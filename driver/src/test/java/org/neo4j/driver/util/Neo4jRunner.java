@@ -19,14 +19,15 @@
  */
 package org.neo4j.driver.util;
 
+import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintWriter;
 import java.net.URI;
 import java.net.URL;
-import java.util.concurrent.TimeUnit;
 
 import org.neo4j.Neo4j;
 import org.neo4j.driver.Session;
@@ -34,8 +35,8 @@ import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.connector.socket.SocketClient;
 import org.neo4j.driver.internal.logging.DevNullLogger;
 
-import static java.io.File.separator;
-
+import org.rauschig.jarchivelib.Archiver;
+import org.rauschig.jarchivelib.ArchiverFactory;
 import static junit.framework.TestCase.assertFalse;
 
 /**
@@ -48,9 +49,17 @@ public class Neo4jRunner
 
     private static Neo4jRunner globalInstance;
 
-    private final File jarFile = new File( System.getProperty( "neo4j.jarTargetFile", "./target/neo4j.jar" ) );
-    private final File dataDir = new File( System.getProperty( "neo4j.datadir", "./target/neo4j.data" ) );
-    private Process process;
+    private final String neo4jVersion = "neo4j-community-2.3.0-M01";
+    private final String neo4jLink = "http://dist.neo4j.org/" + neo4jVersion + "-unix.tar.gz";
+    private final String remotingExtensionLink = "http://m2.neo4j.org/service/local/artifact/maven/content?r=snapshots&g=org.neo4j.ndp&a=neo4j-ndp-kernelextension&v=LATEST";
+
+    private final File neo4jDir = new File( "./target/neo4j" );
+    private final File neo4jHome = new File( neo4jDir, neo4jVersion );
+    private final File dataDir = new File( neo4jHome, "data" );
+
+    private final File neo4jJar = new File( "./target/" + neo4jVersion + ".tar.gz" );
+    private final File remotingExtensionJar = new File( neo4jHome, "plugins/remoting.jar" );
+
 
     public static void main( String... args ) throws Exception
     {
@@ -70,36 +79,39 @@ public class Neo4jRunner
         return globalInstance;
     }
 
-    // Look for the specified file in this directory and parent directories recursively
-    private File findUpwards( String pathname, int levels )
+    public Neo4jRunner() throws IOException
     {
-        File file = new File( pathname );
-        if ( file.exists() )
+        if ( !neo4jHome.exists() || neo4jHome.list() == null || !remotingExtensionJar.exists() )
         {
-            return file;
-        }
-        else if ( levels == 0 )
-        {
-            return null;
-        }
-        else
-        {
-            return findUpwards( ".." + separator + pathname, levels - 1 );
+            // no neo4j exists or no files inside the folder
+
+            // download neo4j server from a URL
+            ensureFileExist( neo4jJar, neo4jLink );
+
+            // Untar the neo4j server
+            System.out.println( "Untarring: " + neo4jJar + " -> " + neo4jDir );
+            Archiver archiver = ArchiverFactory.createArchiver( "tar", "gz" );
+            archiver.extract( neo4jJar, neo4jDir );
+
+            // put the ndp extension into the 'plugins' directory
+            ensureFileExist( remotingExtensionJar, remotingExtensionLink );
+
+            // Add experimental.ndp.enabled=true to conf/neo4j.properties
+            File configFile = new File( neo4jHome, "conf/neo4j.properties" );
+            System.out.println( "Enabling ndp in " + configFile );
+            try ( PrintWriter out = new PrintWriter( new BufferedWriter( new FileWriter( configFile, true ) ) ) )
+            {
+                out.println( "experimental.ndp.enabled=true" );
+            }
+            catch ( IOException e )
+            {
+                throw e;
+            }
         }
     }
 
-    public Neo4jRunner() throws IOException
+    private void ensureFileExist( File jarFile, String downloadLink ) throws IOException
     {
-        String artifactUrl = System.getenv( "neo4j.artifactUrl" );
-        if ( artifactUrl == null )
-        {
-            File artifactFile = findUpwards( "neo4j-driver-test-server-2.3-SNAPSHOT.jar", 3 );
-            if ( artifactFile == null )
-            {
-                throw new FileNotFoundException( "Cannot locate launcher jar" );
-            }
-            artifactUrl = artifactFile.toURI().toURL().toString();
-        }
         if ( jarFile.exists() && jarFile.length() == 0 )
         {
             jarFile.delete();
@@ -107,8 +119,8 @@ public class Neo4jRunner
         if ( !jarFile.exists() )
         {
             jarFile.getParentFile().mkdirs();
-            System.out.println( "Copying: " + artifactUrl + " -> " + jarFile );
-            streamFileTo( artifactUrl, jarFile );
+            System.out.println( "Copying: " + downloadLink + " -> " + jarFile );
+            streamFileTo( downloadLink, jarFile );
         }
     }
 
@@ -116,19 +128,19 @@ public class Neo4jRunner
     {
         assertFalse( "A server instance is already running", serverResponds() );
 
-        FileTools.deleteRecursively( dataDir );
+        FileTools.deleteRecursively( new File( dataDir, "graph.db" ) );
 
-        String path = System.getProperty( "java.home" ) + separator + "bin" + separator + "java";
-        process = new ProcessBuilder()
-                .inheritIO()
-                .command( path, "-jar", jarFile.getAbsolutePath(),
-                        "-c", "dbms.datadir=" + dataDir.getAbsolutePath() ).start();
+        Process process = runNeo4j( "start" );
+        stopOnExit();
 
-        // Add a shutdown hook to try and avoid leaking processes. This won't guard against kill -9 stops, but will
-        // cover any other exit types.
-        stopOnExit( process );
+        awaitServerResponds( process );
+    }
 
-        awaitServerResponds();
+    public Process runNeo4j( String cmd ) throws IOException
+    {
+        File startScript = new File( neo4jHome, "bin/neo4j" );
+        startScript.setExecutable( true );
+        return new ProcessBuilder().inheritIO().command( startScript.getAbsolutePath(), cmd ).start();
     }
 
     public void clearData()
@@ -142,42 +154,17 @@ public class Neo4jRunner
         }
     }
 
-    public void stopServer() throws InterruptedException
+    public void stopServer() throws IOException
     {
-        process.destroy();
-        waitFor( process, 5, TimeUnit.SECONDS );
-        process.destroy();
+        runNeo4j( "stop" );
     }
 
-    private static void waitFor( Process proc, final int time, final TimeUnit unit ) throws InterruptedException
-    {
-        final Thread mainThread = Thread.currentThread();
-
-        new Thread( new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                try
-                {
-                    unit.sleep( time );
-                }
-                catch ( InterruptedException e )
-                {
-                    throw new RuntimeException( e );
-                }
-                mainThread.interrupt();
-            }
-        } ).start();
-
-        proc.waitFor();
-    }
-
-    private void awaitServerResponds() throws IOException, InterruptedException
+    private void awaitServerResponds( Process process ) throws IOException, InterruptedException
     {
         long timeout = System.currentTimeMillis() + 1000 * 30;
         for (; ; )
         {
+            process.waitFor();
             if ( serverResponds() )
             {
                 return;
@@ -185,17 +172,6 @@ public class Neo4jRunner
             else
             {
                 Thread.sleep( 100 );
-            }
-
-            // Make sure process still is alive
-            try
-            {
-                int terminationCode = process.exitValue();
-                throw new RuntimeException( "ERROR: Neo4j process died, exit code " + terminationCode );
-            }
-            catch ( IllegalThreadStateException e )
-            {
-                // process is still alive - ok
             }
 
             if ( System.currentTimeMillis() > timeout )
@@ -242,14 +218,22 @@ public class Neo4jRunner
         }
     }
 
-    private static void stopOnExit( final Process process )
+    private void stopOnExit()
     {
         Runtime.getRuntime().addShutdownHook( new Thread( new Runnable()
         {
             @Override
             public void run()
             {
-                process.destroy();
+                try
+                {
+                    stopServer();
+                }
+                catch ( IOException e )
+                {
+                    // cannot help you anything sorry
+                    e.printStackTrace();
+                }
             }
         } ) );
     }
