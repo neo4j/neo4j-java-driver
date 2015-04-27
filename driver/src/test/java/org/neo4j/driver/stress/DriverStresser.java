@@ -19,6 +19,7 @@
  */
 package org.neo4j.driver.stress;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +44,7 @@ public class DriverStresser
     {
         int iterations = 100_000;
 
-        bench( (long) iterations, 1, 10_000 );
+        bench( iterations, 1, 10_000 );
         bench( (long) iterations / 2, 2, 10_000 );
         bench( (long) iterations / 4, 4, 10_000 );
         bench( (long) iterations / 8, 8, 10_000 );
@@ -81,7 +82,7 @@ public class DriverStresser
         }
     }
 
-    public static void teardown() throws InterruptedException
+    public static void teardown() throws IOException
     {
         server.stopServer();
     }
