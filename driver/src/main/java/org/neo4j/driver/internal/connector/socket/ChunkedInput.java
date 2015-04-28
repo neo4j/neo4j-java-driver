@@ -19,11 +19,16 @@
  */
 package org.neo4j.driver.internal.connector.socket;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 import org.neo4j.driver.exceptions.ClientException;
@@ -32,28 +37,18 @@ import org.neo4j.driver.internal.packstream.PackStream;
 
 public class ChunkedInput implements PackInput
 {
-    private List<ByteBuffer> chunks = new ArrayList<>();
+    private LinkedList<ByteBuffer> chunks = new LinkedList<>();
     private ByteBuffer currentChunk = null;
-    private int currentChunkIndex = -1;
 
     private int remaining = 0;
     private InputStream in;
+    private FileOutputStream recording;
 
     public ChunkedInput clear()
     {
         currentChunk = null;
-        currentChunkIndex = -1;
         remaining = 0;
-
-        if ( chunks.size() > 128 )
-        {
-            // faster to allocate a new one than to release if the list is large
-            chunks = new ArrayList<>();
-        }
-        else
-        {
-            chunks.clear();
-        }
+        chunks.clear();
         return this;
     }
 
@@ -201,6 +196,11 @@ public class ChunkedInput implements PackInput
 
     private void ensureChunkAvailable( int toRead )
     {
+        if(toRead == 0)
+        {
+            return;
+        }
+
         while ( remaining < toRead )
         {
             // if not enough data in chunk list, we read more data from input stream
@@ -211,21 +211,19 @@ public class ChunkedInput implements PackInput
             }
             catch ( IOException e )
             {
-                // TODO or maybe just a simple IOException as it deals with socket IO directly
                 throw new ClientException( "Unable to process request: " + e.getMessage(), e );
             }
         }
 
         if ( currentChunk == null || currentChunk.remaining() == 0 )
         {
-            currentChunkIndex++;
-            if ( currentChunkIndex < chunks.size() )
+            if ( chunks.size() > 0 )
             {
-                currentChunk = chunks.get( currentChunkIndex );
+                currentChunk = chunks.pop();
             }
             else
             {
-                throw new BufferOverflowException();
+                throw new ClientException("Fatal error while reading network data, expected: " + toRead + ", " + remaining + " bytes remaining. Current chunk: " + currentChunk + ", " + chunks);
             }
         }
     }
@@ -251,6 +249,24 @@ public class ChunkedInput implements PackInput
 
     public void setInputStream( InputStream in )
     {
+        try
+        {
+            File file = new File( "/tmp/datas" );
+            if(file.exists())
+            {
+                file.delete();
+            }
+            file.createNewFile();
+            this.recording = new FileOutputStream( "/tmp/datas" );
+        }
+        catch ( FileNotFoundException e )
+        {
+            e.printStackTrace();
+        }
+        catch ( IOException e )
+        {
+            e.printStackTrace();
+        }
         this.in = in;
     }
 }

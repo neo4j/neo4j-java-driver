@@ -192,7 +192,7 @@ public class Neo4j
     private static String connectorSchemes()
     {
         LinkedList<String> schemes = new LinkedList<>();
-        for ( Connector connector : connectors )
+        for ( Connector connector : connectors() )
         {
             schemes.addAll( connector.supportedSchemes() );
         }

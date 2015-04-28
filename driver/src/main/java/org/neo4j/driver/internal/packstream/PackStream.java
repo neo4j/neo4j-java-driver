@@ -562,12 +562,17 @@ public class PackStream
 
         public String unpackString() throws IOException
         {
-            return new String(unpackUtf8(), UTF_8);
+            final byte markerByte = in.ensure( 1 ).get();
+            if( markerByte == TINY_TEXT ) // Note no mask, so we compare to 0x80.
+            {
+                return PackValue.EMPTY_STRING;
+            }
+
+            return new String(unpackUtf8(markerByte), UTF_8);
         }
 
-        public byte[] unpackUtf8() throws IOException
+        private byte[] unpackUtf8(byte markerByte) throws IOException
         {
-            final byte markerByte = in.ensure( 1 ).get();
             final byte markerHighNibble = (byte) (markerByte & 0xF0);
             final byte markerLowNibble = (byte) (markerByte & 0x0F);
 
@@ -588,7 +593,7 @@ public class PackStream
                     throw new Overflow( "TEXT_32 too long for Java" );
                 }
             }
-            default: throw new Unexpected( "Expected a string, but got: " + toHexString( markerByte & 0xFF ));
+            default: throw new Unexpected( "Expected a string, but got: 0x" + toHexString( markerByte & 0xFF ));
             }
         }
 
@@ -599,7 +604,7 @@ public class PackStream
             {
             case TRUE: return true;
             case FALSE: return false;
-            default: throw new Unexpected( "Expected a boolean, but got: " + toHexString( markerByte & 0xFF ));
+            default: throw new Unexpected( "Expected a boolean, but got: 0x" + toHexString( markerByte & 0xFF ));
             }
         }
 

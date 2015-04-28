@@ -29,6 +29,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public abstract class PackValue implements Iterable<PackValue>
 {
     public static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
+    public static final String EMPTY_STRING = "";
     public static final List<PackValue> EMPTY_LIST_OF_VALUES = Collections.EMPTY_LIST;
     public static final Map<String, PackValue> EMPTY_MAP_OF_VALUES = Collections.EMPTY_MAP;
 
@@ -354,14 +355,6 @@ public abstract class PackValue implements Iterable<PackValue>
 
     public static class TextValue extends PackValue
     {
-
-        private static final TextValue EMPTY_TEXT = new TextValue( EMPTY_BYTE_ARRAY );
-
-        public static TextValue getInstance( char value )
-        {
-            return new TextValue( value );
-        }
-
         public static TextValue getInstance( byte[] value )
         {
             return new TextValue( value );

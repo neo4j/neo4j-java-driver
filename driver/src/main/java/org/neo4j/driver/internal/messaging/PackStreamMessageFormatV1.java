@@ -361,7 +361,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                 unpackPullAllMessage( handler );
                 break;
             case MSG_RECORD:
-                unpackItemMessage( handler );
+                unpackRecordMessage(handler);
                 break;
             case MSG_SUCCESS:
                 unpackSuccessMessage( handler );
@@ -420,7 +420,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             output.handleSuccessMessage( map );
         }
 
-        private void unpackItemMessage( MessageHandler output ) throws IOException
+        private void unpackRecordMessage(MessageHandler output) throws IOException
         {
             int fieldCount = (int) unpacker.unpackListHeader();
             Value[] fields = new Value[fieldCount];

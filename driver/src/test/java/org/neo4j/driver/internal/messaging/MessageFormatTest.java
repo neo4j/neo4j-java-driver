@@ -21,7 +21,10 @@ package org.neo4j.driver.internal.messaging;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
 import java.util.ArrayList;
@@ -38,6 +41,7 @@ import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.internal.SimpleNode;
 import org.neo4j.driver.internal.SimplePath;
 import org.neo4j.driver.internal.SimpleRelationship;
+import org.neo4j.driver.internal.connector.socket.ChunkedInput;
 import org.neo4j.driver.util.BytePrinter;
 import org.neo4j.driver.internal.packstream.BufferedChannelOutput;
 import org.neo4j.driver.internal.packstream.PackStream;
