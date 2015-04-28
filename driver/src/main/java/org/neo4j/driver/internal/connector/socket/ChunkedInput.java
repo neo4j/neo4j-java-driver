@@ -27,8 +27,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.packstream.PackInput;
-import org.neo4j.packstream.PackStream;
+import org.neo4j.driver.internal.packstream.PackInput;
+import org.neo4j.driver.internal.packstream.PackStream;
 
 public class ChunkedInput implements PackInput
 {

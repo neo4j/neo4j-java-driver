@@ -17,8 +17,6 @@
 
   <modules>
     <module>driver</module>
-    
-    <module>packstream-v1</module>
   </modules>
 
   <dependencyManagement>

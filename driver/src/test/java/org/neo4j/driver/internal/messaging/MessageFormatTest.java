@@ -39,8 +39,8 @@ import org.neo4j.driver.internal.SimpleNode;
 import org.neo4j.driver.internal.SimplePath;
 import org.neo4j.driver.internal.SimpleRelationship;
 import org.neo4j.driver.util.BytePrinter;
-import org.neo4j.packstream.BufferedChannelOutput;
-import org.neo4j.packstream.PackStream;
+import org.neo4j.driver.internal.packstream.BufferedChannelOutput;
+import org.neo4j.driver.internal.packstream.PackStream;
 
 import static java.util.Arrays.asList;
 

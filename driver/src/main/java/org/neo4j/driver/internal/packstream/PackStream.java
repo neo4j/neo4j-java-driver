@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.packstream;
+package org.neo4j.driver.internal.packstream;
 
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
@@ -31,10 +31,6 @@ import java.util.Map;
 import static java.lang.Integer.toHexString;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
-import static org.neo4j.packstream.PackValue.EMPTY_BYTE_ARRAY;
-import static org.neo4j.packstream.PackValue.EMPTY_LIST_OF_VALUES;
-import static org.neo4j.packstream.PackValue.EMPTY_MAP_OF_VALUES;
-import static org.neo4j.packstream.PackValue.NullValue.NULL_VALUE;
 
 /**
  * PackStream is a messaging serialisation format heavily inspired by MessagePack.
@@ -615,7 +611,7 @@ public class PackStream
 
             if ( markerByte == NULL )
             {
-                return NULL_VALUE;
+                return PackValue.NullValue.NULL_VALUE;
             }
             else if ( markerByte == TRUE )
             {
@@ -774,7 +770,7 @@ public class PackStream
 
         private byte[] unpackBytes( int size ) throws IOException
         {
-            if ( size == 0 ) return EMPTY_BYTE_ARRAY;
+            if ( size == 0 ) return PackValue.EMPTY_BYTE_ARRAY;
             byte[] heapBuffer = new byte[size];
             int index = 0;
             while(index < size)
@@ -798,7 +794,7 @@ public class PackStream
 
         private List<PackValue> unpackList( int size ) throws IOException
         {
-            if ( size == 0 ) return EMPTY_LIST_OF_VALUES;
+            if ( size == 0 ) return PackValue.EMPTY_LIST_OF_VALUES;
             List<PackValue> list = new ArrayList<>( size );
             for ( int i = 0; i < size; i++ )
             {
@@ -809,7 +805,7 @@ public class PackStream
 
         private Map<String,PackValue> unpackMap( int size ) throws IOException
         {
-            if ( size == 0 ) return EMPTY_MAP_OF_VALUES;
+            if ( size == 0 ) return PackValue.EMPTY_MAP_OF_VALUES;
             Map<String,PackValue> map = new LinkedHashMap<>( size );
             for ( int i = 0; i < size; i++ )
             {

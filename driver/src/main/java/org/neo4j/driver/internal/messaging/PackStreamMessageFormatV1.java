@@ -42,12 +42,12 @@ import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.internal.value.NodeValue;
 import org.neo4j.driver.internal.value.PathValue;
 import org.neo4j.driver.internal.value.RelationshipValue;
-import org.neo4j.packstream.BufferedChannelInput;
-import org.neo4j.packstream.BufferedChannelOutput;
-import org.neo4j.packstream.PackInput;
-import org.neo4j.packstream.PackOutput;
-import org.neo4j.packstream.PackStream;
-import org.neo4j.packstream.PackType;
+import org.neo4j.driver.internal.packstream.BufferedChannelInput;
+import org.neo4j.driver.internal.packstream.BufferedChannelOutput;
+import org.neo4j.driver.internal.packstream.PackInput;
+import org.neo4j.driver.internal.packstream.PackOutput;
+import org.neo4j.driver.internal.packstream.PackStream;
+import org.neo4j.driver.internal.packstream.PackType;
 
 import static org.neo4j.driver.Values.value;
 
