@@ -48,6 +48,7 @@ public class Neo4jRunner
     public static final String DEFAULT_URL = "neo4j://localhost:7687";
 
     private static Neo4jRunner globalInstance;
+    private static boolean externalServer = Boolean.getBoolean("neo4j.useExternalServer");
 
     private final String neo4jVersion = System.getProperty( "version", "neo4j-community-2.3.0-M01" );
     private final String neo4jLink = System.getProperty( "packageUri",
@@ -83,31 +84,30 @@ public class Neo4jRunner
 
     public Neo4jRunner() throws IOException
     {
-        if ( !neo4jHome.exists() || neo4jHome.list() == null || !remotingExtensionJar.exists() )
+        if(!externalServer)
         {
-            // no neo4j exists or no files inside the folder
+            if (!neo4jHome.exists() || neo4jHome.list() == null || !remotingExtensionJar.exists()) {
+                // no neo4j exists or no files inside the folder
 
-            // download neo4j server from a URL
-            ensureFileExist( neo4jJar, neo4jLink );
+                // download neo4j server from a URL
+                ensureFileExist(neo4jJar, neo4jLink);
 
-            // Untar the neo4j server
-            System.out.println( "Untarring: " + neo4jJar + " -> " + neo4jDir );
-            Archiver archiver = ArchiverFactory.createArchiver( "tar", "gz" );
-            archiver.extract( neo4jJar, neo4jDir );
+                // Untar the neo4j server
+                System.out.println("Untarring: " + neo4jJar + " -> " + neo4jDir);
+                Archiver archiver = ArchiverFactory.createArchiver("tar", "gz");
+                archiver.extract(neo4jJar, neo4jDir);
 
-            // put the ndp extension into the 'plugins' directory
-            ensureFileExist( remotingExtensionJar, remotingExtensionLink );
+                // put the ndp extension into the 'plugins' directory
+                ensureFileExist(remotingExtensionJar, remotingExtensionLink);
 
-            // Add experimental.ndp.enabled=true to conf/neo4j.properties
-            File configFile = new File( neo4jHome, "conf/neo4j.properties" );
-            System.out.println( "Enabling ndp in " + configFile );
-            try ( PrintWriter out = new PrintWriter( new BufferedWriter( new FileWriter( configFile, true ) ) ) )
-            {
-                out.println( "experimental.ndp.enabled=true" );
-            }
-            catch ( IOException e )
-            {
-                throw e;
+                // Add experimental.ndp.enabled=true to conf/neo4j.properties
+                File configFile = new File(neo4jHome, "conf/neo4j.properties");
+                System.out.println("Enabling ndp in " + configFile);
+                try (PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(configFile, true)))) {
+                    out.println("experimental.ndp.enabled=true");
+                } catch (IOException e) {
+                    throw e;
+                }
             }
         }
     }
@@ -128,14 +128,17 @@ public class Neo4jRunner
 
     public void startServer() throws IOException, InterruptedException
     {
-        assertFalse( "A server instance is already running", serverResponds() );
+        if ( !externalServer )
+        {
+            assertFalse( "A server instance is already running", serverResponds() );
 
-        FileTools.deleteRecursively( new File( dataDir, "graph.db" ) );
+            FileTools.deleteRecursively( new File( dataDir, "graph.db" ) );
 
-        Process process = runNeo4j( "start" );
-        stopOnExit();
+            Process process = runNeo4j( "start" );
+            stopOnExit();
 
-        awaitServerResponds( process );
+            awaitServerResponds( process );
+        }
     }
 
     public Process runNeo4j( String cmd ) throws IOException
@@ -158,7 +161,10 @@ public class Neo4jRunner
 
     public void stopServer() throws IOException
     {
-        runNeo4j( "stop" );
+        if ( !externalServer )
+        {
+            runNeo4j( "stop" );
+        }
     }
 
     private void awaitServerResponds( Process process ) throws IOException, InterruptedException

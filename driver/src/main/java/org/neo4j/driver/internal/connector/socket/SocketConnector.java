@@ -32,7 +32,7 @@ import static java.util.Arrays.asList;
 public class SocketConnector implements Connector
 {
     public static final String USER_AGENT = "Neo4j-Java/2.3";
-    public static final String SCHEME = "neo4j"; // TODO: what this????
+    public static final String SCHEME = "neo4j";
     public static final int DEFAULT_PORT = 7687;
 
     private Logging logging;

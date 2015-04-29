@@ -24,16 +24,6 @@ public class ProtocolChooser
         }
     }
 
-    public static byte[] int2bytes( int... values )
-    {
-        ByteBuffer bytes = ByteBuffer.allocate( 4 * values.length );
-        for ( int value : values )
-        {
-            bytes.putInt( value );
-        }
-        return bytes.array();
-    }
-
     public static int bytes2Int( byte[] bytes )
     {
         assert bytes.length == 4;

@@ -9,15 +9,13 @@ import org.neo4j.driver.internal.messaging.MessageFormat.Writer;
 
 public interface SocketProtocol
 {
-    public MessageFormat messageFormat();
+    Reader reader();
 
-    public Reader reader();
+    Writer writer();
 
-    public Writer writer();
+    void outputStream( OutputStream out );
 
-    public void outputStream( OutputStream out );
+    void inputStream( InputStream in );
 
-    public void inputStream( InputStream in );
-
-    public int version();
+    int version();
 }

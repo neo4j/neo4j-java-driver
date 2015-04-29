@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
-import org.neo4j.packstream.PackOutput;
+import org.neo4j.driver.internal.packstream.PackOutput;
 
 public class ChunkedOutput implements PackOutput
 {

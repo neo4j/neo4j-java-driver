@@ -17,9 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.packstream;
+package org.neo4j.driver.internal.packstream;
 
-public enum PackType
+import java.io.IOException;
+
+/**
+ * Client is responsible for calling {@link #ensure(int)} before any calls to 'put' operations,
+ * other than to {@link #put(byte[], int, int)}.
+ */
+public interface PackOutput
 {
-    NULL, BOOLEAN, INTEGER, FLOAT, BYTES, TEXT, LIST, MAP, STRUCT
+    /** Ensure at least the given set of bytes can be written. Size will never exceed 16 */
+    PackOutput ensure( int size ) throws IOException;
+
+    PackOutput flush() throws IOException;
+
+    PackOutput put( byte value );
+
+    PackOutput put( byte[] data, int offset, int amountToWrite ) throws IOException;
+
+    PackOutput putShort( short value );
+
+    PackOutput putInt( int value );
+
+    PackOutput putLong( long value );
+
+    PackOutput putDouble( double value );
 }

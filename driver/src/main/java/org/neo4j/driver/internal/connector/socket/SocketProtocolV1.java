@@ -15,7 +15,6 @@ public class SocketProtocolV1 implements SocketProtocol
     private final ChunkedOutput output;
     private final Reader reader;
     private Writer writer;
-    private static final int VERSION = 1;
 
     public SocketProtocolV1()
     {
@@ -26,12 +25,6 @@ public class SocketProtocolV1 implements SocketProtocol
 
         this.writer = new PackStreamMessageFormatV1.Writer( output, output.messageBoundaryHook() );
         this.reader = new PackStreamMessageFormatV1.Reader( input );
-    }
-
-    @Override
-    public MessageFormat messageFormat()
-    {
-        return messageFormat;
     }
 
     @Override
@@ -61,7 +54,6 @@ public class SocketProtocolV1 implements SocketProtocol
     @Override
     public int version()
     {
-        assert VERSION == messageFormat.version();
-        return VERSION;
+        return messageFormat.version();
     }
 }

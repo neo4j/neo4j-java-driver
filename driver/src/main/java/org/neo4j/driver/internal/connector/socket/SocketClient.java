@@ -93,8 +93,8 @@ public class SocketClient
         }
         writer.flush();
 
-        // well, we block and wait for the response.
-        while ( handler.countsOfResponses() < pendingMessages.size() )
+        // Wait until all pending requests have been replied to
+        while ( handler.recievedResponses() < pendingMessages.size() )
         {
             reader.read( handler );
         }
@@ -110,16 +110,6 @@ public class SocketClient
         {
             throw new ClientException( "Unable to close socket connection properly." + e.getMessage(), e );
         }
-    }
-
-    Writer writer()
-    {
-        return this.writer;
-    }
-
-    Reader reader()
-    {
-        return this.reader;
     }
 
     private SocketProtocol negotiateProtocol() throws IOException

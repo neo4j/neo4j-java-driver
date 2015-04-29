@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.packstream;
+package org.neo4j.driver.internal.packstream;
 
 import java.io.IOException;
 
@@ -25,7 +25,7 @@ public interface PackInput
 {
     /**
      * Ensure the specified number of bytes are available for reading
-     * @throws org.neo4j.packstream.PackStream.EndOfStream if there are not enough bytes available
+     * @throws PackStream.EndOfStream if there are not enough bytes available
      */
     PackInput ensure( int numBytes ) throws IOException;
 

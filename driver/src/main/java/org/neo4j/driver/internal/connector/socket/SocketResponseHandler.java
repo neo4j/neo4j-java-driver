@@ -19,6 +19,7 @@
  */
 package org.neo4j.driver.internal.connector.socket;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -38,7 +39,7 @@ public class SocketResponseHandler implements MessageHandler
     /** Counts number of responses, used to correlate response data with stream collectors */
     private int responseId = 0;
 
-    public int countsOfResponses()
+    public int recievedResponses()
     {
         return responseId;
     }

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.packstream;
+package org.neo4j.driver.internal.packstream;
 
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
@@ -31,10 +31,6 @@ import java.util.Map;
 import static java.lang.Integer.toHexString;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
-import static org.neo4j.packstream.PackValue.EMPTY_BYTE_ARRAY;
-import static org.neo4j.packstream.PackValue.EMPTY_LIST_OF_VALUES;
-import static org.neo4j.packstream.PackValue.EMPTY_MAP_OF_VALUES;
-import static org.neo4j.packstream.PackValue.NullValue.NULL_VALUE;
 
 /**
  * PackStream is a messaging serialisation format heavily inspired by MessagePack.
@@ -566,12 +562,17 @@ public class PackStream
 
         public String unpackString() throws IOException
         {
-            return new String(unpackUtf8(), UTF_8);
+            final byte markerByte = in.ensure( 1 ).get();
+            if( markerByte == TINY_TEXT ) // Note no mask, so we compare to 0x80.
+            {
+                return PackValue.EMPTY_STRING;
+            }
+
+            return new String(unpackUtf8(markerByte), UTF_8);
         }
 
-        public byte[] unpackUtf8() throws IOException
+        private byte[] unpackUtf8(byte markerByte) throws IOException
         {
-            final byte markerByte = in.ensure( 1 ).get();
             final byte markerHighNibble = (byte) (markerByte & 0xF0);
             final byte markerLowNibble = (byte) (markerByte & 0x0F);
 
@@ -592,7 +593,7 @@ public class PackStream
                     throw new Overflow( "TEXT_32 too long for Java" );
                 }
             }
-            default: throw new Unexpected( "Expected a string, but got: " + toHexString( markerByte & 0xFF ));
+            default: throw new Unexpected( "Expected a string, but got: 0x" + toHexString( markerByte & 0xFF ));
             }
         }
 
@@ -603,7 +604,7 @@ public class PackStream
             {
             case TRUE: return true;
             case FALSE: return false;
-            default: throw new Unexpected( "Expected a boolean, but got: " + toHexString( markerByte & 0xFF ));
+            default: throw new Unexpected( "Expected a boolean, but got: 0x" + toHexString( markerByte & 0xFF ));
             }
         }
 
@@ -615,7 +616,7 @@ public class PackStream
 
             if ( markerByte == NULL )
             {
-                return NULL_VALUE;
+                return PackValue.NullValue.NULL_VALUE;
             }
             else if ( markerByte == TRUE )
             {
@@ -774,7 +775,7 @@ public class PackStream
 
         private byte[] unpackBytes( int size ) throws IOException
         {
-            if ( size == 0 ) return EMPTY_BYTE_ARRAY;
+            if ( size == 0 ) return PackValue.EMPTY_BYTE_ARRAY;
             byte[] heapBuffer = new byte[size];
             int index = 0;
             while(index < size)
@@ -798,7 +799,7 @@ public class PackStream
 
         private List<PackValue> unpackList( int size ) throws IOException
         {
-            if ( size == 0 ) return EMPTY_LIST_OF_VALUES;
+            if ( size == 0 ) return PackValue.EMPTY_LIST_OF_VALUES;
             List<PackValue> list = new ArrayList<>( size );
             for ( int i = 0; i < size; i++ )
             {
@@ -809,7 +810,7 @@ public class PackStream
 
         private Map<String,PackValue> unpackMap( int size ) throws IOException
         {
-            if ( size == 0 ) return EMPTY_MAP_OF_VALUES;
+            if ( size == 0 ) return PackValue.EMPTY_MAP_OF_VALUES;
             Map<String,PackValue> map = new LinkedHashMap<>( size );
             for ( int i = 0; i < size; i++ )
             {
