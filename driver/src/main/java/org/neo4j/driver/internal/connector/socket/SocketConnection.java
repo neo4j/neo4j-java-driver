@@ -1,25 +1,26 @@
 /**
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
- *
+ * <p>
  * This file is part of Neo4j.
- *
+ * <p>
  * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- *
+ * <p>
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- *
+ * <p>
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.driver.internal.connector.socket;
 
 import java.io.IOException;
+import java.net.SocketTimeoutException;
 import java.util.LinkedList;
 import java.util.Map;
 
@@ -43,9 +44,9 @@ public class SocketConnection implements Connection
     private final SocketResponseHandler responseHandler = new SocketResponseHandler();
     private int requestCounter = 0;
 
-    public SocketConnection( String host, int port, Logger logger )
+    public SocketConnection( String host, int port )
     {
-        this.socket = new SocketClient( host, port, logger );
+        this.socket = new SocketClient( host, port );
         socket.start();
     }
 
@@ -75,7 +76,7 @@ public class SocketConnection implements Connection
     @Override
     public void sync()
     {
-        if( pendingMessages.size() == 0 )
+        if ( pendingMessages.size() == 0 )
         {
             return;
         }
@@ -100,11 +101,15 @@ public class SocketConnection implements Connection
             String message = e.getMessage();
             if ( message == null )
             {
-                throw new ClientException( "Unable to read response from network: " + e.getClass().getSimpleName(), e );
+                throw new ClientException( "Unable to read response from server: " + e.getClass().getSimpleName(), e );
+            }
+            else if ( e instanceof SocketTimeoutException )
+            {
+                throw new ClientException( "Server did not reply within the network timeout limit.", e );
             }
             else
             {
-                throw new ClientException( "Unable to read response from network: " + message, e );
+                throw new ClientException( "Unable to read response from server: " + message, e );
             }
         }
         finally

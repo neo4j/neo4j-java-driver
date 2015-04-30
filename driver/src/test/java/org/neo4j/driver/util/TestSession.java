@@ -21,7 +21,6 @@ package org.neo4j.driver.util;
 
 import java.util.Map;
 
-import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
@@ -32,27 +31,24 @@ import org.neo4j.driver.Transaction;
 import org.neo4j.driver.Value;
 
 /**
- * A little utility for integration testing, this provides tests with a session they can work with
+ * A little utility for integration testing, this provides tests with a session they can work with.
+ * If you want more direct control, have a look at {@link TestNeo4j} instead.
  */
-public class TestSession implements TestRule, Session
+public class TestSession extends TestNeo4j implements Session
 {
     private Session realSession;
-    private Neo4jRunner runner;
 
     @Override
     public Statement apply( final Statement base, Description description )
     {
-        return new Statement()
+        return super.apply( new Statement()
         {
             @Override
             public void evaluate() throws Throwable
             {
                 try
                 {
-                    runner = Neo4jRunner.getOrCreateGlobalServer();
-                    runner.clearData();
-
-                    realSession = Neo4j.session( "neo4j://localhost:7687" );
+                    realSession = Neo4j.session( address() );
                     base.evaluate();
                 }
                 finally
@@ -63,7 +59,7 @@ public class TestSession implements TestRule, Session
                     }
                 }
             }
-        };
+        }, description );
     }
 
     @Override

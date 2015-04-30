@@ -33,7 +33,6 @@ import org.neo4j.Neo4j;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.connector.socket.SocketClient;
-import org.neo4j.driver.internal.logging.DevNullLogger;
 
 import org.rauschig.jarchivelib.Archiver;
 import org.rauschig.jarchivelib.ArchiverFactory;
@@ -128,7 +127,7 @@ public class Neo4jRunner
 
     public void startServer() throws IOException, InterruptedException
     {
-        if ( !externalServer )
+        if ( canControlServer() )
         {
             assertFalse( "A server instance is already running", serverResponds() );
 
@@ -153,18 +152,23 @@ public class Neo4jRunner
         // Note - this hangs for extended periods some times, because there are tests that leave sessions running.
         // Thus, we need to wait for open sessions and transactions to time out before this will go through.
         // This could be helped by an extension in the future.
-        try ( Session session = Neo4j.session( "neo4j://localhost" ) )
+        try ( Session session = Neo4j.session( address() ) )
         {
             session.run( "MATCH (n) OPTIONAL MATCH (n)-[r]->() DELETE r,n" );
         }
     }
 
-    public void stopServer() throws IOException
+    public void stopServer() throws IOException, InterruptedException
     {
-        if ( !externalServer )
+        if ( canControlServer() )
         {
-            runNeo4j( "stop" );
+            runNeo4j( "stop" ).waitFor();
         }
+    }
+
+    public boolean canControlServer()
+    {
+        return !externalServer;
     }
 
     private void awaitServerResponds( Process process ) throws IOException, InterruptedException
@@ -195,7 +199,7 @@ public class Neo4jRunner
         try
         {
             URI uri = URI.create( DEFAULT_URL );
-            SocketClient client = new SocketClient( uri.getHost(), uri.getPort(), new DevNullLogger() );
+            SocketClient client = new SocketClient( uri.getHost(), uri.getPort() );
             client.start();
             client.stop();
             return true;
@@ -237,7 +241,7 @@ public class Neo4jRunner
                 {
                     stopServer();
                 }
-                catch ( IOException e )
+                catch ( Exception e )
                 {
                     // cannot help you anything sorry
                     e.printStackTrace();
@@ -246,8 +250,9 @@ public class Neo4jRunner
         } ) );
     }
 
-    public String url()
+    public String address()
     {
         return DEFAULT_URL;
     }
+
 }

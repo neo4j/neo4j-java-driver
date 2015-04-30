@@ -1,19 +1,19 @@
 /**
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
- *
+ * <p>
  * This file is part of Neo4j.
- *
+ * <p>
  * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- *
+ * <p>
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- *
+ * <p>
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -25,6 +25,7 @@ import java.io.OutputStream;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.util.List;
 
 import org.neo4j.driver.exceptions.ClientException;
@@ -33,14 +34,24 @@ import org.neo4j.driver.internal.messaging.MessageFormat.Reader;
 import org.neo4j.driver.internal.messaging.MessageFormat.Writer;
 import org.neo4j.driver.internal.spi.Logger;
 
+import static java.lang.Integer.getInteger;
 import static org.neo4j.driver.internal.connector.socket.ProtocolChooser.bytes2Int;
 import static org.neo4j.driver.internal.connector.socket.ProtocolChooser.chooseVersion;
 import static org.neo4j.driver.internal.connector.socket.ProtocolChooser.supportedVersions;
 
 public class SocketClient
 {
+    /**
+     * Timeout for network read operations. By default, this is disabled (the database may take as long as it likes to
+     * reply). However, on networks that suffer from frequent net-splits, there is a serious issue where a socket may
+     * erroneously block for very long periods (up to 10 minutes). If your application suffers from this issue, you
+     * should enable the network timeout, by setting it to some value significantly higher than your slowest query.
+     */
+    private static int defaultNetworkTimeout = getInteger( "neo4j.networkTimeoutMs", 0 );
+
     private final String host;
     private final int port;
+    private final int networkTimeout;
 
     private Socket socket;
 
@@ -51,10 +62,16 @@ public class SocketClient
     private Reader reader;
     private Writer writer;
 
-    public SocketClient( String host, int port, Logger logger )
+    public SocketClient( String host, int port, int networkTimeout )
     {
         this.host = host;
         this.port = port;
+        this.networkTimeout = networkTimeout;
+    }
+
+    public SocketClient( String host, int port )
+    {
+        this( host, port, defaultNetworkTimeout );
     }
 
     public void start()
@@ -62,7 +79,12 @@ public class SocketClient
         try
         {
             socket = new Socket();
+            if ( networkTimeout > 0 )
+            {
+                socket.setSoTimeout( networkTimeout );
+            }
             socket.connect( new InetSocketAddress( host, port ) );
+
             out = socket.getOutputStream();
             in = socket.getInputStream();
 
@@ -78,6 +100,12 @@ public class SocketClient
                                                       "ensure the database is running and that there is a working " +
                                                       "network " +
                                                       "connection to it.", host, port ) );
+        }
+        catch ( SocketTimeoutException e )
+        {
+            throw new ClientException( String.format( "Unable to connect to '%s' on port %s, " +
+                                                      "database took longer than network timeout (%dms) to reply.",
+                    host, port, networkTimeout ) );
         }
         catch ( IOException e )
         {
@@ -116,7 +144,7 @@ public class SocketClient
     {
         out.write( supportedVersions() );
         byte[] accepted = new byte[4];
-        in.read( accepted );
+        in.read( accepted ); // TODO check read length
         int version = bytes2Int( accepted );
         return chooseVersion( version );
     }
