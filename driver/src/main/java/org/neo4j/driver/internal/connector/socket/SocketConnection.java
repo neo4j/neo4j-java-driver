@@ -1,21 +1,21 @@
 /**
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
- * <p>
+ *
  * This file is part of Neo4j.
- * <p>
+ *
  * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- * <p>
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- * <p>
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.driver.internal.connector.socket;
 
@@ -30,7 +30,6 @@ import org.neo4j.driver.internal.messaging.AckFailureMessage;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.RunMessage;
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.spi.Logger;
 import org.neo4j.driver.internal.spi.StreamCollector;
 
 import static org.neo4j.driver.internal.messaging.DiscardAllMessage.DISCARD_ALL;
