@@ -19,21 +19,15 @@
  */
 package org.neo4j.driver.internal.connector.socket;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.LinkedList;
-import java.util.List;
 
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.packstream.PackInput;
 import org.neo4j.driver.internal.packstream.PackStream;
+import org.neo4j.driver.internal.util.InputStreams;
 
 public class ChunkedInput implements PackInput
 {
@@ -42,15 +36,6 @@ public class ChunkedInput implements PackInput
 
     private int remaining = 0;
     private InputStream in;
-    private FileOutputStream recording;
-
-    public ChunkedInput clear()
-    {
-        currentChunk = null;
-        remaining = 0;
-        chunks.clear();
-        return this;
-    }
 
     public void addChunk( ByteBuffer chunk )
     {
@@ -230,43 +215,25 @@ public class ChunkedInput implements PackInput
 
     private ByteBuffer readNextChunk() throws IOException
     {
+        // TODO: Do not allocate new buffers here, swap to Channels API and use a single direct byte buffer
         int chunkSize = readChunkSize();
         byte[] buffer = new byte[chunkSize];
-        in.read( buffer );
-        ByteBuffer chunk = ByteBuffer.allocate( chunkSize );
-        chunk.put( buffer );
-        chunk.flip();
-        return chunk;
+
+        InputStreams.readAll( in, buffer );
+
+        return ByteBuffer.wrap( buffer );
     }
 
     private int readChunkSize() throws IOException
     {
+        // TODO: Do not allocate new buffers here, swap to Channels API and use a single direct byte buffer
         byte[] buffer = new byte[2];
-        in.read( buffer );
-        int chunkSize = ByteBuffer.wrap( buffer ).getShort();
-        return chunkSize;
+        InputStreams.readAll( in, buffer );
+        return (int) ByteBuffer.wrap( buffer ).getShort();
     }
 
     public void setInputStream( InputStream in )
     {
-        try
-        {
-            File file = new File( "/tmp/datas" );
-            if(file.exists())
-            {
-                file.delete();
-            }
-            file.createNewFile();
-            this.recording = new FileOutputStream( "/tmp/datas" );
-        }
-        catch ( FileNotFoundException e )
-        {
-            e.printStackTrace();
-        }
-        catch ( IOException e )
-        {
-            e.printStackTrace();
-        }
         this.in = in;
     }
 }

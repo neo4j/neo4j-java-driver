@@ -82,7 +82,7 @@ public class DriverStresser
         }
     }
 
-    public static void teardown() throws IOException
+    public static void teardown() throws IOException, InterruptedException
     {
         server.stopServer();
     }

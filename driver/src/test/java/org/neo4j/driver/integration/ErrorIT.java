@@ -35,6 +35,7 @@ public class ErrorIT
 {
     @Rule
     public ExpectedException exception = ExpectedException.none();
+
     @Rule
     public TestSession session = new TestSession();
 

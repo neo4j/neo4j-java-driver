@@ -96,7 +96,7 @@ public class StandardTransaction implements Transaction
             }
             else if ( state == State.MARKED_FAILED || state == State.ACTIVE )
             {
-                // If none of the things we've put in the queue have been sent off, there is no need to
+                // If alwaysValid of the things we've put in the queue have been sent off, there is no need to
                 // do this, we could just clear the queue. Future optimization.
                 conn.run( "ROLLBACK", EMPTY_MAP, null );
                 conn.discardAll();
