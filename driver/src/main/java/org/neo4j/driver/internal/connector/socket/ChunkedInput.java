@@ -181,7 +181,7 @@ public class ChunkedInput implements PackInput
 
     private void ensureChunkAvailable( int toRead )
     {
-        if(toRead == 0)
+        if ( toRead == 0 )
         {
             return;
         }
@@ -196,7 +196,9 @@ public class ChunkedInput implements PackInput
             }
             catch ( IOException e )
             {
-                throw new ClientException( "Unable to process request: " + e.getMessage(), e );
+                throw new ClientException( "Unable to process request: " + e.getMessage() + ", expect: " + toRead +
+                                           ", " + remaining + " bytes remaining. Current chunk: " + currentChunk + "," +
+                                           " " + chunks, e );
             }
         }
 
@@ -208,7 +210,9 @@ public class ChunkedInput implements PackInput
             }
             else
             {
-                throw new ClientException("Fatal error while reading network data, expected: " + toRead + ", " + remaining + " bytes remaining. Current chunk: " + currentChunk + ", " + chunks);
+                throw new ClientException( "Fatal error while reading network data, expected: " + toRead + ", " +
+                                           remaining + " bytes remaining. Current chunk: " + currentChunk + ", " +
+                                           chunks );
             }
         }
     }

@@ -19,6 +19,8 @@
  */
 package org.neo4j.driver.internal.packstream;
 
+import org.junit.Test;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -29,16 +31,17 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Test;
+import org.neo4j.driver.util.BytePrinter;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
-
 import static junit.framework.TestCase.assertFalse;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+
 
 public class PackStreamTest
 {
@@ -406,6 +409,24 @@ public class PackStreamTest
     }
 
     @Test
+    public void testCanPackAndUnpackSpecialText() throws Throwable
+    {
+        // Given
+        Machine machine = new Machine();
+        String code = "Mjölnir";
+
+        // When
+        PackStream.Packer packer = machine.packer();
+        packer.pack( code );
+        packer.flush();
+
+        // Then
+        PackValue value = newUnpacker( machine.output() ).unpack();
+        assertThat( value.isText(), equalTo( true ) );
+        assertThat( value.stringValue(), equalTo( code ) );
+    }
+
+    @Test
     public void testCanPackAndUnpackTextFromBytes() throws Throwable
     {
         // Given
@@ -421,6 +442,29 @@ public class PackStreamTest
         assertThat( value.isText(), equalTo( true ) );
         assertThat( value.stringValue(), equalTo( "ABCDEFGHIJ" ) );
 
+    }
+
+    @Test
+    public void testCanPackAndUnpackSpecialTextFromBytes() throws Throwable
+    {
+        // Given
+        Machine machine = new Machine();
+        String code = "Mjölnir"; // UTF-8 `c3 b6` for ö
+
+        // When
+        PackStream.Packer packer = machine.packer();
+
+        byte[] bytes = code.getBytes( UTF_8 );
+        assertThat( BytePrinter.hex( bytes ).trim(), equalTo( "4d 6a c3 b6 6c 6e 69 72" ) );
+        assertThat( new String( bytes, UTF_8 ), equalTo( code ) );
+
+        packer.packText( bytes );
+        packer.flush();
+
+        // Then
+        PackValue value = newUnpacker( machine.output() ).unpack();
+        assertThat( value.isText(), equalTo( true ) );
+        assertThat( value.stringValue(), equalTo( code ) );
     }
 
     @Test
@@ -502,6 +546,30 @@ public class PackStreamTest
     }
 
     @Test
+    public void testCanPackAndUnpackListOfSpecialText() throws Throwable
+    {
+        // Given
+        Machine machine = new Machine();
+
+        // When
+        PackStream.Packer packer = machine.packer();
+        packer.pack( asList( "Mjölnir", "Mjölnir", "Mjölnir" ) );
+        packer.flush();
+
+        // Then
+        PackValue value = newUnpacker( machine.output() ).unpack();
+        assertThat( value.isList(), equalTo( true ) );
+        List<PackValue> list = value.listValue();
+        assertThat( list.size(), equalTo( 3 ) );
+        assertThat( list.get( 0 ).isText(), equalTo( true ) );
+        assertThat( list.get( 1 ).isText(), equalTo( true ) );
+        assertThat( list.get( 2 ).isText(), equalTo( true ) );
+        assertThat( list.get( 0 ).stringValue(), equalTo( "Mjölnir" ) );
+        assertThat( list.get( 1 ).stringValue(), equalTo( "Mjölnir" ) );
+        assertThat( list.get( 2 ).stringValue(), equalTo( "Mjölnir" ) );
+    }
+
+    @Test
     public void testCanPackAndUnpackListOfTextOneByOne() throws Throwable
     {
         // Given
@@ -529,6 +597,37 @@ public class PackStreamTest
         assertThat( list.get( 0 ).stringValue(), equalTo( "eins" ) );
         assertThat( list.get( 1 ).stringValue(), equalTo( "zwei" ) );
         assertThat( list.get( 2 ).stringValue(), equalTo( "drei" ) );
+
+    }
+
+    @Test
+    public void testCanPackAndUnpackListOfSpecialTextOneByOne() throws Throwable
+    {
+        // Given
+        Machine machine = new Machine();
+
+        // When
+        PackStream.Packer packer = machine.packer();
+        packer.packListHeader( 3 );
+        packer.flush();
+        packer.pack( "Mjölnir" );
+        packer.flush();
+        packer.pack( "Mjölnir" );
+        packer.flush();
+        packer.pack( "Mjölnir" );
+        packer.flush();
+
+        // Then
+        PackValue value = newUnpacker( machine.output() ).unpack();
+        assertThat( value.isList(), equalTo( true ) );
+        List<PackValue> list = value.listValue();
+        assertThat( list.size(), equalTo( 3 ) );
+        assertThat( list.get( 0 ).isText(), equalTo( true ) );
+        assertThat( list.get( 1 ).isText(), equalTo( true ) );
+        assertThat( list.get( 2 ).isText(), equalTo( true ) );
+        assertThat( list.get( 0 ).stringValue(), equalTo( "Mjölnir" ) );
+        assertThat( list.get( 1 ).stringValue(), equalTo( "Mjölnir" ) );
+        assertThat( list.get( 2 ).stringValue(), equalTo( "Mjölnir" ) );
 
     }
 

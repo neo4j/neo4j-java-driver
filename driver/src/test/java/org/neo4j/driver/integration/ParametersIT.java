@@ -264,7 +264,7 @@ public class ParametersIT
     }
 
     @Test
-    public void shouldBeAbleToSetAndReturnStringArrayProperty()
+    public void shouldBeAbleToSetAndReturnSpecialStringArrayProperty()
     {
         // When
         String[] arrayValue = new String[]{"Mjölnir", "Mjölnir", "Mjölnir"};
@@ -281,6 +281,29 @@ public class ParametersIT
             {
                 assertThat( item.isText(), equalTo( true ) );
                 assertThat( item.javaString(), equalTo( "Mjölnir" ) );
+            }
+        }
+
+    }
+
+    @Test
+    public void shouldBeAbleToSetAndReturnStringArrayProperty()
+    {
+        // When
+        String[] arrayValue = new String[]{"cat", "cat", "cat"};
+        Result result = session.run(
+                "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", arrayValue ) );
+
+        // Then
+        for ( Record record : result.retain() )
+        {
+            Value value = record.get( "a.value" );
+            assertThat( value.isList(), equalTo( true ) );
+            assertThat( value.size(), equalTo( 3L ) );
+            for ( Value item : value )
+            {
+                assertThat( item.isText(), equalTo( true ) );
+                assertThat( item.javaString(), equalTo( "cat" ) );
             }
         }
 
