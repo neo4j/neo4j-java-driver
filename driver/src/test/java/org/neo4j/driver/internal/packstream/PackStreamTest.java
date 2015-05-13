@@ -31,6 +31,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.driver.util.BytePrinter;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static junit.framework.TestCase.assertFalse;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -446,11 +449,16 @@ public class PackStreamTest
     {
         // Given
         Machine machine = new Machine();
-        String code = "Mjölnir";
+        String code = "Mjölnir"; // UTF-8 `c3 b6` for ö
 
         // When
         PackStream.Packer packer = machine.packer();
-        packer.packText( code.getBytes() );
+
+        byte[] bytes = code.getBytes( UTF_8 );
+        assertThat( BytePrinter.hex( bytes ).trim(), equalTo( "4d 6a c3 b6 6c 6e 69 72" ) );
+        assertThat( new String( bytes, UTF_8 ), equalTo( code ) );
+
+        packer.packText( bytes );
         packer.flush();
 
         // Then
