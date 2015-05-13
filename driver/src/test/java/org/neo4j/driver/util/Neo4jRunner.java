@@ -19,6 +19,9 @@
  */
 package org.neo4j.driver.util;
 
+import org.rauschig.jarchivelib.Archiver;
+import org.rauschig.jarchivelib.ArchiverFactory;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -34,8 +37,6 @@ import org.neo4j.driver.Session;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.connector.socket.SocketClient;
 
-import org.rauschig.jarchivelib.Archiver;
-import org.rauschig.jarchivelib.ArchiverFactory;
 import static junit.framework.TestCase.assertFalse;
 
 /**
@@ -83,30 +84,39 @@ public class Neo4jRunner
 
     public Neo4jRunner() throws IOException
     {
-        if(!externalServer)
+        if ( !externalServer )
         {
-            if (!neo4jHome.exists() || neo4jHome.list() == null || !remotingExtensionJar.exists()) {
+            if ( !neo4jHome.exists() || neo4jHome.list() == null || !remotingExtensionJar.exists() ||
+                 remotingExtensionJar.length() == 0 )
+            {
                 // no neo4j exists or no files inside the folder
 
                 // download neo4j server from a URL
-                ensureFileExist(neo4jJar, neo4jLink);
+                ensureFileExist( neo4jJar, neo4jLink );
 
                 // Untar the neo4j server
-                System.out.println("Untarring: " + neo4jJar + " -> " + neo4jDir);
-                Archiver archiver = ArchiverFactory.createArchiver("tar", "gz");
-                archiver.extract(neo4jJar, neo4jDir);
+                System.out.println( "Untarring: " + neo4jJar + " -> " + neo4jDir );
+                Archiver archiver = ArchiverFactory.createArchiver( "tar", "gz" );
+                archiver.extract( neo4jJar, neo4jDir );
 
                 // put the ndp extension into the 'plugins' directory
-                ensureFileExist(remotingExtensionJar, remotingExtensionLink);
+                ensureFileExist( remotingExtensionJar, remotingExtensionLink );
 
                 // Add experimental.ndp.enabled=true to conf/neo4j.properties
-                File configFile = new File(neo4jHome, "conf/neo4j.properties");
-                System.out.println("Enabling ndp in " + configFile);
-                try (PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(configFile, true)))) {
-                    out.println("experimental.ndp.enabled=true");
-                } catch (IOException e) {
+                File configFile = new File( neo4jHome, "conf/neo4j.properties" );
+                System.out.println( "Enabling ndp in " + configFile );
+                try ( PrintWriter out = new PrintWriter( new BufferedWriter( new FileWriter( configFile, true ) ) ) )
+                {
+                    out.println( "experimental.ndp.enabled=true" );
+                }
+                catch ( IOException e )
+                {
                     throw e;
                 }
+            }
+            else
+            {
+                System.out.println( "Using Neo4j server in: " + neo4jHome.getAbsolutePath() );
             }
         }
     }
