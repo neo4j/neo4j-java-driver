@@ -32,6 +32,7 @@ import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat.Reader;
 import org.neo4j.driver.internal.messaging.MessageFormat.Writer;
+import org.neo4j.driver.internal.spi.Logging;
 
 import static java.lang.Integer.getInteger;
 import static org.neo4j.driver.internal.connector.socket.ProtocolChooser.bytes2Int;
@@ -61,16 +62,29 @@ public class SocketClient
     private Reader reader;
     private Writer writer;
 
-    public SocketClient( String host, int port, int networkTimeout )
+    private Logging logging;
+
+    public SocketClient( String host, int port, Logging logging, int networkTimeout )
     {
         this.host = host;
         this.port = port;
+        this.logging = logging;
         this.networkTimeout = networkTimeout;
+    }
+
+    public SocketClient( String host, int port, int networkTimeout )
+    {
+        this( host, port, null, networkTimeout );
+    }
+
+    public SocketClient( String host, int port, Logging logging )
+    {
+        this( host, port, logging, defaultNetworkTimeout );
     }
 
     public SocketClient( String host, int port )
     {
-        this( host, port, defaultNetworkTimeout );
+        this( host, port, null, defaultNetworkTimeout );
     }
 
     public void start()
@@ -84,8 +98,8 @@ public class SocketClient
             }
             socket.connect( new InetSocketAddress( host, port ) );
 
-            out = socket.getOutputStream();
-            in = socket.getInputStream();
+            out = new MonitoredOutputStream( socket.getOutputStream(), logging );
+            in = new MonitoredInputStream( socket.getInputStream(), logging );
 
             protocol = negotiateProtocol();
             protocol.outputStream( out );

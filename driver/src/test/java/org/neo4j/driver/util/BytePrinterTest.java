@@ -26,6 +26,8 @@ import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
+import org.neo4j.driver.internal.util.BytePrinter;
+
 import static org.junit.Assert.assertEquals;
 
 public class BytePrinterTest
