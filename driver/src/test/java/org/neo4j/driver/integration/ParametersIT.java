@@ -19,7 +19,6 @@
  */
 package org.neo4j.driver.integration;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -264,7 +263,6 @@ public class ParametersIT
 
     }
 
-    @Ignore("Wondering if something wrong with special characters")
     @Test
     public void shouldBeAbleToSetAndReturnSpecialStringArrayProperty()
     {
