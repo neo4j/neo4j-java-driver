@@ -47,8 +47,8 @@ public class SocketConnector implements Connector
     public Connection connect( URI sessionURI ) throws ClientException
     {
         int port = sessionURI.getPort();
-        return new SocketConnection( sessionURI.getHost(), port == -1 ? DEFAULT_PORT : port
-        );
+        return new SocketConnection( sessionURI.getHost(), port == -1 ? DEFAULT_PORT : port,
+                logging /*The logging could be null if {@code setLogging} has never been invoked */ );
     }
 
     @Override

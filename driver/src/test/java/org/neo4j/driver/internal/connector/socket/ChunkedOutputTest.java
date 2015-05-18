@@ -26,7 +26,7 @@ import java.nio.ByteBuffer;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.driver.util.BytePrinter;
+import org.neo4j.driver.internal.util.BytePrinter;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;

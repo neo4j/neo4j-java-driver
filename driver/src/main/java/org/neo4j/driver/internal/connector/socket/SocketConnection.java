@@ -30,6 +30,7 @@ import org.neo4j.driver.internal.messaging.AckFailureMessage;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.RunMessage;
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.Logging;
 import org.neo4j.driver.internal.spi.StreamCollector;
 
 import static org.neo4j.driver.internal.messaging.DiscardAllMessage.DISCARD_ALL;
@@ -43,9 +44,12 @@ public class SocketConnection implements Connection
     private final SocketResponseHandler responseHandler = new SocketResponseHandler();
     private int requestCounter = 0;
 
-    public SocketConnection( String host, int port )
+    private Logging logging;
+
+    public SocketConnection( String host, int port, Logging logging )
     {
-        this.socket = new SocketClient( host, port );
+        this.logging = logging;
+        this.socket = new SocketClient( host, port, logging );
         socket.start();
     }
 
