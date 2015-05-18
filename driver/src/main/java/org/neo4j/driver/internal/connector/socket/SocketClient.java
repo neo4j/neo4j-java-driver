@@ -125,7 +125,7 @@ public class SocketClient
         writer.flush();
 
         // Wait until all pending requests have been replied to
-        while ( handler.recievedResponses() < pendingMessages.size() )
+        while ( handler.receivedResponses() < pendingMessages.size() )
         {
             reader.read( handler );
         }

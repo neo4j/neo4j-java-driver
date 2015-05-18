@@ -21,7 +21,6 @@ package org.neo4j.driver.internal.connector.socket;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.DatabaseException;
@@ -58,7 +57,7 @@ public class SocketResponseHandler implements MessageHandler
         this.logger = logger;
     }
 
-    public int recievedResponses()
+    public int receivedResponses()
     {
         return responseId;
     }
