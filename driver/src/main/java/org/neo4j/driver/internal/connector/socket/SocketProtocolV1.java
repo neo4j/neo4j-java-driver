@@ -24,7 +24,7 @@ public class SocketProtocolV1 implements SocketProtocol
         this.input = new ChunkedInput();
 
         this.writer = new PackStreamMessageFormatV1.Writer( output, output.messageBoundaryHook() );
-        this.reader = new PackStreamMessageFormatV1.Reader( input );
+        this.reader = new PackStreamMessageFormatV1.Reader( input, input.messageBoundaryHook() );
     }
 
     @Override

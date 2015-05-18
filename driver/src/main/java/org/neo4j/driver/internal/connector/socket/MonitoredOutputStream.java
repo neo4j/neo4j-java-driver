@@ -23,27 +23,18 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
-import org.neo4j.driver.internal.logging.DevNullLogger;
 import org.neo4j.driver.internal.spi.Logger;
-import org.neo4j.driver.internal.spi.Logging;
 import org.neo4j.driver.internal.util.BytePrinter;
 
 public class MonitoredOutputStream extends OutputStream
 {
-    OutputStream realOut;
-    Logger logger;
+    private final OutputStream realOut;
+    private final Logger logger;
 
-    public MonitoredOutputStream( OutputStream outputStream, Logging logging )
+    public MonitoredOutputStream( OutputStream outputStream, Logger logger )
     {
         this.realOut = outputStream;
-        if( logging != null )
-        {
-            this.logger = logging.getLogging( getClass().getName() );
-        }
-        else
-        {
-            this.logger = new DevNullLogger();
-        }
+        this.logger = logger;
     }
 
     @Override

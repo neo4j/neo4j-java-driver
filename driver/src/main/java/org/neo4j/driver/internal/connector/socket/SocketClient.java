@@ -29,9 +29,11 @@ import java.net.SocketTimeoutException;
 import java.util.List;
 
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.internal.logging.DevNullLogger;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat.Reader;
 import org.neo4j.driver.internal.messaging.MessageFormat.Writer;
+import org.neo4j.driver.internal.spi.Logger;
 import org.neo4j.driver.internal.spi.Logging;
 
 import static java.lang.Integer.getInteger;
@@ -62,13 +64,15 @@ public class SocketClient
     private Reader reader;
     private Writer writer;
 
-    private Logging logging;
+    private final Logging logging;
+    private final Logger logger;
 
     public SocketClient( String host, int port, Logging logging, int networkTimeout )
     {
         this.host = host;
         this.port = port;
         this.logging = logging;
+        this.logger = logging != null ? logging.getLogging( getClass().getName() ) : new DevNullLogger();
         this.networkTimeout = networkTimeout;
     }
 
@@ -98,8 +102,8 @@ public class SocketClient
             }
             socket.connect( new InetSocketAddress( host, port ) );
 
-            out = new MonitoredOutputStream( socket.getOutputStream(), logging );
-            in = new MonitoredInputStream( socket.getInputStream(), logging );
+            out = new MonitoredOutputStream( socket.getOutputStream(), logger );
+            in = new MonitoredInputStream( socket.getInputStream(), logger );
 
             protocol = negotiateProtocol();
             protocol.outputStream( out );
@@ -155,16 +159,19 @@ public class SocketClient
 
     private SocketProtocol negotiateProtocol() throws IOException
     {
+        logger.debug( "Negotiating protocol..." );
         out.write( supportedVersions() );
         byte[] accepted = new byte[4];
         in.read( accepted ); // TODO check read length
         int version = bytes2Int( accepted );
+        logger.debug( "Protocol [" + version + "] chosen." );
         return chooseVersion( version );
     }
 
     @Override
     public String toString()
     {
-        return "" + protocol.version();
+        int version = protocol == null ? -1 : protocol.version();
+        return "Client using socket protocol version " + version;
     }
 }

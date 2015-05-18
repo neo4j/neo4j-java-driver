@@ -37,8 +37,7 @@ import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.internal.connector.socket.MonitoredInputStream;
-import org.neo4j.driver.internal.connector.socket.MonitoredOutputStream;
+import org.neo4j.driver.internal.connector.socket.SocketClient;
 import org.neo4j.driver.util.TestSession;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -283,23 +282,29 @@ public class ParametersIT
 
         // When
         String[] arrayValue = new String[]{"Mjölnir", "Mjölnir", "Mjölnir"};
-        Result result = session.run(
-                "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", arrayValue ) );
 
-        // Then
-        for ( Record record : result.retain() )
+        try
         {
-            Value value = record.get( "a.value" );
-            assertThat( value.isList(), equalTo( true ) );
-            assertThat( value.size(), equalTo( 3L ) );
-            for ( Value item : value )
+            Result result = session.run(
+                    "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", arrayValue ) );
+
+            // Then
+            for ( Record record : result.retain() )
             {
-                assertThat( item.isText(), equalTo( true ) );
-                assertThat( item.javaString(), equalTo( "Mjölnir" ) );
+                Value value = record.get( "a.value" );
+                assertThat( value.isList(), equalTo( true ) );
+                assertThat( value.size(), equalTo( 3L ) );
+                for ( Value item : value )
+                {
+                    assertThat( item.isText(), equalTo( true ) );
+                    assertThat( item.javaString(), equalTo( "Mjölnir" ) );
+                }
             }
         }
-
-        enableNetworkTrafficlogging( false );
+        finally
+        {
+            enableNetworkTrafficlogging( false );
+        }
     }
 
     @Test
@@ -407,29 +412,25 @@ public class ParametersIT
         session.run( "anything", parameters( "k", new Object() ) );
     }
 
-    private void enableNetworkTrafficlogging( boolean enabled )
+    private static void enableNetworkTrafficlogging( boolean enabled )
     {
-        // get the logger of monitored input/output stream
-        Logger outputLogger = Logger.getLogger( MonitoredOutputStream.class.getName() );
-        Logger inputLogger = Logger.getLogger( MonitoredInputStream.class.getName() );
+        // get the client logger
+        Logger clientLogger = Logger.getLogger( SocketClient.class.getName() );
 
         Level loggingLevel = enabled ? Level.ALL : Level.INFO;
-        outputLogger.setLevel( loggingLevel );
-        inputLogger.setLevel( loggingLevel );
+        clientLogger.setLevel( loggingLevel );
 
-        // simply  output the logging info in the command line
+        // simply output the logging info in the command line
         ConsoleHandler handler = new ConsoleHandler();
         handler.setFormatter( new ShortFormatter() );
         if( enabled )
         {
             handler.setLevel( loggingLevel );
-            outputLogger.addHandler( handler );
-            inputLogger.addHandler( handler );
+            clientLogger.addHandler( handler );
         }
         else
         {
-            outputLogger.removeHandler( handler );
-            inputLogger.removeHandler( handler );
+            clientLogger.removeHandler( handler );
         }
     }
 
