@@ -36,6 +36,28 @@ public class ChunkedInput implements PackInput
 
     private int remaining = 0;
     private InputStream in;
+    private Runnable onMessageComplete = new Runnable()
+    {
+        @Override
+        public void run()
+        {
+            try
+            {
+                // read message boundary
+                int chunkSize = readChunkSize();
+                if( chunkSize != 0 )
+                {
+                    throw new ClientException( "Expecting message complete ending '00 00', but got " +
+                                               ByteBuffer.allocate( 2 ).putShort( (short) chunkSize ).array() );
+                }
+            }
+            catch ( IOException e )
+            {
+                throw new ClientException( "Error while receiving message complete ending '00 00'.", e );
+            }
+
+        }
+    };
 
     public void addChunk( ByteBuffer chunk )
     {
@@ -234,6 +256,11 @@ public class ChunkedInput implements PackInput
         byte[] buffer = new byte[2];
         InputStreams.readAll( in, buffer );
         return (int) ByteBuffer.wrap( buffer ).getShort();
+    }
+
+    public Runnable messageBoundaryHook()
+    {
+        return onMessageComplete;
     }
 
     public void setInputStream( InputStream in )

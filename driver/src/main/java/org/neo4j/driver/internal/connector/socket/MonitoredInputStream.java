@@ -23,9 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 
-import org.neo4j.driver.internal.logging.DevNullLogger;
 import org.neo4j.driver.internal.spi.Logger;
-import org.neo4j.driver.internal.spi.Logging;
 import org.neo4j.driver.internal.util.BytePrinter;
 
 public class MonitoredInputStream extends InputStream
@@ -33,17 +31,10 @@ public class MonitoredInputStream extends InputStream
     private final InputStream realInput;
     private final Logger logger;
 
-    public MonitoredInputStream( InputStream inputStream, Logging logging )
+    public MonitoredInputStream( InputStream inputStream, Logger logger )
     {
         this.realInput = inputStream;
-        if ( logging != null )
-        {
-            this.logger = logging.getLogging( getClass().getName() );
-        }
-        else
-        {
-            this.logger = new DevNullLogger();
-        }
+        this.logger = logger;
     }
 
     @Override
