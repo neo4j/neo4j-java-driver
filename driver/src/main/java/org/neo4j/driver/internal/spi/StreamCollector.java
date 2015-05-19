@@ -23,6 +23,21 @@ import org.neo4j.driver.Value;
 
 public interface StreamCollector
 {
+    StreamCollector NO_OP = new StreamCollector()
+    {
+        @Override
+        public void fieldNames( String[] names )
+        {
+
+        }
+
+        @Override
+        public void record( Value[] fields )
+        {
+
+        }
+    };
+
     void fieldNames( String[] names );
 
     void record( Value[] fields );

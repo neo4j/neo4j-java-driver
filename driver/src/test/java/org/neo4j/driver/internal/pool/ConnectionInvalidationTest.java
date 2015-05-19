@@ -35,6 +35,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class ConnectionInvalidationTest
 {
@@ -44,10 +45,13 @@ public class ConnectionInvalidationTest
     @Test
     public void shouldInvalidateConnectionThatIsOld() throws Throwable
     {
+        // Given a connection that's broken
+        doThrow(new ClientException( "That didn't work" )).when( delegate ).sync();
+
         // When/Then
+        assertTrue( new PooledConnectionValidator( 10 ).isValid( conn, 1 ) );
         assertFalse(new PooledConnectionValidator( 10 ).isValid( conn, 100 ));
         assertFalse(new PooledConnectionValidator( 10 ).isValid( conn, 10 ));
-        assertTrue( new PooledConnectionValidator( 10 ).isValid( conn, 1 ) );
     }
 
     @Test

@@ -55,7 +55,7 @@ public class StandardConnectionPool implements ConnectionPool
 {
     // TODO: This should be dealt with a general config mechanism for the driver, rather than java properties
     private static int defaultConnectionsPerDatabase = getInteger( "neo4j.connectionsPerDatabase", 10 );
-    private static long defaultMaxConnectionIdleTime = getInteger( "neo4j.maxConnectionIdleMillis", 60 * 5 * 1000 );
+    private static long defaultMinIdleBeforeConnectionTest = getInteger( "neo4j.minIdleBeforeConnectionTest", 200 );
 
     /**
      * Map of scheme -> connector, this is what we use to establish new connections.
@@ -82,15 +82,15 @@ public class StandardConnectionPool implements ConnectionPool
 
     public StandardConnectionPool( Collection<Connector> conns )
     {
-        this( defaultConnectionsPerDatabase, defaultMaxConnectionIdleTime, conns, Clock.SYSTEM );
+        this( defaultConnectionsPerDatabase, defaultMinIdleBeforeConnectionTest, conns, Clock.SYSTEM );
     }
 
-    public StandardConnectionPool( int connectionsPerDatabase, long maxConnIdleTimeMillis,
+    public StandardConnectionPool( int connectionsPerDatabase, long minIdleBeforeConnectionTest,
             Collection<Connector> conns, Clock clock )
     {
         this.connectionsPerDatabase = connectionsPerDatabase;
         this.clock = clock;
-        this.connectionValidation = new PooledConnectionValidator( maxConnIdleTimeMillis );
+        this.connectionValidation = new PooledConnectionValidator( minIdleBeforeConnectionTest );
         for ( Connector connector : conns )
         {
             for ( String s : connector.supportedSchemes() )

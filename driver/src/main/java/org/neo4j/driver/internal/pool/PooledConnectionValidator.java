@@ -19,21 +19,51 @@
  */
 package org.neo4j.driver.internal.pool;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.spi.StreamCollector;
+
 /**
  * Validates connections - determining if they are ok to keep in the pool, or if they should be disposed of.
  */
 public class PooledConnectionValidator implements ValidationStrategy<PooledConnection>
 {
-    private final long maxIdleMillis;
+    private static final Map<String,Value> NO_PARAMETERS = new HashMap<>();
 
-    public PooledConnectionValidator( long maxIdleTimeMillis )
+    /**
+     * Connections that have been idle longer than this threshold will have a ping test performed on them.
+     */
+    private final long minIdleBeforeConnectionTest;
+
+    public PooledConnectionValidator( long minIdleBeforeConnectionTest )
     {
-        this.maxIdleMillis = maxIdleTimeMillis;
+        this.minIdleBeforeConnectionTest = minIdleBeforeConnectionTest;
     }
 
     @Override
-    public boolean isValid( PooledConnection value, long idleTime )
+    public boolean isValid( PooledConnection conn, long idleTime )
     {
-        return idleTime < maxIdleMillis && !value.hasUnrecoverableErrors();
+        if ( conn.hasUnrecoverableErrors() )
+        {
+            return false;
+        }
+
+        return idleTime <= minIdleBeforeConnectionTest || ping( conn );
+    }
+
+    private boolean ping( PooledConnection conn )
+    {
+        try
+        {
+            conn.run( "RETURN 1 // JavaDriver poll to test connection", NO_PARAMETERS, StreamCollector.NO_OP );
+            conn.pullAll( StreamCollector.NO_OP );
+            conn.sync();
+            return true;
+        } catch( Throwable e )
+        {
+            return false;
+        }
     }
 }

@@ -72,7 +72,7 @@ public class Neo4jRunner
     }
 
     /** Globall runner controlling a single server, used to avoid having to restart the server between tests */
-    public static Neo4jRunner getOrCreateGlobalServer() throws IOException, InterruptedException
+    public static synchronized Neo4jRunner getOrCreateGlobalServer() throws IOException, InterruptedException
     {
         if ( globalInstance == null )
         {
