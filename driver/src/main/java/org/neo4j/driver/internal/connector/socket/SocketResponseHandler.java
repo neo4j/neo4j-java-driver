@@ -19,7 +19,6 @@
  */
 package org.neo4j.driver.internal.connector.socket;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -28,24 +27,41 @@ import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.DatabaseException;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.TransientException;
+import org.neo4j.driver.internal.messaging.FailureMessage;
 import org.neo4j.driver.internal.messaging.MessageHandler;
+import org.neo4j.driver.internal.messaging.RecordMessage;
+import org.neo4j.driver.internal.messaging.RunMessage;
+import org.neo4j.driver.internal.messaging.SuccessMessage;
+import org.neo4j.driver.internal.spi.Logger;
 import org.neo4j.driver.internal.spi.StreamCollector;
+
+import static org.neo4j.driver.internal.messaging.AckFailureMessage.ACK_FAILURE;
+import static org.neo4j.driver.internal.messaging.DiscardAllMessage.DISCARD_ALL;
+import static org.neo4j.driver.internal.messaging.IgnoredMessage.IGNORED;
+import static org.neo4j.driver.internal.messaging.PullAllMessage.PULL_ALL;
 
 public class SocketResponseHandler implements MessageHandler
 {
     public static final String[] NO_FIELDS = new String[0];
     private final Map<Integer,StreamCollector> collectors = new HashMap<>();
 
+    /** If a failure occurs, the error gets stored here */
+    private Neo4jException error;
+
     /** Counts number of responses, used to correlate response data with stream collectors */
     private int responseId = 0;
+
+    private final Logger logger;
+
+    public SocketResponseHandler( Logger logger )
+    {
+        this.logger = logger;
+    }
 
     public int recievedResponses()
     {
         return responseId;
     }
-
-    /** If a failure occurs, the error gets stored here */
-    private Neo4jException error;
 
     @Override
     public void handleRecordMessage( Value[] fields )
@@ -58,6 +74,8 @@ public class SocketResponseHandler implements MessageHandler
         {
             collector.record( fields );
         }
+
+        logger.debug( new RecordMessage( fields ).toString() );
     }
 
     @Override
@@ -83,6 +101,7 @@ public class SocketResponseHandler implements MessageHandler
         finally
         {
             responseId++;
+            logger.debug( new FailureMessage( code, message ).toString() );
         }
     }
 
@@ -95,32 +114,38 @@ public class SocketResponseHandler implements MessageHandler
             collector.fieldNames( fieldNamesFromMeta( meta ) );
         }
         responseId++;
+        logger.debug( new SuccessMessage( meta ).toString() );
     }
 
     @Override
     public void handleIgnoredMessage()
     {
         responseId++;
+        logger.debug( IGNORED.toString() );
     }
 
     @Override
     public void handleDiscardAllMessage()
     {
+        logger.debug( DISCARD_ALL.toString() );
     }
 
     @Override
     public void handleAckFailureMessage()
     {
+        logger.debug( ACK_FAILURE.toString() );
     }
 
     @Override
     public void handlePullAllMessage()
     {
+        logger.debug( PULL_ALL.toString() );
     }
 
     @Override
     public void handleRunMessage( String statement, Map<String,Value> parameters )
     {
+        logger.debug( new RunMessage( statement, parameters ).toString() );
     }
 
     public void registerResultCollector( int correlationId, StreamCollector collector )

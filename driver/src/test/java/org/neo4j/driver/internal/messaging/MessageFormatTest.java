@@ -19,34 +19,28 @@
  */
 package org.neo4j.driver.internal.messaging;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.nio.channels.Channels;
-import java.nio.channels.WritableByteChannel;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.channels.Channels;
+import java.nio.channels.WritableByteChannel;
+import java.util.HashMap;
+
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.internal.SimpleNode;
 import org.neo4j.driver.internal.SimplePath;
 import org.neo4j.driver.internal.SimpleRelationship;
-import org.neo4j.driver.internal.util.BytePrinter;
 import org.neo4j.driver.internal.packstream.BufferedChannelOutput;
 import org.neo4j.driver.internal.packstream.PackStream;
+import static org.neo4j.driver.util.DumpMessage.unpack;
 
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-
 import static org.neo4j.driver.Values.properties;
 import static org.neo4j.driver.Values.value;
 
@@ -117,7 +111,7 @@ public class MessageFormatTest
                                  "received NODE structure has 0 fields." );
 
         // When
-        unpack( out.toByteArray() );
+        unpack( format, out.toByteArray() );
     }
 
     private void assertSerializesValue( Value value ) throws IOException
@@ -139,76 +133,7 @@ public class MessageFormatTest
         writer.flush();
 
         // Unpack
-        assertThat( unpack( out.toByteArray() ), equalTo( asList( messages ) ) );
+        assertThat( unpack( format, out.toByteArray() ), equalTo( asList( messages ) ) );
     }
 
-    private ArrayList<Message> unpack( byte[] data )
-    {
-        final ArrayList<Message> outcome = new ArrayList<>();
-        try
-        {
-            MessageFormat.Reader reader = format.newReader();
-            ByteArrayInputStream input = new ByteArrayInputStream( data );
-            reader.reset( Channels.newChannel( input ) );
-            reader.read( new MessageHandler()
-            {
-                @Override
-                public void handlePullAllMessage()
-                {
-                    outcome.add( new PullAllMessage() );
-                }
-
-                @Override
-                public void handleRunMessage( String statement, Map<String,Value> parameters )
-                {
-                    outcome.add( new RunMessage( statement, parameters ) );
-                }
-
-                @Override
-                public void handleDiscardAllMessage()
-                {
-                    outcome.add( new DiscardAllMessage() );
-                }
-
-                @Override
-                public void handleAckFailureMessage()
-                {
-                    outcome.add( new AckFailureMessage() );
-                }
-
-                @Override
-                public void handleSuccessMessage( Map<String,Value> meta )
-                {
-                    outcome.add( new SuccessMessage( meta ) );
-                }
-
-                @Override
-                public void handleRecordMessage( Value[] fields )
-                {
-                    outcome.add( new RecordMessage( fields ) );
-                }
-
-                @Override
-                public void handleFailureMessage( String code, String message )
-                {
-                    outcome.add( new FailureMessage( code, message ) );
-                }
-
-                @Override
-                public void handleIgnoredMessage()
-                {
-                    outcome.add( new IgnoredMessage() );
-                }
-            } );
-        }
-        catch ( Neo4jException e )
-        {
-            throw e;
-        }
-        catch ( Throwable e )
-        {
-            throw new RuntimeException( "Failed to deserialize message. Raw data was:\n" + BytePrinter.hex( data ), e );
-        }
-        return outcome;
-    }
 }

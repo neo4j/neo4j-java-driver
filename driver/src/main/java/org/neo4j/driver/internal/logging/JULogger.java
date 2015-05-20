@@ -26,21 +26,22 @@ import org.neo4j.driver.internal.spi.Logger;
 public class JULogger implements Logger
 {
     private final java.util.logging.Logger delegate;
-    private final boolean debugEnabled;
 
     public JULogger( String name )
     {
         delegate = java.util.logging.Logger.getLogger( name );
-        debugEnabled = delegate.isLoggable( Level.FINE );
+    }
+
+    @Override
+    public void log( Level level, String message )
+    {
+        delegate.log( level, message );
     }
 
     @Override
     public void debug( String message )
     {
-        if ( debugEnabled )
-        {
-            delegate.log( Level.FINE, message );
-        }
+        delegate.log( Level.FINE, message );
     }
 
     @Override

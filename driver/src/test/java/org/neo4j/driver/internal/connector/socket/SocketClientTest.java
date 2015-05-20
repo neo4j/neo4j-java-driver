@@ -26,6 +26,7 @@ import org.junit.rules.ExpectedException;
 import java.net.ServerSocket;
 
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.internal.logging.DevNullLogger;
 
 public class SocketClientTest
 {
@@ -40,7 +41,8 @@ public class SocketClientTest
 
         // And given we've configured a client with network timeout
         int networkTimeout = 100;
-        SocketClient client = new SocketClient( "localhost", server.getLocalPort(), networkTimeout );
+        SocketClient client = new SocketClient( "localhost", server.getLocalPort(), new DevNullLogger(),
+                networkTimeout );
 
         // Expect
         exception.expect( ClientException.class );

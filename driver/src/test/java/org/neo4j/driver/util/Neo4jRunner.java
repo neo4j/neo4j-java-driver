@@ -36,6 +36,7 @@ import org.neo4j.Neo4j;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.connector.socket.SocketClient;
+import org.neo4j.driver.internal.logging.DevNullLogger;
 
 import static junit.framework.TestCase.assertFalse;
 
@@ -209,7 +210,7 @@ public class Neo4jRunner
         try
         {
             URI uri = URI.create( DEFAULT_URL );
-            SocketClient client = new SocketClient( uri.getHost(), uri.getPort() );
+            SocketClient client = new SocketClient( uri.getHost(), uri.getPort(), new DevNullLogger() );
             client.start();
             client.stop();
             return true;

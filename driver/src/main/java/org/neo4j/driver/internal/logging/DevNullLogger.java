@@ -19,10 +19,18 @@
  */
 package org.neo4j.driver.internal.logging;
 
+import java.util.logging.Level;
+
 import org.neo4j.driver.internal.spi.Logger;
 
 public class DevNullLogger implements Logger
 {
+    @Override
+    public void log( Level level, String message )
+    {
+
+    }
+
     @Override
     public void debug( String message )
     {

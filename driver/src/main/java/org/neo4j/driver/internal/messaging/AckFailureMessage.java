@@ -38,6 +38,8 @@ import static java.lang.String.format;
  */
 public class AckFailureMessage implements Message
 {
+    public static final AckFailureMessage ACK_FAILURE = new AckFailureMessage();
+
     @Override
     public void dispatch( MessageHandler handler ) throws IOException
     {

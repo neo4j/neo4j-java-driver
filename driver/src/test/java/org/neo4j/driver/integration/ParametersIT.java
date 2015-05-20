@@ -37,7 +37,7 @@ import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.internal.connector.socket.SocketClient;
+import org.neo4j.driver.internal.connector.socket.SocketConnection;
 import org.neo4j.driver.util.TestSession;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -412,16 +412,17 @@ public class ParametersIT
         session.run( "anything", parameters( "k", new Object() ) );
     }
 
+    private static ConsoleHandler handler = new ConsoleHandler();
     private static void enableNetworkTrafficlogging( boolean enabled )
     {
         // get the client logger
-        Logger clientLogger = Logger.getLogger( SocketClient.class.getName() );
+        Logger clientLogger = Logger.getLogger( SocketConnection.class.getName() );
 
         Level loggingLevel = enabled ? Level.ALL : Level.INFO;
         clientLogger.setLevel( loggingLevel );
 
         // simply output the logging info in the command line
-        ConsoleHandler handler = new ConsoleHandler();
+
         handler.setFormatter( new ShortFormatter() );
         if( enabled )
         {

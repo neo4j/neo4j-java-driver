@@ -28,6 +28,7 @@ import java.nio.charset.StandardCharsets;
 
 import org.neo4j.driver.internal.util.BytePrinter;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 public class BytePrinterTest
@@ -52,5 +53,12 @@ public class BytePrinterTest
         baos.reset();
         BytePrinter.print( ByteBuffer.wrap( new byte[]{1, 2, 3} ), new PrintStream( baos ) );
         assertEquals( "01 02 03 ", new String( baos.toByteArray(), StandardCharsets.UTF_8 ) );
+    }
+
+    @Test
+    public void shouldRevertHexStringToBytes()
+    {
+        byte[] bytes = BytePrinter.hexStringToBytes( "01 02 03    04\n05\n" );
+        assertArrayEquals( new byte[]{1, 2, 3, 4, 5}, bytes );
     }
 }

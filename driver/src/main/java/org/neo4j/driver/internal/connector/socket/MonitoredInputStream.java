@@ -22,6 +22,7 @@ package org.neo4j.driver.internal.connector.socket;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.util.logging.Level;
 
 import org.neo4j.driver.internal.spi.Logger;
 import org.neo4j.driver.internal.util.BytePrinter;
@@ -41,7 +42,7 @@ public class MonitoredInputStream extends InputStream
     public int read() throws IOException
     {
         int read = realInput.read();
-        logger.debug( "Input:\n" + BytePrinter.hex( (byte) read ) );
+        logger.log( Level.FINEST, "Input:\n" + BytePrinter.hex( (byte) read ) );
         return read;
     }
 
@@ -49,7 +50,7 @@ public class MonitoredInputStream extends InputStream
     public int read( byte b[] ) throws IOException
     {
         int read = realInput.read( b );
-        logger.debug( "Input:\n" + BytePrinter.hex( b ) );
+        logger.log( Level.FINEST, "Input:\n" + BytePrinter.hex( b ) );
         return read;
     }
 
@@ -57,7 +58,7 @@ public class MonitoredInputStream extends InputStream
     public int read( byte b[], int off, int len ) throws IOException
     {
         int read = realInput.read( b, off, len );
-        logger.debug( "Input:\n" + BytePrinter.hex( ByteBuffer.wrap( b ), off, len ) );
+        logger.log( Level.FINEST, "Input:\n" + BytePrinter.hex( ByteBuffer.wrap( b ), off, len ) );
         return read;
     }
 

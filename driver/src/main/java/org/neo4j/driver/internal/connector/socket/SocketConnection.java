@@ -26,10 +26,12 @@ import java.util.Map;
 
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.internal.logging.DevNullLogger;
 import org.neo4j.driver.internal.messaging.AckFailureMessage;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.RunMessage;
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.Logger;
 import org.neo4j.driver.internal.spi.Logging;
 import org.neo4j.driver.internal.spi.StreamCollector;
 
@@ -38,18 +40,21 @@ import static org.neo4j.driver.internal.messaging.PullAllMessage.PULL_ALL;
 
 public class SocketConnection implements Connection
 {
-    private final LinkedList<Message> pendingMessages = new LinkedList<>();
-    private final SocketClient socket;
+    private final Logging logging;
+    private final Logger logger;
 
-    private final SocketResponseHandler responseHandler = new SocketResponseHandler();
     private int requestCounter = 0;
+    private final LinkedList<Message> pendingMessages = new LinkedList<>();
+    private final SocketResponseHandler responseHandler;
 
-    private Logging logging;
+    private final SocketClient socket;
 
     public SocketConnection( String host, int port, Logging logging )
     {
         this.logging = logging;
-        this.socket = new SocketClient( host, port, logging );
+        this.logger = logging != null ? logging.getLogging( getClass().getName() ) : new DevNullLogger();
+        this.responseHandler = new SocketResponseHandler( logger );
+        this.socket = new SocketClient( host, port, logger );
         socket.start();
     }
 
@@ -126,6 +131,7 @@ public class SocketConnection implements Connection
     {
         int messageId = nextRequestId();
         pendingMessages.add( msg );
+        logger.debug( msg.toString() );
         return messageId;
     }
 
