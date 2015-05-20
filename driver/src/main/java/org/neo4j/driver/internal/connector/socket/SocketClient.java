@@ -29,12 +29,10 @@ import java.net.SocketTimeoutException;
 import java.util.List;
 
 import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.internal.logging.DevNullLogger;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat.Reader;
 import org.neo4j.driver.internal.messaging.MessageFormat.Writer;
 import org.neo4j.driver.internal.spi.Logger;
-import org.neo4j.driver.internal.spi.Logging;
 
 import static java.lang.Integer.getInteger;
 import static org.neo4j.driver.internal.connector.socket.ProtocolChooser.bytes2Int;
@@ -64,31 +62,19 @@ public class SocketClient
     private Reader reader;
     private Writer writer;
 
-    private final Logging logging;
     private final Logger logger;
 
-    public SocketClient( String host, int port, Logging logging, int networkTimeout )
+    public SocketClient( String host, int port, Logger logger, int networkTimeout )
     {
         this.host = host;
         this.port = port;
-        this.logging = logging;
-        this.logger = logging != null ? logging.getLogging( getClass().getName() ) : new DevNullLogger();
+        this.logger = logger;
         this.networkTimeout = networkTimeout;
     }
 
-    public SocketClient( String host, int port, int networkTimeout )
+    public SocketClient( String host, int port, Logger logger )
     {
-        this( host, port, null, networkTimeout );
-    }
-
-    public SocketClient( String host, int port, Logging logging )
-    {
-        this( host, port, logging, defaultNetworkTimeout );
-    }
-
-    public SocketClient( String host, int port )
-    {
-        this( host, port, null, defaultNetworkTimeout );
+        this( host, port, logger, defaultNetworkTimeout );
     }
 
     public void start()

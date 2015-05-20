@@ -29,6 +29,8 @@ import java.io.IOException;
  */
 public class IgnoredMessage implements Message
 {
+    public static final IgnoredMessage IGNORED = new IgnoredMessage();
+
     @Override
     public void dispatch( MessageHandler handler ) throws IOException
     {

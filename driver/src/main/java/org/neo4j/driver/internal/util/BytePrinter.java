@@ -194,4 +194,26 @@ public class BytePrinter
     {
         return hex( wrap( bytes ) );
     }
+
+    public static byte[] hexStringToBytes( String s )
+    {
+        int len = s.length();
+        ByteArrayOutputStream data = new ByteArrayOutputStream( 1024 );
+        for ( int i = 0; i < len;  )
+        {
+            int firstDigit = Character.digit( s.charAt( i ), 16 );
+            if ( firstDigit != -1 )
+            {
+                int secondDigit = Character.digit( s.charAt( i + 1 ), 16 );
+                int toWrite = (firstDigit << 4) + secondDigit;
+                data.write( toWrite );
+                i += 2;
+            }
+            else
+            {
+                i += 1;
+            }
+        }
+        return data.toByteArray();
+    }
 }
