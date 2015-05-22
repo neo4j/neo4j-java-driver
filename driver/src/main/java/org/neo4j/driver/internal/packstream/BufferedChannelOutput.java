@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -41,7 +41,7 @@ public class BufferedChannelOutput implements PackOutput
 
     public BufferedChannelOutput( WritableByteChannel channel, int bufferSize )
     {
-        this(bufferSize);
+        this( bufferSize );
         reset( channel );
     }
 
@@ -51,75 +51,78 @@ public class BufferedChannelOutput implements PackOutput
     }
 
     @Override
-    public BufferedChannelOutput ensure( int size ) throws IOException
-    {
-        if ( buffer.remaining() < size )
-        {
-            flush();
-        }
-        return this;
-    }
-
-    @Override
     public BufferedChannelOutput flush() throws IOException
     {
         buffer.flip();
-        do { channel.write( buffer ); } while( buffer.remaining() > 0 );
+        do { channel.write( buffer ); } while ( buffer.remaining() > 0 );
         buffer.clear();
         return this;
     }
 
     @Override
-    public PackOutput put( byte value )
-    {
-        buffer.put( value );
-        return this;
-    }
-
-    @Override
-    public PackOutput put( byte[] data, int offset, int length ) throws IOException
+    public PackOutput writeBytes( byte[] data, int offset, int length ) throws IOException
     {
         int index = 0;
-        while(index < length)
+        while ( index < length )
         {
-            int amountToWrite = Math.min( buffer.remaining(), length - index );
-
-            buffer.put( data, offset, amountToWrite );
-            index += amountToWrite;
-
-            if( buffer.remaining() == 0)
+            if ( buffer.remaining() == 0 )
             {
                 flush();
             }
+
+            int amountToWrite = Math.min( buffer.remaining(), length - index );
+
+            buffer.put( data, offset + index, amountToWrite );
+            index += amountToWrite;
         }
         return this;
     }
 
     @Override
-    public PackOutput putShort( short value )
+    public PackOutput writeByte( byte value ) throws IOException
     {
+        ensure( 1 );
+        buffer.put( value );
+        return this;
+    }
+
+    @Override
+    public PackOutput writeShort( short value ) throws IOException
+    {
+        ensure( 2 );
         buffer.putShort( value );
         return this;
     }
 
     @Override
-    public PackOutput putInt( int value )
+    public PackOutput writeInt( int value ) throws IOException
     {
+        ensure( 4 );
         buffer.putInt( value );
         return this;
     }
 
     @Override
-    public PackOutput putLong( long value )
+    public PackOutput writeLong( long value ) throws IOException
     {
+        ensure( 8 );
         buffer.putLong( value );
         return this;
     }
 
     @Override
-    public PackOutput putDouble( double value )
+    public PackOutput writeDouble( double value ) throws IOException
     {
+        ensure( 8 );
         buffer.putDouble( value );
         return this;
+    }
+
+    private void ensure( int size ) throws IOException
+    {
+        if ( buffer.remaining() < size )
+        {
+            flush();
+        }
     }
 }

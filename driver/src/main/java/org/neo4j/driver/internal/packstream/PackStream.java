@@ -179,59 +179,51 @@ public class PackStream
 
         public void packRaw( byte[] data ) throws IOException
         {
-            out.put( data, 0, data.length );
+            out.writeBytes( data, 0, data.length );
         }
 
         public void packNull() throws IOException
         {
-            out.ensure( 1 )
-               .put( NULL );
+            out.writeByte( NULL );
         }
 
         public void pack( boolean value ) throws IOException
         {
-            out.ensure( 1 )
-               .put( value ? TRUE : FALSE );
+            out.writeByte( value ? TRUE : FALSE );
         }
 
         public void pack( long value ) throws IOException
         {
             if ( value >= MINUS_2_TO_THE_4 && value < PLUS_2_TO_THE_7)
             {
-                out.ensure( 1 )
-                   .put( (byte) value );
+                out.writeByte( (byte) value );
             }
             else if ( value >= MINUS_2_TO_THE_7 && value < MINUS_2_TO_THE_4 )
             {
-                out.ensure( 2 )
-                   .put( INT_8 )
-                   .put( (byte) value );
+                out.writeByte( INT_8 )
+                   .writeByte( (byte) value );
             }
             else if ( value >= MINUS_2_TO_THE_15 && value < PLUS_2_TO_THE_15 )
             {
-                out.ensure( 3 )
-                   .put( INT_16 )
-                   .putShort( (short) value );
+                out.writeByte( INT_16 )
+                   .writeShort( (short) value );
             }
             else if ( value >= MINUS_2_TO_THE_31 && value < PLUS_2_TO_THE_31 )
             {
-                out.ensure( 5 )
-                   .put( INT_32 )
-                   .putInt( (int) value );
+                out.writeByte( INT_32 )
+                   .writeInt( (int) value );
             }
             else
             {
-                out.ensure( 9 )
-                   .put( INT_64 )
-                   .putLong( value );
+                out.writeByte( INT_64 )
+                   .writeLong( value );
             }
         }
 
         public void pack( double value ) throws IOException
         {
-            out.ensure( 9 )
-               .put( FLOAT_64 )
-               .putDouble( value );
+            out.writeByte( FLOAT_64 )
+               .writeDouble( value );
         }
 
         public void pack( byte[] values ) throws IOException
@@ -322,21 +314,18 @@ public class PackStream
         {
             if ( size <= Byte.MAX_VALUE )
             {
-                out.ensure( 2 )
-                   .put( BYTES_8 )
-                   .put( (byte) size );
+                out.writeByte( BYTES_8 )
+                   .writeByte( (byte) size );
             }
             else if ( size <= Short.MAX_VALUE )
             {
-                out.ensure( 3 )
-                   .put( BYTES_16 )
-                   .putShort( (short) size );
+                out.writeByte( BYTES_16 )
+                   .writeShort( (short) size );
             }
             else
             {
-                out.ensure( 5 )
-                   .put( BYTES_32 )
-                   .putInt( size );
+                out.writeByte( BYTES_32 )
+                   .writeInt( size );
             }
         }
 
@@ -344,26 +333,22 @@ public class PackStream
         {
             if ( size < 0x10 )
             {
-                out.ensure( 1 )
-                   .put( (byte) (TINY_TEXT | size) );
+                out.writeByte( (byte) (TINY_TEXT | size) );
             }
             else if ( size <= Byte.MAX_VALUE )
             {
-                out.ensure( 2 )
-                   .put( TEXT_8 )
-                   .put( (byte) size );
+                out.writeByte( TEXT_8 )
+                   .writeByte( (byte) size );
             }
             else if ( size <= Short.MAX_VALUE )
             {
-                out.ensure( 3 )
-                   .put( TEXT_16 )
-                   .putShort( (short) size );
+                out.writeByte( TEXT_16 )
+                   .writeShort( (short) size );
             }
             else
             {
-                out.ensure( 5 )
-                   .put( TEXT_32 )
-                   .putInt( size );
+                out.writeByte( TEXT_32 )
+                   .writeInt( size );
             }
         }
 
@@ -371,26 +356,22 @@ public class PackStream
         {
             if ( size < 0x10 )
             {
-                out.ensure( 1 )
-                   .put( (byte) (TINY_LIST | size) );
+                   out.writeByte( (byte) (TINY_LIST | size) );
             }
             else if ( size <= Byte.MAX_VALUE )
             {
-                out.ensure( 2 )
-                   .put( LIST_8 )
-                   .put( (byte) size );
+                out.writeByte( LIST_8 )
+                   .writeByte( (byte) size );
             }
             else if ( size <= Short.MAX_VALUE )
             {
-                out.ensure( 3 )
-                   .put( LIST_16 )
-                   .putShort( (short) size );
+                out.writeByte( LIST_16 )
+                   .writeShort( (short) size );
             }
             else
             {
-                out.ensure( 5 )
-                   .put( LIST_32 )
-                   .putInt( size );
+                out.writeByte( LIST_32 )
+                   .writeInt( size );
             }
         }
 
@@ -398,26 +379,22 @@ public class PackStream
         {
             if ( size < 0x10 )
             {
-                out.ensure( 1 )
-                   .put( (byte) (TINY_MAP | size) );
+                out.writeByte( (byte) (TINY_MAP | size) );
             }
             else if ( size <= Byte.MAX_VALUE )
             {
-                out.ensure( 2 )
-                   .put( MAP_8 )
-                   .put( (byte) size );
+                out.writeByte( MAP_8 )
+                   .writeByte( (byte) size );
             }
             else if ( size <= Short.MAX_VALUE )
             {
-                out.ensure( 3 )
-                   .put( MAP_16 )
-                   .putShort( (short) size );
+                out.writeByte( MAP_16 )
+                   .writeShort( (short) size );
             }
             else
             {
-                out.ensure( 5 )
-                   .put( MAP_32 )
-                   .putInt( size );
+                out.writeByte( MAP_32 )
+                   .writeInt( size );
             }
         }
 
@@ -425,23 +402,20 @@ public class PackStream
         {
             if ( size < 0x10 )
             {
-                out.ensure( 2 )
-                   .put( (byte) (TINY_STRUCT | size) )
-                   .put( (byte) signature );
+                out.writeByte( (byte) (TINY_STRUCT | size) )
+                   .writeByte( (byte) signature );
             }
             else if ( size <= Byte.MAX_VALUE )
             {
-                out.ensure( 3 )
-                   .put( STRUCT_8 )
-                   .put( (byte) size )
-                   .put( (byte) signature );
+                out.writeByte( STRUCT_8 )
+                   .writeByte( (byte) size )
+                   .writeByte( (byte) signature );
             }
             else if ( size <= Short.MAX_VALUE )
             {
-                out.ensure( 4 )
-                   .put( STRUCT_16 )
-                   .putShort( (short) size )
-                   .put( (byte) signature );
+                out.writeByte( STRUCT_16 )
+                   .writeShort( (short) size )
+                   .writeByte( (byte) signature );
             }
             else
             {
@@ -481,12 +455,12 @@ public class PackStream
 
         public boolean hasNext() throws IOException
         {
-            return in.remaining() > 0 || in.attempt( 1 );
+            return in.hasMoreData();
         }
 
         public long unpackStructHeader() throws IOException
         {
-            final byte markerByte = in.ensure( 1 ).get();
+            final byte markerByte = in.readByte();
             final byte markerHighNibble = (byte) (markerByte & 0xF0);
             final byte markerLowNibble = (byte) (markerByte & 0x0F);
 
@@ -501,12 +475,12 @@ public class PackStream
 
         public char unpackStructSignature() throws IOException
         {
-            return (char) in.ensure( 1 ).get();
+            return (char) in.readByte();
         }
 
         public long unpackListHeader() throws IOException
         {
-            final byte markerByte = in.ensure( 1 ).get();
+            final byte markerByte = in.readByte();
             final byte markerHighNibble = (byte) (markerByte & 0xF0);
             final byte markerLowNibble  = (byte) (markerByte & 0x0F);
 
@@ -522,7 +496,7 @@ public class PackStream
 
         public long unpackMapHeader() throws IOException
         {
-            final byte markerByte = in.ensure( 1 ).get();
+            final byte markerByte = in.readByte();
             final byte markerHighNibble = (byte) (markerByte & 0xF0);
             final byte markerLowNibble = (byte) (markerByte & 0x0F);
 
@@ -538,31 +512,31 @@ public class PackStream
 
         public long unpackLong() throws IOException
         {
-            final byte markerByte = in.ensure( 1 ).get();
+            final byte markerByte = in.readByte();
             if ( markerByte >= MINUS_2_TO_THE_4) { return markerByte; }
             switch(markerByte)
             {
-            case INT_8:   return in.ensure( 1 ).get();
-            case INT_16:  return in.ensure( 2 ).getShort();
-            case INT_32:  return in.ensure( 4 ).getInt();
-            case INT_64:  return in.ensure( 8 ).getLong();
+            case INT_8:   return in.readByte();
+            case INT_16:  return in.readShort();
+            case INT_32:  return in.readInt();
+            case INT_64:  return in.readLong();
             default: throw new Unexpected( "Expected an integer, but got: " + toHexString( markerByte ));
             }
         }
 
         public double unpackDouble() throws IOException
         {
-            final byte markerByte = in.ensure( 1 ).get();
+            final byte markerByte = in.readByte();
             if(markerByte == FLOAT_64)
             {
-                return in.ensure( 8 ).getDouble();
+                return in.readDouble();
             }
             throw new Unexpected( "Expected a double, but got: " + toHexString( markerByte ));
         }
 
         public String unpackString() throws IOException
         {
-            final byte markerByte = in.ensure( 1 ).get();
+            final byte markerByte = in.readByte();
             if( markerByte == TINY_TEXT ) // Note no mask, so we compare to 0x80.
             {
                 return PackValue.EMPTY_STRING;
@@ -599,7 +573,7 @@ public class PackStream
 
         public boolean unpackBoolean() throws IOException
         {
-            final byte markerByte = in.ensure( 1 ).get();
+            final byte markerByte = in.readByte();
             switch(markerByte)
             {
             case TRUE: return true;
@@ -610,7 +584,7 @@ public class PackStream
 
         public PackValue unpack() throws IOException
         {
-            final byte markerByte = in.ensure( 1 ).get();
+            final byte markerByte = in.readByte();
             final byte markerHighNibble = (byte) (markerByte & 0xF0);
             final byte markerLowNibble = (byte) (markerByte & 0x0F);
 
@@ -628,23 +602,23 @@ public class PackStream
             }
             else if ( markerByte == FLOAT_64 )
             {
-                return new PackValue.FloatValue( in.ensure( 8 ).getDouble() );
+                return new PackValue.FloatValue( in.readDouble() );
             }
             else if ( markerByte == INT_8 )
             {
-                return PackValue.IntegerValue.getInstance( in.ensure( 1 ).get() );
+                return PackValue.IntegerValue.getInstance( in.readByte() );
             }
             else if ( markerByte == INT_16 )
             {
-                return PackValue.IntegerValue.getInstance( in.ensure( 2 ).getShort() );
+                return PackValue.IntegerValue.getInstance( in.readShort() );
             }
             else if ( markerByte == INT_32 )
             {
-                return PackValue.IntegerValue.getInstance( in.ensure( 4 ).getInt() );
+                return PackValue.IntegerValue.getInstance( in.readInt() );
             }
             else if ( markerByte == INT_64 )
             {
-                return PackValue.IntegerValue.getInstance( in.ensure( 8 ).getLong() );
+                return PackValue.IntegerValue.getInstance( in.readLong() );
             }
             else if ( markerByte == BYTES_8 )
             {
@@ -760,40 +734,23 @@ public class PackStream
 
         private int unpackUINT8() throws IOException
         {
-            return in.ensure( 1 ).get() & 0xFF;
+            return in.readByte() & 0xFF;
         }
 
         private int unpackUINT16() throws IOException
         {
-            return in.ensure( 2 ).getShort() & 0xFFFF;
+            return in.readShort() & 0xFFFF;
         }
 
         private long unpackUINT32() throws IOException
         {
-            return in.ensure( 4 ).getInt() & 0xFFFFFFFFL;
+            return in.readInt() & 0xFFFFFFFFL;
         }
 
         private byte[] unpackBytes( int size ) throws IOException
         {
-            if ( size == 0 ) return PackValue.EMPTY_BYTE_ARRAY;
             byte[] heapBuffer = new byte[size];
-            int index = 0;
-            while(index < size)
-            {
-                int toRead = Math.min( in.remaining(), size - index );
-                in.get( heapBuffer, index, toRead );
-                index += toRead;
-
-                if(in.remaining() == 0 && index < size)
-                {
-                    in.attemptUpTo( size - index );
-                    if(in.remaining() == 0)
-                    {
-                        throw new EndOfStream( "Expected " + (size - index) + " bytes available, " +
-                                                "but no more bytes accessible from underlying stream." );
-                    }
-                }
-            }
+            in.readBytes( heapBuffer, 0, heapBuffer.length );
             return heapBuffer;
         }
 
@@ -826,7 +783,7 @@ public class PackStream
 
         public PackType peekNextType() throws IOException
         {
-            final byte markerByte = in.ensure( 1 ).peek();
+            final byte markerByte = in.peekByte();
             final byte markerHighNibble = (byte) (markerByte & 0xF0);
 
             switch(markerHighNibble)
