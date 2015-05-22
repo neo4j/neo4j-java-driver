@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
+import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.packstream.PackOutput;
 
 import static java.lang.Math.max;
@@ -36,30 +37,6 @@ public class ChunkedOutput implements PackOutput
     private int currentChunkHeaderOffset;
     /** Are currently in the middle of writing a chunk? */
     private boolean chunkOpen = false;
-    private Runnable onMessageComplete = new Runnable()
-    {
-        @Override
-        public void run()
-        {
-            try
-            {
-                closeCurrentChunk();
-
-                // Write message boundary
-                ensure( CHUNK_HEADER_SIZE );
-                putShort( (short) 0 );
-
-                // Mark us as not currently in a chunk
-                chunkOpen = false;
-            }
-            catch ( IOException e )
-            {
-                // TODO: Don't use runnable here then, use something that can throw this IOException
-                throw new RuntimeException( e );
-            }
-
-        }
-    };
 
     public ChunkedOutput()
     {
@@ -69,30 +46,6 @@ public class ChunkedOutput implements PackOutput
     public ChunkedOutput( int bufferSize )
     {
         this.bufferSize = max( 16, bufferSize );
-    }
-
-    @Override
-    public PackOutput ensure( int size ) throws IOException
-    {
-        int toWriteSize = chunkOpen ? size : size + CHUNK_HEADER_SIZE;
-
-        if ( buffer == null )
-        {
-            newBuffer();
-        }
-        else if ( buffer.remaining() < toWriteSize )
-        {
-            flush();
-        }
-
-        if ( !chunkOpen )
-        {
-            currentChunkHeaderOffset = buffer.position();
-            buffer.position( buffer.position() + CHUNK_HEADER_SIZE );
-            chunkOpen = true;
-        }
-
-        return this;
     }
 
     @Override
@@ -113,47 +66,47 @@ public class ChunkedOutput implements PackOutput
     }
 
     @Override
-    public PackOutput put( byte value )
+    public PackOutput writeByte( byte value ) throws IOException
     {
-        assert chunkOpen;
+        ensure( 1 );
         buffer.put( value );
         return this;
     }
 
     @Override
-    public PackOutput putShort( short value )
+    public PackOutput writeShort( short value ) throws IOException
     {
-        assert chunkOpen;
+        ensure( 2 );
         buffer.putShort( value );
         return this;
     }
 
     @Override
-    public PackOutput putInt( int value )
+    public PackOutput writeInt( int value ) throws IOException
     {
-        assert chunkOpen;
+        ensure( 4 );
         buffer.putInt( value );
         return this;
     }
 
     @Override
-    public PackOutput putLong( long value )
+    public PackOutput writeLong( long value ) throws IOException
     {
-        assert chunkOpen;
+        ensure( 8 );
         buffer.putLong( value );
         return this;
     }
 
     @Override
-    public PackOutput putDouble( double value )
+    public PackOutput writeDouble( double value ) throws IOException
     {
-        assert chunkOpen;
+        ensure( 8 );
         buffer.putDouble( value );
         return this;
     }
 
     @Override
-    public PackOutput put( byte[] data, int offset, int length ) throws IOException
+    public PackOutput writeBytes( byte[] data, int offset, int length ) throws IOException
     {
         int index = 0;
         while ( index < length )
@@ -172,17 +125,62 @@ public class ChunkedOutput implements PackOutput
         return this;
     }
 
-    private void closeCurrentChunk()
-    {
-        int chunkSize = buffer.position() - (currentChunkHeaderOffset + CHUNK_HEADER_SIZE);
-        buffer.putShort( currentChunkHeaderOffset, (short) chunkSize );
-    }
-
     private void newBuffer()
     {
         buffer = ByteBuffer.allocate( bufferSize );
         chunkOpen = false;
     }
+
+    private void closeCurrentChunk()
+    {
+        int chunkSize = buffer.position() - ( currentChunkHeaderOffset + CHUNK_HEADER_SIZE );
+        buffer.putShort( currentChunkHeaderOffset, (short) chunkSize );
+    }
+
+    private PackOutput ensure( int size ) throws IOException
+    {
+        if ( buffer == null )
+        {
+            newBuffer();
+        }
+        else if ( buffer.remaining() < size )
+        {
+            flush();
+        }
+
+        if ( !chunkOpen )
+        {
+            currentChunkHeaderOffset = buffer.position();
+            buffer.position( buffer.position() + CHUNK_HEADER_SIZE );
+            chunkOpen = true;
+        }
+
+        return this;
+    }
+
+    private Runnable onMessageComplete = new Runnable()
+    {
+        @Override
+        public void run()
+        {
+            try
+            {
+                closeCurrentChunk();
+
+                // Write message boundary
+                ensure( CHUNK_HEADER_SIZE );
+                writeShort( (short) 0 );
+
+                // Mark us as not currently in a chunk
+                chunkOpen = false;
+            }
+            catch ( IOException e )
+            {
+                throw new ClientException( "Error while sending message complete ending '00 00'.", e );
+            }
+
+        }
+    };
 
     public Runnable messageBoundaryHook()
     {
