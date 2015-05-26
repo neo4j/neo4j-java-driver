@@ -22,7 +22,6 @@ package org.neo4j.driver.internal.connector.socket;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.util.logging.Level;
 
 import org.neo4j.driver.internal.spi.Logger;
 import org.neo4j.driver.internal.util.BytePrinter;
@@ -42,21 +41,21 @@ public class MonitoredOutputStream extends OutputStream
     public void write( int b ) throws IOException
     {
         realOut.write( b );
-        logger.log( Level.FINEST, "Output:\n" + BytePrinter.hex( (byte) b ) );
+        logger.trace( "Client:\n" + BytePrinter.hex( (byte) b ) );
     }
 
     @Override
     public void write( byte b[], int off, int len ) throws IOException
     {
         realOut.write( b, off, len );
-        logger.log( Level.FINEST, "Output:\n" + BytePrinter.hex( ByteBuffer.wrap( b ), off, len ) );
+        logger.trace( "Client:\n" + BytePrinter.hex( ByteBuffer.wrap( b ), off, len ) );
     }
 
     @Override
     public void write( byte b[] ) throws IOException
     {
         realOut.write( b );
-        logger.log( Level.FINEST, "Output:\n" + BytePrinter.hex( b ) );
+        logger.trace( "Client:\n" + BytePrinter.hex( b ) );
     }
 
     @Override

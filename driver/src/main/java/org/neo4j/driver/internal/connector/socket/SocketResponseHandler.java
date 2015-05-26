@@ -75,7 +75,7 @@ public class SocketResponseHandler implements MessageHandler
             collector.record( fields );
         }
 
-        logger.debug( new RecordMessage( fields ).toString() );
+        debug( new RecordMessage( fields ).toString() );
     }
 
     @Override
@@ -101,7 +101,7 @@ public class SocketResponseHandler implements MessageHandler
         finally
         {
             responseId++;
-            logger.debug( new FailureMessage( code, message ).toString() );
+            debug( new FailureMessage( code, message ).toString() );
         }
     }
 
@@ -114,38 +114,38 @@ public class SocketResponseHandler implements MessageHandler
             collector.fieldNames( fieldNamesFromMeta( meta ) );
         }
         responseId++;
-        logger.debug( new SuccessMessage( meta ).toString() );
+        debug( new SuccessMessage( meta ).toString() );
     }
 
     @Override
     public void handleIgnoredMessage()
     {
         responseId++;
-        logger.debug( IGNORED.toString() );
+        debug( IGNORED.toString() );
     }
 
     @Override
     public void handleDiscardAllMessage()
     {
-        logger.debug( DISCARD_ALL.toString() );
+        debug( DISCARD_ALL.toString() );
     }
 
     @Override
     public void handleAckFailureMessage()
     {
-        logger.debug( ACK_FAILURE.toString() );
+        debug( ACK_FAILURE.toString() );
     }
 
     @Override
     public void handlePullAllMessage()
     {
-        logger.debug( PULL_ALL.toString() );
+        debug( PULL_ALL.toString() );
     }
 
     @Override
     public void handleRunMessage( String statement, Map<String,Value> parameters )
     {
-        logger.debug( new RunMessage( statement, parameters ).toString() );
+        debug( new RunMessage( statement, parameters ).toString() );
     }
 
     public void registerResultCollector( int correlationId, StreamCollector collector )
@@ -191,4 +191,8 @@ public class SocketResponseHandler implements MessageHandler
         return fields;
     }
 
+    private void debug( String info )
+    {
+        logger.debug( "Server: " + info );
+    }
 }

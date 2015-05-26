@@ -131,7 +131,7 @@ public class SocketConnection implements Connection
     {
         int messageId = nextRequestId();
         pendingMessages.add( msg );
-        logger.debug( msg.toString() );
+        logger.debug( "Client: " + msg.toString() );
         return messageId;
     }
 
