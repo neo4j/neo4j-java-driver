@@ -19,12 +19,12 @@
  */
 package org.neo4j.driver.internal.connector.socket;
 
+import org.junit.Before;
+import org.junit.Test;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-
-import org.junit.Before;
-import org.junit.Test;
 
 import org.neo4j.driver.internal.util.BytePrinter;
 
@@ -67,6 +67,33 @@ public class ChunkedOutputTest
                          "00 00 00 02 00 08 00 00    00 00 00 00 00 03 00 00\n" ) );
     }
 
+    @Test
+    public void shouldReserveSpaceForChunkHeaderWhenWriteDataToNewChunk() throws IOException
+    {
+        // Given 2 bytes left in buffer + chunk is closed
+        out.ensure( 10 ).put( new byte[10], 0, 10 );    // 2 (header) + 10
+        out.messageBoundaryHook().run();                // 2 (ending)
+
+        // When write 2 bytes
+        out.ensure( 2 ).putShort( (short) 33 );         // 2 (header) + 2
+
+        // Then the buffer should auto flash if space left (2) is smaller than new data and chunk header (2 + 2)
+        assertThat( writtenData.position(), equalTo( 14 ) );
+        assertThat( BytePrinter.hex( writtenData, 0, 14 ),
+                equalTo( "00 0a 00 00 00 00 00 00    00 00 00 00 00 00 " ) );
+    }
+
+    @Test
+    public void shouldSendOutDataWhoseSizeIsGreaterThanOutputBufferCapacity() throws IOException
+    {
+        out.ensure( 16 ).put( new byte[16], 0, 16 ); // 2 + 16 is greater than the default max size 16
+        out.messageBoundaryHook().run();
+        out.flush();
+
+        assertThat( writtenData.position(), equalTo( 22 ) );
+        assertThat( BytePrinter.hex( writtenData, 0, 22 ),
+                equalTo( "00 0e 00 00 00 00 00 00    00 00 00 00 00 00 00 00    00 02 00 00 00 00 " ) );
+    }
     @Before
     public void setup()
     {
