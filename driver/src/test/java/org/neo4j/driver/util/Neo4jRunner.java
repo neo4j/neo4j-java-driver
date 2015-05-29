@@ -49,13 +49,14 @@ public class Neo4jRunner
     public static final String DEFAULT_URL = "neo4j://localhost:7687";
 
     private static Neo4jRunner globalInstance;
-    private static boolean externalServer = Boolean.getBoolean("neo4j.useExternalServer");
+    private static boolean externalServer = Boolean.getBoolean( "neo4j.useExternalServer" );
 
     private final String neo4jVersion = System.getProperty( "version", "neo4j-community-2.3.0-M01" );
     private final String neo4jLink = System.getProperty( "packageUri",
             "http://dist.neo4j.org/" + neo4jVersion + "-unix.tar.gz" );
     private final String remotingExtensionLink =
-            "http://m2.neo4j.org/service/local/artifact/maven/content?r=snapshots&g=org.neo4j.ndp&a=neo4j-ndp-kernelextension&v=LATEST";
+            "https://m2.neo4j.org/service/local/artifact/maven/content?r=snapshots&g=org.neo4j" +
+            ".ndp&a=neo4j-ndp-kernelextension&v=LATEST";
 
     private final File neo4jDir = new File( "./target/neo4j" );
     private final File neo4jHome = new File( neo4jDir, neo4jVersion );

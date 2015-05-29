@@ -40,7 +40,7 @@ public class ChunkedOutputTest
     public void shouldChunkSingleMessage() throws Throwable
     {
         // When
-        out.ensure( 3 ).put( (byte) 1 ).putShort( (short) 2 );
+        out.writeByte( (byte) 1 ).writeShort( (short) 2 );
         out.messageBoundaryHook().run();
         out.flush();
 
@@ -54,9 +54,9 @@ public class ChunkedOutputTest
     public void shouldChunkMessageSpanningMultipleChunks() throws Throwable
     {
         // When
-        out.ensure( 8 ).putLong( 1 )
-                .ensure( 8 ).putLong( 2 )
-                .ensure( 8 ).putLong( 3 );
+        out.writeLong( 1 )
+           .writeLong( 2 )
+           .writeLong( 3 );
         out.messageBoundaryHook().run();
         out.flush();
 
@@ -71,11 +71,11 @@ public class ChunkedOutputTest
     public void shouldReserveSpaceForChunkHeaderWhenWriteDataToNewChunk() throws IOException
     {
         // Given 2 bytes left in buffer + chunk is closed
-        out.ensure( 10 ).put( new byte[10], 0, 10 );    // 2 (header) + 10
+        out.writeBytes( new byte[10], 0, 10 );  // 2 (header) + 10
         out.messageBoundaryHook().run();                // 2 (ending)
 
         // When write 2 bytes
-        out.ensure( 2 ).putShort( (short) 33 );         // 2 (header) + 2
+        out.writeShort( (short) 33 );           // 2 (header) + 2
 
         // Then the buffer should auto flash if space left (2) is smaller than new data and chunk header (2 + 2)
         assertThat( writtenData.position(), equalTo( 14 ) );
@@ -86,7 +86,7 @@ public class ChunkedOutputTest
     @Test
     public void shouldSendOutDataWhoseSizeIsGreaterThanOutputBufferCapacity() throws IOException
     {
-        out.ensure( 16 ).put( new byte[16], 0, 16 ); // 2 + 16 is greater than the default max size 16
+        out.writeBytes( new byte[16], 0, 16 );  // 2 + 16 is greater than the default max size 16
         out.messageBoundaryHook().run();
         out.flush();
 
