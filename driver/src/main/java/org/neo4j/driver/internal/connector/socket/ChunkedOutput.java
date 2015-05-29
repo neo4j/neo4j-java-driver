@@ -25,6 +25,8 @@ import java.nio.ByteBuffer;
 
 import org.neo4j.driver.internal.packstream.PackOutput;
 
+import static java.lang.Math.max;
+
 public class ChunkedOutput implements PackOutput
 {
     public static final int CHUNK_HEADER_SIZE = 2;
@@ -66,17 +68,19 @@ public class ChunkedOutput implements PackOutput
 
     public ChunkedOutput( int bufferSize )
     {
-        this.bufferSize = bufferSize;
+        this.bufferSize = max( 16, bufferSize );
     }
 
     @Override
     public PackOutput ensure( int size ) throws IOException
     {
+        int toWriteSize = chunkOpen ? size : size + CHUNK_HEADER_SIZE;
+
         if ( buffer == null )
         {
             newBuffer();
         }
-        else if ( buffer.remaining() < size )
+        else if ( buffer.remaining() < toWriteSize )
         {
             flush();
         }
