@@ -22,44 +22,27 @@ package org.neo4j.driver.internal.connector.socket;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
+import java.nio.channels.WritableByteChannel;
 
+import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.packstream.PackOutput;
 
 import static java.lang.Math.max;
 
 public class ChunkedOutput implements PackOutput
 {
+    public static final short MESSAGE_BOUNDARY = 0;
     public static final int CHUNK_HEADER_SIZE = 2;
-    private final int bufferSize;
-    private ByteBuffer buffer;
-    private OutputStream out;
+
+    private final ByteBuffer buffer;
+
+    /** The chunk header */
     private int currentChunkHeaderOffset;
     /** Are currently in the middle of writing a chunk? */
     private boolean chunkOpen = false;
-    private Runnable onMessageComplete = new Runnable()
-    {
-        @Override
-        public void run()
-        {
-            try
-            {
-                closeCurrentChunk();
 
-                // Write message boundary
-                ensure( CHUNK_HEADER_SIZE );
-                putShort( (short) 0 );
-
-                // Mark us as not currently in a chunk
-                chunkOpen = false;
-            }
-            catch ( IOException e )
-            {
-                // TODO: Don't use runnable here then, use something that can throw this IOException
-                throw new RuntimeException( e );
-            }
-
-        }
-    };
+    private WritableByteChannel channel;
 
     public ChunkedOutput()
     {
@@ -68,19 +51,94 @@ public class ChunkedOutput implements PackOutput
 
     public ChunkedOutput( int bufferSize )
     {
-        this.bufferSize = max( 16, bufferSize );
+        buffer = ByteBuffer.allocateDirect(  max( 16, bufferSize ) );
+        chunkOpen = false;
     }
 
     @Override
-    public PackOutput ensure( int size ) throws IOException
+    public PackOutput flush() throws IOException
+    {
+        closeChunkIfOpen();
+
+        buffer.flip();
+        channel.write( buffer );
+        buffer.clear();
+
+        return this;
+    }
+
+    @Override
+    public PackOutput writeByte( byte value ) throws IOException
+    {
+        ensure( 1 );
+        buffer.put( value );
+        return this;
+    }
+
+    @Override
+    public PackOutput writeShort( short value ) throws IOException
+    {
+        ensure( 2 );
+        buffer.putShort( value );
+        return this;
+    }
+
+    @Override
+    public PackOutput writeInt( int value ) throws IOException
+    {
+        ensure( 4 );
+        buffer.putInt( value );
+        return this;
+    }
+
+    @Override
+    public PackOutput writeLong( long value ) throws IOException
+    {
+        ensure( 8 );
+        buffer.putLong( value );
+        return this;
+    }
+
+    @Override
+    public PackOutput writeDouble( double value ) throws IOException
+    {
+        ensure( 8 );
+        buffer.putDouble( value );
+        return this;
+    }
+
+    @Override
+    public PackOutput writeBytes( byte[] data, int offset, int length ) throws IOException
+    {
+        int index = 0;
+        while ( index < length )
+        {
+            // Ensure there is an open chunk, and that it has at least one byte of space left
+            ensure(1);
+
+            // Write as much as we can into the current chunk
+            int amountToWrite = Math.min( buffer.remaining(), length - index );
+
+            buffer.put( data, offset, amountToWrite );
+            index += amountToWrite;
+        }
+        return this;
+    }
+
+    private void closeChunkIfOpen()
+    {
+        if( chunkOpen )
+        {
+            int chunkSize = buffer.position() - ( currentChunkHeaderOffset + CHUNK_HEADER_SIZE );
+            buffer.putShort( currentChunkHeaderOffset, (short) chunkSize );
+            chunkOpen = false;
+        }
+    }
+
+    private PackOutput ensure( int size ) throws IOException
     {
         int toWriteSize = chunkOpen ? size : size + CHUNK_HEADER_SIZE;
-
-        if ( buffer == null )
-        {
-            newBuffer();
-        }
-        else if ( buffer.remaining() < toWriteSize )
+        if ( buffer.remaining() < toWriteSize )
         {
             flush();
         }
@@ -95,94 +153,34 @@ public class ChunkedOutput implements PackOutput
         return this;
     }
 
-    @Override
-    public PackOutput flush() throws IOException
+    private Runnable onMessageComplete = new Runnable()
     {
-        if ( chunkOpen )
+        @Override
+        public void run()
         {
-            closeCurrentChunk();
-        }
-
-        byte[] bytes = new byte[buffer.position()];
-        buffer.flip();
-        buffer.get( bytes, 0, buffer.limit() );
-        out.write( bytes );
-        newBuffer();
-
-        return this;
-    }
-
-    @Override
-    public PackOutput put( byte value )
-    {
-        assert chunkOpen;
-        buffer.put( value );
-        return this;
-    }
-
-    @Override
-    public PackOutput putShort( short value )
-    {
-        assert chunkOpen;
-        buffer.putShort( value );
-        return this;
-    }
-
-    @Override
-    public PackOutput putInt( int value )
-    {
-        assert chunkOpen;
-        buffer.putInt( value );
-        return this;
-    }
-
-    @Override
-    public PackOutput putLong( long value )
-    {
-        assert chunkOpen;
-        buffer.putLong( value );
-        return this;
-    }
-
-    @Override
-    public PackOutput putDouble( double value )
-    {
-        assert chunkOpen;
-        buffer.putDouble( value );
-        return this;
-    }
-
-    @Override
-    public PackOutput put( byte[] data, int offset, int length ) throws IOException
-    {
-        int index = 0;
-        while ( index < length )
-        {
-            int amountToWrite = Math.min( buffer.remaining(), length - index );
-            ensure( amountToWrite );
-
-            buffer.put( data, offset, amountToWrite );
-            index += amountToWrite;
-
-            if ( buffer.remaining() == 0 )
+            try
             {
-                flush();
+                closeChunkIfOpen();
+
+                // Ensure there's space to write the message boundary
+                if ( buffer.remaining() < CHUNK_HEADER_SIZE )
+                {
+                    flush();
+                }
+
+                // Write message boundary
+                buffer.putShort( MESSAGE_BOUNDARY );
+
+                // Mark us as not currently in a chunk
+                chunkOpen = false;
             }
+            catch ( IOException e )
+            {
+                throw new ClientException( "Error while sending message complete ending '00 00'.", e );
+            }
+
         }
-        return this;
-    }
-
-    private void closeCurrentChunk()
-    {
-        int chunkSize = buffer.position() - (currentChunkHeaderOffset + CHUNK_HEADER_SIZE);
-        buffer.putShort( currentChunkHeaderOffset, (short) chunkSize );
-    }
-
-    private void newBuffer()
-    {
-        buffer = ByteBuffer.allocate( bufferSize );
-        chunkOpen = false;
-    }
+    };
 
     public Runnable messageBoundaryHook()
     {
@@ -191,6 +189,6 @@ public class ChunkedOutput implements PackOutput
 
     public void setOutputStream( OutputStream out )
     {
-        this.out = out;
+        this.channel = Channels.newChannel( out );
     }
 }

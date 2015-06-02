@@ -277,33 +277,23 @@ public class ParametersIT
     @Test
     public void shouldBeAbleToSetAndReturnSpecialStringArrayProperty()
     {
-        // Setting up
-        enableNetworkTrafficlogging( true );
-
         // When
         String[] arrayValue = new String[]{"Mjölnir", "Mjölnir", "Mjölnir"};
 
-        try
-        {
-            Result result = session.run(
-                    "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", arrayValue ) );
+        Result result = session.run(
+                "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", arrayValue ) );
 
-            // Then
-            for ( Record record : result.retain() )
-            {
-                Value value = record.get( "a.value" );
-                assertThat( value.isList(), equalTo( true ) );
-                assertThat( value.size(), equalTo( 3L ) );
-                for ( Value item : value )
-                {
-                    assertThat( item.isText(), equalTo( true ) );
-                    assertThat( item.javaString(), equalTo( "Mjölnir" ) );
-                }
-            }
-        }
-        finally
+        // Then
+        for ( Record record : result.retain() )
         {
-            enableNetworkTrafficlogging( false );
+            Value value = record.get( "a.value" );
+            assertThat( value.isList(), equalTo( true ) );
+            assertThat( value.size(), equalTo( 3L ) );
+            for ( Value item : value )
+            {
+                assertThat( item.isText(), equalTo( true ) );
+                assertThat( item.javaString(), equalTo( "Mjölnir" ) );
+            }
         }
     }
 

@@ -22,20 +22,261 @@ package org.neo4j.driver.internal.connector.socket;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.util.LinkedList;
+import java.nio.ByteOrder;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.packstream.PackInput;
-import org.neo4j.driver.internal.packstream.PackStream;
-import org.neo4j.driver.internal.util.InputStreams;
+import org.neo4j.driver.internal.util.BytePrinter;
+
+import static java.lang.Math.min;
+import static org.neo4j.driver.internal.util.InputStreams.readAll;
 
 public class ChunkedInput implements PackInput
 {
-    private LinkedList<ByteBuffer> chunks = new LinkedList<>();
-    private ByteBuffer currentChunk = null;
+    private final ByteBuffer buffer;
 
-    private int remaining = 0;
-    private InputStream in;
+    /* a special buffer for chunk header */
+    private final ByteBuffer chunkHeaderBuffer = ByteBuffer.allocateDirect( 2 );
+
+    /* the size of bytes that have not been read in current incoming chunk */
+    private int unreadChunkSize = 0;
+
+    private ReadableByteChannel channel;
+
+    public ChunkedInput()
+    {
+        this( 1024 * 8, null );
+    }
+
+    public ChunkedInput( int bufferCapacity, ReadableByteChannel channel )
+    {
+        assert bufferCapacity >= 1;
+        buffer = ByteBuffer.allocateDirect( bufferCapacity ).order( ByteOrder.BIG_ENDIAN );
+        buffer.limit( 0 );
+        this.channel = channel;
+    }
+
+    public ChunkedInput reset( ReadableByteChannel ch )
+    {
+        this.channel = ch;
+        buffer.limit( 0 );
+        unreadChunkSize = 0;
+        return this;
+    }
+
+    @Override
+    public boolean hasMoreData() throws IOException
+    {
+        return buffer.remaining() > 0;
+    }
+
+    @Override
+    public byte readByte()
+    {
+        ensure( 1 );
+        return buffer.get();
+    }
+
+    @Override
+    public short readShort()
+    {
+        attempt( 2 );
+        if ( remainingData() >= 2 )
+        {
+            return buffer.getShort();
+        }
+        else
+        {
+            // Short is crossing chunk boundaries, use slow route
+            return (short) (readByte() << 8 & readByte());
+        }
+    }
+
+    @Override
+    public int readInt()
+    {
+        attempt( 4 );
+        if ( remainingData() >= 4 )
+        {
+            return buffer.getShort();
+        }
+        else
+        {
+            // Short is crossing chunk boundaries, use slow route
+            return readShort() << 16 & readShort();
+        }
+    }
+
+    @Override
+    public long readLong()
+    {
+        attempt( 8 );
+        if ( remainingData() >= 8 )
+        {
+            return buffer.getLong();
+        }
+        else
+        {
+            // long is crossing chunk boundaries, use slow route
+            return ((long) readInt() << 32) & readInt();
+        }
+    }
+
+    @Override
+    public double readDouble()
+    {
+        attempt( 8 );
+        if ( remainingData() >= 8 )
+        {
+            return buffer.getDouble();
+        }
+        else
+        {
+            // double is crossing chunk boundaries, use slow route
+            return Double.longBitsToDouble( readLong() );
+        }
+    }
+
+    @Override
+    public PackInput readBytes( byte[] into, int offset, int toRead )
+    {
+        int toReadFromChunk = min( toRead, freeSpace() );
+        ensure( toReadFromChunk );
+
+        // Do the read
+        buffer.get( into, offset, toReadFromChunk );
+
+        // Can we read another chunk into the destination buffer?
+        if ( toReadFromChunk < toRead )
+        {
+            // More data can be read into the buffer, keep reading from the next chunk
+            readBytes( into, offset + toReadFromChunk, toRead - toReadFromChunk );
+        }
+
+        return this;
+    }
+
+    @Override
+    public byte peekByte()
+    {
+        ensure( 1 );
+        int pos = buffer.position();
+        byte nextByte = buffer.get();
+        buffer.position( pos );
+        return nextByte;
+    }
+
+    /**
+     * Return the size of free space in a buffer.
+     * E.g. Given a buffer with pointers 0 <= position <= limit <= capacity,
+     * E.g.
+     * Buffer: | 0, 0, 1, 2, 3, 4, 0, 0, 0, 0, 0 |
+     *           |     |        |              |
+     *           0  position  limit         capacity
+     * This method returns capacity - limit + position
+     * @return
+     */
+    private int freeSpace()
+    {
+        return buffer.capacity() - buffer.limit() + buffer.position();
+    }
+
+    /**
+     * Return the size of bytes in a buffer.
+     * E.g. Given a buffer with pointers 0 <= position <= limit <= capacity,
+     * Buffer: | 0, 0, 1, 2, 3, 4, 0, 0, 0, 0, 0 |
+     *           |     |        |              |
+     *           0  position  limit         capacity
+     * this method returns limit - position
+     * @return
+     */
+    private int remainingData()
+    {
+        return buffer.remaining();
+    }
+
+    private void attempt( int toRead )
+    {
+        if( toRead == 0 || remainingData() >= toRead )
+        {
+            return;
+        }
+        int freeSpace = freeSpace();
+        ensure( Math.min( freeSpace, toRead ) );
+    }
+
+    private void ensure( int toRead )
+    {
+        if( toRead == 0 || remainingData() >= toRead )
+        {
+            return;
+        }
+        assert toRead <= freeSpace();
+        while ( remainingData() < toRead )
+        {
+            // first compact the data in the buffer
+            if ( remainingData() > 0 )
+            {
+                // If there is data remaining in the buffer, shift that remaining data to the beginning of the buffer.
+                buffer.compact();
+            }
+            else
+            {
+                buffer.clear();
+            }
+            /* the buffer is ready for writing */
+            try
+            {
+                if( unreadChunkSize > 0 )
+                {
+                    int freeSpace = buffer.remaining();
+                    readChunk( min( freeSpace, unreadChunkSize ) );
+                    unreadChunkSize -= freeSpace;
+                }
+                else
+                {
+                    int chunkSize = readChunkSize();
+                    assert chunkSize != 0;
+                    readChunk( chunkSize );
+                }
+            }
+            catch ( IOException e )
+            {
+                throw new ClientException( "Unable to process request: " + e.getMessage() + ", expect: " + toRead +
+                                           ", buffer: \n" + BytePrinter.hex( buffer ), e );
+            }
+            /* buffer ready for reading again */
+        }
+    }
+
+    private int readChunkSize() throws IOException
+    {
+        chunkHeaderBuffer.clear();
+        readAll( channel, chunkHeaderBuffer );
+        chunkHeaderBuffer.flip();
+        return chunkHeaderBuffer.getShort();
+    }
+
+    private void readChunk( int chunkSize ) throws IOException
+    {
+        if ( chunkSize <= buffer.remaining() )
+        {
+            buffer.limit( buffer.position() + chunkSize );
+            readAll( channel, buffer );
+            buffer.flip();
+        }
+        else
+        {
+            unreadChunkSize = chunkSize - buffer.remaining();
+            readAll( channel, buffer ); //current is full after this
+            buffer.flip();
+        }
+    }
+
+
+
     private Runnable onMessageComplete = new Runnable()
     {
         @Override
@@ -45,7 +286,7 @@ public class ChunkedInput implements PackInput
             {
                 // read message boundary
                 int chunkSize = readChunkSize();
-                if( chunkSize != 0 )
+                if ( chunkSize != 0 )
                 {
                     throw new ClientException( "Expecting message complete ending '00 00', but got " +
                                                ByteBuffer.allocate( 2 ).putShort( (short) chunkSize ).array() );
@@ -59,212 +300,13 @@ public class ChunkedInput implements PackInput
         }
     };
 
-    public void addChunk( ByteBuffer chunk )
-    {
-        assert chunk.position() == 0;
-        if ( chunk.limit() > 0 )
-        {
-            chunks.add( chunk );
-            remaining += chunk.limit();
-        }
-    }
-
-    @Override
-    public PackInput ensure( int numBytes ) throws IOException
-    {
-        if ( !attempt( numBytes ) )
-        {
-            throw new PackStream.EndOfStream( "Unexpected end of stream while trying to read " + numBytes + " bytes." );
-        }
-        return this;
-    }
-
-    @Override
-    public PackInput attemptUpTo( int numBytes ) throws IOException
-    {
-        ensureChunkAvailable( numBytes );
-        return this;
-    }
-
-    @Override
-    public boolean attempt( int numBytes ) throws IOException
-    {
-        ensureChunkAvailable( numBytes );
-        return remaining >= numBytes;
-    }
-
-    @Override
-    public int remaining()
-    {
-        return remaining;
-    }
-
-    @Override
-    public byte get()
-    {
-        ensureChunkAvailable( 1 );
-        remaining -= 1;
-        return currentChunk.get();
-    }
-
-    @Override
-    public byte peek()
-    {
-        ensureChunkAvailable( 1 );
-        int pos = currentChunk.position();
-        byte nextByte = currentChunk.get();
-        currentChunk.position( pos );
-        return nextByte;
-    }
-
-    @Override
-    public short getShort()
-    {
-        ensureChunkAvailable( 2 );
-        if ( currentChunk.remaining() >= 2 )
-        {
-            remaining -= 2;
-            return currentChunk.getShort();
-        }
-        else
-        {
-            // Short is crossing chunk boundaries, use slow route
-            return (short) (get() << 8 & get());
-        }
-    }
-
-    @Override
-    public int getInt()
-    {
-        ensureChunkAvailable( 4 );
-        if ( currentChunk.remaining() >= 4 )
-        {
-            remaining -= 4;
-            return currentChunk.getInt();
-        }
-        else
-        {
-            // int is crossing chunk boundaries, use slow route
-            return (getShort() << 16) & getShort();
-        }
-    }
-
-    @Override
-    public long getLong()
-    {
-        ensureChunkAvailable( 8 );
-        if ( currentChunk.remaining() >= 8 )
-        {
-            remaining -= 8;
-            return currentChunk.getLong();
-        }
-        else
-        {
-            // long is crossing chunk boundaries, use slow route
-            return ((long) getInt() << 32) & getInt();
-        }
-    }
-
-    @Override
-    public double getDouble()
-    {
-        ensureChunkAvailable( 8 );
-        if ( currentChunk.remaining() >= 8 )
-        {
-            remaining -= 8;
-            return currentChunk.getDouble();
-        }
-        else
-        {
-            // double is crossing chunk boundaries, use slow route
-            return Double.longBitsToDouble( getLong() );
-        }
-    }
-
-    @Override
-    public PackInput get( byte[] into, int offset, int toRead )
-    {
-        ensureChunkAvailable( toRead );
-        int toReadFromChunk = Math.min( toRead, currentChunk.remaining() );
-
-        // Do the read
-        currentChunk.get( into, offset, toReadFromChunk );
-        remaining -= toReadFromChunk;
-
-        // Can we read another chunk into the destination buffer?
-        if ( toReadFromChunk < toRead )
-        {
-            // More data can be read into the buffer, keep reading from the next chunk
-            get( into, offset + toReadFromChunk, toRead - toReadFromChunk );
-        }
-
-        return this;
-    }
-
-    private void ensureChunkAvailable( int toRead )
-    {
-        if ( toRead == 0 )
-        {
-            return;
-        }
-
-        while ( remaining < toRead )
-        {
-            // if not enough data in chunk list, we read more data from input stream
-            try
-            {
-                ByteBuffer chunk = readNextChunk();
-                addChunk( chunk );
-            }
-            catch ( IOException e )
-            {
-                throw new ClientException( "Unable to process request: " + e.getMessage() + ", expect: " + toRead +
-                                           ", " + remaining + " bytes remaining. Current chunk: " + currentChunk + "," +
-                                           " " + chunks, e );
-            }
-        }
-
-        if ( currentChunk == null || currentChunk.remaining() == 0 )
-        {
-            if ( chunks.size() > 0 )
-            {
-                currentChunk = chunks.pop();
-            }
-            else
-            {
-                throw new ClientException( "Fatal error while reading network data, expected: " + toRead + ", " +
-                                           remaining + " bytes remaining. Current chunk: " + currentChunk + ", " +
-                                           chunks );
-            }
-        }
-    }
-
-    private ByteBuffer readNextChunk() throws IOException
-    {
-        // TODO: Do not allocate new buffers here, swap to Channels API and use a single direct byte buffer
-        int chunkSize = readChunkSize();
-        byte[] buffer = new byte[chunkSize];
-
-        InputStreams.readAll( in, buffer );
-
-        return ByteBuffer.wrap( buffer );
-    }
-
-    private int readChunkSize() throws IOException
-    {
-        // TODO: Do not allocate new buffers here, swap to Channels API and use a single direct byte buffer
-        byte[] buffer = new byte[2];
-        InputStreams.readAll( in, buffer );
-        return (int) ByteBuffer.wrap( buffer ).getShort();
-    }
-
     public Runnable messageBoundaryHook()
     {
-        return onMessageComplete;
+        return this.onMessageComplete;
     }
 
     public void setInputStream( InputStream in )
     {
-        this.in = in;
+        this.channel = Channels.newChannel( in );
     }
 }
