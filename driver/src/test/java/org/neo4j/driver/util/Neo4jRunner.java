@@ -55,7 +55,7 @@ public class Neo4jRunner
     private final String neo4jLink = System.getProperty( "packageUri",
             "http://dist.neo4j.org/" + neo4jVersion + "-unix.tar.gz" );
     private final String remotingExtensionLink =
-            "https://m2.neo4j.org/service/local/artifact/maven/content?r=snapshots&g=org.neo4j" +
+            "http://m2.neo4j.org/service/local/artifact/maven/content?r=snapshots&g=org.neo4j" +
             ".ndp&a=neo4j-ndp-kernelextension&v=LATEST";
 
     private final File neo4jDir = new File( "./target/neo4j" );
