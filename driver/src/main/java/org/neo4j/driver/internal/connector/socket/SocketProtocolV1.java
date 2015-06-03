@@ -1,7 +1,7 @@
 package org.neo4j.driver.internal.connector.socket;
 
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.IOException;
+import java.nio.channels.SocketChannel;
 
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.MessageFormat.Reader;
@@ -11,17 +11,15 @@ import org.neo4j.driver.internal.messaging.PackStreamMessageFormatV1;
 public class SocketProtocolV1 implements SocketProtocol
 {
     private final MessageFormat messageFormat;
-    private final ChunkedInput input;
-    private final ChunkedOutput output;
     private final Reader reader;
-    private Writer writer;
+    private final Writer writer;
 
-    public SocketProtocolV1()
+    public SocketProtocolV1( SocketChannel channel ) throws IOException
     {
         messageFormat = new PackStreamMessageFormatV1();
 
-        this.output = new ChunkedOutput();
-        this.input = new ChunkedInput();
+        ChunkedOutput output = new ChunkedOutput( channel );
+        ChunkedInput input = new ChunkedInput( channel );
 
         this.writer = new PackStreamMessageFormatV1.Writer( output, output.messageBoundaryHook() );
         this.reader = new PackStreamMessageFormatV1.Reader( input, input.messageBoundaryHook() );
@@ -37,18 +35,6 @@ public class SocketProtocolV1 implements SocketProtocol
     public Writer writer()
     {
         return writer;
-    }
-
-    @Override
-    public void outputStream( OutputStream out )
-    {
-        output.setOutputStream( out );
-    }
-
-    @Override
-    public void inputStream( InputStream in )
-    {
-        input.setInputStream( in );
     }
 
     @Override

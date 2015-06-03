@@ -20,10 +20,8 @@
 package org.neo4j.driver.internal.connector.socket;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 
 import org.neo4j.driver.exceptions.ClientException;
@@ -43,11 +41,11 @@ public class ChunkedInput implements PackInput
     /* the size of bytes that have not been read in current incoming chunk */
     private int unreadChunkSize = 0;
 
-    private ReadableByteChannel channel;
+    private final ReadableByteChannel channel;
 
-    public ChunkedInput()
+    public ChunkedInput( ReadableByteChannel ch )
     {
-        this( 1024 * 8, null );
+        this( 1024 * 8, ch );
     }
 
     public ChunkedInput( int bufferCapacity, ReadableByteChannel channel )
@@ -56,14 +54,6 @@ public class ChunkedInput implements PackInput
         buffer = ByteBuffer.allocateDirect( bufferCapacity ).order( ByteOrder.BIG_ENDIAN );
         buffer.limit( 0 );
         this.channel = channel;
-    }
-
-    public ChunkedInput reset( ReadableByteChannel ch )
-    {
-        this.channel = ch;
-        buffer.limit( 0 );
-        unreadChunkSize = 0;
-        return this;
     }
 
     @Override
@@ -303,10 +293,5 @@ public class ChunkedInput implements PackInput
     public Runnable messageBoundaryHook()
     {
         return this.onMessageComplete;
-    }
-
-    public void setInputStream( InputStream in )
-    {
-        this.channel = Channels.newChannel( in );
     }
 }

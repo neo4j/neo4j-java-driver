@@ -27,6 +27,7 @@ import java.util.logging.Level;
 import org.neo4j.driver.internal.spi.Logger;
 import org.neo4j.driver.internal.util.BytePrinter;
 
+// TODO: These should be modified to be WritableByteChannel, rather than OutputStream
 public class MonitoredOutputStream extends OutputStream
 {
     private final OutputStream realOut;

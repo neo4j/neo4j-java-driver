@@ -19,22 +19,18 @@
  */
 package org.neo4j.driver.internal.connector.socket;
 
-import org.junit.Before;
 import org.junit.Test;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.ByteBuffer;
-
 import org.neo4j.driver.internal.util.BytePrinter;
+import org.neo4j.driver.util.RecordingByteChannel;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 public class ChunkedOutputTest
 {
-    private final ByteBuffer writtenData = ByteBuffer.allocate( 1024 );
-    private final ChunkedOutput out = new ChunkedOutput( 16 );
+    private final RecordingByteChannel channel = new RecordingByteChannel();
+    private final ChunkedOutput out = new ChunkedOutput( 16, channel );
 
     @Test
     public void shouldChunkSingleMessage() throws Throwable
@@ -45,8 +41,7 @@ public class ChunkedOutputTest
         out.flush();
 
         // Then
-        assertThat( writtenData.position(), equalTo( 7 ) );
-        assertThat( BytePrinter.hex( writtenData, 0, 7 ),
+        assertThat( BytePrinter.hex( channel.getBytes() ),
                 equalTo( "00 03 01 00 02 00 00 " ) );
     }
 
@@ -61,8 +56,7 @@ public class ChunkedOutputTest
         out.flush();
 
         // Then
-        assertThat( writtenData.position(), equalTo( 32 ) );
-        assertThat( BytePrinter.hex( writtenData, 0, 32 ),
+        assertThat( BytePrinter.hex( channel.getBytes() ),
                 equalTo( "00 08 00 00 00 00 00 00    00 01 00 08 00 00 00 00    " +
                          "00 00 00 02 00 08 00 00    00 00 00 00 00 03 00 00\n" ) );
     }
@@ -78,8 +72,7 @@ public class ChunkedOutputTest
         out.writeShort( (short) 33 );           // 2 (header) + 2
 
         // Then the buffer should auto flash if space left (2) is smaller than new data and chunk header (2 + 2)
-        assertThat( writtenData.position(), equalTo( 14 ) );
-        assertThat( BytePrinter.hex( writtenData, 0, 14 ),
+        assertThat( BytePrinter.hex( channel.getBytes() ),
                 equalTo( "00 0a 00 00 00 00 00 00    00 00 00 00 00 00 " ) );
     }
 
@@ -90,28 +83,7 @@ public class ChunkedOutputTest
         out.messageBoundaryHook().run();
         out.flush();
 
-        assertThat( writtenData.position(), equalTo( 22 ) );
-        assertThat( BytePrinter.hex( writtenData, 0, 22 ),
+        assertThat( BytePrinter.hex( channel.getBytes() ),
                 equalTo( "00 0e 00 00 00 00 00 00    00 00 00 00 00 00 00 00    00 02 00 00 00 00 " ) );
-    }
-    @Before
-    public void setup()
-    {
-        OutputStream st = new OutputStream()
-        {
-            @Override
-            public void write( int b ) throws IOException
-            {
-                writtenData.put( (byte) b );
-            }
-
-            @Override
-            public void write( byte[] buffer ) throws IOException
-            {
-                writtenData.put( buffer );
-            }
-        };
-
-        out.setOutputStream( st );
     }
 }
