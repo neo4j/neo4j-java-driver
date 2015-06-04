@@ -12,6 +12,7 @@ import org.neo4j.driver.internal.messaging.AckFailureMessage;
 import org.neo4j.driver.internal.messaging.DiscardAllMessage;
 import org.neo4j.driver.internal.messaging.FailureMessage;
 import org.neo4j.driver.internal.messaging.IgnoredMessage;
+import org.neo4j.driver.internal.messaging.InitializeMessage;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.MessageHandler;
@@ -67,6 +68,12 @@ public class DumpMessage
                 public void handlePullAllMessage()
                 {
                     outcome.add( new PullAllMessage() );
+                }
+
+                @Override
+                public void handleInitializeMessage( String clientNameAndVersion ) throws IOException
+                {
+                    outcome.add( new InitializeMessage( clientNameAndVersion ) );
                 }
 
                 @Override

@@ -53,6 +53,7 @@ import static org.neo4j.driver.Values.value;
 
 public class PackStreamMessageFormatV1 implements MessageFormat
 {
+    public final static byte MSG_INITIALIZE = 0x01;
     public final static byte MSG_ACK_FAILURE = 0x0F;
     public final static byte MSG_RUN = 0x10;
     public final static byte MSG_DISCARD_ALL = 0x2F;
@@ -63,9 +64,9 @@ public class PackStreamMessageFormatV1 implements MessageFormat
     public final static byte MSG_IGNORED = 0x7E;
     public final static byte MSG_FAILURE = 0x7F;
 
-    public static final char NODE = 'N';
-    public static final char RELATIONSHIP = 'R';
-    public static final char PATH = 'P';
+    public static final byte NODE = 'N';
+    public static final byte RELATIONSHIP = 'R';
+    public static final byte PATH = 'P';
 
     public static final int VERSION = 1;
 
@@ -110,9 +111,17 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         }
 
         @Override
+        public void handleInitializeMessage( String clientNameAndVersion ) throws IOException
+        {
+            packer.packStructHeader( 1, MSG_INITIALIZE );
+            packer.pack( clientNameAndVersion );
+            onMessageComplete.run();
+        }
+
+        @Override
         public void handleRunMessage( String statement, Map<String,Value> parameters ) throws IOException
         {
-            packer.packStructHeader( 2, (char) MSG_RUN );
+            packer.packStructHeader( 2, MSG_RUN );
             packer.pack( statement );
             packRawMap( parameters );
             onMessageComplete.run();
@@ -121,28 +130,28 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         @Override
         public void handlePullAllMessage() throws IOException
         {
-            packer.packStructHeader( 0, (char) MSG_PULL_ALL );
+            packer.packStructHeader( 0, MSG_PULL_ALL );
             onMessageComplete.run();
         }
 
         @Override
         public void handleDiscardAllMessage() throws IOException
         {
-            packer.packStructHeader( 0, (char) MSG_DISCARD_ALL );
+            packer.packStructHeader( 0, MSG_DISCARD_ALL );
             onMessageComplete.run();
         }
 
         @Override
         public void handleAckFailureMessage() throws IOException
         {
-            packer.packStructHeader( 0, (char) MSG_ACK_FAILURE );
+            packer.packStructHeader( 0, MSG_ACK_FAILURE );
             onMessageComplete.run();
         }
 
         @Override
         public void handleSuccessMessage( Map<String,Value> meta ) throws IOException
         {
-            packer.packStructHeader( 1, (char) MSG_SUCCESS );
+            packer.packStructHeader( 1, MSG_SUCCESS );
             packRawMap( meta );
             onMessageComplete.run();
         }
@@ -150,7 +159,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         @Override
         public void handleRecordMessage( Value[] fields ) throws IOException
         {
-            packer.packStructHeader( 1, (char) MSG_RECORD );
+            packer.packStructHeader( 1, MSG_RECORD );
             packer.packListHeader( fields.length );
             for ( Value field : fields )
             {
@@ -162,7 +171,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         @Override
         public void handleFailureMessage( String code, String message ) throws IOException
         {
-            packer.packStructHeader( 1, (char) MSG_FAILURE );
+            packer.packStructHeader( 1, MSG_FAILURE );
             packer.packMapHeader( 2 );
 
             packer.pack( "code" );
@@ -176,7 +185,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         @Override
         public void handleIgnoredMessage() throws IOException
         {
-            packer.packStructHeader( 0, (char) MSG_IGNORED );
+            packer.packStructHeader( 0, MSG_IGNORED );
             onMessageComplete.run();
         }
 
@@ -366,6 +375,9 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             case MSG_IGNORED:
                 unpackIgnoredMessage( handler );
                 break;
+            case MSG_INITIALIZE:
+                unpackInitializeMessage( handler );
+                break;
             default:
                 throw new IOException( "Unknown message type: " + type );
             }
@@ -376,6 +388,12 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         {
             this.unpacker.reset( channel );
             return this;
+        }
+
+        private void unpackInitializeMessage( MessageHandler handler ) throws IOException
+        {
+            handler.handleInitializeMessage( unpacker.unpackString() );
+            onMessageComplete.run();
         }
 
         private void unpackIgnoredMessage( MessageHandler output ) throws IOException

@@ -99,6 +99,30 @@ the relevant Commercial Agreement.
             </goals>
           </execution>
         </executions>
+        <configuration>
+          <archive>
+            <index>true</index>
+            <manifest>
+              <packageName>org/neo4j/driver</packageName>
+            </manifest>
+            <manifestEntries>
+              <!-- This is used to programatically determine the driver version -->
+              <Specification-Version>${project.version}-${git.commit.id.abbrev}</Specification-Version>
+            </manifestEntries>
+          </archive>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>pl.project13.maven</groupId>
+        <artifactId>git-commit-id-plugin</artifactId>
+        <version>2.1.15</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>revision</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

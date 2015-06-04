@@ -30,6 +30,12 @@ import org.neo4j.driver.Value;
 public interface Connection extends AutoCloseable
 {
     /**
+     * Initialize the connection. This must be done before any other action is allowed.
+     * @param clientName should be the driver name and version: "java-driver/1.0.0"
+     */
+    void initialize( String clientName );
+
+    /**
      * Queue up a run action. The collector will get called with metadata about the stream that will become available
      * for retrieval.
      */

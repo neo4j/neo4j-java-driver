@@ -60,6 +60,7 @@ public class MessageFormatTest
         assertSerializes( new DiscardAllMessage() );
         assertSerializes( new IgnoredMessage() );
         assertSerializes( new FailureMessage( "Neo.Banana.Bork.Birk", "Hello, world!" ) );
+        assertSerializes( new InitializeMessage( "JavaDriver/1.0.0" ) );
     }
 
     @Test
@@ -100,7 +101,7 @@ public class MessageFormatTest
         WritableByteChannel writable = Channels.newChannel( out );
         PackStream.Packer packer = new PackStream.Packer( new BufferedChannelOutput( writable ) );
 
-        packer.packStructHeader( 1, (char) PackStreamMessageFormatV1.MSG_RECORD );
+        packer.packStructHeader( 1, PackStreamMessageFormatV1.MSG_RECORD );
         packer.packListHeader( 1 );
         packer.packStructHeader( 0, PackStreamMessageFormatV1.NODE );
         packer.flush();

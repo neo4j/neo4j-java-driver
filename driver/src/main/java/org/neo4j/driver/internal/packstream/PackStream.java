@@ -398,24 +398,24 @@ public class PackStream
             }
         }
 
-        public void packStructHeader( int size, char signature ) throws IOException
+        public void packStructHeader( int size, byte signature ) throws IOException
         {
             if ( size < 0x10 )
             {
                 out.writeByte( (byte) (TINY_STRUCT | size) )
-                   .writeByte( (byte) signature );
+                   .writeByte( signature );
             }
             else if ( size <= Byte.MAX_VALUE )
             {
                 out.writeByte( STRUCT_8 )
                    .writeByte( (byte) size )
-                   .writeByte( (byte) signature );
+                   .writeByte( signature );
             }
             else if ( size <= Short.MAX_VALUE )
             {
                 out.writeByte( STRUCT_16 )
                    .writeShort( (short) size )
-                   .writeByte( (byte) signature );
+                   .writeByte( signature );
             }
             else
             {
