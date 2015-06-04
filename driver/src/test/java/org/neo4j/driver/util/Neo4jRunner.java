@@ -19,6 +19,7 @@
  */
 package org.neo4j.driver.util;
 
+import org.rauschig.jarchivelib.ArchiveStream;
 import org.rauschig.jarchivelib.Archiver;
 import org.rauschig.jarchivelib.ArchiverFactory;
 
@@ -51,19 +52,14 @@ public class Neo4jRunner
     private static Neo4jRunner globalInstance;
     private static boolean externalServer = Boolean.getBoolean( "neo4j.useExternalServer" );
 
-    private final String neo4jVersion = System.getProperty( "version", "neo4j-community-2.3.0-M01" );
-    private final String neo4jLink = System.getProperty( "packageUri",
-            "http://dist.neo4j.org/" + neo4jVersion + "-unix.tar.gz" );
-    private final String remotingExtensionLink =
-            "http://m2.neo4j.org/service/local/artifact/maven/content?r=snapshots&g=org.neo4j" +
-            ".ndp&a=neo4j-ndp-kernelextension&v=LATEST";
+    private static final String neo4jVersion = System.getProperty( "version", "3.0.0-alpha.LATEST" );
+    private static final String neo4jLink = System.getProperty( "packageUri",
+            String.format( "http://alpha.neotechnology.com.s3-website-eu-west-1.amazonaws.com/" +
+                    "neo4j-enterprise-%s-unix.tar.gz", neo4jVersion ) );
 
     private final File neo4jDir = new File( "./target/neo4j" );
     private final File neo4jHome = new File( neo4jDir, neo4jVersion );
     private final File dataDir = new File( neo4jHome, "data" );
-
-    private final File neo4jJar = new File( "./target/" + neo4jVersion + ".tar.gz" );
-    private final File remotingExtensionJar = new File( neo4jHome, "plugins/remoting.jar" );
 
 
     public static void main( String... args ) throws Exception
@@ -73,7 +69,7 @@ public class Neo4jRunner
         neo4jRunner.stopServer();
     }
 
-    /** Globall runner controlling a single server, used to avoid having to restart the server between tests */
+    /** Global runner controlling a single server, used to avoid having to restart the server between tests */
     public static synchronized Neo4jRunner getOrCreateGlobalServer() throws IOException, InterruptedException
     {
         if ( globalInstance == null )
@@ -88,32 +84,23 @@ public class Neo4jRunner
     {
         if ( !externalServer )
         {
-            if ( !neo4jHome.exists() || neo4jHome.list() == null || !remotingExtensionJar.exists() ||
-                 remotingExtensionJar.length() == 0 )
+            if ( !neo4jHome.exists() || neo4jHome.list() == null )
             {
-                // no neo4j exists or no files inside the folder
+                // no neo4j exists
 
                 // download neo4j server from a URL
-                ensureFileExist( neo4jJar, neo4jLink );
+                File neo4jTarball = new File( "./target/" + neo4jVersion + ".tar.gz" );
+                ensureDownloaded( neo4jTarball, neo4jLink );
 
                 // Untar the neo4j server
-                System.out.println( "Untarring: " + neo4jJar + " -> " + neo4jDir );
-                Archiver archiver = ArchiverFactory.createArchiver( "tar", "gz" );
-                archiver.extract( neo4jJar, neo4jDir );
+                extractTarball( neo4jTarball );
 
-                // put the ndp extension into the 'plugins' directory
-                ensureFileExist( remotingExtensionJar, remotingExtensionLink );
 
                 // Add experimental.ndp.enabled=true to conf/neo4j.properties
                 File configFile = new File( neo4jHome, "conf/neo4j.properties" );
-                System.out.println( "Enabling ndp in " + configFile );
                 try ( PrintWriter out = new PrintWriter( new BufferedWriter( new FileWriter( configFile, true ) ) ) )
                 {
-                    out.println( "experimental.ndp.enabled=true" );
-                }
-                catch ( IOException e )
-                {
-                    throw e;
+                    out.println( "xx.ndp.enabled=true" );
                 }
             }
             else
@@ -123,17 +110,31 @@ public class Neo4jRunner
         }
     }
 
-    private void ensureFileExist( File jarFile, String downloadLink ) throws IOException
+    private void extractTarball( File neo4jTarball ) throws IOException
     {
-        if ( jarFile.exists() && jarFile.length() == 0 )
+        System.out.println( "Extracting: " + neo4jTarball + " -> " + neo4jDir );
+        Archiver archiver = ArchiverFactory.createArchiver( "tar", "gz" );
+
+        archiver.extract( neo4jTarball, neo4jDir );
+
+        // Rename the extracted file to something predictable (extracted folder may contain build number, date or so)
+        try(ArchiveStream stream = archiver.stream( neo4jTarball ))
         {
-            jarFile.delete();
+            new File( neo4jDir, stream.getNextEntry().getName() ).renameTo( neo4jHome );
         }
-        if ( !jarFile.exists() )
+    }
+
+    private void ensureDownloaded( File file, String downloadLink ) throws IOException
+    {
+        if ( file.exists() && file.length() == 0 )
         {
-            jarFile.getParentFile().mkdirs();
-            System.out.println( "Copying: " + downloadLink + " -> " + jarFile );
-            streamFileTo( downloadLink, jarFile );
+            file.delete();
+        }
+        if ( !file.exists() )
+        {
+            file.getParentFile().mkdirs();
+            System.out.println( "Copying: " + downloadLink + " -> " + file );
+            streamFileTo( downloadLink, file );
         }
     }
 
