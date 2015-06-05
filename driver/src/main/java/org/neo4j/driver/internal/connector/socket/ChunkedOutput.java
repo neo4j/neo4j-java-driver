@@ -44,15 +44,16 @@ public class ChunkedOutput implements PackOutput
 
     private WritableByteChannel channel;
 
-    public ChunkedOutput()
+    public ChunkedOutput(WritableByteChannel ch)
     {
-        this( 8192 );
+        this( 8192, ch );
     }
 
-    public ChunkedOutput( int bufferSize )
+    public ChunkedOutput( int bufferSize, WritableByteChannel ch )
     {
         buffer = ByteBuffer.allocateDirect(  max( 16, bufferSize ) );
         chunkOpen = false;
+        channel = ch;
     }
 
     @Override

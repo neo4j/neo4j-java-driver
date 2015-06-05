@@ -31,7 +31,7 @@ public class DumpMessage
         if( args.length <= 1)
         {
             System.out.println( "Please specify the PackStreamV1 message (without chunk size and 00 00 ending) " +
-                                "that you want to unpark in hex strings");
+                                "that you want to unpack in hex strings");
             return;
         }
         StringBuilder hexStr = new StringBuilder();

@@ -22,10 +22,12 @@ package org.neo4j.driver.internal.connector.socket;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
-import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Arrays;
+
+import org.neo4j.driver.util.RecordingByteChannel;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -87,9 +89,10 @@ public class ChunkedInputTest
                 0, 10, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,   // chunk 1 with size 10
                 0, 5, 1, 2, 3, 4, 5                     // chunk 2 with size 5
                 };
-        InputStream in = new ByteArrayInputStream( inputBuffer );
-        ChunkedInput input = new ChunkedInput();
-        input.setInputStream( in );
+        RecordingByteChannel ch = new RecordingByteChannel();
+        ch.write( ByteBuffer.wrap( inputBuffer ) );
+
+        ChunkedInput input = new ChunkedInput(ch);
 
         byte[] outputBuffer = new byte[15];
 

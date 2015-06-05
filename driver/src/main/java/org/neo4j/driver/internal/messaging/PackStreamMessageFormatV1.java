@@ -53,8 +53,6 @@ import static org.neo4j.driver.Values.value;
 
 public class PackStreamMessageFormatV1 implements MessageFormat
 {
-    public static final String CONTENT_TYPE = "application/vnd.neo4j.v1+packstream";
-
     public final static byte MSG_ACK_FAILURE = 0x0F;
     public final static byte MSG_RUN = 0x10;
     public final static byte MSG_DISCARD_ALL = 0x2F;
@@ -98,8 +96,9 @@ public class PackStreamMessageFormatV1 implements MessageFormat
 
         public Writer()
         {
-            this( new BufferedChannelOutput( 8192 ), new NullRunnable() );
+            this( new BufferedChannelOutput( 8192 ), new NoOpRunnable() );
         }
+
         /**
          * @param output interface to write messages to
          * @param onMessageComplete invoked for each message, after it's done writing to the output
@@ -321,7 +320,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
 
         public Reader()
         {
-            this( new BufferedChannelInput( 8192 ), new NullRunnable() );
+            this( new BufferedChannelInput( 8192 ), new NoOpRunnable() );
         }
 
         public Reader( PackInput input, Runnable onMessageComplete )
@@ -571,12 +570,10 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             }
             return map;
         }
-
     }
 
-    public static class NullRunnable implements Runnable
+    public static class NoOpRunnable implements Runnable
     {
-
         @Override
         public void run()
         {

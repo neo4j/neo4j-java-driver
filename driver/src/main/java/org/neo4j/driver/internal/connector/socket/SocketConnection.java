@@ -54,7 +54,7 @@ public class SocketConnection implements Connection
         this.logging = logging;
         this.logger = logging != null ? logging.getLogging( getClass().getName() ) : new DevNullLogger();
         this.responseHandler = new SocketResponseHandler( logger );
-        this.socket = new SocketClient( host, port, logger );
+        this.socket = new SocketClient( host, port );
         socket.start();
     }
 
