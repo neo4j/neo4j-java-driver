@@ -136,16 +136,16 @@ public class SocketClient
                 0, 0, 0, 0,
                 0, 0, 0, 0} );
 
-        while(buf.remaining() > 0 )
+        while ( buf.remaining() > 0 )
         {
             channel.write( buf );
         }
 
         // Read back the servers choice
         buf.clear();
-        buf.limit( 2 );
+        buf.limit( 4 );
 
-        while(buf.remaining() > 0)
+        while ( buf.remaining() > 0 )
         {
             channel.read( buf );
         }
