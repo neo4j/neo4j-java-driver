@@ -23,6 +23,7 @@ import java.net.URI;
 import java.util.Collection;
 
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.internal.Version;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.Connector;
 import org.neo4j.driver.internal.spi.Logging;
@@ -31,7 +32,6 @@ import static java.util.Arrays.asList;
 
 public class SocketConnector implements Connector
 {
-    public static final String USER_AGENT = "Neo4j-Java/2.3";
     public static final String SCHEME = "neo4j";
     public static final int DEFAULT_PORT = 7687;
 
@@ -46,9 +46,10 @@ public class SocketConnector implements Connector
     @Override
     public Connection connect( URI sessionURI ) throws ClientException
     {
-        int port = sessionURI.getPort();
-        return new SocketConnection( sessionURI.getHost(), port == -1 ? DEFAULT_PORT : port,
-                logging /*The logging could be null if {@code setLogging} has never been invoked */ );
+        int port = sessionURI.getPort() == -1 ? DEFAULT_PORT : sessionURI.getPort();
+        SocketConnection conn = new SocketConnection( sessionURI.getHost(), port, logging );
+        conn.initialize( "ndp-java-driver/" + Version.driverVersion() );
+        return conn;
     }
 
     @Override

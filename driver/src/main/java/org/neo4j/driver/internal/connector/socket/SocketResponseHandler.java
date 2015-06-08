@@ -19,6 +19,7 @@
  */
 package org.neo4j.driver.internal.connector.socket;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import org.neo4j.driver.Value;
@@ -27,6 +28,7 @@ import org.neo4j.driver.exceptions.DatabaseException;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.TransientException;
 import org.neo4j.driver.internal.messaging.FailureMessage;
+import org.neo4j.driver.internal.messaging.InitializeMessage;
 import org.neo4j.driver.internal.messaging.MessageHandler;
 import org.neo4j.driver.internal.messaging.RecordMessage;
 import org.neo4j.driver.internal.messaging.RunMessage;
@@ -100,6 +102,9 @@ public class SocketResponseHandler implements MessageHandler
         finally
         {
             responseId++;
+            // TODO: Allocating a new object to use the toString is a major GC issue
+            // Add a #debug() call that can do formatting, so we can change this to
+            // debug( "FAILURE %s %s", code, message ).
             logger.debug( new FailureMessage( code, message ).toString() );
         }
     }
@@ -139,6 +144,12 @@ public class SocketResponseHandler implements MessageHandler
     public void handlePullAllMessage()
     {
         logger.debug( PULL_ALL.toString() );
+    }
+
+    @Override
+    public void handleInitializeMessage( String clientNameAndVersion ) throws IOException
+    {
+        logger.debug( new InitializeMessage( clientNameAndVersion ).toString() );
     }
 
     @Override

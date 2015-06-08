@@ -41,6 +41,8 @@ public class JULogger implements Logger
     @Override
     public void debug( String message )
     {
+        // TODO: This causes synchronized on every debug call, major performance issue
+        // We should check the log level when we initialize, and not allow runtime changing it.
         delegate.log( Level.FINE, message );
     }
 

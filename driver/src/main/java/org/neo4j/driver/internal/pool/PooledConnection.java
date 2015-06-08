@@ -40,6 +40,19 @@ public class PooledConnection implements Connection
     }
 
     @Override
+    public void initialize( String clientName )
+    {
+        try
+        {
+            delegate.initialize( clientName );
+        }
+        catch( RuntimeException e )
+        {
+            onDelegateException( e );
+        }
+    }
+
+    @Override
     public void run( String statement, Map<String,Value> parameters,
             StreamCollector collector )
     {

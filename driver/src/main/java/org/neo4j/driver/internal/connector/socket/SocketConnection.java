@@ -28,6 +28,7 @@ import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.logging.DevNullLogger;
 import org.neo4j.driver.internal.messaging.AckFailureMessage;
+import org.neo4j.driver.internal.messaging.InitializeMessage;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.RunMessage;
 import org.neo4j.driver.internal.spi.Connection;
@@ -56,6 +57,13 @@ public class SocketConnection implements Connection
         this.responseHandler = new SocketResponseHandler( logger );
         this.socket = new SocketClient( host, port );
         socket.start();
+    }
+
+    @Override
+    public void initialize( String clientName )
+    {
+        // No need to sync, this'll get sent once regular communication starts
+        queueMessage( new InitializeMessage( clientName ) );
     }
 
     @Override
