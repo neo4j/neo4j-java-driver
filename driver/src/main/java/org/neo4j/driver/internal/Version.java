@@ -31,9 +31,9 @@ public class Version
         // 'org.neo4j.driver' package, because that is where the jar manifest specifies the version.
         // This is done as part of the build, adding a MANIFEST.MF file to the generated jarfile.
         Package pkg = Session.class.getPackage();
-        if(pkg != null && pkg.getSpecificationVersion() != null)
+        if(pkg != null && pkg.getImplementationVersion() != null)
         {
-            return pkg.getSpecificationVersion();
+            return pkg.getImplementationVersion();
         }
 
         // If there is no version, we're not running from a jar file, but from raw compiled class files.
