@@ -13,7 +13,7 @@
 
   <packaging>pom</packaging>
   <name>Neo4j Java Driver Project</name>
-  <description>A project for building a performant remote Java driver for Neo4j.</description>
+  <description>A project for building a Java driver for Neo4j NDP.</description>
 
   <modules>
     <module>driver</module>
