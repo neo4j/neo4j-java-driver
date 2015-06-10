@@ -18,12 +18,11 @@
  */
 package org.neo4j.driver.util;
 
-import java.util.Map;
-
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
-import org.neo4j.Neo4j;
+import java.util.Map;
+
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
@@ -47,7 +46,7 @@ public class TestSession extends TestNeo4j implements Session
             {
                 try
                 {
-                    realSession = Neo4j.session( address() );
+                    realSession = Neo4jDriver.session();
                     base.evaluate();
                 }
                 finally

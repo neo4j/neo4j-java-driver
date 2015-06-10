@@ -34,7 +34,7 @@ import org.neo4j.driver.util.TestSession;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.Neo4j.parameters;
+import static org.neo4j.driver.Driver.parameters;
 import static org.neo4j.driver.Values.value;
 
 @RunWith(Parameterized.class)

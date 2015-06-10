@@ -18,15 +18,17 @@
  */
 package org.neo4j.driver.internal.spi;
 
-import java.util.logging.Level;
-
 public interface Logger
 {
-    void log( Level level, String message );
-
-    void debug( String message );
-
-    void info( String message );
-
     void error( String message, Throwable cause );
+
+    void info( String message, Object... params );
+
+    void debug( String message, Object... params );
+
+    void trace( String message, Object... params );
+
+    boolean isTraceEnabled();
+
+    boolean isDebugEnabled();
 }

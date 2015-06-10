@@ -22,26 +22,15 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.logging.ConsoleHandler;
-import java.util.logging.Formatter;
-import java.util.logging.Handler;
-import java.util.logging.Level;
-import java.util.logging.LogRecord;
-import java.util.logging.Logger;
-
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.internal.connector.socket.SocketConnection;
 import org.neo4j.driver.util.TestSession;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.Neo4j.parameters;
+import static org.neo4j.driver.Driver.parameters;
 
 public class ParametersIT
 {
@@ -400,57 +389,4 @@ public class ParametersIT
         // When
         session.run( "anything", parameters( "k", new Object() ) );
     }
-
-    private static ConsoleHandler handler = new ConsoleHandler();
-    private static void enableNetworkTrafficlogging( boolean enabled )
-    {
-        // get the client logger
-        Logger clientLogger = Logger.getLogger( SocketConnection.class.getName() );
-
-        Level loggingLevel = enabled ? Level.ALL : Level.INFO;
-        clientLogger.setLevel( loggingLevel );
-
-        // simply output the logging info in the command line
-
-        handler.setFormatter( new ShortFormatter() );
-        if( enabled )
-        {
-            handler.setLevel( loggingLevel );
-            clientLogger.addHandler( handler );
-        }
-        else
-        {
-            clientLogger.removeHandler( handler );
-        }
-    }
-
-    private static class ShortFormatter extends Formatter
-    {
-        // Create a DateFormat to format the logger timestamp.
-        private static final DateFormat dateFormat = new SimpleDateFormat( "dd/MM/yyyy hh:mm:ss.SSS" );
-
-        public String format( LogRecord record )
-        {
-            StringBuilder builder = new StringBuilder( 1000 );
-            builder.append( dateFormat.format( new Date( record.getMillis() ) ) ).append( " - " );
-            builder.append( "[" ).append( record.getSourceClassName() ).append( "." );
-            builder.append( record.getSourceMethodName() ).append( "] - " );
-            builder.append( "[" ).append( record.getLevel() ).append( "] - " );
-            builder.append( formatMessage( record ) );
-            builder.append( "\n" );
-            return builder.toString();
-        }
-
-        public String getHead( Handler h )
-        {
-            return super.getHead( h );
-        }
-
-        public String getTail( Handler h )
-        {
-            return super.getTail( h );
-        }
-    }
-
-
 }

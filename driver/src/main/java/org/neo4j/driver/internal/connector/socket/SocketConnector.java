@@ -21,45 +21,34 @@ package org.neo4j.driver.internal.connector.socket;
 import java.net.URI;
 import java.util.Collection;
 
+import org.neo4j.driver.Config;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.Version;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.Connector;
-import org.neo4j.driver.internal.spi.Logging;
 
 import static java.util.Arrays.asList;
 
 public class SocketConnector implements Connector
 {
-    public static final String SCHEME = "neo4j";
-    public static final int DEFAULT_PORT = 7687;
-
-    private Logging logging;
-
     @Override
     public boolean supports( String scheme )
     {
-        return scheme.equals( SCHEME );
+        return scheme.equals( Config.SCHEME );
     }
 
     @Override
-    public Connection connect( URI sessionURI ) throws ClientException
+    public Connection connect( URI sessionURI, Config config ) throws ClientException
     {
-        int port = sessionURI.getPort() == -1 ? DEFAULT_PORT : sessionURI.getPort();
-        SocketConnection conn = new SocketConnection( sessionURI.getHost(), port, logging );
+        int port = sessionURI.getPort() == -1 ? Config.DEFAULT_PORT : sessionURI.getPort();
+        SocketConnection conn = new SocketConnection( sessionURI.getHost(), port, config );
         conn.initialize( "ndp-java-driver/" + Version.driverVersion() );
         return conn;
     }
 
     @Override
-    public void setLogging( Logging logging )
-    {
-        this.logging = logging;
-    }
-
-    @Override
     public Collection<String> supportedSchemes()
     {
-        return asList( SCHEME );
+        return asList( Config.SCHEME );
     }
 }

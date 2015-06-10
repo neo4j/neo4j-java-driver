@@ -28,7 +28,9 @@ import org.neo4j.driver.internal.util.Consumer;
 
 public class PooledConnection implements Connection
 {
+    /** The real connection who will do all the real jobs */
     private Connection delegate;
+    /** A reference to the {@link ThreadCachingPool pool} so that we could return this resource back */
     private Consumer<PooledConnection> release;
     private boolean unrecoverableErrorsOccurred = false;
 
@@ -128,7 +130,7 @@ public class PooledConnection implements Connection
      */
     private void onDelegateException( RuntimeException e )
     {
-        if(!isClientOrTransientError( e ) )
+        if ( !isClientOrTransientError( e ) )
         {
             unrecoverableErrorsOccurred = true;
         }
@@ -139,7 +141,7 @@ public class PooledConnection implements Connection
     {
         // Eg: DatabaseErrors and unknown (no status code or not neo4j exception) cause session to be discarded
         return e instanceof Neo4jException
-            && (((Neo4jException) e).neo4jErrorCode().contains( "ClientError" )
-            || ((Neo4jException) e).neo4jErrorCode().contains( "TransientError" ));
+               && (((Neo4jException) e).neo4jErrorCode().contains( "ClientError" )
+                   || ((Neo4jException) e).neo4jErrorCode().contains( "TransientError" ));
     }
 }

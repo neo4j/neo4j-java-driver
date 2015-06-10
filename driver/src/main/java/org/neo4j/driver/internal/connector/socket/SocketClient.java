@@ -24,57 +24,44 @@ import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
+import java.nio.channels.ByteChannel;
 import java.nio.channels.SocketChannel;
 import java.util.List;
 
+import org.neo4j.driver.Config;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat.Reader;
 import org.neo4j.driver.internal.messaging.MessageFormat.Writer;
-
-import static java.lang.Integer.getInteger;
+import org.neo4j.driver.internal.spi.Logger;
 
 public class SocketClient
 {
-    /**
-     * Timeout for network read operations. By default, this is disabled (the database may take as long as it likes to
-     * reply). However, on networks that suffer from frequent net-splits, there is a serious issue where a socket may
-     * erroneously block for very long periods (up to 10 minutes). If your application suffers from this issue, you
-     * should enable the network timeout, by setting it to some value significantly higher than your slowest query.
-     */
-    private static int defaultNetworkTimeout = getInteger( "neo4j.networkTimeoutMs", 0 );
-
     private final String host;
     private final int port;
-    private final int networkTimeout;
+    private final Logger logger;
+    protected final Config config;
 
     private SocketProtocol protocol;
     private Reader reader;
     private Writer writer;
 
-    private SocketChannel channel;
+    private ByteChannel channel;
 
-    public SocketClient( String host, int port, int networkTimeout )
+    public SocketClient( String host, int port, Config config, Logger logger )
     {
         this.host = host;
         this.port = port;
-        this.networkTimeout = networkTimeout;
-    }
-
-    public SocketClient( String host, int port )
-    {
-        this( host, port, defaultNetworkTimeout );
+        this.config = config;
+        this.logger = logger;
     }
 
     public void start()
     {
         try
         {
-            channel = SocketChannel.open();
-            channel.setOption( StandardSocketOptions.SO_REUSEADDR, true );
-            channel.setOption( StandardSocketOptions.SO_KEEPALIVE, true );
-
-            channel.connect( new InetSocketAddress( host, port ) );
+            logger.debug( "~~ [CONNECT] {0}:{1}.", host, port );
+            channel = SocketChannelFactory.create( host, port, logger );
 
             protocol = negotiateProtocol();
             reader = protocol.reader();
@@ -87,11 +74,11 @@ public class SocketClient
                                                       "network " +
                                                       "connection to it.", host, port ) );
         }
-        catch ( SocketTimeoutException e )
+        catch ( SocketTimeoutException e ) // TODO
         {
             throw new ClientException( String.format( "Unable to connect to '%s' on port %s, " +
                                                       "database took longer than network timeout (%dms) to reply.",
-                    host, port, networkTimeout ) );
+                    host, port, config.soTimeout ) );
         }
         catch ( IOException e )
         {
@@ -119,6 +106,7 @@ public class SocketClient
         try
         {
             channel.close();
+            logger.debug( "~~ [CLOSE]" );
         }
         catch ( IOException e )
         {
@@ -126,8 +114,30 @@ public class SocketClient
         }
     }
 
+    private static class SocketChannelFactory
+    {
+        public static ByteChannel create( String host, int port, Logger logger ) throws IOException
+        {
+            SocketChannel channel = SocketChannel.open();
+            channel.setOption( StandardSocketOptions.SO_REUSEADDR, true );
+            channel.setOption( StandardSocketOptions.SO_KEEPALIVE, true );
+            channel.connect( new InetSocketAddress( host, port ) );
+
+            if( logger.isTraceEnabled() )
+            {
+                return new LoggableSocketChannel( channel, logger );
+            }
+            else
+            {
+                return new org.neo4j.driver.internal.connector.socket.SocketChannel( channel );
+            }
+        }
+    }
+
     private SocketProtocol negotiateProtocol() throws IOException
     {
+        // TODO make this not so hard-coded
+        logger.debug( "~~ [HANDSHAKE] [1, 0, 0, 0]." );
         // Propose protocol versions
         ByteBuffer buf = ByteBuffer.wrap( new byte[]{
                 0, 0, 0, 1,
@@ -135,19 +145,13 @@ public class SocketClient
                 0, 0, 0, 0,
                 0, 0, 0, 0} );
 
-        while ( buf.remaining() > 0 )
-        {
-            channel.write( buf );
-        }
+        channel.write( buf );
 
         // Read back the servers choice
         buf.clear();
         buf.limit( 4 );
 
-        while ( buf.remaining() > 0 )
-        {
-            channel.read( buf );
-        }
+        channel.read( buf );
 
         // Choose protocol, or fail
         buf.flip();
@@ -155,7 +159,9 @@ public class SocketClient
 
         switch ( proposal )
         {
-        case 1: return new SocketProtocolV1( channel );
+        case 1:
+            logger.debug( "~~ [HANDSHAKE] 1" );
+            return new SocketProtocolV1( channel );
         case 0: throw new ClientException( "The server does not support any of the protocol versions supported by " +
                                            "this driver. Ensure that you are using driver and server versions that " +
                                            "are compatible with one another." );

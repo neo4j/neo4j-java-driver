@@ -18,27 +18,16 @@
  */
 package org.neo4j.driver.internal.connector.socket;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.DatabaseException;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.TransientException;
-import org.neo4j.driver.internal.messaging.FailureMessage;
-import org.neo4j.driver.internal.messaging.InitializeMessage;
 import org.neo4j.driver.internal.messaging.MessageHandler;
-import org.neo4j.driver.internal.messaging.RecordMessage;
-import org.neo4j.driver.internal.messaging.RunMessage;
-import org.neo4j.driver.internal.messaging.SuccessMessage;
-import org.neo4j.driver.internal.spi.Logger;
 import org.neo4j.driver.internal.spi.StreamCollector;
-
-import static org.neo4j.driver.internal.messaging.AckFailureMessage.ACK_FAILURE;
-import static org.neo4j.driver.internal.messaging.DiscardAllMessage.DISCARD_ALL;
-import static org.neo4j.driver.internal.messaging.IgnoredMessage.IGNORED;
-import static org.neo4j.driver.internal.messaging.PullAllMessage.PULL_ALL;
 
 public class SocketResponseHandler implements MessageHandler
 {
@@ -50,13 +39,6 @@ public class SocketResponseHandler implements MessageHandler
 
     /** Counts number of responses, used to correlate response data with stream collectors */
     private int responseId = 0;
-
-    private final Logger logger;
-
-    public SocketResponseHandler( Logger logger )
-    {
-        this.logger = logger;
-    }
 
     public int receivedResponses()
     {
@@ -74,8 +56,6 @@ public class SocketResponseHandler implements MessageHandler
         {
             collector.record( fields );
         }
-
-        logger.debug( new RecordMessage( fields ).toString() );
     }
 
     @Override
@@ -101,10 +81,6 @@ public class SocketResponseHandler implements MessageHandler
         finally
         {
             responseId++;
-            // TODO: Allocating a new object to use the toString is a major GC issue
-            // Add a #debug() call that can do formatting, so we can change this to
-            // debug( "FAILURE %s %s", code, message ).
-            logger.debug( new FailureMessage( code, message ).toString() );
         }
     }
 
@@ -117,44 +93,42 @@ public class SocketResponseHandler implements MessageHandler
             collector.fieldNames( fieldNamesFromMeta( meta ) );
         }
         responseId++;
-        logger.debug( new SuccessMessage( meta ).toString() );
     }
 
     @Override
     public void handleIgnoredMessage()
     {
         responseId++;
-        logger.debug( IGNORED.toString() );
     }
 
     @Override
     public void handleDiscardAllMessage()
     {
-        logger.debug( DISCARD_ALL.toString() );
+
     }
 
     @Override
     public void handleAckFailureMessage()
     {
-        logger.debug( ACK_FAILURE.toString() );
+
     }
 
     @Override
     public void handlePullAllMessage()
     {
-        logger.debug( PULL_ALL.toString() );
+
     }
 
     @Override
-    public void handleInitializeMessage( String clientNameAndVersion ) throws IOException
+    public void handleInitializeMessage( String clientNameAndVersion )
     {
-        logger.debug( new InitializeMessage( clientNameAndVersion ).toString() );
+
     }
 
     @Override
     public void handleRunMessage( String statement, Map<String,Value> parameters )
     {
-        logger.debug( new RunMessage( statement, parameters ).toString() );
+
     }
 
     public void registerResultCollector( int correlationId, StreamCollector collector )

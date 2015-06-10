@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.spi;
 import java.net.URI;
 import java.util.Collection;
 
+import org.neo4j.driver.Config;
 import org.neo4j.driver.exceptions.ClientException;
 
 /**
@@ -41,15 +42,10 @@ public interface Connector
      * Establish a connection to a remote listener and attach to the session identified.
      *
      * @param sessionURL a URL identifying a remote session
+     * @param config a configuration for this connection
      * @return a Connection object
      */
-    Connection connect( URI sessionURL ) throws ClientException;
-
-    /**
-     * Set the logging to be used by this connector. All connections created after this call will use the provided
-     * logging instance.
-     */
-    void setLogging( Logging logging );
+    Connection connect( URI sessionURL, Config config ) throws ClientException;
 
     /** List names of supported schemes, used for error messages and similar signaling to end users. */
     Collection<String> supportedSchemes();

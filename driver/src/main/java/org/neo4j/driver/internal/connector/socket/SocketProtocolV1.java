@@ -19,7 +19,7 @@
 package org.neo4j.driver.internal.connector.socket;
 
 import java.io.IOException;
-import java.nio.channels.SocketChannel;
+import java.nio.channels.ByteChannel;
 
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.MessageFormat.Reader;
@@ -32,7 +32,7 @@ public class SocketProtocolV1 implements SocketProtocol
     private final Reader reader;
     private final Writer writer;
 
-    public SocketProtocolV1( SocketChannel channel ) throws IOException
+    public SocketProtocolV1( ByteChannel channel ) throws IOException
     {
         messageFormat = new PackStreamMessageFormatV1();
 

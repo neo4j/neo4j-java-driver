@@ -28,7 +28,6 @@ import org.neo4j.driver.internal.packstream.PackInput;
 import org.neo4j.driver.internal.util.BytePrinter;
 
 import static java.lang.Math.min;
-import static org.neo4j.driver.internal.util.InputStreams.readAll;
 
 public class ChunkedInput implements PackInput
 {
@@ -44,7 +43,7 @@ public class ChunkedInput implements PackInput
 
     public ChunkedInput( ReadableByteChannel ch )
     {
-        this( 1024 * 8, ch );
+        this( 8192, ch );
     }
 
     public ChunkedInput( int bufferCapacity, ReadableByteChannel channel )
@@ -243,7 +242,7 @@ public class ChunkedInput implements PackInput
     private int readChunkSize() throws IOException
     {
         chunkHeaderBuffer.clear();
-        readAll( channel, chunkHeaderBuffer );
+        channel.read( chunkHeaderBuffer );
         chunkHeaderBuffer.flip();
         return chunkHeaderBuffer.getShort();
     }
@@ -253,18 +252,16 @@ public class ChunkedInput implements PackInput
         if ( chunkSize <= buffer.remaining() )
         {
             buffer.limit( buffer.position() + chunkSize );
-            readAll( channel, buffer );
+            channel.read( buffer );
             buffer.flip();
         }
         else
         {
             unreadChunkSize = chunkSize - buffer.remaining();
-            readAll( channel, buffer ); //current is full after this
+            channel.read( buffer ); //current is full after this
             buffer.flip();
         }
     }
-
-
 
     private Runnable onMessageComplete = new Runnable()
     {

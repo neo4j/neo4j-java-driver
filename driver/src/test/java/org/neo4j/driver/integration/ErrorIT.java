@@ -22,7 +22,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import org.neo4j.Neo4j;
+import org.neo4j.driver.GraphDatabase;
+import org.neo4j.driver.Driver;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.util.TestSession;
@@ -109,7 +110,10 @@ public class ErrorIT
                                  "and that there is a working network connection to it." );
 
         // When
-        Neo4j.session( "neo4j://localhost:7777" );
+        try ( Driver driver = GraphDatabase.driver( "neo4j://localhost:7777" ) )
+        {
+            driver.session();
+        }
     }
 
 }

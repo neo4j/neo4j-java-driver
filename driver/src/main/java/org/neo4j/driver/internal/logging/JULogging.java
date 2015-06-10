@@ -18,14 +18,21 @@
  */
 package org.neo4j.driver.internal.logging;
 
+import java.util.logging.Level;
+
 import org.neo4j.driver.internal.spi.Logger;
 import org.neo4j.driver.internal.spi.Logging;
 
 public class JULogging implements Logging
 {
+    private final Level loggingLevel;
+    public JULogging( Level loggingLevel )
+    {
+        this.loggingLevel = loggingLevel;
+    }
     @Override
     public Logger getLogging( String name )
     {
-        return new JULogger( name );
+        return new JULogger( name, loggingLevel );
     }
 }

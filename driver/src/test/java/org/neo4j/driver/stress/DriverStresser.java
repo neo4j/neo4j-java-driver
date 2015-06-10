@@ -18,7 +18,6 @@
  */
 package org.neo4j.driver.stress;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -28,16 +27,20 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.Neo4j;
+import org.neo4j.driver.GraphDatabase;
+import org.neo4j.driver.Driver;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.util.Neo4jRunner;
 
+import static org.neo4j.driver.Driver.parameters;
+
 public class DriverStresser
 {
 
     private static Neo4jRunner server;
+    private static Driver driver;
 
     public static void main( String... args ) throws Throwable
     {
@@ -55,6 +58,7 @@ public class DriverStresser
     {
         server = new Neo4jRunner();
         server.startServer();
+        driver = GraphDatabase.driver( "neo4j://localhost" );
     }
 
     static class Worker
@@ -63,13 +67,13 @@ public class DriverStresser
 
         public Worker()
         {
-            session = Neo4j.session( "neo4j://localhost" );
+            session = driver.session();
         }
 
         public int operation()
         {
             String statement = "RETURN 1 AS n";                   // = "CREATE (a {name:{n}}) RETURN a.name";
-            Map<String,Value> parameters = Neo4j.parameters();  // = Neo4j.parameters( "n", "Bob" );
+            Map<String,Value> parameters = parameters();          // = Neo4j.parameters( "n", "Bob" );
 
             int total = 0;
             Result result = session.run( statement, parameters );
@@ -81,8 +85,9 @@ public class DriverStresser
         }
     }
 
-    public static void teardown() throws IOException, InterruptedException
+    public static void teardown() throws Exception
     {
+        driver.close();
         server.stopServer();
     }
 

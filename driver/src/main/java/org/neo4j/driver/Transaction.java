@@ -29,7 +29,7 @@ package org.neo4j.driver;
  * <p>
  * <pre class="docTest:org.neo4j.driver.doctest.TransactionDocIT#classDoc">
  * {@code
- * try(Transaction tx = session.newTransaction() )
+ * try( Transaction tx = session.newTransaction() )
  * {
  * tx.run( "CREATE (n)" );
  * tx.success();
@@ -46,7 +46,7 @@ public interface Transaction extends AutoCloseable, StatementRunner
     void success();
 
     /**
-     * Mark this transaction as failed. When you call {@link #close()}, the transaction will get rolled back.   q
+     * Mark this transaction as failed. When you call {@link #close()}, the transaction will get rolled back.
      * <p>
      * After this method has been called, there is nothing that can be done to "un-mark" it. This is a safety feature
      * to make sure no other code calls {@link #success()} and makes a transaction commit that was meant to be rolled

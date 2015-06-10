@@ -32,10 +32,10 @@ import java.io.PrintWriter;
 import java.net.URI;
 import java.net.URL;
 
-import org.neo4j.Neo4j;
-import org.neo4j.driver.Session;
+import org.neo4j.driver.Config;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.connector.socket.SocketClient;
+import org.neo4j.driver.internal.logging.DevNullLogger;
 
 import static junit.framework.TestCase.assertFalse;
 
@@ -53,7 +53,7 @@ public class Neo4jRunner
     private static final String neo4jVersion = System.getProperty( "version", "3.0.0-alpha.LATEST" );
     private static final String neo4jLink = System.getProperty( "packageUri",
             String.format( "http://alpha.neotechnology.com.s3-website-eu-west-1.amazonaws.com/" +
-                    "neo4j-enterprise-%s-unix.tar.gz", neo4jVersion ) );
+                           "neo4j-enterprise-%s-unix.tar.gz", neo4jVersion ) );
 
     private final File neo4jDir = new File( "./target/neo4j" );
     private final File neo4jHome = new File( neo4jDir, neo4jVersion );
@@ -158,17 +158,6 @@ public class Neo4jRunner
         return new ProcessBuilder().inheritIO().command( startScript.getAbsolutePath(), cmd ).start();
     }
 
-    public void clearData()
-    {
-        // Note - this hangs for extended periods some times, because there are tests that leave sessions running.
-        // Thus, we need to wait for open sessions and transactions to time out before this will go through.
-        // This could be helped by an extension in the future.
-        try ( Session session = Neo4j.session( address() ) )
-        {
-            session.run( "MATCH (n) OPTIONAL MATCH (n)-[r]->() DELETE r,n" );
-        }
-    }
-
     public void stopServer() throws IOException, InterruptedException
     {
         if ( canControlServer() )
@@ -210,7 +199,8 @@ public class Neo4jRunner
         try
         {
             URI uri = URI.create( DEFAULT_URL );
-            SocketClient client = new SocketClient( uri.getHost(), uri.getPort() );
+            SocketClient client = new SocketClient( uri.getHost(), uri.getPort(),
+                    Config.defaultConfig(), new DevNullLogger() );
             client.start();
             client.stop();
             return true;
@@ -260,10 +250,4 @@ public class Neo4jRunner
             }
         } ) );
     }
-
-    public String address()
-    {
-        return DEFAULT_URL;
-    }
-
 }

@@ -27,16 +27,14 @@ import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.driver.Config;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.connector.socket.SocketConnector;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.Connector;
-import org.neo4j.driver.internal.spi.Logging;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Consumer;
-
-import static java.lang.Integer.getInteger;
 
 /**
  * A basic connection pool that optimizes for threads being long-lived, acquiring/releasing many connections.
@@ -52,10 +50,6 @@ import static java.lang.Integer.getInteger;
  */
 public class StandardConnectionPool implements ConnectionPool
 {
-    // TODO: This should be dealt with a general config mechanism for the driver, rather than java properties
-    private static int defaultConnectionsPerDatabase = getInteger( "neo4j.connectionsPerDatabase", 10 );
-    private static long defaultMinIdleBeforeConnectionTest = getInteger( "neo4j.minIdleBeforeConnectionTest", 200 );
-
     /**
      * Map of scheme -> connector, this is what we use to establish new connections.
      */
@@ -71,25 +65,19 @@ public class StandardConnectionPool implements ConnectionPool
      */
     private final ValidationStrategy<PooledConnection> connectionValidation;
 
-    private final int connectionsPerDatabase;
     private final Clock clock;
+    private final Config config;
 
-    public StandardConnectionPool( Logging logging )
+    public StandardConnectionPool( Config config )
     {
-        this( loadConnectors( logging ) );
+        this( loadConnectors( config ), Clock.SYSTEM, config );
     }
 
-    public StandardConnectionPool( Collection<Connector> conns )
+    public StandardConnectionPool( Collection<Connector> conns, Clock clock, Config config )
     {
-        this( defaultConnectionsPerDatabase, defaultMinIdleBeforeConnectionTest, conns, Clock.SYSTEM );
-    }
-
-    public StandardConnectionPool( int connectionsPerDatabase, long minIdleBeforeConnectionTest,
-            Collection<Connector> conns, Clock clock )
-    {
-        this.connectionsPerDatabase = connectionsPerDatabase;
+        this.config = config;
         this.clock = clock;
-        this.connectionValidation = new PooledConnectionValidator( minIdleBeforeConnectionTest );
+        this.connectionValidation = new PooledConnectionValidator( config.connectionIdleTimeout );
         for ( Connector connector : conns )
         {
             for ( String s : connector.supportedSchemes() )
@@ -129,20 +117,18 @@ public class StandardConnectionPool implements ConnectionPool
     }
 
     @SuppressWarnings( "SameReturnValue" )
-    private static Collection<Connector> loadConnectors( Logging logging )
+    private static Collection<Connector> loadConnectors( Config config )
     {
         List<Connector> connectors = new LinkedList<>();
 
         // Hard code socket connector
         Connector conn = new SocketConnector();
-        conn.setLogging( logging );
         connectors.add( conn );
 
         // Load custom loadConnectors via JSL
         ServiceLoader<Connector> load = ServiceLoader.load( Connector.class );
         for ( Connector connector : load )
         {
-            connector.setLogging( logging );
             connectors.add( connector );
         }
         return connectors;
@@ -166,7 +152,7 @@ public class StandardConnectionPool implements ConnectionPool
     private ThreadCachingPool<PooledConnection> newPool( final URI uri )
     {
 
-        return new ThreadCachingPool<>( connectionsPerDatabase, new Allocator<PooledConnection>()
+        return new ThreadCachingPool<>( config.connectionPoolSize, new Allocator<PooledConnection>()
         {
             @Override
             public PooledConnection create( Consumer<PooledConnection> release )
@@ -178,7 +164,7 @@ public class StandardConnectionPool implements ConnectionPool
                             "'" + uri.getScheme() + "' is not a supported transport (in '" +
                             uri + "', available transports are: " + connectorSchemes() + "." );
                 }
-                Connection conn = connector.connect( uri );
+                Connection conn = connector.connect( uri, config );
                 return new PooledConnection( conn, release );
             }
 

@@ -91,7 +91,7 @@ public class ChunkedInputTest
         RecordingByteChannel ch = new RecordingByteChannel();
         ch.write( ByteBuffer.wrap( inputBuffer ) );
 
-        ChunkedInput input = new ChunkedInput(ch);
+        ChunkedInput input = new ChunkedInput( ch );
 
         byte[] outputBuffer = new byte[15];
 

@@ -16,38 +16,54 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j;
+package org.neo4j.driver;
 
 import java.net.URI;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.driver.Session;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.Values;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.StandardSession;
-import org.neo4j.driver.internal.logging.JULogging;
 import org.neo4j.driver.internal.pool.StandardConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.Logging;
 
 /**
- * The <strong>Neo4j</strong> class provides static methods to establish a
- * {@link org.neo4j.driver.Session} on a Neo4j database.
+ * A driver to a Neo4j database is a connection manager to the database.
+ * It provides methods to establish {@link Session sessions} with a Neo4j instance to run statements.
+ * <P>
+ * A driver to a Neo4j instance could be created by providing a url to the database and a {@link Config} for any user
+ * specified configuration. When a user finishes work with the database, he/she should release the resources used by
+ * this driver by invoking {@code driver.close()}
  * <p>
- * For example:
- * <p>
+ * An example:
  * <pre>
  * {@code
- * Session session = Neo4j.session("neo4j://localhost:7687");
+ *
+ * // Create a driver with default configuration
+ * Driver driver = GraphDatabase.driver( "neo4j://localhost:7687" );
+ *
+ * // Establish a session with a Neo4j instance
+ * Session session = driver.session();
+ * ** Do some work with the database... **
+ *
+ * // Release all the resources
+ * driver.close();
+ * }
+ * </pre>
+ * <p>
+ * After a session is established, we could run statements
+ * <p>
+ * For example:
+ * <pre>
+ * {@code
  *
  * // Run a single statement
  * session.run( "CREATE (n {name:'Bob'})" );
  *
  * // Run multiple statements in a transaction
- * try(Transaction tx = session.newTransaction())
+ * try( Transaction tx = session.newTransaction() )
  * {
  *     tx.run( "CREATE (n {name:'Alice'})" );
  *     tx.run( "CREATE (n {name:'Tina'})" );
@@ -55,60 +71,50 @@ import org.neo4j.driver.internal.spi.Logging;
  * }
  *
  * // Retrieve results from a query
- * Result result = session.run("MATCH (n) RETURN n.name");
- * while(result.hasNext())
+ * Result result = session.run( "MATCH (n) RETURN n.name" );
+ * while( result.hasNext())
  * {
  *     Value record = result.next();
- *     System.out.println(record.get("n.name"));
+ *     System.out.println( record.get("n.name") );
  * }
- *
- * session.close();
  * }
  * </pre>
+ * <p>
+ * A driver manages a connection pool to a Neo4j instance.
+ * Therefore more than one session could be established over one driver until the driver's connection pool is full.
+ * (The default connection pool size could be found in {@link Config}.)
+ * A connection could be returned to the connection pool by invoking {@link Session#close() close} when the work over
+ * a session is done.
  */
-public class Neo4j
+public class Driver implements AutoCloseable
 {
-    /**
-     * Skinny log facade to allow users to inject their own logging in the future.
-     */
-    private static final Logging logging = new JULogging();
 
-    /**
-     * Live connections to databases
-     */
-    private static ConnectionPool connections = new StandardConnectionPool( logging );
+    private final ConnectionPool connections;
+    private final URI url;
 
-    // Blocked constructor for this class as it only provides static methods.
-    private Neo4j()
+    private final Config config;
+    private final Logging logging;
+
+    public Driver( URI url, Config config )
     {
+        this.url = url;
+        this.config = config;
+        this.logging = config.logging;
+        this.connections = new StandardConnectionPool( config );
     }
 
-    /**
-     * Establish a session with a Neo4j instance.
-     *
-     * @param sessionURL the URL to use to connect to neo4j and establish a session
-     * @return a newly established session
-     * @see #session(java.net.URI)
-     */
-    public static Session session( String sessionURL )
+    public Session session()
     {
-        return session( URI.create( sessionURL ) );
+        return new StandardSession( connections.acquire( url ) );
+        // TODO a ConnectionPool per URL
+        // ConnectionPool connections = new StandardConnectionPool( logging, url );
+        // And to get a connection from the pool could be
+        // connections.acquire();
     }
 
-    /**
-     * Establish a session with a Neo4j instance.
-     * <p>
-     * The session is established using a transport connector, which by default is the HTTP transport. You
-     * specify the connector in the URL scheme. For the default transport, simply use {@code neo4j://<host>} and for
-     * alternative connectors, use the {@code +} scheme-syntax. For instance, {@code neo4j+http://localhost} to
-     * explicitly request the http transport.
-     *
-     * @param sessionURL the URL to use to connect to neo4j and establish a session
-     * @return a newly established session
-     */
-    public static Session session( URI sessionURL )
+    public void close() throws Exception
     {
-        return new StandardSession( connections.acquire( sessionURL ) );
+        connections.close();
     }
 
     /**

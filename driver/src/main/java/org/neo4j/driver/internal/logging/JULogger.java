@@ -25,35 +25,56 @@ import org.neo4j.driver.internal.spi.Logger;
 public class JULogger implements Logger
 {
     private final java.util.logging.Logger delegate;
+    private final boolean debugEnabled;
+    private final boolean traceEnabled;
 
-    public JULogger( String name )
+    public JULogger( String name, Level loggingLevel )
     {
         delegate = java.util.logging.Logger.getLogger( name );
-    }
-
-    @Override
-    public void log( Level level, String message )
-    {
-        delegate.log( level, message );
-    }
-
-    @Override
-    public void debug( String message )
-    {
-        // TODO: This causes synchronized on every debug call, major performance issue
-        // We should check the log level when we initialize, and not allow runtime changing it.
-        delegate.log( Level.FINE, message );
-    }
-
-    @Override
-    public void info( String message )
-    {
-        delegate.log( Level.INFO, message );
+        delegate.setLevel( loggingLevel );
+        debugEnabled = delegate.isLoggable( Level.FINE );
+        traceEnabled = delegate.isLoggable( Level.FINEST );
     }
 
     @Override
     public void error( String message, Throwable cause )
     {
         delegate.log( Level.SEVERE, message, cause );
+    }
+
+    @Override
+    public void info( String format, Object... params )
+    {
+        delegate.log( Level.INFO, String.format( format, params ) );
+    }
+
+    @Override
+    public void debug( String format, Object... params )
+    {
+        if( debugEnabled )
+        {
+            delegate.log( Level.FINE, String.format( format, params ) );
+        }
+    }
+
+    @Override
+    public void trace( String format, Object... params )
+    {
+        if( traceEnabled )
+        {
+            delegate.log( Level.FINEST, String.format( format, params ) );
+        }
+    }
+
+    @Override
+    public boolean isTraceEnabled()
+    {
+        return traceEnabled;
+    }
+
+    @Override
+    public boolean isDebugEnabled()
+    {
+        return debugEnabled;
     }
 }

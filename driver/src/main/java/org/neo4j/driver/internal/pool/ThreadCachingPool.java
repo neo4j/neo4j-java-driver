@@ -33,8 +33,20 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 /**
  * A general pool implementation, heavily inspired by Chris Vests "stormpot" pool, but without a background thread
  * managing allocation.
+ * <p>
+ * Some quick info to understand this pool:
+ * <li>
+ * The pool caches a reference for each thread who uses this pool to the resource that has ever been assigned to the
+ * thread by the pool.
+ * Next time when the same thread wants to get a resource from the pool again, if the cached resource happens to be
+ * free, the same resource will be assigned directly to the thread to avoid searching from the global pool.
+ * </li>
+ * <li>
+ * The pool will fail all incoming resource requests once all the resources in the pool has been consumed. But the
+ * resource requesting thread could choose to wait for a while for a possible available resource.
+ * </li>
  *
- * @param <T>
+ * @param <T> A pool of T
  */
 public class ThreadCachingPool<T> implements AutoCloseable
 {

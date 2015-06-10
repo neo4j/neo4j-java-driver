@@ -176,7 +176,7 @@ public class BytePrinter
      */
     public static String hex( ByteBuffer bytes )
     {
-        return hex( bytes, 0, bytes.capacity() );
+        return hex( bytes, 0, bytes.limit() );
     }
 
     /**
@@ -214,5 +214,34 @@ public class BytePrinter
             }
         }
         return data.toByteArray();
+    }
+
+    public static String hexInOneLine( ByteBuffer bytes, int offset, int length )
+    {
+        try
+        {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            PrintStream out;
+            out = new PrintStream( baos, true, "UTF-8" );
+            for ( int i = offset; i < offset + length; i++ )
+            {
+                print( bytes.get( i ), out );
+                if ( (i - offset + 1) % 8 == 0 )
+                {
+                    out.print( "    " );
+                }
+                else
+                {
+                    out.print( " " );
+                }
+            }
+            return baos.toString( "UTF-8" );
+        }
+        catch ( UnsupportedEncodingException e )
+        {
+            throw new RuntimeException( e );
+        }
+
+
     }
 }

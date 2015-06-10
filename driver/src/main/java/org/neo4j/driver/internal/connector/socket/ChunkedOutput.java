@@ -19,9 +19,7 @@
 package org.neo4j.driver.internal.connector.socket;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
 
 import org.neo4j.driver.exceptions.ClientException;
@@ -41,9 +39,10 @@ public class ChunkedOutput implements PackOutput
     /** Are currently in the middle of writing a chunk? */
     private boolean chunkOpen = false;
 
-    private WritableByteChannel channel;
+    private final WritableByteChannel channel;
 
-    public ChunkedOutput(WritableByteChannel ch)
+
+    public ChunkedOutput( WritableByteChannel ch )
     {
         this( 8192, ch );
     }
@@ -187,8 +186,4 @@ public class ChunkedOutput implements PackOutput
         return onMessageComplete;
     }
 
-    public void setOutputStream( OutputStream out )
-    {
-        this.channel = Channels.newChannel( out );
-    }
 }

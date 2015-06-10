@@ -24,6 +24,8 @@ import org.junit.runners.model.Statement;
 
 import java.io.IOException;
 
+import org.neo4j.driver.Session;
+
 public class TestNeo4j implements TestRule
 {
     private Neo4jRunner runner;
@@ -37,16 +39,11 @@ public class TestNeo4j implements TestRule
             public void evaluate() throws Throwable
             {
                 runner = Neo4jRunner.getOrCreateGlobalServer();
-                runner.clearData();
+                clearData();
 
                 base.evaluate();
             }
         };
-    }
-
-    public String address()
-    {
-        return runner.address();
     }
 
     public void restartDatabase() throws IOException, InterruptedException
@@ -58,5 +55,16 @@ public class TestNeo4j implements TestRule
     public boolean canControlServer()
     {
         return runner.canControlServer();
+    }
+
+    private void clearData()
+    {
+        // Note - this hangs for extended periods some times, because there are tests that leave sessions running.
+        // Thus, we need to wait for open sessions and transactions to time out before this will go through.
+        // This could be helped by an extension in the future.
+        try ( Session session = Neo4jDriver.session() )
+        {
+            session.run( "MATCH (n) OPTIONAL MATCH (n)-[r]->() DELETE r,n" );
+        }
     }
 }

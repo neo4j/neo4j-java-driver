@@ -19,55 +19,51 @@
 package org.neo4j.driver.internal.connector.socket;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.util.logging.Level;
 
 import org.neo4j.driver.internal.spi.Logger;
 import org.neo4j.driver.internal.util.BytePrinter;
 
-// TODO: These should be modified to be WritableByteChannel, rather than OutputStream
-public class MonitoredOutputStream extends OutputStream
+/**
+ * Basically it is a wrapper to {@link SocketChannel} with logging enabled on bytes sent and received over the channel.
+ */
+public class LoggableSocketChannel extends SocketChannel
 {
-    private final OutputStream realOut;
     private final Logger logger;
 
-    public MonitoredOutputStream( OutputStream outputStream, Logger logger )
+
+    public LoggableSocketChannel( java.nio.channels.SocketChannel channel, Logger logger ) throws IOException
     {
-        this.realOut = outputStream;
+        super( channel );
         this.logger = logger;
     }
 
     @Override
-    public void write( int b ) throws IOException
+    public int write( ByteBuffer buf ) throws IOException
     {
-        realOut.write( b );
-        logger.log( Level.FINEST, "Output:\n" + BytePrinter.hex( (byte) b ) );
+        int offset = buf.position();
+        int length = super.write( buf );
+        logger.trace( "C: " + BytePrinter.hexInOneLine( buf, offset, length ) );
+        return length;
     }
 
     @Override
-    public void write( byte b[], int off, int len ) throws IOException
+    public int read( ByteBuffer buf ) throws IOException
     {
-        realOut.write( b, off, len );
-        logger.log( Level.FINEST, "Output:\n" + BytePrinter.hex( ByteBuffer.wrap( b ), off, len ) );
+        int offset = buf.position();
+        int length = super.read( buf );
+        logger.trace( "S: " + BytePrinter.hexInOneLine( buf, offset, length ) );
+        return length;
     }
 
     @Override
-    public void write( byte b[] ) throws IOException
+    public boolean isOpen()
     {
-        realOut.write( b );
-        logger.log( Level.FINEST, "Output:\n" + BytePrinter.hex( b ) );
+        return super.isOpen();
     }
 
-    @Override
-    public void flush() throws IOException
-    {
-        realOut.flush();
-    }
-
-    @Override
     public void close() throws IOException
     {
-        realOut.close();
+        super.close();
     }
 }

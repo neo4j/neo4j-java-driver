@@ -45,7 +45,7 @@ public interface StatementRunner
      * </pre>
      *
      * @param statement a Neo4j statement
-     * @param parameters input data for the statement, see {@link org.neo4j.Neo4j#parameters(Object[])}
+     * @param parameters input data for the statement, see {@link Driver#parameters(Object[])}
      * @return a stream of result values and associated metadata
      */
     Result run( String statement, Map<String,Value> parameters );

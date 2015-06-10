@@ -22,8 +22,10 @@ import org.junit.Test;
 
 import java.net.URI;
 
+import org.neo4j.driver.Config;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.Connector;
+import org.neo4j.driver.internal.util.Clock;
 
 import static java.util.Arrays.asList;
 import static org.mockito.Matchers.any;
@@ -41,7 +43,9 @@ public class StandardConnectionPoolTest
         // Given
         URI uri = URI.create( "neo4j://asd" );
         Connector connector = connector( "neo4j" );
-        StandardConnectionPool pool = new StandardConnectionPool( asList( connector ) );
+        Config config = Config.defaultConfig();
+        StandardConnectionPool pool = new StandardConnectionPool( asList( connector ),
+                Clock.SYSTEM, config );
 
         Connection conn = pool.acquire( uri );
         conn.close();
@@ -50,14 +54,14 @@ public class StandardConnectionPoolTest
         pool.acquire( uri );
 
         // Then
-        verify( connector, times( 1 ) ).connect( uri );
+        verify( connector, times( 1 ) ).connect( uri, config );
     }
 
-    private Connector connector(String scheme)
+    private Connector connector( String scheme )
     {
         Connector mock = mock( Connector.class );
-        when( mock.supportedSchemes() ).thenReturn( asList( scheme ));
-        when( mock.connect( any(URI.class) )).thenReturn( mock(Connection.class) );
+        when( mock.supportedSchemes() ).thenReturn( asList( scheme ) );
+        when( mock.connect( any( URI.class ), any( Config.class ) ) ).thenReturn( mock( Connection.class ) );
         return mock;
     }
 }
