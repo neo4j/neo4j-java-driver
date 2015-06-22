@@ -52,7 +52,7 @@ public class ErrorIT
     }
 
     @Test
-    public void shouldNotAllowUsingTransactionAfterError() throws Throwable
+    public void shouldAllowUsingTransactionAfterRecoverableError() throws Throwable
     {
         // Given
         Transaction tx = session.newTransaction();
@@ -60,18 +60,15 @@ public class ErrorIT
         // And Given an error has occurred
         try { tx.run( "invalid" ); } catch ( ClientException e ) {}
 
-        // Expect
-        exception.expect( ClientException.class );
-        exception.expectMessage( "Cannot run more statements in this transaction, because previous statements in the " +
-                                 "transaction has failed and the transaction has been rolled back. Please start a new" +
-                                 " transaction to run another statement." );
-
         // When
-        tx.run( "invalid statement" );
+        int val = tx.run( "RETURN 1" ).single().get( "1" ).javaInteger();
+
+        // Then
+        assertThat( val, equalTo( 1 ) );
     }
 
     @Test
-    public void shouldAllowNewStatementAfterAFailure() throws Throwable
+    public void shouldAllowNewStatementAfterRecoverableError() throws Throwable
     {
         // Given an error has occurred
         try { session.run( "invalid" ); } catch ( ClientException e ) {}
@@ -84,7 +81,7 @@ public class ErrorIT
     }
 
     @Test
-    public void shouldAllowNewTransactionAfterFailure() throws Throwable
+    public void shouldAllowNewTransactionAfterRecoverableError() throws Throwable
     {
         // Given an error has occurred in a prior transaction
         try ( Transaction tx = session.newTransaction() )
