@@ -121,6 +121,15 @@ public class StandardTransaction implements Transaction
             conn.sync();
             return resultBuilder.build();
         }
+        catch ( ClientException e )
+        {
+            assert state != State.FAILED;
+            if( state == State.ACTIVE || state == State.MARKED_SUCCESS )
+            {
+                state = State.ACTIVE;
+            }
+            throw e;
+        }
         catch ( Neo4jException e )
         {
             state = State.FAILED;
