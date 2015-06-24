@@ -66,8 +66,8 @@ public class ConsoleLoggingTest
     {
         // Given
         ConsoleLogging logging = new ConsoleLogging( Level.ALL );
-        Logger catLogger = logging.getLogging( "Cat" );
-        Logger dogLogger = logging.getLogging( "Dog" );
+        Logger catLogger = logging.getLog( "Cat" );
+        Logger dogLogger = logging.getLog( "Dog" );
 
         catLogger.debug( "Meow" );
         dogLogger.debug( "Wow" );

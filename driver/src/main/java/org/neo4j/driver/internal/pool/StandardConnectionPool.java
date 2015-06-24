@@ -70,14 +70,14 @@ public class StandardConnectionPool implements ConnectionPool
 
     public StandardConnectionPool( Config config )
     {
-        this( loadConnectors( config ), Clock.SYSTEM, config );
+        this( loadConnectors(), Clock.SYSTEM, config );
     }
 
     public StandardConnectionPool( Collection<Connector> conns, Clock clock, Config config )
     {
         this.config = config;
         this.clock = clock;
-        this.connectionValidation = new PooledConnectionValidator( config.connectionIdleTimeout );
+        this.connectionValidation = new PooledConnectionValidator( config.idleTimeBeforeConnectionTest() );
         for ( Connector connector : conns )
         {
             for ( String s : connector.supportedSchemes() )
@@ -116,8 +116,7 @@ public class StandardConnectionPool implements ConnectionPool
         return pool;
     }
 
-    @SuppressWarnings( "SameReturnValue" )
-    private static Collection<Connector> loadConnectors( Config config )
+    private static Collection<Connector> loadConnectors()
     {
         List<Connector> connectors = new LinkedList<>();
 
@@ -152,7 +151,7 @@ public class StandardConnectionPool implements ConnectionPool
     private ThreadCachingPool<PooledConnection> newPool( final URI uri )
     {
 
-        return new ThreadCachingPool<>( config.connectionPoolSize, new Allocator<PooledConnection>()
+        return new ThreadCachingPool<>( config.connectionPoolSize(), new Allocator<PooledConnection>()
         {
             @Override
             public PooledConnection create( Consumer<PooledConnection> release )

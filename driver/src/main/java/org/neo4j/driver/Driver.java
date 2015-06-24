@@ -27,15 +27,11 @@ import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.StandardSession;
 import org.neo4j.driver.internal.pool.StandardConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionPool;
-import org.neo4j.driver.internal.spi.Logging;
 
 /**
- * A driver to a Neo4j database is a connection manager to the database.
- * It provides methods to establish {@link Session sessions} with a Neo4j instance to run statements.
- * <P>
- * A driver to a Neo4j instance could be created by providing a url to the database and a {@link Config} for any user
- * specified configuration. When a user finishes work with the database, he/she should release the resources used by
- * this driver by invoking {@code driver.close()}
+ * A driver to a Neo4j database.
+ *
+ * It provides methods to establish {@link Session sessions}, in which you can run statements.
  * <p>
  * An example:
  * <pre>
@@ -80,26 +76,18 @@ import org.neo4j.driver.internal.spi.Logging;
  * }
  * </pre>
  * <p>
- * A driver manages a connection pool to a Neo4j instance.
- * Therefore more than one session could be established over one driver until the driver's connection pool is full.
- * (The default connection pool size could be found in {@link Config}.)
- * A connection could be returned to the connection pool by invoking {@link Session#close() close} when the work over
- * a session is done.
+ *
+ * A driver maintains a connection pool for each Neo4j instance. For resource efficiency reasons you are encouraged
+ * to use the same driver instance across your application.
  */
 public class Driver implements AutoCloseable
 {
-
     private final ConnectionPool connections;
     private final URI url;
-
-    private final Config config;
-    private final Logging logging;
 
     public Driver( URI url, Config config )
     {
         this.url = url;
-        this.config = config;
-        this.logging = config.logging;
         this.connections = new StandardConnectionPool( config );
     }
 

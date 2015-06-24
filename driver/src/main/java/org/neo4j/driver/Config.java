@@ -31,7 +31,7 @@ import org.neo4j.driver.internal.spi.Logging;
  * {@code
  * Config config = Config
  *                  .build()
- *               ** .withProperties() **
+ *                  .withLogging(new MyLogging())
  *                  .toConfig();
  * }
  * </pre>
@@ -42,27 +42,48 @@ public class Config
     public static final int DEFAULT_PORT = 7687;
 
     /** User defined logging */
-    public final Logging logging;
+    private final Logging logging;
 
     /** The size of connection pool for each database url */
-    public final int connectionPoolSize;
+    private final int connectionPoolSize;
+
     /** Connections that have been idle longer than this threshold will have a ping test performed on them. */
-    public final int connectionIdleTimeout;
-    /**
-     * Timeout for network read operations. By default, this is disabled (the database may take as long as it likes to
-     * reply). However, on networks that suffer from frequent net-splits, there is a serious issue where a socket may
-     * erroneously block for very long periods (up to 10 minutes). If your application suffers from this issue, you
-     * should enable the network timeout, by setting it to some value significantly higher than your slowest query.
-     */
-    public final int soTimeout; //TODO
+    private final long idleTimeBeforeConnectionTest;
 
     private Config( ConfigBuilder builder )
     {
         this.logging = builder.logging;
 
         this.connectionPoolSize = builder.connectionPoolSize;
-        this.connectionIdleTimeout = builder.connectionIdleTimeout;
-        this.soTimeout = builder.soTimeout;
+        this.idleTimeBeforeConnectionTest = builder.idleTimeBeforeConnectionTest;
+    }
+
+    /**
+     * Logging provider
+     * @return the logging provider to use
+     */
+    public Logging logging()
+    {
+        return logging;
+    }
+
+    /**
+     * Max number of connections per URL for this driver.
+     * @return the max number of connections
+     */
+    public int connectionPoolSize()
+    {
+        return connectionPoolSize;
+    }
+
+    /**
+     * Pooled connections that have been unused for longer than this timeout will be tested before they are
+     * used again, to ensure they are still live.
+     * @return idle time in milliseconds
+     */
+    public long idleTimeBeforeConnectionTest()
+    {
+        return idleTimeBeforeConnectionTest;
     }
 
     public static ConfigBuilder build()
@@ -78,43 +99,59 @@ public class Config
         return Config.build().toConfig();
     }
 
+    /**
+     * Used to build new config instances
+     */
     public static class ConfigBuilder
     {
         private Logging logging = new JULogging( Level.INFO );
-
         private int connectionPoolSize = 10;
-        private int connectionIdleTimeout = 200;
-        private int soTimeout = 10;
+        private long idleTimeBeforeConnectionTest = 200;
 
         private ConfigBuilder()
         {
 
         }
 
+        /**
+         * Provide an alternative logging implementation for the driver to use. By default we use
+         * java util logging.
+         * @param logging the logging instance to use
+         * @return this builder
+         */
         public ConfigBuilder withLogging( Logging logging )
         {
             this.logging = logging;
             return this;
         }
 
+        /**
+         * The max number of connections to open at any given time per Neo4j instance.
+         * @param size
+         * @return this builder
+         */
         public ConfigBuilder withConnectionPoolSize( int size )
         {
             this.connectionPoolSize = size;
             return this;
         }
 
-        public ConfigBuilder withConnectionIdleTimeout( int milliSecond )
+        /**
+         * Pooled connections that have been unused for longer than this timeout will be tested before they are
+         * used again, to ensure they are still live.
+         * @param milliSecond minimum idle time in milliseconds
+         * @return this builder
+         */
+        public ConfigBuilder withMinIdleTimeBeforeConnectionTest( long milliSecond )
         {
-            this.connectionIdleTimeout = milliSecond;
+            this.idleTimeBeforeConnectionTest = milliSecond;
             return this;
         }
 
-        public ConfigBuilder withSoTimeout( int milliSecond )
-        {
-            this.soTimeout = milliSecond;
-            return this;
-        }
-
+        /**
+         * Create a config instance from this builder.
+         * @return a {@link Config} instance
+         */
         public Config toConfig()
         {
             return new Config( this );

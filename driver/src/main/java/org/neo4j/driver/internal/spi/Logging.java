@@ -20,5 +20,5 @@ package org.neo4j.driver.internal.spi;
 
 public interface Logging
 {
-    Logger getLogging( String name );
+    Logger getLog( String name );
 }

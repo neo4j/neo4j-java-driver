@@ -54,7 +54,7 @@ public class LoggingIT
                 Config.build().withLogging( logging ).toConfig() );
 
         // When
-        when( logging.getLogging( anyString() ) ).thenReturn( logger );
+        when( logging.getLog( anyString() ) ).thenReturn( logger );
         when( logger.isDebugEnabled() ).thenReturn( true );
         when( logger.isTraceEnabled() ).thenReturn( true );
         Session session = driver.session();

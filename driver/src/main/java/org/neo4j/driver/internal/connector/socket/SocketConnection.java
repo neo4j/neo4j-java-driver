@@ -40,7 +40,6 @@ import static org.neo4j.driver.internal.messaging.PullAllMessage.PULL_ALL;
 public class SocketConnection implements Connection
 {
     private final Logger logger;
-    private final Config config;
 
     private int requestCounter = 0;
     private final LinkedList<Message> pendingMessages = new LinkedList<>();
@@ -50,8 +49,7 @@ public class SocketConnection implements Connection
 
     public SocketConnection( String host, int port, Config config )
     {
-        this.config = config;
-        this.logger = config.logging.getLogging( getClass().getName() );
+        this.logger = config.logging().getLog( getClass().getName() );
 
         if( logger.isDebugEnabled() )
         {

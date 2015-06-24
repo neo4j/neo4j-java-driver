@@ -31,7 +31,7 @@ public class JULogging implements Logging
         this.loggingLevel = loggingLevel;
     }
     @Override
-    public Logger getLogging( String name )
+    public Logger getLog( String name )
     {
         return new JULogger( name, loggingLevel );
     }

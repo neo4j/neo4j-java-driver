@@ -21,7 +21,6 @@ package org.neo4j.driver.internal.connector.socket;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
-import java.net.SocketTimeoutException;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
@@ -73,12 +72,6 @@ public class SocketClient
                                                       "ensure the database is running and that there is a working " +
                                                       "network " +
                                                       "connection to it.", host, port ) );
-        }
-        catch ( SocketTimeoutException e ) // TODO
-        {
-            throw new ClientException( String.format( "Unable to connect to '%s' on port %s, " +
-                                                      "database took longer than network timeout (%dms) to reply.",
-                    host, port, config.soTimeout ) );
         }
         catch ( IOException e )
         {

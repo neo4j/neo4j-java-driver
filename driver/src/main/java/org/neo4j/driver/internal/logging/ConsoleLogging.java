@@ -54,7 +54,7 @@ public class ConsoleLogging implements Logging
     }
 
     @Override
-    public Logger getLogging( String name )
+    public Logger getLog( String name )
     {
         return this.logger;
     }

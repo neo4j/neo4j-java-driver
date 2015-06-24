@@ -28,13 +28,12 @@ import java.net.URI;
  * {@code
  *
  * // Create a driver with default configuration
- * Driver driver = GraphDatabase.driver( "neo4j://localhost:7687" );
+ * Driver driver = GraphDatabase.driver( "neo4j://localhost" );
  *
  * // Establish a session with a Neo4j instance
  * Session session = driver.session();
- * ** Do some work with the database... **
  *
- * // Release all the resources
+ * // And when you are done, make sure all resources are released
  * driver.close();
  * }
  * </pre>
@@ -64,7 +63,7 @@ public class GraphDatabase
     }
 
     /**
-     * Return a driver for a Neo4j instance with a user defined configuration
+     * Return a driver for a Neo4j instance with custom configuration.
      *
      * @param url the URL to a Neo4j instance
      * @param config user defined configuration
