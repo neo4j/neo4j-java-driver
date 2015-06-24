@@ -37,7 +37,7 @@ public class SocketConnector implements Connector
     private Logging logging;
 
     @Override
-    public boolean supports( String scheme )
+    //public boolean supports( String scheme )
     {
         return scheme.equals( SCHEME );
     }
