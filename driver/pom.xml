@@ -157,11 +157,21 @@
             <version>2.1.13</version>
             <executions>
               <execution>
+                <id>generate-git-hash</id>
                 <goals>
                   <goal>revision</goal>
                 </goals>
               </execution>
             </executions>
+            <configuration>
+              <skipPoms>false</skipPoms>
+              <dotGitDirectory>${project.basedir}/.git</dotGitDirectory>
+              <gitDescribe>
+                <dirty>-dirty</dirty>
+                <abbrev>7</abbrev>
+                <forceLongFormat>true</forceLongFormat>
+              </gitDescribe>
+            </configuration>
           </plugin>
         </plugins>
       </build>
