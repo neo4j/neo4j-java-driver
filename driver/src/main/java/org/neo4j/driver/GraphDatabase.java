@@ -40,6 +40,7 @@ import java.net.URI;
  */
 public class GraphDatabase
 {
+    /* Working on setting up CI. This commit should never never be merged */
     /**
      * Return a driver for a Neo4j instance with the default configuration settings
      *
