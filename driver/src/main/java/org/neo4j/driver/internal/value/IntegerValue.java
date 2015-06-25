@@ -70,6 +70,12 @@ public class IntegerValue extends ValueAdapter
     }
 
     @Override
+    public String toString()
+    {
+        return "integer<" + val + ">";
+    }
+
+    @Override
     public boolean equals( Object o )
     {
         if ( this == o )

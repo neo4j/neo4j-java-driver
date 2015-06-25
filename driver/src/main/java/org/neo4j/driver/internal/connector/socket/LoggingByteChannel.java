@@ -20,21 +20,23 @@ package org.neo4j.driver.internal.connector.socket;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ByteChannel;
 
 import org.neo4j.driver.internal.spi.Logger;
 import org.neo4j.driver.internal.util.BytePrinter;
 
 /**
- * Basically it is a wrapper to {@link SocketChannel} with logging enabled on bytes sent and received over the channel.
+ * Basically it is a wrapper to {@link AllOrNothingChannel} with logging enabled on bytes sent and received over the channel.
  */
-public class LoggableSocketChannel extends SocketChannel
+public class LoggingByteChannel implements ByteChannel
 {
+    private final ByteChannel delegate;
     private final Logger logger;
 
 
-    public LoggableSocketChannel( java.nio.channels.SocketChannel channel, Logger logger ) throws IOException
+    public LoggingByteChannel( ByteChannel delegate, Logger logger ) throws IOException
     {
-        super( channel );
+        this.delegate = delegate;
         this.logger = logger;
     }
 
@@ -42,7 +44,7 @@ public class LoggableSocketChannel extends SocketChannel
     public int write( ByteBuffer buf ) throws IOException
     {
         int offset = buf.position();
-        int length = super.write( buf );
+        int length = delegate.write( buf );
         logger.trace( "C: " + BytePrinter.hexInOneLine( buf, offset, length ) );
         return length;
     }
@@ -51,7 +53,7 @@ public class LoggableSocketChannel extends SocketChannel
     public int read( ByteBuffer buf ) throws IOException
     {
         int offset = buf.position();
-        int length = super.read( buf );
+        int length = delegate.read( buf );
         logger.trace( "S: " + BytePrinter.hexInOneLine( buf, offset, length ) );
         return length;
     }
@@ -59,11 +61,11 @@ public class LoggableSocketChannel extends SocketChannel
     @Override
     public boolean isOpen()
     {
-        return super.isOpen();
+        return delegate.isOpen();
     }
 
     public void close() throws IOException
     {
-        super.close();
+        delegate.close();
     }
 }

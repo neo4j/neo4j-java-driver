@@ -25,14 +25,16 @@ import java.nio.channels.ByteChannel;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.util.BytePrinter;
 
-
-public class SocketChannel implements ByteChannel // TODO I am running out of names for this class
+/**
+ * Wraps a regular byte channel such that read and write will not return until the full buffers given have been sent or received, respectively.
+ */
+public class AllOrNothingChannel implements ByteChannel
 {
-    private final java.nio.channels.SocketChannel channel;
+    private final ByteChannel channel;
 
-    public SocketChannel( java.nio.channels.SocketChannel channel ) throws IOException
+    public AllOrNothingChannel( ByteChannel delegate ) throws IOException
     {
-        this.channel = channel;
+        this.channel = delegate;
     }
 
     @Override

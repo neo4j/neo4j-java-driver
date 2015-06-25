@@ -70,6 +70,12 @@ public class FloatValue extends ValueAdapter
     }
 
     @Override
+    public String toString()
+    {
+        return "float<" + val + ">";
+    }
+
+    @Override
     public boolean equals( Object o )
     {
         if ( this == o )

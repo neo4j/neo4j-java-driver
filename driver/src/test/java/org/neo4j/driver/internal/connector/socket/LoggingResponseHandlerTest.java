@@ -39,12 +39,12 @@ import org.neo4j.driver.internal.messaging.SuccessMessage;
 import static junit.framework.Assert.assertEquals;
 import static org.neo4j.driver.Driver.parameters;
 
-public class LoggableSocketResponseHandlerTest
+public class LoggingResponseHandlerTest
 {
 
     private String log;
 
-    private MessageHandler handler = new LoggableSocketResponseHandler( new DevNullLogger()
+    private MessageHandler handler = new LoggingResponseHandler( new DevNullLogger()
     {
         @Override
         public void debug( String message, Object... params )
