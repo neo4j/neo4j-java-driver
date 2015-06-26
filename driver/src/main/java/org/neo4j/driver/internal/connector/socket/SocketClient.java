@@ -118,11 +118,11 @@ public class SocketClient
 
             if( logger.isTraceEnabled() )
             {
-                return new LoggableSocketChannel( channel, logger );
+                return new LoggingByteChannel( new AllOrNothingChannel( channel ), logger );
             }
             else
             {
-                return new org.neo4j.driver.internal.connector.socket.SocketChannel( channel );
+                return new AllOrNothingChannel( channel );
             }
         }
     }

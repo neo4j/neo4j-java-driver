@@ -29,12 +29,12 @@ import static org.neo4j.driver.internal.messaging.DiscardAllMessage.DISCARD_ALL;
 import static org.neo4j.driver.internal.messaging.IgnoredMessage.IGNORED;
 import static org.neo4j.driver.internal.messaging.PullAllMessage.PULL_ALL;
 
-public class LoggableSocketResponseHandler extends SocketResponseHandler
+public class LoggingResponseHandler extends SocketResponseHandler
 {
     private static final String DEFAULT_DEBUG_LOGGING_FORMAT = "S: %s";
     private final Logger logger;
 
-    public LoggableSocketResponseHandler( Logger logger )
+    public LoggingResponseHandler( Logger logger )
     {
         this.logger = logger;
     }

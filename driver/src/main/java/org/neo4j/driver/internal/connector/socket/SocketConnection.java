@@ -53,7 +53,7 @@ public class SocketConnection implements Connection
 
         if( logger.isDebugEnabled() )
         {
-            this.responseHandler = new LoggableSocketResponseHandler( logger );
+            this.responseHandler = new LoggingResponseHandler( logger );
         }
         else
         {
