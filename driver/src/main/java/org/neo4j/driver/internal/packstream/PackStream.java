@@ -25,6 +25,8 @@ import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.driver.Value;
+
 import static java.lang.Integer.toHexString;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
@@ -565,6 +567,23 @@ public class PackStream
             }
             default: throw new Unexpected( "Expected binary data, but got: 0x" + toHexString( markerByte & 0xFF ));
             }
+        }
+
+        /**
+         * This may seem confusing. This method exists to move forward the internal pointer when encountering
+         * a null value. The idiomatic usage would be someone using {@link #peekNextType()} to detect a null type,
+         * and then this method to "skip past it".
+         * @return null
+         * @throws IOException if the unpacked value was not null
+         */
+        public Object unpackNull() throws IOException
+        {
+            final byte markerByte = in.readByte();
+            if ( markerByte != NULL )
+            {
+                throw new Unexpected( "Expected a null, but got: 0x" + toHexString( markerByte & 0xFF ) );
+            }
+            return null;
         }
 
         private byte[] unpackUtf8(byte markerByte) throws IOException

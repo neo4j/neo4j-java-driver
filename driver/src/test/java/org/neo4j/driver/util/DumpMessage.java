@@ -26,6 +26,7 @@ import java.util.Map;
 
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.Neo4jException;
+import org.neo4j.driver.internal.connector.socket.ChunkedInput;
 import org.neo4j.driver.internal.messaging.AckFailureMessage;
 import org.neo4j.driver.internal.messaging.DiscardAllMessage;
 import org.neo4j.driver.internal.messaging.FailureMessage;
@@ -35,11 +36,12 @@ import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.MessageHandler;
 import org.neo4j.driver.internal.messaging.PackStreamMessageFormatV1;
+import org.neo4j.driver.internal.messaging.PackStreamMessageFormatV1.NoOpRunnable;
 import org.neo4j.driver.internal.messaging.PullAllMessage;
 import org.neo4j.driver.internal.messaging.RecordMessage;
 import org.neo4j.driver.internal.messaging.RunMessage;
 import org.neo4j.driver.internal.messaging.SuccessMessage;
-import org.neo4j.driver.internal.util.BytePrinter;
+import org.neo4j.driver.internal.packstream.BufferedChannelInput;
 
 import static org.neo4j.driver.internal.util.BytePrinter.hexStringToBytes;
 
@@ -58,28 +60,53 @@ public class DumpMessage
         {
             hexStr.append( args[i] );
         }
-        // for now we only handle PackStreamV1
-        unpackPackStreamV1Message( hexStr.toString() );
-    }
 
-    public static void unpackPackStreamV1Message( String hexString ) throws IOException
-    {
-        byte[] bytes = hexStringToBytes( hexString );
-        ArrayList<Message> messages = unpack( new PackStreamMessageFormatV1(), bytes );
+        byte[] bytes = hexStringToBytes( hexStr.toString() );
+
+        // for now we only handle PackStreamV1
+        ArrayList<Message> messages = null;
+        try
+        {
+            messages = unpackPackStreamV1WithHeader( bytes );
+        }
+        catch ( Exception e )
+        {
+            System.out.println( e.toString() );
+            messages = unpackPackStreamV1Message( bytes );
+        }
+
         for ( Message message : messages )
         {
             System.out.println( message );
         }
     }
 
-    public static ArrayList<Message> unpack( MessageFormat format, byte[] data )
+    public static ArrayList<Message> unpackPackStreamV1WithHeader( byte[] bytes ) throws IOException
+    {
+        ByteArrayInputStream input = new ByteArrayInputStream( bytes );
+        ChunkedInput chunkedInput = new ChunkedInput( Channels.newChannel( input ) );
+        PackStreamMessageFormatV1.Reader reader =
+                new PackStreamMessageFormatV1.Reader( chunkedInput, chunkedInput.messageBoundaryHook() );
+        ArrayList<Message> messages = unpack( reader );
+        return messages;
+    }
+
+    public static ArrayList<Message> unpackPackStreamV1Message( byte[] bytes ) throws IOException
+    {
+        ByteArrayInputStream input = new ByteArrayInputStream( bytes );
+        BufferedChannelInput bufferedChannelInput = new BufferedChannelInput( 1024*8, Channels.newChannel( input ) );
+        PackStreamMessageFormatV1.Reader reader =
+                new PackStreamMessageFormatV1.Reader( bufferedChannelInput, new NoOpRunnable() );
+        ArrayList<Message> messages = unpack( reader );
+
+        return messages;
+    }
+
+    public static ArrayList<Message> unpack( MessageFormat.Reader reader ) throws IOException
     {
         final ArrayList<Message> outcome = new ArrayList<>();
         try
         {
-            MessageFormat.Reader reader = format.newReader();
-            ByteArrayInputStream input = new ByteArrayInputStream( data );
-            reader.reset( Channels.newChannel( input ) );
             reader.read( new MessageHandler()
             {
                 @Override
@@ -140,10 +167,6 @@ public class DumpMessage
         catch ( Neo4jException e )
         {
             throw e;
-        }
-        catch ( Throwable e )
-        {
-            throw new RuntimeException( "Failed to deserialize message. Raw data was:\n" + BytePrinter.hex( data ), e );
         }
         return outcome;
     }

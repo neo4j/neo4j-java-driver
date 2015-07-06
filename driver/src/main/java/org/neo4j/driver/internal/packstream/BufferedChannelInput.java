@@ -33,7 +33,13 @@ public class BufferedChannelInput implements PackInput
 
     public BufferedChannelInput( int bufferCapacity )
     {
+        this( bufferCapacity, null );
+    }
+
+    public BufferedChannelInput( int bufferCapacity, ReadableByteChannel ch )
+    {
         this.buffer = ByteBuffer.allocateDirect( bufferCapacity ).order( ByteOrder.BIG_ENDIAN );
+        reset( ch );
     }
 
     public BufferedChannelInput reset( ReadableByteChannel ch )

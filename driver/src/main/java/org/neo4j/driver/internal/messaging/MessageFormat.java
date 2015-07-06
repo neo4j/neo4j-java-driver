@@ -42,12 +42,11 @@ public interface MessageFormat
 
         void read( MessageHandler handler ) throws IOException;
 
-        Reader reset( ReadableByteChannel channel );
     }
 
-    Writer newWriter();
+    Writer newWriter( WritableByteChannel ch );
 
-    Reader newReader();
+    Reader newReader( ReadableByteChannel ch );
 
     int version();
 }
