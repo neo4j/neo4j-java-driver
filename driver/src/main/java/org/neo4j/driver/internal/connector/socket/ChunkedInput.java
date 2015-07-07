@@ -57,7 +57,10 @@ public class ChunkedInput implements PackInput
     @Override
     public boolean hasMoreData() throws IOException
     {
-        return buffer.remaining() > 0;
+        return hasMoreDataUnreadInCurrentChunk();
+        // TODO change the reading mode to non-blocking so that we could also detect
+        // if there are more chunks in the channel?
+        // this method currently is only valid if we are in the middle of a chunk
     }
 
     @Override
@@ -185,6 +188,11 @@ public class ChunkedInput implements PackInput
         return buffer.remaining();
     }
 
+    /**
+     * Attempts to read {@code toRead} bytes from the channel, however if {@code freeSpace}, the free space in
+     * current buffer is less than {@Code toRead}, then only {@code freeSpace} bytes will be read.
+     * @param toRead
+     */
     private void attempt( int toRead )
     {
         if( toRead == 0 || remainingData() >= toRead )
@@ -195,6 +203,10 @@ public class ChunkedInput implements PackInput
         ensure( Math.min( freeSpace, toRead ) );
     }
 
+    /**
+     * Block until {@code toRead} bytes are read from channel
+     * @param toRead
+     */
     private void ensure( int toRead )
     {
         if( toRead == 0 || remainingData() >= toRead )
@@ -239,7 +251,7 @@ public class ChunkedInput implements PackInput
         }
     }
 
-    private int readChunkSize() throws IOException
+    protected int readChunkSize() throws IOException
     {
         chunkHeaderBuffer.clear();
         channel.read( chunkHeaderBuffer );
@@ -263,11 +275,25 @@ public class ChunkedInput implements PackInput
         }
     }
 
+    private boolean hasMoreDataUnreadInCurrentChunk()
+    {
+        return buffer.remaining() > 0 || unreadChunkSize > 0;
+    }
+
+
     private Runnable onMessageComplete = new Runnable()
     {
         @Override
         public void run()
         {
+            // the on message complete should only be called when no data unread from the message buffer
+            if( hasMoreDataUnreadInCurrentChunk() )
+            {
+                throw new ClientException( "Trying to read message complete ending '00 00' while there are more data " +
+                                           "left in the message content unread: buffer [" +
+                                           BytePrinter.hexInOneLine( buffer, buffer.position(), buffer.remaining() ) +
+                                           "], unread chunk size " + unreadChunkSize );
+            }
             try
             {
                 // read message boundary
@@ -275,7 +301,7 @@ public class ChunkedInput implements PackInput
                 if ( chunkSize != 0 )
                 {
                     throw new ClientException( "Expecting message complete ending '00 00', but got " +
-                                               ByteBuffer.allocate( 2 ).putShort( (short) chunkSize ).array() );
+                                               BytePrinter.hex( ByteBuffer.allocate( 2 ).putShort( (short) chunkSize ) ) );
                 }
             }
             catch ( IOException e )

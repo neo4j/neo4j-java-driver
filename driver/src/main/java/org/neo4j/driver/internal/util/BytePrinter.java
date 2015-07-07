@@ -226,7 +226,11 @@ public class BytePrinter
             for ( int i = offset; i < offset + length; i++ )
             {
                 print( bytes.get( i ), out );
-                if ( (i - offset + 1) % 8 == 0 )
+                if ( i == offset + length - 1 )
+                {
+                    // no pending blanks
+                }
+                else if ( (i - offset + 1) % 8 == 0 )
                 {
                     out.print( "    " );
                 }
@@ -241,7 +245,5 @@ public class BytePrinter
         {
             throw new RuntimeException( e );
         }
-
-
     }
 }
