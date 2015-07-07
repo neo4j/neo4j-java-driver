@@ -37,7 +37,6 @@ import org.neo4j.driver.internal.SimplePath;
 import org.neo4j.driver.internal.SimpleRelationship;
 import org.neo4j.driver.internal.connector.socket.ChunkedInput;
 import org.neo4j.driver.internal.connector.socket.ChunkedOutput;
-import org.neo4j.driver.internal.packstream.BufferedChannelInput;
 import org.neo4j.driver.internal.packstream.BufferedChannelOutput;
 import org.neo4j.driver.internal.packstream.PackInput;
 import org.neo4j.driver.internal.packstream.PackOutput;
@@ -329,11 +328,6 @@ public class PackStreamMessageFormatV1 implements MessageFormat
     {
         private final PackStream.Unpacker unpacker;
         private final Runnable onMessageComplete;
-
-        public Reader()
-        {
-            this( new BufferedChannelInput( 8192 ), new NoOpRunnable() );
-        }
 
         public Reader( PackInput input, Runnable onMessageComplete )
         {
