@@ -28,6 +28,7 @@ import java.util.Arrays;
 
 import org.neo4j.driver.util.RecordingByteChannel;
 
+import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -101,5 +102,52 @@ public class ChunkedInputTest
         // Then
         input.readBytes( outputBuffer, 0, 15 );
         assertThat( outputBuffer, equalTo( new byte[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 1, 2, 3, 4, 5} ) );
+    }
+
+    @Test
+    public void canReadAllIntegerSizes() throws Exception
+    {
+        // Given
+        RecordingByteChannel ch = new RecordingByteChannel();
+        ChunkedOutput out = new ChunkedOutput( ch );
+
+        // these are written in one go on purpose, to check for buffer pointer errors where writes
+        // would interfere with one another, writing at the wrong offsets
+        out.writeByte( Byte.MAX_VALUE );
+        out.writeByte( (byte)1 );
+        out.writeByte( Byte.MIN_VALUE );
+
+        out.writeLong( Long.MAX_VALUE );
+        out.writeLong( 0l );
+        out.writeLong( Long.MIN_VALUE );
+
+        out.writeShort( Short.MAX_VALUE );
+        out.writeShort( (short)0 );
+        out.writeShort( Short.MIN_VALUE );
+
+        out.writeInt( Integer.MAX_VALUE );
+        out.writeInt( 0 );
+        out.writeInt( Integer.MIN_VALUE );
+
+        out.flush();
+
+        ChunkedInput in = new ChunkedInput( ch );
+
+        // when / then
+        assertEquals( Byte.MAX_VALUE, in.readByte() );
+        assertEquals( (byte)1,        in.readByte() );
+        assertEquals( Byte.MIN_VALUE, in.readByte() );
+
+        assertEquals( Long.MAX_VALUE, in.readLong() );
+        assertEquals( 0l,             in.readLong() );
+        assertEquals( Long.MIN_VALUE, in.readLong() );
+
+        assertEquals( Short.MAX_VALUE, in.readShort() );
+        assertEquals( (short)0,        in.readShort() );
+        assertEquals( Short.MIN_VALUE, in.readShort() );
+
+        assertEquals( Integer.MAX_VALUE, in.readInt() );
+        assertEquals( 0,                 in.readInt() );
+        assertEquals( Integer.MIN_VALUE, in.readInt() );
     }
 }

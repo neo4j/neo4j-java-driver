@@ -88,7 +88,7 @@ public class ChunkedInput implements PackInput
         attempt( 4 );
         if ( remainingData() >= 4 )
         {
-            return buffer.getShort();
+            return buffer.getInt();
         }
         else
         {
