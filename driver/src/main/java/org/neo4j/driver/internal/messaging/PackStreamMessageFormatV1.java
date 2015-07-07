@@ -35,18 +35,20 @@ import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.SimpleNode;
 import org.neo4j.driver.internal.SimplePath;
 import org.neo4j.driver.internal.SimpleRelationship;
-import org.neo4j.driver.internal.util.Iterables;
-import org.neo4j.driver.internal.value.ListValue;
-import org.neo4j.driver.internal.value.MapValue;
-import org.neo4j.driver.internal.value.NodeValue;
-import org.neo4j.driver.internal.value.PathValue;
-import org.neo4j.driver.internal.value.RelationshipValue;
+import org.neo4j.driver.internal.connector.socket.ChunkedInput;
+import org.neo4j.driver.internal.connector.socket.ChunkedOutput;
 import org.neo4j.driver.internal.packstream.BufferedChannelInput;
 import org.neo4j.driver.internal.packstream.BufferedChannelOutput;
 import org.neo4j.driver.internal.packstream.PackInput;
 import org.neo4j.driver.internal.packstream.PackOutput;
 import org.neo4j.driver.internal.packstream.PackStream;
 import org.neo4j.driver.internal.packstream.PackType;
+import org.neo4j.driver.internal.util.Iterables;
+import org.neo4j.driver.internal.value.ListValue;
+import org.neo4j.driver.internal.value.MapValue;
+import org.neo4j.driver.internal.value.NodeValue;
+import org.neo4j.driver.internal.value.PathValue;
+import org.neo4j.driver.internal.value.RelationshipValue;
 
 import static org.neo4j.driver.Values.value;
 
@@ -72,15 +74,17 @@ public class PackStreamMessageFormatV1 implements MessageFormat
     private static final Map<String,Value> EMPTY_STRING_VALUE_MAP = new HashMap<>( 0 );
 
     @Override
-    public MessageFormat.Writer newWriter()
+    public MessageFormat.Writer newWriter( WritableByteChannel ch )
     {
-        return new Writer();
+        ChunkedOutput output = new ChunkedOutput( ch );
+        return new Writer( output, output.messageBoundaryHook() );
     }
 
     @Override
-    public MessageFormat.Reader newReader()
+    public MessageFormat.Reader newReader( ReadableByteChannel ch )
     {
-        return new Reader();
+        ChunkedInput input = new ChunkedInput( ch );
+        return new Reader( input, input.messageBoundaryHook() );
     }
 
     @Override
@@ -382,13 +386,6 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             }
         }
 
-        @Override
-        public MessageFormat.Reader reset( ReadableByteChannel channel )
-        {
-            this.unpacker.reset( channel );
-            return this;
-        }
-
         private void unpackInitializeMessage( MessageHandler handler ) throws IOException
         {
             handler.handleInitializeMessage( unpacker.unpackString() );
@@ -457,7 +454,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             case BYTES:
                 break;
             case NULL:
-                return null;
+                return value( unpacker.unpackNull() );
             case BOOLEAN:
                 return value( unpacker.unpackBoolean() );
             case INTEGER:
@@ -473,7 +470,8 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                 for ( int j = 0; j < size; j++ )
                 {
                     String key = unpacker.unpackString();
-                    map.put( key, unpackValue() );
+                    Value value = unpackValue();
+                    map.put( key, value );
                 }
                 return new MapValue( map );
             }

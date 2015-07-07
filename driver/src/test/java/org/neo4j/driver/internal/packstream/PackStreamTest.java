@@ -99,7 +99,6 @@ public class PackStreamTest
         {
             return packer;
         }
-
     }
 
     private PackStream.Unpacker newUnpacker( byte[] bytes )

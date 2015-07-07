@@ -22,10 +22,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import org.neo4j.driver.Value;
@@ -33,9 +35,10 @@ import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.SimpleNode;
 import org.neo4j.driver.internal.SimplePath;
 import org.neo4j.driver.internal.SimpleRelationship;
+import org.neo4j.driver.internal.connector.socket.ChunkedOutput;
 import org.neo4j.driver.internal.packstream.BufferedChannelOutput;
 import org.neo4j.driver.internal.packstream.PackStream;
-import static org.neo4j.driver.util.DumpMessage.unpack;
+import org.neo4j.driver.util.DumpMessage;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -72,6 +75,7 @@ public class MessageFormatTest
     @Test
     public void shouldUnpackAllValues() throws Throwable
     {
+        assertSerializesValue( value( properties( "cat", null, "dog", null ) ) );
         assertSerializesValue( value( properties( "k", 12, "a", "banana" ) ) );
         assertSerializesValue( value( asList( "k", 12, "a", "banana" ) ) );
         assertSerializesValue( value(
@@ -98,7 +102,7 @@ public class MessageFormatTest
         // Given
         ByteArrayOutputStream out = new ByteArrayOutputStream( 128 );
         WritableByteChannel writable = Channels.newChannel( out );
-        PackStream.Packer packer = new PackStream.Packer( new BufferedChannelOutput( writable ) );
+        PackStream.Packer packer = new PackStream.Packer( new ChunkedOutput( writable ) );
 
         packer.packStructHeader( 1, PackStreamMessageFormatV1.MSG_RECORD );
         packer.packListHeader( 1 );
@@ -121,11 +125,9 @@ public class MessageFormatTest
 
     private void assertSerializes( Message... messages ) throws IOException
     {
-        MessageFormat.Writer writer = format.newWriter();
-
         // Pack
         final ByteArrayOutputStream out = new ByteArrayOutputStream( 128 );
-        writer.reset( Channels.newChannel( out ) );
+        MessageFormat.Writer writer = format.newWriter( Channels.newChannel( out ) );
         for ( Message message : messages )
         {
             writer.write( message );
@@ -134,6 +136,13 @@ public class MessageFormatTest
 
         // Unpack
         assertThat( unpack( format, out.toByteArray() ), equalTo( asList( messages ) ) );
+    }
+
+    private ArrayList<Message> unpack( MessageFormat format, byte[] bytes ) throws IOException
+    {
+        ByteArrayInputStream input = new ByteArrayInputStream( bytes );
+        MessageFormat.Reader reader = format.newReader( Channels.newChannel( input ) );
+        return DumpMessage.unpack( reader );
     }
 
 }
