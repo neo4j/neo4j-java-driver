@@ -62,6 +62,7 @@ public class ConsoleLogging implements Logging
     public static class ConsoleLogger extends JULogger
     {
         private final ConsoleHandler handler;
+
         public ConsoleLogger( String name, Level level )
         {
             super( name, level );

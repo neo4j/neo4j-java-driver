@@ -26,8 +26,10 @@ import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Arrays;
 
+import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.util.RecordingByteChannel;
 
+import static junit.framework.Assert.fail;
 import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -149,5 +151,31 @@ public class ChunkedInputTest
         assertEquals( Integer.MAX_VALUE, in.readInt() );
         assertEquals( 0,                 in.readInt() );
         assertEquals( Integer.MIN_VALUE, in.readInt() );
+    }
+
+    @Test
+    public void shouldNotReadMessageEndingWhenByteLeftInBuffer()
+    {
+        // Given
+        ReadableByteChannel channel = Channels.newChannel(
+                new ByteArrayInputStream( new byte[]{ 0, 5, 1, 2, 3, 4, 5, 0, 0} ) );
+        ChunkedInput ch = new ChunkedInput( 2, channel );
+
+        byte[] bytes = new byte[4];
+        ch.readBytes( bytes, 0, 4 );
+        assertThat( bytes, equalTo( new byte[]{1, 2, 3, 4} ) );
+
+        // When
+        try
+        {
+            ch.messageBoundaryHook().run();
+            fail( "The expected ClientException is not thrown" );
+        }
+        catch ( ClientException e )
+        {
+            assertEquals( "org.neo4j.driver.exceptions.ClientException: Trying to read message complete ending " +
+                          "'00 00' while there are more data left in the message content unread: buffer [], " +
+                          "unread chunk size 1", e.toString() );
+        }
     }
 }

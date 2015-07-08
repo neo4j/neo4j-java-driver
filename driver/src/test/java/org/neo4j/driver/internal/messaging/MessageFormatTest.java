@@ -36,7 +36,6 @@ import org.neo4j.driver.internal.SimpleNode;
 import org.neo4j.driver.internal.SimplePath;
 import org.neo4j.driver.internal.SimpleRelationship;
 import org.neo4j.driver.internal.connector.socket.ChunkedOutput;
-import org.neo4j.driver.internal.packstream.BufferedChannelOutput;
 import org.neo4j.driver.internal.packstream.PackStream;
 import org.neo4j.driver.util.DumpMessage;
 
@@ -142,7 +141,9 @@ public class MessageFormatTest
     {
         ByteArrayInputStream input = new ByteArrayInputStream( bytes );
         MessageFormat.Reader reader = format.newReader( Channels.newChannel( input ) );
-        return DumpMessage.unpack( reader );
+        ArrayList<Message> messages = new ArrayList<>();
+        DumpMessage.unpack( messages, reader );
+        return messages;
     }
 
 }
