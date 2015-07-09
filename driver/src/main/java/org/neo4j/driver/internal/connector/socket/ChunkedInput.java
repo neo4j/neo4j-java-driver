@@ -238,7 +238,10 @@ public class ChunkedInput implements PackInput
                 else
                 {
                     int chunkSize = readChunkSize();
-                    assert chunkSize != 0;
+                    if( chunkSize <= 0 )
+                    {
+                        throw new ClientException( "Invalid non-positive chunk size: " + chunkSize );
+                    }
                     readChunk( chunkSize );
                 }
             }
@@ -256,7 +259,7 @@ public class ChunkedInput implements PackInput
         chunkHeaderBuffer.clear();
         channel.read( chunkHeaderBuffer );
         chunkHeaderBuffer.flip();
-        return chunkHeaderBuffer.getShort();
+        return chunkHeaderBuffer.getShort() & 0xffff;
     }
 
     private void readChunk( int chunkSize ) throws IOException
