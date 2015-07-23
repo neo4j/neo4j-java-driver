@@ -18,13 +18,17 @@
  */
 package org.neo4j.driver.util;
 
-import java.io.File;
-
 import org.junit.Test;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
+import java.util.Scanner;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.neo4j.driver.util.FileTools.tmpDir;
 
 public class FileToolsTest
@@ -45,6 +49,76 @@ public class FileToolsTest
             dir.delete();
         }
 
+    }
+
+    @Test
+    public void shouldAddPropertyAtBottom() throws FileNotFoundException
+    {
+        // Given
+        File propertyFile = createPropertyFile();
+
+        // When
+        FileTools.setProperty( propertyFile, "cat.name", "mimi" );
+
+        // Then
+        Scanner in = new Scanner( propertyFile );
+
+        try
+        {
+            assertEquals( "#Wow wow", in.nextLine() );
+            assertEquals( "Meow meow", in.nextLine() );
+            assertEquals( "color=black", in.nextLine() );
+            assertEquals( "cat.age=3", in.nextLine() );
+            assertEquals( "cat.name=mimi", in.nextLine() );
+
+            assertFalse( in.hasNextLine() );
+        }
+        finally
+        {
+            propertyFile.delete();
+        }
+    }
+
+    @Test
+    public void shouldResetPropertyAtTheSameLine() throws FileNotFoundException
+    {
+        // Given
+        File propertyFile = createPropertyFile();
+
+        // When
+        FileTools.setProperty( propertyFile, "color", "white" );
+
+        // Then
+        Scanner in = new Scanner( propertyFile );
+
+        try
+        {
+            assertEquals( "#Wow wow", in.nextLine() );
+            assertEquals( "Meow meow", in.nextLine() );
+            assertEquals( "color=white", in.nextLine() );
+            assertEquals( "cat.age=3", in.nextLine() );
+
+            assertFalse( in.hasNextLine() );
+        }
+        finally
+        {
+            propertyFile.delete();
+        }
+    }
+
+
+    private File createPropertyFile() throws FileNotFoundException
+    {
+        File propFile = new File( "Cat" );
+        PrintWriter out = new PrintWriter( propFile );
+
+        out.println( "#Wow wow" );
+        out.println( "Meow meow" );
+        out.println( "color=black" );
+        out.println( "cat.age=3" );
+
+        out.close();
+        return propFile;
     }
 
 }

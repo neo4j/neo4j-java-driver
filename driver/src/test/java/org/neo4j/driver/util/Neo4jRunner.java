@@ -8,7 +8,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,13 +22,10 @@ import org.rauschig.jarchivelib.ArchiveStream;
 import org.rauschig.jarchivelib.Archiver;
 import org.rauschig.jarchivelib.ArchiverFactory;
 
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PrintWriter;
 import java.net.URI;
 import java.net.URL;
 
@@ -58,6 +55,7 @@ public class Neo4jRunner
     private final File neo4jDir = new File( "./target/neo4j" );
     private final File neo4jHome = new File( neo4jDir, neo4jVersion );
     private final File dataDir = new File( neo4jHome, "data" );
+    private boolean isTLSEnabled;
 
 
     public static void main( String... args ) throws Exception
@@ -93,13 +91,8 @@ public class Neo4jRunner
                 // Untar the neo4j server
                 extractTarball( neo4jTarball );
 
-
-                // Add experimental.ndp.enabled=true to conf/neo4j.properties
-                File configFile = new File( neo4jHome, "conf/neo4j.properties" );
-                try ( PrintWriter out = new PrintWriter( new BufferedWriter( new FileWriter( configFile, true ) ) ) )
-                {
-                    out.println( "xx.ndp.enabled=true" );
-                }
+                File configFile = new File( neo4jHome, "conf/neo4j-server.properties" );
+                FileTools.setProperty( configFile, "xx.ndp.enabled", "true" );
             }
             else
             {
@@ -116,7 +109,7 @@ public class Neo4jRunner
         archiver.extract( neo4jTarball, neo4jDir );
 
         // Rename the extracted file to something predictable (extracted folder may contain build number, date or so)
-        try(ArchiveStream stream = archiver.stream( neo4jTarball ))
+        try ( ArchiveStream stream = archiver.stream( neo4jTarball ) )
         {
             new File( neo4jDir, stream.getNextEntry().getName() ).renameTo( neo4jHome );
         }
@@ -166,6 +159,36 @@ public class Neo4jRunner
         }
     }
 
+    public void enableTLS( boolean isTLSEnabled )
+    {
+        this.isTLSEnabled = isTLSEnabled;
+        setServerProperty( "xx.ndp.tls.enabled", String.valueOf( isTLSEnabled ) );
+    }
+
+    /**
+     * Write the new property and its value in neo4j-server.properties.
+     * If the server is already running, then stop and restart the server to reload the changes in the property file
+     * @param name
+     * @param value
+     */
+    private void setServerProperty( String name, String value )
+    {
+        File oldFile = new File( neo4jHome, "conf/neo4j-server.properties" );
+        try
+        {
+            FileTools.setProperty( oldFile, name, value );
+
+            System.out.println( "Restart server to reload property change: " + name + "=" + value );
+            this.stopServer();
+            this.startServer();
+        }
+        catch ( Exception e )
+        {
+            System.out.println( "Failed to change property." );
+            e.printStackTrace();
+        }
+    }
+
     public boolean canControlServer()
     {
         return !externalServer;
@@ -199,8 +222,13 @@ public class Neo4jRunner
         try
         {
             URI uri = URI.create( DEFAULT_URL );
+            Config config = Config.defaultConfig();
+            if( isTLSEnabled )
+            {
+                config = Config.build().withTLSEnabled( true ).toConfig();
+            }
             SocketClient client = new SocketClient( uri.getHost(), uri.getPort(),
-                    Config.defaultConfig(), new DevNullLogger() );
+                    config, new DevNullLogger() );
             client.start();
             client.stop();
             return true;

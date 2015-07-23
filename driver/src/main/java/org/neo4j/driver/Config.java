@@ -50,12 +50,16 @@ public class Config
     /** Connections that have been idle longer than this threshold will have a ping test performed on them. */
     private final long idleTimeBeforeConnectionTest;
 
+    private final boolean isTLSEnabled;
+
     private Config( ConfigBuilder builder )
     {
         this.logging = builder.logging;
 
         this.connectionPoolSize = builder.connectionPoolSize;
         this.idleTimeBeforeConnectionTest = builder.idleTimeBeforeConnectionTest;
+
+        this.isTLSEnabled = builder.isTLSEnabled;
     }
 
     /**
@@ -86,6 +90,15 @@ public class Config
         return idleTimeBeforeConnectionTest;
     }
 
+    /**
+     * If TLS is enabled in all socket connections
+     * @return
+     */
+    public boolean isTLSEnabled()
+    {
+        return isTLSEnabled;
+    }
+
     public static ConfigBuilder build()
     {
         return new ConfigBuilder();
@@ -107,6 +120,7 @@ public class Config
         private Logging logging = new JULogging( Level.INFO );
         private int connectionPoolSize = 10;
         private long idleTimeBeforeConnectionTest = 200;
+        public boolean isTLSEnabled = false;
 
         private ConfigBuilder()
         {
@@ -145,6 +159,16 @@ public class Config
         public ConfigBuilder withMinIdleTimeBeforeConnectionTest( long milliSecond )
         {
             this.idleTimeBeforeConnectionTest = milliSecond;
+            return this;
+        }
+
+        /**
+         * Enable TLS in all connections with server
+         * @param value
+         */
+        public ConfigBuilder withTLSEnabled( boolean value )
+        {
+            this.isTLSEnabled = value;
             return this;
         }
 
