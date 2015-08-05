@@ -22,12 +22,14 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
+import javax.net.ssl.SSLHandshakeException;
 
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
@@ -37,6 +39,7 @@ import org.neo4j.driver.internal.connector.socket.SSLSocketChannel;
 import org.neo4j.driver.internal.connector.socket.SSLTestSocketChannel;
 import org.neo4j.driver.internal.logging.DevNullLogger;
 import org.neo4j.driver.internal.spi.Logger;
+import org.neo4j.driver.internal.util.CertificateTool;
 import org.neo4j.driver.util.Neo4jRunner;
 
 import static junit.framework.Assert.assertFalse;
@@ -49,6 +52,7 @@ import static org.mockito.Mockito.verify;
 public class SSLSocketChannelIT
 {
     private static TLSServer server;
+
     @BeforeClass
     public static void setup() throws IOException, InterruptedException
     {
@@ -61,7 +65,7 @@ public class SSLSocketChannelIT
     @AfterClass
     public static void tearDown()
     {
-        if( server != null )
+        if ( server != null )
         {
             server.close();
         }
@@ -77,7 +81,7 @@ public class SSLSocketChannelIT
 
         // When
         SSLSocketChannel sslChannel =
-                new SSLSocketChannel( "localhost", 7687, channel, logger );
+                new SSLSocketChannel( "localhost", 7687, channel, logger, null );
         sslChannel.close();
 
         // Then
@@ -104,7 +108,7 @@ public class SSLSocketChannelIT
 
         // When & Then
         SSLTestSocketChannel sslChannel =
-                new SSLTestSocketChannel( "localhost", 7687, channel, logger, 128, 128 );
+                new SSLTestSocketChannel( "localhost", 7687, channel, logger, null, 128, 128 );
 
         assertEquals( 5, logs.size() );
         assertTrue( logs.get( 0 ).equals( "TLS connection enabled" ) );
@@ -145,6 +149,39 @@ public class SSLSocketChannelIT
         assertTrue( logs.get( 6 ).startsWith( "Enlarged network input buffer from 32 to" ) );
 
         sslChannel.close();
+    }
+
+    @Test
+    public void shouldRejectServerConnectionDueToWrongCert() throws Throwable
+    {
+        // Given
+        Logger logger = mock( Logger.class );
+        SocketChannel channel = SocketChannel.open();
+        channel.connect( new InetSocketAddress( "localhost", 7687 ) );
+        File certFile = File.createTempFile( "random", ".cer" );
+        certFile.deleteOnExit();
+        CertificateTool.genX509Cert( certFile );
+
+        // When & Then
+        SSLSocketChannel sslChannel = null;
+        try
+        {
+            sslChannel = new SSLSocketChannel( "localhost", 7687, channel, logger, certFile );
+            sslChannel.close();
+        }
+        catch ( SSLHandshakeException e )
+        {
+            assertEquals( "General SSLEngine problem", e.getMessage() );
+            assertEquals( "General SSLEngine problem", e.getCause().getMessage() );
+            assertEquals( "No trusted certificate found", e.getCause().getCause().getMessage() );
+        }
+        finally
+        {
+            if ( sslChannel != null )
+            {
+                sslChannel.close();
+            }
+        }
     }
 
     @Test

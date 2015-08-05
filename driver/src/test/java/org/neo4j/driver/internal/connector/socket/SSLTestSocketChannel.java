@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal.connector.socket;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
 import java.security.GeneralSecurityException;
@@ -30,11 +31,11 @@ import org.neo4j.driver.internal.spi.Logger;
 public class SSLTestSocketChannel extends SSLSocketChannel
 {
 
-    public SSLTestSocketChannel( String host, int port, SocketChannel channel, Logger logger,
+    public SSLTestSocketChannel( String host, int port, SocketChannel channel, Logger logger, File cert,
             int appBufferSize, int netBufferSize )
             throws GeneralSecurityException, IOException
     {
-        super( host, port, channel, logger, appBufferSize, netBufferSize );
+        super( host, port, channel, logger, cert, appBufferSize, netBufferSize );
     }
 
     public void setBufferSize( int appBufferSize, int netBufferSize )

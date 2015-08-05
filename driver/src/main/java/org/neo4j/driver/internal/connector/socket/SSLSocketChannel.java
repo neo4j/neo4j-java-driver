@@ -8,7 +8,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,13 +18,13 @@
  */
 package org.neo4j.driver.internal.connector.socket;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.SocketChannel;
 import java.security.GeneralSecurityException;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
+import java.security.KeyStore;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
@@ -33,6 +33,7 @@ import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 import javax.net.ssl.SSLEngineResult.Status;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
 
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.spi.Logger;
@@ -40,6 +41,7 @@ import org.neo4j.driver.internal.util.BytePrinter;
 
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.FINISHED;
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING;
+import static org.neo4j.driver.internal.util.CertificateTool.loadX509Cert;
 
 /**
  * A blocking SSL socket channel.
@@ -70,7 +72,7 @@ public class SSLSocketChannel implements ByteChannel
     /** When enlarge the application and net buffer, this is the maximum buffer size that we could give */
     private int bufferMax;
 
-    public SSLSocketChannel( String host, int port, SocketChannel channel, Logger logger )
+    public SSLSocketChannel( String host, int port, SocketChannel channel, Logger logger, File cert )
             throws GeneralSecurityException, IOException
     {
         logger.debug( "TLS connection enabled" );
@@ -78,7 +80,7 @@ public class SSLSocketChannel implements ByteChannel
         this.channel = channel;
         this.channel.configureBlocking( true );
 
-        initSSLContext( host );
+        initSSLContext( host, cert );
         createSSLEngine( host, port );
         createBuffers();
         runSSLHandShake();
@@ -86,7 +88,7 @@ public class SSLSocketChannel implements ByteChannel
     }
 
     /** Used in internal tests only */
-    SSLSocketChannel( String host, int port, SocketChannel channel, Logger logger,
+    SSLSocketChannel( String host, int port, SocketChannel channel, Logger logger, File cert,
             int appBufferSize, int netBufferSize )
             throws GeneralSecurityException, IOException
     {
@@ -95,7 +97,7 @@ public class SSLSocketChannel implements ByteChannel
         this.channel = channel;
         this.channel.configureBlocking( true );
 
-        initSSLContext( host );
+        initSSLContext( host, cert );
         createSSLEngine( host, port );
         createBuffers();
         createBuffers( appBufferSize, netBufferSize ); // reset buffer size
@@ -375,13 +377,35 @@ public class SSLSocketChannel implements ByteChannel
     }
 
     /**
-     * Using trust-on-first-use
+     * Default to use trust-on-first-use, however if {@code cert} is specified (not null), then only the certificate
+     * in this file will be trusted.
      */
-    private void initSSLContext( String host ) throws NoSuchAlgorithmException, IOException, KeyManagementException
+    private void initSSLContext( String host, File certFile ) throws GeneralSecurityException, IOException
     {
         sslContext = SSLContext.getInstance( "TLS" );
 
-        sslContext.init( new KeyManager[0], new TrustManager[]{new TrustOnFirstUseTrustManager( host )}, null );
+        // TODO Do we also want the server to verify the client's cert, a.k.a mutual authentication?
+        // Ref: http://logicoy.com/blogs/ssl-keystore-truststore-and-mutual-authentication/
+        KeyManager[] keyManagers = new KeyManager[0];
+        TrustManager[] trustManagers = new TrustManager[]{new TrustOnFirstUseTrustManager( host )};
+
+        if ( certFile != null )
+        {
+            // A certificate file is specified so we will load the certificates in the file
+            // Init a in memory TrustedKeyStore
+            KeyStore trustedKeyStore = KeyStore.getInstance( "JKS" );
+            trustedKeyStore.load( null, null );
+
+            // Load the certs from the file
+            loadX509Cert( certFile, trustedKeyStore );
+
+            // Create TrustManager from TrustedKeyStore
+            TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance( "SunX509" );
+            trustManagerFactory.init( trustedKeyStore );
+            trustManagers = trustManagerFactory.getTrustManagers();
+        }
+
+        sslContext.init( keyManagers, trustManagers, null );
     }
 
     @Override

@@ -61,7 +61,7 @@ public class SocketClient
         try
         {
             logger.debug( "~~ [CONNECT] {0}:{1}.", host, port );
-            channel = ChannelFactory.create( host, port, config.isTLSEnabled(), logger );
+            channel = ChannelFactory.create( host, port, config, logger );
 
             protocol = negotiateProtocol();
             reader = protocol.reader();
@@ -156,7 +156,7 @@ public class SocketClient
 
     private static class ChannelFactory
     {
-        public static ByteChannel create( String host, int port, boolean isTLSEnabled, Logger logger )
+        public static ByteChannel create( String host, int port, Config config, Logger logger )
                 throws IOException, GeneralSecurityException
         {
             SocketChannel soChannel = SocketChannel.open();
@@ -166,9 +166,9 @@ public class SocketClient
 
             ByteChannel channel = null;
 
-            if( isTLSEnabled )
+            if( config.isTLSEnabled() )
             {
-                channel = new SSLSocketChannel( host, port, soChannel, logger );
+                channel = new SSLSocketChannel( host, port, soChannel, logger, config.trustedCertificate() );
             }
             else
             {

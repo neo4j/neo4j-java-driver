@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver;
 
+import java.io.File;
 import java.util.logging.Level;
 
 import org.neo4j.driver.internal.logging.JULogging;
@@ -51,6 +52,7 @@ public class Config
     private final long idleTimeBeforeConnectionTest;
 
     private final boolean isTLSEnabled;
+    private final File trustedCertificate;
 
     private Config( ConfigBuilder builder )
     {
@@ -60,6 +62,7 @@ public class Config
         this.idleTimeBeforeConnectionTest = builder.idleTimeBeforeConnectionTest;
 
         this.isTLSEnabled = builder.isTLSEnabled;
+        this.trustedCertificate = builder.trustedCertificate;
     }
 
     /**
@@ -99,6 +102,15 @@ public class Config
         return isTLSEnabled;
     }
 
+    /**
+     * Return the trusted certificate file. If it is not specified, then this method will return null.
+     * @return
+     */
+    public File trustedCertificate()
+    {
+        return trustedCertificate;
+    }
+
     public static ConfigBuilder build()
     {
         return new ConfigBuilder();
@@ -120,7 +132,8 @@ public class Config
         private Logging logging = new JULogging( Level.INFO );
         private int connectionPoolSize = 10;
         private long idleTimeBeforeConnectionTest = 200;
-        public boolean isTLSEnabled = false;
+        private boolean isTLSEnabled = false;
+        private File trustedCertificate = null;
 
         private ConfigBuilder()
         {
@@ -163,12 +176,29 @@ public class Config
         }
 
         /**
-         * Enable TLS in all connections with server
+         * Enable TLS in all connections with the server. When TLS enabled, if a trusted certificate is provided by
+         * invoking {@code withTrustedCertificate}, then only the connections with the trusted certificate will be
+         * accepted; if no certificated is provided, then we will trust the first certificate received from the server.
          * @param value
+         * @return this builder
          */
         public ConfigBuilder withTLSEnabled( boolean value )
         {
             this.isTLSEnabled = value;
+            return this;
+        }
+
+        /**
+         * Specify the certificate file where a trusted certificate is stored. (The file could contain multiple
+         * certificates. )
+         * If the certificate file is not provided, then default to trust the first certificate received from the
+         * server.
+         * @param cert
+         * @return this builder
+         */
+        public ConfigBuilder withTrustedCertificate( File cert )
+        {
+            this.trustedCertificate = cert;
             return this;
         }
 

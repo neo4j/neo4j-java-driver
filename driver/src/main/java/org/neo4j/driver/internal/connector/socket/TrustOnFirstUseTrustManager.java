@@ -37,6 +37,8 @@ import javax.xml.bind.DatatypeConverter;
 
 class TrustOnFirstUseTrustManager implements X509TrustManager
 {
+    // TODO: discussion: do we really need the ip? Is it enough if we just create a trusted store from the first cert
+    // that we've got and trust the single cert?
     /**
      * A list of pairs (known_server_ip, certificate) are stored in this file.
      * When establishing a SSL connection to a new server, we will save the server's IP and its certificate in this
