@@ -25,6 +25,7 @@ import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.SocketChannel;
+import java.security.GeneralSecurityException;
 import java.util.List;
 
 import org.neo4j.driver.Config;
@@ -60,7 +61,7 @@ public class SocketClient
         try
         {
             logger.debug( "~~ [CONNECT] {0}:{1}.", host, port );
-            channel = SocketChannelFactory.create( host, port, logger );
+            channel = ChannelFactory.create( host, port, config, logger );
 
             protocol = negotiateProtocol();
             reader = protocol.reader();
@@ -68,14 +69,17 @@ public class SocketClient
         }
         catch ( ConnectException e )
         {
-            throw new ClientException( String.format( "Unable to connect to '%s' on port %s, " +
-                                                      "ensure the database is running and that there is a working " +
-                                                      "network " +
-                                                      "connection to it.", host, port ) );
+            throw new ClientException( String.format(
+                    "Unable to connect to '%s' on port %s, ensure the database is running and that there is a " +
+                    "working network connection to it.", host, port ) );
         }
         catch ( IOException e )
         {
             throw new ClientException( "Unable to process request: " + e.getMessage(), e );
+        }
+        catch ( GeneralSecurityException e )
+        {
+            throw new ClientException( "Unable to establish ssl connection with server: " + e.getMessage(), e );
         }
     }
 
@@ -104,26 +108,6 @@ public class SocketClient
         catch ( IOException e )
         {
             throw new ClientException( "Unable to close socket connection properly." + e.getMessage(), e );
-        }
-    }
-
-    private static class SocketChannelFactory
-    {
-        public static ByteChannel create( String host, int port, Logger logger ) throws IOException
-        {
-            SocketChannel channel = SocketChannel.open();
-            channel.setOption( StandardSocketOptions.SO_REUSEADDR, true );
-            channel.setOption( StandardSocketOptions.SO_KEEPALIVE, true );
-            channel.connect( new InetSocketAddress( host, port ) );
-
-            if( logger.isTraceEnabled() )
-            {
-                return new LoggingByteChannel( new AllOrNothingChannel( channel ), logger );
-            }
-            else
-            {
-                return new AllOrNothingChannel( channel );
-            }
         }
     }
 
@@ -168,5 +152,36 @@ public class SocketClient
     {
         int version = protocol == null ? -1 : protocol.version();
         return "SocketClient[protocolVersion=" + version + "]";
+    }
+
+    private static class ChannelFactory
+    {
+        public static ByteChannel create( String host, int port, Config config, Logger logger )
+                throws IOException, GeneralSecurityException
+        {
+            SocketChannel soChannel = SocketChannel.open();
+            soChannel.setOption( StandardSocketOptions.SO_REUSEADDR, true );
+            soChannel.setOption( StandardSocketOptions.SO_KEEPALIVE, true );
+            soChannel.connect( new InetSocketAddress( host, port ) );
+
+            ByteChannel channel = null;
+
+            if( config.isTLSEnabled() )
+            {
+                channel = new SSLSocketChannel( host, port, soChannel, logger,
+                        config.knownCerts(), config.trustedCert() );
+            }
+            else
+            {
+                channel = new AllOrNothingChannel( soChannel );
+            }
+
+            if( logger.isTraceEnabled() )
+            {
+                channel = new LoggingByteChannel( channel, logger );
+            }
+
+            return channel;
+        }
     }
 }

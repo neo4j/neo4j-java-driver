@@ -19,7 +19,10 @@
 package org.neo4j.driver.util;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.Scanner;
 
 import static java.io.File.createTempFile;
 
@@ -50,5 +53,52 @@ public class FileTools
         tmp.delete();
         tmp.mkdir();
         return tmp;
+    }
+
+
+    public static void setProperty( File propFile, String name, String value ) throws FileNotFoundException
+    {
+        boolean foundProp = false;
+        Scanner in = new Scanner( propFile );
+
+        File newPropFile = new File( propFile.getParentFile(), "prop.tmp" );
+        PrintWriter out = new PrintWriter( newPropFile );
+
+        while ( in.hasNextLine() )
+        {
+            String line = in.nextLine();
+            if ( !line.trim().startsWith( "#" ) )
+            {
+                String[] tokens = line.split( "=" );
+                if ( tokens.length == 2 && tokens[0].equals( name ) )
+                {
+                    // found property and set it to the new value
+                    out.println( name + "=" + value );
+                    foundProp = true;
+                }
+                else
+                {
+                    // not the property that we are looking for, print it as original
+                    out.println( line );
+                }
+            }
+            else
+            {
+                // comments, print as original
+                out.println( line );
+            }
+        }
+
+        if ( !foundProp )
+        {
+            // add this as a new prop
+            out.println( name + "=" + value );
+        }
+
+        in.close();
+        out.close();
+
+        propFile.delete();
+        newPropFile.renameTo( propFile );
     }
 }

@@ -21,20 +21,23 @@ package org.neo4j.driver.internal.connector.socket;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
+import java.nio.channels.SocketChannel;
 
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.util.BytePrinter;
 
 /**
- * Wraps a regular byte channel such that read and write will not return until the full buffers given have been sent or received, respectively.
+ * Wraps a regular socket channel such that read and write will not return until the full buffers given have been sent
+ * or received, respectively.
  */
 public class AllOrNothingChannel implements ByteChannel
 {
-    private final ByteChannel channel;
+    private final SocketChannel channel;
 
-    public AllOrNothingChannel( ByteChannel delegate ) throws IOException
+    public AllOrNothingChannel( SocketChannel channel ) throws IOException
     {
-        this.channel = delegate;
+        this.channel = channel;
+        this.channel.configureBlocking( true );
     }
 
     @Override
@@ -76,7 +79,7 @@ public class AllOrNothingChannel implements ByteChannel
     @Override
     public boolean isOpen()
     {
-        return true;
+        return channel.isOpen();
     }
 
     @Override

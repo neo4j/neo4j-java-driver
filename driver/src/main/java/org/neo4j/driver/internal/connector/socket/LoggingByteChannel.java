@@ -26,7 +26,8 @@ import org.neo4j.driver.internal.spi.Logger;
 import org.neo4j.driver.internal.util.BytePrinter;
 
 /**
- * Basically it is a wrapper to {@link AllOrNothingChannel} with logging enabled on bytes sent and received over the channel.
+ * Basically it is a wrapper to a {@link ByteChannel} with logging enabled to record bytes sent and received over the
+ * channel.
  */
 public class LoggingByteChannel implements ByteChannel
 {
