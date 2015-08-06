@@ -52,6 +52,7 @@ import static org.mockito.Mockito.verify;
 public class SSLSocketChannelIT
 {
     private static TLSServer server;
+    private static File knownCert;
 
     @BeforeClass
     public static void setup() throws IOException, InterruptedException
@@ -60,6 +61,7 @@ public class SSLSocketChannelIT
         // System.setProperty( "javax.net.debug", "all" );
         // delete any certificate file that the client already know
         server = new TLSServer();
+        knownCert = File.createTempFile( "neo4j_known_certs", ".tmp" );
     }
 
     @AfterClass
@@ -69,6 +71,7 @@ public class SSLSocketChannelIT
         {
             server.close();
         }
+        knownCert.delete();
     }
 
     @Test
@@ -81,7 +84,7 @@ public class SSLSocketChannelIT
 
         // When
         SSLSocketChannel sslChannel =
-                new SSLSocketChannel( "localhost", 7687, channel, logger, null );
+                new SSLSocketChannel( "localhost", 7687, channel, logger, knownCert, null );
         sslChannel.close();
 
         // Then
@@ -108,7 +111,7 @@ public class SSLSocketChannelIT
 
         // When & Then
         SSLTestSocketChannel sslChannel =
-                new SSLTestSocketChannel( "localhost", 7687, channel, logger, null, 128, 128 );
+                new SSLTestSocketChannel( "localhost", 7687, channel, logger, knownCert, null, 128, 128 );
 
         assertEquals( 5, logs.size() );
         assertTrue( logs.get( 0 ).equals( "TLS connection enabled" ) );
@@ -158,15 +161,15 @@ public class SSLSocketChannelIT
         Logger logger = mock( Logger.class );
         SocketChannel channel = SocketChannel.open();
         channel.connect( new InetSocketAddress( "localhost", 7687 ) );
-        File certFile = File.createTempFile( "random", ".cer" );
-        certFile.deleteOnExit();
-        CertificateTool.genX509Cert( certFile );
+        File trustedCert = File.createTempFile( "neo4j_trusted_cert", ".tmp" );
+        trustedCert.deleteOnExit();
+        CertificateTool.genX509Cert( trustedCert );
 
         // When & Then
         SSLSocketChannel sslChannel = null;
         try
         {
-            sslChannel = new SSLSocketChannel( "localhost", 7687, channel, logger, certFile );
+            sslChannel = new SSLSocketChannel( "localhost", 7687, channel, logger, knownCert, trustedCert );
             sslChannel.close();
         }
         catch ( SSLHandshakeException e )

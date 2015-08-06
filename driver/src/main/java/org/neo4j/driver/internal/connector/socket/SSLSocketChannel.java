@@ -72,7 +72,8 @@ public class SSLSocketChannel implements ByteChannel
     /** When enlarge the application and net buffer, this is the maximum buffer size that we could give */
     private int bufferMax;
 
-    public SSLSocketChannel( String host, int port, SocketChannel channel, Logger logger, File cert )
+    public SSLSocketChannel( String host, int port, SocketChannel channel, Logger logger,
+            File knownCerts, File trustedCert )
             throws GeneralSecurityException, IOException
     {
         logger.debug( "TLS connection enabled" );
@@ -80,7 +81,7 @@ public class SSLSocketChannel implements ByteChannel
         this.channel = channel;
         this.channel.configureBlocking( true );
 
-        initSSLContext( host, cert );
+        initSSLContext( host, port, knownCerts, trustedCert );
         createSSLEngine( host, port );
         createBuffers();
         runSSLHandShake();
@@ -88,7 +89,7 @@ public class SSLSocketChannel implements ByteChannel
     }
 
     /** Used in internal tests only */
-    SSLSocketChannel( String host, int port, SocketChannel channel, Logger logger, File cert,
+    SSLSocketChannel( String host, int port, SocketChannel channel, Logger logger, File knownCerts, File trustedCert,
             int appBufferSize, int netBufferSize )
             throws GeneralSecurityException, IOException
     {
@@ -97,7 +98,7 @@ public class SSLSocketChannel implements ByteChannel
         this.channel = channel;
         this.channel.configureBlocking( true );
 
-        initSSLContext( host, cert );
+        initSSLContext( host, port, knownCerts, trustedCert );
         createSSLEngine( host, port );
         createBuffers();
         createBuffers( appBufferSize, netBufferSize ); // reset buffer size
@@ -377,19 +378,19 @@ public class SSLSocketChannel implements ByteChannel
     }
 
     /**
-     * Default to use trust-on-first-use, however if {@code cert} is specified (not null), then only the certificate
-     * in this file will be trusted.
+     * Default to use trust-on-first-use, however if {@code cert} is specified (not null), then use full-trust.
      */
-    private void initSSLContext( String host, File certFile ) throws GeneralSecurityException, IOException
+    private void initSSLContext( String host, int port, File knownCertsFile, File trustedCertFile )
+            throws GeneralSecurityException, IOException
     {
         sslContext = SSLContext.getInstance( "TLS" );
 
         // TODO Do we also want the server to verify the client's cert, a.k.a mutual authentication?
         // Ref: http://logicoy.com/blogs/ssl-keystore-truststore-and-mutual-authentication/
         KeyManager[] keyManagers = new KeyManager[0];
-        TrustManager[] trustManagers = new TrustManager[]{new TrustOnFirstUseTrustManager( host )};
+        TrustManager[] trustManagers = new TrustManager[]{new TrustOnFirstUseTrustManager( host, port, knownCertsFile )};
 
-        if ( certFile != null )
+        if ( trustedCertFile != null )
         {
             // A certificate file is specified so we will load the certificates in the file
             // Init a in memory TrustedKeyStore
@@ -397,7 +398,7 @@ public class SSLSocketChannel implements ByteChannel
             trustedKeyStore.load( null, null );
 
             // Load the certs from the file
-            loadX509Cert( certFile, trustedKeyStore );
+            loadX509Cert( trustedCertFile, trustedKeyStore );
 
             // Create TrustManager from TrustedKeyStore
             TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance( "SunX509" );

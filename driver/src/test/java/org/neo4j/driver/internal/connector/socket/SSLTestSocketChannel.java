@@ -31,11 +31,11 @@ import org.neo4j.driver.internal.spi.Logger;
 public class SSLTestSocketChannel extends SSLSocketChannel
 {
 
-    public SSLTestSocketChannel( String host, int port, SocketChannel channel, Logger logger, File cert,
-            int appBufferSize, int netBufferSize )
+    public SSLTestSocketChannel( String host, int port, SocketChannel channel, Logger logger,
+            File knownCerts, File trustedCert, int appBufferSize, int netBufferSize )
             throws GeneralSecurityException, IOException
     {
-        super( host, port, channel, logger, cert, appBufferSize, netBufferSize );
+        super( host, port, channel, logger, knownCerts, trustedCert, appBufferSize, netBufferSize );
     }
 
     public void setBufferSize( int appBufferSize, int netBufferSize )

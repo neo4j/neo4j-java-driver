@@ -37,29 +37,27 @@ import javax.xml.bind.DatatypeConverter;
 
 class TrustOnFirstUseTrustManager implements X509TrustManager
 {
-    // TODO: discussion: do we really need the ip? Is it enough if we just create a trusted store from the first cert
-    // that we've got and trust the single cert?
     /**
-     * A list of pairs (known_server_ip, certificate) are stored in this file.
-     * When establishing a SSL connection to a new server, we will save the server's IP and its certificate in this
+     * A list of pairs (known_server, certificate) are stored in this file.
+     * When establishing a SSL connection to a new server, we will save the server's ip:port and its certificate in this
      * file.
      * Then when we try to connect to a known server again, we will authenticate the server by checking if it provides
      * the same certificate as the one saved in this file.
      */
-    static final String KNOWN_CERTS_FILE_PATH = "known_certs";
+    private final File knownCerts;
 
-    /** The ip address of the server that we are currently connected to */
-    private final String ip;
+    /** The server ip:port (in digits) of the server that we are currently connected to */
+    private final String serverId;
 
     /** The known certificate we've registered for this server */
     private String cert;
 
-    TrustOnFirstUseTrustManager( String host ) throws IOException
+    TrustOnFirstUseTrustManager( String host, int port, File knownCerts ) throws IOException
     {
-        // retrieve ip from host
-        InetAddress address = InetAddress.getByName( host );
-        this.ip = address.getHostAddress();
+        String ip = InetAddress.getByName( host ).getHostAddress(); // localhost -> 127.0.0.1
+        this.serverId = ip + ":" + port;
 
+        this.knownCerts = knownCerts;
         load();
     }
 
@@ -70,21 +68,19 @@ class TrustOnFirstUseTrustManager implements X509TrustManager
      */
     private void load() throws IOException
     {
-        File knownCertsFile = new File( KNOWN_CERTS_FILE_PATH );
-        if ( !knownCertsFile.exists() ) // it is fine if this file dose not exist
+        if ( !knownCerts.exists() )
         {
-            knownCertsFile.createNewFile();
             return;
         }
 
-        BufferedReader reader = new BufferedReader( new FileReader( knownCertsFile ) );
+        BufferedReader reader = new BufferedReader( new FileReader( knownCerts ) );
         String line = null;
         while ( (line = reader.readLine()) != null )
         {
-            if ( line.contains( "," ) )
+            if ( (!line.trim().startsWith( "#" )) && line.contains( "," ) )
             {
                 String[] strings = line.split( "," );
-                if ( strings[0].trim().equals( ip ) )
+                if ( strings[0].trim().equals( serverId ) )
                 {
                     // load the certificate
                     cert = strings[1].trim();
@@ -104,14 +100,10 @@ class TrustOnFirstUseTrustManager implements X509TrustManager
     {
         this.cert = cert;
 
-        File knownCertsFile = new File( KNOWN_CERTS_FILE_PATH );
-        if ( !knownCertsFile.exists() ) // it is fine if this file dose not exist
-        {
-            knownCertsFile.createNewFile();
-        }
+        createKnownCertFileIfNotExists();
 
-        BufferedWriter writer = new BufferedWriter( new FileWriter( knownCertsFile, true ) );
-        writer.write( ip + "," + this.cert );
+        BufferedWriter writer = new BufferedWriter( new FileWriter( knownCerts, true ) );
+        writer.write( serverId + "," + this.cert );
         writer.newLine();
         writer.close();
     }
@@ -145,9 +137,9 @@ class TrustOnFirstUseTrustManager implements X509TrustManager
             catch ( IOException e )
             {
                 throw new CertificateException( String.format(
-                        "Failed to save the server's ip and the certificate received from the server to file %s.\n" +
-                        "Server IP: %s\nReceived cert: %s",
-                        new File( KNOWN_CERTS_FILE_PATH ).getAbsolutePath(), ip, cert ), e );
+                        "Failed to save the server ID and the certificate received from the server to file %s.\n" +
+                        "Server ID: %s\nReceived cert: %s",
+                        knownCerts.getAbsolutePath(), serverId, cert ), e );
             }
         }
         else if ( !this.cert.equals( cert ) )
@@ -155,8 +147,29 @@ class TrustOnFirstUseTrustManager implements X509TrustManager
             throw new CertificateException( String.format(
                     "The certificate received from the server is different from the one we've known in file %s.\n" +
                     "Expect cert: %s\nReceived cert: %s",
-                    new File( KNOWN_CERTS_FILE_PATH ).getAbsolutePath(), this.cert, cert ) );
+                    knownCerts.getAbsolutePath(), this.cert, cert ) );
         }
+    }
+
+    private File createKnownCertFileIfNotExists() throws IOException
+    {
+        if ( !knownCerts.exists() )
+        {
+            File parentDir = knownCerts.getParentFile();
+            if( parentDir != null && !parentDir.exists() )
+            {
+                parentDir.mkdirs();
+            }
+            knownCerts.createNewFile();
+            BufferedWriter writer = new BufferedWriter( new FileWriter( knownCerts ) );
+            writer.write( "# This file contains trusted certificates for Neo4j servers, it's created by Neo4j drivers." );
+            writer.newLine();
+            writer.write( "# You can configure the location of this file in `org.neo4j.driver.Config`" );
+            writer.newLine();
+            writer.close();
+        }
+
+        return knownCerts;
     }
 
     /**
