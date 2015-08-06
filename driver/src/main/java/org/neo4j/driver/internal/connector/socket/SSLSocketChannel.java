@@ -248,6 +248,11 @@ public class SSLSocketChannel implements ByteChannel
                     logger.debug( "Enlarged network input buffer from %s to %s. " +
                                   "This operation should be a rare operation.", curNetSize, netSize );
                 }
+                else
+                {
+                    // Otherwise, make room for reading more data from channel
+                    cipherIn.compact();
+                }
                 // Obtain more inbound network data for cipherIn,
                 // then retry the operation.
                 return handshakeStatus; // old status
