@@ -31,8 +31,8 @@ import org.neo4j.driver.Value;
  */
 public class SimpleRelationship extends SimpleEntity implements Relationship
 {
-    private final Identity start;
-    private final Identity end;
+    private Identity start;
+    private Identity end;
     private final String type;
 
     public SimpleRelationship( String id, String start, String end, String type )
@@ -56,6 +56,13 @@ public class SimpleRelationship extends SimpleEntity implements Relationship
         this.start = start;
         this.end = end;
         this.type = type;
+    }
+
+    /** Modify the start/end identities of this relationship */
+    public void setStartAndEnd( Identity start, Identity end )
+    {
+        this.start = start;
+        this.end = end;
     }
 
     @Override

@@ -37,6 +37,7 @@ import org.neo4j.driver.internal.SimplePath;
 import org.neo4j.driver.internal.SimpleRelationship;
 import org.neo4j.driver.internal.connector.socket.ChunkedOutput;
 import org.neo4j.driver.internal.packstream.PackStream;
+import org.neo4j.driver.internal.util.BytePrinter;
 import org.neo4j.driver.util.DumpMessage;
 
 import static java.util.Arrays.asList;
@@ -79,6 +80,7 @@ public class MessageFormatTest
         assertSerializesValue( value( asList( "k", 12, "a", "banana" ) ) );
         assertSerializesValue( value(
                 new SimpleNode( "node/1", asList( "User" ), properties( "name", "Bob", "age", 45 ) ) ) );
+        assertSerializesValue( value( new SimpleNode( "node/1" ) ) );
         assertSerializesValue( value(
                 new SimpleRelationship( "rel/1", "node/1", "node/1",
                         "KNOWS",
@@ -93,6 +95,7 @@ public class MessageFormatTest
                                 "LIKES", properties() ),
                         new SimpleNode( "node/1" )
                 ) ) );
+        assertSerializesValue( value( new SimplePath( new SimpleNode( "node/1" ) ) ) );
     }
 
     @Test
@@ -139,11 +142,18 @@ public class MessageFormatTest
 
     private ArrayList<Message> unpack( MessageFormat format, byte[] bytes ) throws IOException
     {
-        ByteArrayInputStream input = new ByteArrayInputStream( bytes );
-        MessageFormat.Reader reader = format.newReader( Channels.newChannel( input ) );
-        ArrayList<Message> messages = new ArrayList<>();
-        DumpMessage.unpack( messages, reader );
-        return messages;
+        try
+        {
+            ByteArrayInputStream input = new ByteArrayInputStream( bytes );
+            MessageFormat.Reader reader = format.newReader( Channels.newChannel( input ) );
+            ArrayList<Message> messages = new ArrayList<>();
+            DumpMessage.unpack( messages, reader );
+            return messages;
+        }
+        catch( Exception e )
+        {
+            throw new RuntimeException( String.format("Failed to unpack value: %s. Raw data:\n%s", e.getMessage(), BytePrinter.hex( bytes )), e );
+        }
     }
 
 }
