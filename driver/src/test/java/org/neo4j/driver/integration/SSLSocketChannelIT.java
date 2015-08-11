@@ -28,6 +28,7 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import javax.net.ssl.SSLHandshakeException;
 
@@ -40,6 +41,7 @@ import org.neo4j.driver.internal.connector.socket.SSLTestSocketChannel;
 import org.neo4j.driver.internal.logging.DevNullLogger;
 import org.neo4j.driver.internal.spi.Logger;
 import org.neo4j.driver.internal.util.CertificateTool;
+import org.neo4j.driver.util.CertificateToolTest;
 import org.neo4j.driver.util.Neo4jRunner;
 
 import static junit.framework.Assert.assertFalse;
@@ -161,15 +163,16 @@ public class SSLSocketChannelIT
         Logger logger = mock( Logger.class );
         SocketChannel channel = SocketChannel.open();
         channel.connect( new InetSocketAddress( "localhost", 7687 ) );
-        File trustedCert = File.createTempFile( "neo4j_trusted_cert", ".tmp" );
-        trustedCert.deleteOnExit();
-        CertificateTool.genX509Cert( trustedCert );
+        File trustedCertFile = File.createTempFile( "neo4j_trusted_cert", ".tmp" );
+        trustedCertFile.deleteOnExit();
+        X509Certificate aRandomCert = CertificateToolTest.generateSelfSignedCertificate();
+        CertificateTool.saveX509Cert( aRandomCert, trustedCertFile );
 
         // When & Then
         SSLSocketChannel sslChannel = null;
         try
         {
-            sslChannel = new SSLSocketChannel( "localhost", 7687, channel, logger, knownCert, trustedCert );
+            sslChannel = new SSLSocketChannel( "localhost", 7687, channel, logger, knownCert, trustedCertFile );
             sslChannel.close();
         }
         catch ( SSLHandshakeException e )

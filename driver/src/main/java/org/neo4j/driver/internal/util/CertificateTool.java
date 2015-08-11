@@ -18,17 +18,6 @@
  */
 package org.neo4j.driver.internal.util;
 
-import sun.security.provider.X509Factory;
-import sun.security.x509.AlgorithmId;
-import sun.security.x509.CertificateAlgorithmId;
-import sun.security.x509.CertificateSerialNumber;
-import sun.security.x509.CertificateValidity;
-import sun.security.x509.CertificateVersion;
-import sun.security.x509.CertificateX509Key;
-import sun.security.x509.X500Name;
-import sun.security.x509.X509CertImpl;
-import sun.security.x509.X509CertInfo;
-
 import java.io.BufferedInputStream;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -36,57 +25,19 @@ import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
-import java.security.InvalidKeyException;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.security.SecureRandom;
-import java.security.SignatureException;
 import java.security.cert.Certificate;
-import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
-import java.util.Date;
-import java.util.Random;
 import javax.xml.bind.DatatypeConverter;
 
-import org.neo4j.driver.exceptions.ClientException;
-
 /**
- * A tool related to create, save, load certs, etc.
+ * A tool related to save, load certs, etc.
  */
 public class CertificateTool
 {
-    /**
-     * Create a random certificate
-     *
-     * @return
-     * @throws GeneralSecurityException
-     * @throws IOException
-     */
-    public static X509Certificate genX509Cert() throws GeneralSecurityException, IOException
-    {
-        long validSecs = (long) 365 * 24 * 60 * 60; // valid for one year
-        return generateSelfSignedCertificate( new X500Name( "CN=NEO4J_JAVA_DRIVER" ), 1024, validSecs );
-    }
-
-    /**
-     * Create a random certificate and save it into a file in X.509 format
-     *
-     * @param saveTo
-     * @throws GeneralSecurityException
-     * @throws IOException
-     */
-    public static void genX509Cert( File saveTo ) throws GeneralSecurityException, IOException
-    {
-        X509Certificate cert = genX509Cert();
-        saveX509Cert( cert, saveTo );
-    }
+    private static final String BEGIN_CERT = "-----BEGIN CERTIFICATE-----";
+    private static final String END_CERT = "-----END CERTIFICATE-----";
 
     /**
      * Save a certificate to a file. Remove all the content in the file if there is any before.
@@ -117,13 +68,13 @@ public class CertificateTool
         {
             String certStr = DatatypeConverter.printBase64Binary( cert.getEncoded() ).replaceAll( "(.{64})", "$1\n" );
 
-            writer.write( X509Factory.BEGIN_CERT );
+            writer.write( BEGIN_CERT );
             writer.newLine();
 
             writer.write( certStr );
             writer.newLine();
 
-            writer.write( X509Factory.END_CERT );
+            writer.write( END_CERT );
             writer.newLine();
         }
 
@@ -162,43 +113,6 @@ public class CertificateTool
     public static void loadX509Cert( Certificate cert, String certAlias, KeyStore keyStore ) throws KeyStoreException
     {
         keyStore.setCertificateEntry( certAlias, cert );
-    }
-
-    private static X509Certificate generateSelfSignedCertificate(X500Name name, int bits, long validSecs)
-    {
-        try {
-            String sigAlg = "SHA1WithRSA";
-
-            KeyPairGenerator keyGen = KeyPairGenerator.getInstance( "RSA" );
-            SecureRandom rand = new SecureRandom();
-            Date validAfter = new Date();
-            Date validBefore = new Date(validAfter.getTime() + validSecs * 1000L);
-
-            keyGen.initialize(bits, rand);
-            KeyPair keyPair = keyGen.generateKeyPair();
-
-            PublicKey publicKey = keyPair.getPublic();
-            PrivateKey privateKey = keyPair.getPrivate();
-            if(!"X.509".equalsIgnoreCase(publicKey.getFormat())) {
-                throw new IllegalArgumentException("publicKey\'s is not X.509, but " + publicKey.getFormat());
-            }
-
-            X509CertInfo certInfo = new X509CertInfo();
-            certInfo.set( "version", new CertificateVersion( 2 ) );
-            certInfo.set( "serialNumber", new CertificateSerialNumber( (new Random()).nextInt() & 2147483647 ) );
-            certInfo.set( "algorithmID", new CertificateAlgorithmId( AlgorithmId.get(sigAlg) ) );
-            certInfo.set( "subject", name );
-            certInfo.set( "key", new CertificateX509Key( publicKey ) );
-            certInfo.set( "validity", new CertificateValidity(validAfter, validBefore) );
-            certInfo.set( "issuer", name );
-
-            X509CertImpl cert = new X509CertImpl(certInfo);
-            cert.sign( privateKey, sigAlg );
-            return cert;
-        } catch (IOException | CertificateException | NoSuchAlgorithmException | SignatureException | NoSuchProviderException | InvalidKeyException e )
-        {
-            throw new ClientException( "Failed to generate self-signed certificate: " + e.getMessage(), e );
-        }
     }
 }
 

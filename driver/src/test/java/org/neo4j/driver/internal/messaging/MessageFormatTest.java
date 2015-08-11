@@ -31,7 +31,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import org.neo4j.driver.Value;
-import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.SimpleNode;
 import org.neo4j.driver.internal.SimplePath;
 import org.neo4j.driver.internal.SimpleRelationship;
@@ -43,6 +42,7 @@ import org.neo4j.driver.util.DumpMessage;
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.startsWith;
 import static org.neo4j.driver.Values.properties;
 import static org.neo4j.driver.Values.value;
 
@@ -112,9 +112,10 @@ public class MessageFormatTest
         packer.flush();
 
         // Expect
-        exception.expect( ClientException.class );
-        exception.expectMessage( "Invalid message received, serialized NODE structures should have 3 fields, " +
-                                 "received NODE structure has 0 fields." );
+        exception.expect( RuntimeException.class );
+        exception.expectMessage( startsWith(
+                "Failed to unpack value: Invalid message received, serialized NODE structures should have 3 fields, " +
+                "received NODE structure has 0 fields." ) );
 
         // When
         unpack( format, out.toByteArray() );
@@ -152,7 +153,9 @@ public class MessageFormatTest
         }
         catch( Exception e )
         {
-            throw new RuntimeException( String.format("Failed to unpack value: %s. Raw data:\n%s", e.getMessage(), BytePrinter.hex( bytes )), e );
+            throw new RuntimeException(
+                    String.format( "Failed to unpack value: %s Raw data:\n%s",
+                            e.getMessage(), BytePrinter.hex( bytes ) ), e );
         }
     }
 

@@ -601,6 +601,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             Relationship[] rels = new Relationship[segments.length];
 
             Node prevNode = uniqNodes[0], nextNode; // Start node is always 0, and isn't encoded in the sequence
+            nodes[0] = prevNode;
             SimpleRelationship rel;
             for ( int i = 0; i < segments.length; i++ )
             {
