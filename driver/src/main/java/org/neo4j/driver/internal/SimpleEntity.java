@@ -55,6 +55,12 @@ public abstract class SimpleEntity implements Entity
     }
 
     @Override
+    public int propertyCount()
+    {
+        return properties.size();
+    }
+
+    @Override
     public boolean equals( Object o )
     {
         if ( this == o )

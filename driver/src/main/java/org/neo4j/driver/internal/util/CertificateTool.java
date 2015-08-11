@@ -18,10 +18,6 @@
  */
 package org.neo4j.driver.internal.util;
 
-import sun.security.provider.X509Factory;
-import sun.security.x509.CertAndKeyGen;
-import sun.security.x509.X500Name;
-
 import java.io.BufferedInputStream;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -33,43 +29,15 @@ import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
 import javax.xml.bind.DatatypeConverter;
 
 /**
- * A tool related to create, save, load certs, etc.
+ * A tool related to save, load certs, etc.
  */
 public class CertificateTool
 {
-    /**
-     * Create a random certificate
-     *
-     * @return
-     * @throws GeneralSecurityException
-     * @throws IOException
-     */
-    public static X509Certificate genX509Cert() throws GeneralSecurityException, IOException
-    {
-        CertAndKeyGen certGen = new CertAndKeyGen( "RSA", "SHA1WithRSA", null );
-        certGen.generate( 1024 );
-
-        long validSecs = (long) 365 * 24 * 60 * 60; // valid for one year
-        X509Certificate cert = certGen.getSelfCertificate( new X500Name( "CN=NEO4J_JAVA_DRIVER" ), validSecs );
-        return cert;
-    }
-
-    /**
-     * Create a random certificate and save it into a file in X.509 format
-     *
-     * @param saveTo
-     * @throws GeneralSecurityException
-     * @throws IOException
-     */
-    public static void genX509Cert( File saveTo ) throws GeneralSecurityException, IOException
-    {
-        X509Certificate cert = genX509Cert();
-        saveX509Cert( cert, saveTo );
-    }
+    private static final String BEGIN_CERT = "-----BEGIN CERTIFICATE-----";
+    private static final String END_CERT = "-----END CERTIFICATE-----";
 
     /**
      * Save a certificate to a file. Remove all the content in the file if there is any before.
@@ -96,18 +64,17 @@ public class CertificateTool
     {
         BufferedWriter writer = new BufferedWriter( new FileWriter( certFile ) );
 
-        for ( int i = 0; i < certs.length; i++ )
+        for ( Certificate cert : certs )
         {
-            String certStr = DatatypeConverter.printBase64Binary( certs[i].getEncoded() )
-                    .replaceAll( "(.{64})", "$1\n" );
+            String certStr = DatatypeConverter.printBase64Binary( cert.getEncoded() ).replaceAll( "(.{64})", "$1\n" );
 
-            writer.write( X509Factory.BEGIN_CERT );
+            writer.write( BEGIN_CERT );
             writer.newLine();
 
             writer.write( certStr );
             writer.newLine();
 
-            writer.write( X509Factory.END_CERT );
+            writer.write( END_CERT );
             writer.newLine();
         }
 

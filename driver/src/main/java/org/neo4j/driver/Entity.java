@@ -41,6 +41,13 @@ public interface Entity
     Iterable<String> propertyKeys();
 
     /**
+     * Number of properties in this entity.
+     *
+     * @return the number of properties this entity contains.
+     */
+    int propertyCount();
+
+    /**
      * Return a specific property {@link org.neo4j.driver.Value}.
      *
      * @param key a property key

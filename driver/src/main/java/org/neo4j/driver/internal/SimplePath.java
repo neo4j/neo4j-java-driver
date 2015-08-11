@@ -105,12 +105,16 @@ public class SimplePath implements Path
         return node.identity().equals( relationship.start() ) || node.identity().equals( relationship.end() );
     }
 
-    private final ArrayList<Node> nodes = new ArrayList<>();
-    private final ArrayList<Relationship> relationships = new ArrayList<>();
-    private final ArrayList<Segment> segments = new ArrayList<>();
+    private final List<Node> nodes;
+    private final List<Relationship> relationships;
+    private final List<Segment> segments;
 
     public SimplePath( List<Entity> alternatingNodeAndRel )
     {
+        nodes = new ArrayList<>(alternatingNodeAndRel.size() / 2 + 1);
+        relationships = new ArrayList<>(alternatingNodeAndRel.size() / 2);
+        segments = new ArrayList<>(alternatingNodeAndRel.size() / 2);
+
         if ( alternatingNodeAndRel.size() % 2 == 0 )
         {
             throw new IllegalArgumentException( "An odd number of entities are required to build a path" );
@@ -181,6 +185,13 @@ public class SimplePath implements Path
     public SimplePath( Entity... alternatingNodeAndRel )
     {
         this( Arrays.asList( alternatingNodeAndRel ) );
+    }
+
+    public SimplePath( List<Segment> segments, List<Node> nodes, List<Relationship> relationships )
+    {
+        this.segments = segments;
+        this.nodes = nodes;
+        this.relationships = relationships;
     }
 
     @Override
