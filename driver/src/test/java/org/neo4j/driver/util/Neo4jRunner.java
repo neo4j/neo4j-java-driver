@@ -185,7 +185,7 @@ public class Neo4jRunner
         catch ( Exception e )
         {
             System.out.println( "Failed to change property." );
-            e.printStackTrace();
+            throw new RuntimeException( e );
         }
     }
 
@@ -226,6 +226,11 @@ public class Neo4jRunner
             if( isTLSEnabled )
             {
                 config = Config.build().withTLSEnabled( true ).toConfig();
+                if( config.knownCerts().exists() )
+                {
+                    config.knownCerts().delete();
+                }
+                config.knownCerts().deleteOnExit();
             }
             SocketClient client = new SocketClient( uri.getHost(), uri.getPort(),
                     config, new DevNullLogger() );

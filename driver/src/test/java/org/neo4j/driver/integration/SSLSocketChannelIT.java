@@ -26,10 +26,8 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
-import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.security.cert.X509Certificate;
-import java.util.ArrayList;
 import javax.net.ssl.SSLHandshakeException;
 
 import org.neo4j.driver.Config;
@@ -37,8 +35,6 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.internal.connector.socket.SSLSocketChannel;
-import org.neo4j.driver.internal.connector.socket.SSLTestSocketChannel;
-import org.neo4j.driver.internal.logging.DevNullLogger;
 import org.neo4j.driver.internal.spi.Logger;
 import org.neo4j.driver.internal.util.CertificateTool;
 import org.neo4j.driver.util.CertificateToolTest;
@@ -96,67 +92,6 @@ public class SSLSocketChannelIT
     }
 
     @Test
-    public void shouldEnlargeBuffers() throws Throwable
-    {
-        // Given
-        final ArrayList<String> logs = new ArrayList<>();
-        Logger logger = new DevNullLogger()
-        {
-            @Override
-            public void debug( String format, Object... params )
-            {
-                logs.add( String.format( format, params ) );
-            }
-        };
-        SocketChannel channel = SocketChannel.open();
-        channel.connect( new InetSocketAddress( "localhost", 7687 ) );
-
-        // When & Then
-        SSLTestSocketChannel sslChannel =
-                new SSLTestSocketChannel( "localhost", 7687, channel, logger, knownCert, null, 128, 128 );
-
-        assertEquals( 5, logs.size() );
-        assertTrue( logs.get( 0 ).equals( "TLS connection enabled" ) );
-        assertTrue( logs.get( 1 ).startsWith( "Enlarged network output buffer from 128 to" ) );
-        assertTrue( logs.get( 2 ).startsWith( "Enlarged application input buffer from 128 to" ) );
-        assertTrue( logs.get( 3 ).startsWith( "Enlarged network input buffer from 128 to" ) );
-        assertTrue( logs.get( 4 ).equals( "TLS connection established" ) );
-
-
-        // Then we will do the protocol handshake
-        // Reset the buffer to be a extreme small size
-        sslChannel.setBufferSize( 32, 32 );
-        ByteBuffer buf = ByteBuffer.wrap( new byte[]{
-                0, 0, 0, 1,
-                0, 0, 0, 0,
-                0, 0, 0, 0,
-                0, 0, 0, 0} );
-        // Write the bytes to server
-        sslChannel.write( buf );
-
-        // Read the 0 0 0 1 from server in two read methods
-        buf.clear();
-        buf.limit( 2 );
-        sslChannel.read( buf );
-        buf.flip();
-        short proposal = buf.getShort();
-        assertEquals( 0, proposal );
-
-        buf.clear();
-        buf.limit( 2 );
-        sslChannel.read( buf );
-        buf.flip();
-        proposal = buf.getShort();
-        assertEquals( 1, proposal );
-
-        assertEquals( 7, logs.size() );
-        assertTrue( logs.get( 5 ).startsWith( "Enlarged network output buffer from 32 to" ) );
-        assertTrue( logs.get( 6 ).startsWith( "Enlarged network input buffer from 32 to" ) );
-
-        sslChannel.close();
-    }
-
-    @Test
     public void shouldRejectServerConnectionDueToWrongCert() throws Throwable
     {
         // Given
@@ -193,9 +128,14 @@ public class SSLSocketChannelIT
     @Test
     public void shouldEstablishTLSConnection() throws Throwable
     {
+        Config config = Config.build().withTLSEnabled( true ).toConfig();
+        if( config.knownCerts().exists() )
+        {
+            config.knownCerts().delete();
+        }
         Driver driver = GraphDatabase.driver(
                 URI.create( Neo4jRunner.DEFAULT_URL ),
-                Config.build().withTLSEnabled( true ).toConfig() );
+                config );
 
         Result result = driver.session().run( "RETURN 1" );
         assertTrue( result.next() );
