@@ -80,24 +80,25 @@ public class Neo4jRunner
     {
         if ( !externalServer )
         {
-            if ( !neo4jHome.exists() || neo4jHome.list() == null )
+            if ( neo4jHome.exists() )
             {
-                // no neo4j exists
-
-                // download neo4j server from a URL
-                File neo4jTarball = new File( "./target/" + neo4jVersion + ".tar.gz" );
-                ensureDownloaded( neo4jTarball, neo4jLink );
-
-                // Untar the neo4j server
-                extractTarball( neo4jTarball );
-
-                File configFile = new File( neo4jHome, "conf/neo4j-server.properties" );
-                FileTools.setProperty( configFile, "xx.ndp.enabled", "true" );
+                System.out.println( "Found an old Neo4j server in: " + neo4jHome.getAbsolutePath() + ". Deleting to " +
+                                    "use a new one." );
+                FileTools.deleteRecursively( neo4jHome );
             }
-            else
-            {
-                System.out.println( "Using Neo4j server in: " + neo4jHome.getAbsolutePath() );
-            }
+
+            // no neo4j exists
+
+            // download neo4j server from a URL
+            File neo4jTarball = new File( "./target/" + neo4jVersion + ".tar.gz" );
+            ensureDownloaded( neo4jTarball, neo4jLink );
+
+            // Untar the neo4j server
+            extractTarball( neo4jTarball );
+
+            File configFile = new File( neo4jHome, "conf/neo4j-server.properties" );
+            FileTools.setProperty( configFile, "xx.ndp.enabled", "true" );
+
         }
     }
 
@@ -117,16 +118,14 @@ public class Neo4jRunner
 
     private void ensureDownloaded( File file, String downloadLink ) throws IOException
     {
-        if ( file.exists() && file.length() == 0 )
+        if ( file.exists() )
         {
             file.delete();
         }
-        if ( !file.exists() )
-        {
-            file.getParentFile().mkdirs();
-            System.out.println( "Copying: " + downloadLink + " -> " + file );
-            streamFileTo( downloadLink, file );
-        }
+        file.getParentFile().mkdirs();
+        System.out.println( "Copying: " + downloadLink + " -> " + file );
+        streamFileTo( downloadLink, file );
+
     }
 
     public void startServer() throws IOException, InterruptedException
