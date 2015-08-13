@@ -80,7 +80,13 @@ public class Neo4jRunner
     {
         if ( !externalServer )
         {
-            if ( !neo4jHome.exists() || neo4jHome.list() == null )
+            if ( neo4jHome.exists() && neo4jHome.list() != null )
+            {
+                System.out.println( "Found an old Neo4j server in: " + neo4jHome.getAbsolutePath() + ". Deleting to " +
+                                    "use a new one." );
+                FileTools.deleteRecursively( neo4jHome );
+            }
+            else
             {
                 // no neo4j exists
 
@@ -93,10 +99,6 @@ public class Neo4jRunner
 
                 File configFile = new File( neo4jHome, "conf/neo4j-server.properties" );
                 FileTools.setProperty( configFile, "xx.ndp.enabled", "true" );
-            }
-            else
-            {
-                System.out.println( "Using Neo4j server in: " + neo4jHome.getAbsolutePath() );
             }
         }
     }
