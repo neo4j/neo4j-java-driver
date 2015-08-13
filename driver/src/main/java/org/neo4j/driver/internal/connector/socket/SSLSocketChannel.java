@@ -69,9 +69,6 @@ public class SSLSocketChannel implements ByteChannel
     private ByteBuffer plainIn;
     private ByteBuffer plainOut;
 
-    /** When enlarge the application and net buffer, this is the maximum buffer size that we could give */
-    private int bufferMax;
-
     public SSLSocketChannel( String host, int port, SocketChannel channel, Logger logger,
             File knownCerts, File trustedCert )
             throws GeneralSecurityException, IOException
@@ -89,21 +86,16 @@ public class SSLSocketChannel implements ByteChannel
     }
 
     /** Used in internal tests only */
-    SSLSocketChannel( String host, int port, SocketChannel channel, Logger logger, File knownCerts, File trustedCert,
-            int appBufferSize, int netBufferSize )
+    SSLSocketChannel( SocketChannel channel, Logger logger, SSLEngine sslEngine,
+            ByteBuffer plainIn, ByteBuffer cipherIn, ByteBuffer plainOut, ByteBuffer cipherOut )
             throws GeneralSecurityException, IOException
     {
-        logger.debug( "TLS connection enabled" );
+        logger.debug( "Testing TLS buffers" );
         this.logger = logger;
         this.channel = channel;
-        this.channel.configureBlocking( true );
 
-        initSSLContext( host, port, knownCerts, trustedCert );
-        createSSLEngine( host, port );
-        createBuffers();
-        createBuffers( appBufferSize, netBufferSize ); // reset buffer size
-        runSSLHandShake();
-        logger.debug( "TLS connection established" );
+        this.sslEngine = sslEngine;
+        resetBuffers( plainIn, cipherIn, plainOut, cipherOut ); // reset buffer size
     }
 
     /**
@@ -217,6 +209,7 @@ public class SSLSocketChannel implements ByteChannel
                 handshakeStatus = runDelegatedTasks();
                 break;
             case BUFFER_OVERFLOW:
+                plainIn.flip();
                 // Could attempt to drain the plainIn buffer of any already obtained
                 // data, but we'll just increase it to the size needed.
                 int curAppSize = plainIn.capacity();
@@ -225,7 +218,7 @@ public class SSLSocketChannel implements ByteChannel
                 if ( newAppSize > appSize * 2 )
                 {
                     throw new ClientException(
-                            String.format( "Failed ro enlarge application buffer from %s to %s, as the maximum " +
+                            String.format( "Failed ro enlarge application input buffer from %s to %s, as the maximum " +
                                            "buffer size allowed is %s. The content in the buffer is: %s\n",
                                     curAppSize, newAppSize, appSize * 2, BytePrinter.hex( plainIn ) ) );
                 }
@@ -253,6 +246,12 @@ public class SSLSocketChannel implements ByteChannel
                     // Otherwise, make room for reading more data from channel
                     cipherIn.compact();
                 }
+
+                // I skipped the following check as it "should not" happen at all:
+                // The channel should not provide us ciphered bytes that cannot hold in the channel buffer at all
+                // if( cipherIn.remaining() == 0 )
+                // {throw new ClientException( "cannot enlarge as it already reached the limit" );}
+
                 // Obtain more inbound network data for cipherIn,
                 // then retry the operation.
                 return handshakeStatus; // old status
@@ -332,7 +331,7 @@ public class SSLSocketChannel implements ByteChannel
      * @param to
      * @return
      */
-    private int bufferCopy( ByteBuffer from, ByteBuffer to )
+    static int bufferCopy( ByteBuffer from, ByteBuffer to )
     {
         if ( from == null || to == null )
         {
@@ -355,19 +354,22 @@ public class SSLSocketChannel implements ByteChannel
     private void createBuffers() throws IOException
     {
         SSLSession session = sslEngine.getSession();
-        int applicationBufferSize = session.getApplicationBufferSize();
-        int networkBufferSize = session.getPacketBufferSize();
-        bufferMax = Math.max( applicationBufferSize * 2, networkBufferSize * 2 );
+        int appBufferSize = session.getApplicationBufferSize();
+        int netBufferSize = session.getPacketBufferSize();
 
-        createBuffers( applicationBufferSize, networkBufferSize );
-    }
-
-    void createBuffers( int appBufferSize, int netBufferSize )
-    {
         plainOut = ByteBuffer.allocateDirect( appBufferSize );
         plainIn = ByteBuffer.allocateDirect( appBufferSize );
         cipherOut = ByteBuffer.allocateDirect( netBufferSize );
         cipherIn = ByteBuffer.allocateDirect( netBufferSize );
+    }
+
+    /** Should only be used in tests */
+    void resetBuffers( ByteBuffer plainIn, ByteBuffer cipherIn, ByteBuffer plainOut, ByteBuffer cipherOut )
+    {
+        this.plainIn = plainIn;
+        this.cipherIn = cipherIn;
+        this.plainOut = plainOut;
+        this.cipherOut = cipherOut;
     }
 
     /**
