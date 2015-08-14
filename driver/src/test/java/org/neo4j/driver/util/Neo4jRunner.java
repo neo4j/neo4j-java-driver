@@ -46,6 +46,7 @@ public class Neo4jRunner
 
     private static Neo4jRunner globalInstance;
     private static boolean externalServer = Boolean.getBoolean( "neo4j.useExternalServer" );
+    private static boolean shutdownHookRegistered = false;
 
     private static final String neo4jVersion = System.getProperty( "version", "3.0.0-alpha.LATEST" );
     private static final String neo4jLink = System.getProperty( "packageUri",
@@ -78,7 +79,7 @@ public class Neo4jRunner
 
     public Neo4jRunner() throws IOException
     {
-        if ( !externalServer )
+        if ( canControlServer() )
         {
             if ( neo4jHome.exists() )
             {
@@ -265,21 +266,25 @@ public class Neo4jRunner
 
     private void stopOnExit()
     {
-        Runtime.getRuntime().addShutdownHook( new Thread( new Runnable()
+        if( !shutdownHookRegistered )
         {
-            @Override
-            public void run()
+            Runtime.getRuntime().addShutdownHook( new Thread( new Runnable()
             {
-                try
+                @Override
+                public void run()
                 {
-                    stopServer();
+                    try
+                    {
+                        stopServer();
+                    }
+                    catch ( Exception e )
+                    {
+                        // cannot help you anything sorry
+                        e.printStackTrace();
+                    }
                 }
-                catch ( Exception e )
-                {
-                    // cannot help you anything sorry
-                    e.printStackTrace();
-                }
-            }
-        } ) );
+            } ) );
+            shutdownHookRegistered = true;
+        }
     }
 }
