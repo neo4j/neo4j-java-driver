@@ -98,7 +98,7 @@ public class Neo4jRunner
             extractTarball( neo4jTarball );
 
             File configFile = new File( neo4jHome, "conf/neo4j-server.properties" );
-            FileTools.setProperty( configFile, "xx.ndp.enabled", "true" );
+            FileTools.setProperty( configFile, "xx.bolt.enabled", "true" );
 
         }
     }
@@ -162,7 +162,7 @@ public class Neo4jRunner
     public void enableTLS( boolean isTLSEnabled )
     {
         this.isTLSEnabled = isTLSEnabled;
-        setServerProperty( "xx.ndp.tls.enabled", String.valueOf( isTLSEnabled ) );
+        setServerProperty( "xx.bolt.tls.enabled", String.valueOf( isTLSEnabled ) );
     }
 
     /**
