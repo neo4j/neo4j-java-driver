@@ -18,11 +18,16 @@
  */
 package org.neo4j.driver.internal.connector.socket;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.mockito.Matchers;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
+import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Arrays;
 
@@ -33,9 +38,14 @@ import static junit.framework.Assert.fail;
 import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class ChunkedInputTest
 {
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
+
     @Test
     public void shouldExposeMultipleChunksAsCohesiveStream() throws Throwable
     {
@@ -177,5 +187,23 @@ public class ChunkedInputTest
                           "'00 00' while there are more data left in the message content unread: buffer [], " +
                           "unread chunk size 1", e.toString() );
         }
+    }
+
+    @Test
+    public void shouldGiveHelpfulMessageOnInterrupt() throws IOException
+    {
+        // Given
+        ReadableByteChannel channel = mock(ReadableByteChannel.class);
+        when(channel.read( Matchers.any(ByteBuffer.class) )).thenThrow( new ClosedByInterruptException() );
+
+        ChunkedInput ch = new ChunkedInput( 2, channel );
+
+        // Expect
+        exception.expectMessage( "Connection to the database was lost because someone called `interrupt()` on the driver thread waiting for a reply. " +
+                                 "This normally happens because the JVM is shutting down, but it can also happen because your application code or some " +
+                                 "framework you are using is manually interrupting the thread." );
+
+        // When
+        ch.readByte();
     }
 }

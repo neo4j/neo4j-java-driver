@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.connector.socket;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ReadableByteChannel;
 
 import org.neo4j.driver.exceptions.ClientException;
@@ -245,10 +246,18 @@ public class ChunkedInput implements PackInput
                     readChunk( chunkSize );
                 }
             }
+            catch( ClosedByInterruptException e )
+            {
+                throw new ClientException(
+                                "Connection to the database was lost because someone called `interrupt()` on the driver thread waiting for a reply. " +
+                                "This normally happens because the JVM is shutting down, but it can also happen because your application code or some " +
+                                "framework you are using is manually interrupting the thread." );
+            }
             catch ( IOException e )
             {
-                throw new ClientException( "Unable to process request: " + e.getMessage() + ", expect: " + toRead +
-                                           ", buffer: \n" + BytePrinter.hex( buffer ), e );
+                String message = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
+                throw new ClientException( "Unable to process request: " + message + ", expected: " + toRead +
+                                           " bytes, buffer: \n" + BytePrinter.hex( buffer ), e );
             }
             /* buffer ready for reading again */
         }
