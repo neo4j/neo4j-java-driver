@@ -85,8 +85,8 @@ public class TrustOnFirstUseTrustManagerTest
         }
         catch ( CertificateException e )
         {
-            assertTrue( e.getMessage().startsWith(
-                    "The certificate received from the server is different from the one we've known in file" ) );
+            assertTrue( e.getMessage().contains(
+                    "If you trust the certificate the server uses now, simply remove the line that starts with" ) );
         }
     }
 

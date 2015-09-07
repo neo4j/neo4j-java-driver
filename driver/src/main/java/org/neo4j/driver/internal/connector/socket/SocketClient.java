@@ -168,8 +168,7 @@ public class SocketClient
 
             if( config.isTLSEnabled() )
             {
-                channel = new SSLSocketChannel( host, port, soChannel, logger,
-                        config.knownCerts(), config.trustedCert() );
+                channel = new SSLSocketChannel( host, port, soChannel, logger, config.tlsAuthConfig() );
             }
             else
             {

@@ -30,6 +30,8 @@ import java.security.cert.X509Certificate;
 import javax.net.ssl.X509TrustManager;
 import javax.xml.bind.DatatypeConverter;
 
+import static org.neo4j.driver.internal.util.CertificateTool.X509CertToString;
+
 /**
  * References:
  * http://stackoverflow.com/questions/6802421/how-to-compare-distinct-implementations-of-java-security-cert-x509certificate?answertab=votes#tab-top
@@ -138,16 +140,24 @@ class TrustOnFirstUseTrustManager implements X509TrustManager
             {
                 throw new CertificateException( String.format(
                         "Failed to save the server ID and the certificate received from the server to file %s.\n" +
-                        "Server ID: %s\nReceived cert: %s",
-                        knownCerts.getAbsolutePath(), serverId, cert ), e );
+                        "Server ID: %s\nReceived cert:\n%s",
+                        knownCerts.getAbsolutePath(), serverId, X509CertToString( cert ) ), e );
             }
         }
-        else if ( !this.cert.equals( cert ) )
+        else
         {
-            throw new CertificateException( String.format(
-                    "The certificate received from the server is different from the one we've known in file %s.\n" +
-                    "Expect cert: %s\nReceived cert: %s",
-                    knownCerts.getAbsolutePath(), this.cert, cert ) );
+            if ( !this.cert.equals( cert ) )
+            {
+                throw new CertificateException( String.format(
+                        "Unable to connect to neo4j at `%s`, because the certificate the server uses has changed. " +
+                        "This is a security feature to protect against man-in-the-middle attacks.\n" +
+                        "If you trust the certificate the server uses now, simply remove the line that starts with " +
+                        "`%s` " +
+                        "in the file `%s`.\n" +
+                        "The old certificate saved in file is:\n%sThe New certificate received is:\n%s",
+                        serverId, serverId, knownCerts.getAbsolutePath(),
+                        X509CertToString( this.cert ), X509CertToString( cert ) ) );
+            }
         }
     }
 

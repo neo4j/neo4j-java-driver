@@ -18,30 +18,25 @@
  */
 package org.neo4j.driver.internal.connector.socket;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.SocketChannel;
 import java.security.GeneralSecurityException;
-import java.security.KeyStore;
-import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 import javax.net.ssl.SSLEngineResult.Status;
 import javax.net.ssl.SSLSession;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.TrustManagerFactory;
 
+import org.neo4j.driver.Config.TLSAuthenticationConfig;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.spi.Logger;
 import org.neo4j.driver.internal.util.BytePrinter;
 
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.FINISHED;
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING;
-import static org.neo4j.driver.internal.util.CertificateTool.loadX509Cert;
 
 /**
  * A blocking SSL socket channel.
@@ -56,10 +51,10 @@ import static org.neo4j.driver.internal.util.CertificateTool.loadX509Cert;
  */
 public class SSLSocketChannel implements ByteChannel
 {
-    private SocketChannel channel;      // The real channel the data is sent to and read from
+    private final SocketChannel channel;      // The real channel the data is sent to and read from
     private final Logger logger;
 
-    private SSLContext sslContext;
+    private final SSLContext sslContext;
     private SSLEngine sslEngine;
 
     /** The buffer for network data */
@@ -70,7 +65,7 @@ public class SSLSocketChannel implements ByteChannel
     private ByteBuffer plainOut;
 
     public SSLSocketChannel( String host, int port, SocketChannel channel, Logger logger,
-            File knownCerts, File trustedCert )
+            TLSAuthenticationConfig authConfig )
             throws GeneralSecurityException, IOException
     {
         logger.debug( "TLS connection enabled" );
@@ -78,7 +73,7 @@ public class SSLSocketChannel implements ByteChannel
         this.channel = channel;
         this.channel.configureBlocking( true );
 
-        initSSLContext( host, port, knownCerts, trustedCert );
+        sslContext =  new SSLContextFactory( host, port, authConfig ).create();
         createSSLEngine( host, port );
         createBuffers();
         runSSLHandShake();
@@ -94,6 +89,7 @@ public class SSLSocketChannel implements ByteChannel
         this.logger = logger;
         this.channel = channel;
 
+        this.sslContext = SSLContext.getInstance( "TLS" );
         this.sslEngine = sslEngine;
         resetBuffers( plainIn, cipherIn, plainOut, cipherOut ); // reset buffer size
     }
@@ -382,38 +378,6 @@ public class SSLSocketChannel implements ByteChannel
     {
         sslEngine = sslContext.createSSLEngine( host, port );
         sslEngine.setUseClientMode( true );
-    }
-
-    /**
-     * Default to use trust-on-first-use, however if {@code cert} is specified (not null), then use full-trust.
-     */
-    private void initSSLContext( String host, int port, File knownCertsFile, File trustedCertFile )
-            throws GeneralSecurityException, IOException
-    {
-        sslContext = SSLContext.getInstance( "TLS" );
-
-        // TODO Do we also want the server to verify the client's cert, a.k.a mutual authentication?
-        // Ref: http://logicoy.com/blogs/ssl-keystore-truststore-and-mutual-authentication/
-        KeyManager[] keyManagers = new KeyManager[0];
-        TrustManager[] trustManagers = new TrustManager[]{new TrustOnFirstUseTrustManager( host, port, knownCertsFile )};
-
-        if ( trustedCertFile != null )
-        {
-            // A certificate file is specified so we will load the certificates in the file
-            // Init a in memory TrustedKeyStore
-            KeyStore trustedKeyStore = KeyStore.getInstance( "JKS" );
-            trustedKeyStore.load( null, null );
-
-            // Load the certs from the file
-            loadX509Cert( trustedCertFile, trustedKeyStore );
-
-            // Create TrustManager from TrustedKeyStore
-            TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance( "SunX509" );
-            trustManagerFactory.init( trustedKeyStore );
-            trustManagers = trustManagerFactory.getTrustManagers();
-        }
-
-        sslContext.init( keyManagers, trustManagers, null );
     }
 
     @Override
