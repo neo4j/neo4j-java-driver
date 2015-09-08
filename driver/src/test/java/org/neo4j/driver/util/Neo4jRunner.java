@@ -35,6 +35,9 @@ import org.neo4j.driver.internal.connector.socket.SocketClient;
 import org.neo4j.driver.internal.logging.DevNullLogger;
 
 import static junit.framework.TestCase.assertFalse;
+import static org.neo4j.driver.internal.ConfigTest.deleteDefaultKnownCertFileIfExists;
+import static org.neo4j.driver.util.FileTools.deleteRecursively;
+import static org.neo4j.driver.util.FileTools.setProperty;
 
 /**
  * This class wraps the neo4j stand-alone jar in some code to help pulling it in from a remote URL and then launching
@@ -85,7 +88,7 @@ public class Neo4jRunner
             {
                 System.out.println( "Found an old Neo4j server in: " + neo4jHome.getAbsolutePath() + ". Deleting to " +
                                     "use a new one." );
-                FileTools.deleteRecursively( neo4jHome );
+                deleteRecursively( neo4jHome );
             }
 
             // no neo4j exists
@@ -98,7 +101,7 @@ public class Neo4jRunner
             extractTarball( neo4jTarball );
 
             File configFile = new File( neo4jHome, "conf/neo4j-server.properties" );
-            FileTools.setProperty( configFile, "xx.ndp.enabled", "true" );
+            setProperty( configFile, "xx.ndp.enabled", "true" );
 
         }
     }
@@ -135,7 +138,8 @@ public class Neo4jRunner
         {
             assertFalse( "A server instance is already running", serverResponds() );
 
-            FileTools.deleteRecursively( new File( dataDir, "graph.db" ) );
+            deleteRecursively( new File( dataDir, "graph.db" ) );
+            deleteDefaultKnownCertFileIfExists();
 
             Process process = runNeo4j( "start" );
             stopOnExit();
@@ -176,7 +180,7 @@ public class Neo4jRunner
         File oldFile = new File( neo4jHome, "conf/neo4j-server.properties" );
         try
         {
-            FileTools.setProperty( oldFile, name, value );
+            setProperty( oldFile, name, value );
 
             System.out.println( "Restart server to reload property change: " + name + "=" + value );
             this.stopServer();
@@ -226,11 +230,6 @@ public class Neo4jRunner
             if( isTLSEnabled )
             {
                 config = Config.build().withTLSEnabled( true ).toConfig();
-                if( config.knownCerts().exists() )
-                {
-                    config.knownCerts().delete();
-                }
-                config.knownCerts().deleteOnExit();
             }
             SocketClient client = new SocketClient( uri.getHost(), uri.getPort(),
                     config, new DevNullLogger() );
