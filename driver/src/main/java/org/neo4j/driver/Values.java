@@ -256,15 +256,4 @@ public class Values
         }
         return map;
     }
-
-    public static Map<String,Value> toValueMap( Map<String,Object> input )
-    {
-        HashMap<String,Value> map = new HashMap<>( input.size() );
-        for ( Map.Entry<String,Object> entry : input.entrySet() )
-        {
-            map.put( entry.getKey(), value( entry.getValue() ) );
-        }
-        return map;
-    }
-
 }

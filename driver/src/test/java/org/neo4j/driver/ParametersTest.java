@@ -16,25 +16,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.exceptions;
+package org.neo4j.driver;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
+import org.neo4j.driver.exceptions.ClientException;
 
-public class DatabaseExceptionTest
+import static org.neo4j.driver.Driver.*;
+
+public class ParametersTest
 {
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
 
     @Test
-    public void shouldBeAbleToCreateDatabaseException() throws Throwable
+    public void shouldGiveHelpfulMessageOnMisalignedInput() throws Throwable
     {
-        // Given
-        String message = "Your database is broken";
-        DatabaseException exception = new DatabaseException( message );
+        // Expect
+        exception.expect( ClientException.class );
+        exception.expectMessage( "Parameters function requires an even number of arguments, " +
+                                 "alternating key and value." );
 
-        // Then
-        assertThat( exception.getMessage(), equalTo( message ) );
+        // When
+        parameters( "1", new Object(), "2" );
     }
-
 }

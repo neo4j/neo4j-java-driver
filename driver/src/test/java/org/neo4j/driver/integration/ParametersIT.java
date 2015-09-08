@@ -259,7 +259,6 @@ public class ParametersIT
                 assertThat( item.javaDouble(), equalTo( 6.28 ) );
             }
         }
-
     }
 
     @Test

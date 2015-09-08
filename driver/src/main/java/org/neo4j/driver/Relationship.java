@@ -23,12 +23,10 @@ package org.neo4j.driver;
  */
 public interface Relationship extends Directed<Identity>, Entity
 {
-
     /**
      * Return the <em>type</em> of this relationship.
      *
      * @return the type name
      */
     String type();
-
 }

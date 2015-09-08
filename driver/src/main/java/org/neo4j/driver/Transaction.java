@@ -27,12 +27,12 @@ package org.neo4j.driver;
  * <p>
  * <h2>Example:</h2>
  * <p>
- * <pre class="docTest:org.neo4j.driver.doctest.TransactionDocIT#classDoc">
+ * <pre class="docTest:TransactionDocIT#classDoc">
  * {@code
  * try( Transaction tx = session.newTransaction() )
  * {
- * tx.run( "CREATE (n)" );
- * tx.success();
+ *     tx.run( "CREATE (n)" );
+ *     tx.success();
  * }
  * }
  * </pre>
@@ -54,12 +54,12 @@ public interface Transaction extends AutoCloseable, StatementRunner
      * <p>
      * Example:
      * <p>
-     * <pre class="docTest:org.neo4j.driver.doctest.TransactionDocIT#failure">
+     * <pre class="docTest:TransactionDocIT#failure">
      * {@code
      * try(Transaction tx = session.newTransaction() )
      * {
-     * tx.run( "CREATE (n)" );
-     * tx.failure();
+     *     tx.run( "CREATE (n)" );
+     *     tx.failure();
      * }
      * }
      * </pre>

@@ -62,6 +62,12 @@
       <version>1.52</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>com.jakewins</groupId>
+      <artifactId>javadoc-test</artifactId>
+      <version>1.0</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
