@@ -34,31 +34,18 @@ import org.neo4j.driver.internal.spi.ConnectionPool;
  * It provides methods to establish {@link Session sessions}, in which you can run statements.
  * <p>
  * An example:
- * <pre>
+ * <pre class="doctest:DriverDocIT#exampleUsage">
  * {@code
- *
  * // Create a driver with default configuration
  * Driver driver = GraphDatabase.driver( "neo4j://localhost:7687" );
  *
- * // Establish a session with a Neo4j instance
+ * // Establish a session
  * Session session = driver.session();
- * ** Do some work with the database... **
  *
- * // Release all the resources
- * driver.close();
- * }
- * </pre>
- * <p>
- * After a session is established, we could run statements
- * <p>
- * For example:
- * <pre>
- * {@code
- *
- * // Run a single statement
+ * // Running a simple statement can be done like this
  * session.run( "CREATE (n {name:'Bob'})" );
  *
- * // Run multiple statements in a transaction
+ * // Or, run multiple statements together in an atomic transaction, like this
  * try( Transaction tx = session.newTransaction() )
  * {
  *     tx.run( "CREATE (n {name:'Alice'})" );
@@ -66,19 +53,24 @@ import org.neo4j.driver.internal.spi.ConnectionPool;
  *     tx.success();
  * }
  *
- * // Retrieve results from a query
+ * // Retrieve results
  * Result result = session.run( "MATCH (n) RETURN n.name" );
- * while( result.hasNext())
+ * List<String> names = new LinkedList<>();
+ * while( result.next() )
  * {
- *     Value record = result.next();
- *     System.out.println( record.get("n.name") );
+ *     names.add( result.get("n.name").javaString() );
  * }
+ *
+ * // And, always remember to close your driver when your application is done with it, this helps the
+ * // database release resources on its side.
+ * driver.close();
  * }
  * </pre>
  * <p>
  *
  * A driver maintains a connection pool for each Neo4j instance. For resource efficiency reasons you are encouraged
- * to use the same driver instance across your application.
+ * to use the same driver instance across your application. You can control the connection pooling behavior when you
+ * create the driver using the {@link Config} you pass in.
  */
 public class Driver implements AutoCloseable
 {

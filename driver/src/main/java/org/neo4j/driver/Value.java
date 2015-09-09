@@ -49,19 +49,20 @@ package org.neo4j.driver;
  * <p>
  * You can retrieve the name of the second user, John, like so:
  * <p>
- * <pre>
+ * <pre class="docTest:ValueDocIT#classDocTreeExample">
  * {@code
- * String username = value.get("users").get(1).get("name").stringValue();
+ * String username = value.get("users").get(1).get("name").javaString();
  * }
  * </pre>
  * <p>
  * You can also easily iterate over the users:
  * <p>
- * <pre>
+ * <pre class="docTest:ValueDocIT#classDocIterationExample">
  * {@code
+ * List<String> names = new LinkedList<>();
  * for(Value user : value.get("users") )
  * {
- *     System.out.println(user.get("name").stringValue());
+ *     names.add(user.get("name").javaString());
  * }
  * }
  * </pre>

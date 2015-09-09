@@ -24,9 +24,8 @@ import java.net.URI;
  * A static class to create a {@link Driver driver}
  * <p>
  * An example:
- * <pre>
+ * <pre class="doctest:GraphDatabaseDocIT#simpleExample">
  * {@code
- *
  * // Create a driver with default configuration
  * Driver driver = GraphDatabase.driver( "neo4j://localhost" );
  *
