@@ -61,7 +61,6 @@ import static org.neo4j.driver.util.CertificateToolTest.generateSelfSignedCertif
 public class SSLSocketChannelIT
 {
     private static TLSServer server;
-    private static File knownCert;
 
     @BeforeClass
     public static void setup() throws IOException, InterruptedException
@@ -70,7 +69,6 @@ public class SSLSocketChannelIT
         // System.setProperty( "javax.net.debug", "all" );
         // delete any certificate file that the client already know
         server = new TLSServer();
-        knownCert = File.createTempFile( "neo4j_known_certs", ".tmp" );
     }
 
     @AfterClass
@@ -80,7 +78,6 @@ public class SSLSocketChannelIT
         {
             server.close();
         }
-        knownCert.delete();
     }
 
     @Test

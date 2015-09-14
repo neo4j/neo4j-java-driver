@@ -51,10 +51,10 @@ public class Neo4jRunner
     private static boolean externalServer = Boolean.getBoolean( "neo4j.useExternalServer" );
     private static boolean shutdownHookRegistered = false;
 
-    private static final String neo4jVersion = System.getProperty( "version", "3.0.0-alpha.LATEST" );
+    private static final String neo4jVersion = System.getProperty( "version", "3.0.0-alpha" );
     private static final String neo4jLink = System.getProperty( "packageUri",
-            String.format( "http://alpha.neotechnology.com.s3-website-eu-west-1.amazonaws.com/" +
-                           "neo4j-enterprise-%s-unix.tar.gz", neo4jVersion ) );
+            String.format( "http://alpha.neohq.net/dist/neo4j-enterprise-" +
+                           "%s-unix.tar.gz", neo4jVersion ) );
 
     private final File neo4jDir = new File( "./target/neo4j" );
     private final File neo4jHome = new File( neo4jDir, neo4jVersion );
@@ -101,7 +101,7 @@ public class Neo4jRunner
             extractTarball( neo4jTarball );
 
             File configFile = new File( neo4jHome, "conf/neo4j-server.properties" );
-            setProperty( configFile, "xx.ndp.enabled", "true" );
+            setProperty( configFile, "xx.bolt.enabled", "true" );
 
         }
     }
@@ -166,7 +166,7 @@ public class Neo4jRunner
     public void enableTLS( boolean isTLSEnabled )
     {
         this.isTLSEnabled = isTLSEnabled;
-        setServerProperty( "xx.ndp.tls.enabled", String.valueOf( isTLSEnabled ) );
+        setServerProperty( "xx.bolt.tls.enabled", String.valueOf( isTLSEnabled ) );
     }
 
     /**
