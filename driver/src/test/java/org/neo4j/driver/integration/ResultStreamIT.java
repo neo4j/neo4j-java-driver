@@ -44,4 +44,15 @@ public class ResultStreamIT
             assertEquals( idx++, res.get( "a" ).javaLong() );
         }
     }
+
+    @Test
+    public void shouldHaveFieldNamesInResult()
+    {
+        // When
+        Result res = session.run( "CREATE (n:TestNode {name:'test'}) RETURN n" );
+
+        // Then
+        assertEquals( "[n]", res.fieldNames().toString() );
+        assertEquals( "[n]", res.single().fieldNames().toString() );
+    }
 }

@@ -39,14 +39,17 @@ public class ResultBuilder implements StreamCollector
     {
         if ( names.length == 0 )
         {
-            fieldLookup = Collections.EMPTY_MAP;
+            this.fieldLookup = Collections.EMPTY_MAP;
         }
-        Map<String,Integer> fieldLookup = new HashMap<>();
-        for ( int i = 0; i < names.length; i++ )
+        else
         {
-            fieldLookup.put( names[i], i );
+            Map<String,Integer> fieldLookup = new HashMap<>();
+            for ( int i = 0; i < names.length; i++ )
+            {
+                fieldLookup.put( names[i], i );
+            }
+            this.fieldLookup = fieldLookup;
         }
-        this.fieldLookup = fieldLookup;
     }
 
     @Override
