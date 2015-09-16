@@ -99,10 +99,6 @@ public class Neo4jRunner
 
             // Untar the neo4j server
             extractTarball( neo4jTarball );
-
-            File configFile = new File( neo4jHome, "conf/neo4j-server.properties" );
-            setProperty( configFile, "xx.bolt.enabled", "true" );
-
         }
     }
 
@@ -166,7 +162,7 @@ public class Neo4jRunner
     public void enableTLS( boolean isTLSEnabled )
     {
         this.isTLSEnabled = isTLSEnabled;
-        setServerProperty( "xx.bolt.tls.enabled", String.valueOf( isTLSEnabled ) );
+        setServerProperty( "dbms.bolt.tls.enabled", String.valueOf( isTLSEnabled ) );
     }
 
     /**

@@ -26,7 +26,7 @@ import org.neo4j.driver.Value;
 public interface MessageHandler
 {
     // Requests
-    void handleInitializeMessage( String clientNameAndVersion ) throws IOException;
+    void handleInitMessage( String clientNameAndVersion ) throws IOException;
 
     void handleRunMessage( String statement, Map<String,Value> parameters ) throws IOException;
 

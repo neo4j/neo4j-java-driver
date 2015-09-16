@@ -57,7 +57,7 @@ import static org.neo4j.driver.Values.value;
 
 public class PackStreamMessageFormatV1 implements MessageFormat
 {
-    public final static byte MSG_INITIALIZE = 0x01;
+    public final static byte MSG_INIT = 0x01;
     public final static byte MSG_ACK_FAILURE = 0x0F;
     public final static byte MSG_RUN = 0x10;
     public final static byte MSG_DISCARD_ALL = 0x2F;
@@ -120,9 +120,9 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         }
 
         @Override
-        public void handleInitializeMessage( String clientNameAndVersion ) throws IOException
+        public void handleInitMessage( String clientNameAndVersion ) throws IOException
         {
-            packer.packStructHeader( 1, MSG_INITIALIZE );
+            packer.packStructHeader( 1, MSG_INIT );
             packer.pack( clientNameAndVersion );
             onMessageComplete.run();
         }
@@ -418,17 +418,17 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             case MSG_IGNORED:
                 unpackIgnoredMessage( handler );
                 break;
-            case MSG_INITIALIZE:
-                unpackInitializeMessage( handler );
+            case MSG_INIT:
+                unpackInitMessage( handler );
                 break;
             default:
                 throw new IOException( "Unknown message type: " + type );
             }
         }
 
-        private void unpackInitializeMessage( MessageHandler handler ) throws IOException
+        private void unpackInitMessage( MessageHandler handler ) throws IOException
         {
-            handler.handleInitializeMessage( unpacker.unpackString() );
+            handler.handleInitMessage( unpacker.unpackString() );
             onMessageComplete.run();
         }
 

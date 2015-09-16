@@ -23,15 +23,15 @@ import java.io.IOException;
 import static java.lang.String.format;
 
 /**
- * INITIALIZE request message
+ * INIT request message
  * <p>
  * Sent by clients to initialize a new connection. Must be sent as the very first message after protocol negotiation.
  */
-public class InitializeMessage implements Message
+public class InitMessage implements Message
 {
     private final String clientNameAndVersion;
 
-    public InitializeMessage( String clientNameAndVersion )
+    public InitMessage( String clientNameAndVersion )
     {
         this.clientNameAndVersion = clientNameAndVersion;
     }
@@ -39,13 +39,13 @@ public class InitializeMessage implements Message
     @Override
     public void dispatch( MessageHandler handler ) throws IOException
     {
-        handler.handleInitializeMessage( clientNameAndVersion );
+        handler.handleInitMessage( clientNameAndVersion );
     }
 
     @Override
     public String toString()
     {
-        return format( "[INITIALIZE \"%s\"]", clientNameAndVersion );
+        return format( "[INIT \"%s\"]", clientNameAndVersion );
     }
 
     @Override
@@ -56,7 +56,7 @@ public class InitializeMessage implements Message
         if ( o == null || getClass() != o.getClass() )
         { return false; }
 
-        InitializeMessage that = (InitializeMessage) o;
+        InitMessage that = (InitMessage) o;
 
         return !(clientNameAndVersion != null ? !clientNameAndVersion.equals( that.clientNameAndVersion )
                                               : that.clientNameAndVersion != null);

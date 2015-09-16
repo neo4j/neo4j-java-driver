@@ -40,10 +40,10 @@ public class LoggingResponseHandler extends SocketResponseHandler
     }
 
     @Override
-    public void handleInitializeMessage( String clientNameAndVersion )
+    public void handleInitMessage( String clientNameAndVersion )
     {
-        super.handleInitializeMessage( clientNameAndVersion );
-        logger.debug( "S: [INITIALIZE \"%s\"]", clientNameAndVersion );
+        super.handleInitMessage( clientNameAndVersion );
+        logger.debug( "S: [INIT \"%s\"]", clientNameAndVersion );
     }
 
     @Override

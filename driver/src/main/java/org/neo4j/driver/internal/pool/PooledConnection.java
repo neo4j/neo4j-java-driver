@@ -41,11 +41,11 @@ public class PooledConnection implements Connection
     }
 
     @Override
-    public void initialize( String clientName )
+    public void init( String clientName )
     {
         try
         {
-            delegate.initialize( clientName );
+            delegate.init( clientName );
         }
         catch( RuntimeException e )
         {
