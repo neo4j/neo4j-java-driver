@@ -120,7 +120,7 @@ public class SocketResponseHandler implements MessageHandler
     }
 
     @Override
-    public void handleInitializeMessage( String clientNameAndVersion )
+    public void handleInitMessage( String clientNameAndVersion )
     {
 
     }

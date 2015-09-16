@@ -42,7 +42,7 @@ public class SocketConnector implements Connector
     {
         int port = sessionURI.getPort() == -1 ? Config.DEFAULT_PORT : sessionURI.getPort();
         SocketConnection conn = new SocketConnection( sessionURI.getHost(), port, config );
-        conn.initialize( "bolt-java-driver/" + Version.driverVersion() );
+        conn.init( "bolt-java-driver/" + Version.driverVersion() );
         return conn;
     }
 

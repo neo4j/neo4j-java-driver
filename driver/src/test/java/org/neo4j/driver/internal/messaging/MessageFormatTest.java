@@ -62,7 +62,7 @@ public class MessageFormatTest
         assertSerializes( new DiscardAllMessage() );
         assertSerializes( new IgnoredMessage() );
         assertSerializes( new FailureMessage( "Neo.Banana.Bork.Birk", "Hello, world!" ) );
-        assertSerializes( new InitializeMessage( "JavaDriver/1.0.0" ) );
+        assertSerializes( new InitMessage( "JavaDriver/1.0.0" ) );
     }
 
     @Test

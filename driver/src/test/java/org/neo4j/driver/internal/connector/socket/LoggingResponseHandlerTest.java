@@ -28,7 +28,7 @@ import org.neo4j.driver.internal.messaging.AckFailureMessage;
 import org.neo4j.driver.internal.messaging.DiscardAllMessage;
 import org.neo4j.driver.internal.messaging.FailureMessage;
 import org.neo4j.driver.internal.messaging.IgnoredMessage;
-import org.neo4j.driver.internal.messaging.InitializeMessage;
+import org.neo4j.driver.internal.messaging.InitMessage;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageHandler;
 import org.neo4j.driver.internal.messaging.PullAllMessage;
@@ -54,14 +54,14 @@ public class LoggingResponseHandlerTest
     } );
 
     @Test
-    public void shouldLogInitializeMessage() throws Throwable
+    public void shouldLogInitMessage() throws Throwable
     {
         // When
-        handler.handleInitializeMessage( "client" );
+        handler.handleInitMessage( "client" );
 
         // Then
-        assertEquals( "S: [INITIALIZE \"client\"]", log );
-        assertEquals( format( new InitializeMessage( "client" ) ), log );
+        assertEquals( "S: [INIT \"client\"]", log );
+        assertEquals( format( new InitMessage( "client" ) ), log );
     }
 
     @Test

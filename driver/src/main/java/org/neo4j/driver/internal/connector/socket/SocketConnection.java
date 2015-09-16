@@ -27,7 +27,7 @@ import org.neo4j.driver.Config;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.messaging.AckFailureMessage;
-import org.neo4j.driver.internal.messaging.InitializeMessage;
+import org.neo4j.driver.internal.messaging.InitMessage;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.RunMessage;
 import org.neo4j.driver.internal.spi.Connection;
@@ -65,10 +65,10 @@ public class SocketConnection implements Connection
     }
 
     @Override
-    public void initialize( String clientName )
+    public void init( String clientName )
     {
         // No need to sync, this'll get sent once regular communication starts
-        queueMessage( new InitializeMessage( clientName ) );
+        queueMessage( new InitMessage( clientName ) );
     }
 
     @Override
