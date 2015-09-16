@@ -51,7 +51,7 @@ public class SocketResponseHandler implements MessageHandler
         // This is not very efficient, using something like a singly-linked queue with a current collector as head
         // would take advantage of the ordered nature of exchanges and avoid all these objects allocated from boxing
         // below.
-        StreamCollector collector = collectors.get( responseId );
+        StreamCollector collector = collectors.get( responseId - 1 );
         if ( collector != null )
         {
             collector.record( fields );
