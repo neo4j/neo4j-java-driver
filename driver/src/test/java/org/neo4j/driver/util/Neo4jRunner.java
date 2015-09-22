@@ -45,7 +45,7 @@ import static org.neo4j.driver.util.FileTools.setProperty;
  */
 public class Neo4jRunner
 {
-    public static final String DEFAULT_URL = "neo4j://localhost:7687";
+    public static final String DEFAULT_URL = "bolt://localhost:7687";
 
     private static Neo4jRunner globalInstance;
     private static boolean externalServer = Boolean.getBoolean( "neo4j.useExternalServer" );

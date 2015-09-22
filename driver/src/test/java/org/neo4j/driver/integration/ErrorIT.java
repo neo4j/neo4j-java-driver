@@ -110,7 +110,7 @@ public class ErrorIT
                                  "and that there is a working network connection to it." );
 
         // When
-        try ( Driver driver = GraphDatabase.driver( "neo4j://localhost:7777" ) )
+        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:7777" ) )
         {
             driver.session();
         }

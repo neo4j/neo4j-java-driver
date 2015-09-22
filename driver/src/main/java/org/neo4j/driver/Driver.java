@@ -37,7 +37,7 @@ import org.neo4j.driver.internal.spi.ConnectionPool;
  * <pre class="doctest:DriverDocIT#exampleUsage">
  * {@code
  * // Create a driver with default configuration
- * Driver driver = GraphDatabase.driver( "neo4j://localhost:7687" );
+ * Driver driver = GraphDatabase.driver( "bolt://localhost:7687" );
  *
  * // Establish a session
  * Session session = driver.session();

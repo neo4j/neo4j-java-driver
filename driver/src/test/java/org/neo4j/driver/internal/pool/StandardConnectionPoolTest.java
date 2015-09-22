@@ -41,8 +41,8 @@ public class StandardConnectionPoolTest
     public void shouldAcquireAndRelease() throws Throwable
     {
         // Given
-        URI uri = URI.create( "neo4j://asd" );
-        Connector connector = connector( "neo4j" );
+        URI uri = URI.create( "bolt://asd" );
+        Connector connector = connector( "bolt" );
         Config config = Config.defaultConfig();
         StandardConnectionPool pool = new StandardConnectionPool( asList( connector ),
                 Clock.SYSTEM, config );
