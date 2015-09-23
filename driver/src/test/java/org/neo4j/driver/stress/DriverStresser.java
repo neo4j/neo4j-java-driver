@@ -34,7 +34,7 @@ import org.neo4j.driver.Session;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.util.Neo4jRunner;
 
-import static org.neo4j.driver.Driver.parameters;
+import static org.neo4j.driver.Values.parameters;
 
 public class DriverStresser
 {
@@ -73,7 +73,7 @@ public class DriverStresser
         public int operation()
         {
             String statement = "RETURN 1 AS n";                   // = "CREATE (a {name:{n}}) RETURN a.name";
-            Map<String,Value> parameters = parameters();          // = Neo4j.parameters( "n", "Bob" );
+            Map<String,Value> parameters = parameters();          // = Values.parameters( "n", "Bob" );
 
             int total = 0;
             Result result = session.run( statement, parameters );

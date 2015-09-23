@@ -225,7 +225,7 @@ public class Neo4jRunner
             Config config = Config.defaultConfig();
             if( isTLSEnabled )
             {
-                config = Config.build().withTLSEnabled( true ).toConfig();
+                config = Config.build().withTlsEnabled( true ).toConfig();
             }
             SocketClient client = new SocketClient( uri.getHost(), uri.getPort(),
                     config, new DevNullLogger() );

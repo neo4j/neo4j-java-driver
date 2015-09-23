@@ -43,7 +43,7 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.startsWith;
-import static org.neo4j.driver.Values.properties;
+import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.Values.value;
 
 public class MessageFormatTest
@@ -56,8 +56,8 @@ public class MessageFormatTest
     @Test
     public void shouldPackAllRequests() throws Throwable
     {
-        assertSerializes( new RunMessage( "Hello", properties() ) );
-        assertSerializes( new RunMessage( "Hello", properties( "a", 12 ) ) );
+        assertSerializes( new RunMessage( "Hello", parameters() ) );
+        assertSerializes( new RunMessage( "Hello", parameters( "a", 12 ) ) );
         assertSerializes( new PullAllMessage() );
         assertSerializes( new DiscardAllMessage() );
         assertSerializes( new IgnoredMessage() );
@@ -75,24 +75,24 @@ public class MessageFormatTest
     @Test
     public void shouldUnpackAllValues() throws Throwable
     {
-        assertSerializesValue( value( properties( "cat", null, "dog", null ) ) );
-        assertSerializesValue( value( properties( "k", 12, "a", "banana" ) ) );
+        assertSerializesValue( value( parameters( "cat", null, "dog", null ) ) );
+        assertSerializesValue( value( parameters( "k", 12, "a", "banana" ) ) );
         assertSerializesValue( value( asList( "k", 12, "a", "banana" ) ) );
         assertSerializesValue( value(
-                new SimpleNode( "node/1", asList( "User" ), properties( "name", "Bob", "age", 45 ) ) ) );
+                new SimpleNode( "node/1", asList( "User" ), parameters( "name", "Bob", "age", 45 ) ) ) );
         assertSerializesValue( value( new SimpleNode( "node/1" ) ) );
         assertSerializesValue( value(
                 new SimpleRelationship( "rel/1", "node/1", "node/1",
                         "KNOWS",
-                        properties( "name", "Bob", "age", 45 ) ) ) );
+                        parameters( "name", "Bob", "age", 45 ) ) ) );
         assertSerializesValue( value(
                 new SimplePath(
                         new SimpleNode( "node/1" ),
                         new SimpleRelationship( "relationship/1", "node/1", "node/1",
-                                "KNOWS", properties() ),
+                                "KNOWS", parameters() ),
                         new SimpleNode( "node/1" ),
                         new SimpleRelationship( "relationship/2", "node/1", "node/1",
-                                "LIKES", properties() ),
+                                "LIKES", parameters() ),
                         new SimpleNode( "node/1" )
                 ) ) );
         assertSerializesValue( value( new SimplePath( new SimpleNode( "node/1" ) ) ) );

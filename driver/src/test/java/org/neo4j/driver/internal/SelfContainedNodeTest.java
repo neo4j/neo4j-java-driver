@@ -29,7 +29,7 @@ import org.neo4j.driver.Values;
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.neo4j.driver.Values.properties;
+import static org.neo4j.driver.Values.parameters;
 
 public class SelfContainedNodeTest
 {
@@ -37,7 +37,7 @@ public class SelfContainedNodeTest
     private Node adamTheNode()
     {
         return new SimpleNode( "A", asList( "Person" ),
-                properties( "name", Values.value( "Adam" ) ) );
+                parameters( "name", Values.value( "Adam" ) ) );
     }
 
     @Test

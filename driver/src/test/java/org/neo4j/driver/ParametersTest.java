@@ -24,8 +24,6 @@ import org.junit.rules.ExpectedException;
 
 import org.neo4j.driver.exceptions.ClientException;
 
-import static org.neo4j.driver.Driver.*;
-
 public class ParametersTest
 {
     @Rule
@@ -40,6 +38,6 @@ public class ParametersTest
                                  "alternating key and value." );
 
         // When
-        parameters( "1", new Object(), "2" );
+        Values.parameters( "1", new Object(), "2" );
     }
 }

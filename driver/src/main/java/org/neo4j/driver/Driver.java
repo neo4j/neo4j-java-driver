@@ -19,11 +19,7 @@
 package org.neo4j.driver;
 
 import java.net.URI;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 
-import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.StandardSession;
 import org.neo4j.driver.internal.pool.StandardConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionPool;
@@ -85,6 +81,11 @@ public class Driver implements AutoCloseable
         this.connections = new StandardConnectionPool( config );
     }
 
+    /**
+     * Establish a session
+     * @return a session that could be used to run {@link Session#run(String) a statement} or
+     * {@link Session#newTransaction() a transaction }.
+     */
     public Session session()
     {
         return new StandardSession( connections.acquire( url ) );
@@ -94,37 +95,12 @@ public class Driver implements AutoCloseable
         // connections.acquire();
     }
 
+    /**
+     * Close all the resources assigned to this driver
+     * @throws Exception any error that might happen when releasing all resources
+     */
     public void close() throws Exception
     {
         connections.close();
-    }
-
-    /**
-     * Helper function for creating a map of parameters, this can be used when you {@link
-     * org.neo4j.driver.StatementRunner#run(String, java.util.Map) run} statements.
-     * <p>
-     * Allowed parameter types are java primitives and {@link java.lang.String} as well as
-     * {@link java.util.Collection} and {@link java.util.Map} objects containing java
-     * primitives and {@link java.lang.String} values.
-     *
-     * @param keysAndValues alternating sequence of keys and values
-     * @return Map containing all parameters specified
-     * @see org.neo4j.driver.StatementRunner#run(String, java.util.Map)
-     */
-    public static Map<String,Value> parameters( Object... keysAndValues )
-    {
-        if ( keysAndValues.length % 2 != 0 )
-        {
-            throw new ClientException( "Parameters function requires an even number " +
-                                       "of arguments, " +
-                                       "alternating key and value. Arguments were: " +
-                                       Arrays.toString( keysAndValues ) + "." );
-        }
-        HashMap<String,Value> map = new HashMap<>( keysAndValues.length / 2 );
-        for ( int i = 0; i < keysAndValues.length; i += 2 )
-        {
-            map.put( keysAndValues[i].toString(), Values.value( keysAndValues[i + 1] ) );
-        }
-        return map;
     }
 }
