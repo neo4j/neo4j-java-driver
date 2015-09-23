@@ -29,9 +29,7 @@ import org.neo4j.driver.internal.pool.StandardConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 
 /**
- * A driver to a Neo4j database.
- *
- * It provides methods to establish {@link Session sessions}, in which you can run statements.
+ * A Neo4j database driver, through which you can create {@link Session sessions} to run statements against the database.
  * <p>
  * An example:
  * <pre class="doctest:DriverDocIT#exampleUsage">
@@ -45,7 +43,7 @@ import org.neo4j.driver.internal.spi.ConnectionPool;
  * // Running a simple statement can be done like this
  * session.run( "CREATE (n {name:'Bob'})" );
  *
- * // Or, run multiple statements together in an atomic transaction, like this
+ * // Or, run multiple statements together in an atomic transaction:
  * try( Transaction tx = session.newTransaction() )
  * {
  *     tx.run( "CREATE (n {name:'Alice'})" );
@@ -61,8 +59,12 @@ import org.neo4j.driver.internal.spi.ConnectionPool;
  *     names.add( result.get("n.name").javaString() );
  * }
  *
- * // And, always remember to close your driver when your application is done with it, this helps the
- * // database release resources on its side.
+ * // Sessions are pooled, to avoid the overhead of creating new connections - this means
+ * // it is very important to close your session when you are done with it, otherwise you will
+ * // run out of sessions.
+ * session.close();
+ *
+ * // And, to clean up resources, always close the driver when your application is done
  * driver.close();
  * }
  * </pre>
@@ -70,7 +72,7 @@ import org.neo4j.driver.internal.spi.ConnectionPool;
  *
  * A driver maintains a connection pool for each Neo4j instance. For resource efficiency reasons you are encouraged
  * to use the same driver instance across your application. You can control the connection pooling behavior when you
- * create the driver using the {@link Config} you pass in.
+ * create the driver using the {@link Config} you pass into {@link GraphDatabase#driver(URI, Config)}.
  */
 public class Driver implements AutoCloseable
 {

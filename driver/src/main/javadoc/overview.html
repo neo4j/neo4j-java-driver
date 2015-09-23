@@ -5,27 +5,26 @@
 </HEAD>
 <BODY>
 
-This is the reference driver implementation for <a href="http://neo4j.com">Neo4j</a> 3.0, it allows you to connect to a
+This is the reference driver implementation for <a href="http://neo4j.com">Neo4j</a>, it allows you to connect to a
 Neo4j server and interact with it.
 If you are using Java, this is generally the interface you'd use to integrate Neo4j in your application.
-
-<h3>Installation</h3>
-
-<p>To include this driver in your application, you need to include it on your classpath.
-    The driver is available as a maven artifact, and can be included in regular Maven projects as follows:</p>
-
-<pre><code>&lt;dependency&gt;
-    &lt;groupId&gt;org.neo4j.driver&lt;/groupId&gt;
-    &lt;artifactId&gt;neo4j-java-driver&lt;/artifactId&gt;
-    &lt;version&gt;1.0-SNAPSHOT&lt;/version&gt;
-&lt;/dependency&gt;
-</code></pre>
 
 <h3>Getting Connected</h3>
 
 <p>Once you have the driver and a connector on your classpath, you can establish sessions with Neo4j.</p>
 
-Have a look at the <a href="org/neo4j/driver/GraphDatabase.html" title="interface in org.neo4j"><code>GraphDatabase</code></a> class to get started.
+<pre><code>Driver driver = GraphDatabase.driver("bolt://localhost");
+try( Session session = driver.session() )
+{
+    Result result = session.run("RETURN 'hello, world!'");
+    while(result.next())
+    {
+        System.out.println( result.get(0).javaString() );
+    }
+}
+</code></pre>
+
+Have a look at the <a href="org/neo4j/driver/Driver.html" title="interface in org.neo4j"><code>Driver</code></a> class to get started.
 
 </BODY>
 </HTML>

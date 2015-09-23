@@ -21,21 +21,8 @@ package org.neo4j.driver;
 import java.net.URI;
 
 /**
- * A static class to create a {@link Driver driver}
- * <p>
- * An example:
- * <pre class="doctest:GraphDatabaseDocIT#simpleExample">
- * {@code
- * // Create a driver with default configuration
- * Driver driver = GraphDatabase.driver( "bolt://localhost" );
- *
- * // Establish a session with a Neo4j instance
- * Session session = driver.session();
- *
- * // And when you are done, make sure all resources are released
- * driver.close();
- * }
- * </pre>
+ * Creates {@link Driver drivers}, optionally letting you {@link #driver(URI, Config)}  configure them}.
+ * @see Driver
  */
 public class GraphDatabase
 {
