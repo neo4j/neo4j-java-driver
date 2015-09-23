@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.driver.Value;
+import org.neo4j.driver.Values;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.value.BooleanValue;
 import org.neo4j.driver.internal.value.FloatValue;
@@ -143,16 +144,20 @@ public class ValuesTest
     }
 
     @Test
-    public void shouldMapDriverSimpleTypesToListOfJavaPrimitiveTypes() throws Throwable
+    public void shouldMapDriverMapsToJavaMaps() throws Throwable
     {
-        assertEquals( "string", new TextValue( "string" ).javaList( valueToString() ).get( 0 ) );
+        // Given
+        Map<String,Value> map = new HashMap<>();
+        map.put( "Cat", value( 1 ) );
+        map.put( "Dog", value( 2 ) );
+        MapValue values = new MapValue( map );
 
-        assertFalse( new BooleanValue( false ).javaList( valueToBoolean() ).get( 0 ) );
+        // When
+        Map<String, String> result = values.javaMap( Values.valueToString() );
 
-        assertThat( -1, equalTo( (int) (new IntegerValue( -1 ).javaList( valueToInt() ).get( 0 )) ) );
-        assertThat( -1L, equalTo( (long) (new IntegerValue( -1 ).javaList( valueToLong() ).get( 0 )) ) );
-
-        assertThat( -1.1F, equalTo( (float) (new FloatValue( -1.1 ).javaList( valueToFloat() ).get( 0 )) ) );
-        assertThat( -1.1, equalTo( (double) (new FloatValue( -1.1 ).javaList( valueToDouble() ).get( 0 )) ) );
+        // Then
+        assertThat( result.size(), equalTo( 2 ) );
+        assertThat( result.get( "Dog" ), equalTo( "2" ) );
+        assertThat( result.get( "Cat" ), equalTo( "1" ) );
     }
 }

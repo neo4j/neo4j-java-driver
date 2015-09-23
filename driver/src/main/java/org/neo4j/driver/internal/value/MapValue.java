@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal.value;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -42,14 +43,25 @@ public class MapValue extends ValueAdapter
     }
 
     @Override
-    public <T> List<T> javaList( Function<Value,T> map )
+    public <T> List<T> javaList( Function<Value,T> mapFunction )
     {
         List<T> list = new ArrayList<>( val.size() );
         for ( Value value : val.values() )
         {
-            list.add( map.apply( value ) );
+            list.add( mapFunction.apply( value ) );
         }
         return list;
+    }
+
+    @Override
+    public <T> Map<String, T> javaMap( Function<Value,T> mapFunction )
+    {
+        Map<String, T> map = new HashMap<>( val.size() );
+        for ( Map.Entry<String, Value> entry : val.entrySet() )
+        {
+            map.put( entry.getKey(), mapFunction.apply( entry.getValue() ) );
+        }
+        return map;
     }
 
     @Override

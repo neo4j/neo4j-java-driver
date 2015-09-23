@@ -19,6 +19,7 @@
 package org.neo4j.driver;
 
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 /**
@@ -96,12 +97,20 @@ public interface Value extends Iterable<Value>
     boolean javaBoolean();
 
     /**
-     * @param map a function to map from Value to T. See {@link Values} for some predefined functions, such
+     * @param mapFunction a function to map from Value to T. See {@link Values} for some predefined functions, such
      * as {@link Values#valueToBoolean()}, {@link Values#valueToList(Function)}.
      * @param <T> the type of list elements
      * @return the value as a list of T, if possible
      */
-    <T> List<T> javaList( Function<Value, T> map );
+    <T> List<T> javaList( Function<Value, T> mapFunction );
+
+    /**
+     * @param mapFunction a function to map from Value to T. See {@link Values} for some predefined functions, such
+     * as {@link Values#valueToBoolean()}, {@link Values#valueToList(Function)}.
+     * @param <T> the type of map values
+     * @return the value as a map from string keys to values of type T, if possible
+     */
+    <T> Map<String, T> javaMap( Function<Value, T> mapFunction );
 
     /** @return the value as an {@link Identity}, if possible. */
     Identity asIdentity();

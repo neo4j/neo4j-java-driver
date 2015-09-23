@@ -40,7 +40,7 @@ public class ResultBuilderTest
     public void shouldBuildHappyPathResult()
     {
         // Given
-        ResultBuilder builder = new ResultBuilder();
+        ResultBuilder builder = createResultBuilder();
         builder.fieldNames( new String[]{"a"} );
         builder.record( new Value[]{value( "Admin" )} );
 
@@ -58,7 +58,7 @@ public class ResultBuilderTest
     public void shouldHandleEmptyTable()
     {
         // Given
-        ResultBuilder builder = new ResultBuilder();
+        ResultBuilder builder = createResultBuilder();
 
         // When
         ReusableResult result = builder.build().retain();
@@ -71,7 +71,7 @@ public class ResultBuilderTest
     public void shouldThrowNoSuchSomething()
     {
         // Given
-        ResultBuilder builder = new ResultBuilder();
+        ResultBuilder builder = createResultBuilder();
         builder.fieldNames( new String[]{"a"} );
         builder.record( new Value[]{value( "Admin" )} );
 
@@ -82,5 +82,10 @@ public class ResultBuilderTest
 
         // When
         result.get( 2 );
+    }
+
+    private ResultBuilder createResultBuilder()
+    {
+        return new ResultBuilder( "<unknown>", ParameterSupport.NO_PARAMETERS );
     }
 }

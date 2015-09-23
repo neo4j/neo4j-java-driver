@@ -21,11 +21,14 @@ package org.neo4j.driver.internal.connector.socket;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.driver.SimpleStatementStatistics;
+import org.neo4j.driver.StatementType;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.DatabaseException;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.TransientException;
+import org.neo4j.driver.internal.SimplePlanTreeNode;
 import org.neo4j.driver.internal.messaging.MessageHandler;
 import org.neo4j.driver.internal.spi.StreamCollector;
 
@@ -51,7 +54,7 @@ public class SocketResponseHandler implements MessageHandler
         // This is not very efficient, using something like a singly-linked queue with a current collector as head
         // would take advantage of the ordered nature of exchanges and avoid all these objects allocated from boxing
         // below.
-        StreamCollector collector = collectors.get( responseId - 1 );
+        StreamCollector collector = collectors.get( responseId );
         if ( collector != null )
         {
             collector.record( fields );
@@ -65,17 +68,17 @@ public class SocketResponseHandler implements MessageHandler
         {
             String[] parts = code.split( "\\." );
             String classification = parts[1];
-            if ( classification.equals( "ClientError" ) )
+            switch ( classification )
             {
-                error = new ClientException( code, message );
-            }
-            else if ( classification.equals( "TransientError" ) )
-            {
-                error = new TransientException( code, message );
-            }
-            else
-            {
-                error = new DatabaseException( code, message );
+                case "ClientError":
+                    error = new ClientException( code, message );
+                    break;
+                case "TransientError":
+                    error = new TransientException( code, message );
+                    break;
+                default:
+                    error = new DatabaseException( code, message );
+                    break;
             }
         }
         finally
@@ -90,9 +93,93 @@ public class SocketResponseHandler implements MessageHandler
         StreamCollector collector = collectors.get( responseId );
         if ( collector != null )
         {
-            collector.fieldNames( fieldNamesFromMeta( meta ) );
+            collectFields( collector, meta.get( "fields" ) );
+            collectType( collector, meta.get( "type") );
+            collectStatistics( collector, meta.get( "stats") );
+            collectPlan( collector, meta.get( "plan") );
         }
         responseId++;
+    }
+
+    private void collectPlan( StreamCollector collector, Value plan )
+    {
+        if ( plan != null )
+        {
+            collector.plan( SimplePlanTreeNode.FROM_VALUE.apply( plan ) );
+        }
+    }
+
+    private void collectFields( StreamCollector collector, Value fieldValue )
+    {
+        if (fieldValue != null)
+        {
+            if ( fieldValue.size() > 0 )
+            {
+                String[] fields = new String[(int) fieldValue.size()];
+                int idx = 0;
+                for ( Value value : fieldValue )
+                {
+                    fields[idx++] = value.javaString();
+                }
+                collector.fieldNames( fields );
+            }
+        }
+    }
+
+    private void collectType( StreamCollector collector, Value type )
+    {
+        if ( type != null )
+        {
+            switch ( type.javaString() )
+            {
+                case "r":
+                    collector.statementType( StatementType.READ_ONLY );
+                    break;
+
+                case "rw":
+                    collector.statementType( StatementType.READ_WRITE );
+                    break;
+
+                case "w":
+                    collector.statementType( StatementType.WRITE_ONLY);
+                    break;
+
+                case "s":
+                    collector.statementType( StatementType.SCHEMA_WRITE);
+                    break;
+
+                default:
+                    throw new ClientException( "Received unknown statement type when retrieving result" );
+            }
+        }
+    }
+
+    private void collectStatistics( StreamCollector collector, Value stats )
+    {
+        if ( stats != null )
+        {
+            collector.statementStatistics(
+                new SimpleStatementStatistics(
+                    statsValue( stats, "nodes-created" ),
+                    statsValue( stats, "nodes-deleted" ),
+                    statsValue( stats, "relationships-created" ),
+                    statsValue( stats, "relationships-deleted" ),
+                    statsValue( stats, "properties-set" ),
+                    statsValue( stats, "labels-added" ),
+                    statsValue( stats, "labels-removed" ),
+                    statsValue( stats, "indexes-added" ),
+                    statsValue( stats, "indexes-removed" ),
+                    statsValue( stats, "constraints-added" ),
+                    statsValue( stats, "constraints-removed" )
+                )
+            );
+        }
+    }
+
+    private int statsValue( Value stats, String name )
+    {
+        Value value = stats.get( name );
+        return value == null ? 0 : value.javaInteger();
     }
 
     @Override
@@ -152,26 +239,4 @@ public class SocketResponseHandler implements MessageHandler
         error = null;
         collectors.clear();
     }
-
-    private String[] fieldNamesFromMeta( Map<String,Value> meta )
-    {
-        String[] fields;
-        Value fieldValue = meta.get( "fields" );
-        if ( fieldValue == null || fieldValue.size() == 0 )
-        {
-            fields = NO_FIELDS;
-        }
-        else
-        {
-            fields = new String[(int) fieldValue.size()];
-            int idx = 0;
-            for ( Value value : fieldValue )
-            {
-                fields[idx++] = value.javaString();
-            }
-
-        }
-        return fields;
-    }
-
 }

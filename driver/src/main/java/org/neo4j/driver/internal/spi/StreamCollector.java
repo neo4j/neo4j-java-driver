@@ -18,6 +18,10 @@
  */
 package org.neo4j.driver.internal.spi;
 
+import org.neo4j.driver.PlanTreeNode;
+import org.neo4j.driver.ProfiledPlanTreeNode;
+import org.neo4j.driver.StatementStatistics;
+import org.neo4j.driver.StatementType;
 import org.neo4j.driver.Value;
 
 public interface StreamCollector
@@ -27,17 +31,37 @@ public interface StreamCollector
         @Override
         public void fieldNames( String[] names )
         {
-
         }
 
         @Override
         public void record( Value[] fields )
         {
+        }
 
+        @Override
+        public void statementType( StatementType type )
+        {
+        }
+
+        @Override
+        public void statementStatistics( StatementStatistics statistics )
+        {
+        }
+
+        @Override
+        public void plan( PlanTreeNode plan )
+        {
         }
     };
 
     void fieldNames( String[] names );
 
     void record( Value[] fields );
+
+    void statementType( StatementType type);
+
+    void statementStatistics( StatementStatistics statistics );
+
+    void plan( PlanTreeNode plan );
 }
+

@@ -115,7 +115,7 @@ public class StandardTransaction implements Transaction
 
         try
         {
-            ResultBuilder resultBuilder = new ResultBuilder();
+            ResultBuilder resultBuilder = new ResultBuilder( statement, parameters );
             conn.run( statement, parameters, resultBuilder );
             conn.pullAll( resultBuilder );
             conn.sync();
@@ -131,7 +131,7 @@ public class StandardTransaction implements Transaction
     @Override
     public Result run( String statement )
     {
-        return run( statement, EMPTY_MAP );
+        return run( statement, ParameterSupport.NO_PARAMETERS );
     }
 
     private void ensureNotFailed()
@@ -139,9 +139,10 @@ public class StandardTransaction implements Transaction
         if ( state == State.FAILED )
         {
             throw new ClientException(
-                    "Cannot run more statements in this transaction, because previous statements in the " +
-                    "transaction has failed and the transaction has been rolled back. Please start a new" +
-                    " transaction to run another statement." );
+                "Cannot run more statements in this transaction, because previous statements in the " +
+                "transaction has failed and the transaction has been rolled back. Please start a new" +
+                " transaction to run another statement."
+            );
         }
     }
 }

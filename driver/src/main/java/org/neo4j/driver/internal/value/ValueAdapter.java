@@ -18,9 +18,9 @@
  */
 package org.neo4j.driver.internal.value;
 
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 import org.neo4j.driver.Identity;
@@ -73,9 +73,15 @@ public abstract class ValueAdapter implements Value
     }
 
     @Override
-    public <T> List<T> javaList( Function<Value,T> map )
+    public <T> List<T> javaList( Function<Value,T> mapFunction )
     {
-        return Arrays.asList( map.apply( this ) );
+        throw new Uncoercible( typeName(), "Java List" );
+    }
+
+    @Override
+    public <T> Map<String, T> javaMap( Function<Value,T> mapFunction )
+    {
+        throw new Uncoercible( typeName(), "Java Map" );
     }
 
     @Override
