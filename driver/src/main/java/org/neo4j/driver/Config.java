@@ -41,7 +41,7 @@ import static org.neo4j.driver.Config.TLSAuthenticationConfig.*;
  */
 public class Config
 {
-    public static final String SCHEME = "neo4j";
+    public static final String SCHEME = "bolt";
     public static final int DEFAULT_PORT = 7687;
 
     /** User defined logging */

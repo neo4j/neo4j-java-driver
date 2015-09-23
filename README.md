@@ -34,7 +34,7 @@ Add the driver to your project:
 
 Connect to a Neo4j 3.0.0+ database
 
-    Driver driver = GraphDatabase.driver( "neo4j://localhost" );
+    Driver driver = GraphDatabase.driver( "bolt://localhost" );
     
     Session session = driver.session();
     

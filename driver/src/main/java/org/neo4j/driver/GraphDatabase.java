@@ -27,7 +27,7 @@ import java.net.URI;
  * <pre class="doctest:GraphDatabaseDocIT#simpleExample">
  * {@code
  * // Create a driver with default configuration
- * Driver driver = GraphDatabase.driver( "neo4j://localhost" );
+ * Driver driver = GraphDatabase.driver( "bolt://localhost" );
  *
  * // Establish a session with a Neo4j instance
  * Session session = driver.session();

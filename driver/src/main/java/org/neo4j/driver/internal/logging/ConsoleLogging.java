@@ -40,7 +40,7 @@ import org.neo4j.driver.internal.spi.Logging;
  *     Config config = Config.build()
  *                      .withLogging( new ConsoleLogging( Level.ALL ) )
  *                      .toConfig();
- *     Driver driver = GraphDatabase.driver( "neo4j://localhost:7687", config );
+ *     Driver driver = GraphDatabase.driver( "bolt://localhost:7687", config );
  * }
  * </pre>
  */

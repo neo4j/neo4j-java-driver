@@ -60,7 +60,7 @@ public class SocketClient
     {
         try
         {
-            logger.debug( "~~ [CONNECT] {0}:{1}.", host, port );
+            logger.debug( "~~ [CONNECT] %s:%d.", host, port );
             channel = ChannelFactory.create( host, port, config, logger );
 
             protocol = negotiateProtocol();

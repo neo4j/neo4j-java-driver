@@ -58,7 +58,7 @@ public class DriverStresser
     {
         server = new Neo4jRunner();
         server.startServer();
-        driver = GraphDatabase.driver( "neo4j://localhost" );
+        driver = GraphDatabase.driver( "bolt://localhost" );
     }
 
     static class Worker
