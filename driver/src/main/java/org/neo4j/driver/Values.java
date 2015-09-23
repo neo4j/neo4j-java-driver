@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.internal.util.Function;
 import org.neo4j.driver.internal.value.BooleanValue;
 import org.neo4j.driver.internal.value.FloatValue;
 import org.neo4j.driver.internal.value.IdentityValue;
@@ -45,8 +44,9 @@ import org.neo4j.driver.internal.value.TextValue;
  */
 public class Values
 {
-    public static final Value EmptyMap = value( Collections.EMPTY_MAP );
+    public static final Value EmptyMap = value( Collections.emptyMap() );
 
+    @SuppressWarnings("unchecked")
     public static Value value( Object value )
     {
         if ( value == null ) { return null; }
@@ -57,9 +57,9 @@ public class Values
         if ( value instanceof Relationship ) { return new RelationshipValue( (Relationship) value ); }
         if ( value instanceof Path ) { return new PathValue( (Path) value ); }
 
-        if ( value instanceof Map ) { return value( (Map<String,Object>) value ); }
-        if ( value instanceof Collection ) { return value( (List<Object>) value ); }
-        if ( value instanceof Iterable ) { return value( (Iterable<Object>) value ); }
+        if ( value instanceof Map<?, ?> ) { return value( (Map<String,Object>) value ); }
+        if ( value instanceof Collection<?> ) { return value( (List<Object>) value ); }
+        if ( value instanceof Iterable<?> ) { return value( (Iterable<Object>) value ); }
 
         if ( value instanceof String ) { return value( (String) value ); }
         if ( value instanceof Boolean ) { return value( (boolean) value ); }
@@ -79,6 +79,7 @@ public class Values
         if ( value instanceof long[] ) { return value( (long[]) value ); }
         if ( value instanceof float[] ) { return value( (float[]) value ); }
         if ( value instanceof double[] ) { return value( (double[]) value ); }
+        if ( value instanceof Object[] ) { return value( Arrays.asList( (Object[]) value )); }
 
         throw new ClientException( "Unable to convert " + value.getClass().getName() + " to Neo4j Value." );
     }
@@ -262,6 +263,11 @@ public class Values
         return map;
     }
 
+    public static Function<Value,Value> valueAsIs()
+    {
+        return VALUE;
+    }
+
     public static Function<Value,String> valueToString()
     {
         return STRING;
@@ -303,6 +309,14 @@ public class Values
             }
         };
     }
+
+    private static final Function<Value,Value> VALUE = new Function<Value,Value>()
+    {
+        public Value apply( Value val )
+        {
+            return val;
+        }
+    };
 
     private static final Function<Value,String> STRING = new Function<Value,String>()
     {

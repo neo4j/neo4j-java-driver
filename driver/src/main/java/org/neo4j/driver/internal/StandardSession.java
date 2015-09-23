@@ -18,7 +18,6 @@
  */
 package org.neo4j.driver.internal;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.driver.Result;
@@ -30,8 +29,6 @@ import org.neo4j.driver.internal.spi.Connection;
 
 public class StandardSession implements Session
 {
-    public static final Map<String,Value> NO_PARAMETERS = new HashMap<>();
-
     private final Connection connection;
 
     /** Called when a transaction object is closed */
@@ -55,18 +52,18 @@ public class StandardSession implements Session
     public Result run( String statement, Map<String,Value> parameters )
     {
         ensureNoOpenTransaction();
-        ResultBuilder resultBuilder = new ResultBuilder();
-        CombinedResultBuilder combinedResultBuilder = new CombinedResultBuilder( resultBuilder );
+        ResultBuilder resultBuilder = new ResultBuilder( statement, parameters );
         connection.run( statement, parameters, resultBuilder );
-        connection.pullAll( combinedResultBuilder );
+
+        connection.pullAll( resultBuilder );
         connection.sync();
-        return combinedResultBuilder.build();
+        return resultBuilder.build();
     }
 
     @Override
     public Result run( String statement )
     {
-        return run( statement, NO_PARAMETERS );
+        return run( statement, ParameterSupport.NO_PARAMETERS );
     }
 
     @Override

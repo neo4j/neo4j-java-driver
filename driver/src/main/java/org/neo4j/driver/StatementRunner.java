@@ -48,7 +48,7 @@ public interface StatementRunner
      * @param parameters input data for the statement, see {@link Values#parameters(Object...)}
      * @return a stream of result values and associated metadata
      */
-    Result run( String statement, Map<String,Value> parameters );
+    Result run( String statement, Map<String, Value> parameters );
 
     /**
      * Run a statement and return a result stream.

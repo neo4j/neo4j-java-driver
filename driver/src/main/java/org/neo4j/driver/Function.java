@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.driver.internal.util;
+package org.neo4j.driver;
 
 /**
  * Same as {@link java.util.function.Function}, but defined here to work in versions older than java 8.
