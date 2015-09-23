@@ -10,14 +10,13 @@ things to break in the medium term!
 Add the driver to your project:
 
     <dependencies>
-        [..]
         <dependency>
             <groupId>org.neo4j.driver</groupId>
             <artifactId>neo4j-java-driver</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
     </dependencies>
-    [..]
+    
     <repositories>
         <repository>
             <id>neo4j-snapshot-repository</id>
