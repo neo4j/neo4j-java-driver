@@ -26,7 +26,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 
-import org.neo4j.driver.Config.TLSAuthenticationConfig;
+import org.neo4j.driver.Config.TlsAuthenticationConfig;
 
 import static org.neo4j.driver.internal.util.CertificateTool.loadX509Cert;
 
@@ -35,9 +35,9 @@ class SSLContextFactory
 
     private final String host;
     private final int port;
-    private final TLSAuthenticationConfig authConfig;
+    private final TlsAuthenticationConfig authConfig;
 
-    SSLContextFactory( String host, int port, TLSAuthenticationConfig authConfig )
+    SSLContextFactory( String host, int port, TlsAuthenticationConfig authConfig )
     {
         this.host = host;
         this.port = port;

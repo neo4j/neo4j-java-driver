@@ -24,7 +24,7 @@ import java.util.logging.Level;
 import org.neo4j.driver.internal.logging.JULogging;
 import org.neo4j.driver.internal.spi.Logging;
 
-import static org.neo4j.driver.Config.TLSAuthenticationConfig.*;
+import static org.neo4j.driver.Config.TlsAuthenticationConfig.*;
 
 /**
  * A configuration class to config driver properties.
@@ -54,10 +54,10 @@ public class Config
     private final long idleTimeBeforeConnectionTest;
 
     /* Whether TLS is enabled on all connections */
-    private final boolean isTLSEnabled;
+    private final boolean isTlsEnabled;
 
     /* Defines how to authenticate a server in TLS connections */
-    private TLSAuthenticationConfig tlsAuthConfig;
+    private TlsAuthenticationConfig tlsAuthConfig;
 
     private Config( ConfigBuilder builder )
     {
@@ -66,7 +66,7 @@ public class Config
         this.connectionPoolSize = builder.connectionPoolSize;
         this.idleTimeBeforeConnectionTest = builder.idleTimeBeforeConnectionTest;
 
-        this.isTLSEnabled = builder.isTLSEnabled;
+        this.isTlsEnabled = builder.isTlsEnabled;
         this.tlsAuthConfig = builder.tlsAuthConfig;
     }
 
@@ -100,22 +100,26 @@ public class Config
 
     /**
      * If TLS is enabled in all socket connections
-     * @return
+     * @return if TLS is enabled
      */
-    public boolean isTLSEnabled()
+    public boolean isTlsEnabled()
     {
-        return isTLSEnabled;
+        return isTlsEnabled;
     }
 
     /**
      * Specify an approach to authenticate the server when establishing TLS connections with the server
-     * @return
+     * @return a TLS configuration
      */
-    public TLSAuthenticationConfig tlsAuthConfig()
+    public TlsAuthenticationConfig tlsAuthConfig()
     {
         return tlsAuthConfig;
     }
 
+    /**
+     * Return a {@link ConfigBuilder} instance
+     * @return a {@link ConfigBuilder} instance
+     */
     public static ConfigBuilder build()
     {
         return new ConfigBuilder();
@@ -137,14 +141,11 @@ public class Config
         private Logging logging = new JULogging( Level.INFO );
         private int connectionPoolSize = 10;
         private long idleTimeBeforeConnectionTest = 200;
-        private boolean isTLSEnabled = false;
-        private TLSAuthenticationConfig tlsAuthConfig =
+        private boolean isTlsEnabled = false;
+        private TlsAuthenticationConfig tlsAuthConfig =
                 usingKnownCerts( new File( System.getProperty( "user.home" ), "neo4j/neo4j_known_certs" ) );
 
-        private ConfigBuilder()
-        {
-
-        }
+        private ConfigBuilder() {}
 
         /**
          * Provide an alternative logging implementation for the driver to use. By default we use
@@ -191,9 +192,9 @@ public class Config
          * @param value
          * @return this builder
          */
-        public ConfigBuilder withTLSEnabled( boolean value )
+        public ConfigBuilder withTlsEnabled( boolean value )
         {
-            this.isTLSEnabled = value;
+            this.isTlsEnabled = value;
             return this;
         }
 
@@ -202,7 +203,7 @@ public class Config
          * @param tlsAuthConfig
          * @return
          */
-        public ConfigBuilder withTLSAuthConfig( TLSAuthenticationConfig tlsAuthConfig )
+        public ConfigBuilder withTlsAuthConfig( TlsAuthenticationConfig tlsAuthConfig )
         {
             this.tlsAuthConfig = tlsAuthConfig;
             return this;
@@ -218,7 +219,10 @@ public class Config
         }
     }
 
-    public static class TLSAuthenticationConfig
+    /**
+     * A configuration to configure TLS authentication
+     */
+    public static class TlsAuthenticationConfig
     {
         private enum Mode
         {
@@ -228,12 +232,17 @@ public class Config
         private final Mode mode;
         private final File certFile;
 
-        private TLSAuthenticationConfig( Mode mode, File certFile )
+        private TlsAuthenticationConfig( Mode mode, File certFile )
         {
             this.mode = mode;
             this.certFile = certFile;
         }
 
+        /**
+         * Return true if full authentication is enabled, which suggests a trusted certificate is provided with
+         * {@link #usingTrustedCert(File)}. Otherwise, return false.
+         * @return true if full authentication is enabled.
+         */
         public boolean isFullAuthEnabled()
         {
             return mode == Mode.TRUSTED_CERT;
@@ -255,9 +264,9 @@ public class Config
          * @param certFile the trusted certificate file
          * @return an authentication config
          */
-        public static TLSAuthenticationConfig usingTrustedCert( File certFile )
+        public static TlsAuthenticationConfig usingTrustedCert( File certFile )
         {
-            return new TLSAuthenticationConfig( Mode.TRUSTED_CERT, certFile );
+            return new TlsAuthenticationConfig( Mode.TRUSTED_CERT, certFile );
         }
 
         /**
@@ -275,9 +284,9 @@ public class Config
          * @param certFile the new file where known certificates are stored.
          * @return an authentication config
          */
-        public static TLSAuthenticationConfig usingKnownCerts( File certFile )
+        public static TlsAuthenticationConfig usingKnownCerts( File certFile )
         {
-            return new TLSAuthenticationConfig( Mode.KNOWN_CERTS, certFile );
+            return new TlsAuthenticationConfig( Mode.KNOWN_CERTS, certFile );
         }
     }
 }

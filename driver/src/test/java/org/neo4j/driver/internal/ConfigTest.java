@@ -23,13 +23,13 @@ import org.junit.Test;
 import java.io.File;
 
 import org.neo4j.driver.Config;
-import org.neo4j.driver.Config.TLSAuthenticationConfig;
+import org.neo4j.driver.Config.TlsAuthenticationConfig;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.driver.Config.TLSAuthenticationConfig.usingKnownCerts;
-import static org.neo4j.driver.Config.TLSAuthenticationConfig.usingTrustedCert;
+import static org.neo4j.driver.Config.TlsAuthenticationConfig.usingKnownCerts;
+import static org.neo4j.driver.Config.TlsAuthenticationConfig.usingTrustedCert;
 
 public class ConfigTest
 {
@@ -42,7 +42,7 @@ public class ConfigTest
         Config config = Config.defaultConfig();
 
         // When
-        TLSAuthenticationConfig authConfig = config.tlsAuthConfig();
+        TlsAuthenticationConfig authConfig = config.tlsAuthConfig();
 
         // Then
         assertFalse( authConfig.isFullAuthEnabled() );
@@ -54,10 +54,10 @@ public class ConfigTest
     {
         // Given
         File knownCerts = new File( "new_known_certs" );
-        Config config = Config.build().withTLSAuthConfig( usingKnownCerts( knownCerts ) ).toConfig();
+        Config config = Config.build().withTlsAuthConfig( usingKnownCerts( knownCerts ) ).toConfig();
 
         // When
-        TLSAuthenticationConfig authConfig = config.tlsAuthConfig();
+        TlsAuthenticationConfig authConfig = config.tlsAuthConfig();
 
         // Then
         assertFalse( authConfig.isFullAuthEnabled() );
@@ -69,10 +69,10 @@ public class ConfigTest
     {
         // Given
         File trustedCert = new File( "trusted_cert" );
-        Config config = Config.build().withTLSAuthConfig( usingTrustedCert( trustedCert ) ).toConfig();
+        Config config = Config.build().withTlsAuthConfig( usingTrustedCert( trustedCert ) ).toConfig();
 
         // When
-        TLSAuthenticationConfig authConfig = config.tlsAuthConfig();
+        TlsAuthenticationConfig authConfig = config.tlsAuthConfig();
 
         // Then
         assertTrue( authConfig.isFullAuthEnabled() );

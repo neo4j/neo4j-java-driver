@@ -37,15 +37,15 @@ public interface StatementRunner
      * Neo4j can re-use query plans more often.
      * <p>
      * <h2>Example</h2>
-     * <pre>
+     * <pre class="doctest:StatementRunnerDocIT#parameterTest">
      * {@code
      * Result res = session.run( "MATCH (n) WHERE n.name = {myNameParam} RETURN (n)",
-     *              Neo4j.parameters( "myNameParam", "Bob" ) );
+     *              Values.parameters( "myNameParam", "Bob" ) );
      * }
      * </pre>
      *
      * @param statement a Neo4j statement
-     * @param parameters input data for the statement, see {@link Driver#parameters(Object[])}
+     * @param parameters input data for the statement, see {@link Values#parameters(Object...)}
      * @return a stream of result values and associated metadata
      */
     Result run( String statement, Map<String,Value> parameters );

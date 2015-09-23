@@ -30,7 +30,7 @@ import org.neo4j.driver.util.TestSession;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.driver.Driver.parameters;
+import static org.neo4j.driver.Values.parameters;
 
 public class ParametersIT
 {

@@ -166,7 +166,7 @@ public class SocketClient
 
             ByteChannel channel = null;
 
-            if( config.isTLSEnabled() )
+            if( config.isTlsEnabled() )
             {
                 channel = new SSLSocketChannel( host, port, soChannel, logger, config.tlsAuthConfig() );
             }

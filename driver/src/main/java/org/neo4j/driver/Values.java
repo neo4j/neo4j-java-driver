@@ -19,6 +19,7 @@
 package org.neo4j.driver;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -232,27 +233,30 @@ public class Values
     }
 
     /**
-     * Helper function for creating a map of properties.
+     * Helper function for creating a map of parameters, this can be used when you {@link
+     * StatementRunner#run(String, Map) run} statements.
+     * <p>
+     * Allowed parameter types are java primitives and {@link String} as well as
+     * {@link Collection} and {@link Map} objects containing java
+     * primitives and {@link String} values.
      *
      * @param keysAndValues alternating sequence of keys and values
-     * @return Map containing all properties specified
+     * @return Map containing all parameters specified
+     * @see StatementRunner#run(String, Map)
      */
-    public static Map<String,Value> properties( Object... keysAndValues )
+    public static Map<String,Value> parameters( Object... keysAndValues )
     {
-        HashMap<String,Value> map = new HashMap<>( keysAndValues.length / 2 );
-        String key = null;
-        for ( Object keyOrValue : keysAndValues )
+        if ( keysAndValues.length % 2 != 0 )
         {
-            if ( key == null )
-            {
-                key = keyOrValue.toString();
-            }
-            else
-            {
-
-                map.put( key, value( keyOrValue ) );
-                key = null;
-            }
+            throw new ClientException( "Parameters function requires an even number " +
+                                       "of arguments, " +
+                                       "alternating key and value. Arguments were: " +
+                                       Arrays.toString( keysAndValues ) + "." );
+        }
+        HashMap<String,Value> map = new HashMap<>( keysAndValues.length / 2 );
+        for ( int i = 0; i < keysAndValues.length; i += 2 )
+        {
+            map.put( keysAndValues[i].toString(), value( keysAndValues[i + 1] ) );
         }
         return map;
     }

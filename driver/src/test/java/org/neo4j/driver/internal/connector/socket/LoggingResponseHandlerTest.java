@@ -37,7 +37,7 @@ import org.neo4j.driver.internal.messaging.RunMessage;
 import org.neo4j.driver.internal.messaging.SuccessMessage;
 
 import static junit.framework.Assert.assertEquals;
-import static org.neo4j.driver.Driver.parameters;
+import static org.neo4j.driver.Values.parameters;
 
 public class LoggingResponseHandlerTest
 {

@@ -52,8 +52,8 @@ import static junit.framework.TestCase.assertEquals;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.driver.Config.TLSAuthenticationConfig.usingKnownCerts;
-import static org.neo4j.driver.Config.TLSAuthenticationConfig.usingTrustedCert;
+import static org.neo4j.driver.Config.TlsAuthenticationConfig.usingKnownCerts;
+import static org.neo4j.driver.Config.TlsAuthenticationConfig.usingTrustedCert;
 import static org.neo4j.driver.internal.ConfigTest.deleteDefaultKnownCertFileIfExists;
 import static org.neo4j.driver.internal.util.CertificateTool.saveX509Cert;
 import static org.neo4j.driver.util.CertificateToolTest.generateSelfSignedCertificate;
@@ -241,7 +241,7 @@ public class SSLSocketChannelIT
     public void shouldEstablishTLSConnection() throws Throwable
     {
         deleteDefaultKnownCertFileIfExists();
-        Config config = Config.build().withTLSEnabled( true ).toConfig();
+        Config config = Config.build().withTlsEnabled( true ).toConfig();
 
         Driver driver = GraphDatabase.driver(
                 URI.create( Neo4jRunner.DEFAULT_URL ),

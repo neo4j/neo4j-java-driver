@@ -21,7 +21,7 @@ package org.neo4j.driver;
 import java.net.URI;
 
 /**
- * Creates {@link Driver drivers}, optionally letting you {@link #driver(URI, Config)}  configure them}.
+ * Creates {@link Driver drivers}, optionally letting you {@link #driver(URI, Config)} to configure them.
  * @see Driver
  */
 public class GraphDatabase
