@@ -54,6 +54,7 @@ public class SocketClient
         this.port = port;
         this.config = config;
         this.logger = logger;
+        this.channel = null;
     }
 
     public void start()
@@ -103,6 +104,7 @@ public class SocketClient
         try
         {
             channel.close();
+            channel = null;
             logger.debug( "~~ [CLOSE]" );
         }
         catch ( IOException e )

@@ -72,4 +72,11 @@ public interface StatementRunner
      * @return a stream of result values and associated metadata
      */
     Result run( Statement statement );
+
+    /**
+     * Detect whether this statement runner can be used, of if it has been closed.
+     *
+     * @return true if you can currently {@link #run(String) run} statements with this
+     */
+    boolean isOpen();
 }

@@ -61,6 +61,12 @@ public class TestSession extends TestNeo4j implements Session
     }
 
     @Override
+    public boolean isOpen()
+    {
+        return true;  // this is a test so can be always available
+    }
+
+    @Override
     public void close()
     {
         throw new UnsupportedOperationException( "Disallowed on this test session" );
