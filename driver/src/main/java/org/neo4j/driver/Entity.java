@@ -48,10 +48,11 @@ public interface Entity
     int propertyCount();
 
     /**
-     * Return a specific property {@link org.neo4j.driver.Value}.
+     * Return a specific property {@link org.neo4j.driver.Value}. If no value could be found with the specified key,
+     * null will be returned.
      *
      * @param key a property key
-     * @return the property value
+     * @return the property value or null
      */
     Value property( String key );
 }

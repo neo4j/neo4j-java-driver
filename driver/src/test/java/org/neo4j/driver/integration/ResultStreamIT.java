@@ -22,9 +22,14 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.driver.Result;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.util.TestSession;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
+import static org.neo4j.driver.Values.parameters;
 
 public class ResultStreamIT
 {
@@ -54,5 +59,54 @@ public class ResultStreamIT
         // Then
         assertEquals( "[n]", res.fieldNames().toString() );
         assertEquals( "[n]", res.single().fieldNames().toString() );
+    }
+
+    @Test
+    public void shouldGiveHelpfulFailureMessageWhenCurrentRecordHasNotBeenSet() throws Throwable
+    {
+        // Given
+        Result rs = session.run( "CREATE (n:Person {name:{name}}) RETURN n", parameters( "name", "Tom Hanks" ) );
+
+        // When & Then
+        try
+        {
+            rs.get( "n" );
+            fail( "The test should fail with a proper message to indicate `next` method should be called first" );
+        }
+        catch( ClientException e )
+        {
+            assertEquals(
+                    "In order to access fields of a record in a result, " +
+                    "you must first call next() to point the result to the next record in the result stream.",
+                    e.getMessage() );
+
+        }
+    }
+
+    @Test
+    public void shouldGiveHelpfulFailureMessageWhenAccessNonExistingField() throws Throwable
+    {
+        // Given
+        Result rs = session.run( "CREATE (n:Person {name:{name}}) RETURN n", parameters( "name", "Tom Hanks" ) );
+
+        // When
+        Value m = rs.single().get( "m" );
+
+        // Then
+        assertNull( m );
+    }
+
+    @Test
+    public void shouldGiveHelpfulFailureMessageWhenAccessNonExistingPropertyOnNode() throws Throwable
+    {
+        // Given
+        Result rs = session.run( "CREATE (n:Person {name:{name}}) RETURN n", parameters( "name", "Tom Hanks" ) );
+
+        // When
+        Value n = rs.single().get( "n" );
+        Value age = n.get( "age" );
+
+        // Then
+        assertNull( age );
     }
 }
