@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal.pool;
 
+import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.internal.util.Consumer;
 
 public interface Allocator<Value>
@@ -26,8 +27,11 @@ public interface Allocator<Value>
      * Called when the pool needs a new value created. The 'release' handle given here will return the object to the
      * pool. How it gets invoked is up to the pooled object, but a suggested pattern is for the pooled object to
      * implement a 'close' method which calls the release handle.
+     *
+     * It is legal for the allocator to fail to allocate a new item. To signal that allocation failed, the allocator
+     * should throw a {@link org.neo4j.driver.exceptions.Neo4jException}
      */
-    Value create( Consumer<Value> release );
+    Value allocate( Consumer<Value> release ) throws Neo4jException;
 
     /** Called when a value gets kicked out of the pool. */
     void onDispose( Value value );

@@ -154,7 +154,7 @@ public class StandardConnectionPool implements ConnectionPool
         return new ThreadCachingPool<>( config.connectionPoolSize(), new Allocator<PooledConnection>()
         {
             @Override
-            public PooledConnection create( Consumer<PooledConnection> release )
+            public PooledConnection allocate( Consumer<PooledConnection> release )
             {
                 Connector connector = connectors.get( uri.getScheme() );
                 if ( connector == null )

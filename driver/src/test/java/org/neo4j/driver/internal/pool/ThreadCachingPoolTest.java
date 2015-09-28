@@ -30,8 +30,10 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.util.Consumer;
 
+import static junit.framework.TestCase.fail;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertNull;
@@ -58,31 +60,7 @@ public class ThreadCachingPoolTest
     };
 
     /** Allocator that allocates pooled objects and tracks their current state (pooled, used, disposed) */
-    private final Allocator<PooledObject> trackAllocator = new Allocator<PooledObject>()
-    {
-        @Override
-        public PooledObject create( Consumer<PooledObject> release )
-        {
-            PooledObject p = new PooledObject( release );
-            inPool.add( p );
-            return p;
-        }
-
-        @Override
-        public void onDispose( PooledObject o )
-        {
-            inPool.remove( o );
-            inUse.remove( o );
-            disposed.add( o );
-        }
-
-        @Override
-        public void onAcquire( PooledObject o )
-        {
-            inPool.remove( o );
-            inUse.add( o );
-        }
-    };
+    private final TestAllocator trackAllocator = new TestAllocator();
 
     @Test
     public void shouldDisposeAllOnClose() throws Throwable
@@ -198,6 +176,89 @@ public class ThreadCachingPoolTest
         assertThat( disposed, equalTo( items( val ) ) );
     }
 
+    @Test
+    public void shouldRecoverFromItemCreationFailure() throws Throwable
+    {
+        // Given a pool where creation will fail from the get-go
+        ThreadCachingPool<PooledObject>
+                pool = new ThreadCachingPool<>( 4, trackAllocator, checkInvalidateFlag, SYSTEM );
+
+        trackAllocator.startEmulatingCreationFailures();
+
+        // And given I've acquire a few items, failing to do so
+        for ( int i = 0; i < 4; i++ )
+        {
+            try
+            {
+                pool.acquire( 10, TimeUnit.SECONDS );
+                fail("Should not succeed at allocating any item here.");
+            }
+            catch( ClientException e )
+            {
+                // Expected
+            }
+        }
+
+        // When creation starts working again
+        trackAllocator.stopEmulatingCreationFailures();
+
+        // Then I should be able to allocate things
+        for ( int i = 0; i < 4; i++ )
+        {
+            pool.acquire( 10, TimeUnit.SECONDS );
+        }
+        assertThat( inPool,   equalTo( none() ) );
+        assertThat( inUse,    equalTo( items( 0, 1, 2, 3 ) ) );
+        assertThat( disposed, equalTo( none() ) ); // because allocation fails, onDispose is not called
+    }
+
+    @Test
+    public void shouldRecovedDisposedItemReallocationFailing() throws Throwable
+    {
+        // Given a pool where creation will fail from the get-go
+        ThreadCachingPool<PooledObject>
+                pool = new ThreadCachingPool<>( 2, trackAllocator, checkInvalidateFlag, SYSTEM );
+
+        // And given I've allocated and released some stuff, and it became invalid, such that I have a set
+        // of disposed-of slots in the pool
+        PooledObject first = pool.acquire( 10, TimeUnit.SECONDS );
+        PooledObject second = pool.acquire( 10, TimeUnit.SECONDS );
+        first.invalidate();
+        second.invalidate();
+        first.release();
+        second.release();
+
+        // And given (bear with me here!) allocation starts failing
+        trackAllocator.startEmulatingCreationFailures();
+
+        // And I try and allocate some stuff, failing at it
+        for ( int i = 0; i < 2; i++ )
+        {
+            try
+            {
+                pool.acquire( 10, TimeUnit.SECONDS );
+                fail( "Should not succeed at allocating any item here." );
+            }
+            catch ( ClientException e )
+            {
+                // Expected
+            }
+        }
+
+        // When creation starts working again
+        trackAllocator.stopEmulatingCreationFailures();
+
+        // Then I should be able to allocate things
+        for ( int i = 0; i < 2; i++ )
+        {
+            pool.acquire( 10, TimeUnit.SECONDS );
+        }
+        assertThat( inPool, equalTo( none() ) );
+        assertThat( inUse, equalTo( items( 2, 3 ) ) );
+        // only the first two items get onDispose called, since allocation fails after that
+        assertThat( disposed, equalTo( items( 0, 1) ) );
+    }
+
     private List<PooledObject> items( int ... objects )
     {
         List<PooledObject> out = new LinkedList<>();
@@ -291,6 +352,48 @@ public class ThreadCachingPoolTest
         public int hashCode()
         {
             return id;
+        }
+    }
+
+    private class TestAllocator implements Allocator<PooledObject>
+    {
+        private ClientException creationException;
+
+        @Override
+        public PooledObject allocate( Consumer<PooledObject> release )
+        {
+            if( creationException != null )
+            {
+                throw creationException;
+            }
+            PooledObject p = new PooledObject( release );
+            inPool.add( p );
+            return p;
+        }
+
+        @Override
+        public void onDispose( PooledObject o )
+        {
+            inPool.remove( o );
+            inUse.remove( o );
+            disposed.add( o );
+        }
+
+        @Override
+        public void onAcquire( PooledObject o )
+        {
+            inPool.remove( o );
+            inUse.add( o );
+        }
+
+        public void startEmulatingCreationFailures()
+        {
+            this.creationException = new ClientException( "Failed to create item," );
+        }
+
+        public void stopEmulatingCreationFailures()
+        {
+            this.creationException = null;
         }
     }
 }
