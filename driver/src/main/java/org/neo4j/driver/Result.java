@@ -77,7 +77,7 @@ public interface Result
      * <p>
      * <pre>
      * {@code
-     * Record record = statement.run( "MATCH (n:User {uid:..}) RETURN n" ).single();
+     * Record record = statement.run( "MATCH (n:User {uid:..}) RETURN n.name" ).single();
      * }
      * </pre>
      *
