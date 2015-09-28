@@ -86,10 +86,6 @@ public class SimpleRelationship extends SimpleEntity implements Relationship
     @Override
     public String toString()
     {
-        return "Relationship{" + super.toString() + ", " +
-               "start=" + start +
-               ", end=" + end +
-               ", type='" + type + '\'' +
-               '}';
+        return "relationship<" + identity() + '>';
     }
 }
