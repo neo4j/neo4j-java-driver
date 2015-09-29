@@ -18,6 +18,9 @@
  */
 package org.neo4j.driver;
 
+import java.util.List;
+import java.util.function.Function;
+
 /**
  * Represents a value from Neo4j.
  * <p>
@@ -84,8 +87,21 @@ public interface Value extends Iterable<Value>
     /** @return the value as a Java double, if possible. */
     double javaDouble();
 
-    /** @return the value as a Java boolean, if possible. */
+    /**
+     * If the value represents a number, this method will return true if the number is not equals to 0.
+     * If the value represents a collection, this method will return true if the collection is not empty.
+     * If the value represents a string, this method will return true, if the string is not empty.
+     * @return the value as a Java boolean, if possible.
+     */
     boolean javaBoolean();
+
+    /**
+     * @param map a function to map from Value to T. See {@link Values} for some predefined functions, such
+     * as {@link Values#valueToBoolean()}, {@link Values#valueToList(Function)}.
+     * @param <T> the type of list elements
+     * @return the value as a list of T, if possible
+     */
+    <T> List<T> javaList( Function<Value, T> map );
 
     /** @return the value as an {@link Identity}, if possible. */
     Identity asIdentity();

@@ -18,7 +18,10 @@
  */
 package org.neo4j.driver.internal.value;
 
+import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
+import java.util.function.Function;
 
 import org.neo4j.driver.Identity;
 import org.neo4j.driver.Node;
@@ -67,6 +70,12 @@ public abstract class ValueAdapter implements Value
     public boolean javaBoolean()
     {
         throw new Uncoercible( typeName(), "Java boolean" );
+    }
+
+    @Override
+    public <T> List<T> javaList( Function<Value,T> map )
+    {
+        return Arrays.asList( map.apply( this ) );
     }
 
     @Override
