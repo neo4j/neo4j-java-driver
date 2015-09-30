@@ -52,6 +52,12 @@ public class TestNeo4j implements TestRule
         runner.startServer();
     }
 
+    public String address()
+    {
+        return runner.DEFAULT_URL;
+    }
+
+
     public boolean canControlServer()
     {
         return runner.canControlServer();

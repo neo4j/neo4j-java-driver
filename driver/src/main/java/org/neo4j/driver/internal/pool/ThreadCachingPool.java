@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Consumer;
 
@@ -151,8 +152,8 @@ public class ThreadCachingPool<T> implements AutoCloseable
                 slot = disposed.poll();
                 if ( slot != null )
                 {
-                    // Got a hold of a previously disposed slot, it's place in the world for our purposes
-                    all[slot.index] = slot = allocateNew( slot.index );
+                    // Got a hold of a previously disposed slot!
+                    slot = allocate( slot.index );
                     break;
                 }
 
@@ -160,7 +161,7 @@ public class ThreadCachingPool<T> implements AutoCloseable
                 int index = nextSlotIndex.get();
                 if ( maxSize > index && nextSlotIndex.compareAndSet( index, index + 1 ) )
                 {
-                    all[index] = slot = allocateNew( index );
+                    slot = allocate( index );
                     break;
                 }
             }
@@ -194,14 +195,40 @@ public class ThreadCachingPool<T> implements AutoCloseable
         // pool are used for read-only operations
         disposed.add( slot );
         allocator.onDispose( slot.value );
-
     }
 
-    private Slot<T> allocateNew( int index )
+    /**
+     * This method will create allocate a new value, returning the slot in the {@code CLAIMED} state. If allocation
+     * fails, a slot for the same index will be added to the {@link #disposed} list, and an exception will be thrown.
+     * @param slotIndex the slot index to use for the new item
+     * @return a slot in the {@code CLAIMED} state
+     */
+    private Slot<T> allocate( int slotIndex )
     {
-        final Slot<T> slot = new Slot<>( index, clock );
+        final Slot<T> slot = new Slot<>( slotIndex, clock );
+        try
+        {
+            // Allocate the new item - this may fail with an exception
+            slot.set( allocator.allocate( createDisposeCallback( slot ) ) );
 
-        slot.set( allocator.create( new Consumer<T>()
+            // Store the slot in the global list of slots
+            all[slotIndex] = slot;
+
+            // Return it :)
+            return slot;
+        }
+        catch( Neo4jException e )
+        {
+            // Failed to allocate slot, return it to the list of disposed slots, rethrow exception.
+            slot.claimedToDisposed();
+            disposed.add( slot );
+            throw e;
+        }
+    }
+
+    private Consumer<T> createDisposeCallback( final Slot<T> slot )
+    {
+        return new Consumer<T>()
         {
             @Override
             public void accept( T t )
@@ -237,8 +264,7 @@ public class ThreadCachingPool<T> implements AutoCloseable
                     }
                 }
             }
-        } ) );
-        return slot;
+        };
     }
 
     @Override
@@ -277,6 +303,13 @@ class Slot<T>
 
     long lastUsed;
     T value;
+
+    public static <T> Slot<T> disposed( int index, Clock clock )
+    {
+        Slot<T> slot = new Slot<>( index, clock );
+        slot.claimedToDisposed();
+        return slot;
+    }
 
     /**
      * @param index the index into the {@link ThreadCachingPool#all all} array, used to re-use that slot when this is
