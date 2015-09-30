@@ -84,4 +84,10 @@ public class NodeValue extends ValueAdapter
     {
         return adapted != null ? adapted.hashCode() : 0;
     }
+
+    @Override
+    public String toString()
+    {
+        return adapted.toString();
+    }
 }
