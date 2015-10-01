@@ -21,17 +21,20 @@ package org.neo4j.driver.internal.connector.socket;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.driver.StatementType;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.DatabaseException;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.TransientException;
+import org.neo4j.driver.internal.StandardResultSummary;
 import org.neo4j.driver.internal.messaging.MessageHandler;
 import org.neo4j.driver.internal.spi.StreamCollector;
 
+import static org.neo4j.driver.Values.valueToString;
+
 public class SocketResponseHandler implements MessageHandler
 {
-    public static final String[] NO_FIELDS = new String[0];
     private final Map<Integer,StreamCollector> collectors = new HashMap<>();
 
     /** If a failure occurs, the error gets stored here */
@@ -51,7 +54,7 @@ public class SocketResponseHandler implements MessageHandler
         // This is not very efficient, using something like a singly-linked queue with a current collector as head
         // would take advantage of the ordered nature of exchanges and avoid all these objects allocated from boxing
         // below.
-        StreamCollector collector = collectors.get( responseId - 1 );
+        StreamCollector collector = collectors.get( responseId );
         if ( collector != null )
         {
             collector.record( fields );
@@ -90,9 +93,53 @@ public class SocketResponseHandler implements MessageHandler
         StreamCollector collector = collectors.get( responseId );
         if ( collector != null )
         {
-            collector.fieldNames( fieldNamesFromMeta( meta ) );
+            if( meta.containsKey( "fields" ) )
+            {
+                collector.head( meta.get( "fields" ).javaList( valueToString() ) );
+            }
+            if( meta.containsKey( "type" ))
+            {
+                System.out.println("EOS: " + meta );
+                Value stats = meta.get( "stats" );
+                collector.tail( new StandardResultSummary(
+                    intOrZero( stats, "nodes-created" ),
+                    intOrZero( stats, "nodes-deleted" ),
+                    intOrZero( stats, "relationships-created" ),
+                    intOrZero( stats, "relationships-deleted" ),
+                    intOrZero( stats, "properties-set" ),
+                    intOrZero( stats, "labels-added" ),
+                    intOrZero( stats, "labels-removed" ),
+                    intOrZero( stats, "indexes-added" ),
+                    intOrZero( stats, "indexes-removed" ),
+                    intOrZero( stats, "constraints-added" ),
+                    intOrZero( stats, "constraints-removed" ),
+                    statementType( meta.get( "type" ) )
+                ));
+            }
         }
         responseId++;
+    }
+
+    private StatementType statementType( Value type )
+    {
+        switch( type.javaString() )
+        {
+        case "r":  return StatementType.READ_ONLY;
+        case "rw": return StatementType.READ_WRITE;
+        case "w":  return StatementType.WRITE_ONLY;
+        case "s":  return StatementType.SCHEMA_WRITE;
+        default: throw new ClientException( "Unknown statement type code: `" + type.javaBoolean() + "`." );
+        }
+    }
+
+    private int intOrZero( Value stats, String key )
+    {
+        if( stats == null )
+        {
+            return 0;
+        }
+        Value value = stats.get( key );
+        return value == null ? 0 : value.javaInteger();
     }
 
     @Override
@@ -152,26 +199,4 @@ public class SocketResponseHandler implements MessageHandler
         error = null;
         collectors.clear();
     }
-
-    private String[] fieldNamesFromMeta( Map<String,Value> meta )
-    {
-        String[] fields;
-        Value fieldValue = meta.get( "fields" );
-        if ( fieldValue == null || fieldValue.size() == 0 )
-        {
-            fields = NO_FIELDS;
-        }
-        else
-        {
-            fields = new String[(int) fieldValue.size()];
-            int idx = 0;
-            for ( Value value : fieldValue )
-            {
-                fields[idx++] = value.javaString();
-            }
-
-        }
-        return fields;
-    }
-
 }

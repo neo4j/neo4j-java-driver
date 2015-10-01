@@ -6,6 +6,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <build.revision></build.revision>
+    <cucumber.version>1.2.2</cucumber.version>
   </properties>
 
   <parent>
@@ -66,6 +67,18 @@
       <groupId>com.jakewins</groupId>
       <artifactId>javadoc-test</artifactId>
       <version>1.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>info.cukes</groupId>
+      <artifactId>cucumber-java</artifactId>
+      <version>${cucumber.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>info.cukes</groupId>
+      <artifactId>cucumber-junit</artifactId>
+      <version>${cucumber.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

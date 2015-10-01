@@ -26,27 +26,25 @@ import java.util.Map;
 
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
+import org.neo4j.driver.ResultSummary;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.spi.StreamCollector;
 
 public class ResultBuilder implements StreamCollector
 {
     private List<Record> body = new ArrayList<>();
-    private Map<String,Integer> fieldLookup = Collections.EMPTY_MAP;
+    private Map<String,Integer> fieldLookup = Collections.emptyMap();
+    private ResultSummary summary;
 
     @Override
-    public void fieldNames( String[] names )
+    public void head( List<String> fields )
     {
-        if ( names.length == 0 )
-        {
-            this.fieldLookup = Collections.EMPTY_MAP;
-        }
-        else
+        if ( fields.size() > 0 )
         {
             Map<String,Integer> fieldLookup = new HashMap<>();
-            for ( int i = 0; i < names.length; i++ )
+            for ( int i = 0; i < fields.size(); i++ )
             {
-                fieldLookup.put( names[i], i );
+                fieldLookup.put( fields.get( i ), i );
             }
             this.fieldLookup = fieldLookup;
         }
@@ -58,9 +56,14 @@ public class ResultBuilder implements StreamCollector
         body.add( new SimpleRecord( fieldLookup, fields ) );
     }
 
-    public Result build()
+    @Override
+    public void tail( ResultSummary summary )
     {
-        return new SimpleResult( fieldLookup.keySet(), body );
+        this.summary = summary;
     }
 
+    public Result build()
+    {
+        return new SimpleResult( fieldLookup.keySet(), body, summary );
+    }
 }

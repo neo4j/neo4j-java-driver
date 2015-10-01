@@ -18,10 +18,17 @@
  */
 package org.neo4j.driver.util;
 
+import org.rauschig.jarchivelib.ArchiveStream;
+import org.rauschig.jarchivelib.Archiver;
+import org.rauschig.jarchivelib.ArchiverFactory;
+
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintWriter;
+import java.net.URL;
 import java.util.Scanner;
 
 import static java.io.File.createTempFile;
@@ -100,5 +107,38 @@ public class FileTools
 
         propFile.delete();
         newPropFile.renameTo( propFile );
+    }
+
+    /** To allow retrieving a runnable neo4j jar from the international webbernets, we have this */
+    public static void streamFileTo( String url, File target ) throws IOException
+    {
+        try ( FileOutputStream out = new FileOutputStream( target );
+              InputStream in = new URL( url ).openStream() )
+        {
+            byte[] buffer = new byte[1024];
+            int read = in.read( buffer );
+            while ( read != -1 )
+            {
+                if ( read > 0 )
+                {
+                    out.write( buffer, 0, read );
+                }
+
+                read = in.read( buffer );
+            }
+        }
+    }
+
+    public static void extractTarball( File tarball, File outputDir, File outputName ) throws IOException
+    {
+        Archiver archiver = ArchiverFactory.createArchiver( "tar", "gz" );
+
+        archiver.extract( tarball, outputDir );
+
+        // Rename the extracted file to something predictable (extracted folder may contain build number, date or so)
+        try ( ArchiveStream stream = archiver.stream( tarball ) )
+        {
+            new File( outputDir, stream.getNextEntry().getName() ).renameTo( outputName );
+        }
     }
 }

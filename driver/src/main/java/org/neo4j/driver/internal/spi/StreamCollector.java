@@ -18,6 +18,9 @@
  */
 package org.neo4j.driver.internal.spi;
 
+import java.util.List;
+
+import org.neo4j.driver.ResultSummary;
 import org.neo4j.driver.Value;
 
 public interface StreamCollector
@@ -25,7 +28,7 @@ public interface StreamCollector
     StreamCollector NO_OP = new StreamCollector()
     {
         @Override
-        public void fieldNames( String[] names )
+        public void head( List<String> fields )
         {
 
         }
@@ -35,9 +38,20 @@ public interface StreamCollector
         {
 
         }
+
+        @Override
+        public void tail( ResultSummary summary )
+        {
+
+        }
     };
 
-    void fieldNames( String[] names );
+    /** Called when the stream starts */
+    void head( List<String> fields );
 
+    /** Called for each record in the stream */
     void record( Value[] fields );
+
+    /** Called at the end of the stream */
+    void tail( ResultSummary summary );
 }

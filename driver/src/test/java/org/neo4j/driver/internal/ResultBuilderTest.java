@@ -27,6 +27,7 @@ import org.neo4j.driver.ReusableResult;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
 
+import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.neo4j.driver.Values.value;
@@ -41,7 +42,7 @@ public class ResultBuilderTest
     {
         // Given
         ResultBuilder builder = new ResultBuilder();
-        builder.fieldNames( new String[]{"a"} );
+        builder.head( asList("a") );
         builder.record( new Value[]{value( "Admin" )} );
 
         // When
@@ -72,7 +73,7 @@ public class ResultBuilderTest
     {
         // Given
         ResultBuilder builder = new ResultBuilder();
-        builder.fieldNames( new String[]{"a"} );
+        builder.head( asList("a") );
         builder.record( new Value[]{value( "Admin" )} );
 
         ReusableResult result = builder.build().retain();

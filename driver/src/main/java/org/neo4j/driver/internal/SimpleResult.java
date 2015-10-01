@@ -23,6 +23,7 @@ import java.util.List;
 
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
+import org.neo4j.driver.ResultSummary;
 import org.neo4j.driver.ReusableResult;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
@@ -32,13 +33,15 @@ public class SimpleResult implements Result
     private final Iterable<String> fieldNames;
     private final List<Record> body;
     private final Iterator<Record> iter;
+    private final ResultSummary summary;
     private Record current;
 
-    public SimpleResult( Iterable<String> fieldNames, List<Record> body )
+    public SimpleResult( Iterable<String> fieldNames, List<Record> body, ResultSummary summary )
     {
         this.fieldNames = fieldNames;
         this.body = body;
         this.iter = body.iterator();
+        this.summary = summary;
     }
 
     @Override
@@ -51,6 +54,19 @@ public class SimpleResult implements Result
     public Record single()
     {
         return iter.next();
+    }
+
+    @Override
+    public ResultSummary summarize()
+    {
+        // While we currently have the full result readily available, we want to consume the result lazilly off the
+        // network in the future. To support that, the contract for this method is that we consume the whole
+        // result (because we cannot access the summary without consuming the whole result).
+        while(iter.hasNext())
+        {
+            iter.next();
+        }
+        return summary;
     }
 
     @Override
