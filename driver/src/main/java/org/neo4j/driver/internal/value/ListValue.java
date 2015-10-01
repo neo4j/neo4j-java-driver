@@ -18,8 +18,11 @@
  */
 package org.neo4j.driver.internal.value;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
+import java.util.function.Function;
 
 import org.neo4j.driver.Value;
 
@@ -36,6 +39,17 @@ public class ListValue extends ValueAdapter
     public boolean javaBoolean()
     {
         return values.length > 0;
+    }
+
+    @Override
+    public <T> List<T> javaList( Function<Value,T> map )
+    {
+        List<T> list = new ArrayList<>( values.length );
+        for ( Value value : values )
+        {
+            list.add( map.apply( value ) );
+        }
+        return list;
     }
 
     @Override
@@ -109,6 +123,6 @@ public class ListValue extends ValueAdapter
     @Override
     public String toString()
     {
-        return "ListValue[" + Arrays.toString( values ) + "]";
+        return "ListValue" + Arrays.toString( values ) + "";
     }
 }

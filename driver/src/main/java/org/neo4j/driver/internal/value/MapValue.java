@@ -18,8 +18,11 @@
  */
 package org.neo4j.driver.internal.value;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.neo4j.driver.Value;
 
@@ -36,6 +39,17 @@ public class MapValue extends ValueAdapter
     public boolean javaBoolean()
     {
         return !val.isEmpty();
+    }
+
+    @Override
+    public <T> List<T> javaList( Function<Value,T> map )
+    {
+        List<T> list = new ArrayList<>( val.size() );
+        for ( Value value : val.values() )
+        {
+            list.add( map.apply( value ) );
+        }
+        return list;
     }
 
     @Override

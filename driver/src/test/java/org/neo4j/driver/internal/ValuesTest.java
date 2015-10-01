@@ -22,16 +22,32 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.neo4j.driver.Value;
-import org.neo4j.driver.internal.value.ListValue;
-import org.neo4j.driver.internal.value.TextValue;
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.internal.value.BooleanValue;
+import org.neo4j.driver.internal.value.FloatValue;
+import org.neo4j.driver.internal.value.IntegerValue;
+import org.neo4j.driver.internal.value.ListValue;
+import org.neo4j.driver.internal.value.MapValue;
+import org.neo4j.driver.internal.value.TextValue;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.neo4j.driver.Values.value;
+import static org.neo4j.driver.Values.valueToBoolean;
+import static org.neo4j.driver.Values.valueToDouble;
+import static org.neo4j.driver.Values.valueToFloat;
+import static org.neo4j.driver.Values.valueToInt;
+import static org.neo4j.driver.Values.valueToList;
+import static org.neo4j.driver.Values.valueToLong;
+import static org.neo4j.driver.Values.valueToString;
 import static org.neo4j.driver.Values.values;
 
 public class ValuesTest
@@ -101,5 +117,42 @@ public class ValuesTest
         assertNotEquals( value( "Hello" ), value( "hello" ) );
         assertNotEquals( value( "This åäö string ?? contains strange " ),
                 value( "This åäö string ?? contains strange Ü" ) );
+    }
+
+    @Test
+    public void shouldMapDriverComplexTypesToListOfJavaPrimitiveTypes() throws Throwable
+    {
+        // Given
+        Map<String,Value> map = new HashMap<>();
+        map.put( "Cat", new ListValue( values( "meow", "miaow" ) ) );
+        map.put( "Dog", new ListValue( values( "wow" ) ) );
+        map.put( "Wrong", new ListValue( values( -1 ) ) );
+        MapValue values = new MapValue( map );
+
+        // When
+        List<List<String>> list = values.javaList( valueToList( valueToString() ) );
+
+        // Then
+        assertEquals( 3, list.size() );
+        int i = 0;
+        for ( Value value : values )
+        {
+            assertEquals( value.get( 0 ).javaString(), list.get( i ).get( 0 ) );
+            i++;
+        }
+    }
+
+    @Test
+    public void shouldMapDriverSimpleTypesToListOfJavaPrimitiveTypes() throws Throwable
+    {
+        assertEquals( "string", new TextValue( "string" ).javaList( valueToString() ).get( 0 ) );
+
+        assertFalse( new BooleanValue( false ).javaList( valueToBoolean() ).get( 0 ) );
+
+        assertThat( -1, equalTo( (int) (new IntegerValue( -1 ).javaList( valueToInt() ).get( 0 )) ) );
+        assertThat( -1L, equalTo( (long) (new IntegerValue( -1 ).javaList( valueToLong() ).get( 0 )) ) );
+
+        assertThat( -1.1F, equalTo( (float) (new FloatValue( -1.1 ).javaList( valueToFloat() ).get( 0 )) ) );
+        assertThat( -1.1, equalTo( (double) (new FloatValue( -1.1 ).javaList( valueToDouble() ).get( 0 )) ) );
     }
 }

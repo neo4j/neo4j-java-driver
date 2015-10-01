@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.value.BooleanValue;
@@ -260,4 +261,91 @@ public class Values
         }
         return map;
     }
+
+    public static Function<Value,String> valueToString()
+    {
+        return STRING;
+    }
+
+    public static Function<Value,Integer> valueToInt()
+    {
+        return INTEGER;
+    }
+
+    public static Function<Value,Long> valueToLong()
+    {
+        return LONG;
+    }
+
+    public static Function<Value,Float> valueToFloat()
+    {
+        return FLOAT;
+    }
+
+    public static Function<Value,Double> valueToDouble()
+    {
+        return DOUBLE;
+    }
+
+    public static Function<Value,Boolean> valueToBoolean()
+    {
+        return BOOLEAN;
+    }
+
+    public static <T> Function<Value,List<T>> valueToList( final Function<Value,T> innerMap )
+    {
+        return new Function<Value,List<T>>()
+        {
+            @Override
+            public List<T> apply( Value value )
+            {
+                return value.javaList( innerMap );
+            }
+        };
+    }
+
+    private static final Function<Value,String> STRING = new Function<Value,String>()
+    {
+        public String apply( Value val )
+        {
+            return val.javaString();
+        }
+    };
+
+    private static final Function<Value,Integer> INTEGER = new Function<Value,Integer>()
+    {
+        public Integer apply( Value val )
+        {
+            return val.javaInteger();
+        }
+    };
+    private static final Function<Value,Long> LONG = new Function<Value,Long>()
+    {
+        public Long apply( Value val )
+        {
+            return val.javaLong();
+        }
+    };
+    private static final Function<Value,Float> FLOAT = new Function<Value,Float>()
+    {
+        public Float apply( Value val )
+        {
+            return val.javaFloat();
+        }
+    };
+    private static final Function<Value,Double> DOUBLE = new Function<Value,Double>()
+    {
+        public Double apply( Value val )
+        {
+            return val.javaDouble();
+        }
+    };
+    private static final Function<Value,Boolean> BOOLEAN = new Function<Value,Boolean>()
+    {
+        public Boolean apply( Value val )
+        {
+            return val.javaBoolean();
+        }
+    };
+
 }
