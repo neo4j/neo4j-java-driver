@@ -57,9 +57,10 @@ public interface Result
 
     /**
      * From the current record the result is pointing to, retrieve the value in the specified field.
+     * If no value could be found in the specified filed, null will be returned.
      *
      * @param fieldName the field to retrieve the value from
-     * @return the value in the specified field
+     * @return the value in the specified field or null if no value could be found in the specified filed
      */
     Value get( String fieldName );
 

@@ -57,7 +57,16 @@ public class SimpleRecord implements Record
     @Override
     public Value get( String fieldName )
     {
-        return fields[fieldLookup.get( fieldName )];
+        Integer fieldIndex = fieldLookup.get( fieldName );
+
+        if ( fieldIndex == null )
+        {
+            return null;
+        }
+        else
+        {
+            return fields[fieldIndex];
+        }
     }
 
     @Override

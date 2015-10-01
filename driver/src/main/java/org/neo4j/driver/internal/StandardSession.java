@@ -98,7 +98,7 @@ public class StandardSession implements Session
         if ( currentTransaction != null )
         {
             throw new ClientException( "Please close the currently open transaction object before running " +
-                                       "more statements on the session level." );
+                                       "more statements/transactions in the current session." );
         }
     }
 }

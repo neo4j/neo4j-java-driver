@@ -76,6 +76,12 @@ public class SimpleResult implements Result
     @Override
     public Value get( String fieldName )
     {
+        if( current == null )
+        {
+            throw new ClientException(
+                    "In order to access fields of a record in a result, " +
+                    "you must first call next() to point the result to the next record in the result stream." );
+        }
         return current.get( fieldName );
     }
 

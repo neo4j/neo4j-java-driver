@@ -110,10 +110,10 @@ public interface Value extends Iterable<Value>
     /**
      * Retrieve an inner value by key. This can be used for {@link #isMap() maps},
      * {@link #isNode() nodes} and {@link #isRelationship() relationships}. For nodes and relationships, this method
-     * returns property values.
+     * returns property values. If no value could be found with the specified key, then null will be returned.
      *
      * @param key the key to find a value by
-     * @return the value with the specified key
+     * @return the value with the specified key or null if no value could be found with the key
      */
     Value get( String key );
 
