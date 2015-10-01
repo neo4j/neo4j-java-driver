@@ -22,14 +22,15 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Driver;
+import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.util.TestSession;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.Matchers.startsWith;
 
 public class ErrorIT
 {
@@ -53,7 +54,7 @@ public class ErrorIT
     }
 
     @Test
-    public void shouldAllowUsingTransactionAfterRecoverableError() throws Throwable
+    public void shouldNotAllowMoreTxAfterClientException() throws Throwable
     {
         // Given
         Transaction tx = session.newTransaction();
@@ -61,11 +62,13 @@ public class ErrorIT
         // And Given an error has occurred
         try { tx.run( "invalid" ); } catch ( ClientException e ) {}
 
-        // When
-        int val = tx.run( "RETURN 1" ).single().get( "1" ).javaInteger();
+        // Expect
+        exception.expect( ClientException.class );
+        exception.expectMessage( startsWith( "Cannot run more statements in this transaction, " +
+                                             "because previous statements in the" ) );
 
-        // Then
-        assertThat( val, equalTo( 1 ) );
+        // When
+        tx.run( "RETURN 1" ).single().get( "1" ).javaInteger();
     }
 
     @Test
