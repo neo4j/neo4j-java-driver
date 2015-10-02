@@ -92,7 +92,18 @@ public class StandardConnectionPool implements ConnectionPool
     {
         try
         {
-            return pool( sessionURI ).acquire( 30, TimeUnit.SECONDS );
+            PooledConnection conn = pool( sessionURI ).acquire( 30, TimeUnit.SECONDS );
+            if( conn == null )
+            {
+                throw new ClientException(
+                        "Failed to acquire a session with Neo4j " +
+                        "as all the connections in the connection pool are already occupied by other sessions. "+
+                        "Please close unused session and retry. " +
+                        "Current Pool size: " + config.connectionPoolSize() +
+                        ". If your application requires running more sessions concurrently than the current pool " +
+                        "size, you should create a driver with a larger connection pool size." );
+            }
+            return conn;
         }
         catch ( InterruptedException e )
         {

@@ -30,7 +30,6 @@ import org.neo4j.driver.util.TestSession;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.mockito.Matchers.startsWith;
 
 public class ErrorIT
 {
@@ -64,8 +63,8 @@ public class ErrorIT
 
         // Expect
         exception.expect( ClientException.class );
-        exception.expectMessage( startsWith( "Cannot run more statements in this transaction, " +
-                                             "because previous statements in the" ) );
+        exception.expectMessage( "Cannot run more statements in this transaction, " +
+                                             "because previous statements in the" );
 
         // When
         tx.run( "RETURN 1" ).single().get( "1" ).javaInteger();
