@@ -18,11 +18,14 @@
  */
 package org.neo4j.driver.internal.pool;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.net.URI;
 
 import org.neo4j.driver.Config;
+import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.Connector;
 import org.neo4j.driver.internal.util.Clock;
@@ -37,6 +40,32 @@ import static org.mockito.Mockito.when;
 
 public class StandardConnectionPoolTest
 {
+
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
+
+    @Test
+    public void shouldThrowExceptionWhenConnectionPoolIsFullWhatever() throws Throwable
+    {
+        // Given
+
+        URI uri = URI.create( "bolt://asd" );
+        Connector connector = connector( "bolt" );
+        Config config = Config.build().withConnectionPoolSize( 1 ).toConfig();
+        StandardConnectionPool pool = new StandardConnectionPool( asList( connector ),
+                Clock.SYSTEM, config );
+
+        // When & Then
+        pool.acquire( uri );
+
+        exception.expect( ClientException.class );
+        exception.expectMessage(
+                "Failed to acquire a session with Neo4j as all the connections in the connection pool are already" +
+                " occupied by other sessions.");
+
+        pool.acquire( uri );
+    }
+
     @Test
     public void shouldAcquireAndRelease() throws Throwable
     {
