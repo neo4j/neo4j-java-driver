@@ -86,4 +86,13 @@ public interface Result
      * @throws org.neo4j.driver.exceptions.ClientException if the stream is empty
      */
     Record single();
+
+    /**
+     * Summarize this result, giving access to metadata about the execution of it, such as number of items created
+     * and deleted. Calling this method will consume the entire result, meaning you cannot access the result records
+     * after calling this method, unless you first {@link #retain()} them.
+     *
+     * @return a summary of this result
+     */
+    ResultSummary summarize();
 }

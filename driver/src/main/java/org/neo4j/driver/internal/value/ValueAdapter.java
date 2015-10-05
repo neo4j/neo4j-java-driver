@@ -21,8 +21,8 @@ package org.neo4j.driver.internal.value;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.function.Function;
 
+import org.neo4j.driver.Function;
 import org.neo4j.driver.Identity;
 import org.neo4j.driver.Node;
 import org.neo4j.driver.Path;

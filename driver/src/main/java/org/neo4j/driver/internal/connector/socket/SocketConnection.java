@@ -144,6 +144,7 @@ public class SocketConnection implements Connection
     {
         int messageId = nextRequestId();
         pendingMessages.add( msg );
+        System.out.println("C: " + msg);
         logger.debug( "C: %s", msg );
         return messageId;
     }

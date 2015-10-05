@@ -22,8 +22,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.function.Function;
 
+import org.neo4j.driver.Function;
 import org.neo4j.driver.Value;
 
 public class ListValue extends ValueAdapter

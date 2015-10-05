@@ -18,16 +18,9 @@
  */
 package org.neo4j.driver.util;
 
-import org.rauschig.jarchivelib.ArchiveStream;
-import org.rauschig.jarchivelib.Archiver;
-import org.rauschig.jarchivelib.ArchiverFactory;
-
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
-import java.net.URL;
 
 import org.neo4j.driver.Config;
 import org.neo4j.driver.exceptions.ClientException;
@@ -82,37 +75,15 @@ public class Neo4jRunner
 
     public Neo4jRunner() throws IOException
     {
-        if ( canControlServer() )
+        if ( canControlServer() && !neo4jHome.exists() )
         {
-            if ( neo4jHome.exists() )
-            {
-                System.out.println( "Found an old Neo4j server in: " + neo4jHome.getAbsolutePath() + ". Deleting to " +
-                                    "use a new one." );
-                deleteRecursively( neo4jHome );
-            }
-
-            // no neo4j exists
-
             // download neo4j server from a URL
             File neo4jTarball = new File( "./target/" + neo4jVersion + ".tar.gz" );
             ensureDownloaded( neo4jTarball, neo4jLink );
 
             // Untar the neo4j server
-            extractTarball( neo4jTarball );
-        }
-    }
-
-    private void extractTarball( File neo4jTarball ) throws IOException
-    {
-        System.out.println( "Extracting: " + neo4jTarball + " -> " + neo4jDir );
-        Archiver archiver = ArchiverFactory.createArchiver( "tar", "gz" );
-
-        archiver.extract( neo4jTarball, neo4jDir );
-
-        // Rename the extracted file to something predictable (extracted folder may contain build number, date or so)
-        try ( ArchiveStream stream = archiver.stream( neo4jTarball ) )
-        {
-            new File( neo4jDir, stream.getNextEntry().getName() ).renameTo( neo4jHome );
+            System.out.println( "Extracting: " + neo4jTarball + " -> " + neo4jDir );
+            FileTools.extractTarball( neo4jTarball, neo4jDir, neo4jHome );
         }
     }
 
@@ -124,7 +95,7 @@ public class Neo4jRunner
         }
         file.getParentFile().mkdirs();
         System.out.println( "Copying: " + downloadLink + " -> " + file );
-        streamFileTo( downloadLink, file );
+        FileTools.streamFileTo( downloadLink, file );
 
     }
 
@@ -236,26 +207,6 @@ public class Neo4jRunner
         catch ( ClientException e )
         {
             return false;
-        }
-    }
-
-    /** To allow retrieving a runnable neo4j jar from the international webbernets, we have this */
-    private static void streamFileTo( String url, File target ) throws IOException
-    {
-        try ( FileOutputStream out = new FileOutputStream( target );
-              InputStream in = new URL( url ).openStream() )
-        {
-            byte[] buffer = new byte[1024];
-            int read = in.read( buffer );
-            while ( read != -1 )
-            {
-                if ( read > 0 )
-                {
-                    out.write( buffer, 0, read );
-                }
-
-                read = in.read( buffer );
-            }
         }
     }
 

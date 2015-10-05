@@ -56,11 +56,10 @@ public class StandardSession implements Session
     {
         ensureNoOpenTransaction();
         ResultBuilder resultBuilder = new ResultBuilder();
-        CombinedResultBuilder combinedResultBuilder = new CombinedResultBuilder( resultBuilder );
         connection.run( statement, parameters, resultBuilder );
-        connection.pullAll( combinedResultBuilder );
+        connection.pullAll( resultBuilder );
         connection.sync();
-        return combinedResultBuilder.build();
+        return resultBuilder.build();
     }
 
     @Override
