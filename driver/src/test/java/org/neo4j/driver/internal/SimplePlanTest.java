@@ -23,7 +23,7 @@ import java.util.List;
 
 import org.junit.Test;
 
-import org.neo4j.driver.PlanTreeNode;
+import org.neo4j.driver.Plan;
 import org.neo4j.driver.Value;
 import static org.neo4j.driver.Values.*;
 
@@ -31,7 +31,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.*;
 
 @SuppressWarnings("unchecked")
-public class SimplePlanTreeNodeTest
+public class SimplePlanTest
 {
     @Test
     public void shouldConvertFromEmptyMapValue()
@@ -40,13 +40,13 @@ public class SimplePlanTreeNodeTest
         Value value = value( parameters( "operatorType", "X" ) );
 
         // When
-        PlanTreeNode plan = SimplePlanTreeNode.FROM_VALUE.apply( value );
+        Plan plan = SimplePlan.FROM_VALUE.apply( value );
 
         // Then
         assertThat( plan.operatorType(), equalTo( "X") );
         assertThat( plan.arguments(), equalTo( parameters() ) );
         assertThat( plan.identifiers(), equalTo( Collections.<String>emptyList() ) );
-        assertThat( (List<PlanTreeNode>) plan.children(), equalTo( Collections.<PlanTreeNode>emptyList() ) );
+        assertThat( (List<Plan>) plan.children(), equalTo( Collections.<Plan>emptyList() ) );
     }
 
     @Test
@@ -61,13 +61,13 @@ public class SimplePlanTreeNodeTest
         ) );
 
         // When
-        PlanTreeNode plan = SimplePlanTreeNode.FROM_VALUE.apply( value );
+        Plan plan = SimplePlan.FROM_VALUE.apply( value );
 
         // Then
         assertThat( plan.operatorType(), equalTo( "X") );
         assertThat( plan.arguments(), equalTo( parameters( "a", 1 ) ) );
         assertThat( plan.identifiers(), equalTo( Collections.<String>emptyList() ) );
-        assertThat( (List<PlanTreeNode>) plan.children(), equalTo( Collections.<PlanTreeNode>emptyList() ) );
+        assertThat( (List<Plan>) plan.children(), equalTo( Collections.<Plan>emptyList() ) );
     }
 
     @Test
@@ -86,13 +86,13 @@ public class SimplePlanTreeNodeTest
         ) );
 
         // When
-        PlanTreeNode plan = SimplePlanTreeNode.FROM_VALUE.apply( value );
+        Plan plan = SimplePlan.FROM_VALUE.apply( value );
 
         // Then
         assertThat( plan.operatorType(), equalTo( "X") );
         assertThat( plan.arguments(), equalTo( parameters( "a", 1 ) ) );
         assertThat( plan.identifiers(), equalTo( Collections.<String>emptyList() ) );
-        List<? extends PlanTreeNode> children = plan.children();
+        List<? extends Plan> children = plan.children();
         assertThat( children.size(), equalTo( 1 ) );
         assertThat( children.get( 0 ).operatorType(), equalTo( "Y" ) );
     }

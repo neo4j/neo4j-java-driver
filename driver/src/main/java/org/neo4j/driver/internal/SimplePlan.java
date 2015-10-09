@@ -23,25 +23,25 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-import org.neo4j.driver.PlanTreeNode;
+import org.neo4j.driver.Plan;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
 
 import static java.lang.String.format;
 
-public class SimplePlanTreeNode implements PlanTreeNode
+public class SimplePlan implements Plan
 {
     private final String operatorType;
     private final List<String> identifiers;
     private final Map<String, Value> arguments;
-    private final List<? extends PlanTreeNode> children;
+    private final List<? extends Plan> children;
 
     // Only call when sub-classing, for constructing plans, use .plan instead
-    protected SimplePlanTreeNode(
+    protected SimplePlan(
             String operatorType,
             Map<String, Value> arguments,
             List<String> identifiers,
-            List<? extends PlanTreeNode> children )
+            List<? extends Plan> children )
     {
         this.operatorType = operatorType;
         this.identifiers = identifiers;
@@ -68,7 +68,7 @@ public class SimplePlanTreeNode implements PlanTreeNode
     }
 
     @Override
-    public List<? extends PlanTreeNode> children()
+    public List<? extends Plan> children()
     {
         return children;
     }
@@ -94,7 +94,7 @@ public class SimplePlanTreeNode implements PlanTreeNode
             return false;
         }
 
-        SimplePlanTreeNode that = (SimplePlanTreeNode) o;
+        SimplePlan that = (SimplePlan) o;
 
         return operatorType.equals( that.operatorType )
             && arguments.equals( that.arguments )
@@ -112,21 +112,21 @@ public class SimplePlanTreeNode implements PlanTreeNode
         return result;
     }
 
-    public static SimplePlanTreeNode plan(
+    public static SimplePlan plan(
             String operatorType,
             Map<String, Value> arguments,
             List<String> identifiers,
-            List<? extends PlanTreeNode> children )
+            List<? extends Plan> children )
     {
-        return new SimplePlanTreeNode( operatorType, arguments, identifiers, children );
+        return new SimplePlan( operatorType, arguments, identifiers, children );
     }
 
-    public static final Function<Value, PlanTreeNode> FROM_VALUE = new Converter();
+    public static final Function<Value, Plan> FROM_VALUE = new Converter();
 
-    static class Converter implements Function<Value, PlanTreeNode>
+    static class Converter implements Function<Value, Plan>
     {
         @Override
-        public PlanTreeNode apply( Value plan )
+        public Plan apply( Value plan )
         {
             final String operatorType = plan.get( "operatorType" ).javaString();
 
@@ -141,8 +141,8 @@ public class SimplePlanTreeNode implements PlanTreeNode
                     : identifiersValue.javaList( Values.valueToString() );
 
             final Value childrenValue = plan.get( "children" );
-            final List<PlanTreeNode> children = childrenValue == null
-                    ? Collections.<PlanTreeNode>emptyList()
+            final List<Plan> children = childrenValue == null
+                    ? Collections.<Plan>emptyList()
                     : childrenValue.javaList( this );
 
             return plan( operatorType, arguments, identifiers, children );

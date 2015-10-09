@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver;
 
-public interface StatementStatistics
+public interface UpdateStatistics
 {
     boolean containsUpdates();
 

@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver;
 
-public class SimpleStatementStatistics implements StatementStatistics
+public class SimpleUpdateStatistics implements UpdateStatistics
 {
     private final int nodesCreated;
     private final int nodesDeleted;
@@ -32,7 +32,7 @@ public class SimpleStatementStatistics implements StatementStatistics
     private final int constraintsAdded;
     private final int constrainsRemoved;
 
-    public SimpleStatementStatistics(
+    public SimpleUpdateStatistics(
             int nodesCreated, int nodesDeleted,
             int relationshipsCreated, int relationshipsDeleted,
             int propertiesSet,
@@ -148,7 +148,7 @@ public class SimpleStatementStatistics implements StatementStatistics
             return false;
         }
 
-        SimpleStatementStatistics that = (SimpleStatementStatistics) o;
+        SimpleUpdateStatistics that = (SimpleUpdateStatistics) o;
 
         return nodesCreated == that.nodesCreated
             && nodesDeleted == that.nodesDeleted
