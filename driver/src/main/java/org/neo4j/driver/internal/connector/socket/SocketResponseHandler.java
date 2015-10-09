@@ -21,14 +21,14 @@ package org.neo4j.driver.internal.connector.socket;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.driver.SimpleStatementStatistics;
+import org.neo4j.driver.SimpleUpdateStatistics;
 import org.neo4j.driver.StatementType;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.DatabaseException;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.TransientException;
-import org.neo4j.driver.internal.SimplePlanTreeNode;
+import org.neo4j.driver.internal.SimplePlan;
 import org.neo4j.driver.internal.messaging.MessageHandler;
 import org.neo4j.driver.internal.spi.StreamCollector;
 
@@ -105,7 +105,7 @@ public class SocketResponseHandler implements MessageHandler
     {
         if ( plan != null )
         {
-            collector.plan( SimplePlanTreeNode.FROM_VALUE.apply( plan ) );
+            collector.plan( SimplePlan.FROM_VALUE.apply( plan ) );
         }
     }
 
@@ -159,7 +159,7 @@ public class SocketResponseHandler implements MessageHandler
         if ( stats != null )
         {
             collector.statementStatistics(
-                new SimpleStatementStatistics(
+                new SimpleUpdateStatistics(
                     statsValue( stats, "nodes-created" ),
                     statsValue( stats, "nodes-deleted" ),
                     statsValue( stats, "relationships-created" ),

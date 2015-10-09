@@ -73,24 +73,24 @@ public class SummaryIT
     @Test
     public void shouldContainCorrectStatistics() throws Throwable
     {
-        assertThat( session.run( "CREATE (n)" ).summarize().statistics().nodesCreated(), equalTo( 1 ) );
-        assertThat( session.run( "MATCH (n) DELETE (n)" ).summarize().statistics().nodesDeleted(), equalTo( 1 ) );
+        assertThat( session.run( "CREATE (n)" ).summarize().updateStatistics().nodesCreated(), equalTo( 1 ) );
+        assertThat( session.run( "MATCH (n) DELETE (n)" ).summarize().updateStatistics().nodesDeleted(), equalTo( 1 ) );
 
-        assertThat( session.run( "CREATE ()-[:KNOWS]->()" ).summarize().statistics().relationshipsCreated(), equalTo( 1 ) );
-        assertThat( session.run( "MATCH ()-[r:KNOWS]->() DELETE r" ).summarize().statistics().relationshipsDeleted(), equalTo( 1 ) );
+        assertThat( session.run( "CREATE ()-[:KNOWS]->()" ).summarize().updateStatistics().relationshipsCreated(), equalTo( 1 ) );
+        assertThat( session.run( "MATCH ()-[r:KNOWS]->() DELETE r" ).summarize().updateStatistics().relationshipsDeleted(), equalTo( 1 ) );
 
-        assertThat( session.run( "CREATE (n:ALabel)" ).summarize().statistics().labelsAdded(), equalTo( 1 ) );
-        assertThat( session.run( "CREATE (n {magic: 42})" ).summarize().statistics().propertiesSet(), equalTo( 1 ) );
-        assertTrue( session.run( "CREATE (n {magic: 42})" ).summarize().statistics().containsUpdates() );
-        assertThat( session.run( "MATCH (n:ALabel) REMOVE n:ALabel " ).summarize().statistics().labelsRemoved(), equalTo( 1 ) );
+        assertThat( session.run( "CREATE (n:ALabel)" ).summarize().updateStatistics().labelsAdded(), equalTo( 1 ) );
+        assertThat( session.run( "CREATE (n {magic: 42})" ).summarize().updateStatistics().propertiesSet(), equalTo( 1 ) );
+        assertTrue( session.run( "CREATE (n {magic: 42})" ).summarize().updateStatistics().containsUpdates() );
+        assertThat( session.run( "MATCH (n:ALabel) REMOVE n:ALabel " ).summarize().updateStatistics().labelsRemoved(), equalTo( 1 ) );
 
-        assertThat( session.run( "CREATE INDEX ON :ALabel(prop)" ).summarize().statistics().indexesAdded(), equalTo( 1 ) );
-        assertThat( session.run( "DROP INDEX ON :ALabel(prop)" ).summarize().statistics().indexesRemoved(), equalTo( 1 ) );
+        assertThat( session.run( "CREATE INDEX ON :ALabel(prop)" ).summarize().updateStatistics().indexesAdded(), equalTo( 1 ) );
+        assertThat( session.run( "DROP INDEX ON :ALabel(prop)" ).summarize().updateStatistics().indexesRemoved(), equalTo( 1 ) );
 
         assertThat( session.run( "CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE" )
-                .summarize().statistics().constraintsAdded(), equalTo( 1 ) );
+                .summarize().updateStatistics().constraintsAdded(), equalTo( 1 ) );
         assertThat( session.run( "DROP CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE" )
-                .summarize().statistics().constraintsRemoved(), equalTo( 1 ) );
+                .summarize().updateStatistics().constraintsRemoved(), equalTo( 1 ) );
     }
 
     @Test

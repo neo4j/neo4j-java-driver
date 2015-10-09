@@ -25,10 +25,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.driver.PlanTreeNode;
+import org.neo4j.driver.Plan;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
-import org.neo4j.driver.StatementStatistics;
+import org.neo4j.driver.UpdateStatistics;
 import org.neo4j.driver.StatementType;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
@@ -90,13 +90,13 @@ public class ResultBuilder implements StreamCollector
     }
 
     @Override
-    public void statementStatistics( StatementStatistics statistics )
+    public void statementStatistics( UpdateStatistics statistics )
     {
         summaryBuilder.statementStatistics( statistics );
     }
 
     @Override
-    public void plan( PlanTreeNode plan )
+    public void plan( Plan plan )
     {
         summaryBuilder.plan( plan );
     }

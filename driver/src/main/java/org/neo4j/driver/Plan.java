@@ -21,11 +21,11 @@ package org.neo4j.driver;
 import java.util.List;
 import java.util.Map;
 
-public interface PlanTreeNode
+public interface Plan
 {
     String operatorType();
     Map<String, Value> arguments();
     List<String> identifiers();
 
-    List<? extends PlanTreeNode> children();
+    List<? extends Plan> children();
 }

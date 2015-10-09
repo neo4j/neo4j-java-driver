@@ -18,9 +18,8 @@
  */
 package org.neo4j.driver.internal.spi;
 
-import org.neo4j.driver.PlanTreeNode;
-import org.neo4j.driver.ProfiledPlanTreeNode;
-import org.neo4j.driver.StatementStatistics;
+import org.neo4j.driver.Plan;
+import org.neo4j.driver.UpdateStatistics;
 import org.neo4j.driver.StatementType;
 import org.neo4j.driver.Value;
 
@@ -44,12 +43,12 @@ public interface StreamCollector
         }
 
         @Override
-        public void statementStatistics( StatementStatistics statistics )
+        public void statementStatistics( UpdateStatistics statistics )
         {
         }
 
         @Override
-        public void plan( PlanTreeNode plan )
+        public void plan( Plan plan )
         {
         }
     };
@@ -60,8 +59,8 @@ public interface StreamCollector
 
     void statementType( StatementType type);
 
-    void statementStatistics( StatementStatistics statistics );
+    void statementStatistics( UpdateStatistics statistics );
 
-    void plan( PlanTreeNode plan );
+    void plan( Plan plan );
 }
 

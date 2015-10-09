@@ -24,9 +24,9 @@ import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.driver.PlanTreeNode;
-import org.neo4j.driver.SimpleStatementStatistics;
-import org.neo4j.driver.StatementStatistics;
+import org.neo4j.driver.Plan;
+import org.neo4j.driver.SimpleUpdateStatistics;
+import org.neo4j.driver.UpdateStatistics;
 import org.neo4j.driver.StatementType;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.spi.StreamCollector;
@@ -42,7 +42,7 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.Values.values;
-import static org.neo4j.driver.internal.SimplePlanTreeNode.plan;
+import static org.neo4j.driver.internal.SimplePlan.plan;
 
 public class SocketResponseHandlerTest
 {
@@ -100,7 +100,7 @@ public class SocketResponseHandlerTest
                         "properties-set", 12
                 )
         );
-        StatementStatistics stats = new SimpleStatementStatistics( 1, 0, 0, 0, 12, 0, 0, 0, 0, 0, 0);
+        UpdateStatistics stats = new SimpleUpdateStatistics( 1, 0, 0, 0, 12, 0, 0, 0, 0, 0, 0);
 
         // When
         handler.handleSuccessMessage( data );
@@ -137,12 +137,12 @@ public class SocketResponseHandlerTest
                 )
         );
 
-        StatementStatistics stats = new SimpleStatementStatistics( 1, 0, 0, 0, 12, 0, 0, 0, 0, 0, 0 );
-        PlanTreeNode plan = plan(
+        UpdateStatistics stats = new SimpleUpdateStatistics( 1, 0, 0, 0, 12, 0, 0, 0, 0, 0, 0 );
+        Plan plan = plan(
             "ProduceResults",
                 parameters( "KeyNames", "num", "EstimatedRows", 1.0 ), singletonList( "num" ),
                 singletonList(
-                plan( "Projection", parameters( "A", "x", "B", 2 ), singletonList( "num" ), Collections.<PlanTreeNode>emptyList() )
+                plan( "Projection", parameters( "A", "x", "B", 2 ), singletonList( "num" ), Collections.<Plan>emptyList() )
             )
         );
 

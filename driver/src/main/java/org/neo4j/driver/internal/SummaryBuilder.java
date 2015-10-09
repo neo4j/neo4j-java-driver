@@ -20,10 +20,10 @@ package org.neo4j.driver.internal;
 
 import java.util.Map;
 
-import org.neo4j.driver.PlanTreeNode;
-import org.neo4j.driver.ProfiledPlanTreeNode;
+import org.neo4j.driver.Plan;
+import org.neo4j.driver.ProfiledPlan;
 import org.neo4j.driver.ResultSummary;
-import org.neo4j.driver.StatementStatistics;
+import org.neo4j.driver.UpdateStatistics;
 import org.neo4j.driver.StatementType;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
@@ -35,8 +35,8 @@ public class SummaryBuilder implements StreamCollector
     private final Map<String, Value> parameters;
 
     private StatementType type = null;
-    private StatementStatistics statistics = null;
-    private PlanTreeNode plan = null;
+    private UpdateStatistics statistics = null;
+    private Plan plan = null;
 
     public SummaryBuilder( String statement, Map<String, Value> parameters )
     {
@@ -68,7 +68,7 @@ public class SummaryBuilder implements StreamCollector
         }
     }
 
-    public void statementStatistics( StatementStatistics statistics )
+    public void statementStatistics( UpdateStatistics statistics )
     {
         if ( this.statistics == null )
         {
@@ -81,7 +81,7 @@ public class SummaryBuilder implements StreamCollector
     }
 
     @Override
-    public void plan( PlanTreeNode plan )
+    public void plan( Plan plan )
     {
         if ( this.plan == null )
         {
@@ -116,7 +116,7 @@ public class SummaryBuilder implements StreamCollector
             }
 
             @Override
-            public StatementStatistics statistics()
+            public UpdateStatistics updateStatistics()
             {
                 return statistics;
             }
@@ -134,19 +134,19 @@ public class SummaryBuilder implements StreamCollector
             }
 
             @Override
-            public PlanTreeNode plan()
+            public Plan plan()
             {
                 return plan;
             }
 
             @Override
-            public Map<String, Value> planOptions()
+            public Map<String, Value> planningSummary()
             {
                 throw new IllegalStateException( "Plan options not available for this query" );
             }
 
             @Override
-            public ProfiledPlanTreeNode profile()
+            public ProfiledPlan profile()
             {
                 throw new IllegalStateException( "Profiled plan not available for this query" );
             }

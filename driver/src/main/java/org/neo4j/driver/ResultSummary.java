@@ -52,7 +52,7 @@ public interface ResultSummary
     /**
      * @return update statistics for the statement
      */
-    StatementStatistics statistics();
+    UpdateStatistics updateStatistics();
 
     /**
      * @return true if the result contained a statement plan, i.e. is the summary of a Cypher "PROFILE" or "EXPLAIN" statement
@@ -68,17 +68,23 @@ public interface ResultSummary
      * @throws IllegalStateException if {@link #hasPlan()} is false
      * @return statement plan for the executed statement if available
      */
-    PlanTreeNode plan();
+    Plan plan();
 
     /**
      * @return any plan options retrieved from the database
      * @throws IllegalStateException if {@link #hasPlan()} is false
      */
-    Map<String, Value> planOptions();
+    Map<String, Value> planningSummary();
+
+//    TODO: Preparser options should go here
+//    TODO: StatementType should go here
+//    PlanningSummary planningSummary();
 
     /**
      * @throws IllegalStateException if {@link #hasProfile()} is false
      * @return profiled statement plan for the executed statement if available
      */
-    ProfiledPlanTreeNode profile();
+    ProfiledPlan profile();
+//
+//    ProfileStatistics profileStatistics();
 }

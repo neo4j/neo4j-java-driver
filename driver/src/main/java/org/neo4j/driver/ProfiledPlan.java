@@ -20,11 +20,11 @@ package org.neo4j.driver;
 
 import java.util.List;
 
-public interface ProfiledPlanTreeNode extends PlanTreeNode
+public interface ProfiledPlan extends Plan
 {
     long dbHits();
     long rows();
 
     @Override
-    List<ProfiledPlanTreeNode> children();
+    List<ProfiledPlan> children();
 }
