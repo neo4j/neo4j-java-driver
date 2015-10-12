@@ -26,6 +26,7 @@ import org.neo4j.driver.PlanningSummary;
 import org.neo4j.driver.ProfileSummary;
 import org.neo4j.driver.ProfiledPlan;
 import org.neo4j.driver.ResultSummary;
+import org.neo4j.driver.Statement;
 import org.neo4j.driver.UpdateStatistics;
 import org.neo4j.driver.StatementType;
 import org.neo4j.driver.Value;
@@ -34,17 +35,15 @@ import org.neo4j.driver.internal.spi.StreamCollector;
 
 public class SummaryBuilder implements StreamCollector
 {
-    private final String statement;
-    private final Map<String, Value> parameters;
+    private final Statement statement;
 
     private StatementType type = null;
     private UpdateStatistics statistics = null;
     private Plan plan = null;
 
-    public SummaryBuilder( String statement, Map<String, Value> parameters )
+    public SummaryBuilder( Statement statement )
     {
         this.statement = statement;
-        this.parameters = parameters;
     }
 
     @Override
@@ -101,15 +100,9 @@ public class SummaryBuilder implements StreamCollector
         return new ResultSummary()
         {
             @Override
-            public String statement()
+            public Statement statement()
             {
                 return statement;
-            }
-
-            @Override
-            public Map<String, Value> parameters()
-            {
-                return parameters;
             }
 
             @Override

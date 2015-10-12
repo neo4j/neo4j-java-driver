@@ -28,6 +28,7 @@ import java.util.Set;
 import org.neo4j.driver.Plan;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
+import org.neo4j.driver.Statement;
 import org.neo4j.driver.UpdateStatistics;
 import org.neo4j.driver.StatementType;
 import org.neo4j.driver.Value;
@@ -49,7 +50,7 @@ public class ResultBuilder implements StreamCollector
     {
         Map<String, Value> unmodifiableParameters =
             parameters.isEmpty() ? NO_PARAMETERS : unmodifiableMap( parameters );
-        this.summaryBuilder = new SummaryBuilder( statement, unmodifiableParameters );
+        this.summaryBuilder = new SummaryBuilder( new Statement( statement, unmodifiableParameters ) );
     }
 
     @Override
