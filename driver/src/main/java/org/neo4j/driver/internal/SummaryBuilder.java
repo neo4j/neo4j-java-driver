@@ -18,9 +18,11 @@
  */
 package org.neo4j.driver.internal;
 
+import java.util.Collections;
 import java.util.Map;
 
 import org.neo4j.driver.Plan;
+import org.neo4j.driver.PlanningSummary;
 import org.neo4j.driver.ProfiledPlan;
 import org.neo4j.driver.ResultSummary;
 import org.neo4j.driver.UpdateStatistics;
@@ -110,12 +112,6 @@ public class SummaryBuilder implements StreamCollector
             }
 
             @Override
-            public StatementType statementType()
-            {
-                return type;
-            }
-
-            @Override
             public UpdateStatistics updateStatistics()
             {
                 return statistics;
@@ -140,9 +136,22 @@ public class SummaryBuilder implements StreamCollector
             }
 
             @Override
-            public Map<String, Value> planningSummary()
+            public PlanningSummary planningSummary()
             {
-                throw new IllegalStateException( "Plan options not available for this query" );
+                return new PlanningSummary() {
+
+                    @Override
+                    public StatementType statementType()
+                    {
+                        return type;
+                    }
+
+                    @Override
+                    public Map<String, Value> details()
+                    {
+                        return Collections.emptyMap();
+                    }
+                };
             }
 
             @Override
