@@ -23,6 +23,7 @@ import java.util.Map;
 
 import org.neo4j.driver.Plan;
 import org.neo4j.driver.PlanningSummary;
+import org.neo4j.driver.ProfileSummary;
 import org.neo4j.driver.ProfiledPlan;
 import org.neo4j.driver.ResultSummary;
 import org.neo4j.driver.UpdateStatistics;
