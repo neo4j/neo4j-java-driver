@@ -66,7 +66,7 @@ public interface ResultSummary
     Plan plan();
 
     /**
-     * @return any plan options retrieved from the database
+     * @return summary information on how the plan was constructed
      * @throws IllegalStateException if {@link #hasPlan()} is false
      */
     PlanningSummary planningSummary();
@@ -76,6 +76,10 @@ public interface ResultSummary
      * @return profiled statement plan for the executed statement if available
      */
     ProfiledPlan profile();
-//
-//    ProfileStatistics profileStatistics();
+
+//    /**
+//     * @return summary information on how the plan was constructed
+//     * @throws IllegalStateException if {@link #hasPlan()} is false
+//     */
+//    ProfileSummary profileSummary();
 }
