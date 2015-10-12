@@ -48,11 +48,11 @@ public class SummaryIT
     public void shouldContainBasicMetadata() throws Throwable
     {
         // Given
-        Map<String, Value> parameters = Values.parameters( "limit", 10 );
-        String statement = "UNWIND [1, 2, 3, 4] AS n RETURN n AS number LIMIT {limit}";
+        Map<String, Value> statementParameters = Values.parameters( "limit", 10 );
+        String statementText = "UNWIND [1, 2, 3, 4] AS n RETURN n AS number LIMIT {limit}";
 
         // When
-        Result result = session.run( statement, parameters );
+        Result result = session.run( statementText, statementParameters );
 
         // Then
         assertTrue( result.next() );
@@ -63,8 +63,8 @@ public class SummaryIT
         // Then
         assertFalse( result.next() );
         assertThat( summary.planningSummary().statementType(), equalTo( READ_ONLY ) );
-        assertThat( summary.statement(), equalTo( statement ) );
-        assertThat( summary.parameters(), equalTo( parameters ) );
+        assertThat( summary.statement().text(), equalTo( statementText ) );
+        assertThat( summary.statement().parameters(), equalTo( statementParameters ) );
         assertFalse( summary.hasPlan() );
         assertFalse( summary.hasProfile() );
         assertThat( summary, equalTo( result.summarize() ) );

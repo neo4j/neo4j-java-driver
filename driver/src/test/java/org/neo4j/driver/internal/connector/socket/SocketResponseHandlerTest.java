@@ -25,7 +25,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.driver.Plan;
-import org.neo4j.driver.SimpleUpdateStatistics;
+import org.neo4j.driver.internal.SimpleUpdateStatistics;
 import org.neo4j.driver.UpdateStatistics;
 import org.neo4j.driver.StatementType;
 import org.neo4j.driver.Value;

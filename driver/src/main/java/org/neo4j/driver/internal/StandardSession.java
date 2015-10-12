@@ -22,6 +22,7 @@ import java.util.Map;
 
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
+import org.neo4j.driver.Statement;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
@@ -49,11 +50,11 @@ public class StandardSession implements Session
     }
 
     @Override
-    public Result run( String statement, Map<String,Value> parameters )
+    public Result run( String statementText, Map<String,Value> parameters )
     {
         ensureNoOpenTransaction();
-        ResultBuilder resultBuilder = new ResultBuilder( statement, parameters );
-        connection.run( statement, parameters, resultBuilder );
+        ResultBuilder resultBuilder = new ResultBuilder( statementText, parameters );
+        connection.run( statementText, parameters, resultBuilder );
 
         connection.pullAll( resultBuilder );
         connection.sync();
@@ -61,9 +62,15 @@ public class StandardSession implements Session
     }
 
     @Override
-    public Result run( String statement )
+    public Result run( String statementText )
     {
-        return run( statement, ParameterSupport.NO_PARAMETERS );
+        return run( statementText, ParameterSupport.NO_PARAMETERS );
+    }
+
+    @Override
+    public Result run( Statement statement )
+    {
+        return run( statement.text(), statement.parameters() );
     }
 
     @Override

@@ -18,8 +18,6 @@
  */
 package org.neo4j.driver;
 
-import java.util.Map;
-
 /**
  * The result summary of running a statement. The result summary interface can be used to investigate
  * details about the result, like the type of query run, how many and which kinds of updates have been executed,
@@ -31,18 +29,10 @@ import java.util.Map;
  */
 public interface ResultSummary
 {
-    // TODO: Perhaps introduce Statement object with builder like capabilities for changing parameters
-    //       statement( "MATCH .." ).withParameter(name, "Zhen").withParameter(age, 12);
-
     /**
      * @return statement that has been executed
      */
-    String statement();
-
-    /**
-     * @return parameters of the executed statement
-     */
-    Map<String, Value> parameters();
+    Statement statement();
 
     /**
      * @return update statistics for the statement
@@ -78,8 +68,8 @@ public interface ResultSummary
     ProfiledPlan profile();
 
 //    /**
-//     * @return summary information on how the plan was constructed
-//     * @throws IllegalStateException if {@link #hasPlan()} is false
+//     * @return summary information on how the profile was constructed
+//     * @throws IllegalStateException if {@link #hasProfile()} is false
 //     */
 //    ProfileSummary profileSummary();
 }

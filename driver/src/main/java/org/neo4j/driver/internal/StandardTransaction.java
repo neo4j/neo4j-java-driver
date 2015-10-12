@@ -18,9 +18,13 @@
  */
 package org.neo4j.driver.internal;
 
+import java.util.Collections;
 import java.util.Map;
 
+import javafx.print.Collation;
+
 import org.neo4j.driver.Result;
+import org.neo4j.driver.Statement;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
@@ -60,7 +64,7 @@ public class StandardTransaction implements Transaction
         this.cleanup = cleanup;
 
         // Note there is no sync here, so this will just get queued locally
-        conn.run( "BEGIN", EMPTY_MAP, null );
+        conn.run( "BEGIN", Collections.<String, Value>emptyMap(), null );
         conn.discardAll();
     }
 
@@ -89,7 +93,7 @@ public class StandardTransaction implements Transaction
         {
             if ( state == State.MARKED_SUCCESS )
             {
-                conn.run( "COMMIT", EMPTY_MAP, null );
+                conn.run( "COMMIT", Collections.<String, Value>emptyMap(), null );
                 conn.discardAll();
                 conn.sync();
             }
@@ -97,7 +101,7 @@ public class StandardTransaction implements Transaction
             {
                 // If alwaysValid of the things we've put in the queue have been sent off, there is no need to
                 // do this, we could just clear the queue. Future optimization.
-                conn.run( "ROLLBACK", EMPTY_MAP, null );
+                conn.run( "ROLLBACK", Collections.<String, Value>emptyMap(), null );
                 conn.discardAll();
             }
         }
@@ -109,14 +113,14 @@ public class StandardTransaction implements Transaction
 
     @Override
     @SuppressWarnings( "unchecked" )
-    public Result run( String statement, Map<String,Value> parameters )
+    public Result run( String statementText, Map<String,Value> parameters )
     {
         ensureNotFailed();
 
         try
         {
-            ResultBuilder resultBuilder = new ResultBuilder( statement, parameters );
-            conn.run( statement, parameters, resultBuilder );
+            ResultBuilder resultBuilder = new ResultBuilder( statementText, parameters );
+            conn.run( statementText, parameters, resultBuilder );
             conn.pullAll( resultBuilder );
             conn.sync();
             return resultBuilder.build();
@@ -129,9 +133,15 @@ public class StandardTransaction implements Transaction
     }
 
     @Override
-    public Result run( String statement )
+    public Result run( String statementText )
     {
-        return run( statement, ParameterSupport.NO_PARAMETERS );
+        return run( statementText, ParameterSupport.NO_PARAMETERS );
+    }
+
+    @Override
+    public Result run( Statement statement )
+    {
+        return run( statement.text(), statement.parameters() );
     }
 
     private void ensureNotFailed()

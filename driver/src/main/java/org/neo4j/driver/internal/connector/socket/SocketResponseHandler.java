@@ -21,7 +21,7 @@ package org.neo4j.driver.internal.connector.socket;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.driver.SimpleUpdateStatistics;
+import org.neo4j.driver.internal.SimpleUpdateStatistics;
 import org.neo4j.driver.StatementType;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
