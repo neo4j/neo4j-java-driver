@@ -62,7 +62,7 @@ public class SummaryIT
 
         // Then
         assertFalse( result.next() );
-        assertThat( summary.statementType(), equalTo( READ_ONLY ) );
+        assertThat( summary.planningSummary().statementType(), equalTo( READ_ONLY ) );
         assertThat( summary.statement(), equalTo( statement ) );
         assertThat( summary.parameters(), equalTo( parameters ) );
         assertFalse( summary.hasPlan() );
@@ -96,10 +96,10 @@ public class SummaryIT
     @Test
     public void shouldContainCorrectStatementType() throws Throwable
     {
-        assertThat( session.run("MATCH (n) RETURN 1").summarize().statementType(), equalTo( READ_ONLY ));
-        assertThat( session.run("CREATE (n)").summarize().statementType(), equalTo( WRITE_ONLY ));
-        assertThat( session.run("CREATE (n) RETURN (n)").summarize().statementType(), equalTo( READ_WRITE ));
-        assertThat( session.run("CREATE INDEX ON :User(p)").summarize().statementType(), equalTo( SCHEMA_WRITE ));
+        assertThat( session.run("MATCH (n) RETURN 1").summarize().planningSummary().statementType(), equalTo( READ_ONLY ));
+        assertThat( session.run("CREATE (n)").summarize().planningSummary().statementType(), equalTo( WRITE_ONLY ));
+        assertThat( session.run("CREATE (n) RETURN (n)").summarize().planningSummary().statementType(), equalTo( READ_WRITE ));
+        assertThat( session.run("CREATE INDEX ON :User(p)").summarize().planningSummary().statementType(), equalTo( SCHEMA_WRITE ));
     }
 
 

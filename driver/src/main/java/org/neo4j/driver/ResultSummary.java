@@ -45,11 +45,6 @@ public interface ResultSummary
     Map<String, Value> parameters();
 
     /**
-     * @return type of statement that has been executed
-     */
-    StatementType statementType();
-
-    /**
      * @return update statistics for the statement
      */
     UpdateStatistics updateStatistics();
@@ -74,11 +69,7 @@ public interface ResultSummary
      * @return any plan options retrieved from the database
      * @throws IllegalStateException if {@link #hasPlan()} is false
      */
-    Map<String, Value> planningSummary();
-
-//    TODO: Preparser options should go here
-//    TODO: StatementType should go here
-//    PlanningSummary planningSummary();
+    PlanningSummary planningSummary();
 
     /**
      * @throws IllegalStateException if {@link #hasProfile()} is false
