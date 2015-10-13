@@ -40,6 +40,11 @@ public interface ResultSummary
     UpdateStatistics updateStatistics();
 
     /**
+     * @return type of statement that has been executed
+     */
+    StatementType statementType();
+
+    /**
      * @return true if the result contained a statement plan, i.e. is the summary of a Cypher "PROFILE" or "EXPLAIN" statement
      */
     boolean hasPlan();
@@ -58,12 +63,6 @@ public interface ResultSummary
     Plan plan();
 
     /**
-     * @return summary information on how the plan was constructed
-     * @throws IllegalStateException if {@link #hasPlan()} is false
-     */
-    PlanningSummary planningSummary();
-
-    /**
      * This describes how the database did execute your statement.
      *
      * If the statement you executed {@link #hasProfile() was profiled}, the statement plan will contain detailed
@@ -74,10 +73,4 @@ public interface ResultSummary
      * @return profiled statement plan for the executed statement if available
      */
     ProfiledPlan profile();
-
-//    /**
-//     * @return summary information on how the profile was constructed
-//     * @throws IllegalStateException if {@link #hasProfile()} is false
-//     */
-//    ProfileSummary profileSummary();
 }

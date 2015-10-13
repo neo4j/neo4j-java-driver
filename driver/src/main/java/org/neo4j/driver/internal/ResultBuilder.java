@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.driver.Plan;
+import org.neo4j.driver.ProfiledPlan;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Statement;
@@ -100,6 +101,12 @@ public class ResultBuilder implements StreamCollector
     public void plan( Plan plan )
     {
         summaryBuilder.plan( plan );
+    }
+
+    @Override
+    public void profile( ProfiledPlan plan )
+    {
+        summaryBuilder.profile( plan );
     }
 
     public Result build()

@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal.spi;
 
 import org.neo4j.driver.Plan;
+import org.neo4j.driver.ProfiledPlan;
 import org.neo4j.driver.UpdateStatistics;
 import org.neo4j.driver.StatementType;
 import org.neo4j.driver.Value;
@@ -51,6 +52,12 @@ public interface StreamCollector
         public void plan( Plan plan )
         {
         }
+
+        @Override
+        public void profile( ProfiledPlan plan )
+        {
+
+        }
     };
 
     // TODO: This should be modified to simply have head/record/tail methods
@@ -64,5 +71,7 @@ public interface StreamCollector
     void statementStatistics( UpdateStatistics statistics );
 
     void plan( Plan plan );
+
+    void profile( ProfiledPlan plan );
 }
 

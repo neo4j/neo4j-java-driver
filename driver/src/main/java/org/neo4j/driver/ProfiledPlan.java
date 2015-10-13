@@ -20,10 +20,21 @@ package org.neo4j.driver;
 
 import java.util.List;
 
+/**
+ * This is the same as a regular {@link Plan} - except this plan has been executed, meaning it also contains detailed information about how much work each
+ * step of the plan incurred on the database.
+ */
 public interface ProfiledPlan extends Plan
 {
+    /**
+     * @return the number of times this part of the plan touched the underlying data stores
+     */
     long dbHits();
-    long rows();
+
+    /**
+     * @return the number of records this part of the plan produced
+     */
+    long records();
 
     @Override
     List<ProfiledPlan> children();

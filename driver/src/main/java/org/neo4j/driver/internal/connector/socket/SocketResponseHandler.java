@@ -114,7 +114,7 @@ public class SocketResponseHandler implements MessageHandler
     {
         if ( plan != null )
         {
-            collector.plan( SimpleProfiledPlan.PROFILED_PLAN_FROM_VALUE.apply( plan ) );
+            collector.profile( SimpleProfiledPlan.PROFILED_PLAN_FROM_VALUE.apply( plan ) );
         }
     }
 

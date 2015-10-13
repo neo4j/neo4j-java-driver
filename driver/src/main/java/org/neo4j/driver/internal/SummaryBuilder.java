@@ -18,17 +18,12 @@
  */
 package org.neo4j.driver.internal;
 
-import java.util.Collections;
-import java.util.Map;
-
 import org.neo4j.driver.Plan;
-import org.neo4j.driver.PlanningSummary;
-import org.neo4j.driver.ProfileSummary;
 import org.neo4j.driver.ProfiledPlan;
 import org.neo4j.driver.ResultSummary;
 import org.neo4j.driver.Statement;
-import org.neo4j.driver.UpdateStatistics;
 import org.neo4j.driver.StatementType;
+import org.neo4j.driver.UpdateStatistics;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.spi.StreamCollector;
@@ -40,6 +35,7 @@ public class SummaryBuilder implements StreamCollector
     private StatementType type = null;
     private UpdateStatistics statistics = null;
     private Plan plan = null;
+    private ProfiledPlan profile;
 
     public SummaryBuilder( Statement statement )
     {
@@ -95,6 +91,20 @@ public class SummaryBuilder implements StreamCollector
         }
     }
 
+    @Override
+    public void profile( ProfiledPlan plan )
+    {
+        if ( this.plan == null && this.profile == null )
+        {
+            this.profile = plan;
+            this.plan = plan;
+        }
+        else
+        {
+            throw new ClientException( "Received plan twice" );
+        }
+    }
+
     public ResultSummary build()
     {
         return new ResultSummary()
@@ -112,15 +122,21 @@ public class SummaryBuilder implements StreamCollector
             }
 
             @Override
+            public StatementType statementType()
+            {
+                return type;
+            }
+
+            @Override
             public boolean hasProfile()
             {
-                return false;
+                return profile != null;
             }
 
             @Override
             public boolean hasPlan()
             {
-                return false;
+                return plan != null;
             }
 
             @Override
@@ -130,28 +146,9 @@ public class SummaryBuilder implements StreamCollector
             }
 
             @Override
-            public PlanningSummary planningSummary()
-            {
-                return new PlanningSummary() {
-
-                    @Override
-                    public StatementType statementType()
-                    {
-                        return type;
-                    }
-
-                    @Override
-                    public Map<String, Value> details()
-                    {
-                        return Collections.emptyMap();
-                    }
-                };
-            }
-
-            @Override
             public ProfiledPlan profile()
             {
-                throw new IllegalStateException( "Profiled plan not available for this query" );
+                return profile;
             }
         };
     }

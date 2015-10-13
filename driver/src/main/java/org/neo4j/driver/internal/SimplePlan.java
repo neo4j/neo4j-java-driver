@@ -21,8 +21,8 @@ package org.neo4j.driver.internal;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
+import org.neo4j.driver.Function;
 import org.neo4j.driver.Plan;
 import org.neo4j.driver.Value;
 

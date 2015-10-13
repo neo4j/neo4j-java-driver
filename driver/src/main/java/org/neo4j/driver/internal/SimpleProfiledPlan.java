@@ -21,34 +21,34 @@ package org.neo4j.driver.internal;
 
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
+import org.neo4j.driver.Function;
 import org.neo4j.driver.ProfiledPlan;
 import org.neo4j.driver.Value;
 
 public class SimpleProfiledPlan extends SimplePlan<ProfiledPlan> implements ProfiledPlan
 {
     private final long dbHits;
-    private final long rows;
+    private final long records;
 
     protected SimpleProfiledPlan( String operatorType, Map<String,Value> arguments,
-            List<String> identifiers, List<ProfiledPlan> children, long dbHits, long rows )
+            List<String> identifiers, List<ProfiledPlan> children, long dbHits, long records )
     {
         super( operatorType, arguments, identifiers, children );
         this.dbHits = dbHits;
-        this.rows = rows;
+        this.records = records;
     }
 
     @Override
     public long dbHits()
     {
-        return 0;
+        return dbHits;
     }
 
     @Override
-    public long rows()
+    public long records()
     {
-        return 0;
+        return records;
     }
 
     public static final PlanCreator<ProfiledPlan> PROFILED_PLAN = new PlanCreator<ProfiledPlan>()

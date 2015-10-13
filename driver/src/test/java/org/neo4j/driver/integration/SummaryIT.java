@@ -63,7 +63,7 @@ public class SummaryIT
 
         // Then
         assertFalse( result.next() );
-        assertThat( summary.planningSummary().statementType(), equalTo( READ_ONLY ) );
+        assertThat( summary.statementType(), equalTo( READ_ONLY ) );
         assertThat( summary.statement().text(), equalTo( statementText ) );
         assertThat( summary.statement().parameters(), equalTo( statementParameters ) );
         assertFalse( summary.hasPlan() );
@@ -97,12 +97,11 @@ public class SummaryIT
     @Test
     public void shouldContainCorrectStatementType() throws Throwable
     {
-        assertThat( session.run("MATCH (n) RETURN 1").summarize().planningSummary().statementType(), equalTo( READ_ONLY ));
-        assertThat( session.run("CREATE (n)").summarize().planningSummary().statementType(), equalTo( WRITE_ONLY ));
-        assertThat( session.run("CREATE (n) RETURN (n)").summarize().planningSummary().statementType(), equalTo( READ_WRITE ));
-        assertThat( session.run("CREATE INDEX ON :User(p)").summarize().planningSummary().statementType(), equalTo( SCHEMA_WRITE ));
+        assertThat( session.run("MATCH (n) RETURN 1").summarize().statementType(), equalTo( READ_ONLY ));
+        assertThat( session.run("CREATE (n)").summarize().statementType(), equalTo( WRITE_ONLY ));
+        assertThat( session.run("CREATE (n) RETURN (n)").summarize().statementType(), equalTo( READ_WRITE ));
+        assertThat( session.run("CREATE INDEX ON :User(p)").summarize().statementType(), equalTo( SCHEMA_WRITE ));
     }
-
 
     @Test
     public void shouldContainCorrectPlan() throws Throwable
@@ -115,10 +114,16 @@ public class SummaryIT
     public void shouldContainProfile() throws Throwable
     {
         // When
-        ProfiledPlan profile = session.run( "PROFILE MATCH (n:NonExistent) RETURN 1" ).summarize().profile();
+        ResultSummary summary = session.run( "PROFILE RETURN 1" ).summarize();
 
         // Then
+        assertEquals( true, summary.hasProfile() );
+        assertEquals( true, summary.hasPlan() ); // Profile is a superset of plan, so plan should be available as well if profile is available
+        assertEquals( summary.plan(), summary.profile() );
+
+        ProfiledPlan profile = summary.profile();
+
         assertEquals( 0, profile.dbHits() );
-        assertEquals( 0, profile.rows() );
+        assertEquals( 1, profile.records() );
     }
 }
