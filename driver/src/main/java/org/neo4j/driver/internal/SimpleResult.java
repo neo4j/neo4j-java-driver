@@ -23,6 +23,7 @@ import java.util.List;
 
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
+import org.neo4j.driver.ResultSummary;
 import org.neo4j.driver.ReusableResult;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
@@ -32,13 +33,16 @@ public class SimpleResult implements Result
     private final Iterable<String> fieldNames;
     private final List<Record> body;
     private final Iterator<Record> iter;
-    private Record current;
+    private final ResultSummary summary;
 
-    public SimpleResult( Iterable<String> fieldNames, List<Record> body )
+    private Record current = null;
+
+    public SimpleResult( Iterable<String> fieldNames, List<Record> body, ResultSummary summary )
     {
         this.fieldNames = fieldNames;
         this.body = body;
         this.iter = body.iterator();
+        this.summary = summary;
     }
 
     @Override
@@ -51,6 +55,14 @@ public class SimpleResult implements Result
     public Record single()
     {
         return iter.next();
+    }
+
+    @SuppressWarnings("StatementWithEmptyBody")
+    @Override
+    public ResultSummary summarize()
+    {
+        while (next()) ;
+        return summary;
     }
 
     @Override

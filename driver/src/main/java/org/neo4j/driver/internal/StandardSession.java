@@ -18,11 +18,11 @@
  */
 package org.neo4j.driver.internal;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
+import org.neo4j.driver.Statement;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
@@ -30,8 +30,6 @@ import org.neo4j.driver.internal.spi.Connection;
 
 public class StandardSession implements Session
 {
-    public static final Map<String,Value> NO_PARAMETERS = new HashMap<>();
-
     private final Connection connection;
 
     /** Called when a transaction object is closed */
@@ -52,21 +50,27 @@ public class StandardSession implements Session
     }
 
     @Override
-    public Result run( String statement, Map<String,Value> parameters )
+    public Result run( String statementText, Map<String,Value> parameters )
     {
         ensureNoOpenTransaction();
-        ResultBuilder resultBuilder = new ResultBuilder();
-        CombinedResultBuilder combinedResultBuilder = new CombinedResultBuilder( resultBuilder );
-        connection.run( statement, parameters, resultBuilder );
-        connection.pullAll( combinedResultBuilder );
+        ResultBuilder resultBuilder = new ResultBuilder( statementText, parameters );
+        connection.run( statementText, parameters, resultBuilder );
+
+        connection.pullAll( resultBuilder );
         connection.sync();
-        return combinedResultBuilder.build();
+        return resultBuilder.build();
     }
 
     @Override
-    public Result run( String statement )
+    public Result run( String statementText )
     {
-        return run( statement, NO_PARAMETERS );
+        return run( statementText, ParameterSupport.NO_PARAMETERS );
+    }
+
+    @Override
+    public Result run( Statement statement )
+    {
+        return run( statement.text(), statement.parameters() );
     }
 
     @Override

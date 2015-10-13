@@ -23,32 +23,58 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import org.neo4j.driver.Plan;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
+import org.neo4j.driver.Statement;
+import org.neo4j.driver.UpdateStatistics;
+import org.neo4j.driver.StatementType;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.spi.StreamCollector;
+
+import static java.util.Collections.unmodifiableMap;
+
+import static org.neo4j.driver.internal.ParameterSupport.NO_PARAMETERS;
 
 public class ResultBuilder implements StreamCollector
 {
+    private final SummaryBuilder summaryBuilder;
+
     private List<Record> body = new ArrayList<>();
-    private Map<String,Integer> fieldLookup = Collections.EMPTY_MAP;
+    private Map<String, Integer> fieldLookup = null;
+
+    public ResultBuilder( String statement, Map<String, Value> parameters )
+    {
+        Map<String, Value> unmodifiableParameters =
+            parameters.isEmpty() ? NO_PARAMETERS : unmodifiableMap( parameters );
+        this.summaryBuilder = new SummaryBuilder( new Statement( statement, unmodifiableParameters ) );
+    }
 
     @Override
     public void fieldNames( String[] names )
     {
-        if ( names.length == 0 )
+        if ( fieldLookup == null )
         {
-            this.fieldLookup = Collections.EMPTY_MAP;
+            if ( names.length == 0 )
+            {
+                this.fieldLookup = Collections.emptyMap();
+            }
+            else
+            {
+                Map<String, Integer> fieldLookup = new HashMap<>();
+                for ( int i = 0; i < names.length; i++ )
+                {
+                    fieldLookup.put( names[i], i );
+                }
+                this.fieldLookup = fieldLookup;
+            }
         }
         else
         {
-            Map<String,Integer> fieldLookup = new HashMap<>();
-            for ( int i = 0; i < names.length; i++ )
-            {
-                fieldLookup.put( names[i], i );
-            }
-            this.fieldLookup = fieldLookup;
+            throw new ClientException( "Received field names twice" );
         }
     }
 
@@ -58,9 +84,27 @@ public class ResultBuilder implements StreamCollector
         body.add( new SimpleRecord( fieldLookup, fields ) );
     }
 
-    public Result build()
+    @Override
+    public void statementType( StatementType type )
     {
-        return new SimpleResult( fieldLookup.keySet(), body );
+        summaryBuilder.statementType( type );
     }
 
+    @Override
+    public void statementStatistics( UpdateStatistics statistics )
+    {
+        summaryBuilder.statementStatistics( statistics );
+    }
+
+    @Override
+    public void plan( Plan plan )
+    {
+        summaryBuilder.plan( plan );
+    }
+
+    public Result build()
+    {
+        Set<String> fieldNames = fieldLookup == null ? Collections.<String>emptySet() : fieldLookup.keySet();
+        return new SimpleResult( fieldNames, body, summaryBuilder.build() );
+    }
 }

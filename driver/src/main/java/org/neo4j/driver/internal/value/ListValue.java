@@ -42,12 +42,12 @@ public class ListValue extends ValueAdapter
     }
 
     @Override
-    public <T> List<T> javaList( Function<Value,T> map )
+    public <T> List<T> javaList( Function<Value,T> mapFunction )
     {
         List<T> list = new ArrayList<>( values.length );
         for ( Value value : values )
         {
-            list.add( map.apply( value ) );
+            list.add( mapFunction.apply( value ) );
         }
         return list;
     }

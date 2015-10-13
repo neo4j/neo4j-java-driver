@@ -108,17 +108,4 @@ public class StatementIT
         // Then
         assertThat( result.size(), equalTo( 3l ) );
     }
-
-    @Test
-    public void shouldReadYourWrites() throws Throwable
-    {
-        // Given I've performed a write operation
-        session.run( "CREATE (n:MyNode)" );
-
-        // When
-        ReusableResult result = session.run( "MATCH (n:MyNode) RETURN 1" ).retain();
-
-        // Then
-        assertThat( result.size(), equalTo( 1l ) );
-    }
 }
