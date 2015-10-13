@@ -9,7 +9,7 @@ import org.neo4j.driver.internal.ParameterSupport;
 import static java.lang.String.format;
 
 /**
- * An executable statement, i.e. the statement's text and it's parameters.
+ * An executable statement, i.e. the statements' text and its parameters.
  *
  * @see org.neo4j.driver.Session
  * @see org.neo4j.driver.Transaction

@@ -60,6 +60,13 @@ public interface StatementRunner
 
     /**
      * Run a statement and return a result stream.
+     * <h2>Example</h2>
+     * <pre class="doctest:StatementRunnerDocIT#statementObjectTest">
+     * {@code
+     * Statement statement = new Statement( "MATCH (n) WHERE n.name={myNameParam} RETURN n.age" );
+     * Result res = session.run( statement.withParameters( Values.parameters( "myNameParam", "Bob" )  ) );
+     * }
+     * </pre>
      *
      * @param statement a Neo4j statement
      * @return a stream of result values and associated metadata
