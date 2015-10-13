@@ -21,7 +21,6 @@ package org.neo4j.driver.internal.value;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.function.Function;
 
 import org.neo4j.driver.Identity;
 import org.neo4j.driver.Node;
@@ -31,6 +30,7 @@ import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.value.NotMultiValued;
 import org.neo4j.driver.exceptions.value.Uncoercible;
 import org.neo4j.driver.exceptions.value.Unsizable;
+import org.neo4j.driver.internal.util.Function;
 
 import static java.util.Collections.emptyList;
 

@@ -22,9 +22,9 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.util.Function;
 
 public class MapValue extends ValueAdapter
 {

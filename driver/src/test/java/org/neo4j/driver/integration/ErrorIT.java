@@ -64,7 +64,7 @@ public class ErrorIT
         // Expect
         exception.expect( ClientException.class );
         exception.expectMessage( "Cannot run more statements in this transaction, " +
-                                             "because previous statements in the" );
+                                 "because previous statements in the" );
 
         // When
         tx.run( "RETURN 1" ).single().get( "1" ).javaInteger();

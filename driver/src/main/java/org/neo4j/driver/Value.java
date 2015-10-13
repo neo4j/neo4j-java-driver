@@ -19,7 +19,8 @@
 package org.neo4j.driver;
 
 import java.util.List;
-import java.util.function.Function;
+
+import org.neo4j.driver.internal.util.Function;
 
 /**
  * Represents a value from Neo4j.
