@@ -18,11 +18,12 @@
  */
 package org.neo4j.driver.integration;
 
-import java.util.Map;
-
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.Map;
+
+import org.neo4j.driver.ProfiledPlan;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.ResultSummary;
 import org.neo4j.driver.Value;
@@ -30,10 +31,10 @@ import org.neo4j.driver.Values;
 import org.neo4j.driver.util.TestSession;
 
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.driver.StatementType.READ_ONLY;
 import static org.neo4j.driver.StatementType.READ_WRITE;
 import static org.neo4j.driver.StatementType.SCHEMA_WRITE;
@@ -108,5 +109,16 @@ public class SummaryIT
     {
         assertThat( session.run("EXPLAIN MATCH (n) RETURN 1").summarize().plan().toString(), equalTo( "SimplePlanTreeNode{operatorType='ProduceResults', arguments={planner-impl=IDP, KeyNames=1, runtime=INTERPRETED, runtime-impl=INTERPRETED, version=CYPHER 3.0, EstimatedRows=float<0.0>, planner=COST}, identifiers=[1], children=[SimplePlanTreeNode{operatorType='Projection', arguments={LegacyExpression={  AUTOINT0}, EstimatedRows=float<0.0>}, identifiers=[1, n], children=[SimplePlanTreeNode{operatorType='AllNodesScan', arguments={EstimatedRows=float<0.0>}, identifiers=[n], children=[]}]}]}" ) );
         assertThat( session.run("EXPLAIN MATCH (n) CREATE (m) SET m += n RETURN m").summarize().plan().toString(), equalTo( "SimplePlanTreeNode{operatorType='ColumnFilter', arguments={runtime=INTERPRETED, planner-impl=RULE, runtime-impl=INTERPRETED, ColumnsLeft=keep columns m, version=CYPHER 3.0, planner=RULE}, identifiers=[m], children=[SimplePlanTreeNode{operatorType='UpdateGraph', arguments={UpdateActionName=MapPropertySet}, identifiers=[m, n], children=[SimplePlanTreeNode{operatorType='UpdateGraph', arguments={UpdateActionName=CreateNode}, identifiers=[m, n], children=[SimplePlanTreeNode{operatorType='AllNodes', arguments={}, identifiers=[n], children=[]}]}]}]}" ) );
+    }
+
+    @Test
+    public void shouldContainProfile() throws Throwable
+    {
+        // When
+        ProfiledPlan profile = session.run( "PROFILE MATCH (n:NonExistent) RETURN 1" ).summarize().profile();
+
+        // Then
+        assertEquals( 0, profile.dbHits() );
+        assertEquals( 0, profile.rows() );
     }
 }

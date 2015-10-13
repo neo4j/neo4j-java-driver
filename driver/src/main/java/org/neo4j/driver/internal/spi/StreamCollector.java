@@ -53,6 +53,8 @@ public interface StreamCollector
         }
     };
 
+    // TODO: This should be modified to simply have head/record/tail methods
+
     void fieldNames( String[] names );
 
     void record( Value[] fields );

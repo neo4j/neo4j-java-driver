@@ -25,23 +25,24 @@ import java.util.function.Function;
 
 import org.neo4j.driver.Plan;
 import org.neo4j.driver.Value;
-import org.neo4j.driver.Values;
 
 import static java.lang.String.format;
+import static org.neo4j.driver.Values.valueAsIs;
+import static org.neo4j.driver.Values.valueToString;
 
-public class SimplePlan implements Plan
+public class SimplePlan<T extends Plan> implements Plan
 {
     private final String operatorType;
     private final List<String> identifiers;
     private final Map<String, Value> arguments;
-    private final List<? extends Plan> children;
+    private final List<T> children;
 
     // Only call when sub-classing, for constructing plans, use .plan instead
     protected SimplePlan(
             String operatorType,
             Map<String, Value> arguments,
             List<String> identifiers,
-            List<? extends Plan> children )
+            List<T> children )
     {
         this.operatorType = operatorType;
         this.identifiers = identifiers;
@@ -68,7 +69,7 @@ public class SimplePlan implements Plan
     }
 
     @Override
-    public List<? extends Plan> children()
+    public List<T> children()
     {
         return children;
     }
@@ -112,40 +113,71 @@ public class SimplePlan implements Plan
         return result;
     }
 
-    public static SimplePlan plan(
+    public static Plan plan(
             String operatorType,
             Map<String, Value> arguments,
             List<String> identifiers,
-            List<? extends Plan> children )
+            List<Plan> children )
     {
-        return new SimplePlan( operatorType, arguments, identifiers, children );
+        return EXPLAIN_PLAN.create( operatorType, arguments, identifiers, children, null );
     }
 
-    public static final Function<Value, Plan> FROM_VALUE = new Converter();
-
-    static class Converter implements Function<Value, Plan>
+    public static final PlanCreator<Plan> EXPLAIN_PLAN = new PlanCreator<Plan>()
     {
         @Override
-        public Plan apply( Value plan )
+        public Plan create( String operatorType, Map<String,Value> arguments, List<String> identifiers, List<Plan> children, Value originalPlanValue )
+        {
+            return new SimplePlan( operatorType, arguments, identifiers, children );
+        }
+    };
+
+    /** Builds a regular plan without profiling information - eg. a plan that came as a result of an `EXPLAIN` statement */
+    public static final Function<Value, Plan> EXPLAIN_PLAN_FROM_VALUE = new Converter<>(EXPLAIN_PLAN);
+
+    /**
+     * Since a plan with or without profiling looks almost the same, we just keep two impls. of this
+     * around to contain the small difference, and share the rest of the code for building plan trees.
+     * @param <T>
+     */
+    interface PlanCreator<T extends Plan>
+    {
+        T create( String operatorType,
+                  Map<String, Value> arguments,
+                  List<String> identifiers,
+                  List<T> children,
+                  Value originalPlanValue );
+    }
+
+    static class Converter<T extends Plan> implements Function<Value, T>
+    {
+        private final PlanCreator<T> planCreator;
+
+        public Converter( PlanCreator<T> planCreator )
+        {
+            this.planCreator = planCreator;
+        }
+
+        @Override
+        public T apply( Value plan )
         {
             final String operatorType = plan.get( "operatorType" ).javaString();
 
             final Value argumentsValue = plan.get( "args" );
             final Map<String, Value> arguments = argumentsValue == null
                     ? Collections.<String, Value>emptyMap()
-                    : argumentsValue.javaMap( Values.valueAsIs() );
+                    : argumentsValue.javaMap( valueAsIs() );
 
             final Value identifiersValue = plan.get( "identifiers" );
             final List<String> identifiers = identifiersValue == null
                     ? Collections.<String>emptyList()
-                    : identifiersValue.javaList( Values.valueToString() );
+                    : identifiersValue.javaList( valueToString() );
 
             final Value childrenValue = plan.get( "children" );
-            final List<Plan> children = childrenValue == null
-                    ? Collections.<Plan>emptyList()
+            final List<T> children = childrenValue == null
+                    ? Collections.<T>emptyList()
                     : childrenValue.javaList( this );
 
-            return plan( operatorType, arguments, identifiers, children );
+            return planCreator.create( operatorType, arguments, identifiers, children, plan );
         }
     }
 }

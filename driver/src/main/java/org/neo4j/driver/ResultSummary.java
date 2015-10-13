@@ -50,6 +50,8 @@ public interface ResultSummary
     boolean hasProfile();
 
     /**
+     * This describes how the database will execute your statement.
+     *
      * @throws IllegalStateException if {@link #hasPlan()} is false
      * @return statement plan for the executed statement if available
      */
@@ -62,6 +64,12 @@ public interface ResultSummary
     PlanningSummary planningSummary();
 
     /**
+     * This describes how the database did execute your statement.
+     *
+     * If the statement you executed {@link #hasProfile() was profiled}, the statement plan will contain detailed
+     * information about what each step of the plan did. That more in-depth version of the statement plan becomes
+     * available here.
+     *
      * @throws IllegalStateException if {@link #hasProfile()} is false
      * @return profiled statement plan for the executed statement if available
      */

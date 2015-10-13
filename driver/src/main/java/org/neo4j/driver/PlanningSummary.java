@@ -12,5 +12,5 @@ public interface PlanningSummary
     StatementType statementType();
 
     // TODO: All preparser options should go here
-    Map<String, Value> details();
+    Map<String,Value> details();
 }

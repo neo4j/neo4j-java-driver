@@ -40,7 +40,7 @@ public class SimplePlanTest
         Value value = value( parameters( "operatorType", "X" ) );
 
         // When
-        Plan plan = SimplePlan.FROM_VALUE.apply( value );
+        Plan plan = SimplePlan.EXPLAIN_PLAN_FROM_VALUE.apply( value );
 
         // Then
         assertThat( plan.operatorType(), equalTo( "X") );
@@ -61,7 +61,7 @@ public class SimplePlanTest
         ) );
 
         // When
-        Plan plan = SimplePlan.FROM_VALUE.apply( value );
+        Plan plan = SimplePlan.EXPLAIN_PLAN_FROM_VALUE.apply( value );
 
         // Then
         assertThat( plan.operatorType(), equalTo( "X") );
@@ -86,7 +86,7 @@ public class SimplePlanTest
         ) );
 
         // When
-        Plan plan = SimplePlan.FROM_VALUE.apply( value );
+        Plan plan = SimplePlan.EXPLAIN_PLAN_FROM_VALUE.apply( value );
 
         // Then
         assertThat( plan.operatorType(), equalTo( "X") );

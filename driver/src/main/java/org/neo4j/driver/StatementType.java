@@ -18,10 +18,29 @@
  */
 package org.neo4j.driver;
 
+import org.neo4j.driver.exceptions.ClientException;
+
 public enum StatementType
 {
     READ_ONLY,
     READ_WRITE,
     WRITE_ONLY,
     SCHEMA_WRITE;
+
+    public static StatementType fromCode( String type )
+    {
+        switch ( type )
+        {
+        case "r":
+            return StatementType.READ_ONLY;
+        case "rw":
+            return StatementType.READ_WRITE;
+        case "w":
+            return StatementType.WRITE_ONLY;
+        case "s":
+            return StatementType.SCHEMA_WRITE;
+        default:
+            throw new ClientException( "Unknown statement type: `" + type + "`." );
+        }
+    }
 }

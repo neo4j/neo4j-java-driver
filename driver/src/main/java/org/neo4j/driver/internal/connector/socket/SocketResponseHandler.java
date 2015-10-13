@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.connector.socket;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.driver.internal.SimpleProfiledPlan;
 import org.neo4j.driver.internal.SimpleUpdateStatistics;
 import org.neo4j.driver.StatementType;
 import org.neo4j.driver.Value;
@@ -34,7 +35,6 @@ import org.neo4j.driver.internal.spi.StreamCollector;
 
 public class SocketResponseHandler implements MessageHandler
 {
-    public static final String[] NO_FIELDS = new String[0];
     private final Map<Integer,StreamCollector> collectors = new HashMap<>();
 
     /** If a failure occurs, the error gets stored here */
@@ -97,6 +97,7 @@ public class SocketResponseHandler implements MessageHandler
             collectType( collector, meta.get( "type") );
             collectStatistics( collector, meta.get( "stats") );
             collectPlan( collector, meta.get( "plan") );
+            collectProfile( collector, meta.get( "profile") );
         }
         responseId++;
     }
@@ -105,7 +106,15 @@ public class SocketResponseHandler implements MessageHandler
     {
         if ( plan != null )
         {
-            collector.plan( SimplePlan.FROM_VALUE.apply( plan ) );
+            collector.plan( SimplePlan.EXPLAIN_PLAN_FROM_VALUE.apply( plan ) );
+        }
+    }
+
+    private void collectProfile( StreamCollector collector, Value plan )
+    {
+        if ( plan != null )
+        {
+            collector.plan( SimpleProfiledPlan.PROFILED_PLAN_FROM_VALUE.apply( plan ) );
         }
     }
 
@@ -130,27 +139,7 @@ public class SocketResponseHandler implements MessageHandler
     {
         if ( type != null )
         {
-            switch ( type.javaString() )
-            {
-                case "r":
-                    collector.statementType( StatementType.READ_ONLY );
-                    break;
-
-                case "rw":
-                    collector.statementType( StatementType.READ_WRITE );
-                    break;
-
-                case "w":
-                    collector.statementType( StatementType.WRITE_ONLY);
-                    break;
-
-                case "s":
-                    collector.statementType( StatementType.SCHEMA_WRITE);
-                    break;
-
-                default:
-                    throw new ClientException( "Received unknown statement type when retrieving result" );
-            }
+            collector.statementType( StatementType.fromCode( type.javaString() ) );
         }
     }
 
