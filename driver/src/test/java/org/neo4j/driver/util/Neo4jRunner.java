@@ -44,7 +44,7 @@ public class Neo4jRunner
     private static boolean externalServer = Boolean.getBoolean( "neo4j.useExternalServer" );
     private static boolean shutdownHookRegistered = false;
 
-    private static final String neo4jVersion = System.getProperty( "version", "3.0.0-M01" );
+    private static final String neo4jVersion = System.getProperty( "version", "3.0.0-M01-NIGHTLY" );
     private static final String neo4jLink = System.getProperty( "packageUri",
             String.format( "http://alpha.neohq.net/dist/neo4j-enterprise-" +
                            "%s-unix.tar.gz", neo4jVersion ) );
