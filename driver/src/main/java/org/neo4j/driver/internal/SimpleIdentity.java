@@ -22,9 +22,9 @@ import org.neo4j.driver.Identity;
 
 public class SimpleIdentity implements Identity
 {
-    private final String raw;
+    private final long raw;
 
-    public SimpleIdentity( String raw )
+    public SimpleIdentity( long raw )
     {
         this.raw = raw;
     }
@@ -32,7 +32,7 @@ public class SimpleIdentity implements Identity
     @Override
     public String toString()
     {
-        return raw;
+        return "#"+raw;
     }
 
     @Override
@@ -49,13 +49,19 @@ public class SimpleIdentity implements Identity
 
         SimpleIdentity that = (SimpleIdentity) o;
 
-        return !(raw != null ? !raw.equals( that.raw ) : that.raw != null);
+        return raw == that.raw;
 
     }
 
     @Override
     public int hashCode()
     {
-        return raw != null ? raw.hashCode() : 0;
+        return (int) raw;
+    }
+
+    @Override
+    public long asLong()
+    {
+        return raw;
     }
 }

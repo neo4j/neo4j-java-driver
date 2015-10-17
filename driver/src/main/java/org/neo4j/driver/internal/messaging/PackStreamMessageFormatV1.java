@@ -261,9 +261,9 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             {
                 Relationship rel = value.asRelationship();
                 packer.packStructHeader( 5, RELATIONSHIP );
-                packer.pack( rel.identity().toString() );
-                packer.pack( rel.start().toString() );
-                packer.pack( rel.end().toString() );
+                packer.pack( rel.identity().asLong() );
+                packer.pack( rel.start().asLong() );
+                packer.pack( rel.end().asLong() );
 
                 packer.pack( rel.type() );
 
@@ -302,7 +302,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                 for ( Relationship rel : relIdx.keySet() )
                 {
                     packer.packStructHeader( 3, UNBOUND_RELATIONSHIP );
-                    packer.pack( rel.identity().toString() );
+                    packer.pack( rel.identity().asLong() );
                     packer.pack( rel.type() );
                     packProperties( rel );
                 }
@@ -346,7 +346,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         private void packNode( Node node ) throws IOException
         {
             packer.packStructHeader( NODE_FIELDS, NODE );
-            packer.pack( node.identity().toString() );
+            packer.pack( node.identity().asLong() );
 
             Iterable<String> labels = node.labels();
             packer.packListHeader( Iterables.count( labels ) );
@@ -539,9 +539,9 @@ public class PackStreamMessageFormatV1 implements MessageFormat
 
         private Value unpackRelationship() throws IOException
         {
-            String urn = unpacker.unpackString();
-            String startUrn = unpacker.unpackString();
-            String endUrn = unpacker.unpackString();
+            long urn = unpacker.unpackLong();
+            long startUrn = unpacker.unpackLong();
+            long endUrn = unpacker.unpackLong();
             String relType = unpacker.unpackString();
             Map<String,Value> props = unpackMap();
 
@@ -550,7 +550,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
 
         private SimpleNode unpackNode() throws IOException
         {
-            String urn = unpacker.unpackString();
+            long urn = unpacker.unpackLong();
 
             int numLabels = (int) unpacker.unpackListHeader();
             List<String> labels = new ArrayList<>( numLabels );
@@ -586,7 +586,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             {
                 ensureCorrectStructSize( "RELATIONSHIP", 3, unpacker.unpackStructHeader() );
                 ensureCorrectStructSignature( "UNBOUND_RELATIONSHIP", UNBOUND_RELATIONSHIP, unpacker.unpackStructSignature() );
-                Identity urn = Identities.identity( unpacker.unpackString() );
+                Identity urn = Identities.identity( unpacker.unpackLong() );
                 String relType = unpacker.unpackString();
                 Map<String,Value> props = unpackMap();
                 uniqRels[i] = new SimpleRelationship( urn, null, null, relType, props );

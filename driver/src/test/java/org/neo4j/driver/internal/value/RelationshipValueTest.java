@@ -30,7 +30,7 @@ public class RelationshipValueTest
     @Test
     public void shouldHaveSensibleToString() throws Throwable
     {
-        assertEquals( "relationship<1234>",
-                new RelationshipValue( new SimpleRelationship( "1234", "1", "2", "KNOWS" ) ).toString() );
+        assertEquals( "relationship<#1234>",
+                new RelationshipValue( new SimpleRelationship( 1234, 1, 2, "KNOWS" ) ).toString() );
     }
 }

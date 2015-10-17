@@ -36,7 +36,7 @@ public class SelfContainedNodeTest
 
     private Node adamTheNode()
     {
-        return new SimpleNode( "A", asList( "Person" ),
+        return new SimpleNode( 1, asList( "Person" ),
                 parameters( "name", Values.value( "Adam" ) ) );
     }
 
@@ -47,7 +47,7 @@ public class SelfContainedNodeTest
         Node node = adamTheNode();
 
         // Then
-        assertThat( node.identity(), equalTo( Identities.identity( "A" ) ) );
+        assertThat( node.identity(), equalTo( Identities.identity( 1 ) ) );
     }
 
     @Test

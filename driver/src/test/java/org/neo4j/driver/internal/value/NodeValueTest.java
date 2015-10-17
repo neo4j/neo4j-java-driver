@@ -34,7 +34,7 @@ public class NodeValueTest
     @Test
     public void shouldHaveSensibleToString() throws Throwable
     {
-        assertEquals("node<1234>",
-                new NodeValue( new SimpleNode("1234", asList("User"), new HashMap<String, Value>() )).toString());
+        assertEquals("node<#1234>",
+                new NodeValue( new SimpleNode(1234, asList("User"), new HashMap<String, Value>() )).toString());
     }
 }

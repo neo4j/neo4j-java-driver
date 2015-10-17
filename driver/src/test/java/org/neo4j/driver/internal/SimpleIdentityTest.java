@@ -33,8 +33,8 @@ public class SimpleIdentityTest
     public void shouldBeAbleToCompareIdentities() throws Throwable
     {
         // Given
-        Identity firstIdentity = new SimpleIdentity( "node/1" );
-        Identity secondIdentity = new SimpleIdentity( "node/1" );
+        Identity firstIdentity = new SimpleIdentity( 1 );
+        Identity secondIdentity = new SimpleIdentity( 1 );
 
         // Then
         assertThat( firstIdentity, equalTo( secondIdentity ) );
@@ -45,7 +45,7 @@ public class SimpleIdentityTest
     public void hashCodeShouldNotBeNull() throws Throwable
     {
         // Given
-        Identity identity = new SimpleIdentity( "node/1" );
+        Identity identity = new SimpleIdentity( 1 );
 
         // Then
         assertThat( identity.hashCode(), notNullValue() );
@@ -56,10 +56,10 @@ public class SimpleIdentityTest
     public void shouldBeAbleToCastIdentityToString() throws Throwable
     {
         // Given
-        Identity identity = new SimpleIdentity( "node/1" );
+        Identity identity = new SimpleIdentity( 1 );
 
         // Then
-        assertThat( identity.toString(), equalTo( "node/1" ) );
+        assertThat( identity.toString(), equalTo( "#1" ) );
 
     }
 
