@@ -21,8 +21,6 @@ package org.neo4j.driver.internal;
 import java.util.Collections;
 import java.util.Map;
 
-import javafx.print.Collation;
-
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.Transaction;
@@ -30,8 +28,6 @@ import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.internal.spi.Connection;
-
-import static java.util.Collections.EMPTY_MAP;
 
 public class StandardTransaction implements Transaction
 {
