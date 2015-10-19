@@ -37,7 +37,7 @@ package org.neo4j.driver;
  * }
  * </pre>
  */
-public interface Transaction extends AutoCloseable, StatementRunner
+public interface Transaction extends CloseableStatementRunner
 {
     /**
      * Mark this transaction as successful. You must call this method before calling {@link #close()} to have your
@@ -65,7 +65,4 @@ public interface Transaction extends AutoCloseable, StatementRunner
      * </pre>
      */
     void failure();
-
-    @Override
-    void close();
 }
