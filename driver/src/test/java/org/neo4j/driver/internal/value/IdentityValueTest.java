@@ -35,7 +35,7 @@ public class IdentityValueTest
     public void testValueAsIdentity() throws Exception
     {
         // Given
-        Identity id = identity( "node/1" );
+        Identity id = identity( 1 );
         IdentityValue value = new IdentityValue( id );
 
         // Then
@@ -46,7 +46,7 @@ public class IdentityValueTest
     public void testIsIdentity() throws Exception
     {
         // Given
-        Identity id = identity( "node/1" );
+        Identity id = identity( 1 );
         IdentityValue value = new IdentityValue( id );
 
         // Then
@@ -57,7 +57,7 @@ public class IdentityValueTest
     public void testEquals() throws Exception
     {
         // Given
-        Identity id = identity( "node/1" );
+        Identity id = identity( 1 );
         IdentityValue firstValue = new IdentityValue( id );
         IdentityValue secondValue = new IdentityValue( id );
 
@@ -69,7 +69,7 @@ public class IdentityValueTest
     public void testHashCode() throws Exception
     {
         // Given
-        Identity id = identity( "node/1" );
+        Identity id = identity( 1 );
         IdentityValue value = new IdentityValue( id );
 
         // Then

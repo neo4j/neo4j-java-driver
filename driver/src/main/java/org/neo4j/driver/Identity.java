@@ -35,4 +35,8 @@ public interface Identity
     // Force implementation
     @Override
     int hashCode();
+
+    // NOTE: This should be removed, but is kept until the Identity CIP is played
+    /** Return a long representation of this identity */
+    long asLong();
 }

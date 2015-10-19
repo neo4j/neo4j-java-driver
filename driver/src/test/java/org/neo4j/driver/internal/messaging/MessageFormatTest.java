@@ -79,23 +79,23 @@ public class MessageFormatTest
         assertSerializesValue( value( parameters( "k", 12, "a", "banana" ) ) );
         assertSerializesValue( value( asList( "k", 12, "a", "banana" ) ) );
         assertSerializesValue( value(
-                new SimpleNode( "node/1", asList( "User" ), parameters( "name", "Bob", "age", 45 ) ) ) );
-        assertSerializesValue( value( new SimpleNode( "node/1" ) ) );
+                new SimpleNode( 1, asList( "User" ), parameters( "name", "Bob", "age", 45 ) ) ) );
+        assertSerializesValue( value( new SimpleNode( 1 ) ) );
         assertSerializesValue( value(
-                new SimpleRelationship( "rel/1", "node/1", "node/1",
+                new SimpleRelationship( 1, 1, 1,
                         "KNOWS",
                         parameters( "name", "Bob", "age", 45 ) ) ) );
         assertSerializesValue( value(
                 new SimplePath(
-                        new SimpleNode( "node/1" ),
-                        new SimpleRelationship( "relationship/1", "node/1", "node/1",
+                        new SimpleNode( 1 ),
+                        new SimpleRelationship( 1, 1, 1,
                                 "KNOWS", parameters() ),
-                        new SimpleNode( "node/1" ),
-                        new SimpleRelationship( "relationship/2", "node/1", "node/1",
+                        new SimpleNode( 1 ),
+                        new SimpleRelationship( 2, 1, 1,
                                 "LIKES", parameters() ),
-                        new SimpleNode( "node/1" )
+                        new SimpleNode( 1 )
                 ) ) );
-        assertSerializesValue( value( new SimplePath( new SimpleNode( "node/1" ) ) ) );
+        assertSerializesValue( value( new SimplePath( new SimpleNode( 1 ) ) ) );
     }
 
     @Test

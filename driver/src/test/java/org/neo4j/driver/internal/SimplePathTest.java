@@ -42,13 +42,13 @@ public class SimplePathTest
     private SimplePath testPath()
     {
         return new SimplePath(
-                new SimpleNode( "A" ),
-                new SimpleRelationship( "AB", "A", "B", "KNOWS" ),
-                new SimpleNode( "B" ),
-                new SimpleRelationship( "CB", "C", "B", "KNOWS" ),
-                new SimpleNode( "C" ),
-                new SimpleRelationship( "CD", "C", "D", "KNOWS" ),
-                new SimpleNode( "D" )
+                new SimpleNode( 1 ),
+                new SimpleRelationship( -1, 1, 2, "KNOWS" ),
+                new SimpleNode( 2 ),
+                new SimpleRelationship( -2, 3, 2, "KNOWS" ),
+                new SimpleNode( 3 ),
+                new SimpleRelationship( -3, 3, 4, "KNOWS" ),
+                new SimpleNode( 4 )
         );
     }
 
@@ -66,7 +66,7 @@ public class SimplePathTest
     public void shouldBeAbleToCreatePathWithSingleNode()
     {
         // When
-        SimplePath path = new SimplePath( new SimpleNode( "A" ) );
+        SimplePath path = new SimplePath( new SimpleNode( 1 ) );
 
         // Then
         assertThat( path.length(), equalTo( 0L ) );
@@ -83,20 +83,20 @@ public class SimplePathTest
 
         // Then
         assertThat( segments, equalTo( Arrays.asList( (Path.Segment)
-                                new SimplePath.SelfContainedSegment(
-                                        new SimpleNode( "A" ),
-                                        new SimpleRelationship( "AB", "A", "B", "KNOWS" ),
-                                        new SimpleNode( "B" )
-                                ),
                         new SimplePath.SelfContainedSegment(
-                                new SimpleNode( "B" ),
-                                new SimpleRelationship( "CB", "C", "B", "KNOWS" ),
-                                new SimpleNode( "C" )
+                                new SimpleNode( 1 ),
+                                new SimpleRelationship( -1, 1, 2, "KNOWS" ),
+                                new SimpleNode( 2 )
                         ),
                         new SimplePath.SelfContainedSegment(
-                                new SimpleNode( "C" ),
-                                new SimpleRelationship( "CD", "C", "D", "KNOWS" ),
-                                new SimpleNode( "D" )
+                                new SimpleNode( 2 ),
+                                new SimpleRelationship( -2, 3, 2, "KNOWS" ),
+                                new SimpleNode( 3 )
+                        ),
+                        new SimplePath.SelfContainedSegment(
+                                new SimpleNode( 3 ),
+                                new SimpleRelationship( -3, 3, 4, "KNOWS" ),
+                                new SimpleNode( 4 )
                         )
                 )
         ) );
@@ -113,10 +113,10 @@ public class SimplePathTest
 
         // Then
         assertThat( segments, equalTo( Arrays.asList( (Node)
-                        new SimpleNode( "A" ),
-                new SimpleNode( "B" ),
-                new SimpleNode( "C" ),
-                new SimpleNode( "D" ) ) ) );
+                new SimpleNode( 1 ),
+                new SimpleNode( 2 ),
+                new SimpleNode( 3 ),
+                new SimpleNode( 4 ) ) ) );
     }
 
     @Test
@@ -130,9 +130,9 @@ public class SimplePathTest
 
         // Then
         assertThat( segments, equalTo( Arrays.asList( (Relationship)
-                        new SimpleRelationship( "AB", "A", "B", "KNOWS" ),
-                new SimpleRelationship( "CB", "C", "B", "KNOWS" ),
-                new SimpleRelationship( "CD", "C", "D", "KNOWS" ) ) ) );
+                new SimpleRelationship( -1, 1, 2, "KNOWS" ),
+                new SimpleRelationship( -2, 3, 2, "KNOWS" ),
+                new SimpleRelationship( -3, 3, 4, "KNOWS" ) ) ) );
     }
 
     @Test
@@ -154,8 +154,8 @@ public class SimplePathTest
 
         // When
         new SimplePath(
-                new SimpleNode( "A" ),
-                new SimpleRelationship( "AB", "A", "B", "KNOWS" ) );
+                new SimpleNode( 1 ),
+                new SimpleRelationship( 2, 3, 4, "KNOWS" ) );
 
     }
 
@@ -180,9 +180,9 @@ public class SimplePathTest
 
         // When
         new SimplePath(
-                new SimpleNode( "A" ),
-                new SimpleRelationship( "AB", "A", "B", "KNOWS" ),
-                new SimpleNode( "C" ) );
+                new SimpleNode( 1 ),
+                new SimpleRelationship( 2, 1, 3, "KNOWS" ),
+                new SimpleNode( 4 ) );
 
     }
 
@@ -194,9 +194,9 @@ public class SimplePathTest
 
         // When
         new SimplePath(
-                new SimpleNode( "A" ),
-                new SimpleRelationship( "CD", "C", "D", "KNOWS" ),
-                new SimpleNode( "C" ) );
+                new SimpleNode( 1 ),
+                new SimpleRelationship( 2, 3, 4, "KNOWS" ),
+                new SimpleNode( 3 ) );
 
     }
 

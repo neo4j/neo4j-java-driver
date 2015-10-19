@@ -35,14 +35,14 @@ public class SimpleRelationship extends SimpleEntity implements Relationship
     private Identity end;
     private final String type;
 
-    public SimpleRelationship( String id, String start, String end, String type )
+    public SimpleRelationship( long id, long start, long end, String type )
     {
         this( Identities.identity( id ), Identities.identity( start ),
                 Identities.identity( end ), type,
                 Collections.<String,Value>emptyMap() );
     }
 
-    public SimpleRelationship( String id, String start, String end, String type,
+    public SimpleRelationship( long id, long start, long end, String type,
             Map<String,Value> properties )
     {
         this( Identities.identity( id ), Identities.identity( start ),

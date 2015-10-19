@@ -22,7 +22,7 @@ import org.neo4j.driver.Identity;
 
 public class Identities
 {
-    public static Identity identity( String raw )
+    public static Identity identity( long raw )
     {
         return new SimpleIdentity( raw );
     }

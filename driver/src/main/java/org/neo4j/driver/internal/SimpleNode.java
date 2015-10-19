@@ -33,12 +33,12 @@ public class SimpleNode extends SimpleEntity implements Node
 {
     private final Collection<String> labels;
 
-    public SimpleNode( String id )
+    public SimpleNode( long id )
     {
         this( id, Collections.<String>emptyList(), Collections.<String,Value>emptyMap() );
     }
 
-    public SimpleNode( String id, Collection<String> labels, Map<String,Value> properties )
+    public SimpleNode( long id, Collection<String> labels, Map<String,Value> properties )
     {
         this( Identities.identity( id ), labels, properties );
     }

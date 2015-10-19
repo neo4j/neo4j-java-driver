@@ -40,7 +40,7 @@ public class EntityTypeIT
         Node node = session.run( "CREATE (n) RETURN n" ).single().get( "n" ).asNode();
 
         // Then
-        assertTrue( node.identity().toString(), node.identity().toString().matches( "node/\\d+" ) );
+        assertTrue( node.identity().toString(), node.identity().toString().matches( "#\\d+" ) );
     }
 
     @Test
@@ -50,9 +50,9 @@ public class EntityTypeIT
         Relationship rel = session.run( "CREATE ()-[r:T]->() RETURN r" ).single().get( "r" ).asRelationship();
 
         // Then
-        assertTrue( rel.start().toString(), rel.start().toString().matches( "node/\\d+" ) );
-        assertTrue( rel.end().toString(), rel.end().toString().matches( "node/\\d+" ) );
-        assertTrue( rel.identity().toString(), rel.identity().toString().matches( "rel/\\d+" ) );
+        assertTrue( rel.start().toString(), rel.start().toString().matches( "#\\d+" ) );
+        assertTrue( rel.end().toString(), rel.end().toString().matches( "#\\d+" ) );
+        assertTrue( rel.identity().toString(), rel.identity().toString().matches( "#\\d+" ) );
     }
 
     @Test
@@ -62,16 +62,16 @@ public class EntityTypeIT
         Path path = session.run( "CREATE p=()-[r:T]->() RETURN p" ).single().get( "p" ).asPath();
 
         // Then
-        assertTrue( path.start().identity().toString(), path.start().identity().toString().matches( "node/\\d+" ) );
-        assertTrue( path.end().identity().toString(), path.end().identity().toString().matches( "node/\\d+" ) );
+        assertTrue( path.start().identity().toString(), path.start().identity().toString().matches( "#\\d+" ) );
+        assertTrue( path.end().identity().toString(), path.end().identity().toString().matches( "#\\d+" ) );
 
         Path.Segment segment = path.iterator().next();
 
         assertTrue( segment.start().identity().toString(),
-                segment.start().identity().toString().matches( "node/\\d+" ) );
+                segment.start().identity().toString().matches( "#\\d+" ) );
         assertTrue( segment.relationship().identity().toString(),
-                segment.relationship().identity().toString().matches( "rel/\\d+" ) );
-        assertTrue( segment.end().identity().toString(), segment.end().identity().toString().matches( "node/\\d+" ) );
+                segment.relationship().identity().toString().matches( "#\\d+" ) );
+        assertTrue( segment.end().identity().toString(), segment.end().identity().toString().matches( "#\\d+" ) );
     }
 
 }
