@@ -43,6 +43,7 @@ public class StandardSession implements Session
     };
 
     private Transaction currentTransaction;
+    private boolean isOpen = true;
 
     public StandardSession( Connection connection )
     {
@@ -74,20 +75,34 @@ public class StandardSession implements Session
     }
 
     @Override
+    public boolean isOpen()
+    {
+        return isOpen;
+    }
+
+    @Override
     public void close()
     {
-        if ( currentTransaction != null )
+        if( !isOpen )
         {
-            try
-            {
-                currentTransaction.close();
-            }
-            catch ( Throwable e )
-            {
-                // Best-effort
-            }
+            throw new ClientException( "This session has already been closed." );
         }
-        connection.close();
+        else
+        {
+            isOpen = false;
+            if ( currentTransaction != null )
+            {
+                try
+                {
+                    currentTransaction.close();
+                }
+                catch ( Throwable e )
+                {
+                    // Best-effort
+                }
+            }
+            connection.close();
+        }
     }
 
     @Override

@@ -27,9 +27,10 @@ import org.neo4j.driver.Transaction;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.util.TestSession;
 
+import static junit.framework.Assert.assertTrue;
+import static junit.framework.TestCase.assertFalse;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.fail;
 
 public class TransactionIT
 {
@@ -97,6 +98,39 @@ public class TransactionIT
 
         // When
         session.run( "anything" );
-        fail( "Should have failed." );
     }
+
+    @Test
+    public void shouldBeClosedAfterRollback() throws Throwable
+    {
+        // When
+        Transaction tx = session.newTransaction();
+        tx.close();
+
+        // Then
+        assertFalse( tx.isOpen() );
+    }
+
+    @Test
+    public void shouldBeClosedAfterCommit() throws Throwable
+    {
+        // When
+        Transaction tx = session.newTransaction();
+        tx.success();
+        tx.close();
+
+        // Then
+        assertFalse( tx.isOpen() );
+    }
+
+    @Test
+    public void shouldBeOpenBeforeCommit() throws Throwable
+    {
+        // When
+        Transaction tx = session.newTransaction();
+
+        // Then
+        assertTrue( tx.isOpen() );
+    }
+
 }

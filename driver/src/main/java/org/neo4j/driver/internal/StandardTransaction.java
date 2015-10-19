@@ -53,7 +53,13 @@ public class StandardTransaction implements Transaction
          * An error has occurred, transaction can no longer be used and no more messages will be sent for this
          * transaction.
          */
-        FAILED
+        FAILED,
+
+        /** This transaction has successfully committed */
+        SUCCEEDED,
+
+        /** This transaction has been rolled back */
+        ROLLED_BACK
     }
 
     private State state = State.ACTIVE;
@@ -96,6 +102,7 @@ public class StandardTransaction implements Transaction
                 conn.run( "COMMIT", Collections.<String, Value>emptyMap(), null );
                 conn.discardAll();
                 conn.sync();
+                state = State.SUCCEEDED;
             }
             else if ( state == State.MARKED_FAILED || state == State.ACTIVE )
             {
@@ -103,6 +110,7 @@ public class StandardTransaction implements Transaction
                 // do this, we could just clear the queue. Future optimization.
                 conn.run( "ROLLBACK", Collections.<String, Value>emptyMap(), null );
                 conn.discardAll();
+                state = State.ROLLED_BACK;
             }
         }
         finally
@@ -142,6 +150,12 @@ public class StandardTransaction implements Transaction
     public Result run( Statement statement )
     {
         return run( statement.text(), statement.parameters() );
+    }
+
+    @Override
+    public boolean isOpen()
+    {
+        return state == State.ACTIVE;
     }
 
     private void ensureNotFailed()
