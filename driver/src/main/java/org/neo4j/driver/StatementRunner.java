@@ -44,18 +44,32 @@ public interface StatementRunner
      * }
      * </pre>
      *
-     * @param statement a Neo4j statement
+     * @param statementText text of a Neo4j statement
      * @param parameters input data for the statement, see {@link Values#parameters(Object...)}
      * @return a stream of result values and associated metadata
      */
-    Result run( String statement, Map<String,Value> parameters );
+    Result run( String statementText, Map<String, Value> parameters );
 
     /**
      * Run a statement and return a result stream.
      *
+     * @param statementText text of a Neo4j statement
+     * @return a stream of result values and associated metadata
+     */
+    Result run( String statementText );
+
+    /**
+     * Run a statement and return a result stream.
+     * <h2>Example</h2>
+     * <pre class="doctest:StatementRunnerDocIT#statementObjectTest">
+     * {@code
+     * Statement statement = new Statement( "MATCH (n) WHERE n.name={myNameParam} RETURN n.age" );
+     * Result res = session.run( statement.withParameters( Values.parameters( "myNameParam", "Bob" )  ) );
+     * }
+     * </pre>
+     *
      * @param statement a Neo4j statement
      * @return a stream of result values and associated metadata
      */
-    Result run( String statement );
-
+    Result run( Statement statement );
 }

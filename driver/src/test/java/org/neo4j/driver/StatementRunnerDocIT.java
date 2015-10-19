@@ -46,4 +46,16 @@ public class StatementRunnerDocIT
         // then
         assertThat( snippet.get( "res" ), notNullValue() );
     }
+
+    public void statementObjectTest( DocSnippet snippet )
+    {
+        // given
+        snippet.set( "session", session );
+
+        // when
+        snippet.run();
+
+        // then
+        assertThat( snippet.get( "res" ), notNullValue() );
+    }
 }

@@ -18,6 +18,10 @@
  */
 package org.neo4j.driver.internal.spi;
 
+import org.neo4j.driver.Plan;
+import org.neo4j.driver.ProfiledPlan;
+import org.neo4j.driver.UpdateStatistics;
+import org.neo4j.driver.StatementType;
 import org.neo4j.driver.Value;
 
 public interface StreamCollector
@@ -27,17 +31,47 @@ public interface StreamCollector
         @Override
         public void fieldNames( String[] names )
         {
-
         }
 
         @Override
         public void record( Value[] fields )
         {
+        }
+
+        @Override
+        public void statementType( StatementType type )
+        {
+        }
+
+        @Override
+        public void statementStatistics( UpdateStatistics statistics )
+        {
+        }
+
+        @Override
+        public void plan( Plan plan )
+        {
+        }
+
+        @Override
+        public void profile( ProfiledPlan plan )
+        {
 
         }
     };
 
+    // TODO: This should be modified to simply have head/record/tail methods
+
     void fieldNames( String[] names );
 
     void record( Value[] fields );
+
+    void statementType( StatementType type);
+
+    void statementStatistics( UpdateStatistics statistics );
+
+    void plan( Plan plan );
+
+    void profile( ProfiledPlan plan );
 }
+

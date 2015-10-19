@@ -86,4 +86,19 @@ public interface Result
      * @throws org.neo4j.driver.exceptions.ClientException if the stream is empty
      */
     Record single();
+
+    /**
+     * Summarize the result
+     * <p>
+     * Any remaining (unprocessed) result records will be consumed.
+     * <p>
+     * <pre class="doctest:ResultDocIT#summarizeUsage">
+     * {@code
+     * ResultSummary summary = session.run( "PROFILE MATCH (n:User {id: 12345}) RETURN n" ).summarize();
+     * }
+     * </pre>
+     *
+     * @return a summary for the whole query
+     */
+    ResultSummary summarize();
 }

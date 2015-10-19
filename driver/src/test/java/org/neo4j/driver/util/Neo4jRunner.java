@@ -77,6 +77,7 @@ public class Neo4jRunner
     {
         if ( canControlServer() && !neo4jHome.exists() )
         {
+            // no neo4j exists
             // download neo4j server from a URL
             File neo4jTarball = new File( "./target/" + neo4jVersion + ".tar.gz" );
             ensureDownloaded( neo4jTarball, neo4jLink );
