@@ -22,9 +22,14 @@ import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.net.URL;
 
 import org.neo4j.driver.Session;
+
+import static org.neo4j.driver.util.Neo4jRunner.DEFAULT_URL;
 
 public class TestNeo4j implements TestRule
 {
@@ -52,11 +57,21 @@ public class TestNeo4j implements TestRule
         runner.startServer();
     }
 
-    public String address()
+    public URL putTmpFile( String prefix, String suffix, String contents ) throws IOException
     {
-        return runner.DEFAULT_URL;
+        File tmpFile = File.createTempFile( prefix, suffix, null );
+        tmpFile.deleteOnExit();
+        try ( PrintWriter out = new PrintWriter( tmpFile ) )
+        {
+            out.println( contents);
+        }
+        return tmpFile.toURI().toURL();
     }
 
+    public String address()
+    {
+        return DEFAULT_URL;
+    }
 
     public boolean canControlServer()
     {
