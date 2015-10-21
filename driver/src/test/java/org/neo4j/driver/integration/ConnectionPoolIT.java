@@ -19,18 +19,20 @@
  */
 package org.neo4j.driver.integration;
 
-import org.junit.After;
-import org.junit.Ignore;
-import org.junit.Rule;
-
 import java.util.LinkedList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
+import org.junit.After;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.exceptions.DatabaseException;
 import org.neo4j.driver.util.TestNeo4j;
 
 import static junit.framework.TestCase.fail;
@@ -42,7 +44,7 @@ public class ConnectionPoolIT
     private Driver driver;
     private SessionGrabber sessionGrabber;
 
-    @Test
+    @Ignore
     public void shouldRecoverFromDownedServer() throws Throwable
     {
         // Given a driver
@@ -56,7 +58,7 @@ public class ConnectionPoolIT
         neo4j.restartServerOnEmptyDatabase();
 
         // Then we accept a hump with failing sessions, but demand that failures stop as soon as the server is back up.
-        sessionGrabber.assertSessionsAvailableWithin( 60 * 5 );
+        sessionGrabber.assertSessionsAvailableWithin( 20 );
     }
 
     @After
@@ -107,7 +109,7 @@ public class ConnectionPoolIT
                         // Success! We created 8 sessions without failures
                         sessionsAreAvailable = true;
                     }
-                    catch ( ClientException e )
+                    catch ( ClientException | DatabaseException e )
                     {
                         lastExceptionFromDriver = e;
                         sessionsAreAvailable = false;
@@ -132,11 +134,12 @@ public class ConnectionPoolIT
             {
                 for ( int i = 0; i < sessionCount; i++ )
                 {
-                    Session s =  driver.session();
-                    sessions.add( s );
+                    Session s = driver.session();
                     s.run( "RETURN 1" );
+                    sessions.add( s );
                 }
-            } finally
+            }
+            finally
             {
                 for ( Session session : sessions )
                 {
