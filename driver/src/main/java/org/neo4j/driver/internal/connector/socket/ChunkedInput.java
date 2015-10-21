@@ -32,6 +32,8 @@ import static java.lang.Math.min;
 
 public class ChunkedInput implements PackInput
 {
+    // http://stackoverflow.com/questions/2613734/maximum-packet-size-for-a-tcp-connection
+    public static final int STACK_OVERFLOW_SUGGESTED_BUFFER_SIZE = 1400;
     private final ByteBuffer buffer;
 
     /* a special buffer for chunk header */
@@ -44,7 +46,7 @@ public class ChunkedInput implements PackInput
 
     public ChunkedInput( ReadableByteChannel ch )
     {
-        this( 8192, ch );
+        this( STACK_OVERFLOW_SUGGESTED_BUFFER_SIZE, ch );
     }
 
     public ChunkedInput( int bufferCapacity, ReadableByteChannel channel )
