@@ -23,7 +23,7 @@ import javadoctest.DocTestRunner;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
 
-import org.neo4j.driver.util.TestSession;
+import org.neo4j.driver.util.TestNeo4jSession;
 
 import static org.junit.Assert.assertTrue;
 
@@ -31,7 +31,7 @@ import static org.junit.Assert.assertTrue;
 public class ResultDocIT
 {
     @Rule
-    public TestSession session = new TestSession();
+    public TestNeo4jSession session = new TestNeo4jSession();
 
     /** @see Result */
     public void summarizeUsage( DocSnippet snippet )

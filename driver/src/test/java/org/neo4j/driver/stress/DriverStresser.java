@@ -56,8 +56,8 @@ public class DriverStresser
 
     public static void setup() throws Exception
     {
-        server = new Neo4jRunner();
-        server.startServer();
+        server = Neo4jRunner.getOrCreateGlobalRunner();
+        server.startServerOnEmptyDatabase();
         driver = GraphDatabase.driver( "bolt://localhost" );
     }
 
@@ -85,10 +85,10 @@ public class DriverStresser
         }
     }
 
-    public static void teardown() throws Exception
+    public static void tearDown() throws Exception
     {
         driver.close();
-        server.stopServer();
+        server.stopServerIfRunning();
     }
 
 
@@ -97,20 +97,23 @@ public class DriverStresser
         ExecutorService executorService = Executors.newFixedThreadPool( concurrency );
 
         setup();
+        try
+        {
+            // Warmup
+            awaitAll( executorService.invokeAll( workers( warmupIterations, concurrency ) ) );
 
-        // Warmup
-        awaitAll( executorService.invokeAll( workers( warmupIterations, concurrency ) ) );
+            long start = System.nanoTime();
+            List<Future<Object>> futures = executorService.invokeAll( workers( iterations, concurrency ) );
+            awaitAll( futures );
+            long delta = System.nanoTime() - start;
 
-        long start = System.nanoTime();
-        List<Future<Object>> futures = executorService.invokeAll( workers( iterations, concurrency ) );
-        awaitAll( futures );
-        long delta = System.nanoTime() - start;
-
-        System.out.println(
-                "With " + concurrency + " threads: " + (iterations * concurrency) / (delta / 1_000_000_000.0) +
-                " ops/s" );
-
-        teardown();
+            System.out.printf( "With %d threads: %s ops/s%n",
+                               concurrency, (iterations * concurrency) / (delta / 1_000_000_000.0) );
+        }
+        finally
+        {
+            tearDown();
+        }
 
         executorService.shutdownNow();
         executorService.awaitTermination( 10, TimeUnit.SECONDS );

@@ -8,7 +8,7 @@ import org.junit.runner.RunWith;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.neo4j.driver.util.TestSession;
+import org.neo4j.driver.util.TestNeo4jSession;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -19,7 +19,7 @@ import static org.junit.Assert.assertEquals;
 public class DriverDocIT
 {
     @Rule
-    public TestSession session = new TestSession();
+    public TestNeo4jSession session = new TestNeo4jSession();
 
     /** @see Driver */
     public void exampleUsage( DocSnippet snippet )

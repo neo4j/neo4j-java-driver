@@ -28,7 +28,7 @@ import org.neo4j.driver.Result;
 import org.neo4j.driver.ResultSummary;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
-import org.neo4j.driver.util.TestSession;
+import org.neo4j.driver.util.TestNeo4jSession;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
@@ -43,7 +43,7 @@ import static org.neo4j.driver.StatementType.WRITE_ONLY;
 public class SummaryIT
 {
     @Rule
-    public TestSession session = new TestSession();
+    public TestNeo4jSession session = new TestNeo4jSession();
 
     @Test
     public void shouldContainBasicMetadata() throws Throwable

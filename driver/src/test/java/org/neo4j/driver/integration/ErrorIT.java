@@ -26,7 +26,7 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.util.TestSession;
+import org.neo4j.driver.util.TestNeo4jSession;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -37,7 +37,7 @@ public class ErrorIT
     public ExpectedException exception = ExpectedException.none();
 
     @Rule
-    public TestSession session = new TestSession();
+    public TestNeo4jSession session = new TestNeo4jSession();
 
     @Test
     public void shouldThrowHelpfulSyntaxError() throws Throwable

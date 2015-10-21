@@ -21,16 +21,21 @@ package org.neo4j.driver.util;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.util.Map;
 
 import org.neo4j.driver.Config;
+import org.neo4j.driver.Driver;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.connector.socket.SocketClient;
 import org.neo4j.driver.internal.logging.DevNullLogger;
 
+import static java.lang.String.format;
+
 import static junit.framework.TestCase.assertFalse;
+
 import static org.neo4j.driver.internal.ConfigTest.deleteDefaultKnownCertFileIfExists;
 import static org.neo4j.driver.util.FileTools.deleteRecursively;
-import static org.neo4j.driver.util.FileTools.setProperty;
+import static org.neo4j.driver.util.FileTools.updateProperties;
 
 /**
  * This class wraps the neo4j stand-alone jar in some code to help pulling it in from a remote URL and then launching
@@ -41,50 +46,64 @@ public class Neo4jRunner
     public static final String DEFAULT_URL = "bolt://localhost:7687";
 
     private static Neo4jRunner globalInstance;
-    private static boolean externalServer = Boolean.getBoolean( "neo4j.useExternalServer" );
-    private static boolean shutdownHookRegistered = false;
 
+    private static final boolean externalServer = Boolean.getBoolean( "neo4j.useExternalServer" );
     private static final String neo4jVersion = System.getProperty( "version", "3.0.0-M01-NIGHTLY" );
     private static final String neo4jLink = System.getProperty( "packageUri",
-            String.format( "http://alpha.neohq.net/dist/neo4j-enterprise-" +
-                           "%s-unix.tar.gz", neo4jVersion ) );
+            format( "http://alpha.neohq.net/dist/neo4j-enterprise-%s-unix.tar.gz", neo4jVersion ) );
 
     private final File neo4jDir = new File( "./target/neo4j" );
     private final File neo4jHome = new File( neo4jDir, neo4jVersion );
     private final File dataDir = new File( neo4jHome, "data" );
-    private boolean isTLSEnabled;
 
+    private Neo4jSettings cachedSettings = Neo4jSettings.DEFAULT;
+    private Driver currentDriver;
+    private boolean staleDriver;
 
     public static void main( String... args ) throws Exception
     {
         Neo4jRunner neo4jRunner = new Neo4jRunner();
-        neo4jRunner.startServer();
-        neo4jRunner.stopServer();
+        neo4jRunner.startServerOnEmptyDatabase();
+        neo4jRunner.stopServerIfRunning();
     }
 
     /** Global runner controlling a single server, used to avoid having to restart the server between tests */
-    public static synchronized Neo4jRunner getOrCreateGlobalServer() throws IOException, InterruptedException
+    public static synchronized Neo4jRunner getOrCreateGlobalRunner() throws Exception
     {
         if ( globalInstance == null )
         {
             globalInstance = new Neo4jRunner();
-            globalInstance.startServer();
         }
         return globalInstance;
     }
 
-    public Neo4jRunner() throws IOException
+    private Neo4jRunner() throws Exception
     {
-        if ( canControlServer() && !neo4jHome.exists() )
-        {
-            // no neo4j exists
-            // download neo4j server from a URL
-            File neo4jTarball = new File( "./target/" + neo4jVersion + ".tar.gz" );
-            ensureDownloaded( neo4jTarball, neo4jLink );
+        debug( "NEO4J_HOME is: %s", neo4jHome.getCanonicalPath() );
+        debug( "NEO4J_VERSION is: %s", neo4jVersion );
 
-            // Untar the neo4j server
-            System.out.println( "Extracting: " + neo4jTarball + " -> " + neo4jDir );
-            FileTools.extractTarball( neo4jTarball, neo4jDir, neo4jHome );
+        if ( canControlServer() )
+        {
+            if ( !neo4jHome.exists() )
+            {
+                // no neo4j exists
+                // download neo4j server from a URL
+                File neo4jTarball = new File( "./target/" + neo4jVersion + ".tar.gz" );
+                ensureDownloaded( neo4jTarball, neo4jLink );
+
+                // Untar the neo4j server
+                System.out.println( "Extracting: " + neo4jTarball + " -> " + neo4jDir );
+                FileTools.extractTarball( neo4jTarball, neo4jDir, neo4jHome );
+            }
+
+            // Install default settings
+            updateServerSettingsFile();
+
+            // Reset driver to match default settings
+            resetDriver();
+
+            // Make sure we stop on JVM exit
+            installShutdownHook();
         }
     }
 
@@ -92,71 +111,202 @@ public class Neo4jRunner
     {
         if ( file.exists() )
         {
-            file.delete();
+            if ( !file.delete() )
+            {
+                throw new IllegalStateException( "Couldn't delete previous download " + file.getCanonicalPath() );
+            }
         }
-        file.getParentFile().mkdirs();
+        File parentFile = file.getParentFile();
+        if ( ! parentFile.exists() && ! parentFile.mkdirs() )
+        {
+            throw new IllegalStateException( "Couldn't create download directory " + parentFile.getCanonicalPath() );
+        }
         System.out.println( "Copying: " + downloadLink + " -> " + file );
         FileTools.streamFileTo( downloadLink, file );
-
     }
 
-    public void startServer() throws IOException, InterruptedException
+    public synchronized void restartServerOnEmptyDatabase() throws Exception
+    {
+        restartServerOnEmptyDatabase( cachedSettings );
+    }
+
+    public synchronized void restartServerOnEmptyDatabase( Neo4jSettings settingsUpdate ) throws Exception
     {
         if ( canControlServer() )
         {
-            assertFalse( "A server instance is already running", serverResponds() );
-
-            deleteRecursively( new File( dataDir, "graph.db" ) );
-            deleteDefaultKnownCertFileIfExists();
-
-            Process process = runNeo4j( "start" );
-            stopOnExit();
-
-            awaitServerResponds( process );
+            stopServerIfRunning();
+            startServerOnEmptyDatabase( settingsUpdate );
         }
     }
 
-    public Process runNeo4j( String cmd ) throws IOException
+    public synchronized void startServerOnEmptyDatabase() throws Exception
     {
-        File startScript = new File( neo4jHome, "bin/neo4j" );
-        startScript.setExecutable( true );
-        return new ProcessBuilder().inheritIO().command( startScript.getAbsolutePath(), cmd ).start();
+        startServerOnEmptyDatabase( cachedSettings );
     }
 
-    public void stopServer() throws IOException, InterruptedException
+    public synchronized void startServerOnEmptyDatabase( Neo4jSettings settingsUpdate ) throws Exception
     {
         if ( canControlServer() )
         {
-            runNeo4j( "stop" ).waitFor();
+            assertFalse( "A server instance is already running", serverStatus() == ServerStatus.ONLINE );
+            updateServerSettings( settingsUpdate );
+            doStartServerOnEmptyDatabase();
         }
     }
 
-    public void enableTLS( boolean isTLSEnabled )
+    public synchronized boolean startServerOnEmptyDatabaseUnlessRunning( Neo4jSettings settingsUpdate ) throws Exception
     {
-        this.isTLSEnabled = isTLSEnabled;
-        setServerProperty( "dbms.bolt.tls.enabled", String.valueOf( isTLSEnabled ) );
+        if ( canControlServer() )
+        {
+            ServerStatus status = serverStatus();
+            switch ( status )
+            {
+                case OFFLINE:
+                    updateServerSettings( settingsUpdate );
+                    doStartServerOnEmptyDatabase();
+                    return true;
+
+                case ONLINE:
+                    if ( updateServerSettings( settingsUpdate ) )
+                    {
+                        doStopServer();
+                        doStartServerOnEmptyDatabase();
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+            }
+        }
+        return true;
+    }
+
+    private void doStartServerOnEmptyDatabase() throws Exception
+    {
+        debug( "Deleting database at: %s", dataDir.getCanonicalPath() );
+
+        deleteRecursively( new File( dataDir, "graph.db" ) );
+        deleteDefaultKnownCertFileIfExists();
+
+        debug( "Starting server at: ", neo4jHome.getCanonicalPath() );
+
+        if ( runNeo4j( "start" ) != 0 )
+        {
+            throw new IllegalStateException( "Failed to start server" );
+        }
+        awaitServerStatusOrFail( ServerStatus.ONLINE );
+
+        if ( staleDriver )
+        {
+            resetDriver();
+        }
+    }
+
+    public synchronized void stopServerIfRunning() throws IOException, InterruptedException
+    {
+        if ( serverStatus() == ServerStatus.ONLINE )
+        {
+            doStopServer();
+        }
+    }
+
+    private void doStopServer() throws IOException, InterruptedException
+    {
+        if ( !tryStopServer() )
+        {
+            throw new IllegalStateException( "Failed to stop server" );
+        }
+    }
+
+    private synchronized boolean tryStopServer() throws IOException, InterruptedException
+    {
+        debug( "Trying to stop server at %s", neo4jHome.getCanonicalPath() );
+
+        if ( canControlServer() )
+        {
+            int exitCode = runNeo4j( "stop" );
+            if ( exitCode == 0 )
+            {
+                awaitServerStatusOrFail( ServerStatus.OFFLINE );
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @SuppressWarnings("LoopStatementThatDoesntLoop")
+    private int runNeo4j( String cmd ) throws IOException
+    {
+        File scriptFile = new File( neo4jHome, "bin/neo4j" );
+        if ( ! scriptFile.setExecutable( true ) )
+        {
+            throw new IllegalStateException( "Could not set executable permissions for " + scriptFile.getCanonicalPath() );
+        }
+        Process process = new ProcessBuilder().inheritIO().command( scriptFile.getAbsolutePath(), cmd ).start();
+        while (true)
+        {
+            try
+            {
+                return process.waitFor();
+            }
+            catch ( InterruptedException e )
+            {
+                Thread.interrupted();
+            }
+        }
+    }
+
+    private boolean updateServerSettings( Neo4jSettings settingsUpdate )
+    {
+        if ( cachedSettings == null )
+        {
+            cachedSettings = settingsUpdate;
+        }
+        else
+        {
+            Neo4jSettings updatedSettings = cachedSettings.updateWith( settingsUpdate );
+            if ( cachedSettings.equals( updatedSettings ) )
+            {
+                return false;
+            }
+            else
+            {
+                cachedSettings = updatedSettings;
+            }
+        }
+        updateServerSettingsFile();
+        staleDriver = true;
+        return true;
     }
 
     /**
-     * Write the new property and its value in neo4j-server.properties.
-     * If the server is already running, then stop and restart the server to reload the changes in the property file
-     * @param name
-     * @param value
+     * Write updated neo4j settings into neo4j-server.properties for use by the next start
      */
-    private void setServerProperty( String name, String value )
+    private void updateServerSettingsFile()
     {
+        Map<String, Object> propertiesMap = cachedSettings.propertiesMap();
+        if ( propertiesMap.isEmpty() )
+        {
+            return;
+        }
+
         File oldFile = new File( neo4jHome, "conf/neo4j-server.properties" );
         try
         {
-            setProperty( oldFile, name, value );
+            debug( "Changing server properties file (for next start): " + oldFile.getCanonicalPath() );
+            for ( Map.Entry<String, Object> property : propertiesMap.entrySet() )
+            {
+                String name = property.getKey();
+                Object value = property.getValue();
+                debug( "%s=%s", name, value );
+            }
 
-            System.out.println( "Restart server to reload property change: " + name + "=" + value );
-            this.stopServer();
-            this.startServer();
+            updateProperties( oldFile, propertiesMap );
         }
         catch ( Exception e )
         {
-            System.out.println( "Failed to change property." );
+            System.out.println( "Failed to update properties" );
             throw new RuntimeException( e );
         }
     }
@@ -166,13 +316,12 @@ public class Neo4jRunner
         return !externalServer;
     }
 
-    private void awaitServerResponds( Process process ) throws IOException, InterruptedException
+    private void awaitServerStatusOrFail( ServerStatus goalStatus ) throws IOException, InterruptedException
     {
         long timeout = System.currentTimeMillis() + 1000 * 30;
-        for (; ; )
+        for (; ;)
         {
-            process.waitFor();
-            if ( serverResponds() )
+            if ( serverStatus() == goalStatus )
             {
                 return;
             }
@@ -183,55 +332,119 @@ public class Neo4jRunner
 
             if ( System.currentTimeMillis() > timeout )
             {
-                throw new RuntimeException( "Waited for 30 seconds for server to respond to socket calls, " +
-                                            "but no response, timing out to avoid blocking forever." );
+                throw new RuntimeException( format(
+                        "Waited for 30 seconds for server to become %s but failed, " +
+                        "timing out to avoid blocking forever.", goalStatus ) );
             }
         }
     }
 
-    private boolean serverResponds() throws IOException, InterruptedException
+    private ServerStatus serverStatus() throws IOException, InterruptedException
     {
         try
         {
-            URI uri = URI.create( DEFAULT_URL );
-            Config config = Config.defaultConfig();
-            if( isTLSEnabled )
-            {
-                config = Config.build().withTlsEnabled( true ).toConfig();
-            }
-            SocketClient client = new SocketClient( uri.getHost(), uri.getPort(),
-                    config, new DevNullLogger() );
+            URI uri = serverURI();
+            Config config = serverConfig();
+            SocketClient client = new SocketClient( uri.getHost(), uri.getPort(), config, new DevNullLogger() );
             client.start();
             client.stop();
-            return true;
+            return ServerStatus.ONLINE;
         }
         catch ( ClientException e )
+        {
+            return ServerStatus.OFFLINE;
+        }
+    }
+
+    private void resetDriver() throws Exception
+    {
+        Driver oldDriver = currentDriver;
+        try
+        {
+            debug( "Resetting driver" );
+            currentDriver = new Driver( serverURI(), serverConfig() );
+            staleDriver = false;
+        }
+        finally
+        {
+            if ( oldDriver != null )
+            {
+                oldDriver.close();
+            }
+        }
+    }
+
+    private Config serverConfig()
+    {
+        Config config = Config.defaultConfig();
+        if( cachedSettings.isUsingTLS() )
+        {
+            config = Config.build().withTlsEnabled( true ).toConfig();
+        }
+        return config;
+    }
+
+    private URI serverURI()
+    {
+        return URI.create( DEFAULT_URL );
+    }
+
+    private void installShutdownHook()
+    {
+        Runtime.getRuntime().addShutdownHook( new Thread( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+            try
+            {
+                debug("Starting shutdown hook");
+                stopServerIfRunning();
+                cachedSettings = Neo4jSettings.DEFAULT;
+                updateServerSettingsFile();
+                debug("Finished shutdown hook");
+            }
+            catch ( Exception e )
+            {
+                // cannot help you anything sorry
+                System.out.println("Failed to shutdown neo4j server");
+                e.printStackTrace();
+            }
+            }
+        } ) );
+    }
+
+    public Driver driver()
+    {
+        return currentDriver;
+    }
+
+    private enum ServerStatus {
+        ONLINE, OFFLINE
+    }
+
+    private static boolean DEBUG = isEnabled( "DEBUG_NEO4J_RUNNER" );
+
+    static void debug( String text, Object... args )
+    {
+        if ( DEBUG )
+        {
+            System.err.println( "Neo4jRunner: " + String.format( text, args ) );
+        }
+    }
+
+    private static boolean isEnabled( String envVarName )
+    {
+        String value = System.getenv( envVarName );
+        if ( value != null )
+        {
+            value = value.trim();
+            return value.equals( "1" ) || value.equalsIgnoreCase( "true" );
+        }
+        else
         {
             return false;
         }
     }
-
-    private void stopOnExit()
-    {
-        if( !shutdownHookRegistered )
-        {
-            Runtime.getRuntime().addShutdownHook( new Thread( new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    try
-                    {
-                        stopServer();
-                    }
-                    catch ( Exception e )
-                    {
-                        // cannot help you anything sorry
-                        e.printStackTrace();
-                    }
-                }
-            } ) );
-            shutdownHookRegistered = true;
-        }
-    }
 }
+

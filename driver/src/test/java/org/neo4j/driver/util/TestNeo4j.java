@@ -27,34 +27,85 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URL;
 
+import org.neo4j.driver.Driver;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 
+import static org.neo4j.driver.util.Neo4jResetMode.CLEAR_DATABASE_CONTENTS;
 import static org.neo4j.driver.util.Neo4jRunner.DEFAULT_URL;
 
 public class TestNeo4j implements TestRule
 {
+    private final Neo4jResetMode resetMode;
+    private final Neo4jSettings initialSettings;
+
     private Neo4jRunner runner;
 
+    public TestNeo4j()
+    {
+        this( Neo4jSettings.DEFAULT, CLEAR_DATABASE_CONTENTS );
+    }
+
+    public TestNeo4j( Neo4jResetMode resetMode )
+    {
+        this( Neo4jSettings.DEFAULT, resetMode );
+    }
+
+    public TestNeo4j( Neo4jSettings initialSettings )
+    {
+        this( initialSettings, CLEAR_DATABASE_CONTENTS );
+    }
+
+    public TestNeo4j( Neo4jSettings initialSettings, Neo4jResetMode resetMode )
+    {
+        this.initialSettings = initialSettings;
+        this.resetMode = resetMode;
+    }
+
     @Override
-    public Statement apply( final Statement base, Description description )
+    public Statement apply( final Statement base, final Description description )
     {
         return new Statement()
         {
             @Override
             public void evaluate() throws Throwable
             {
-                runner = Neo4jRunner.getOrCreateGlobalServer();
-                clearData();
+            runner = Neo4jRunner.getOrCreateGlobalRunner();
+            switch ( resetMode )
+            {
+                case CLEAR_DATABASE_CONTENTS:
+                    if ( !runner.startServerOnEmptyDatabaseUnlessRunning( initialSettings ) )
+                    {
+                        try ( Session session = driver().session() )
+                        {
+                            clearDatabaseContents( session, description.toString() );
+                        }
+                    }
+                    break;
 
-                base.evaluate();
+                case CLEAR_DATABASE_FILES:
+                    restartServerOnEmptyDatabase( initialSettings );
+                    break;
+            }
+
+            base.evaluate();
             }
         };
     }
 
-    public void restartDatabase() throws IOException, InterruptedException
+    public Driver driver()
     {
-        runner.stopServer();
-        runner.startServer();
+        return runner.driver();
+    }
+
+    public void restartServerOnEmptyDatabase() throws Exception
+    {
+        runner.restartServerOnEmptyDatabase();
+    }
+
+    public void restartServerOnEmptyDatabase( Neo4jSettings settingsUpdate ) throws Exception
+    {
+        runner.restartServerOnEmptyDatabase( settingsUpdate );
     }
 
     public URL putTmpFile( String prefix, String suffix, String contents ) throws IOException
@@ -78,14 +129,18 @@ public class TestNeo4j implements TestRule
         return runner.canControlServer();
     }
 
-    private void clearData()
+    @SuppressWarnings("StatementWithEmptyBody")
+    static void clearDatabaseContents( Session session, String reason )
     {
+        Neo4jRunner.debug( "Clearing database contents for: %s", reason );
+
         // Note - this hangs for extended periods some times, because there are tests that leave sessions running.
         // Thus, we need to wait for open sessions and transactions to time out before this will go through.
         // This could be helped by an extension in the future.
-        try ( Session session = Neo4jDriver.session() )
+        Result result = session.run( "MATCH (n) DETACH DELETE n RETURN count(*)" );
+        while ( result.next() )
         {
-            session.run( "MATCH (n) OPTIONAL MATCH (n)-[r]->() DELETE r,n" );
+            // consume
         }
     }
 }

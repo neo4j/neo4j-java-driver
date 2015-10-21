@@ -18,16 +18,11 @@
  */
 package org.neo4j.driver.integration;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -36,13 +31,19 @@ import java.security.cert.X509Certificate;
 import javax.net.ssl.SSLHandshakeException;
 import javax.xml.bind.DatatypeConverter;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.internal.connector.socket.SSLSocketChannel;
 import org.neo4j.driver.internal.spi.Logger;
+import org.neo4j.driver.util.Neo4jResetMode;
 import org.neo4j.driver.util.Neo4jRunner;
+import org.neo4j.driver.util.Neo4jSettings;
+import org.neo4j.driver.util.TestNeo4j;
 
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertNotNull;
@@ -52,6 +53,7 @@ import static junit.framework.TestCase.assertEquals;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+
 import static org.neo4j.driver.Config.TlsAuthenticationConfig.usingKnownCerts;
 import static org.neo4j.driver.Config.TlsAuthenticationConfig.usingTrustedCert;
 import static org.neo4j.driver.internal.ConfigTest.deleteDefaultKnownCertFileIfExists;
@@ -60,25 +62,8 @@ import static org.neo4j.driver.util.CertificateToolTest.generateSelfSignedCertif
 
 public class SSLSocketChannelIT
 {
-    private static TLSServer server;
-
-    @BeforeClass
-    public static void setup() throws IOException, InterruptedException
-    {
-        /* uncomment for JSSE debugging info */
-        // System.setProperty( "javax.net.debug", "all" );
-        // delete any certificate file that the client already know
-        server = new TLSServer();
-    }
-
-    @AfterClass
-    public static void tearDown()
-    {
-        if ( server != null )
-        {
-            server.close();
-        }
-    }
+    @Rule
+    public TestNeo4j neo4j = new TestNeo4j( Neo4jSettings.DEFAULT.usingTLS( true ) );
 
     @Test
     public void shouldPerformTLSHandshakeWithEmptyKnownCertsFile() throws Throwable
@@ -254,22 +239,4 @@ public class SSLSocketChannelIT
 
         driver.close();
     }
-
-    private static class TLSServer
-    {
-        private Neo4jRunner server;
-
-        public TLSServer() throws IOException, InterruptedException
-        {
-            server = Neo4jRunner.getOrCreateGlobalServer();
-            server.enableTLS( true );
-        }
-
-        public void close()
-        {
-            server.enableTLS( false );
-        }
-
-    }
-
 }

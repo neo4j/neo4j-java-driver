@@ -30,7 +30,7 @@ import java.util.Collections;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.value.ListValue;
 import org.neo4j.driver.internal.value.MapValue;
-import org.neo4j.driver.util.TestSession;
+import org.neo4j.driver.util.TestNeo4jSession;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -41,7 +41,7 @@ import static org.neo4j.driver.Values.value;
 public class ScalarTypeIT
 {
     @Rule
-    public TestSession session = new TestSession();
+    public TestNeo4jSession session = new TestNeo4jSession();
 
     @Parameterized.Parameter(0)
     public String statement;
@@ -62,7 +62,7 @@ public class ScalarTypeIT
                 new Object[]{"RETURN ['hello'] as v", new ListValue( value( "hello" ) )},
                 new Object[]{"RETURN [] as v", new ListValue()},
                 new Object[]{"RETURN {k:'hello'} as v", new MapValue( parameters( "k", value( "hello" ) ) )},
-                new Object[]{"RETURN {} as v", new MapValue( Collections.EMPTY_MAP )}
+                new Object[]{"RETURN {} as v", new MapValue( Collections.<String, Value>emptyMap() )}
         );
     }
 

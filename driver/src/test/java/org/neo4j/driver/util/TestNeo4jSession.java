@@ -18,10 +18,10 @@
  */
 package org.neo4j.driver.util;
 
+import java.util.Map;
+
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
-
-import java.util.Map;
 
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
@@ -32,9 +32,29 @@ import org.neo4j.driver.Value;
  * A little utility for integration testing, this provides tests with a session they can work with.
  * If you want more direct control, have a look at {@link TestNeo4j} instead.
  */
-public class TestSession extends TestNeo4j implements Session
+public class TestNeo4jSession extends TestNeo4j implements Session
 {
     private Session realSession;
+
+    public TestNeo4jSession()
+    {
+        super();
+    }
+
+    public TestNeo4jSession( Neo4jResetMode resetMode )
+    {
+        super( resetMode );
+    }
+
+    public TestNeo4jSession( Neo4jSettings initialSettings )
+    {
+        super( initialSettings );
+    }
+
+    public TestNeo4jSession( Neo4jSettings initialSettings, Neo4jResetMode resetMode )
+    {
+        super( initialSettings, resetMode );
+    }
 
     @Override
     public Statement apply( final Statement base, Description description )
@@ -46,7 +66,7 @@ public class TestSession extends TestNeo4j implements Session
             {
                 try
                 {
-                    realSession = Neo4jDriver.session();
+                    realSession = driver().session();
                     base.evaluate();
                 }
                 finally
@@ -63,7 +83,7 @@ public class TestSession extends TestNeo4j implements Session
     @Override
     public boolean isOpen()
     {
-        return true;  // this is a test so can be always available
+        return realSession.isOpen();
     }
 
     @Override
@@ -93,6 +113,6 @@ public class TestSession extends TestNeo4j implements Session
     @Override
     public Result run( org.neo4j.driver.Statement statement )
     {
-        return run( statement.text(), statement.parameters() );
+        return realSession.run( statement.text(), statement.parameters() );
     }
 }

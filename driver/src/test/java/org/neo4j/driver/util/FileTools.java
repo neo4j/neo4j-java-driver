@@ -29,7 +29,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.net.URL;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Scanner;
+import java.util.Set;
 
 import static java.io.File.createTempFile;
 
@@ -62,12 +66,18 @@ public class FileTools
         return tmp;
     }
 
-
-    public static void setProperty( File propFile, String name, String value ) throws FileNotFoundException
+    public static void updateProperty( File propFile, String key, Object value ) throws FileNotFoundException
     {
-        boolean foundProp = false;
+        Map<String, Object> propertiesMap = new HashMap<>( 1 );
+        propertiesMap.put( key, value );
+        updateProperties( propFile, propertiesMap );
+    }
+
+    public static void updateProperties( File propFile, Map<String, Object> propertiesMap ) throws FileNotFoundException
+    {
         Scanner in = new Scanner( propFile );
 
+        Set<String> updatedProperties = new HashSet<>( propertiesMap.size() );
         File newPropFile = new File( propFile.getParentFile(), "prop.tmp" );
         PrintWriter out = new PrintWriter( newPropFile );
 
@@ -77,11 +87,21 @@ public class FileTools
             if ( !line.trim().startsWith( "#" ) )
             {
                 String[] tokens = line.split( "=" );
-                if ( tokens.length == 2 && tokens[0].equals( name ) )
+                if ( tokens.length == 2 )
                 {
-                    // found property and set it to the new value
-                    out.println( name + "=" + value );
-                    foundProp = true;
+                    String name = tokens[0];
+                    Object value = propertiesMap.get( name );
+                    if ( value != null && !updatedProperties.contains( name ) )
+                    {
+                        // found property and set it to the new value
+                        printlnProperty( out, name, value );
+                        updatedProperties.add( name );
+                    }
+                    else
+                    {
+                        // not the property that we are looking for, print it as original
+                        out.println( line );
+                    }
                 }
                 else
                 {
@@ -96,10 +116,15 @@ public class FileTools
             }
         }
 
-        if ( !foundProp )
+        for ( Map.Entry<String, Object> entry : propertiesMap.entrySet() )
         {
-            // add this as a new prop
-            out.println( name + "=" + value );
+            String name = entry.getKey();
+            Object value = entry.getValue();
+            if ( value != null && !updatedProperties.contains( name ) )
+            {
+                // add this as a new prop
+                printlnProperty( out, name, value );
+            }
         }
 
         in.close();
@@ -107,6 +132,13 @@ public class FileTools
 
         propFile.delete();
         newPropFile.renameTo( propFile );
+    }
+
+    private static void printlnProperty( PrintWriter out, String name, Object value )
+    {
+        out.print( name );
+        out.print( '=' );
+        out.println( value );
     }
 
     /** To allow retrieving a runnable neo4j jar from the international webbernets, we have this */

@@ -61,7 +61,7 @@ public class ServerKilledIT
             s4.close();
 
             // When
-            neo4j.restartDatabase();
+            neo4j.restartServerOnEmptyDatabase();
 
             // Then we should be able to start using sessions again, at most O(numSessions) session calls later
             // TODO: These should get evicted immediately, not show up as application-loggingLevel errors first

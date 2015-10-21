@@ -24,7 +24,7 @@ import javadoctest.DocTestRunner;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
 
-import org.neo4j.driver.util.TestSession;
+import org.neo4j.driver.util.TestNeo4jSession;
 
 import static org.junit.Assert.assertEquals;
 
@@ -32,7 +32,7 @@ import static org.junit.Assert.assertEquals;
 public class TransactionDocIT
 {
     @Rule
-    public TestSession session = new TestSession();
+    public TestNeo4jSession session = new TestNeo4jSession();
 
     /** @see Transaction */
     public void classDoc( DocSnippet snippet )

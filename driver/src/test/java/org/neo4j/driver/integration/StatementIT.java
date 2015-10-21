@@ -24,8 +24,9 @@ import org.junit.Test;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.ReusableResult;
+import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
-import org.neo4j.driver.util.TestSession;
+import org.neo4j.driver.util.TestNeo4jSession;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -35,35 +36,7 @@ import static org.neo4j.driver.Values.parameters;
 public class StatementIT
 {
     @Rule
-    public TestSession session = new TestSession();
-
-    @Test
-    public void shouldRun() throws Throwable
-    {
-        // When
-        session.run( "CREATE (n:FirstNode)" );
-
-        // Then nothing should've failed
-    }
-
-    @Test
-    public void shouldRunSimpleStatement() throws Throwable
-    {
-        // When I run a simple write statement
-        session.run( "CREATE (a {name:'Adam'})" );
-
-        // And I run a read statement
-        Result result = session.run( "MATCH (a) RETURN a.name" );
-
-        // Then I expect to get the name back
-        String name = null;
-        while ( result.next() )
-        {
-            name = result.get( "a.name" ).javaString();
-        }
-
-        assertThat( name, equalTo( "Adam" ) );
-    }
+    public TestNeo4jSession session = new TestNeo4jSession();
 
     @Test
     public void shouldRunWithResult() throws Throwable
@@ -99,6 +72,15 @@ public class StatementIT
     }
 
     @Test
+    public void shouldRun() throws Throwable
+    {
+        // When
+        session.run( "CREATE (n:FirstNode)" );
+
+        // Then nothing should've failed
+    }
+
+    @Test
     public void shouldRunParameterizedWithResult() throws Throwable
     {
         // When
@@ -107,5 +89,29 @@ public class StatementIT
 
         // Then
         assertThat( result.size(), equalTo( 3l ) );
+    }
+
+    @SuppressWarnings({"StatementWithEmptyBody", "ConstantConditions"})
+    @Test
+    public void shouldRunSimpleStatement() throws Throwable
+    {
+        // When I run a simple write statement
+        Result result1 = session.run( "CREATE (a {name:'Adam'})" );
+        while ( result1.next() )
+        {
+            // ignored
+        }
+
+        // And I run a read statement
+        Result result2 = session.run( "MATCH (a) RETURN a.name" );
+
+        // Then I expect to get the name back
+        Value name = null;
+        while ( result2.next() )
+        {
+            name = result2.get( "a.name" );
+        }
+
+        assertThat( name.javaString(), equalTo( "Adam" ) );
     }
 }
