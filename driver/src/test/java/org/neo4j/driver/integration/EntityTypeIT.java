@@ -24,14 +24,14 @@ import org.junit.Test;
 import org.neo4j.driver.Node;
 import org.neo4j.driver.Path;
 import org.neo4j.driver.Relationship;
-import org.neo4j.driver.util.TestSession;
+import org.neo4j.driver.util.TestNeo4jSession;
 
 import static org.junit.Assert.assertTrue;
 
 public class EntityTypeIT
 {
     @Rule
-    public TestSession session = new TestSession();
+    public TestNeo4jSession session = new TestNeo4jSession();
 
     @Test
     public void shouldReturnIdentitiesOfNodes() throws Throwable

@@ -58,7 +58,7 @@ public class FileToolsTest
         File propertyFile = createPropertyFile();
 
         // When
-        FileTools.setProperty( propertyFile, "cat.name", "mimi" );
+        FileTools.updateProperty( propertyFile, "cat.name", "mimi" );
 
         // Then
         Scanner in = new Scanner( propertyFile );
@@ -86,7 +86,7 @@ public class FileToolsTest
         File propertyFile = createPropertyFile();
 
         // When
-        FileTools.setProperty( propertyFile, "color", "white" );
+        FileTools.updateProperty( propertyFile, "color", "white" );
 
         // Then
         Scanner in = new Scanner( propertyFile );

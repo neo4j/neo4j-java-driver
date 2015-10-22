@@ -25,7 +25,7 @@ import org.junit.rules.ExpectedException;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.util.TestSession;
+import org.neo4j.driver.util.TestNeo4jSession;
 
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.TestCase.assertFalse;
@@ -37,7 +37,7 @@ public class TransactionIT
     @Rule
     public ExpectedException exception = ExpectedException.none();
     @Rule
-    public TestSession session = new TestSession();
+    public TestNeo4jSession session = new TestNeo4jSession();
 
     @Test
     public void shouldRunAndCommit() throws Throwable
