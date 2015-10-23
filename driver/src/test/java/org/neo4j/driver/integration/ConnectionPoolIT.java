@@ -19,14 +19,17 @@
  */
 package org.neo4j.driver.integration;
 
+import java.util.Arrays;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
@@ -37,6 +40,7 @@ import org.neo4j.driver.util.TestNeo4j;
 
 import static junit.framework.TestCase.fail;
 
+@RunWith(Parameterized.class)
 public class ConnectionPoolIT
 {
     @Rule
@@ -44,7 +48,11 @@ public class ConnectionPoolIT
     private Driver driver;
     private SessionGrabber sessionGrabber;
 
-    @Ignore
+    @Parameterized.Parameters
+    public static List<Object[]> data() {
+        return Arrays.asList( new Object[8][0] );
+    }
+    @Test
     public void shouldRecoverFromDownedServer() throws Throwable
     {
         // Given a driver
@@ -58,7 +66,7 @@ public class ConnectionPoolIT
         neo4j.restartServerOnEmptyDatabase();
 
         // Then we accept a hump with failing sessions, but demand that failures stop as soon as the server is back up.
-        sessionGrabber.assertSessionsAvailableWithin( 20 );
+        sessionGrabber.assertSessionsAvailableWithin( 60 );
     }
 
     @After
@@ -135,8 +143,8 @@ public class ConnectionPoolIT
                 for ( int i = 0; i < sessionCount; i++ )
                 {
                     Session s = driver.session();
-                    s.run( "RETURN 1" );
                     sessions.add( s );
+                    s.run( "RETURN 1" );
                 }
             }
             finally
