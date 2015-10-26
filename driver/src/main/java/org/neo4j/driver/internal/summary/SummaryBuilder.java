@@ -32,6 +32,8 @@ import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.spi.StreamCollector;
 
+import static org.neo4j.driver.internal.summary.SimpleUpdateStatistics.EMPTY_STATS;
+
 public class SummaryBuilder implements StreamCollector
 {
     private final Statement statement;
@@ -136,7 +138,7 @@ public class SummaryBuilder implements StreamCollector
             @Override
             public UpdateStatistics updateStatistics()
             {
-                return statistics;
+                return statistics == null ? EMPTY_STATS : statistics;
             }
 
             @Override

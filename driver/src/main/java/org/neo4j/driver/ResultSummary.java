@@ -24,9 +24,9 @@ import java.util.List;
  * The result summary of running a statement. The result summary interface can be used to investigate
  * details about the result, like the type of query run, how many and which kinds of updates have been executed,
  * and query plan and profiling information if available.
- * <p>
+ *
  * The result summary is only available after all result records have been consumed.
- * <p>
+ *
  * Keeping the result summary around does not influence the lifecycle of any associated session and/or transaction.
  */
 public interface ResultSummary
@@ -59,8 +59,7 @@ public interface ResultSummary
     /**
      * This describes how the database will execute your statement.
      *
-     * @throws IllegalStateException if {@link #hasPlan()} is false
-     * @return statement plan for the executed statement if available
+     * @return statement plan for the executed statement if available, otherwise null
      */
     Plan plan();
 
@@ -71,8 +70,7 @@ public interface ResultSummary
      * information about what each step of the plan did. That more in-depth version of the statement plan becomes
      * available here.
      *
-     * @throws IllegalStateException if {@link #hasProfile()} is false
-     * @return profiled statement plan for the executed statement if available
+     * @return profiled statement plan for the executed statement if available, otherwise null
      */
     ProfiledPlan profile();
 
