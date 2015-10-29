@@ -21,15 +21,16 @@ package org.neo4j.driver.internal.connector.socket;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.driver.internal.SimpleProfiledPlan;
-import org.neo4j.driver.internal.SimpleUpdateStatistics;
 import org.neo4j.driver.StatementType;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.DatabaseException;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.TransientException;
+import org.neo4j.driver.internal.SimpleNotification;
 import org.neo4j.driver.internal.SimplePlan;
+import org.neo4j.driver.internal.SimpleProfiledPlan;
+import org.neo4j.driver.internal.SimpleUpdateStatistics;
 import org.neo4j.driver.internal.messaging.MessageHandler;
 import org.neo4j.driver.internal.spi.StreamCollector;
 
@@ -94,12 +95,21 @@ public class SocketResponseHandler implements MessageHandler
         if ( collector != null )
         {
             collectFields( collector, meta.get( "fields" ) );
-            collectType( collector, meta.get( "type") );
-            collectStatistics( collector, meta.get( "stats") );
-            collectPlan( collector, meta.get( "plan") );
-            collectProfile( collector, meta.get( "profile") );
+            collectType( collector, meta.get( "type" ) );
+            collectStatistics( collector, meta.get( "stats" ) );
+            collectPlan( collector, meta.get( "plan" ) );
+            collectProfile( collector, meta.get( "profile" ) );
+            collectNotifications( collector, meta.get( "notifications" ) );
         }
         responseId++;
+    }
+
+    private void collectNotifications( StreamCollector collector, Value notifications )
+    {
+        if ( notifications != null )
+        {
+            collector.notifications( notifications.javaList( SimpleNotification.VALUE_TO_NOTIFICATION ) );
+        }
     }
 
     private void collectPlan( StreamCollector collector, Value plan )

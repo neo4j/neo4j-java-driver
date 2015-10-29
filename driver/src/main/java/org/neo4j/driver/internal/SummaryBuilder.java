@@ -18,6 +18,10 @@
  */
 package org.neo4j.driver.internal;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.neo4j.driver.Notification;
 import org.neo4j.driver.Plan;
 import org.neo4j.driver.ProfiledPlan;
 import org.neo4j.driver.ResultSummary;
@@ -36,6 +40,7 @@ public class SummaryBuilder implements StreamCollector
     private UpdateStatistics statistics = null;
     private Plan plan = null;
     private ProfiledPlan profile;
+    private List<Notification> notifications = null;
 
     public SummaryBuilder( Statement statement )
     {
@@ -105,6 +110,19 @@ public class SummaryBuilder implements StreamCollector
         }
     }
 
+    @Override
+    public void notifications( List<Notification> notifications )
+    {
+        if( this.notifications == null )
+        {
+            this.notifications = notifications;
+        }
+        else
+        {
+            throw new ClientException( "Received notifications twice" );
+        }
+    }
+
     public ResultSummary build()
     {
         return new ResultSummary()
@@ -149,6 +167,12 @@ public class SummaryBuilder implements StreamCollector
             public ProfiledPlan profile()
             {
                 return profile;
+            }
+
+            @Override
+            public List<Notification> notifications()
+            {
+                return notifications == null ? new ArrayList<Notification>() : notifications;
             }
         };
     }

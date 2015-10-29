@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.driver.Notification;
 import org.neo4j.driver.Plan;
 import org.neo4j.driver.ProfiledPlan;
 import org.neo4j.driver.Record;
@@ -107,6 +108,12 @@ public class ResultBuilder implements StreamCollector
     public void profile( ProfiledPlan plan )
     {
         summaryBuilder.profile( plan );
+    }
+
+    @Override
+    public void notifications( List<Notification> notifications )
+    {
+        summaryBuilder.notifications( notifications );
     }
 
     public Result build()
