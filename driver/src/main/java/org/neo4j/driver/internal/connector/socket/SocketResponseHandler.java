@@ -27,10 +27,10 @@ import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.DatabaseException;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.TransientException;
-import org.neo4j.driver.internal.SimpleNotification;
-import org.neo4j.driver.internal.SimplePlan;
-import org.neo4j.driver.internal.SimpleProfiledPlan;
-import org.neo4j.driver.internal.SimpleUpdateStatistics;
+import org.neo4j.driver.internal.summary.SimpleNotification;
+import org.neo4j.driver.internal.summary.SimplePlan;
+import org.neo4j.driver.internal.summary.SimpleProfiledPlan;
+import org.neo4j.driver.internal.summary.SimpleUpdateStatistics;
 import org.neo4j.driver.internal.messaging.MessageHandler;
 import org.neo4j.driver.internal.spi.StreamCollector;
 

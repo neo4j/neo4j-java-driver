@@ -27,6 +27,7 @@ import org.neo4j.driver.Transaction;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.summary.ResultBuilder;
 
 public class StandardSession implements Session
 {

@@ -16,19 +16,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal;
+package org.neo4j.driver.internal.summary;
+
+import org.junit.Test;
 
 import java.util.Collections;
 import java.util.List;
 
-import org.junit.Test;
-
 import org.neo4j.driver.Plan;
 import org.neo4j.driver.Value;
-import static org.neo4j.driver.Values.*;
 
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
+import static org.neo4j.driver.Values.parameters;
+import static org.neo4j.driver.Values.value;
+import static org.neo4j.driver.Values.values;
 
 @SuppressWarnings("unchecked")
 public class SimplePlanTest
