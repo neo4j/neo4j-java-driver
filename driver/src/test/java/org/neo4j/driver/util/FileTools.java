@@ -128,6 +128,7 @@ public class FileTools
         }
 
         in.close();
+        out.flush();
         out.close();
 
         propFile.delete();
