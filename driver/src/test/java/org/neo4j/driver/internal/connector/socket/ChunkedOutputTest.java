@@ -55,9 +55,9 @@ public class ChunkedOutputTest
         out.flush();
 
         // Then
-        assertThat( BytePrinter.hex( channel.getBytes() ),
-                equalTo( "00 08 00 00 00 00 00 00    00 01 00 08 00 00 00 00    " +
-                         "00 00 00 02 00 08 00 00    00 00 00 00 00 03 00 00\n" ) );
+        assertThat( BytePrinter.hex( channel.getBytes() ), equalTo( String.format(
+                "00 08 00 00 00 00 00 00    00 01 00 08 00 00 00 00    " +
+                "00 00 00 02 00 08 00 00    00 00 00 00 00 03 00 00%n" ) ) );
     }
 
     @Test
