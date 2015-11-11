@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.driver.Notification;
+import org.neo4j.driver.Plan;
 import org.neo4j.driver.ProfiledPlan;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.ResultSummary;
@@ -33,6 +34,8 @@ import org.neo4j.driver.Values;
 import org.neo4j.driver.util.TestNeo4jSession;
 
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -109,8 +112,13 @@ public class SummaryIT
     @Test
     public void shouldContainCorrectPlan() throws Throwable
     {
-        assertThat( session.run("EXPLAIN MATCH (n) RETURN 1").summarize().plan().toString(), equalTo( "SimplePlanTreeNode{operatorType='ProduceResults', arguments={planner-impl=IDP, KeyNames=1, runtime=INTERPRETED, runtime-impl=INTERPRETED, version=CYPHER 3.0, EstimatedRows=float<0.0>, planner=COST}, identifiers=[1], children=[SimplePlanTreeNode{operatorType='Projection', arguments={LegacyExpression={  AUTOINT0}, EstimatedRows=float<0.0>}, identifiers=[1, n], children=[SimplePlanTreeNode{operatorType='AllNodesScan', arguments={EstimatedRows=float<0.0>}, identifiers=[n], children=[]}]}]}" ) );
-        assertThat( session.run("EXPLAIN MATCH (n) CREATE (m) SET m += n RETURN m").summarize().plan().toString(), equalTo( "SimplePlanTreeNode{operatorType='ProduceResults', arguments={planner-impl=IDP, KeyNames=m, runtime=INTERPRETED, runtime-impl=INTERPRETED, version=CYPHER 3.0, EstimatedRows=float<0.0>, planner=COST}, identifiers=[m], children=[SimplePlanTreeNode{operatorType='SetNodePropertiesFromMap', arguments={EstimatedRows=float<0.0>}, identifiers=[m, n], children=[SimplePlanTreeNode{operatorType='CreateNode', arguments={EstimatedRows=float<0.0>}, identifiers=[m, n], children=[SimplePlanTreeNode{operatorType='AllNodesScan', arguments={EstimatedRows=float<0.0>}, identifiers=[n], children=[]}]}]}]}" ) );
+        // When
+        Plan plan = session.run( "EXPLAIN MATCH (n) RETURN 1" ).summarize().plan();
+
+        // Then
+        assertThat( plan.operatorType(), notNullValue() );
+        assertThat( plan.arguments().size(), greaterThan( 0 ) );
+        assertThat( plan.children().size(), greaterThan( 0 ) );
     }
 
     @Test
