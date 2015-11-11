@@ -18,31 +18,29 @@
  */
 package org.neo4j.driver.internal.connector.socket;
 
-import java.util.Collections;
-import java.util.Map;
-
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Collections;
+import java.util.Map;
+
 import org.neo4j.driver.Plan;
-import org.neo4j.driver.internal.SimpleUpdateStatistics;
-import org.neo4j.driver.UpdateStatistics;
 import org.neo4j.driver.StatementType;
+import org.neo4j.driver.UpdateStatistics;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.spi.StreamCollector;
+import org.neo4j.driver.internal.summary.SimpleUpdateStatistics;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
-
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
-
 import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.Values.values;
-import static org.neo4j.driver.internal.SimplePlan.plan;
+import static org.neo4j.driver.internal.summary.SimplePlan.plan;
 
 public class SocketResponseHandlerTest
 {

@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal;
+package org.neo4j.driver.internal.summary;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -25,19 +25,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.driver.Notification;
 import org.neo4j.driver.Plan;
 import org.neo4j.driver.ProfiledPlan;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Statement;
-import org.neo4j.driver.UpdateStatistics;
 import org.neo4j.driver.StatementType;
+import org.neo4j.driver.UpdateStatistics;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.internal.SimpleRecord;
+import org.neo4j.driver.internal.SimpleResult;
 import org.neo4j.driver.internal.spi.StreamCollector;
 
 import static java.util.Collections.unmodifiableMap;
-
 import static org.neo4j.driver.internal.ParameterSupport.NO_PARAMETERS;
 
 public class ResultBuilder implements StreamCollector
@@ -107,6 +109,12 @@ public class ResultBuilder implements StreamCollector
     public void profile( ProfiledPlan plan )
     {
         summaryBuilder.profile( plan );
+    }
+
+    @Override
+    public void notifications( List<Notification> notifications )
+    {
+        summaryBuilder.notifications( notifications );
     }
 
     public Result build()

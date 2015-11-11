@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver;
 
+import java.util.List;
+
 /**
  * The result summary of running a statement. The result summary interface can be used to investigate
  * details about the result, like the type of query run, how many and which kinds of updates have been executed,
@@ -73,4 +75,14 @@ public interface ResultSummary
      * @return profiled statement plan for the executed statement if available
      */
     ProfiledPlan profile();
+
+    /**
+     * A list of notifications that might arise when executing the statement.
+     * Notifications can be warnings about problematic statements or other valuable information that can be presented
+     * in a client.
+     * Unlike failures or errors, notifications do not affect the execution of a statement.
+     * @return a list of notifications produced while executing the statement. The list will be empty if no
+     * notifications produced while executing the statement.
+     */
+    List<Notification> notifications();
 }

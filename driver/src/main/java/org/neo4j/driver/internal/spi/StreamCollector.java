@@ -18,10 +18,13 @@
  */
 package org.neo4j.driver.internal.spi;
 
+import java.util.List;
+
+import org.neo4j.driver.Notification;
 import org.neo4j.driver.Plan;
 import org.neo4j.driver.ProfiledPlan;
-import org.neo4j.driver.UpdateStatistics;
 import org.neo4j.driver.StatementType;
+import org.neo4j.driver.UpdateStatistics;
 import org.neo4j.driver.Value;
 
 public interface StreamCollector
@@ -58,6 +61,12 @@ public interface StreamCollector
         {
 
         }
+
+        @Override
+        public void notifications( List<Notification> notifications )
+        {
+
+        }
     };
 
     // TODO: This should be modified to simply have head/record/tail methods
@@ -73,5 +82,7 @@ public interface StreamCollector
     void plan( Plan plan );
 
     void profile( ProfiledPlan plan );
+
+    void notifications( List<Notification> notifications );
 }
 

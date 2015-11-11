@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal;
+package org.neo4j.driver.internal.summary;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -26,6 +26,7 @@ import org.neo4j.driver.Record;
 import org.neo4j.driver.ReusableResult;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.internal.ParameterSupport;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
