@@ -23,12 +23,12 @@ import org.rauschig.jarchivelib.Archiver;
 import org.rauschig.jarchivelib.ArchiverFactory;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.net.URL;
+import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -36,6 +36,7 @@ import java.util.Scanner;
 import java.util.Set;
 
 import static java.io.File.createTempFile;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 public class FileTools
 {
@@ -66,36 +67,46 @@ public class FileTools
         return tmp;
     }
 
-    public static void updateProperty( File propFile, String key, Object value ) throws FileNotFoundException
+    public static void updateProperty( File propFile, String key, Object value ) throws IOException
     {
         Map<String, Object> propertiesMap = new HashMap<>( 1 );
         propertiesMap.put( key, value );
         updateProperties( propFile, propertiesMap );
     }
 
-    public static void updateProperties( File propFile, Map<String, Object> propertiesMap ) throws FileNotFoundException
+    public static void updateProperties( File propFile, Map<String, Object> propertiesMap ) throws IOException
     {
         Scanner in = new Scanner( propFile );
 
         Set<String> updatedProperties = new HashSet<>( propertiesMap.size() );
-        File newPropFile = new File( propFile.getParentFile(), "prop.tmp" );
-        PrintWriter out = new PrintWriter( newPropFile );
+        File newPropFile = File.createTempFile( propFile.getName(), null );
 
-        while ( in.hasNextLine() )
+        try
         {
-            String line = in.nextLine();
-            if ( !line.trim().startsWith( "#" ) )
+            FileOutputStream outStream = new FileOutputStream( newPropFile );
+            PrintWriter out = new PrintWriter( outStream );
+
+            while ( in.hasNextLine() )
             {
-                String[] tokens = line.split( "=" );
-                if ( tokens.length == 2 )
+                String line = in.nextLine();
+                if ( !line.trim().startsWith( "#" ) )
                 {
-                    String name = tokens[0];
-                    Object value = propertiesMap.get( name );
-                    if ( value != null && !updatedProperties.contains( name ) )
+                    String[] tokens = line.split( "=" );
+                    if ( tokens.length == 2 )
                     {
-                        // found property and set it to the new value
-                        printlnProperty( out, name, value );
-                        updatedProperties.add( name );
+                        String name = tokens[0].trim();
+                        Object value = propertiesMap.get( name );
+                        if ( value != null && !updatedProperties.contains( name ) )
+                        {
+                            // found property and set it to the new value
+                            printlnProperty( out, name, value );
+                            updatedProperties.add( name );
+                        }
+                        else
+                        {
+                            // not the property that we are looking for, print it as original
+                            out.println( line );
+                        }
                     }
                     else
                     {
@@ -105,34 +116,35 @@ public class FileTools
                 }
                 else
                 {
-                    // not the property that we are looking for, print it as original
+                    // comments, print as original
                     out.println( line );
                 }
             }
-            else
-            {
-                // comments, print as original
-                out.println( line );
-            }
-        }
 
-        for ( Map.Entry<String, Object> entry : propertiesMap.entrySet() )
+            for ( Map.Entry<String,Object> entry : propertiesMap.entrySet() )
+            {
+                String name = entry.getKey();
+                Object value = entry.getValue();
+                if ( value != null && !updatedProperties.contains( name ) )
+                {
+                    // add this as a new prop
+                    printlnProperty( out, name, value );
+                }
+            }
+
+            in.close();
+            out.flush();
+            outStream.getChannel().force( true );
+            outStream.getFD().sync();
+            out.close();
+
+            Files.move( newPropFile.toPath(), propFile.toPath(), REPLACE_EXISTING );
+        }
+        catch ( IOException | RuntimeException e )
         {
-            String name = entry.getKey();
-            Object value = entry.getValue();
-            if ( value != null && !updatedProperties.contains( name ) )
-            {
-                // add this as a new prop
-                printlnProperty( out, name, value );
-            }
+            newPropFile.deleteOnExit();
+            throw e;
         }
-
-        in.close();
-        out.flush();
-        out.close();
-
-        propFile.delete();
-        newPropFile.renameTo( propFile );
     }
 
     private static void printlnProperty( PrintWriter out, String name, Object value )

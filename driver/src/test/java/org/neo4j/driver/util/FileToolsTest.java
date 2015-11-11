@@ -22,6 +22,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Scanner;
 
@@ -52,7 +53,7 @@ public class FileToolsTest
     }
 
     @Test
-    public void shouldAddPropertyAtBottom() throws FileNotFoundException
+    public void shouldAddPropertyAtBottom() throws IOException
     {
         // Given
         File propertyFile = createPropertyFile();
@@ -80,7 +81,7 @@ public class FileToolsTest
     }
 
     @Test
-    public void shouldResetPropertyAtTheSameLine() throws FileNotFoundException
+    public void shouldResetPropertyAtTheSameLine() throws IOException
     {
         // Given
         File propertyFile = createPropertyFile();
