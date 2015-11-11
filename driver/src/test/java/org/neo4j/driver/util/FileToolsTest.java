@@ -47,9 +47,8 @@ public class FileToolsTest
         }
         finally
         {
-            dir.delete();
+            assertThat( FileTools.deleteFile( dir ), equalTo( true ) );
         }
-
     }
 
     @Test
@@ -62,9 +61,7 @@ public class FileToolsTest
         FileTools.updateProperty( propertyFile, "cat.name", "mimi" );
 
         // Then
-        Scanner in = new Scanner( propertyFile );
-
-        try
+        try( Scanner in = new Scanner( propertyFile ) )
         {
             assertEquals( "#Wow wow", in.nextLine() );
             assertEquals( "Meow meow", in.nextLine() );
@@ -76,7 +73,7 @@ public class FileToolsTest
         }
         finally
         {
-            propertyFile.delete();
+            assertThat( FileTools.deleteFile( propertyFile ), equalTo( true ) );
         }
     }
 
@@ -90,9 +87,7 @@ public class FileToolsTest
         FileTools.updateProperty( propertyFile, "color", "white" );
 
         // Then
-        Scanner in = new Scanner( propertyFile );
-
-        try
+        try( Scanner in = new Scanner( propertyFile ) )
         {
             assertEquals( "#Wow wow", in.nextLine() );
             assertEquals( "Meow meow", in.nextLine() );
@@ -103,7 +98,7 @@ public class FileToolsTest
         }
         finally
         {
-            propertyFile.delete();
+            assertThat( FileTools.deleteFile( propertyFile ), equalTo( true ) );
         }
     }
 

@@ -22,11 +22,7 @@ import org.rauschig.jarchivelib.ArchiveStream;
 import org.rauschig.jarchivelib.Archiver;
 import org.rauschig.jarchivelib.ArchiverFactory;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.URL;
 import java.nio.file.Files;
 import java.util.HashMap;
@@ -40,6 +36,8 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 public class FileTools
 {
+    private static final int WINDOWS_RETRY_COUNT = 5;
+
     public static void deleteRecursively( File file )
     {
         if ( file.isDirectory() )
@@ -65,6 +63,125 @@ public class FileTools
         tmp.delete();
         tmp.mkdir();
         return tmp;
+    }
+
+    public static boolean deleteFile( File file )
+    {
+        if ( !file.exists() )
+        {
+            return true;
+        }
+        int count = 0;
+        boolean deleted;
+        do
+        {
+            deleted = file.delete();
+            if ( !deleted )
+            {
+                count++;
+                waitAndThenTriggerGC();
+            }
+        }
+        while ( !deleted && count <= WINDOWS_RETRY_COUNT );
+        return deleted;
+    }
+
+    public static void moveFile( File toMove, File target ) throws IOException
+    {
+        if ( !toMove.exists() )
+        {
+            throw new FileNotFoundException( "Source file[" + toMove.getAbsolutePath() + "] not found" );
+        }
+        if ( target.exists() )
+        {
+            throw new IOException( "Target file[" + target.getAbsolutePath() + "] already exists" );
+        }
+
+        if ( toMove.renameTo( target ) )
+        {
+            return;
+        }
+
+        if ( toMove.isDirectory() )
+        {
+            Files.createDirectories( target.toPath() );
+            copyRecursively( toMove, target, null );
+            deleteRecursively( toMove );
+        }
+        else
+        {
+            copyFile( toMove, target );
+            deleteFile( toMove );
+        }
+    }
+
+    public static void copyRecursively( File fromDirectory, File toDirectory, FileFilter filter) throws IOException
+    {
+        for ( File fromFile : fromDirectory.listFiles( filter ) )
+        {
+            File toFile = new File( toDirectory, fromFile.getName() );
+            if ( fromFile.isDirectory() )
+            {
+                Files.createDirectories( toFile.toPath() );
+                copyRecursively( fromFile, toFile, filter );
+            }
+            else
+            {
+                copyFile( fromFile, toFile );
+            }
+        }
+    }
+
+    public static void copyFile( File srcFile, File dstFile ) throws IOException
+    {
+        //noinspection ResultOfMethodCallIgnored
+        dstFile.getParentFile().mkdirs();
+        FileInputStream input = null;
+        FileOutputStream output = null;
+        try
+        {
+            input = new FileInputStream( srcFile );
+            output = new FileOutputStream( dstFile );
+            int bufferSize = 1024;
+            byte[] buffer = new byte[bufferSize];
+            int bytesRead;
+            while ( (bytesRead = input.read( buffer )) != -1 )
+            {
+                output.write( buffer, 0, bytesRead );
+            }
+        }
+        catch ( IOException e )
+        {
+            // Because the message from this cause may not mention which file it's about
+            throw new IOException( "Could not copy '" + srcFile + "' to '" + dstFile + "'", e );
+        }
+        finally
+        {
+            if ( input != null )
+            {
+                input.close();
+            }
+            if ( output != null )
+            {
+                output.close();
+            }
+        }
+    }
+
+    /*
+     * See http://bugs.java.com/bugdatabase/view_bug.do?bug_id=4715154.
+     */
+    private static void waitAndThenTriggerGC()
+    {
+        try
+        {
+            Thread.sleep( 500 );
+        }
+        catch ( InterruptedException ee )
+        {
+            Thread.interrupted();
+        } // ok
+        System.gc();
     }
 
     public static void updateProperty( File propFile, String key, Object value ) throws IOException
@@ -134,11 +251,9 @@ public class FileTools
 
             in.close();
             out.flush();
-            outStream.getChannel().force( true );
-            outStream.getFD().sync();
             out.close();
-
-            Files.move( newPropFile.toPath(), propFile.toPath(), REPLACE_EXISTING );
+            deleteFile( propFile );
+            moveFile( newPropFile, propFile );
         }
         catch ( IOException | RuntimeException e )
         {
