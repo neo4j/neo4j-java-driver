@@ -28,14 +28,15 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.connector.socket.SocketClient;
 import org.neo4j.driver.internal.logging.DevNullLogger;
+import org.neo4j.driver.util.Neo4jInstaller.Neo4jInstallerFactory;
 
 import static java.lang.String.format;
-
 import static junit.framework.TestCase.assertFalse;
-
 import static org.neo4j.driver.internal.ConfigTest.deleteDefaultKnownCertFileIfExists;
 import static org.neo4j.driver.util.FileTools.deleteRecursively;
 import static org.neo4j.driver.util.FileTools.updateProperties;
+import static org.neo4j.driver.util.Neo4jInstaller.dbDir;
+import static org.neo4j.driver.util.Neo4jInstaller.neo4jHomeDir;
 
 /**
  * This class wraps the neo4j stand-alone jar in some code to help pulling it in from a remote URL and then launching
@@ -47,18 +48,13 @@ public class Neo4jRunner
 
     private static Neo4jRunner globalInstance;
 
-    private static final boolean externalServer = Boolean.getBoolean( "neo4j.useExternalServer" );
-    private static final String neo4jVersion = System.getProperty( "version", "3.0.0-M01-NIGHTLY" );
-    private static final String neo4jLink = System.getProperty( "packageUri",
-            format( "http://alpha.neohq.net/dist/neo4j-enterprise-%s-unix.tar.gz", neo4jVersion ) );
-
-    private final File neo4jDir = new File( "./target/neo4j" );
-    private final File neo4jHome = new File( neo4jDir, neo4jVersion );
-    private final File dataDir = new File( neo4jHome, "data" );
+    private static final boolean externalServer = false; //Boolean.getBoolean( "neo4j.useExternalServer" );
 
     private Neo4jSettings cachedSettings = Neo4jSettings.DEFAULT;
     private Driver currentDriver;
     private boolean staleDriver;
+
+    private Neo4jInstaller installer = Neo4jInstallerFactory.create();
 
     public static void main( String... args ) throws Exception
     {
@@ -79,23 +75,9 @@ public class Neo4jRunner
 
     private Neo4jRunner() throws Exception
     {
-        debug( "NEO4J_HOME is: %s", neo4jHome.getCanonicalPath() );
-        debug( "NEO4J_VERSION is: %s", neo4jVersion );
-
         if ( canControlServer() )
         {
-            if ( !neo4jHome.exists() )
-            {
-                // no neo4j exists
-                // download neo4j server from a URL
-                File neo4jTarball = new File( "./target/" + neo4jVersion + ".tar.gz" );
-                ensureDownloaded( neo4jTarball, neo4jLink );
-
-                // Untar the neo4j server
-                System.out.println( "Extracting: " + neo4jTarball + " -> " + neo4jDir );
-                FileTools.extractTarball( neo4jTarball, neo4jDir, neo4jHome );
-            }
-
+            installer.installNeo4j();
             // Install default settings
             updateServerSettingsFile();
 
@@ -105,24 +87,6 @@ public class Neo4jRunner
             // Make sure we stop on JVM exit
             installShutdownHook();
         }
-    }
-
-    private void ensureDownloaded( File file, String downloadLink ) throws IOException
-    {
-        if ( file.exists() )
-        {
-            if ( !file.delete() )
-            {
-                throw new IllegalStateException( "Couldn't delete previous download " + file.getCanonicalPath() );
-            }
-        }
-        File parentFile = file.getParentFile();
-        if ( ! parentFile.exists() && ! parentFile.mkdirs() )
-        {
-            throw new IllegalStateException( "Couldn't create download directory " + parentFile.getCanonicalPath() );
-        }
-        System.out.println( "Copying: " + downloadLink + " -> " + file );
-        FileTools.streamFileTo( downloadLink, file );
     }
 
     public synchronized void restartServerOnEmptyDatabase() throws Exception
@@ -184,14 +148,14 @@ public class Neo4jRunner
 
     private void doStartServerOnEmptyDatabase() throws Exception
     {
-        debug( "Deleting database at: %s", dataDir.getCanonicalPath() );
+        debug( "Deleting database at: %s", dbDir.getCanonicalPath() );
 
-        deleteRecursively( new File( dataDir, "graph.db" ) );
+        deleteRecursively( dbDir );
         deleteDefaultKnownCertFileIfExists();
 
-        debug( "Starting server at: ", neo4jHome.getCanonicalPath() );
+        debug( "Starting server at: ", neo4jHomeDir.getCanonicalPath() );
 
-        if ( runNeo4j( "start" ) != 0 )
+        if ( installer.startNeo4j() != 0 )
         {
             throw new IllegalStateException( "Failed to start server" );
         }
@@ -221,11 +185,11 @@ public class Neo4jRunner
 
     private synchronized boolean tryStopServer() throws IOException, InterruptedException
     {
-        debug( "Trying to stop server at %s", neo4jHome.getCanonicalPath() );
+        debug( "Trying to stop server at %s", neo4jHomeDir.getCanonicalPath() );
 
         if ( canControlServer() )
         {
-            int exitCode = runNeo4j( "stop" );
+            int exitCode = installer.stopNeo4j();
             if ( exitCode == 0 )
             {
                 awaitServerStatusOrFail( ServerStatus.OFFLINE );
@@ -233,36 +197,6 @@ public class Neo4jRunner
             }
         }
         return false;
-    }
-
-    @SuppressWarnings("LoopStatementThatDoesntLoop")
-    private int runNeo4j( String cmd ) throws IOException
-    {
-        File scriptFile = new File( neo4jHome, "bin/neo4j" );
-        if ( ! scriptFile.setExecutable( true ) )
-        {
-            throw new IllegalStateException( "Could not set executable permissions for " + scriptFile.getCanonicalPath() );
-        }
-        ProcessBuilder pb = new ProcessBuilder().inheritIO();
-        Map<String,String> env = System.getenv();
-        pb.environment().put( "JAVA_HOME",
-                // This driver is built to work with multiple java versions.
-                // Neo4j, however, works with a specific version of Java. This allows
-                // specifying which Java version to use for Neo4j separately from which
-                // version to use for the driver tests.
-                env.containsKey( "NEO4J_JAVA" ) ? env.get( "NEO4J_JAVA" ) : env.get( "JAVA_HOME" ) );
-        Process process = pb.command( scriptFile.getAbsolutePath(), cmd ).start();
-        while (true)
-        {
-            try
-            {
-                return process.waitFor();
-            }
-            catch ( InterruptedException e )
-            {
-                Thread.interrupted();
-            }
-        }
     }
 
     private boolean updateServerSettings( Neo4jSettings settingsUpdate )
@@ -299,7 +233,7 @@ public class Neo4jRunner
             return;
         }
 
-        File oldFile = new File( neo4jHome, "conf/neo4j-server.properties" );
+        File oldFile = new File( neo4jHomeDir, "conf/neo4j-server.properties" );
         try
         {
             debug( "Changing server properties file (for next start): " + oldFile.getCanonicalPath() );
@@ -410,6 +344,7 @@ public class Neo4jRunner
                 stopServerIfRunning();
                 cachedSettings = Neo4jSettings.DEFAULT;
                 updateServerSettingsFile();
+                installer.uninstallNeo4j();
                 debug("Finished shutdown hook");
             }
             catch ( Exception e )
