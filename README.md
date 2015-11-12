@@ -42,3 +42,17 @@ Connect to a Neo4j 3.0.0+ database
     
     session.close();
     
+# Building
+
+If you are running Java 8:
+
+    mvn clean install
+    
+If you are running Java 7, you need to also provide an environment variable telling the tests where to find
+Java 8, because Neo4j-the-database needs it to run.
+
+    export NEO4J_JAVA=<path/to/java/home>
+    mvn clean install
+    
+    # For instance
+    export NEO4J_JAVA=$(/usr/libexec/java_home -v 1.8)
