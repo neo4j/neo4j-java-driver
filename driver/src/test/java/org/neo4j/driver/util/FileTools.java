@@ -135,7 +135,11 @@ public class FileTools
     public static void copyFile( File srcFile, File dstFile ) throws IOException
     {
         //noinspection ResultOfMethodCallIgnored
-        dstFile.getParentFile().mkdirs();
+        File parentFile = dstFile.getParentFile();
+        if (parentFile!=null)
+        {
+            parentFile.mkdirs();
+        }
         FileInputStream input = null;
         FileOutputStream output = null;
         try
