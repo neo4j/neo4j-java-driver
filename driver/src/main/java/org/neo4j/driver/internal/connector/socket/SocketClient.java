@@ -109,7 +109,14 @@ public class SocketClient
         }
         catch ( IOException e )
         {
-            throw new ClientException( "Unable to close socket connection properly." + e.getMessage(), e );
+            if( e.getMessage().equals( "An existing connection was forcibly closed by the remote host" ) )
+            {
+                // Swallow this exception as it is caused by connection already closed by server
+            }
+            else
+            {
+                throw new ClientException("Unable to close socket connection properly." + e.getMessage(), e);
+            }
         }
     }
 
