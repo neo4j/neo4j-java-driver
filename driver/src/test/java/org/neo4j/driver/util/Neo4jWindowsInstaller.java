@@ -23,6 +23,7 @@ import org.rauschig.jarchivelib.ArchiverFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 
 import static java.lang.String.format;
 
@@ -65,7 +66,8 @@ public class Neo4jWindowsInstaller extends Neo4jInstaller
     @Override
     String neo4jPackageUrl()
     {
-        return winPackageUrl;
+        String url = System.getProperty( "packageUri", winPackageUrl );
+        return URI.create( url ).toString();
     }
 
     @Override
