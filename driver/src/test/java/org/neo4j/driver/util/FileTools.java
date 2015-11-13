@@ -20,9 +20,15 @@ package org.neo4j.driver.util;
 
 import org.rauschig.jarchivelib.ArchiveStream;
 import org.rauschig.jarchivelib.Archiver;
-import org.rauschig.jarchivelib.ArchiverFactory;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileFilter;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintWriter;
 import java.net.URL;
 import java.nio.file.Files;
 import java.util.HashMap;
@@ -32,7 +38,6 @@ import java.util.Scanner;
 import java.util.Set;
 
 import static java.io.File.createTempFile;
-import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 public class FileTools
 {
@@ -293,10 +298,9 @@ public class FileTools
         }
     }
 
-    public static void extractTarball( File tarball, File outputDir, File outputName ) throws IOException
+    public static void extractTarball( File tarball, File outputDir, File outputName, Archiver archiver )
+            throws IOException
     {
-        Archiver archiver = ArchiverFactory.createArchiver( "tar", "gz" );
-
         archiver.extract( tarball, outputDir );
 
         // Rename the extracted file to something predictable (extracted folder may contain build number, date or so)
@@ -305,4 +309,5 @@ public class FileTools
             new File( outputDir, stream.getNextEntry().getName() ).renameTo( outputName );
         }
     }
+
 }
