@@ -21,10 +21,10 @@ package org.neo4j.driver;
 /**
  * The result of running a statement, a stream of records. The result interface can be used to iterate over all the
  * records in the stream, and for each record to access the fields within it using the {@link #get(int) get} methods.
- * <p>
+ *
  * Results are valid until the next statement is run or until the end of the current transaction, whichever comes
  * first.
- * <p>
+ *
  * To keep a result around while further statements are run, or to use a result outside the scope of the current
  * transaction, see {@link #retain()}.
  */
@@ -33,7 +33,7 @@ public interface Result
     /**
      * Retrieve and store the entire result stream. This can be used if you want to
      * iterate over the stream multiple times or to store the whole result for later use.
-     * <p>
+     *
      * This cannot be used if you have already started iterating through the stream using {@link #next()}.
      *
      * @return {@link org.neo4j.driver.ReusableResult}
@@ -73,9 +73,9 @@ public interface Result
 
     /**
      * Retrieve the first field of the next record in the stream, and close the stream.
-     * <p>
+     *
      * This is a utility for the common case of statements that are expected to yield a single output value.
-     * <p>
+     *
      * <pre>
      * {@code
      * Record record = statement.run( "MATCH (n:User {uid:..}) RETURN n.name" ).single();
@@ -89,9 +89,9 @@ public interface Result
 
     /**
      * Summarize the result
-     * <p>
+     *
      * Any remaining (unprocessed) result records will be consumed.
-     * <p>
+     *
      * <pre class="doctest:ResultDocIT#summarizeUsage">
      * {@code
      * ResultSummary summary = session.run( "PROFILE MATCH (n:User {id: 12345}) RETURN n" ).summarize();

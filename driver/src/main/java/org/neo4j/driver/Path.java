@@ -22,10 +22,10 @@ package org.neo4j.driver;
  * A <strong>Path</strong> is a directed sequence of relationships between two nodes. This generally
  * represents a <em>traversal</em> or <em>walk</em> through a graph and maintains a direction separate
  * from that of any relationships traversed.
- * <p>
+ *
  * It is allowed to be of size 0, meaning there are no relationships in it. In this case,
  * it contains only a single node which is both the start and the end of the path.
- * <p>
+ *
  * <pre>
  *     Path routeToStockholm = ..;
  *

@@ -44,6 +44,8 @@ Connect to a Neo4j 3.0.0+ database
     
 # Building
 
+## Java version
+
 If you are running Java 8:
 
     mvn clean install
@@ -56,3 +58,12 @@ Java 8, because Neo4j-the-database needs it to run.
     
     # For instance
     export NEO4J_JAVA=$(/usr/libexec/java_home -v 1.8)
+
+## Windows
+
+If you are building on windows, you need to run install as admin so that Neo4j-the-database could be registered as a
+windows service and then be started and stopped correctly using its powershell scripts for windows.
+To be able to run powershell script on windows, you might need to enable running scripts on the system.
+This can for example be achieved by executing the following from an elevated PowerShell prompt:
+
+    Set-ExecutionPolicy -ExecutionPolicy RemoteSigned

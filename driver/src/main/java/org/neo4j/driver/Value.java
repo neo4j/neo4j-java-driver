@@ -23,22 +23,22 @@ import java.util.Map;
 
 /**
  * Represents a value from Neo4j.
- * <p>
+ *
  * This interface describes a number of <code>isType</code> methods along with
  * <code>typeValue</code> methods. The first set of these correlate with types from
  * the Neo4j Type System and are used to determine which Neo4j type is represented.
  * The second set of methods perform coercions to Java types (wherever possible).
  * For example, a common Text value should be tested for using <code>isText</code>
  * and extracted using <code>stringValue</code>.
- * <p>
+ *
  * <h2>Navigating a tree structure</h2>
- * <p>
+ *
  * Because Neo4j often handles dynamic structures, this interface is designed to help
  * you handle such structures in Java. Specifically, {@link org.neo4j.driver.Value} lets you navigate arbitrary tree
  * structures without having to resort to type casting.
- * <p>
+ *
  * Given a tree structure like:
- * <p>
+ *
  * <pre>
  * {@code
  * {
@@ -49,17 +49,17 @@ import java.util.Map;
  * }
  * }
  * </pre>
- * <p>
+ *
  * You can retrieve the name of the second user, John, like so:
- * <p>
+ *
  * <pre class="docTest:ValueDocIT#classDocTreeExample">
  * {@code
  * String username = value.get("users").get(1).get("name").javaString();
  * }
  * </pre>
- * <p>
+ *
  * You can also easily iterate over the users:
- * <p>
+ *
  * <pre class="docTest:ValueDocIT#classDocIterationExample">
  * {@code
  * List<String> names = new LinkedList<>();

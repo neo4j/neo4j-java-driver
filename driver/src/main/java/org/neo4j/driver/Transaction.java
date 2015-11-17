@@ -20,13 +20,13 @@ package org.neo4j.driver;
 
 /**
  * Represents a transaction in the Neo4j database.
- * <p>
+ *
  * This interface may seem surprising in that it does not have explicit "commit" or "rollback" methods.
  * It is designed to minimize the complexity of the code you need to write to use transactions in a safe way, ensuring
  * that transactions are properly rolled back even if there is an exception while the transaction is running.
- * <p>
+ *
  * <h2>Example:</h2>
- * <p>
+ *
  * <pre class="docTest:TransactionDocIT#classDoc">
  * {@code
  * try( Transaction tx = session.newTransaction() )
@@ -47,13 +47,13 @@ public interface Transaction extends AutoCloseable, StatementRunner
 
     /**
      * Mark this transaction as failed. When you call {@link #close()}, the transaction will get rolled back.
-     * <p>
+     *
      * After this method has been called, there is nothing that can be done to "un-mark" it. This is a safety feature
      * to make sure no other code calls {@link #success()} and makes a transaction commit that was meant to be rolled
      * back.
-     * <p>
+     *
      * Example:
-     * <p>
+     *
      * <pre class="docTest:TransactionDocIT#failure">
      * {@code
      * try(Transaction tx = session.newTransaction() )
