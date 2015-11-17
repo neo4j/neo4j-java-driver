@@ -4,7 +4,6 @@
   <modelVersion>4.0.0</modelVersion>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <neo4j.version>2.3-SNAPSHOT</neo4j.version>
   </properties>
 
   <groupId>org.neo4j.driver</groupId>
@@ -14,10 +13,34 @@
   <packaging>pom</packaging>
   <name>Neo4j Java Driver Project</name>
   <description>A project for building a Java driver for the Neo4j Bolt protocol.</description>
+  <url>https://github.com/neo4j/neo4j-java-driver</url>
 
   <modules>
     <module>driver</module>
   </modules>
+
+  <licenses>
+    <license>
+      <name>Apache License, Version 2</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <id>neo4j</id>
+      <name>The Neo4j Team</name>
+      <url>http://neo4j.org/</url>
+      <organization>Neo Technology</organization>
+      <organizationUrl>http://www.neotechnology.com/</organizationUrl>
+    </developer>
+  </developers>
+
+  <scm>
+    <connection>scm:git:git://github.com/neo4j/neo4j-java-driver.git</connection>
+    <developerConnection>scm:git:git@github.com:neo4j/neo4j-java-driver.git</developerConnection>
+    <url>https://github.com/neo4j/neo4j-java-driver</url>
+  </scm>
 
   <dependencyManagement>
     <dependencies>
@@ -101,6 +124,12 @@
           <encoding>UTF-8</encoding>
         </configuration>
         <executions>
+          <execution>
+            <id>attach-javadocs</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
           <execution>
             <id>aggregate</id>
             <goals>

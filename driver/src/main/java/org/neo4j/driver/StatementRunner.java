@@ -30,12 +30,12 @@ public interface StatementRunner
 {
     /**
      * Run a statement and return a result stream.
-     * <p>
+     *
      * This method takes a set of parameters that will be injected into the
      * statement by Neo4j. Using parameters is highly encouraged, it helps avoid
      * dangerous cypher injection attacks and improves database performance as
      * Neo4j can re-use query plans more often.
-     * <p>
+     *
      * <h2>Example</h2>
      * <pre class="doctest:StatementRunnerDocIT#parameterTest">
      * {@code

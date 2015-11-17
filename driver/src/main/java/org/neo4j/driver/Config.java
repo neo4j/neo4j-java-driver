@@ -161,7 +161,7 @@ public class Config
 
         /**
          * The max number of connections to open at any given time per Neo4j instance.
-         * @param size
+         * @param size the size of the connection pool
          * @return this builder
          */
         public ConfigBuilder withConnectionPoolSize( int size )
@@ -189,7 +189,7 @@ public class Config
          * If no certificate is provided, then we will trust the first certificate received from the server.
          * See {@code withKnownCerts} for more info about what will happen when no trusted certificate is
          * provided.
-         * @param value
+         * @param value true to enable tls and flase to disable tls
          * @return this builder
          */
         public ConfigBuilder withTlsEnabled( boolean value )
@@ -200,8 +200,8 @@ public class Config
 
         /**
          * Defines how to authenticate a server in TLS connections.
-         * @param tlsAuthConfig
-         * @return
+         * @param tlsAuthConfig TLS authentication config
+         * @return this builder
          */
         public ConfigBuilder withTlsAuthConfig( TlsAuthenticationConfig tlsAuthConfig )
         {

@@ -19,6 +19,7 @@
   <packaging>jar</packaging>
   <name>Neo4j Java Driver</name>
   <description>Access to the Neo4j graph database through Java</description>
+  <url>https://github.com/neo4j/neo4j-java-driver</url>
 
   <licenses>
     <license>

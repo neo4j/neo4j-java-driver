@@ -31,7 +31,7 @@ import java.util.Map;
  * what that part of the plan does - for instance, perform an index lookup or filter results. The Neo4j Manual contains
  * a reference of the available operator types, and these may differ across Neo4j versions.
  *
- * For a simple view of a plan, the {@link #toString()} will give a human-readable rendering of the tree.
+ * For a simple view of a plan, the {@code toString} method will give a human-readable rendering of the tree.
  */
 public interface Plan
 {
