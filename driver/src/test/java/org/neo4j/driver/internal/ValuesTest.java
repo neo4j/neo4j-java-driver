@@ -29,25 +29,16 @@ import java.util.Map;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
 import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.internal.value.BooleanValue;
-import org.neo4j.driver.internal.value.FloatValue;
-import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.internal.value.ListValue;
 import org.neo4j.driver.internal.value.MapValue;
-import org.neo4j.driver.internal.value.TextValue;
+import org.neo4j.driver.internal.value.StringValue;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.neo4j.driver.Values.value;
-import static org.neo4j.driver.Values.valueToBoolean;
-import static org.neo4j.driver.Values.valueToDouble;
-import static org.neo4j.driver.Values.valueToFloat;
-import static org.neo4j.driver.Values.valueToInt;
 import static org.neo4j.driver.Values.valueToList;
-import static org.neo4j.driver.Values.valueToLong;
 import static org.neo4j.driver.Values.valueToString;
 import static org.neo4j.driver.Values.values;
 
@@ -66,7 +57,7 @@ public class ValuesTest
                 equalTo( (Value) new ListValue( values( 1, 2, 3 ) ) ) );
 
         assertThat( value( new char[]{'a', 'b', 'c'} ),
-                equalTo( (Value) new TextValue( "abc" ) ) );
+                equalTo( (Value) new StringValue( "abc" ) ) );
 
         assertThat( value( new long[]{1, 2, 3} ),
                 equalTo( (Value) new ListValue( values( 1, 2, 3 ) ) ) );

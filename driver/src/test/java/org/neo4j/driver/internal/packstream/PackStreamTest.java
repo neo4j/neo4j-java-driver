@@ -360,7 +360,7 @@ public class PackStreamTest
             PackType packType = unpacker.peekNextType();
 
             // Then
-            assertThat( packType, equalTo( PackType.TEXT ) );
+            assertThat( packType, equalTo( PackType.STRING ) );
             assertThat( unpacker.unpackString(), equalTo( string ) );
         }
 
@@ -388,7 +388,7 @@ public class PackStreamTest
     }
 
     @Test
-    public void testCanPackAndUnpackText() throws Throwable
+    public void testCanPackAndUnpackString() throws Throwable
     {
         // Given
         Machine machine = new Machine();
@@ -403,13 +403,13 @@ public class PackStreamTest
         PackType packType = unpacker.peekNextType();
 
         // Then
-        assertThat( packType, equalTo( PackType.TEXT ) );
+        assertThat( packType, equalTo( PackType.STRING ) );
         assertThat( unpacker.unpackString(), equalTo( "ABCDEFGHIJ" ));
 
     }
 
     @Test
-    public void testCanPackAndUnpackSpecialText() throws Throwable
+    public void testCanPackAndUnpackSpecialString() throws Throwable
     {
         // Given
         Machine machine = new Machine();
@@ -425,19 +425,19 @@ public class PackStreamTest
         PackType packType = unpacker.peekNextType();
 
         // Then
-        assertThat( packType, equalTo( PackType.TEXT ) );
+        assertThat( packType, equalTo( PackType.STRING ) );
         assertThat( unpacker.unpackString(), equalTo( code ));
     }
 
     @Test
-    public void testCanPackAndUnpackTextFromBytes() throws Throwable
+    public void testCanPackAndUnpackStringFromBytes() throws Throwable
     {
         // Given
         Machine machine = new Machine();
 
         // When
         PackStream.Packer packer = machine.packer();
-        packer.packText( "ABCDEFGHIJ".getBytes() );
+        packer.packString( "ABCDEFGHIJ".getBytes() );
         packer.flush();
 
         // Then
@@ -445,13 +445,13 @@ public class PackStreamTest
         PackType packType = unpacker.peekNextType();
 
         // Then
-        assertThat( packType, equalTo( PackType.TEXT ) );
+        assertThat( packType, equalTo( PackType.STRING ) );
         assertThat( unpacker.unpackString(), equalTo( "ABCDEFGHIJ" ));
 
     }
 
     @Test
-    public void testCanPackAndUnpackSpecialTextFromBytes() throws Throwable
+    public void testCanPackAndUnpackSpecialStringFromBytes() throws Throwable
     {
         // Given
         Machine machine = new Machine();
@@ -464,7 +464,7 @@ public class PackStreamTest
         assertThat( BytePrinter.hex( bytes ).trim(), equalTo( "4d 6a c3 b6 6c 6e 69 72" ) );
         assertThat( new String( bytes, UTF_8 ), equalTo( code ) );
 
-        packer.packText( bytes );
+        packer.packString( bytes );
         packer.flush();
 
         // Then
@@ -472,7 +472,7 @@ public class PackStreamTest
         PackType packType = unpacker.peekNextType();
 
         // Then
-        assertThat( packType, equalTo( PackType.TEXT ) );
+        assertThat( packType, equalTo( PackType.STRING ) );
         assertThat( unpacker.unpackString(), equalTo( code ));
     }
 
@@ -503,7 +503,7 @@ public class PackStreamTest
     }
 
     @Test
-    public void testCanPackAndUnpackListOfText() throws Throwable
+    public void testCanPackAndUnpackListOfString() throws Throwable
     {
         // Given
         Machine machine = new Machine();
@@ -526,7 +526,7 @@ public class PackStreamTest
     }
 
     @Test
-    public void testCanPackAndUnpackListOfSpecialText() throws Throwable
+    public void testCanPackAndUnpackListOfSpecialStrings() throws Throwable
     {
         // Given
         Machine machine = new Machine();
@@ -548,7 +548,7 @@ public class PackStreamTest
     }
 
     @Test
-    public void testCanPackAndUnpackListOfTextOneByOne() throws Throwable
+    public void testCanPackAndUnpackListOfStringOneByOne() throws Throwable
     {
         // Given
         Machine machine = new Machine();
@@ -577,7 +577,7 @@ public class PackStreamTest
     }
 
     @Test
-    public void testCanPackAndUnpackListOfSpecialTextOneByOne() throws Throwable
+    public void testCanPackAndUnpackListOfSpecialStringOneByOne() throws Throwable
     {
         // Given
         Machine machine = new Machine();
@@ -833,7 +833,7 @@ public class PackStreamTest
     public void testCanPeekOnNextType() throws Throwable
     {
         // When & Then
-        assertPeekType( PackType.TEXT, "a string" );
+        assertPeekType( PackType.STRING, "a string" );
         assertPeekType( PackType.INTEGER, 123 );
         assertPeekType( PackType.FLOAT, 123.123 );
         assertPeekType( PackType.BOOLEAN, true );

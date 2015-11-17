@@ -231,7 +231,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             {
                 packer.pack( value.javaDouble() );
             }
-            else if ( value.isText() )
+            else if ( value.isString() )
             {
                 packer.pack( value.javaString() );
             }
@@ -501,7 +501,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                 return value( unpacker.unpackLong() );
             case FLOAT:
                 return value( unpacker.unpackDouble() );
-            case TEXT:
+            case STRING:
                 return value( unpacker.unpackString() );
             case MAP:
             {

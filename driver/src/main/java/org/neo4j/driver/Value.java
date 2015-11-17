@@ -28,7 +28,7 @@ import java.util.Map;
  * <code>typeValue</code> methods. The first set of these correlate with types from
  * the Neo4j Type System and are used to determine which Neo4j type is represented.
  * The second set of methods perform coercions to Java types (wherever possible).
- * For example, a common Text value should be tested for using <code>isText</code>
+ * For example, a common String value should be tested for using <code>isString</code>
  * and extracted using <code>stringValue</code>.
  *
  * <h2>Navigating a tree structure</h2>
@@ -166,8 +166,8 @@ public interface Value extends Iterable<Value>
      */
     Iterable<String> keys();
 
-    /** @return true if the underlying value is a Neo4j text value */
-    boolean isText();
+    /** @return true if the underlying value is a Neo4j string value */
+    boolean isString();
 
     /** @return if the underlying value is a Neo4j 64-bit integer */
     boolean isInteger();

@@ -20,5 +20,6 @@ package org.neo4j.driver.internal.packstream;
 
 public enum PackType
 {
-    NULL, BOOLEAN, INTEGER, FLOAT, BYTES, TEXT, LIST, MAP, STRUCT
+    NULL, BOOLEAN, INTEGER, FLOAT, BYTES,
+    STRING, LIST, MAP, STRUCT
 }

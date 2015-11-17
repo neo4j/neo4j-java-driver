@@ -36,7 +36,7 @@ import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.internal.value.NodeValue;
 import org.neo4j.driver.internal.value.PathValue;
 import org.neo4j.driver.internal.value.RelationshipValue;
-import org.neo4j.driver.internal.value.TextValue;
+import org.neo4j.driver.internal.value.StringValue;
 
 /**
  * Utility for wrapping regular Java types and exposing them as {@link org.neo4j.driver.Value}
@@ -146,15 +146,15 @@ public class Values
 
     public static Value value( char[] val )
     {
-        return new TextValue( new String( val ) );
+        return new StringValue( new String( val ) );
     }
 
     public static Value value( String[] val )
     {
-        TextValue[] values = new TextValue[val.length];
+        StringValue[] values = new StringValue[val.length];
         for ( int i = 0; i < val.length; i++ )
         {
-            values[i] = new TextValue( val[i] );
+            values[i] = new StringValue( val[i] );
         }
         return new ListValue( values );
     }
@@ -206,12 +206,12 @@ public class Values
 
     public static Value value( final char val )
     {
-        return new TextValue( Character.toString( val ) );
+        return new StringValue( Character.toString( val ) );
     }
 
     public static Value value( final String val )
     {
-        return new TextValue( val );
+        return new StringValue( val );
     }
 
     public static Value value( final Map<String,Object> val )
