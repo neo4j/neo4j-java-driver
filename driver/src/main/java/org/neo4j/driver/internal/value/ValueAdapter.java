@@ -133,7 +133,7 @@ public abstract class ValueAdapter implements Value
     }
 
     @Override
-    public boolean isText()
+    public boolean isString()
     {
         return false;
     }
@@ -209,7 +209,7 @@ public abstract class ValueAdapter implements Value
         if ( isFloat() ) { return "float"; }
         if ( isInteger() ) { return "integer"; }
         if ( isBoolean() ) { return "boolean"; }
-        if ( isText() ) { return "text"; }
+        if ( isString() ) { return "string"; }
         if ( isList() ) { return "list"; }
         if ( isMap() ) { return "map"; }
         if ( isIdentity() ) { return "identity"; }

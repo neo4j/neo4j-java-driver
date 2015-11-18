@@ -18,11 +18,11 @@
  */
 package org.neo4j.driver.internal.value;
 
-public class TextValue extends ValueAdapter
+public class StringValue extends ValueAdapter
 {
     private final String val;
 
-    public TextValue( String val )
+    public StringValue( String val )
     {
         assert val != null;
         this.val = val;
@@ -41,7 +41,7 @@ public class TextValue extends ValueAdapter
     }
 
     @Override
-    public boolean isText()
+    public boolean isString()
     {
         return true;
     }
@@ -70,7 +70,7 @@ public class TextValue extends ValueAdapter
             return false;
         }
 
-        TextValue values = (TextValue) o;
+        StringValue values = (StringValue) o;
 
         return val.equals( values.val );
 

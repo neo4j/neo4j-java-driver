@@ -25,8 +25,6 @@ import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.driver.Value;
-
 import static java.lang.Integer.toHexString;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
@@ -44,7 +42,7 @@ import static java.util.Arrays.asList;
  * <table> 
  * <tr><th>Marker</th><th>Binary</th><th>Type</th><th>Description</th></tr>
  * <tr><td><code>00..7F</code></td><td><code>0xxxxxxx</code></td><td>+TINY_INT</td><td>Integer 0 to 127</td></tr>
- * <tr><td><code>80..8F</code></td><td><code>1000xxxx</code></td><td>TINY_TEXT</td><td></td></tr>
+ * <tr><td><code>80..8F</code></td><td><code>1000xxxx</code></td><td>TINY_STRING</td><td></td></tr>
  * <tr><td><code>90..9F</code></td><td><code>1001xxxx</code></td><td>TINY_LIST</td><td></td></tr>
  * <tr><td><code>A0..AF</code></td><td><code>1010xxxx</code></td><td>TINY_MAP</td><td></td></tr>
  * <tr><td><code>B0..BF</code></td><td><code>1011xxxx</code></td><td>TINY_STRUCT</td><td></td></tr>
@@ -61,9 +59,9 @@ import static java.util.Arrays.asList;
  * <tr><td><code>CD</code></td><td><code>11001101</code></td><td>BYTES_16</td><td>Byte string (fewer than 2<sup>16</sup> bytes)</td></tr>
  * <tr><td><code>CE</code></td><td><code>11001110</code></td><td>BYTES_32</td><td>Byte string (fewer than 2<sup>32</sup> bytes)</td></tr>
  * <tr><td><code>CF</code></td><td><code>11001111</code></td><td><em>RESERVED</em></td><td></td></tr>
- * <tr><td><code>D0</code></td><td><code>11010000</code></td><td>TEXT_8</td><td>UTF-8 encoded text string (fewer than 2<sup>8</sup> bytes)</td></tr>
- * <tr><td><code>D1</code></td><td><code>11010001</code></td><td>TEXT_16</td><td>UTF-8 encoded text string (fewer than 2<sup>16</sup> bytes)</td></tr>
- * <tr><td><code>D2</code></td><td><code>11010010</code></td><td>TEXT_32</td><td>UTF-8 encoded text string (fewer than 2<sup>32</sup> bytes)</td></tr>
+ * <tr><td><code>D0</code></td><td><code>11010000</code></td><td>STRING_8</td><td>UTF-8 encoded string (fewer than 2<sup>8</sup> bytes)</td></tr>
+ * <tr><td><code>D1</code></td><td><code>11010001</code></td><td>STRING_16</td><td>UTF-8 encoded string (fewer than 2<sup>16</sup> bytes)</td></tr>
+ * <tr><td><code>D2</code></td><td><code>11010010</code></td><td>STRING_32</td><td>UTF-8 encoded string (fewer than 2<sup>32</sup> bytes)</td></tr>
  * <tr><td><code>D3</code></td><td><code>11010011</code></td><td><em>RESERVED</em></td><td></td></tr>
  * <tr><td><code>D4</code></td><td><code>11010100</code></td><td>LIST_8</td><td>List (fewer than 2<sup>8</sup> items)</td></tr>
  * <tr><td><code>D5</code></td><td><code>11010101</code></td><td>LIST_16</td><td>List (fewer than 2<sup>16</sup> items)</td></tr>
@@ -85,7 +83,7 @@ import static java.util.Arrays.asList;
 public class PackStream
 {
     
-    public static final byte TINY_TEXT = (byte) 0x80;
+    public static final byte TINY_STRING = (byte) 0x80;
     public static final byte TINY_LIST = (byte) 0x90;
     public static final byte TINY_MAP = (byte) 0xA0;
     public static final byte TINY_STRUCT = (byte) 0xB0;
@@ -105,9 +103,9 @@ public class PackStream
     public static final byte BYTES_16 = (byte) 0xCD;
     public static final byte BYTES_32 = (byte) 0xCE;
     public static final byte RESERVED_CF = (byte) 0xCF;
-    public static final byte TEXT_8 = (byte) 0xD0;
-    public static final byte TEXT_16 = (byte) 0xD1;
-    public static final byte TEXT_32 = (byte) 0xD2;
+    public static final byte STRING_8 = (byte) 0xD0;
+    public static final byte STRING_16 = (byte) 0xD1;
+    public static final byte STRING_32 = (byte) 0xD2;
     public static final byte RESERVED_D3 = (byte) 0xD3;
     public static final byte LIST_8 = (byte) 0xD4;
     public static final byte LIST_16 = (byte) 0xD5;
@@ -242,17 +240,17 @@ public class PackStream
             else
             {
                 byte[] utf8 = value.getBytes( UTF_8 );
-                packTextHeader( utf8.length );
+                packStringHeader( utf8.length );
                 packRaw( utf8 );
             }
         }
 
-        public void packText( byte[] utf8 ) throws IOException
+        public void packString( byte[] utf8 ) throws IOException
         {
             if ( utf8 == null ) { packNull(); }
             else
             {
-                packTextHeader( utf8.length );
+                packStringHeader( utf8.length );
                 packRaw( utf8 );
             }
         }
@@ -329,25 +327,25 @@ public class PackStream
             }
         }
 
-        public void packTextHeader( int size ) throws IOException
+        public void packStringHeader( int size ) throws IOException
         {
             if ( size < 0x10 )
             {
-                out.writeByte( (byte) (TINY_TEXT | size) );
+                out.writeByte( (byte) (TINY_STRING | size) );
             }
             else if ( size <= Byte.MAX_VALUE )
             {
-                out.writeByte( TEXT_8 )
+                out.writeByte( STRING_8 )
                    .writeByte( (byte) size );
             }
             else if ( size <= Short.MAX_VALUE )
             {
-                out.writeByte( TEXT_16 )
+                out.writeByte( STRING_16 )
                    .writeShort( (short) size );
             }
             else
             {
-                out.writeByte( TEXT_32 )
+                out.writeByte( STRING_32 )
                    .writeInt( size );
             }
         }
@@ -537,7 +535,7 @@ public class PackStream
         public String unpackString() throws IOException
         {
             final byte markerByte = in.readByte();
-            if( markerByte == TINY_TEXT ) // Note no mask, so we compare to 0x80.
+            if( markerByte == TINY_STRING ) // Note no mask, so we compare to 0x80.
             {
                 return EMPTY_STRING;
             }
@@ -591,12 +589,12 @@ public class PackStream
             final byte markerHighNibble = (byte) (markerByte & 0xF0);
             final byte markerLowNibble = (byte) (markerByte & 0x0F);
 
-            if ( markerHighNibble == TINY_TEXT ) { return unpackBytes( markerLowNibble ); }
+            if ( markerHighNibble == TINY_STRING ) { return unpackBytes( markerLowNibble ); }
             switch(markerByte)
             {
-            case TEXT_8: return unpackBytes( unpackUINT8() );
-            case TEXT_16: return unpackBytes( unpackUINT16() );
-            case TEXT_32:
+            case STRING_8: return unpackBytes( unpackUINT8() );
+            case STRING_16: return unpackBytes( unpackUINT16() );
+            case STRING_32:
             {
                 long size = unpackUINT32();
                 if ( size <= Integer.MAX_VALUE )
@@ -605,7 +603,7 @@ public class PackStream
                 }
                 else
                 {
-                    throw new Overflow( "TEXT_32 too long for Java" );
+                    throw new Overflow( "STRING_32 too long for Java" );
                 }
             }
             default: throw new Unexpected( "Expected a string, but got: 0x" + toHexString( markerByte & 0xFF ));
@@ -655,7 +653,7 @@ public class PackStream
 
             switch(markerHighNibble)
             {
-            case TINY_TEXT:   return PackType.TEXT;
+            case TINY_STRING:   return PackType.STRING;
             case TINY_LIST:   return PackType.LIST;
             case TINY_MAP:    return PackType.MAP;
             case TINY_STRUCT: return PackType.STRUCT;
@@ -674,10 +672,10 @@ public class PackStream
             case BYTES_16:
             case BYTES_32:
                 return PackType.BYTES;
-            case TEXT_8:
-            case TEXT_16:
-            case TEXT_32:
-                return PackType.TEXT;
+            case STRING_8:
+            case STRING_16:
+            case STRING_32:
+                return PackType.STRING;
             case LIST_8:
             case LIST_16:
             case LIST_32:

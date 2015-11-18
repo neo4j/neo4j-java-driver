@@ -24,14 +24,14 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
 
-public class TextValueTest
+public class StringValueTest
 {
 
     @Test
-    public void testTextValue() throws Exception
+    public void testStringValue() throws Exception
     {
         // Given
-        TextValue value = new TextValue( "Spongebob" );
+        StringValue value = new StringValue( "Spongebob" );
 
         // Then
         assertThat( value.javaBoolean(), equalTo( true ) );
@@ -39,21 +39,21 @@ public class TextValueTest
     }
 
     @Test
-    public void testIsText() throws Exception
+    public void testIsString() throws Exception
     {
         // Given
-        TextValue value = new TextValue( "Spongebob" );
+        StringValue value = new StringValue( "Spongebob" );
 
         // Then
-        assertThat( value.isText(), equalTo( true ) );
+        assertThat( value.isString(), equalTo( true ) );
     }
 
     @Test
     public void testEquals() throws Exception
     {
         // Given
-        TextValue firstValue = new TextValue( "Spongebob" );
-        TextValue secondValue = new TextValue( "Spongebob" );
+        StringValue firstValue = new StringValue( "Spongebob" );
+        StringValue secondValue = new StringValue( "Spongebob" );
 
         // Then
         assertThat( firstValue, equalTo( secondValue ) );
@@ -63,7 +63,7 @@ public class TextValueTest
     public void testHashCode() throws Exception
     {
         // Given
-        TextValue value = new TextValue( "Spongebob" );
+        StringValue value = new StringValue( "Spongebob" );
 
         // Then
         assertThat( value.hashCode(), notNullValue() );

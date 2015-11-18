@@ -152,7 +152,7 @@ public class ParametersIT
         for ( Record record : result.retain() )
         {
             Value value = record.get( "a.value" );
-            assertThat( value.isText(), equalTo( true ) );
+            assertThat( value.isString(), equalTo( true ) );
             assertThat( value.javaString(), equalTo( "ö" ) );
         }
 
@@ -170,7 +170,7 @@ public class ParametersIT
         for ( Record record : result.retain() )
         {
             Value value = record.get( "a.value" );
-            assertThat( value.isText(), equalTo( true ) );
+            assertThat( value.isString(), equalTo( true ) );
             assertThat( value.javaString(), equalTo( "Mjölnir" ) );
         }
 
@@ -187,7 +187,7 @@ public class ParametersIT
         for ( Record record : result.retain() )
         {
             Value value = record.get( "a.value" );
-            assertThat( value.isText(), equalTo( true ) );
+            assertThat( value.isString(), equalTo( true ) );
             assertThat( value.javaString(), equalTo( "Mjölnir" ) );
         }
 
@@ -278,7 +278,7 @@ public class ParametersIT
             assertThat( value.size(), equalTo( 3L ) );
             for ( Value item : value )
             {
-                assertThat( item.isText(), equalTo( true ) );
+                assertThat( item.isString(), equalTo( true ) );
                 assertThat( item.javaString(), equalTo( "Mjölnir" ) );
             }
         }
@@ -300,7 +300,7 @@ public class ParametersIT
             assertThat( value.size(), equalTo( 3L ) );
             for ( Value item : value )
             {
-                assertThat( item.isText(), equalTo( true ) );
+                assertThat( item.isString(), equalTo( true ) );
                 assertThat( item.javaString(), equalTo( "cat" ) );
             }
         }
@@ -373,7 +373,7 @@ public class ParametersIT
         for ( Record record : result.retain() )
         {
             Value value = record.get( "a.value" );
-            assertThat( value.isText(), equalTo( true ) );
+            assertThat( value.isString(), equalTo( true ) );
             assertThat( value.javaString(), equalTo( "Mjölnir" ) );
         }
     }
