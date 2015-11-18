@@ -22,6 +22,8 @@ import org.neo4j.driver.UpdateStatistics;
 
 public class SimpleUpdateStatistics implements UpdateStatistics
 {
+    public static final SimpleUpdateStatistics EMPTY_STATS =
+            new SimpleUpdateStatistics( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 );
     private final int nodesCreated;
     private final int nodesDeleted;
     private final int relationshipsCreated;
