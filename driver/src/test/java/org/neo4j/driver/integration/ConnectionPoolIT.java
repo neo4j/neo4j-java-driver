@@ -18,28 +18,34 @@
  */
 package org.neo4j.driver.integration;
 
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+<<<<<<< Updated upstream:driver/src/test/java/org/neo4j/driver/integration/ConnectionPoolIT.java
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.DatabaseException;
 import org.neo4j.driver.util.TestNeo4j;
+=======
+import java.util.LinkedList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
+import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.GraphDatabase;
+import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.DatabaseException;
+import org.neo4j.driver.v1.util.TestNeo4j;
+>>>>>>> Stashed changes:driver/src/test/java/org/neo4j/driver/v1/integration/ConnectionPoolIT.java
 
 import static junit.framework.TestCase.fail;
 
-@RunWith(Parameterized.class)
 public class ConnectionPoolIT
 {
     @Rule
@@ -47,10 +53,6 @@ public class ConnectionPoolIT
     private Driver driver;
     private SessionGrabber sessionGrabber;
 
-    @Parameterized.Parameters
-    public static List<Object[]> data() {
-        return Arrays.asList( new Object[8][0] );
-    }
     @Test
     public void shouldRecoverFromDownedServer() throws Throwable
     {
