@@ -55,13 +55,13 @@ public class StandardSessionTest
         // Given
         Connection mock = mock( Connection.class );
         StandardSession sess = new StandardSession( mock );
-        sess.newTransaction();
+        sess.beginTransaction();
 
         // Expect
         exception.expect( ClientException.class );
 
         // When
-        sess.newTransaction();
+        sess.beginTransaction();
     }
 
     @Test
@@ -70,10 +70,10 @@ public class StandardSessionTest
         // Given
         Connection mock = mock( Connection.class );
         StandardSession sess = new StandardSession( mock );
-        sess.newTransaction().close();
+        sess.beginTransaction().close();
 
         // When
-        Transaction tx = sess.newTransaction();
+        Transaction tx = sess.beginTransaction();
 
         // Then we should've gotten a transaction object back
         assertNotNull( tx );

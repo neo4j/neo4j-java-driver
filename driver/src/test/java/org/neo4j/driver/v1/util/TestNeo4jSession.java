@@ -93,9 +93,9 @@ public class TestNeo4jSession extends TestNeo4j implements Session
     }
 
     @Override
-    public Transaction newTransaction()
+    public Transaction beginTransaction()
     {
-        return realSession.newTransaction();
+        return realSession.beginTransaction();
     }
 
     @Override

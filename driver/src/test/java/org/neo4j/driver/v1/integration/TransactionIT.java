@@ -43,7 +43,7 @@ public class TransactionIT
     public void shouldRunAndCommit() throws Throwable
     {
         // When
-        try ( Transaction tx = session.newTransaction() )
+        try ( Transaction tx = session.beginTransaction() )
         {
             tx.run( "CREATE (n:FirstNode)" );
             tx.run( "CREATE (n:SecondNode)" );
@@ -60,7 +60,7 @@ public class TransactionIT
     public void shouldRunAndRollbackByDefault() throws Throwable
     {
         // When
-        try ( Transaction tx = session.newTransaction() )
+        try ( Transaction tx = session.beginTransaction() )
         {
             tx.run( "CREATE (n:FirstNode)" );
             tx.run( "CREATE (n:SecondNode)" );
@@ -78,7 +78,7 @@ public class TransactionIT
         session.run( "CREATE (n {name:'Steve Brook'})" );
 
         // When
-        try ( Transaction tx = session.newTransaction() )
+        try ( Transaction tx = session.beginTransaction() )
         {
             Result res = tx.run( "MATCH (n) RETURN n.name" );
 
@@ -91,7 +91,7 @@ public class TransactionIT
     public void shouldNotAllowSessionLevelStatementsWhenThereIsATransaction() throws Throwable
     {
         // Given
-        session.newTransaction();
+        session.beginTransaction();
 
         // Expect
         exception.expect( ClientException.class );
@@ -104,7 +104,7 @@ public class TransactionIT
     public void shouldBeClosedAfterRollback() throws Throwable
     {
         // When
-        Transaction tx = session.newTransaction();
+        Transaction tx = session.beginTransaction();
         tx.close();
 
         // Then
@@ -115,7 +115,7 @@ public class TransactionIT
     public void shouldBeClosedAfterCommit() throws Throwable
     {
         // When
-        Transaction tx = session.newTransaction();
+        Transaction tx = session.beginTransaction();
         tx.success();
         tx.close();
 
@@ -127,7 +127,7 @@ public class TransactionIT
     public void shouldBeOpenBeforeCommit() throws Throwable
     {
         // When
-        Transaction tx = session.newTransaction();
+        Transaction tx = session.beginTransaction();
 
         // Then
         assertTrue( tx.isOpen() );

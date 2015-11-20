@@ -45,7 +45,7 @@ public interface Session extends AutoCloseable, StatementRunner
      *
      * @return a new transaction
      */
-    Transaction newTransaction();
+    Transaction beginTransaction();
 
     @Override
     void close();

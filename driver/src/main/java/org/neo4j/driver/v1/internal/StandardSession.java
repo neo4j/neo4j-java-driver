@@ -107,7 +107,7 @@ public class StandardSession implements Session
     }
 
     @Override
-    public Transaction newTransaction()
+    public Transaction beginTransaction()
     {
         ensureNoOpenTransaction();
         return currentTransaction = new StandardTransaction( connection, txCleanup );

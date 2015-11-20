@@ -84,7 +84,7 @@ public class Driver implements AutoCloseable
     /**
      * Establish a session
      * @return a session that could be used to run {@link Session#run(String) a statement} or
-     * {@link Session#newTransaction() a transaction }.
+     * {@link Session#beginTransaction() a transaction }.
      */
     public Session session()
     {

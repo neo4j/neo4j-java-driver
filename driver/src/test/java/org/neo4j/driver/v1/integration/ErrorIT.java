@@ -56,7 +56,7 @@ public class ErrorIT
     public void shouldNotAllowMoreTxAfterClientException() throws Throwable
     {
         // Given
-        Transaction tx = session.newTransaction();
+        Transaction tx = session.beginTransaction();
 
         // And Given an error has occurred
         try { tx.run( "invalid" ); } catch ( ClientException e ) {}
@@ -87,14 +87,14 @@ public class ErrorIT
     public void shouldAllowNewTransactionAfterRecoverableError() throws Throwable
     {
         // Given an error has occurred in a prior transaction
-        try ( Transaction tx = session.newTransaction() )
+        try ( Transaction tx = session.beginTransaction() )
         {
             tx.run( "invalid" );
         }
         catch ( ClientException e ) {}
 
         // When
-        try ( Transaction tx = session.newTransaction() )
+        try ( Transaction tx = session.beginTransaction() )
         {
             int val = tx.run( "RETURN 1" ).single().get( "1" ).javaInteger();
 
