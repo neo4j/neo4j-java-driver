@@ -25,19 +25,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.driver.Notification;
-import org.neo4j.driver.Plan;
-import org.neo4j.driver.ProfiledPlan;
-import org.neo4j.driver.Record;
-import org.neo4j.driver.Result;
-import org.neo4j.driver.Statement;
-import org.neo4j.driver.StatementType;
-import org.neo4j.driver.UpdateStatistics;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.SimpleRecord;
 import org.neo4j.driver.internal.SimpleResult;
 import org.neo4j.driver.internal.spi.StreamCollector;
+import org.neo4j.driver.v1.Notification;
+import org.neo4j.driver.v1.Plan;
+import org.neo4j.driver.v1.ProfiledPlan;
+import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.Result;
+import org.neo4j.driver.v1.Statement;
+import org.neo4j.driver.v1.StatementType;
+import org.neo4j.driver.v1.UpdateStatistics;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static java.util.Collections.unmodifiableMap;
 import static org.neo4j.driver.internal.ParameterSupport.NO_PARAMETERS;
@@ -49,7 +49,7 @@ public class ResultBuilder implements StreamCollector
     private List<Record> body = new ArrayList<>();
     private Map<String, Integer> fieldLookup = null;
 
-    public ResultBuilder( String statement, Map<String, Value> parameters )
+    public ResultBuilder( String statement, Map<String,Value> parameters )
     {
         Map<String, Value> unmodifiableParameters =
             parameters.isEmpty() ? NO_PARAMETERS : unmodifiableMap( parameters );

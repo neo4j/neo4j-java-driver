@@ -25,9 +25,9 @@ import org.junit.rules.ExpectedException;
 import java.util.Arrays;
 import java.util.List;
 
-import org.neo4j.driver.Node;
-import org.neo4j.driver.Path;
-import org.neo4j.driver.Relationship;
+import org.neo4j.driver.v1.Node;
+import org.neo4j.driver.v1.Path;
+import org.neo4j.driver.v1.Relationship;
 import org.neo4j.driver.util.Lists;
 
 import static org.hamcrest.CoreMatchers.equalTo;

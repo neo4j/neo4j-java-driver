@@ -27,9 +27,9 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URL;
 
-import org.neo4j.driver.Driver;
-import org.neo4j.driver.Result;
-import org.neo4j.driver.Session;
+import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.Result;
+import org.neo4j.driver.v1.Session;
 
 import static org.neo4j.driver.util.Neo4jResetMode.CLEAR_DATABASE_CONTENTS;
 import static org.neo4j.driver.util.Neo4jRunner.DEFAULT_URL;

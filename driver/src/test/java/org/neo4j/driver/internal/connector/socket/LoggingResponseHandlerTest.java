@@ -22,8 +22,8 @@ import org.junit.Test;
 
 import java.util.HashMap;
 
-import org.neo4j.driver.Value;
-import org.neo4j.driver.internal.logging.DevNullLogger;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.logging.DevNullLogger;
 import org.neo4j.driver.internal.messaging.AckFailureMessage;
 import org.neo4j.driver.internal.messaging.DiscardAllMessage;
 import org.neo4j.driver.internal.messaging.FailureMessage;
@@ -37,7 +37,7 @@ import org.neo4j.driver.internal.messaging.RunMessage;
 import org.neo4j.driver.internal.messaging.SuccessMessage;
 
 import static junit.framework.Assert.assertEquals;
-import static org.neo4j.driver.Values.parameters;
+import static org.neo4j.driver.v1.Values.parameters;
 
 public class LoggingResponseHandlerTest
 {

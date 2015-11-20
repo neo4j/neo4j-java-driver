@@ -26,21 +26,21 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.driver.Value;
-import org.neo4j.driver.Values;
-import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.internal.value.ListValue;
-import org.neo4j.driver.internal.value.MapValue;
-import org.neo4j.driver.internal.value.StringValue;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.Values;
+import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.values.ListValue;
+import org.neo4j.driver.v1.values.MapValue;
+import org.neo4j.driver.v1.values.StringValue;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
-import static org.neo4j.driver.Values.value;
-import static org.neo4j.driver.Values.valueToList;
-import static org.neo4j.driver.Values.valueToString;
-import static org.neo4j.driver.Values.values;
+import static org.neo4j.driver.v1.Values.value;
+import static org.neo4j.driver.v1.Values.valueToList;
+import static org.neo4j.driver.v1.Values.valueToString;
+import static org.neo4j.driver.v1.Values.values;
 
 public class ValuesTest
 {

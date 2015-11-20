@@ -30,9 +30,9 @@ import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 import javax.net.ssl.SSLEngineResult.Status;
 import javax.net.ssl.SSLSession;
 
-import org.neo4j.driver.Config.TlsAuthenticationConfig;
-import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.internal.spi.Logger;
+import org.neo4j.driver.v1.Config.TLSConfig;
+import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.logging.Logger;
 import org.neo4j.driver.internal.util.BytePrinter;
 
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.FINISHED;
@@ -65,7 +65,7 @@ public class SSLSocketChannel implements ByteChannel
     private ByteBuffer plainOut;
 
     public SSLSocketChannel( String host, int port, SocketChannel channel, Logger logger,
-            TlsAuthenticationConfig authConfig )
+            TLSConfig authConfig )
             throws GeneralSecurityException, IOException
     {
         logger.debug( "TLS connection enabled" );

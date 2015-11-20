@@ -21,17 +21,17 @@ package org.neo4j.driver.integration;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.driver.Record;
-import org.neo4j.driver.Result;
-import org.neo4j.driver.ReusableResult;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.Values;
+import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.Result;
+import org.neo4j.driver.v1.ReusableResult;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.util.TestNeo4jSession;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.driver.Values.parameters;
+import static org.neo4j.driver.v1.Values.parameters;
 
 public class StatementIT
 {

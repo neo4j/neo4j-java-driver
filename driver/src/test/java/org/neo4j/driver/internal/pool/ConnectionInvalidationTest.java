@@ -22,9 +22,9 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.exceptions.Neo4jException;
-import org.neo4j.driver.exceptions.TransientException;
+import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.Neo4jException;
+import org.neo4j.driver.v1.exceptions.TransientException;
 import org.neo4j.driver.internal.spi.Connection;
 
 import static junit.framework.TestCase.assertFalse;
@@ -34,7 +34,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class ConnectionInvalidationTest
 {

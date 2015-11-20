@@ -29,6 +29,11 @@
   </licenses>
 
   <dependencies>
+    <dependency>
+      <groupId>org.neo4j.driver</groupId>
+      <artifactId>neo4j-driver-api-v1</artifactId>
+      <version>${project.version}</version>
+    </dependency>
     <!-- Test dependencies -->
     <dependency>
       <groupId>org.hamcrest</groupId>
@@ -149,6 +154,23 @@
             <goals>
               <goal>integration-test</goal>
               <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <!-- Used to enforce architectural rules -->
+        <groupId>de.andrena.tools.macker</groupId>
+        <artifactId>macker-maven-plugin</artifactId>
+        <version>1.0.2</version>
+        <configuration>
+          <rule>module-rules.xml</rule>
+        </configuration>
+        <executions>
+          <execution>
+            <phase>compile</phase>
+            <goals>
+              <goal>macker</goal>
             </goals>
           </execution>
         </executions>

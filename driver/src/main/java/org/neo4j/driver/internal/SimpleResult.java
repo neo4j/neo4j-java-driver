@@ -21,12 +21,12 @@ package org.neo4j.driver.internal;
 import java.util.Iterator;
 import java.util.List;
 
-import org.neo4j.driver.Record;
-import org.neo4j.driver.Result;
-import org.neo4j.driver.ResultSummary;
-import org.neo4j.driver.ReusableResult;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.Result;
+import org.neo4j.driver.v1.ResultSummary;
+import org.neo4j.driver.v1.ReusableResult;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.exceptions.ClientException;
 
 public class SimpleResult implements Result
 {

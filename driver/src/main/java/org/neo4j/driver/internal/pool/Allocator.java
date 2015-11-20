@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal.pool;
 
-import org.neo4j.driver.exceptions.Neo4jException;
+import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.internal.util.Consumer;
 
 public interface Allocator<Value>
@@ -29,7 +29,7 @@ public interface Allocator<Value>
      * implement a 'close' method which calls the release handle.
      *
      * It is legal for the allocator to fail to allocate a new item. To signal that allocation failed, the allocator
-     * should throw a {@link org.neo4j.driver.exceptions.Neo4jException}
+     * should throw a {@link org.neo4j.driver.v1.exceptions.Neo4jException}
      */
     Value allocate( Consumer<Value> release ) throws Neo4jException;
 

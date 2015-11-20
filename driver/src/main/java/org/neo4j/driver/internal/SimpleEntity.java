@@ -21,9 +21,9 @@ package org.neo4j.driver.internal;
 import java.util.Collection;
 import java.util.Map;
 
-import org.neo4j.driver.Entity;
-import org.neo4j.driver.Identity;
-import org.neo4j.driver.Value;
+import org.neo4j.driver.v1.Entity;
+import org.neo4j.driver.v1.Identity;
+import org.neo4j.driver.v1.Value;
 
 public abstract class SimpleEntity implements Entity
 {

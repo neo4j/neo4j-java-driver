@@ -22,8 +22,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import org.neo4j.driver.Transaction;
-import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.internal.spi.Connection;
 
 import static junit.framework.TestCase.assertNotNull;

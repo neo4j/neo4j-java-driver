@@ -27,14 +27,14 @@ import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.driver.Config;
-import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.connector.socket.SocketConnector;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.Connector;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Consumer;
+import org.neo4j.driver.v1.Config;
+import org.neo4j.driver.v1.exceptions.ClientException;
 
 /**
  * A basic connection pool that optimizes for threads being long-lived, acquiring/releasing many connections.

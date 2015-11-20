@@ -23,13 +23,13 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
-import org.neo4j.driver.Entity;
-import org.neo4j.driver.Node;
-import org.neo4j.driver.Path;
-import org.neo4j.driver.Relationship;
+import org.neo4j.driver.v1.Entity;
+import org.neo4j.driver.v1.Node;
+import org.neo4j.driver.v1.Path;
+import org.neo4j.driver.v1.Relationship;
 
 /**
- * {@link org.neo4j.driver.Path} implementation that directly contains all nodes and relationships.
+ * {@link org.neo4j.driver.v1.Path} implementation that directly contains all nodes and relationships.
  */
 public class SimplePath implements Path
 {

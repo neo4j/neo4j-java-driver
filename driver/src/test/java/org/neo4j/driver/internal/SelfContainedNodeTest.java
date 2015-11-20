@@ -22,14 +22,14 @@ import org.junit.Test;
 
 import java.util.List;
 
-import org.neo4j.driver.Node;
+import org.neo4j.driver.v1.Node;
 import org.neo4j.driver.internal.util.Iterables;
-import org.neo4j.driver.Values;
+import org.neo4j.driver.v1.Values;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.neo4j.driver.Values.parameters;
+import static org.neo4j.driver.v1.Values.parameters;
 
 public class SelfContainedNodeTest
 {

@@ -21,13 +21,13 @@ package org.neo4j.driver.internal;
 import java.util.Collections;
 import java.util.Map;
 
-import org.neo4j.driver.Identity;
-import org.neo4j.driver.Relationship;
-import org.neo4j.driver.Value;
+import org.neo4j.driver.v1.Identity;
+import org.neo4j.driver.v1.Relationship;
+import org.neo4j.driver.v1.Value;
 
 /**
- * {@link org.neo4j.driver.Relationship} implementation that directly contains type and properties
- * along with {@link org.neo4j.driver.Identity} values for start and end nodes.
+ * {@link org.neo4j.driver.v1.Relationship} implementation that directly contains type and properties
+ * along with {@link org.neo4j.driver.v1.Identity} values for start and end nodes.
  */
 public class SimpleRelationship extends SimpleEntity implements Relationship
 {

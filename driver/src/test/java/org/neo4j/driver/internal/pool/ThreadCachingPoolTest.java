@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.internal.util.Consumer;
 
 import static junit.framework.TestCase.fail;

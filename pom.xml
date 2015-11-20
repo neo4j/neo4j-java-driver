@@ -16,6 +16,7 @@
   <url>https://github.com/neo4j/neo4j-java-driver</url>
 
   <modules>
+    <module>api-v1</module>
     <module>driver</module>
   </modules>
 

@@ -22,8 +22,9 @@ import org.junit.Test;
 
 import java.util.HashMap;
 
-import org.neo4j.driver.Value;
+import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.internal.SimpleNode;
+import org.neo4j.driver.v1.values.NodeValue;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;

@@ -20,7 +20,8 @@ package org.neo4j.driver.internal.value;
 
 import org.junit.Test;
 
-import org.neo4j.driver.Identity;
+import org.neo4j.driver.v1.Identity;
+import org.neo4j.driver.v1.values.IdentityValue;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.notNullValue;

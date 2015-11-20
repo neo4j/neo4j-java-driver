@@ -24,13 +24,13 @@ import org.junit.Test;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.driver.Notification;
-import org.neo4j.driver.Plan;
-import org.neo4j.driver.ProfiledPlan;
-import org.neo4j.driver.Result;
-import org.neo4j.driver.ResultSummary;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.Values;
+import org.neo4j.driver.v1.Notification;
+import org.neo4j.driver.v1.Plan;
+import org.neo4j.driver.v1.ProfiledPlan;
+import org.neo4j.driver.v1.Result;
+import org.neo4j.driver.v1.ResultSummary;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.util.TestNeo4jSession;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -41,10 +41,10 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.driver.StatementType.READ_ONLY;
-import static org.neo4j.driver.StatementType.READ_WRITE;
-import static org.neo4j.driver.StatementType.SCHEMA_WRITE;
-import static org.neo4j.driver.StatementType.WRITE_ONLY;
+import static org.neo4j.driver.v1.StatementType.READ_ONLY;
+import static org.neo4j.driver.v1.StatementType.READ_WRITE;
+import static org.neo4j.driver.v1.StatementType.SCHEMA_WRITE;
+import static org.neo4j.driver.v1.StatementType.WRITE_ONLY;
 
 public class SummaryIT
 {

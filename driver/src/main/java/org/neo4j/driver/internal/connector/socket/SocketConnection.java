@@ -23,15 +23,15 @@ import java.net.SocketTimeoutException;
 import java.util.LinkedList;
 import java.util.Map;
 
-import org.neo4j.driver.Config;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.v1.Config;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.internal.messaging.AckFailureMessage;
 import org.neo4j.driver.internal.messaging.InitMessage;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.RunMessage;
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.spi.Logger;
+import org.neo4j.driver.v1.logging.Logger;
 import org.neo4j.driver.internal.spi.StreamCollector;
 
 import static org.neo4j.driver.internal.messaging.DiscardAllMessage.DISCARD_ALL;

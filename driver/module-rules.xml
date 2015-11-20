@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<!DOCTYPE macker PUBLIC "-//innig//DTD Macker 0.4//EN" "http://innig.net/macker/dtd/macker-0.4.dtd">
+<macker>
+    <ruleset name="API must never explicitly refer to the API implementation.">
+        <!-- This prevents circular dependencies and ensures it remains possible to private alternative
+             implementations of the API. -->
+        <access-rule>
+            <deny>
+                <from class="org.neo4j.driver.v1.**"/>
+                <to class="org.neo4j.driver.internal.**"/>
+            </deny>
+        </access-rule>
+    </ruleset>
+</macker>

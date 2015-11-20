@@ -24,8 +24,8 @@ import org.junit.rules.ExpectedException;
 
 import java.net.URI;
 
-import org.neo4j.driver.Config;
-import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.v1.Config;
+import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.Connector;
 import org.neo4j.driver.internal.util.Clock;

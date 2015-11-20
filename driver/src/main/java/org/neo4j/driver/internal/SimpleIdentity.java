@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal;
 
-import org.neo4j.driver.Identity;
+import org.neo4j.driver.v1.Identity;
 
 public class SimpleIdentity implements Identity
 {

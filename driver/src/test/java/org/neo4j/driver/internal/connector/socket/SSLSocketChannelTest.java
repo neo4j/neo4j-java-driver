@@ -29,7 +29,7 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLSession;
 
-import org.neo4j.driver.internal.spi.Logger;
+import org.neo4j.driver.v1.logging.Logger;
 import org.neo4j.driver.internal.util.BytePrinter;
 
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING;

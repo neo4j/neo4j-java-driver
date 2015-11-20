@@ -21,14 +21,14 @@ package org.neo4j.driver.internal;
 import java.util.Collections;
 import java.util.Map;
 
-import org.neo4j.driver.Result;
-import org.neo4j.driver.Statement;
-import org.neo4j.driver.Transaction;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.summary.ResultBuilder;
+import org.neo4j.driver.v1.Result;
+import org.neo4j.driver.v1.Statement;
+import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.Neo4jException;
 
 public class StandardTransaction implements Transaction
 {
@@ -67,7 +67,7 @@ public class StandardTransaction implements Transaction
         this.cleanup = cleanup;
 
         // Note there is no sync here, so this will just get queued locally
-        conn.run( "BEGIN", Collections.<String, Value>emptyMap(), null );
+        conn.run( "BEGIN", Collections.<String,Value>emptyMap(), null );
         conn.discardAll();
     }
 

@@ -23,14 +23,14 @@ import org.junit.Test;
 import java.util.Collections;
 import java.util.List;
 
-import org.neo4j.driver.Plan;
-import org.neo4j.driver.Value;
+import org.neo4j.driver.v1.Plan;
+import org.neo4j.driver.v1.Value;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.driver.Values.parameters;
-import static org.neo4j.driver.Values.value;
-import static org.neo4j.driver.Values.values;
+import static org.neo4j.driver.v1.Values.parameters;
+import static org.neo4j.driver.v1.Values.value;
+import static org.neo4j.driver.v1.Values.values;
 
 @SuppressWarnings("unchecked")
 public class SimplePlanTest

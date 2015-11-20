@@ -21,8 +21,8 @@ package org.neo4j.driver.internal.spi;
 import java.net.URI;
 import java.util.Collection;
 
-import org.neo4j.driver.Config;
-import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.v1.Config;
+import org.neo4j.driver.v1.exceptions.ClientException;
 
 /**
  * A Connector conducts the client side of a client-server dialogue,

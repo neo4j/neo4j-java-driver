@@ -22,14 +22,14 @@ import org.junit.Test;
 
 import java.io.File;
 
-import org.neo4j.driver.Config;
-import org.neo4j.driver.Config.TlsAuthenticationConfig;
+import org.neo4j.driver.v1.Config;
+import org.neo4j.driver.v1.Config.TLSConfig;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.driver.Config.TlsAuthenticationConfig.usingKnownCerts;
-import static org.neo4j.driver.Config.TlsAuthenticationConfig.usingTrustedCert;
+import static org.neo4j.driver.v1.Config.TLSConfig.usingKnownCerts;
+import static org.neo4j.driver.v1.Config.TLSConfig.usingTrustedCert;
 
 public class ConfigTest
 {
@@ -42,7 +42,7 @@ public class ConfigTest
         Config config = Config.defaultConfig();
 
         // When
-        TlsAuthenticationConfig authConfig = config.tlsAuthConfig();
+        TLSConfig authConfig = config.tlsAuthConfig();
 
         // Then
         assertFalse( authConfig.isFullAuthEnabled() );
@@ -57,7 +57,7 @@ public class ConfigTest
         Config config = Config.build().withTlsAuthConfig( usingKnownCerts( knownCerts ) ).toConfig();
 
         // When
-        TlsAuthenticationConfig authConfig = config.tlsAuthConfig();
+        TLSConfig authConfig = config.tlsAuthConfig();
 
         // Then
         assertFalse( authConfig.isFullAuthEnabled() );
@@ -72,7 +72,7 @@ public class ConfigTest
         Config config = Config.build().withTlsAuthConfig( usingTrustedCert( trustedCert ) ).toConfig();
 
         // When
-        TlsAuthenticationConfig authConfig = config.tlsAuthConfig();
+        TLSConfig authConfig = config.tlsAuthConfig();
 
         // Then
         assertTrue( authConfig.isFullAuthEnabled() );
