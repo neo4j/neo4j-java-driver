@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.driver.exceptions.Neo4jException;
+import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Consumer;
 

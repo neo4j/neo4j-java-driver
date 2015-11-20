@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.value;
 import org.junit.Test;
 
 import org.neo4j.driver.internal.SimpleRelationship;
+import org.neo4j.driver.v1.values.RelationshipValue;
 
 import static org.junit.Assert.assertEquals;
 

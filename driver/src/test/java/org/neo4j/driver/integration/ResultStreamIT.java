@@ -21,15 +21,15 @@ package org.neo4j.driver.integration;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.driver.Result;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.v1.Result;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.util.TestNeo4jSession;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
-import static org.neo4j.driver.Values.parameters;
+import static org.neo4j.driver.v1.Values.parameters;
 
 public class ResultStreamIT
 {

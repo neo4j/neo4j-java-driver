@@ -21,8 +21,8 @@ package org.neo4j.driver.internal.connector.socket;
 import java.util.Arrays;
 import java.util.Map;
 
-import org.neo4j.driver.Value;
-import org.neo4j.driver.internal.spi.Logger;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.logging.Logger;
 
 import static org.neo4j.driver.internal.messaging.AckFailureMessage.ACK_FAILURE;
 import static org.neo4j.driver.internal.messaging.DiscardAllMessage.DISCARD_ALL;

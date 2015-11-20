@@ -24,11 +24,11 @@ import org.junit.Test;
 import java.net.URI;
 
 import org.neo4j.driver.GraphDatabase;
-import org.neo4j.driver.Config;
-import org.neo4j.driver.Driver;
-import org.neo4j.driver.Session;
-import org.neo4j.driver.internal.spi.Logger;
-import org.neo4j.driver.internal.spi.Logging;
+import org.neo4j.driver.v1.Config;
+import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.logging.Logger;
+import org.neo4j.driver.v1.logging.Logging;
 import org.neo4j.driver.util.Neo4jRunner;
 import org.neo4j.driver.util.TestNeo4j;
 

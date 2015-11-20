@@ -20,9 +20,9 @@ package org.neo4j.driver.internal;
 
 import org.junit.Test;
 
-import org.neo4j.driver.ResultSummary;
-import org.neo4j.driver.Statement;
-import org.neo4j.driver.UpdateStatistics;
+import org.neo4j.driver.v1.ResultSummary;
+import org.neo4j.driver.v1.Statement;
+import org.neo4j.driver.v1.UpdateStatistics;
 import org.neo4j.driver.internal.summary.SimpleUpdateStatistics;
 import org.neo4j.driver.internal.summary.SummaryBuilder;
 

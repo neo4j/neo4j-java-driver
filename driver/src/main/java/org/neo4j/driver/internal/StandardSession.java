@@ -20,14 +20,14 @@ package org.neo4j.driver.internal;
 
 import java.util.Map;
 
-import org.neo4j.driver.Result;
-import org.neo4j.driver.Session;
-import org.neo4j.driver.Statement;
-import org.neo4j.driver.Transaction;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.summary.ResultBuilder;
+import org.neo4j.driver.v1.Result;
+import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.Statement;
+import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.exceptions.ClientException;
 
 public class StandardSession implements Session
 {

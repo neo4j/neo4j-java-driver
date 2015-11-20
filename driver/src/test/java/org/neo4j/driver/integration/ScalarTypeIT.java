@@ -27,15 +27,15 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
-import org.neo4j.driver.Value;
-import org.neo4j.driver.internal.value.ListValue;
-import org.neo4j.driver.internal.value.MapValue;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.values.ListValue;
+import org.neo4j.driver.v1.values.MapValue;
 import org.neo4j.driver.util.TestNeo4jSession;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.driver.Values.parameters;
-import static org.neo4j.driver.Values.value;
+import static org.neo4j.driver.v1.Values.parameters;
+import static org.neo4j.driver.v1.Values.value;
 
 @RunWith(Parameterized.class)
 public class ScalarTypeIT

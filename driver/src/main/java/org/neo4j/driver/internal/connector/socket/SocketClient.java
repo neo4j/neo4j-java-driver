@@ -28,12 +28,12 @@ import java.nio.channels.SocketChannel;
 import java.security.GeneralSecurityException;
 import java.util.List;
 
-import org.neo4j.driver.Config;
-import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.v1.Config;
+import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat.Reader;
 import org.neo4j.driver.internal.messaging.MessageFormat.Writer;
-import org.neo4j.driver.internal.spi.Logger;
+import org.neo4j.driver.v1.logging.Logger;
 
 public class SocketClient
 {

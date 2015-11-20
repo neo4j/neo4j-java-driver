@@ -20,6 +20,8 @@ package org.neo4j.driver.internal.value;
 
 import org.junit.Test;
 
+import org.neo4j.driver.v1.values.IntegerValue;
+
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;

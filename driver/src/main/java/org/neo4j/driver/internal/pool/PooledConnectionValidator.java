@@ -21,7 +21,7 @@ package org.neo4j.driver.internal.pool;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.driver.Value;
+import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.internal.spi.StreamCollector;
 
 /**

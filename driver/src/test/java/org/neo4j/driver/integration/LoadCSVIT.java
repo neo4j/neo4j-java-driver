@@ -23,17 +23,17 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-import org.neo4j.driver.Driver;
+import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.GraphDatabase;
-import org.neo4j.driver.Result;
-import org.neo4j.driver.Session;
+import org.neo4j.driver.v1.Result;
+import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.util.TestNeo4j;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.driver.Values.parameters;
+import static org.neo4j.driver.v1.Values.parameters;
 
 public class LoadCSVIT
 {

@@ -23,7 +23,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.SocketChannel;
 
-import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.internal.util.BytePrinter;
 
 /**

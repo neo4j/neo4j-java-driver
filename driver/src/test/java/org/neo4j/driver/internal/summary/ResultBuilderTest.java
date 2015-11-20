@@ -22,15 +22,15 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import org.neo4j.driver.Record;
-import org.neo4j.driver.ReusableResult;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.ReusableResult;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.internal.ParameterSupport;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.neo4j.driver.Values.value;
+import static org.neo4j.driver.v1.Values.value;
 
 public class ResultBuilderTest
 {

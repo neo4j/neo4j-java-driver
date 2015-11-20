@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal.summary;
 
-import org.neo4j.driver.UpdateStatistics;
+import org.neo4j.driver.v1.UpdateStatistics;
 
 public class SimpleUpdateStatistics implements UpdateStatistics
 {

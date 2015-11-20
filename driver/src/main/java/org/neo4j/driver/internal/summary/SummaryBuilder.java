@@ -21,16 +21,16 @@ package org.neo4j.driver.internal.summary;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.driver.Notification;
-import org.neo4j.driver.Plan;
-import org.neo4j.driver.ProfiledPlan;
-import org.neo4j.driver.ResultSummary;
-import org.neo4j.driver.Statement;
-import org.neo4j.driver.StatementType;
-import org.neo4j.driver.UpdateStatistics;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.spi.StreamCollector;
+import org.neo4j.driver.v1.Notification;
+import org.neo4j.driver.v1.Plan;
+import org.neo4j.driver.v1.ProfiledPlan;
+import org.neo4j.driver.v1.ResultSummary;
+import org.neo4j.driver.v1.Statement;
+import org.neo4j.driver.v1.StatementType;
+import org.neo4j.driver.v1.UpdateStatistics;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static org.neo4j.driver.internal.summary.SimpleUpdateStatistics.EMPTY_STATS;
 

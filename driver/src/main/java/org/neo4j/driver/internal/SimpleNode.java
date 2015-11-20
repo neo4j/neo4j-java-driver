@@ -22,12 +22,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
-import org.neo4j.driver.Identity;
-import org.neo4j.driver.Node;
-import org.neo4j.driver.Value;
+import org.neo4j.driver.v1.Identity;
+import org.neo4j.driver.v1.Node;
+import org.neo4j.driver.v1.Value;
 
 /**
- * {@link org.neo4j.driver.Node} implementation that directly contains labels and properties.
+ * {@link org.neo4j.driver.v1.Node} implementation that directly contains labels and properties.
  */
 public class SimpleNode extends SimpleEntity implements Node
 {

@@ -21,9 +21,9 @@ package org.neo4j.driver.internal.summary;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.driver.Function;
-import org.neo4j.driver.ProfiledPlan;
-import org.neo4j.driver.Value;
+import org.neo4j.driver.v1.Function;
+import org.neo4j.driver.v1.ProfiledPlan;
+import org.neo4j.driver.v1.Value;
 
 public class SimpleProfiledPlan extends SimplePlan<ProfiledPlan> implements ProfiledPlan
 {

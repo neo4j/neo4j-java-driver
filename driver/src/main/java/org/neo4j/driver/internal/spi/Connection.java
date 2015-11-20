@@ -20,7 +20,7 @@ package org.neo4j.driver.internal.spi;
 
 import java.util.Map;
 
-import org.neo4j.driver.Value;
+import org.neo4j.driver.v1.Value;
 
 /**
  * A connection is an abstraction provided by an underlying transport implementation,

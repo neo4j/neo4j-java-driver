@@ -22,7 +22,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.v1.Values;
+import org.neo4j.driver.v1.exceptions.ClientException;
 
 public class ParametersTest
 {

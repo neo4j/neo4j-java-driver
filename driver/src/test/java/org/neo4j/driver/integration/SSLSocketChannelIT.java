@@ -18,6 +18,9 @@
  */
 package org.neo4j.driver.integration;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -31,19 +34,15 @@ import java.security.cert.X509Certificate;
 import javax.net.ssl.SSLHandshakeException;
 import javax.xml.bind.DatatypeConverter;
 
-import org.junit.Rule;
-import org.junit.Test;
-
-import org.neo4j.driver.Config;
-import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
-import org.neo4j.driver.Result;
 import org.neo4j.driver.internal.connector.socket.SSLSocketChannel;
-import org.neo4j.driver.internal.spi.Logger;
-import org.neo4j.driver.util.Neo4jResetMode;
 import org.neo4j.driver.util.Neo4jRunner;
 import org.neo4j.driver.util.Neo4jSettings;
 import org.neo4j.driver.util.TestNeo4j;
+import org.neo4j.driver.v1.Config;
+import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.Result;
+import org.neo4j.driver.v1.logging.Logger;
 
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertNotNull;
@@ -53,12 +52,11 @@ import static junit.framework.TestCase.assertEquals;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-
-import static org.neo4j.driver.Config.TlsAuthenticationConfig.usingKnownCerts;
-import static org.neo4j.driver.Config.TlsAuthenticationConfig.usingTrustedCert;
 import static org.neo4j.driver.internal.ConfigTest.deleteDefaultKnownCertFileIfExists;
 import static org.neo4j.driver.internal.util.CertificateTool.saveX509Cert;
 import static org.neo4j.driver.util.CertificateToolTest.generateSelfSignedCertificate;
+import static org.neo4j.driver.v1.Config.TLSConfig.usingKnownCerts;
+import static org.neo4j.driver.v1.Config.TLSConfig.usingTrustedCert;
 
 public class SSLSocketChannelIT
 {

@@ -22,19 +22,19 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.driver.Function;
-import org.neo4j.driver.Plan;
-import org.neo4j.driver.Value;
+import org.neo4j.driver.v1.Function;
+import org.neo4j.driver.v1.Plan;
+import org.neo4j.driver.v1.Value;
 
 import static java.lang.String.format;
-import static org.neo4j.driver.Values.valueAsIs;
-import static org.neo4j.driver.Values.valueToString;
+import static org.neo4j.driver.v1.Values.valueAsIs;
+import static org.neo4j.driver.v1.Values.valueToString;
 
 public class SimplePlan<T extends Plan> implements Plan
 {
     private final String operatorType;
     private final List<String> identifiers;
-    private final Map<String, Value> arguments;
+    private final Map<String,Value> arguments;
     private final List<T> children;
 
     // Only call when sub-classing, for constructing plans, use .plan instead

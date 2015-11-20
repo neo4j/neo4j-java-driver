@@ -29,8 +29,9 @@ import java.io.PrintStream;
 import java.util.Scanner;
 import java.util.logging.Level;
 
-import org.neo4j.driver.internal.logging.ConsoleLogging.ConsoleLogger;
-import org.neo4j.driver.internal.spi.Logger;
+import org.neo4j.driver.v1.logging.ConsoleLogging;
+import org.neo4j.driver.v1.logging.ConsoleLogging.ConsoleLogger;
+import org.neo4j.driver.v1.logging.Logger;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;

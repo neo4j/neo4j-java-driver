@@ -28,13 +28,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.driver.Entity;
-import org.neo4j.driver.Identity;
-import org.neo4j.driver.Node;
-import org.neo4j.driver.Path;
-import org.neo4j.driver.Relationship;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.Identities;
 import org.neo4j.driver.internal.SimpleNode;
 import org.neo4j.driver.internal.SimplePath;
@@ -47,13 +40,20 @@ import org.neo4j.driver.internal.packstream.PackOutput;
 import org.neo4j.driver.internal.packstream.PackStream;
 import org.neo4j.driver.internal.packstream.PackType;
 import org.neo4j.driver.internal.util.Iterables;
-import org.neo4j.driver.internal.value.ListValue;
-import org.neo4j.driver.internal.value.MapValue;
-import org.neo4j.driver.internal.value.NodeValue;
-import org.neo4j.driver.internal.value.PathValue;
-import org.neo4j.driver.internal.value.RelationshipValue;
+import org.neo4j.driver.v1.Entity;
+import org.neo4j.driver.v1.Identity;
+import org.neo4j.driver.v1.Node;
+import org.neo4j.driver.v1.Path;
+import org.neo4j.driver.v1.Relationship;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.values.ListValue;
+import org.neo4j.driver.v1.values.MapValue;
+import org.neo4j.driver.v1.values.NodeValue;
+import org.neo4j.driver.v1.values.PathValue;
+import org.neo4j.driver.v1.values.RelationshipValue;
 
-import static org.neo4j.driver.Values.value;
+import static org.neo4j.driver.v1.Values.value;
 
 public class PackStreamMessageFormatV1 implements MessageFormat
 {

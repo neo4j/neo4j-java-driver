@@ -21,12 +21,12 @@ package org.neo4j.driver.internal.connector.socket;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.driver.StatementType;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.exceptions.DatabaseException;
-import org.neo4j.driver.exceptions.Neo4jException;
-import org.neo4j.driver.exceptions.TransientException;
+import org.neo4j.driver.v1.StatementType;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.DatabaseException;
+import org.neo4j.driver.v1.exceptions.Neo4jException;
+import org.neo4j.driver.v1.exceptions.TransientException;
 import org.neo4j.driver.internal.summary.SimpleNotification;
 import org.neo4j.driver.internal.summary.SimplePlan;
 import org.neo4j.driver.internal.summary.SimpleProfiledPlan;

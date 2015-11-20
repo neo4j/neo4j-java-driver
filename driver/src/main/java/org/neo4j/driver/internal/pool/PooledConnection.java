@@ -20,8 +20,8 @@ package org.neo4j.driver.internal.pool;
 
 import java.util.Map;
 
-import org.neo4j.driver.Value;
-import org.neo4j.driver.exceptions.Neo4jException;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.StreamCollector;
 import org.neo4j.driver.internal.util.Consumer;

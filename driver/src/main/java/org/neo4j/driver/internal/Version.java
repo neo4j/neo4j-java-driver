@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal;
 
-import org.neo4j.driver.Session;
+import org.neo4j.driver.v1.Session;
 
 public class Version
 {

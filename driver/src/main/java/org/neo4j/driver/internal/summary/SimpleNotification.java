@@ -18,10 +18,10 @@
  */
 package org.neo4j.driver.internal.summary;
 
-import org.neo4j.driver.Function;
-import org.neo4j.driver.InputPosition;
-import org.neo4j.driver.Notification;
-import org.neo4j.driver.Value;
+import org.neo4j.driver.v1.Function;
+import org.neo4j.driver.v1.InputPosition;
+import org.neo4j.driver.v1.Notification;
+import org.neo4j.driver.v1.Value;
 
 public class SimpleNotification implements Notification
 {

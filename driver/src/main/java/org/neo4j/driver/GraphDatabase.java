@@ -20,12 +20,19 @@ package org.neo4j.driver;
 
 import java.net.URI;
 
+import org.neo4j.driver.internal.StandardDriverV1;
+import org.neo4j.driver.v1.Config;
+import org.neo4j.driver.v1.Driver;
+
 /**
  * Creates {@link Driver drivers}, optionally letting you {@link #driver(URI, Config)} to configure them.
  * @see Driver
  */
 public class GraphDatabase
 {
+    // This is explicitly and consciously placed outside the versioned API package. This class is an entry point into the API, it
+    // is the glue that connects the standard implementation (eg. the stuff under 'internal') with the API.
+
     /**
      * Return a driver for a Neo4j instance with the default configuration settings
      *
@@ -57,6 +64,6 @@ public class GraphDatabase
      */
     public static Driver driver( URI url, Config config )
     {
-        return new Driver( url, config );
+        return new StandardDriverV1( url, config );
     }
 }

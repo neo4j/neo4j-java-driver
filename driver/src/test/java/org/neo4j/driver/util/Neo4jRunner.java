@@ -23,11 +23,12 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Map;
 
-import org.neo4j.driver.Config;
-import org.neo4j.driver.Driver;
-import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.internal.StandardDriverV1;
+import org.neo4j.driver.v1.Config;
+import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.internal.connector.socket.SocketClient;
-import org.neo4j.driver.internal.logging.DevNullLogger;
+import org.neo4j.driver.v1.logging.DevNullLogger;
 import org.neo4j.driver.util.Neo4jInstaller.Neo4jInstallerFactory;
 
 import static java.lang.String.format;
@@ -304,7 +305,7 @@ public class Neo4jRunner
         try
         {
             debug( "Resetting driver" );
-            currentDriver = new Driver( serverURI(), serverConfig() );
+            currentDriver = new StandardDriverV1( serverURI(), serverConfig() );
             staleDriver = false;
         }
         finally

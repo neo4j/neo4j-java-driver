@@ -24,10 +24,10 @@ import org.junit.Test;
 import java.util.Collections;
 import java.util.Map;
 
-import org.neo4j.driver.Plan;
-import org.neo4j.driver.StatementType;
-import org.neo4j.driver.UpdateStatistics;
-import org.neo4j.driver.Value;
+import org.neo4j.driver.v1.Plan;
+import org.neo4j.driver.v1.StatementType;
+import org.neo4j.driver.v1.UpdateStatistics;
+import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.internal.spi.StreamCollector;
 import org.neo4j.driver.internal.summary.SimpleUpdateStatistics;
 
@@ -37,9 +37,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.neo4j.driver.Values.parameters;
-import static org.neo4j.driver.Values.value;
-import static org.neo4j.driver.Values.values;
+import static org.neo4j.driver.v1.Values.parameters;
+import static org.neo4j.driver.v1.Values.value;
+import static org.neo4j.driver.v1.Values.values;
 import static org.neo4j.driver.internal.summary.SimplePlan.plan;
 
 public class SocketResponseHandlerTest

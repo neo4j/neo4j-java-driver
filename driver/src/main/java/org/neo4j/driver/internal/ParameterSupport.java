@@ -21,7 +21,7 @@ package org.neo4j.driver.internal;
 import java.util.Collections;
 import java.util.Map;
 
-import org.neo4j.driver.Value;
+import org.neo4j.driver.v1.Value;
 
 public final class ParameterSupport
 {

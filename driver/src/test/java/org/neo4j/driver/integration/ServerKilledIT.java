@@ -22,9 +22,9 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.driver.GraphDatabase;
-import org.neo4j.driver.Driver;
-import org.neo4j.driver.Session;
-import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.util.Neo4jRunner;
 import org.neo4j.driver.util.TestNeo4j;
 
