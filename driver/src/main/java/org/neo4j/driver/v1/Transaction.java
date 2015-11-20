@@ -29,7 +29,7 @@ package org.neo4j.driver.v1;
  *
  * <pre class="docTest:TransactionDocIT#classDoc">
  * {@code
- * try( Transaction tx = session.newTransaction() )
+ * try( Transaction tx = session.beginTransaction() )
  * {
  *     tx.run( "CREATE (n)" );
  *     tx.success();
@@ -56,7 +56,7 @@ public interface Transaction extends AutoCloseable, StatementRunner
      *
      * <pre class="docTest:TransactionDocIT#failure">
      * {@code
-     * try(Transaction tx = session.newTransaction() )
+     * try(Transaction tx = session.beginTransaction() )
      * {
      *     tx.run( "CREATE (n)" );
      *     tx.failure();

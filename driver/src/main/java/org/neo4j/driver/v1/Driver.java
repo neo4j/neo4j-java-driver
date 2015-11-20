@@ -40,7 +40,7 @@ import org.neo4j.driver.v1.internal.spi.ConnectionPool;
  * session.run( "CREATE (n {name:'Bob'})" );
  *
  * // Or, run multiple statements together in an atomic transaction:
- * try( Transaction tx = session.newTransaction() )
+ * try( Transaction tx = session.beginTransaction() )
  * {
  *     tx.run( "CREATE (n {name:'Alice'})" );
  *     tx.run( "CREATE (n {name:'Tina'})" );
