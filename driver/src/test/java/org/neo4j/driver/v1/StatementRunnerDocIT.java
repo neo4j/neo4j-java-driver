@@ -43,7 +43,7 @@ public class StatementRunnerDocIT
         snippet.run();
 
         // then
-        assertThat( snippet.get( "res" ), notNullValue() );
+        assertThat( snippet.get( "cursor" ), notNullValue() );
     }
 
     public void statementObjectTest( DocSnippet snippet )
@@ -55,6 +55,6 @@ public class StatementRunnerDocIT
         snippet.run();
 
         // then
-        assertThat( snippet.get( "res" ), notNullValue() );
+        assertThat( snippet.get( "cursor" ), notNullValue() );
     }
 }

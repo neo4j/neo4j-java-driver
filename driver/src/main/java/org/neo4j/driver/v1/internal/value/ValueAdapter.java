@@ -18,12 +18,12 @@
  */
 package org.neo4j.driver.v1.internal.value;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import org.neo4j.driver.v1.Function;
 import org.neo4j.driver.v1.Identity;
+import org.neo4j.driver.v1.MapLike;
 import org.neo4j.driver.v1.Node;
 import org.neo4j.driver.v1.Path;
 import org.neo4j.driver.v1.Relationship;
@@ -31,8 +31,11 @@ import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.value.NotMultiValued;
 import org.neo4j.driver.v1.exceptions.value.Uncoercible;
 import org.neo4j.driver.v1.exceptions.value.Unsizable;
+import org.neo4j.driver.v1.internal.util.Extract;
 
 import static java.util.Collections.emptyList;
+
+import static org.neo4j.driver.v1.Values.valueAsIs;
 
 public abstract class ValueAdapter implements InternalValue
 {
@@ -41,53 +44,154 @@ public abstract class ValueAdapter implements InternalValue
     {
         return false;
     }
+    
+    public boolean containsKey( String key )
+    {
+        throw new NotMultiValued( typeName() + " is not a keyed collection" );
+    }
 
     @Override
-    public String javaString()
+    public String asString()
     {
         throw new Uncoercible( typeName(), "Java String" );
     }
 
     @Override
-    public int javaInteger()
+    public char asChar()
     {
-        throw new Uncoercible( typeName(), "Java int" );
+        throw new Uncoercible( typeName(), "Java char" );
     }
 
     @Override
-    public long javaLong()
+    public long asLong()
     {
         throw new Uncoercible( typeName(), "Java long" );
     }
 
     @Override
-    public float javaFloat()
+    public int asInt()
+    {
+        throw new Uncoercible( typeName(), "Java int" );
+    }
+
+    @Override
+    public short asShort()
+    {
+        throw new Uncoercible( typeName(), "Java short" );
+    }
+
+    @Override
+    public byte asByte()
+    {
+        throw new Uncoercible( typeName(), "Java byte" );
+    }
+
+    @Override
+    public float asFloat()
     {
         throw new Uncoercible( typeName(), "Java float" );
     }
 
     @Override
-    public double javaDouble()
+    public double asDouble()
     {
         throw new Uncoercible( typeName(), "Java double" );
     }
 
     @Override
-    public boolean javaBoolean()
+    public boolean asBoolean()
     {
         throw new Uncoercible( typeName(), "Java boolean" );
     }
 
     @Override
-    public <T> List<T> javaList( Function<Value,T> mapFunction )
+    public List<Value> asList()
+    {
+        return asList( valueAsIs() );
+    }
+
+    @Override
+    public <T> List<T> asList( Function<Value,T> mapFunction )
     {
         throw new Uncoercible( typeName(), "Java List" );
     }
 
     @Override
-    public <T> Map<String, T> javaMap( Function<Value,T> mapFunction )
+    public Map<String,Value> asMap()
+    {
+        return asMap( valueAsIs() );
+    }
+
+    @Override
+    public <T> Map<String, T> asMap( Function<Value,T> mapFunction )
     {
         throw new Uncoercible( typeName(), "Java Map" );
+    }
+
+    @Override
+    public Object asObject()
+    {
+        throw new Uncoercible( typeName(), "Java Object" );
+    }
+
+    @Override
+    public Value[] asArray()
+    {
+        return asArray( Value.class, valueAsIs() );
+    }
+
+    @Override
+    public <T> T[] asArray( Class<T> clazz, Function<Value, T> mapFunction )
+    {
+        throw new Uncoercible( typeName(), "Java T[]" );
+    }
+
+    @Override
+    public char[] asCharArray()
+    {
+        throw new Uncoercible( typeName(), "Java char[]" );
+    }
+
+    @Override
+    public long[] asLongArray()
+    {
+        throw new Uncoercible( typeName(), "Java long[]" );
+    }
+
+    @Override
+    public int[] asIntArray()
+    {
+        throw new Uncoercible( typeName(), "Java int[]" );
+    }
+
+    @Override
+    public short[] asShortArray()
+    {
+        throw new Uncoercible( typeName(), "Java short[]" );
+    }
+
+    @Override
+    public byte[] asByteArray()
+    {
+        throw new Uncoercible( typeName(), "Java byte[]" );
+    }
+
+    @Override
+    public double[] asDoubleArray()
+    {
+        return new double[0];
+    }
+
+    @Override
+    public float[] asFloatArray()
+    {
+        return new float[0];
+    }
+
+    @Override
+    public Number asNumber()
+    {
+        throw new Uncoercible( typeName(), "Java Number" );
     }
 
     @Override
@@ -115,19 +219,19 @@ public abstract class ValueAdapter implements InternalValue
     }
 
     @Override
-    public Value get( long index )
+    public Value value( int index )
     {
         throw new NotMultiValued( typeName() + " is not an indexed collection" );
     }
 
     @Override
-    public Value get( String key )
+    public Value value( String key )
     {
         throw new NotMultiValued( typeName() + " is not a keyed collection" );
     }
 
     @Override
-    public long size()
+    public int elementCount()
     {
         throw new Unsizable( typeName() + " does not have size" );
     }
@@ -199,9 +303,33 @@ public abstract class ValueAdapter implements InternalValue
     }
 
     @Override
-    public Iterator<Value> iterator()
+    public boolean hasElements()
+    {
+        return values().iterator().hasNext();
+    }
+
+    @Override
+    public Iterable<Value> values()
+    {
+        return values( valueAsIs() );
+    }
+
+    @Override
+    public <T> Iterable<T> values( Function<Value,T> mapFunction )
     {
         throw new NotMultiValued( typeName() + " is not iterable" );
+    }
+
+    @Override
+    public Iterable<MapLike.Entry<Value>> entries()
+    {
+        return entries( valueAsIs() );
+    }
+
+    @Override
+    public <V> Iterable<MapLike.Entry<V>> entries( final Function<Value, V> Function )
+    {
+        return Extract.entries( this, Function );
     }
 
     @Override
@@ -226,3 +354,5 @@ public abstract class ValueAdapter implements InternalValue
         return "unknown";
     }
 }
+
+

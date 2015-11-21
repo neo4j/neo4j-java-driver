@@ -18,19 +18,22 @@
  */
 package org.neo4j.driver.v1.integration;
 
+import java.util.List;
+
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.ImmutableRecord;
 import org.neo4j.driver.v1.Result;
-import org.neo4j.driver.v1.ReusableResult;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
 import static java.util.Arrays.asList;
+
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+
 import static org.neo4j.driver.v1.Values.parameters;
 
 public class StatementIT
@@ -42,22 +45,22 @@ public class StatementIT
     public void shouldRunWithResult() throws Throwable
     {
         // When I execute a statement that yields a result
-        ReusableResult result = session.run( "UNWIND [1,2,3] AS k RETURN k" ).retain();
+        List<ImmutableRecord> result = session.run( "UNWIND [1,2,3] AS k RETURN k" ).retain();
 
         // Then the result object should contain the returned values
-        assertThat( result.size(), equalTo( 3l ) );
+        assertThat( result.size(), equalTo( 3 ) );
 
         // And it should allow random access
-        assertThat( result.get( 0 ).get( "k" ).javaLong(), equalTo( 1l ) );
-        assertThat( result.get( 1 ).get( "k" ).javaLong(), equalTo( 2l ) );
-        assertThat( result.get( 2 ).get( "k" ).javaLong(), equalTo( 3l ) );
+        assertThat( result.get( 0 ).value( "k" ).asLong(), equalTo( 1l ) );
+        assertThat( result.get( 1 ).value( "k" ).asLong(), equalTo( 2l ) );
+        assertThat( result.get( 2 ).value( "k" ).asLong(), equalTo( 3l ) );
 
         // And it should allow iteration
         long expected = 0;
-        for ( Record value : result )
+        for ( ImmutableRecord value : result )
         {
             expected += 1;
-            assertThat( value.get( "k" ), equalTo( Values.value( expected ) ) );
+            assertThat( value.value( "k" ), equalTo( Values.value( expected ) ) );
         }
         assertThat( expected, equalTo( 3l ) );
     }
@@ -84,11 +87,11 @@ public class StatementIT
     public void shouldRunParameterizedWithResult() throws Throwable
     {
         // When
-        ReusableResult result =
+        List<ImmutableRecord> result =
                 session.run( "UNWIND {list} AS k RETURN k", parameters( "list", asList( 1, 2, 3 ) ) ).retain();
 
         // Then
-        assertThat( result.size(), equalTo( 3l ) );
+        assertThat( result.size(), equalTo( 3 ) );
     }
 
     @SuppressWarnings({"StatementWithEmptyBody", "ConstantConditions"})
@@ -105,13 +108,13 @@ public class StatementIT
         // And I run a read statement
         Result result2 = session.run( "MATCH (a) RETURN a.name" );
 
-        // Then I expect to get the name back
+        // Then I expect to value the name back
         Value name = null;
         while ( result2.next() )
         {
-            name = result2.get( "a.name" );
+            name = result2.value( "a.name" );
         }
 
-        assertThat( name.javaString(), equalTo( "Adam" ) );
+        assertThat( name.asString(), equalTo( "Adam" ) );
     }
 }

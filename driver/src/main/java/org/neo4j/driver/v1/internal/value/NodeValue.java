@@ -34,6 +34,12 @@ public class NodeValue extends ValueAdapter
     }
 
     @Override
+    public Object asObject()
+    {
+        return asNode();
+    }
+
+    @Override
     public Node asNode()
     {
         return adapted;
@@ -46,17 +52,17 @@ public class NodeValue extends ValueAdapter
     }
 
     @Override
-    public long size()
+    public int elementCount()
     {
         int count = 0;
-        for ( String ignore : adapted.propertyKeys() ) { count++; }
+        for ( String ignore : adapted.keys() ) { count++; }
         return count;
     }
 
     @Override
     public Iterable<String> keys()
     {
-        return adapted.propertyKeys();
+        return adapted.keys();
     }
 
     @Override
@@ -66,9 +72,9 @@ public class NodeValue extends ValueAdapter
     }
 
     @Override
-    public Value get( String key )
+    public Value value( String key )
     {
-        return adapted.property( key );
+        return adapted.value( key );
     }
 
     @Override
@@ -84,8 +90,7 @@ public class NodeValue extends ValueAdapter
         }
 
         NodeValue values = (NodeValue) o;
-
-        return !(adapted != null ? !adapted.equals( values.adapted ) : values.adapted != null);
+        return adapted == values.adapted || adapted.equals( values.adapted );
 
     }
 

@@ -20,6 +20,7 @@ package org.neo4j.driver.v1.internal;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -77,7 +78,6 @@ public class SimplePath implements Path
             }
 
             SelfContainedSegment that = (SelfContainedSegment) other;
-
             return start.equals( that.start ) && end.equals( that.end ) && relationship.equals( that.relationship );
 
         }
@@ -111,9 +111,9 @@ public class SimplePath implements Path
 
     public SimplePath( List<Entity> alternatingNodeAndRel )
     {
-        nodes = new ArrayList<>(alternatingNodeAndRel.size() / 2 + 1);
-        relationships = new ArrayList<>(alternatingNodeAndRel.size() / 2);
-        segments = new ArrayList<>(alternatingNodeAndRel.size() / 2);
+        nodes = newList( alternatingNodeAndRel.size() / 2 + 1 );
+        relationships = newList( alternatingNodeAndRel.size() / 2 );
+        segments = newList( alternatingNodeAndRel.size() / 2 );
 
         if ( alternatingNodeAndRel.size() % 2 == 0 )
         {
@@ -194,8 +194,13 @@ public class SimplePath implements Path
         this.relationships = relationships;
     }
 
+    private <T> List<T> newList( int size )
+    {
+        return size == 0 ? Collections.<T>emptyList() : new ArrayList<T>( size );
+    }
+
     @Override
-    public long length()
+    public int length()
     {
         return relationships.size();
     }

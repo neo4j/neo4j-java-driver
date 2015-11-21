@@ -34,15 +34,9 @@ public class IdentityValue extends ValueAdapter
     }
 
     @Override
-    public boolean javaBoolean()
+    public Object asObject()
     {
-        return true;
-    }
-
-    @Override
-    public String javaString()
-    {
-        return val.toString();
+        return asIdentity();
     }
 
     @Override
@@ -88,8 +82,7 @@ public class IdentityValue extends ValueAdapter
         }
 
         IdentityValue values = (IdentityValue) o;
-
-        return val.equals( values.val );
+        return val == values.val || val.equals( values.val );
 
     }
 

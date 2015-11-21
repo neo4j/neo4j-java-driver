@@ -16,54 +16,47 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1.internal.messaging;
+package org.neo4j.driver.v1.internal;
 
-import java.io.IOException;
-import java.util.Arrays;
+import java.util.List;
 
+import org.neo4j.driver.v1.Function;
+import org.neo4j.driver.v1.MapLike;
+import org.neo4j.driver.v1.RecordLike;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.internal.util.Extract;
 
-public class RecordMessage implements Message
+import static org.neo4j.driver.v1.Values.valueAsIs;
+
+public abstract class SimpleRecordAdaptor implements RecordLike
 {
-    private final Value[] fields;
-
-    public RecordMessage( Value[] fields )
+    @Override
+    public boolean hasElements()
     {
-        this.fields = fields;
+        return elementCount() > 0;
     }
 
     @Override
-    public void dispatch( MessageHandler handler ) throws IOException
+    public List<Value> values()
     {
-        handler.handleRecordMessage( fields );
+        return Extract.list( this, valueAsIs() );
     }
 
     @Override
-    public String toString()
+    public <T> List<T> values( Function<Value, T> mapFunction )
     {
-        return "RecordMessage{" + Arrays.toString( fields ) + '}';
+        return Extract.list( this, mapFunction );
     }
 
     @Override
-    public boolean equals( Object o )
+    public List<MapLike.Entry<Value>> entries()
     {
-        if ( this == o )
-        {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() )
-        {
-            return false;
-        }
-
-        RecordMessage that = (RecordMessage) o;
-
-        return Arrays.equals( fields, that.fields );
+        return entries( valueAsIs() );
     }
 
     @Override
-    public int hashCode()
+    public <V> List<MapLike.Entry<V>> entries( final Function<Value, V> mapFunction )
     {
-        return Arrays.hashCode( fields );
+        return Extract.entriesList( this, mapFunction );
     }
 }

@@ -22,7 +22,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.ImmutableRecord;
 import org.neo4j.driver.v1.Result;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
@@ -30,6 +30,7 @@ import org.neo4j.driver.v1.util.TestNeo4jSession;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+
 import static org.neo4j.driver.v1.Values.parameters;
 
 public class ParametersIT
@@ -48,11 +49,11 @@ public class ParametersIT
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", true ) );
 
         // Then
-        for ( Record record : result.retain() )
+        for ( ImmutableRecord record : result.retain() )
         {
-            Value value = record.get( "a.value" );
+            Value value = record.value( "a.value" );
             assertThat( value.isBoolean(), equalTo( true ) );
-            assertThat( value.javaBoolean(), equalTo( true ) );
+            assertThat( value.asBoolean(), equalTo( true ) );
         }
     }
 
@@ -64,11 +65,11 @@ public class ParametersIT
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", (byte) 1 ) );
 
         // Then
-        for ( Record record : result.retain() )
+        for ( ImmutableRecord record : result.retain() )
         {
-            Value value = record.get( "a.value" );
+            Value value = record.value( "a.value" );
             assertThat( value.isInteger(), equalTo( true ) );
-            assertThat( value.javaLong(), equalTo( 1L ) );
+            assertThat( value.asLong(), equalTo( 1L ) );
         }
 
     }
@@ -81,11 +82,11 @@ public class ParametersIT
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", (short) 1 ) );
 
         // Then
-        for ( Record record : result.retain() )
+        for ( ImmutableRecord record : result.retain() )
         {
-            Value value = record.get( "a.value" );
+            Value value = record.value( "a.value" );
             assertThat( value.isInteger(), equalTo( true ) );
-            assertThat( value.javaLong(), equalTo( 1L ) );
+            assertThat( value.asLong(), equalTo( 1L ) );
         }
 
     }
@@ -98,11 +99,11 @@ public class ParametersIT
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", 1 ) );
 
         // Then
-        for ( Record record : result.retain() )
+        for ( ImmutableRecord record : result.retain() )
         {
-            Value value = record.get( "a.value" );
+            Value value = record.value( "a.value" );
             assertThat( value.isInteger(), equalTo( true ) );
-            assertThat( value.javaLong(), equalTo( 1L ) );
+            assertThat( value.asLong(), equalTo( 1L ) );
         }
 
     }
@@ -115,11 +116,11 @@ public class ParametersIT
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", 1L ) );
 
         // Then
-        for ( Record record : result.retain() )
+        for ( ImmutableRecord record : result.retain() )
         {
-            Value value = record.get( "a.value" );
+            Value value = record.value( "a.value" );
             assertThat( value.isInteger(), equalTo( true ) );
-            assertThat( value.javaLong(), equalTo( 1L ) );
+            assertThat( value.asLong(), equalTo( 1L ) );
         }
 
     }
@@ -132,11 +133,11 @@ public class ParametersIT
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", 6.28 ) );
 
         // Then
-        for ( Record record : result.retain() )
+        for ( ImmutableRecord record : result.retain() )
         {
-            Value value = record.get( "a.value" );
+            Value value = record.value( "a.value" );
             assertThat( value.isFloat(), equalTo( true ) );
-            assertThat( value.javaDouble(), equalTo( 6.28 ) );
+            assertThat( value.asDouble(), equalTo( 6.28 ) );
         }
 
     }
@@ -149,11 +150,11 @@ public class ParametersIT
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", 'ö' ) );
 
         // Then
-        for ( Record record : result.retain() )
+        for ( ImmutableRecord record : result.retain() )
         {
-            Value value = record.get( "a.value" );
+            Value value = record.value( "a.value" );
             assertThat( value.isString(), equalTo( true ) );
-            assertThat( value.javaString(), equalTo( "ö" ) );
+            assertThat( value.asString(), equalTo( "ö" ) );
         }
 
     }
@@ -167,11 +168,11 @@ public class ParametersIT
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", arrayValue ) );
 
         // Then
-        for ( Record record : result.retain() )
+        for ( ImmutableRecord record : result.retain() )
         {
-            Value value = record.get( "a.value" );
+            Value value = record.value( "a.value" );
             assertThat( value.isString(), equalTo( true ) );
-            assertThat( value.javaString(), equalTo( "Mjölnir" ) );
+            assertThat( value.asString(), equalTo( "Mjölnir" ) );
         }
 
     }
@@ -184,11 +185,11 @@ public class ParametersIT
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", "Mjölnir" ) );
 
         // Then
-        for ( Record record : result.retain() )
+        for ( ImmutableRecord record : result.retain() )
         {
-            Value value = record.get( "a.value" );
+            Value value = record.value( "a.value" );
             assertThat( value.isString(), equalTo( true ) );
-            assertThat( value.javaString(), equalTo( "Mjölnir" ) );
+            assertThat( value.asString(), equalTo( "Mjölnir" ) );
         }
 
     }
@@ -202,15 +203,15 @@ public class ParametersIT
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", arrayValue ) );
 
         // Then
-        for ( Record record : result.retain() )
+        for ( ImmutableRecord record : result.retain() )
         {
-            Value value = record.get( "a.value" );
+            Value value = record.value( "a.value" );
             assertThat( value.isList(), equalTo( true ) );
-            assertThat( value.size(), equalTo( 3L ) );
-            for ( Value item : value )
+            assertThat( value.elementCount(), equalTo( 3 ) );
+            for ( Value item : value.asList() )
             {
                 assertThat( item.isBoolean(), equalTo( true ) );
-                assertThat( item.javaBoolean(), equalTo( true ) );
+                assertThat( item.asBoolean(), equalTo( true ) );
             }
         }
 
@@ -225,15 +226,15 @@ public class ParametersIT
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", arrayValue ) );
 
         // Then
-        for ( Record record : result.retain() )
+        for ( ImmutableRecord record : result.retain() )
         {
-            Value value = record.get( "a.value" );
+            Value value = record.value( "a.value" );
             assertThat( value.isList(), equalTo( true ) );
-            assertThat( value.size(), equalTo( 3L ) );
-            for ( Value item : value )
+            assertThat( value.elementCount(), equalTo( 3 ) );
+            for ( Value item : value.asList() )
             {
                 assertThat( item.isInteger(), equalTo( true ) );
-                assertThat( item.javaLong(), equalTo( 42L ) );
+                assertThat( item.asLong(), equalTo( 42L ) );
             }
         }
 
@@ -248,15 +249,15 @@ public class ParametersIT
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", arrayValue ) );
 
         // Then
-        for ( Record record : result.retain() )
+        for ( ImmutableRecord record : result.retain() )
         {
-            Value value = record.get( "a.value" );
+            Value value = record.value( "a.value" );
             assertThat( value.isList(), equalTo( true ) );
-            assertThat( value.size(), equalTo( 3L ) );
-            for ( Value item : value )
+            assertThat( value.elementCount(), equalTo( 3 ) );
+            for ( Value item : value.asList() )
             {
                 assertThat( item.isFloat(), equalTo( true ) );
-                assertThat( item.javaDouble(), equalTo( 6.28 ) );
+                assertThat( item.asDouble(), equalTo( 6.28 ) );
             }
         }
     }
@@ -271,15 +272,15 @@ public class ParametersIT
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", arrayValue ) );
 
         // Then
-        for ( Record record : result.retain() )
+        for ( ImmutableRecord record : result.retain() )
         {
-            Value value = record.get( "a.value" );
+            Value value = record.value( "a.value" );
             assertThat( value.isList(), equalTo( true ) );
-            assertThat( value.size(), equalTo( 3L ) );
-            for ( Value item : value )
+            assertThat( value.elementCount(), equalTo( 3 ) );
+            for ( Value item : value.asList() )
             {
                 assertThat( item.isString(), equalTo( true ) );
-                assertThat( item.javaString(), equalTo( "Mjölnir" ) );
+                assertThat( item.asString(), equalTo( "Mjölnir" ) );
             }
         }
     }
@@ -293,15 +294,15 @@ public class ParametersIT
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", arrayValue ) );
 
         // Then
-        for ( Record record : result.retain() )
+        for ( ImmutableRecord record : result.retain() )
         {
-            Value value = record.get( "a.value" );
+            Value value = record.value( "a.value" );
             assertThat( value.isList(), equalTo( true ) );
-            assertThat( value.size(), equalTo( 3L ) );
-            for ( Value item : value )
+            assertThat( value.elementCount(), equalTo( 3 ) );
+            for ( Value item : value.asList() )
             {
                 assertThat( item.isString(), equalTo( true ) );
-                assertThat( item.javaString(), equalTo( "cat" ) );
+                assertThat( item.asString(), equalTo( "cat" ) );
             }
         }
 
@@ -316,11 +317,11 @@ public class ParametersIT
                 parameters( "value", parameters( "v", true ) ) );
 
         // Then
-        for ( Record record : result.retain() )
+        for ( ImmutableRecord record : result.retain() )
         {
-            Value value = record.get( "a.value" );
+            Value value = record.value( "a.value" );
             assertThat( value.isBoolean(), equalTo( true ) );
-            assertThat( value.javaBoolean(), equalTo( true ) );
+            assertThat( value.asBoolean(), equalTo( true ) );
         }
 
     }
@@ -334,11 +335,11 @@ public class ParametersIT
                 parameters( "value", parameters( "v", 42 ) ) );
 
         // Then
-        for ( Record record : result.retain() )
+        for ( ImmutableRecord record : result.retain() )
         {
-            Value value = record.get( "a.value" );
+            Value value = record.value( "a.value" );
             assertThat( value.isInteger(), equalTo( true ) );
-            assertThat( value.javaLong(), equalTo( 42L ) );
+            assertThat( value.asLong(), equalTo( 42L ) );
         }
 
     }
@@ -352,11 +353,11 @@ public class ParametersIT
                 parameters( "value", parameters( "v", 6.28 ) ) );
 
         // Then
-        for ( Record record : result.retain() )
+        for ( ImmutableRecord record : result.retain() )
         {
-            Value value = record.get( "a.value" );
+            Value value = record.value( "a.value" );
             assertThat( value.isFloat(), equalTo( true ) );
-            assertThat( value.javaDouble(), equalTo( 6.28 ) );
+            assertThat( value.asDouble(), equalTo( 6.28 ) );
         }
 
     }
@@ -370,11 +371,11 @@ public class ParametersIT
                 parameters( "value", parameters( "v", "Mjölnir" ) ) );
 
         // Then
-        for ( Record record : result.retain() )
+        for ( ImmutableRecord record : result.retain() )
         {
-            Value value = record.get( "a.value" );
+            Value value = record.value( "a.value" );
             assertThat( value.isString(), equalTo( true ) );
-            assertThat( value.javaString(), equalTo( "Mjölnir" ) );
+            assertThat( value.asString(), equalTo( "Mjölnir" ) );
         }
     }
 

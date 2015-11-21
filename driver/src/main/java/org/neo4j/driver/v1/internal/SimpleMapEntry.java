@@ -16,15 +16,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1.exceptions.value;
+package org.neo4j.driver.v1.internal;
 
-public class NotMultiValued extends ValueException
+import org.neo4j.driver.v1.MapLike;
+
+public class SimpleMapEntry<V> implements MapLike.Entry<V>
 {
-    private static final long serialVersionUID = -7380569883011364090L;
+    private final String key;
+    private final V value;
 
-    public NotMultiValued( String message )
+    protected SimpleMapEntry( String key, V value )
     {
-        super( message );
+        this.key = key;
+        this.value = value;
     }
 
+    public String key()
+    {
+        return key;
+    }
+
+    public V value()
+    {
+        return value;
+    }
+
+    public static <V> MapLike.Entry<V> of( String key, V value )
+    {
+        return new SimpleMapEntry<>( key, value );
+    }
 }

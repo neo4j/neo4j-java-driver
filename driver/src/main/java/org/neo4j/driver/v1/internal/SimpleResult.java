@@ -18,59 +18,118 @@
  */
 package org.neo4j.driver.v1.internal;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.ImmutableRecord;
 import org.neo4j.driver.v1.Result;
 import org.neo4j.driver.v1.ResultSummary;
-import org.neo4j.driver.v1.ReusableResult;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
-public class SimpleResult implements Result
+public class SimpleResult extends SimpleRecordAdaptor implements Result
 {
-    private final Iterable<String> fieldNames;
-    private final List<Record> body;
-    private final Iterator<Record> iter;
+    private final List<String> keys;
+    private final Iterator<ImmutableRecord> iter;
     private final ResultSummary summary;
 
-    private Record current = null;
+    private boolean open = true;
+    private ImmutableRecord current = null;
+    private int position = -1;
 
-    public SimpleResult( Iterable<String> fieldNames, List<Record> body, ResultSummary summary )
+    public SimpleResult( List<String> keys, List<ImmutableRecord> body, ResultSummary summary )
     {
-        this.fieldNames = fieldNames;
-        this.body = body;
+        this.keys = keys;
         this.iter = body.iterator();
         this.summary = summary;
     }
 
     @Override
-    public ReusableResult retain()
+    public boolean isOpen()
     {
-        return new StandardReusableResult( body );
+        return open;
     }
 
     @Override
-    public Record single()
+    public int elementCount()
     {
-        return iter.next();
+        return keys.size();
     }
 
-    @SuppressWarnings("StatementWithEmptyBody")
     @Override
-    public ResultSummary summarize()
+    public boolean hasElements()
     {
-        while (next()) ;
-        return summary;
+        return ! keys.isEmpty();
+    }
+
+    public Value value( int index )
+    {
+        return current == null ? throwNoRecord() : current.value( index );
+    }
+
+    @Override
+    public boolean containsKey( String key )
+    {
+        return keys.contains( key );
+    }
+
+    public List<String> keys()
+    {
+        return keys;
+    }
+
+    public Value value( String key )
+    {
+        assertOpen();
+        return current == null ? throwNoRecord() : current.value( key );
+    }
+
+    private Value throwNoRecord()
+    {
+        throw new ClientException(
+            "In order to access fields of a record in a result, " +
+            "you must first call next() to point the result to the next record in the result stream."
+        );
+    }
+
+    @Override
+    public ImmutableRecord record()
+    {
+        assertOpen();
+        if ( current == null )
+        {
+            current = new EmptyRecord( keys );
+        }
+        return current;
+    }
+
+    @Override
+    public int position()
+    {
+        assertOpen();
+
+        return position;
+    }
+
+    @Override
+    public boolean atEnd()
+    {
+        assertOpen();
+
+        return !iter.hasNext();
     }
 
     @Override
     public boolean next()
     {
+        assertOpen();
+
         if ( iter.hasNext() )
         {
             current = iter.next();
+            position += 1;
             return true;
         }
         else
@@ -80,58 +139,80 @@ public class SimpleResult implements Result
     }
 
     @Override
-    public Value get( int fieldIndex )
+    public int skip( int elements )
     {
-        return current.get( fieldIndex );
-    }
-
-    @Override
-    public Value get( String fieldName )
-    {
-        if( current == null )
+        if ( elements < 0 )
         {
-            throw new ClientException(
-                    "In order to access fields of a record in a result, " +
-                    "you must first call next() to point the result to the next record in the result stream." );
+            throw new IllegalArgumentException( "Cannot skip negative number of elements" );
         }
-        return current.get( fieldName );
-    }
-
-    @Override
-    public Iterable<String> fieldNames()
-    {
-        return fieldNames;
-    }
-
-    private static class StandardReusableResult implements ReusableResult
-    {
-        private final List<Record> body;
-
-        private StandardReusableResult( List<Record> body )
+        else
         {
-            this.body = body;
-        }
-
-        @Override
-        public long size()
-        {
-            return body.size();
-        }
-
-        @Override
-        public Record get( long index )
-        {
-            if ( index < 0 || index >= body.size() )
+            int skipped = 0;
+            while ( skipped < elements && next() )
             {
-                throw new ClientException( "Value " + index + " does not exist" );
+                skipped += 1;
             }
-            return body.get( (int) index );
+            return skipped;
         }
+    }
 
-        @Override
-        public Iterator<Record> iterator()
+    @Override
+    public boolean first()
+    {
+        int pos = position();
+        return pos == -1 ? next() : pos == 0;
+    }
+
+    @Override
+    public boolean single()
+    {
+        return first() && atEnd();
+    }
+
+    @Override
+    public List<ImmutableRecord> retain()
+    {
+        if ( first() )
         {
-            return body.iterator();
+            List<ImmutableRecord> result = new ArrayList<>();
+            do
+            {
+                result.add( record() );
+            } while ( next() );
+            return result;
+        }
+        else
+        {
+            return Collections.emptyList();
+        }
+    }
+
+    @SuppressWarnings("StatementWithEmptyBody")
+    @Override
+    public ResultSummary summarize()
+    {
+        while ( next() ) ;
+        return summary;
+    }
+
+    @Override
+    public void close()
+    {
+        if ( open )
+        {
+            open = false;
+        }
+        else
+        {
+            throw new IllegalStateException( "Already closed" );
+        }
+    }
+
+    private void assertOpen()
+    {
+        if ( !open )
+        {
+            throw new IllegalStateException( "Cursor already closed" );
         }
     }
 }

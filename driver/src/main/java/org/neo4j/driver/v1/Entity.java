@@ -21,7 +21,7 @@ package org.neo4j.driver.v1;
 /**
  * A uniquely identifiable property container that can form part of a Neo4j graph.
  */
-public interface Entity
+public interface Entity extends MapLike
 {
     /**
      * A unique {@link Identity identity} for this Entity. Identities are guaranteed
@@ -32,27 +32,4 @@ public interface Entity
      * @return an identity object
      */
     Identity identity();
-
-    /**
-     * Return all property keys.
-     *
-     * @return a property key Collection
-     */
-    Iterable<String> propertyKeys();
-
-    /**
-     * Number of properties in this entity.
-     *
-     * @return the number of properties this entity contains.
-     */
-    int propertyCount();
-
-    /**
-     * Return a specific property {@link Value}. If no value could be found with the specified key,
-     * null will be returned.
-     *
-     * @param key a property key
-     * @return the property value or null
-     */
-    Value property( String key );
 }

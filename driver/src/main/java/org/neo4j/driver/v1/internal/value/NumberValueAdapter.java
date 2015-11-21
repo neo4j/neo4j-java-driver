@@ -16,15 +16,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1.exceptions.value;
+package org.neo4j.driver.v1.internal.value;
 
-public class NotMultiValued extends ValueException
-{
-    private static final long serialVersionUID = -7380569883011364090L;
+public abstract class NumberValueAdapter extends ValueAdapter{
 
-    public NotMultiValued( String message )
+    public final Object asObject()
     {
-        super( message );
+        return asNumber();
     }
-
 }

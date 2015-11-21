@@ -18,13 +18,13 @@
  */
 package org.neo4j.driver.v1.internal;
 
+import java.util.Arrays;
+import java.util.List;
+
 import org.hamcrest.MatcherAssert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-
-import java.util.Arrays;
-import java.util.List;
 
 import org.neo4j.driver.v1.Node;
 import org.neo4j.driver.v1.Path;
@@ -60,7 +60,7 @@ public class SimplePathTest
         SimplePath path = testPath();
 
         // Then
-        assertThat( path.length(), equalTo( 3L ) );
+        assertThat( path.length(), equalTo( 3 ) );
     }
 
     @Test
@@ -70,7 +70,7 @@ public class SimplePathTest
         SimplePath path = new SimplePath( new SimpleNode( 1 ) );
 
         // Then
-        assertThat( path.length(), equalTo( 0L ) );
+        assertThat( path.length(), equalTo( 0 ) );
     }
 
     @Test

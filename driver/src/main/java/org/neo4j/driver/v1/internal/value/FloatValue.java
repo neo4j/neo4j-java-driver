@@ -22,7 +22,7 @@ import org.neo4j.driver.v1.Type;
 import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
 import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
-public class FloatValue extends ValueAdapter
+public class FloatValue extends NumberValueAdapter
 {
     private final double val;
 
@@ -31,34 +31,33 @@ public class FloatValue extends ValueAdapter
         this.val = val;
     }
 
-    @Override
-    public String javaString()
+    public Number asNumber()
     {
-        return Double.toString( val );
+        return asFloat();
     }
 
     @Override
-    public int javaInteger()
-    {
-        return (int) val;
-    }
-
-    @Override
-    public long javaLong()
+    public long asLong()
     {
         return (long) val;
     }
 
     @Override
-    public float javaFloat()
+    public int asInt()
     {
-        return (float) val;
+        return (int) val;
     }
 
     @Override
-    public boolean javaBoolean()
+    public short asShort()
     {
-        return val != 0;
+        return (short) val;
+    }
+
+    @Override
+    public byte asByte()
+    {
+        return (byte) val;
     }
 
     @Override
@@ -67,10 +66,15 @@ public class FloatValue extends ValueAdapter
         return TypeConstructor.FLOAT_TyCon;
     }
 
-    @Override
-    public double javaDouble()
+    public double asDouble()
     {
         return val;
+    }
+
+    @Override
+    public float asFloat()
+    {
+        return (float) val;
     }
 
     @Override
@@ -104,9 +108,7 @@ public class FloatValue extends ValueAdapter
         }
 
         FloatValue values = (FloatValue) o;
-
         return Double.compare( values.val, val ) == 0;
-
     }
 
     @Override

@@ -18,10 +18,6 @@
  */
 package org.neo4j.driver.v1.internal.value;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 
 import org.neo4j.driver.v1.Function;
@@ -29,48 +25,44 @@ import org.neo4j.driver.v1.Type;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
 import org.neo4j.driver.v1.internal.types.TypeConstructor;
+import org.neo4j.driver.v1.internal.util.Extract;
 
 public class MapValue extends ValueAdapter
 {
-    private final Map<String,Value> val;
+    private final Map<String, Value> val;
 
-    public MapValue( Map<String,Value> val )
+    public MapValue( Map<String, Value> val )
     {
         this.val = val;
     }
 
     @Override
-    public boolean javaBoolean()
+    public <T> Map<String, T> asMap( Function<Value, T> mapFunction )
     {
-        return !val.isEmpty();
+        return Extract.map( val, mapFunction );
     }
 
     @Override
-    public <T> List<T> javaList( Function<Value,T> mapFunction )
+    public Map<String,Value> asMap()
     {
-        List<T> list = new ArrayList<>( val.size() );
-        for ( Value value : val.values() )
-        {
-            list.add( mapFunction.apply( value ) );
-        }
-        return list;
+        return Extract.map( val );
+    }
+
+    public Object asObject()
+    {
+        return asMap();
     }
 
     @Override
-    public <T> Map<String, T> javaMap( Function<Value,T> mapFunction )
-    {
-        Map<String, T> map = new HashMap<>( val.size() );
-        for ( Map.Entry<String, Value> entry : val.entrySet() )
-        {
-            map.put( entry.getKey(), mapFunction.apply( entry.getValue() ) );
-        }
-        return map;
-    }
-
-    @Override
-    public long size()
+    public int elementCount()
     {
         return val.size();
+    }
+
+    @Override
+    public boolean containsKey( String key )
+    {
+        return val.containsKey( key );
     }
 
     @Override
@@ -92,32 +84,13 @@ public class MapValue extends ValueAdapter
     }
 
     @Override
-    public Iterator<Value> iterator()
+    public Iterable<Value> values()
     {
-        final Iterator<Value> raw = val.values().iterator();
-        return new Iterator<Value>()
-        {
-            @Override
-            public boolean hasNext()
-            {
-                return raw.hasNext();
-            }
-
-            @Override
-            public Value next()
-            {
-                return raw.next();
-            }
-
-            @Override
-            public void remove()
-            {
-            }
-        };
+        return val.values();
     }
 
     @Override
-    public Value get( String key )
+    public Value value( String key )
     {
         return val.get( key );
     }
@@ -136,6 +109,12 @@ public class MapValue extends ValueAdapter
     }
 
     @Override
+    public <T> Iterable<T> values( Function<Value, T> mapFunction )
+    {
+        return Extract.list( this, mapFunction );
+    }
+
+    @Override
     public boolean equals( Object o )
     {
         if ( this == o )
@@ -148,9 +127,7 @@ public class MapValue extends ValueAdapter
         }
 
         MapValue values = (MapValue) o;
-
-        return !(val != null ? !val.equals( values.val ) : values.val != null);
-
+        return val == values.val || val.equals( values.val );
     }
 
     @Override

@@ -54,7 +54,7 @@ import java.util.Map;
  *
  * <pre class="docTest:ValueDocIT#classDocTreeExample">
  * {@code
- * String username = value.get("users").get(1).get("name").javaString();
+ * String username = value.value("users").value(1).value("name").asString();
  * }
  * </pre>
  *
@@ -63,84 +63,15 @@ import java.util.Map;
  * <pre class="docTest:ValueDocIT#classDocIterationExample">
  * {@code
  * List<String> names = new LinkedList<>();
- * for(Value user : value.get("users") )
+ * for(Value user : value.value("users").values() )
  * {
- *     names.add(user.get("name").javaString());
+ *     names.add(user.value("name").asString());
  * }
  * }
  * </pre>
  */
-public interface Value extends Iterable<Value>
+public interface Value extends MapLike, ListLike
 {
-    /** @return the value as a Java String, if possible. */
-    String javaString();
-
-    /** @return the value as a Java int, if possible. */
-    int javaInteger();
-
-    /** @return the value as a Java long, if possible. */
-    long javaLong();
-
-    /** @return the value as a Java float, if possible. */
-    float javaFloat();
-
-    /** @return the value as a Java double, if possible. */
-    double javaDouble();
-
-    /**
-     * If the value represents a number, this method will return true if the number is not equals to 0.
-     * If the value represents a collection, this method will return true if the collection is not empty.
-     * If the value represents a string, this method will return true, if the string is not empty.
-     * @return the value as a Java boolean, if possible.
-     */
-    boolean javaBoolean();
-
-    /**
-     * @param mapFunction a function to map from Value to T. See {@link Values} for some predefined functions, such
-     * as {@link Values#valueToBoolean()}, {@link Values#valueToList(Function)}.
-     * @param <T> the type of list elements
-     * @return the value as a list of T, if possible
-     */
-    <T> List<T> javaList( Function<Value, T> mapFunction );
-
-    /**
-     * @param mapFunction a function to map from Value to T. See {@link Values} for some predefined functions, such
-     * as {@link Values#valueToBoolean()}, {@link Values#valueToList(Function)}.
-     * @param <T> the type of map values
-     * @return the value as a map from string keys to values of type T, if possible
-     */
-    <T> Map<String, T> javaMap( Function<Value, T> mapFunction );
-
-    /** @return the value as an {@link Identity}, if possible. */
-    Identity asIdentity();
-
-    /** @return the value as a {@link Node}, if possible. */
-    Node asNode();
-
-    /** @return the value as a {@link Relationship}, if possible. */
-    Relationship asRelationship();
-
-    /** @return the value as a {@link Path}, if possible. */
-    Path asPath();
-
-    /**
-     * Retrieve an inner value by index. This can be used for {@link #isList() lists}.
-     *
-     * @param index the index to look up a value by
-     * @return the value at the specified index
-     */
-    Value get( long index );
-
-    /**
-     * Retrieve an inner value by key. This can be used for {@link #isMap() maps},
-     * {@link #isNode() nodes} and {@link #isRelationship() relationships}. For nodes and relationships, this method
-     * returns property values. If no value could be found with the specified key, then null will be returned.
-     *
-     * @param key the key to find a value by
-     * @return the value with the specified key or null if no value could be found with the key
-     */
-    Value get( String key );
-
     /**
      * If the underlying value is a collection type, return the number of values in the collection.
      * <p>
@@ -155,16 +86,114 @@ public interface Value extends Iterable<Value>
      *
      * @return the number of values in an underlying collection
      */
-    long size();
+    @Override
+    int elementCount();
 
     /**
-     * If the underlying value supports {@link #get(String) key-based indexing}, return an iterable of the keys in the
+     * If the underlying value supports {@link #value(String) key-based indexing}, return an iterable of the keys in the
      * map, this applies to {@link #isMap() map}, {@link #asNode() node} and {@link
      * #isRelationship() relationship} values.
      *
      * @return the keys in the value
      */
+    @Override
     Iterable<String> keys();
+
+    /** @return the value as a Java Object */
+    Object asObject();
+
+    /**
+     * If the value represents a number, this method will return true if the number is not equals to 0.
+     * If the value represents a collection, this method will return true if the collection is not empty.
+     * If the value represents a string, this method will return true, if the string is not empty.
+     * @return the value as a Java boolean, if possible.
+     */
+    boolean asBoolean();
+
+    /** @return the value as a Java String, if possible. */
+    String asString();
+
+    /** @return the value as a Java char, if possible. */
+    char asChar();
+
+    /** @return the value as a Java Number, if possible. */
+    Number asNumber();
+
+    /** @return the value as a Java long, if possible. */
+    long asLong();
+
+    /** @return the value as a Java int, if possible. */
+    int asInt();
+
+    /** @return the value as a Java short, if possible. */
+    short asShort();
+
+    /** @return the value as a Java byte, if possible. */
+    byte asByte();
+
+    /** @return the value as a Java double, if possible. */
+    double asDouble();
+
+    /** @return the value as a Java float, if possible. */
+    float asFloat();
+
+    /** @return the value as an {@link Identity}, if possible. */
+    Identity asIdentity();
+
+    /**
+     * @return the value as a list of values, if possible
+     */
+    List<Value> asList();
+
+    /**
+     * @param mapFunction a function to map from Value to T. See {@link Values} for some predefined functions, such
+     * as {@link Values#valueAsBoolean()}, {@link Values#valueAsList(Function)}.
+     * @param <T> the type of list elements
+     * @return the value as a list of T, if possible
+     */
+    <T> List<T> asList( Function<Value, T> mapFunction );
+
+    Value[] asArray();
+
+    <T> T[] asArray( Class<T> clazz, Function<Value, T> mapFunction );
+
+    char[] asCharArray();
+
+    long[] asLongArray();
+
+    int[] asIntArray();
+
+    short[] asShortArray();
+
+    byte[] asByteArray();
+
+    double[] asDoubleArray();
+
+    float[] asFloatArray();
+
+    /**
+     * @return the value as a value map, if possible
+     */
+    Map<String, Value> asMap();
+
+    /**
+     * @param mapFunction a function to map from Value to T. See {@link Values} for some predefined functions, such
+     * as {@link Values#valueAsBoolean()}, {@link Values#valueAsList(Function)}.
+     * @param <T> the type of map values
+     * @return the value as a map from string keys to values of type T, if possible
+     */
+    <T> Map<String, T> asMap( Function<Value, T> mapFunction );
+
+    /** @return the value as a {@link Node}, if possible. */
+    Node asNode();
+
+    /** @return the value as a {@link Relationship}, if possible. */
+    Relationship asRelationship();
+
+    /** @return the value as a {@link Path}, if possible. */
+    Path asPath();
+
+    // TODO: This should go away and be replaced by type introspection
 
     boolean isNull();
 
@@ -193,20 +222,20 @@ public interface Value extends Iterable<Value>
     boolean isRelationship();
 
     /**
-     * Lists are an ordered collection of values. You can {@link #iterator() iterate} over a list as well as
-     * access specific values {@link #get(long) by index}.
+     * Lists are an ordered collection of values. You can {@link #values() iterate} over a list as well as
+     * access specific values {@link ListLike#value(int) by index}.
      * <p>
-     * {@link #size()} will give you the number of entries in the list.
+     * {@link #elementCount()} will give you the number of entries in the list.
      *
      * @return if the underlying value is a Neo4j list
      */
     boolean isList();
 
     /**
-     * Maps are key/value objects, similar to {@link java.util.Map java maps}. You can use {@link #get(String)} to
-     * retrive values from the map, {@link #keys()} to list keys and {@link #iterator()} to iterate over the values.
+     * Maps are key/value objects, similar to {@link java.util.Map java maps}. You can use {@link #value(String)} to
+     * retrive values from the map, {@link #keys()} to list keys and {@link #values()} to iterate over the values.
      * <p>
-     * {@link #size()} will give you the number of entries in the map.
+     * {@link #elementCount()} will give you the number of entries in the map.
      *
      * @return if the underlying value is a Neo4j map
      */

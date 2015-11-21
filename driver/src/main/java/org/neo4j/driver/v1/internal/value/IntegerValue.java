@@ -22,7 +22,7 @@ import org.neo4j.driver.v1.Type;
 import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
 import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
-public class IntegerValue extends ValueAdapter
+public class IntegerValue extends NumberValueAdapter
 {
     private final long val;
 
@@ -32,39 +32,44 @@ public class IntegerValue extends ValueAdapter
     }
 
     @Override
-    public String javaString()
+    public Number asNumber()
     {
-        return Long.toString( val );
+        return asInt();
     }
 
     @Override
-    public int javaInteger()
+    public long asLong()
+    {
+        return val;
+    }
+
+    @Override
+    public int asInt()
     {
         return (int) val;
     }
 
     @Override
-    public float javaFloat()
+    public short asShort()
+    {
+        return (short) val;
+    }
+
+    public byte asByte()
+    {
+        return (byte) val;
+    }
+
+    @Override
+    public double asDouble()
+    {
+        return (double) val;
+    }
+
+    @Override
+    public float asFloat()
     {
         return (float) val;
-    }
-
-    @Override
-    public boolean javaBoolean()
-    {
-        return val != 0;
-    }
-
-    @Override
-    public TypeConstructor typeConstructor()
-    {
-        return TypeConstructor.INTEGER_TyCon;
-    }
-
-    @Override
-    public long javaLong()
-    {
-        return val;
     }
 
     @Override
@@ -74,15 +79,15 @@ public class IntegerValue extends ValueAdapter
     }
 
     @Override
-    public double javaDouble()
-    {
-        return (double) val;
-    }
-
-    @Override
     public Type type()
     {
         return StandardTypeSystem.TYPE_SYSTEM.INTEGER();
+    }
+
+    @Override
+    public TypeConstructor typeConstructor()
+    {
+        return TypeConstructor.INTEGER_TyCon;
     }
 
     @Override
@@ -104,9 +109,7 @@ public class IntegerValue extends ValueAdapter
         }
 
         IntegerValue values = (IntegerValue) o;
-
         return val == values.val;
-
     }
 
     @Override

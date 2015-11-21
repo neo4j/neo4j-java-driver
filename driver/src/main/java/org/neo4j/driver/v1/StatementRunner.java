@@ -39,8 +39,8 @@ public interface StatementRunner
      * <h2>Example</h2>
      * <pre class="doctest:StatementRunnerDocIT#parameterTest">
      * {@code
-     * Result res = session.run( "MATCH (n) WHERE n.name = {myNameParam} RETURN (n)",
-     *              Values.parameters( "myNameParam", "Bob" ) );
+     * Result cursor = session.run( "MATCH (n) WHERE n.name = {myNameParam} RETURN (n)",
+     *                              Values.parameters( "myNameParam", "Bob" ) );
      * }
      * </pre>
      *
@@ -64,7 +64,7 @@ public interface StatementRunner
      * <pre class="doctest:StatementRunnerDocIT#statementObjectTest">
      * {@code
      * Statement statement = new Statement( "MATCH (n) WHERE n.name={myNameParam} RETURN n.age" );
-     * Result res = session.run( statement.withParameters( Values.parameters( "myNameParam", "Bob" )  ) );
+     * Result cursor = session.run( statement.withParameters( Values.parameters( "myNameParam", "Bob" )  ) );
      * }
      * </pre>
      *
@@ -73,10 +73,4 @@ public interface StatementRunner
      */
     Result run( Statement statement );
 
-    /**
-     * Detect whether this statement runner can be used, of if it has been closed.
-     *
-     * @return true if you can currently {@link #run(String) run} statements with this
-     */
-    boolean isOpen();
 }

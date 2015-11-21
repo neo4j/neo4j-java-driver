@@ -16,15 +16,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1.exceptions.value;
+package org.neo4j.driver.v1;
 
-public class NotMultiValued extends ValueException
+/**
+ * Access the fields of an underlying list like data structure by index
+ */
+public interface ListLike extends CollectionLike
 {
-    private static final long serialVersionUID = -7380569883011364090L;
-
-    public NotMultiValued( String message )
-    {
-        super( message );
-    }
-
+    /**
+     * Retrieve the value of the field at the given index
+     *
+     * @param index the index of the field
+     * @return the field's value or a null value if no such field exists
+     */
+    Value value( int index );
 }
+
+

@@ -16,15 +16,46 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1.exceptions.value;
+package org.neo4j.driver.v1.internal;
 
-public class NotMultiValued extends ValueException
+import java.util.List;
+
+import org.neo4j.driver.v1.ImmutableRecord;
+import org.neo4j.driver.v1.Value;
+
+public class EmptyRecord extends SimpleRecordAdaptor implements ImmutableRecord
 {
-    private static final long serialVersionUID = -7380569883011364090L;
+    private final List<String> keys;
 
-    public NotMultiValued( String message )
+    EmptyRecord( List<String> keys )
     {
-        super( message );
+        this.keys = keys;
     }
 
+    public int elementCount()
+    {
+        return keys.size();
+    }
+
+    public Value value( int index )
+    {
+        return null;
+    }
+
+    @Override
+    public boolean containsKey( String key )
+    {
+        return keys.contains( key );
+    }
+
+    public List<String> keys()
+    {
+        return keys;
+    }
+
+    @Override
+    public Value value( String key )
+    {
+        return null;
+    }
 }

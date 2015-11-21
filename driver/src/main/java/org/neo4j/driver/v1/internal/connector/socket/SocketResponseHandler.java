@@ -27,12 +27,12 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.DatabaseException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.exceptions.TransientException;
+import org.neo4j.driver.v1.internal.messaging.MessageHandler;
+import org.neo4j.driver.v1.internal.spi.StreamCollector;
 import org.neo4j.driver.v1.internal.summary.SimpleNotification;
 import org.neo4j.driver.v1.internal.summary.SimplePlan;
 import org.neo4j.driver.v1.internal.summary.SimpleProfiledPlan;
 import org.neo4j.driver.v1.internal.summary.SimpleUpdateStatistics;
-import org.neo4j.driver.v1.internal.messaging.MessageHandler;
-import org.neo4j.driver.v1.internal.spi.StreamCollector;
 
 public class SocketResponseHandler implements MessageHandler
 {
@@ -108,7 +108,7 @@ public class SocketResponseHandler implements MessageHandler
     {
         if ( notifications != null )
         {
-            collector.notifications( notifications.javaList( SimpleNotification.VALUE_TO_NOTIFICATION ) );
+            collector.notifications( notifications.asList( SimpleNotification.VALUE_TO_NOTIFICATION ) );
         }
     }
 
@@ -132,15 +132,15 @@ public class SocketResponseHandler implements MessageHandler
     {
         if (fieldValue != null)
         {
-            if ( fieldValue.size() > 0 )
+            if ( fieldValue.elementCount() > 0 )
             {
-                String[] fields = new String[(int) fieldValue.size()];
+                String[] fields = new String[fieldValue.elementCount()];
                 int idx = 0;
-                for ( Value value : fieldValue )
+                for ( Value value : fieldValue.values() )
                 {
-                    fields[idx++] = value.javaString();
+                    fields[idx++] = value.asString();
                 }
-                collector.fieldNames( fields );
+                collector.keys( fields );
             }
         }
     }
@@ -149,7 +149,7 @@ public class SocketResponseHandler implements MessageHandler
     {
         if ( type != null )
         {
-            collector.statementType( StatementType.fromCode( type.javaString() ) );
+            collector.statementType( StatementType.fromCode( type.asString() ) );
         }
     }
 
@@ -177,8 +177,8 @@ public class SocketResponseHandler implements MessageHandler
 
     private int statsValue( Value stats, String name )
     {
-        Value value = stats.get( name );
-        return value == null ? 0 : value.javaInteger();
+        Value value = stats.value( name );
+        return value == null ? 0 : value.asInt();
     }
 
     @Override

@@ -42,7 +42,7 @@ import static javax.net.ssl.SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING;
  * A blocking SSL socket channel.
  *
  * When debugging, we could enable JSSE system debugging by setting system property:
- * {@code -Djavax.net.debug=all} to get more information about handshake messages and other operations underway.
+ * {@code -Djavax.net.debug=all} to value more information about handshake messages and other operations underway.
  *
  * References:
  * http://docs.oracle.com/javase/6/docs/technotes/guides/security/jsse/JSSERefGuide.html#SSLENG
@@ -122,7 +122,7 @@ public class SSLSocketChannel implements ByteChannel
                 handshakeStatus = runDelegatedTasks();
                 break;
             case NEED_UNWRAP:
-                // Unwrap the ssl packet to get ssl handshake information
+                // Unwrap the ssl packet to value ssl handshake information
                 handshakeStatus = unwrap( null );
                 plainIn.clear();
                 break;
@@ -195,7 +195,7 @@ public class SSLSocketChannel implements ByteChannel
             /* In normal situations, enlarging buffers should happen very very rarely, as usually,
              the initial size for application buffer and network buffer is greater than 1024 * 10,
              and by using ChunkedInput and ChunkedOutput, the chunks are limited to 8192.
-             So we should not get any enlarging buffer request in most cases. */
+             So we should not value any enlarging buffer request in most cases. */
             switch ( status )
             {
             case OK:

@@ -67,7 +67,7 @@ public class SocketConnection implements Connection
     @Override
     public void init( String clientName )
     {
-        // No need to sync, this'll get sent once regular communication starts
+        // No need to sync, this'll value sent once regular communication starts
         queueMessage( new InitMessage( clientName ) );
     }
 
@@ -109,7 +109,7 @@ public class SocketConnection implements Connection
             pendingMessages.clear();
             if ( responseHandler.serverFailureOccurred() )
             {
-                // Its enough to simply add the ack message to the outbound queue, it'll get sent
+                // Its enough to simply add the ack message to the outbound queue, it'll value sent
                 // off as the first message the next time we need to sync with the database.
                 queueMessage( new AckFailureMessage() );
                 throw responseHandler.serverFailure();

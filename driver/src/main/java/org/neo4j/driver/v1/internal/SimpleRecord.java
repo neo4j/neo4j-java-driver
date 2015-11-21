@@ -18,46 +18,74 @@
  */
 package org.neo4j.driver.v1.internal;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.ImmutableRecord;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.internal.util.Extract;
 
-public class SimpleRecord implements Record
+public class SimpleRecord extends SimpleRecordAdaptor implements ImmutableRecord
 {
-    private final Map<String,Integer> fieldLookup;
-    private final Value[] fields;
+    private final List<String> keys;
+    private final Map<String, Integer> keyIndexLookup;
+    private final Value[] values;
 
-    public static Record record( Object... alternatingFieldNameValue )
+    public static ImmutableRecord record( Object... alternatingFieldNameValue )
     {
-        Map<String,Integer> lookup = new HashMap<>();
-        Value[] fields = new Value[alternatingFieldNameValue.length / 2];
+        int length = alternatingFieldNameValue.length / 2;
+        List<String> keys = new ArrayList<>( length );
+        Map<String, Integer> keyIndexLookup = new HashMap<>( length );
+        Value[] fields = new Value[length];
         for ( int i = 0; i < alternatingFieldNameValue.length; i += 2 )
         {
-            lookup.put( alternatingFieldNameValue[i].toString(), i / 2 );
+            String key = alternatingFieldNameValue[i].toString();
+            keys.add( key  );
+            keyIndexLookup.put( key, i / 2 );
             fields[i / 2] = (Value) alternatingFieldNameValue[i + 1];
         }
-        return new SimpleRecord( lookup, fields );
+        return new SimpleRecord( keys, keyIndexLookup, fields );
     }
 
-    public SimpleRecord( Map<String,Integer> fieldLookup, Value[] fields )
+    public SimpleRecord( List<String> keys, Map<String, Integer> keyIndexLookup, Value[] values )
     {
-        this.fieldLookup = fieldLookup;
-        this.fields = fields;
+        this.keys = keys;
+        this.keyIndexLookup = keyIndexLookup;
+        this.values = values;
+    }
+
+
+    @Override
+    public int elementCount()
+    {
+        return values.length;
     }
 
     @Override
-    public Value get( int fieldIndex )
+    public Value value( int index )
     {
-        return fields[fieldIndex];
+        return values[index];
     }
 
     @Override
-    public Value get( String fieldName )
+    public boolean containsKey( String key )
     {
-        Integer fieldIndex = fieldLookup.get( fieldName );
+        return keyIndexLookup.containsKey( key );
+    }
+
+    @Override
+    public List<String> keys()
+    {
+        return keys;
+    }
+
+    @Override
+    public Value value( String key )
+    {
+        Integer fieldIndex = keyIndexLookup.get( key );
 
         if ( fieldIndex == null )
         {
@@ -65,47 +93,21 @@ public class SimpleRecord implements Record
         }
         else
         {
-            return fields[fieldIndex];
+            return values[fieldIndex];
         }
     }
 
     @Override
-    public Iterable<String> fieldNames()
+    public List<Value> values()
     {
-        return fieldLookup.keySet();
-    }
-
-    @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() )
-        {
-            return false;
-        }
-
-        SimpleRecord that = (SimpleRecord) o;
-
-        if ( !fieldLookup.equals( that.fieldLookup ) )
-        {
-            return false;
-        }
-        if ( !Arrays.equals( fields, that.fields ) )
-        {
-            return false;
-        }
-
-        return true;
+        return Extract.list( values );
     }
 
     @Override
     public int hashCode()
     {
-        int result = fieldLookup.hashCode();
-        result = 31 * result + Arrays.hashCode( fields );
+        int result = keys.hashCode();
+        result = 31 * result + Arrays.hashCode( values );
         return result;
     }
 }

@@ -53,7 +53,7 @@ import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
  * List<String> names = new LinkedList<>();
  * while( result.next() )
  * {
- *     names.add( result.get("n.name").javaString() );
+ *     names.add( result.value("n.name").asString() );
  * }
  *
  * // Sessions are pooled, to avoid the overhead of creating new connections - this means
@@ -92,7 +92,7 @@ public class Driver implements AutoCloseable
         return new StandardSession( connections.acquire( url ) );
         // TODO a ConnectionPool per URL
         // ConnectionPool connections = new StandardConnectionPool( logging, url );
-        // And to get a connection from the pool could be
+        // And to value a connection from the pool could be
         // connections.acquire();
     }
 

@@ -35,7 +35,7 @@ public interface Connection extends AutoCloseable
     void init( String clientName );
 
     /**
-     * Queue up a run action. The collector will get called with metadata about the stream that will become available
+     * Queue up a run action. The collector will value called with metadata about the stream that will become available
      * for retrieval.
      */
     void run( String statement, Map<String,Value> parameters, StreamCollector collector );

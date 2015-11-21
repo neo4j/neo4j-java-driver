@@ -18,13 +18,14 @@
  */
 package org.neo4j.driver.v1.internal;
 
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
@@ -37,8 +38,9 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+
 import static org.neo4j.driver.v1.Values.value;
-import static org.neo4j.driver.v1.Values.valueToList;
+import static org.neo4j.driver.v1.Values.valueAsList;
 import static org.neo4j.driver.v1.Values.valueToString;
 import static org.neo4j.driver.v1.Values.values;
 
@@ -122,15 +124,14 @@ public class ValuesTest
         MapValue values = new MapValue( map );
 
         // When
-        List<List<String>> list = values.javaList( valueToList( valueToString() ) );
+        Iterable<List<String>> list = values.values( valueAsList( valueToString() ) );
 
         // Then
-        assertEquals( 3, list.size() );
-        int i = 0;
-        for ( Value value : values )
+        assertEquals( 3, values.elementCount() );
+        Iterator<List<String>> listIterator = list.iterator();
+        for ( Value value : values.values() )
         {
-            assertEquals( value.get( 0 ).javaString(), list.get( i ).get( 0 ) );
-            i++;
+            assertEquals( value.value( 0 ).toString(), listIterator.next().get( 0 ) );
         }
     }
 
@@ -144,11 +145,11 @@ public class ValuesTest
         MapValue values = new MapValue( map );
 
         // When
-        Map<String, String> result = values.javaMap( Values.valueToString() );
+        Map<String, String> result = values.asMap( Values.valueToString() );
 
         // Then
         assertThat( result.size(), equalTo( 2 ) );
-        assertThat( result.get( "Dog" ), equalTo( "2" ) );
-        assertThat( result.get( "Cat" ), equalTo( "1" ) );
+        assertThat( result.get( "Dog" ), equalTo( "integer<2>" ) );
+        assertThat( result.get( "Cat" ), equalTo( "integer<1>" ) );
     }
 }

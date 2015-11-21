@@ -28,6 +28,18 @@ public class NullValue extends ValueAdapter
     public static Value NULL = new NullValue();
 
     @Override
+    public boolean isNull()
+    {
+        return true;
+    }
+
+    @Override
+    public Object asObject()
+    {
+        return null;
+    }
+
+    @Override
     public TypeConstructor typeConstructor()
     {
         return TypeConstructor.NULL_TyCon;
@@ -50,11 +62,5 @@ public class NullValue extends ValueAdapter
     public int hashCode()
     {
         return 0;
-    }
-
-    @Override
-    public boolean isNull()
-    {
-        return true;
     }
 }
