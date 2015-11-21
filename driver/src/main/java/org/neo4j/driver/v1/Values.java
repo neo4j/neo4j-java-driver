@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.internal.util.Extract;
 import org.neo4j.driver.v1.internal.value.BooleanValue;
 import org.neo4j.driver.v1.internal.value.FloatValue;
 import org.neo4j.driver.v1.internal.value.IdentityValue;
@@ -83,8 +84,14 @@ public class Values
         if ( value instanceof float[] ) { return value( (float[]) value ); }
         if ( value instanceof double[] ) { return value( (double[]) value ); }
         if ( value instanceof Object[] ) { return value( Arrays.asList( (Object[]) value )); }
+        if ( value instanceof RecordAccess ) { return value( (RecordAccess) value ); }
 
         throw new ClientException( "Unable to convert " + value.getClass().getName() + " to Neo4j Value." );
+    }
+
+    public static Value value( RecordAccess val )
+    {
+        return new MapValue( Extract.map( val ) );
     }
 
     public static Value value( short[] val )
@@ -271,44 +278,64 @@ public class Values
         return VALUE;
     }
 
-    public static Function<Value,String> valueToString()
+    public static Function<Value,String> valueAsString()
     {
         return STRING;
     }
 
-    public static Function<Value,Integer> valueToInt()
+    public static Function<Value,Integer> valueAsInt()
     {
         return INTEGER;
     }
 
-    public static Function<Value,Long> valueToLong()
+    public static Function<Value,Long> valueAsLong()
     {
         return LONG;
     }
 
-    public static Function<Value,Float> valueToFloat()
+    public static Function<Value,Float> valueAsFloat()
     {
         return FLOAT;
     }
 
-    public static Function<Value,Double> valueToDouble()
+    public static Function<Value,Double> valueAsDouble()
     {
         return DOUBLE;
     }
 
-    public static Function<Value,Boolean> valueToBoolean()
+    public static Function<Value,Boolean> valueAsBoolean()
     {
         return BOOLEAN;
     }
 
-    public static <T> Function<Value,List<T>> valueToList( final Function<Value,T> innerMap )
+    public static Function<Value, Map<String, Value>> valueAsMap()
+    {
+        return MAP;
+    }
+
+    public static Function<Value, Node> valueAsNode()
+    {
+        return NODE;
+    }
+
+    public static Function<Value, Relationship> valueAsRelationship()
+    {
+        return RELATIONSHIP;
+    }
+
+    public static Function<Value, Path> valueAsPath()
+    {
+        return PATH;
+    }
+
+    public static <T> Function<Value,List<T>> valueAsList( final Function<Value, T> innerMap )
     {
         return new Function<Value,List<T>>()
         {
             @Override
             public List<T> apply( Value value )
             {
-                return value.javaList( innerMap );
+                return value.asList( innerMap );
             }
         };
     }
@@ -320,49 +347,74 @@ public class Values
             return val;
         }
     };
-
     private static final Function<Value,String> STRING = new Function<Value,String>()
     {
         public String apply( Value val )
         {
-            return val.javaString();
+            return val.asString();
         }
     };
-
     private static final Function<Value,Integer> INTEGER = new Function<Value,Integer>()
     {
         public Integer apply( Value val )
         {
-            return val.javaInteger();
+            return val.asInteger();
         }
     };
     private static final Function<Value,Long> LONG = new Function<Value,Long>()
     {
         public Long apply( Value val )
         {
-            return val.javaLong();
+            return val.asLong();
         }
     };
     private static final Function<Value,Float> FLOAT = new Function<Value,Float>()
     {
         public Float apply( Value val )
         {
-            return val.javaFloat();
+            return val.asFloat();
         }
     };
     private static final Function<Value,Double> DOUBLE = new Function<Value,Double>()
     {
         public Double apply( Value val )
         {
-            return val.javaDouble();
+            return val.asDouble();
         }
     };
     private static final Function<Value,Boolean> BOOLEAN = new Function<Value,Boolean>()
     {
         public Boolean apply( Value val )
         {
-            return val.javaBoolean();
+            return val.asBoolean();
         }
     };
-
+    private static final Function<Value,Map<String,Value>> MAP = new Function<Value,Map<String,Value>>()
+    {
+        public Map<String,Value> apply( Value val )
+        {
+            return val.asMap();
+        }
+    };
+    private static final Function<Value,Node> NODE = new Function<Value,Node>()
+    {
+        public Node apply( Value val )
+        {
+            return val.asNode();
+        }
+    };
+    private static final Function<Value,Relationship> RELATIONSHIP = new Function<Value,Relationship>()
+    {
+        public Relationship apply( Value val )
+        {
+            return val.asRelationship();
+        }
+    };
+    private static final Function<Value,Path> PATH = new Function<Value,Path>()
+    {
+        public Path apply( Value val )
+        {
+            return val.asPath();
+        }
+    };
 }

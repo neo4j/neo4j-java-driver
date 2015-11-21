@@ -195,7 +195,7 @@ public class SimplePath implements Path
     }
 
     @Override
-    public long length()
+    public int length()
     {
         return relationships.size();
     }

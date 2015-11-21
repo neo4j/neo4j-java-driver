@@ -33,13 +33,13 @@ public class StringValue extends ValueAdapter
     }
 
     @Override
-    public boolean javaBoolean()
+    public boolean asBoolean()
     {
         return !val.isEmpty();
     }
 
     @Override
-    public String javaString()
+    public String asString()
     {
         return val;
     }
@@ -51,7 +51,7 @@ public class StringValue extends ValueAdapter
     }
 
     @Override
-    public long size()
+    public int fieldCount()
     {
         return val.length();
     }
@@ -72,6 +72,11 @@ public class StringValue extends ValueAdapter
     public String toString()
     {
         return val;
+    }
+
+    public Object asObject()
+    {
+        return asString();
     }
 
     @Override

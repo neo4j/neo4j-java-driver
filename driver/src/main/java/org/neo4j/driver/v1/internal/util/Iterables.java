@@ -20,7 +20,13 @@ package org.neo4j.driver.v1.internal.util;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import org.neo4j.driver.v1.Function;
 
 public class Iterables
 {
@@ -35,7 +41,7 @@ public class Iterables
         return size;
     }
 
-    public static <T> List<T> toList( Iterable<T> it )
+    public static <T> List<T> asList( Iterable<T> it )
     {
         if ( it instanceof List ) { return (List<T>) it; }
         List<T> list = new ArrayList<>();
@@ -44,5 +50,41 @@ public class Iterables
             list.add( t );
         }
         return list;
+    }
+
+    public static <A,B> Iterable<B> map(final Iterable<A> it, final Function<A,B> f)
+    {
+        return new Iterable<B>()
+        {
+            @Override
+            public Iterator<B> iterator()
+            {
+                final Iterator<A> aIterator = it.iterator();
+                return new Iterator<B>()
+                {
+                    @Override
+                    public boolean hasNext()
+                    {
+                        return aIterator.hasNext();
+                    }
+
+                    @Override
+                    public B next()
+                    {
+                        return f.apply( aIterator.next() );
+                    }
+                };
+            }
+        };
+    }
+
+    public static <K, A, B> Map<K,B> mapValues( Map<K,A> map, Function<A,B> f )
+    {
+        HashMap<K,B> transformed = new HashMap<>( map.size() );
+        for ( Entry<K,A> entry : map.entrySet() )
+        {
+            transformed.put( entry.getKey(), f.apply( entry.getValue() ) );
+        }
+        return transformed;
     }
 }

@@ -19,8 +19,23 @@
 package org.neo4j.driver.v1;
 
 /**
- * A record is an immutable copy of an ordered map
+ * Access the fields of an underlying unordered map like data structure by key
  */
-public interface Record extends RecordAccess
+public interface MapAccess extends FieldAccess
 {
+
+    /**
+     * Retrieve the keys of the underlying map
+     *
+     * @return all map keys in unspecified order
+     */
+    Iterable<String> keys();
+
+    /**
+     * Retrieve the value of the field with the given key
+     *
+     * @param key the key of the field
+     * @return the field's value or null if no such field exists
+     */
+    Value value( String key );
 }

@@ -60,7 +60,7 @@ public class SimplePathTest
         SimplePath path = testPath();
 
         // Then
-        assertThat( path.length(), equalTo( 3L ) );
+        assertThat( path.length(), equalTo( 3 ) );
     }
 
     @Test
@@ -70,7 +70,7 @@ public class SimplePathTest
         SimplePath path = new SimplePath( new SimpleNode( 1 ) );
 
         // Then
-        assertThat( path.length(), equalTo( 0L ) );
+        assertThat( path.length(), equalTo( 0 ) );
     }
 
     @Test

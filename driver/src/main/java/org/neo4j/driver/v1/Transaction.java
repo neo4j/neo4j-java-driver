@@ -37,7 +37,7 @@ package org.neo4j.driver.v1;
  * }
  * </pre>
  */
-public interface Transaction extends AutoCloseable, StatementRunner
+public interface Transaction extends Resource, StatementRunner
 {
     /**
      * Mark this transaction as successful. You must call this method before calling {@link #close()} to have your
@@ -46,7 +46,7 @@ public interface Transaction extends AutoCloseable, StatementRunner
     void success();
 
     /**
-     * Mark this transaction as failed. When you call {@link #close()}, the transaction will get rolled back.
+     * Mark this transaction as failed. When you call {@link #close()}, the transaction will value rolled back.
      *
      * After this method has been called, there is nothing that can be done to "un-mark" it. This is a safety feature
      * to make sure no other code calls {@link #success()} and makes a transaction commit that was meant to be rolled
@@ -65,7 +65,4 @@ public interface Transaction extends AutoCloseable, StatementRunner
      * </pre>
      */
     void failure();
-
-    @Override
-    void close();
 }

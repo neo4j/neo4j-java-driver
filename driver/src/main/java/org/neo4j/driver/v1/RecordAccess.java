@@ -18,18 +18,31 @@
  */
 package org.neo4j.driver.v1;
 
+import java.util.List;
+
 /**
- * A uniquely identifiable property container that can form part of a Neo4j graph.
+ * Access the fields of an underlying ordered map like data structure by key and index
  */
-public interface Entity extends MapAccess
+public interface RecordAccess extends ListAccess, MapAccess
 {
+    @Override
+    List<String> keys();
+
     /**
-     * A unique {@link Identity identity} for this Entity. Identities are guaranteed
-     * to remain stable for the duration of the session they were found in, but may be re-used for other
-     * entities after that. As such, if you want a public identity to use for your entities, attaching
-     * an explicit 'id' property or similar persistent and unique identifier is a better choice.
+     * Retrieve all field values of the record
      *
-     * @return an identity object
+     * @return all field values in key order
      */
-    Identity identity();
+    @Override
+    List<Value> values();
+
+    /**
+     * Map and retrieve all record field values
+     *
+     * @param mapFunction a function to map from Value to T. See {@link Values} for some predefined functions, such
+     * as {@link Values#valueAsBoolean()}, {@link Values#valueAsList(Function)}.
+     * @return the result of mapping all record field values in key order
+     */
+    @Override
+    <T> List<T> values( Function<Value, T> mapFunction );
 }

@@ -40,7 +40,7 @@ public class StandardTransaction implements Transaction
         /** The transaction is running with no explicit success or failure marked */
         ACTIVE,
 
-        /** Running, user marked for success, meaning it'll get committed */
+        /** Running, user marked for success, meaning it'll value committed */
         MARKED_SUCCESS,
 
         /** User marked as failed, meaning it'll be rolled back. */
@@ -66,7 +66,7 @@ public class StandardTransaction implements Transaction
         this.conn = conn;
         this.cleanup = cleanup;
 
-        // Note there is no sync here, so this will just get queued locally
+        // Note there is no sync here, so this will just value queued locally
         conn.run( "BEGIN", Collections.<String, Value>emptyMap(), null );
         conn.discardAll();
     }

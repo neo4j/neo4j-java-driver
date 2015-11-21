@@ -32,7 +32,7 @@ public interface StreamCollector
     StreamCollector NO_OP = new StreamCollector()
     {
         @Override
-        public void fieldNames( String[] names )
+        public void fieldKeys( String[] names )
         {
         }
 
@@ -71,7 +71,7 @@ public interface StreamCollector
 
     // TODO: This should be modified to simply have head/record/tail methods
 
-    void fieldNames( String[] names );
+    void fieldKeys( String[] names );
 
     void record( Value[] fields );
 

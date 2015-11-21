@@ -38,11 +38,11 @@ public class IntegerValueTest
         IntegerValue value = new IntegerValue( 0 );
 
         // Then
-        assertThat( value.javaBoolean(), equalTo( false ) );
-        assertThat( value.javaInteger(), equalTo( 0 ) );
-        assertThat( value.javaLong(), equalTo( 0L ) );
-        assertThat( value.javaFloat(), equalTo( (float) 0.0 ) );
-        assertThat( value.javaDouble(), equalTo( 0.0 ) );
+        assertThat( value.asBoolean(), equalTo( false ) );
+        assertThat( value.asInteger(), equalTo( 0 ) );
+        assertThat( value.asLong(), equalTo( 0L ) );
+        assertThat( value.asFloat(), equalTo( (float) 0.0 ) );
+        assertThat( value.asDouble(), equalTo( 0.0 ) );
     }
 
     @Test
@@ -52,11 +52,11 @@ public class IntegerValueTest
         IntegerValue value = new IntegerValue( 1 );
 
         // Then
-        assertThat( value.javaBoolean(), equalTo( true ) );
-        assertThat( value.javaInteger(), equalTo( 1 ) );
-        assertThat( value.javaLong(), equalTo( 1L ) );
-        assertThat( value.javaFloat(), equalTo( (float) 1.0 ) );
-        assertThat( value.javaDouble(), equalTo( 1.0 ) );
+        assertThat( value.asBoolean(), equalTo( true ) );
+        assertThat( value.asInteger(), equalTo( 1 ) );
+        assertThat( value.asLong(), equalTo( 1L ) );
+        assertThat( value.asFloat(), equalTo( (float) 1.0 ) );
+        assertThat( value.asDouble(), equalTo( 1.0 ) );
     }
 
     @Test

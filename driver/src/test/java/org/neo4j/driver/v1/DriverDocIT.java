@@ -18,20 +18,22 @@
  */
 package org.neo4j.driver.v1;
 
+import java.util.LinkedList;
+import java.util.List;
+
 import javadoctest.DocSnippet;
 import javadoctest.DocTestRunner;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
 
-import java.util.LinkedList;
-import java.util.List;
-
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
 import static java.util.Arrays.asList;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 @RunWith( DocTestRunner.class )
 public class DriverDocIT
@@ -40,6 +42,7 @@ public class DriverDocIT
     public TestNeo4jSession session = new TestNeo4jSession();
 
     /** @see Driver */
+    @SuppressWarnings("unchecked")
     public void exampleUsage( DocSnippet snippet )
     {
         // given
@@ -50,7 +53,9 @@ public class DriverDocIT
         snippet.run();
 
         // then it should've created a bunch of data
-        assertEquals( 3, session.run( "MATCH (n) RETURN count(n)" ).single().get( 0 ).javaInteger() );
+        Result result = session.run( "MATCH (n) RETURN count(n)" );
+        assertTrue( result.single() );
+        assertEquals( 3, result.value( 0 ).asInteger() );
         assertThat( (List<String>)snippet.get( "names" ), equalTo( asList("Bob", "Alice", "Tina")) );
     }
 }

@@ -230,7 +230,7 @@ public class SSLSocketChannelIT
 
         Result result = driver.session().run( "RETURN 1" );
         assertTrue( result.next() );
-        assertEquals( 1, result.get( 0 ).javaInteger() );
+        assertEquals( 1, result.value( 0 ).asInteger() );
         assertFalse( result.next() );
 
         driver.close();

@@ -18,12 +18,13 @@
  */
 package org.neo4j.driver.v1.internal;
 
-import java.util.Collection;
 import java.util.Map;
 
 import org.neo4j.driver.v1.Entity;
+import org.neo4j.driver.v1.Function;
 import org.neo4j.driver.v1.Identity;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.internal.util.Iterables;
 
 public abstract class SimpleEntity implements Entity
 {
@@ -42,22 +43,17 @@ public abstract class SimpleEntity implements Entity
         return id;
     }
 
-    @Override
-    public Collection<String> propertyKeys()
-    {
-        return properties.keySet();
-    }
 
     @Override
-    public Value property( String key )
-    {
-        return properties.get( key );
-    }
-
-    @Override
-    public int propertyCount()
+    public int fieldCount()
     {
         return properties.size();
+    }
+
+    @Override
+    public boolean hasFields()
+    {
+        return !properties.isEmpty();
     }
 
     @Override
@@ -91,5 +87,29 @@ public abstract class SimpleEntity implements Entity
                "id=" + id +
                ", properties=" + properties +
                '}';
+    }
+
+    @Override
+    public Iterable<String> keys()
+    {
+        return properties.keySet();
+    }
+
+    @Override
+    public Value value( String key )
+    {
+        return properties.get( key );
+    }
+
+    @Override
+    public Iterable<Value> values()
+    {
+        return properties.values();
+    }
+
+    @Override
+    public <T> Iterable<T> values( Function<Value,T> mapFunction )
+    {
+        return Iterables.map( properties.values(), mapFunction );
     }
 }

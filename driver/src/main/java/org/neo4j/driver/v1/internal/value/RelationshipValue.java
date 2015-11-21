@@ -34,6 +34,12 @@ public class RelationshipValue extends ValueAdapter
     }
 
     @Override
+    public Object asObject()
+    {
+        return asRelationship();
+    }
+
+    @Override
     public Relationship asRelationship()
     {
         return adapted;
@@ -46,17 +52,17 @@ public class RelationshipValue extends ValueAdapter
     }
 
     @Override
-    public long size()
+    public int fieldCount()
     {
         int count = 0;
-        for ( String ignore : adapted.propertyKeys() ) { count++; }
+        for ( String ignore : adapted.keys() ) { count++; }
         return count;
     }
 
     @Override
     public Iterable<String> keys()
     {
-        return adapted.propertyKeys();
+        return adapted.keys();
     }
 
     @Override
@@ -65,10 +71,9 @@ public class RelationshipValue extends ValueAdapter
         return TypeConstructor.RELATIONSHIP_TyCon;
     }
 
-    @Override
-    public Value get( String key )
+    public Value value( String key )
     {
-        return adapted.property( key );
+        return adapted.value( key );
     }
 
     @Override

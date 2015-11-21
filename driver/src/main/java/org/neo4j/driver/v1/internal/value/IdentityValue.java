@@ -34,13 +34,13 @@ public class IdentityValue extends ValueAdapter
     }
 
     @Override
-    public boolean javaBoolean()
+    public Object asObject()
     {
-        return true;
+        return asIdentity();
     }
 
     @Override
-    public String javaString()
+    public String asString()
     {
         return val.toString();
     }

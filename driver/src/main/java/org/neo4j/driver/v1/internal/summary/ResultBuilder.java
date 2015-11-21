@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.neo4j.driver.v1.Notification;
 import org.neo4j.driver.v1.Plan;
@@ -40,6 +39,7 @@ import org.neo4j.driver.v1.internal.SimpleResult;
 import org.neo4j.driver.v1.internal.spi.StreamCollector;
 
 import static java.util.Collections.unmodifiableMap;
+
 import static org.neo4j.driver.v1.internal.ParameterSupport.NO_PARAMETERS;
 
 public class ResultBuilder implements StreamCollector
@@ -47,7 +47,8 @@ public class ResultBuilder implements StreamCollector
     private final SummaryBuilder summaryBuilder;
 
     private List<Record> body = new ArrayList<>();
-    private Map<String, Integer> fieldLookup = null;
+    private List<String> keys = null;
+    private Map<String, Integer> keyIndexLookup = null;
 
     public ResultBuilder( String statement, Map<String, Value> parameters )
     {
@@ -57,22 +58,28 @@ public class ResultBuilder implements StreamCollector
     }
 
     @Override
-    public void fieldNames( String[] names )
+    public void fieldKeys( String[] names )
     {
-        if ( fieldLookup == null )
+        if ( keys == null )
         {
-            if ( names.length == 0 )
+            int numFields = names.length;
+            if ( numFields == 0 )
             {
-                this.fieldLookup = Collections.emptyMap();
+                this.keys = Collections.emptyList();
+                this.keyIndexLookup = Collections.emptyMap();
             }
             else
             {
-                Map<String, Integer> fieldLookup = new HashMap<>();
-                for ( int i = 0; i < names.length; i++ )
+                Map<String, Integer> fieldLookup = new HashMap<>( numFields );
+                List<String> fields = new ArrayList<>( numFields );
+                for ( int i = 0; i < numFields; i++ )
                 {
-                    fieldLookup.put( names[i], i );
+                    String name = names[i];
+                    fields.add( name );
+                    fieldLookup.put( name, i );
                 }
-                this.fieldLookup = fieldLookup;
+                this.keys = fields;
+                this.keyIndexLookup = fieldLookup;
             }
         }
         else
@@ -82,9 +89,9 @@ public class ResultBuilder implements StreamCollector
     }
 
     @Override
-    public void record( Value[] fields )
+    public void record( Value[] values )
     {
-        body.add( new SimpleRecord( fieldLookup, fields ) );
+        body.add( new SimpleRecord( keys, keyIndexLookup, values ) );
     }
 
     @Override
@@ -119,7 +126,6 @@ public class ResultBuilder implements StreamCollector
 
     public Result build()
     {
-        Set<String> fieldNames = fieldLookup == null ? Collections.<String>emptySet() : fieldLookup.keySet();
-        return new SimpleResult( fieldNames, body, summaryBuilder.build() );
+        return new SimpleResult( keys, body, summaryBuilder.build() );
     }
 }

@@ -27,8 +27,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Result;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Value;
@@ -79,7 +79,7 @@ public class DriverStresser
             Result result = session.run( statement, parameters );
             while ( result.next() )
             {
-                total += result.get( "n" ).javaInteger();
+                total += result.value( "n" ).asInteger();
             }
             return total;
         }

@@ -16,11 +16,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1;
+package org.neo4j.driver.v1.internal.value;
 
-/**
- * A record is an immutable copy of an ordered map
- */
-public interface Record extends RecordAccess
-{
+public abstract class NumberValueAdapter extends ValueAdapter{
+
+    public final Object asObject()
+    {
+        return asNumber();
+    }
 }

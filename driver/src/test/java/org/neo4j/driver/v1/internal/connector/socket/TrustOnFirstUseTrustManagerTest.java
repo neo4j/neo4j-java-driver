@@ -18,10 +18,6 @@
  */
 package org.neo4j.driver.v1.internal.connector.socket;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.PrintWriter;
 import java.security.cert.CertificateException;
@@ -29,9 +25,13 @@ import java.security.cert.X509Certificate;
 import java.util.Scanner;
 import javax.xml.bind.DatatypeConverter;
 
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertTrue;
-import static junit.framework.TestCase.fail;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -61,6 +61,7 @@ public class TrustOnFirstUseTrustManagerTest
         writer.close();
     }
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     @AfterClass
     public static void teardown()
     {

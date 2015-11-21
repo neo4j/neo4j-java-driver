@@ -37,8 +37,8 @@ public class StringValueTest
         StringValue value = new StringValue( "Spongebob" );
 
         // Then
-        assertThat( value.javaBoolean(), equalTo( true ) );
-        assertThat( value.javaString(), equalTo( "Spongebob" ) );
+        assertThat( value.asBoolean(), equalTo( true ) );
+        assertThat( value.asString(), equalTo( "Spongebob" ) );
     }
 
     @Test

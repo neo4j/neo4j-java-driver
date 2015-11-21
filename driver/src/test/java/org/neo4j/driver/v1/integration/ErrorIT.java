@@ -24,12 +24,14 @@ import org.junit.rules.ExpectedException;
 
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
+import org.neo4j.driver.v1.Result;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class ErrorIT
 {
@@ -67,7 +69,9 @@ public class ErrorIT
                                  "because previous statements in the" );
 
         // When
-        tx.run( "RETURN 1" ).single().get( "1" ).javaInteger();
+        Result cursor = tx.run( "RETURN 1" );
+        assertTrue( cursor.single() );
+        cursor.value( "1" ).asInteger();
     }
 
     @Test
@@ -77,7 +81,9 @@ public class ErrorIT
         try { session.run( "invalid" ); } catch ( ClientException e ) {}
 
         // When
-        int val = session.run( "RETURN 1" ).single().get( "1" ).javaInteger();
+        Result cursor = session.run( "RETURN 1" );
+        assertTrue( cursor.single() );
+        int val = cursor.value( "1" ).asInteger();
 
         // Then
         assertThat( val, equalTo( 1 ) );
@@ -96,7 +102,9 @@ public class ErrorIT
         // When
         try ( Transaction tx = session.beginTransaction() )
         {
-            int val = tx.run( "RETURN 1" ).single().get( "1" ).javaInteger();
+            Result cursor = tx.run( "RETURN 1" );
+            assertTrue( cursor.single() );
+            int val = cursor.value( "1" ).asInteger();
 
             // Then
             assertThat( val, equalTo( 1 ) );

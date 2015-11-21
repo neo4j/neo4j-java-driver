@@ -19,8 +19,17 @@
 package org.neo4j.driver.v1;
 
 /**
- * A record is an immutable copy of an ordered map
+ * Access the fields of an underlying list like data structure by index
  */
-public interface Record extends RecordAccess
+public interface ListAccess extends FieldAccess
 {
+    /**
+     * Retrieve the value of the field at the given index
+     *
+     * @param index the index of the field
+     * @return the field's value or null if no such field exists
+     */
+    Value value( int index );
 }
+
+

@@ -18,10 +18,10 @@
  */
 package org.neo4j.driver.v1.integration;
 
+import java.io.IOException;
+
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.io.IOException;
 
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
@@ -33,6 +33,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.driver.v1.Values.parameters;
 
 public class LoadCSVIT
@@ -61,7 +62,7 @@ public class LoadCSVIT
 
         // Then
         assertTrue( result.next() );
-        assertThat( result.get( "c" ).javaInteger(), equalTo( 150 ) );
+        assertThat( result.value( "c" ).asInteger(), equalTo( 150 ) );
         assertFalse( result.next() );
     }
 

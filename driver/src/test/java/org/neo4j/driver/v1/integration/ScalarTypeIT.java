@@ -18,25 +18,25 @@
  */
 package org.neo4j.driver.v1.integration;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-
+import org.neo4j.driver.v1.Result;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.internal.value.ListValue;
 import org.neo4j.driver.v1.internal.value.MapValue;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
-import org.neo4j.driver.v1.Values;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-
-import static org.neo4j.driver.v1.Values.value;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(Parameterized.class)
 public class ScalarTypeIT
@@ -71,9 +71,10 @@ public class ScalarTypeIT
     public void shouldHandleType() throws Throwable
     {
         // When
-        Value value = session.run( statement ).single().get( "v" );
+        Result cursor = session.run( statement );
 
         // Then
-        assertThat( value, equalTo( expectedValue ) );
+        assertTrue( cursor.next() );
+        assertThat( cursor.value( "v" ), equalTo( expectedValue ) );
     }
 }

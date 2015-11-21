@@ -222,33 +222,33 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             }
             else if ( value.isBoolean() )
             {
-                packer.pack( value.javaBoolean() );
+                packer.pack( value.asBoolean() );
             }
             else if ( value.isInteger() )
             {
-                packer.pack( value.javaLong() );
+                packer.pack( value.asLong() );
             }
             else if ( value.isFloat() )
             {
-                packer.pack( value.javaDouble() );
+                packer.pack( value.asDouble() );
             }
             else if ( value.isString() )
             {
-                packer.pack( value.javaString() );
+                packer.pack( value.asString() );
             }
             else if ( value.isMap() )
             {
-                packer.packMapHeader( (int) value.size() );
+                packer.packMapHeader( value.fieldCount() );
                 for ( String s : value.keys() )
                 {
                     packer.pack( s );
-                    packValue( value.get( s ) );
+                    packValue( value.value( s ) );
                 }
             }
             else if ( value.isList() )
             {
-                packer.packListHeader( (int) value.size() );
-                for ( Value item : value )
+                packer.packListHeader( value.fieldCount() );
+                for ( Value item : value.values() )
                 {
                     packValue( item );
                 }
@@ -309,7 +309,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                 }
 
                 // Sequence
-                packer.packListHeader( (int) path.length() * 2 );
+                packer.packListHeader( path.length() * 2 );
                 for ( Path.Segment seg : path )
                 {
                     Relationship rel = seg.relationship();
@@ -361,12 +361,12 @@ public class PackStreamMessageFormatV1 implements MessageFormat
 
         private void packProperties( Entity entity ) throws IOException
         {
-            Iterable<String> keys = entity.propertyKeys();
-            packer.packMapHeader( entity.propertyCount() );
+            Iterable<String> keys = entity.keys();
+            packer.packMapHeader( entity.fieldCount() );
             for ( String propKey : keys )
             {
                 packer.pack( propKey );
-                packValue( entity.property( propKey ) );
+                packValue( entity.value( propKey ) );
             }
         }
     }
@@ -442,8 +442,8 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         private void unpackFailureMessage( MessageHandler output ) throws IOException
         {
             Map<String,Value> params = unpackMap();
-            String code = params.get( "code" ).javaString();
-            String message = params.get( "message" ).javaString();
+            String code = params.get( "code" ).asString();
+            String message = params.get( "message" ).asString();
             output.handleFailureMessage( code, message );
             onMessageComplete.run();
         }

@@ -22,7 +22,7 @@ import org.neo4j.driver.v1.Type;
 import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
 import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
-public class IntegerValue extends ValueAdapter
+public class IntegerValue extends NumberValueAdapter
 {
     private final long val;
 
@@ -32,25 +32,25 @@ public class IntegerValue extends ValueAdapter
     }
 
     @Override
-    public String javaString()
+    public String asString()
     {
         return Long.toString( val );
     }
 
     @Override
-    public int javaInteger()
+    public int asInteger()
     {
         return (int) val;
     }
 
     @Override
-    public float javaFloat()
+    public float asFloat()
     {
         return (float) val;
     }
 
     @Override
-    public boolean javaBoolean()
+    public boolean asBoolean()
     {
         return val != 0;
     }
@@ -61,8 +61,7 @@ public class IntegerValue extends ValueAdapter
         return TypeConstructor.INTEGER_TyCon;
     }
 
-    @Override
-    public long javaLong()
+    public long asLong()
     {
         return val;
     }
@@ -74,9 +73,14 @@ public class IntegerValue extends ValueAdapter
     }
 
     @Override
-    public double javaDouble()
+    public double asDouble()
     {
         return (double) val;
+    }
+
+    public Number asNumber()
+    {
+        return asInteger();
     }
 
     @Override

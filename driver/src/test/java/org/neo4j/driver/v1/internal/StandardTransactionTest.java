@@ -21,6 +21,9 @@ package org.neo4j.driver.v1.internal;
 import org.junit.Test;
 import org.mockito.InOrder;
 
+import java.util.Collections;
+
+import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.internal.spi.Connection;
 
 import static java.util.Collections.EMPTY_MAP;
@@ -44,9 +47,9 @@ public class StandardTransactionTest
 
         // Then
         InOrder order = inOrder( conn );
-        order.verify( conn ).run( "BEGIN", EMPTY_MAP, null );
+        order.verify( conn ).run( "BEGIN", Collections.<String, Value>emptyMap(), null );
         order.verify( conn ).discardAll();
-        order.verify( conn ).run( "ROLLBACK", EMPTY_MAP, null );
+        order.verify( conn ).run( "ROLLBACK", Collections.<String, Value>emptyMap(), null );
         order.verify( conn ).discardAll();
         verify( cleanup ).run();
         verifyNoMoreInteractions( conn, cleanup );
@@ -68,9 +71,9 @@ public class StandardTransactionTest
 
         // Then
         InOrder order = inOrder( conn );
-        order.verify( conn ).run( "BEGIN", EMPTY_MAP, null );
+        order.verify( conn ).run( "BEGIN", Collections.<String, Value>emptyMap(), null );
         order.verify( conn ).discardAll();
-        order.verify( conn ).run( "ROLLBACK", EMPTY_MAP, null );
+        order.verify( conn ).run( "ROLLBACK", Collections.<String, Value>emptyMap(), null );
         order.verify( conn ).discardAll();
         verify( cleanup ).run();
         verifyNoMoreInteractions( conn, cleanup );
@@ -91,9 +94,9 @@ public class StandardTransactionTest
 
         // Then
         InOrder order = inOrder( conn );
-        order.verify( conn ).run( "BEGIN", EMPTY_MAP, null );
+        order.verify( conn ).run( "BEGIN", Collections.<String, Value>emptyMap(), null );
         order.verify( conn ).discardAll();
-        order.verify( conn ).run( "COMMIT", EMPTY_MAP, null );
+        order.verify( conn ).run( "COMMIT", Collections.<String, Value>emptyMap(), null );
         order.verify( conn ).discardAll();
         order.verify( conn ).sync();
         verify( cleanup ).run();

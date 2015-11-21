@@ -36,7 +36,6 @@ public abstract class BooleanValue extends ValueAdapter
     }
 
     public static BooleanValue TRUE = new TrueValue();
-
     public static BooleanValue FALSE = new FalseValue();
 
     public static BooleanValue fromBoolean( boolean value )
@@ -59,43 +58,27 @@ public abstract class BooleanValue extends ValueAdapter
     @Override
     public int hashCode()
     {
-        return javaBoolean() ? 1231 : 1237;
+        return Boolean.hashCode( asBoolean() );
     }
 
     private static class TrueValue extends BooleanValue {
+
         @Override
-        public boolean javaBoolean()
+        public Object asObject()
+        {
+            return Boolean.TRUE;
+        }
+
+        @Override
+        public boolean asBoolean()
         {
             return true;
         }
 
         @Override
-        public String javaString()
+        public String asString()
         {
-            return"true";
-        }
-        @Override
-        public int javaInteger()
-        {
-            return 1;
-        }
-
-        @Override
-        public long javaLong()
-        {
-            return 1L;
-        }
-
-        @Override
-        public float javaFloat()
-        {
-            return 1f;
-        }
-
-        @Override
-        public double javaDouble()
-        {
-            return 1d;
+            return "true";
         }
 
         @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
@@ -106,40 +89,24 @@ public abstract class BooleanValue extends ValueAdapter
         }
     }
 
-    private static class FalseValue extends BooleanValue {
+    private static class FalseValue extends BooleanValue
+    {
         @Override
-        public boolean javaBoolean()
+        public Object asObject()
+        {
+            return Boolean.FALSE;
+        }
+
+        @Override
+        public boolean asBoolean()
         {
             return false;
         }
 
         @Override
-        public String javaString()
+        public String asString()
         {
             return "false";
-        }
-        @Override
-        public int javaInteger()
-        {
-            return 0;
-        }
-
-        @Override
-        public long javaLong()
-        {
-            return 0L;
-        }
-
-        @Override
-        public float javaFloat()
-        {
-            return 0f;
-        }
-
-        @Override
-        public double javaDouble()
-        {
-            return 0d;
         }
 
         @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")

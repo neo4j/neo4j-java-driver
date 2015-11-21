@@ -273,7 +273,7 @@ public class SSLSocketChannelTest
                     return new SSLEngineResult( OK, NOT_HANDSHAKING, 0, 0 );
                 case 2:
                     // [XX XX] 02 03 -> 02 03
-                    bufferSize = bufferSize / 2;            // so that we could get the same size back
+                    bufferSize = bufferSize / 2;            // so that we could value the same size back
                     return new SSLEngineResult( BUFFER_UNDERFLOW, NOT_HANDSHAKING, 0, 0 ); // waiting for more data
                 case 3:
                     // 02 03 00 01 02 03 -> [XX XX XX XX XX XX]

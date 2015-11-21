@@ -26,6 +26,7 @@ import org.junit.runner.RunWith;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 @RunWith( DocTestRunner.class )
 public class TransactionDocIT
@@ -43,7 +44,9 @@ public class TransactionDocIT
         snippet.run();
 
         // Then a node should've been created
-        assertEquals( 1, session.run( "MATCH (n) RETURN count(n)" ).single().get( "count(n)" ).javaInteger() );
+        Result cursor = session.run( "MATCH (n) RETURN count(n)" );
+        assertTrue( cursor.single() );
+        assertEquals( 1, cursor.value( "count(n)" ).asInteger() );
     }
 
     /** @see Transaction#failure()  */
@@ -56,6 +59,8 @@ public class TransactionDocIT
         snippet.run();
 
         // Then a node should've been created
-        assertEquals( 0, session.run( "MATCH (n) RETURN count(n)" ).single().get( "count(n)" ).javaInteger() );
+        Result cursor = session.run( "MATCH (n) RETURN count(n)" );
+        assertTrue( cursor.single() );
+        assertEquals( 0, cursor.value( "count(n)" ).asInteger() );
     }
 }

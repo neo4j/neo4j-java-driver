@@ -82,7 +82,7 @@ public class SocketResponseHandlerTest
         handler.handleSuccessMessage( data );
 
         // Then
-        verify( collector ).fieldNames( fieldNames );
+        verify( collector ).fieldKeys( fieldNames );
         verifyNoMoreInteractions( collector );
         verifyZeroInteractions( otherCollector );
     }

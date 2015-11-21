@@ -38,6 +38,11 @@ public class PathValue extends ValueAdapter
         return adapted;
     }
 
+    public Object asObject()
+    {
+        return asPath();
+    }
+
     @Override
     public boolean isPath()
     {
@@ -45,7 +50,7 @@ public class PathValue extends ValueAdapter
     }
 
     @Override
-    public long size()
+    public int fieldCount()
     {
         return adapted.length();
     }
