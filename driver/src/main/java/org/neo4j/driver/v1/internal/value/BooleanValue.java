@@ -20,8 +20,6 @@ package org.neo4j.driver.v1.internal.value;
 
 public abstract class BooleanValue extends ValueAdapter
 {
-
-
     private BooleanValue() {
         //do nothing
     }
@@ -38,7 +36,7 @@ public abstract class BooleanValue extends ValueAdapter
     @Override
     public int hashCode()
     {
-        return Boolean.hashCode( javaBoolean() );
+        return javaBoolean() ? 1231 : 1237;
     }
 
     @Override
@@ -46,7 +44,6 @@ public abstract class BooleanValue extends ValueAdapter
     {
         return true;
     }
-
 
     private static class TrueValue extends BooleanValue {
         @Override
