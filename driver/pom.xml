@@ -108,9 +108,8 @@
           <docencoding>UTF-8</docencoding>
           <encoding>UTF-8</encoding>
           <sourceFileIncludes>
-            <sourceFileInclude>**/Neo4j.java</sourceFileInclude>
-            <sourceFileInclude>org/neo4j/driver/*.java</sourceFileInclude>
-            <sourceFileInclude>org/neo4j/driver/exceptions/*.java</sourceFileInclude>
+            <sourceFileInclude>org/neo4j/driver/v1/*.java</sourceFileInclude>
+            <sourceFileInclude>org/neo4j/driver/v1/exceptions/*.java</sourceFileInclude>
           </sourceFileIncludes>
         </configuration>
       </plugin>
