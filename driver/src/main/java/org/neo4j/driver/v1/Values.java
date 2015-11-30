@@ -201,7 +201,7 @@ public class Values
 
     public static Value value( final boolean val )
     {
-        return new BooleanValue( val );
+        return BooleanValue.fromBoolean( val );
     }
 
     public static Value value( final char val )

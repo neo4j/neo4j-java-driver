@@ -18,49 +18,27 @@
  */
 package org.neo4j.driver.v1.internal.value;
 
-public class BooleanValue extends ValueAdapter
+public abstract class BooleanValue extends ValueAdapter
 {
-    private final boolean val;
 
-    public BooleanValue( boolean val )
+
+    private BooleanValue() {
+        //do nothing
+    }
+
+    public static BooleanValue TRUE = new TrueValue();
+
+    public static BooleanValue FALSE = new FalseValue();
+
+    public static BooleanValue fromBoolean( boolean value )
     {
-        this.val = val;
+        return value ? TRUE : FALSE;
     }
 
     @Override
-    public boolean javaBoolean()
+    public int hashCode()
     {
-        return val;
-    }
-
-    @Override
-    public String javaString()
-    {
-        return val ? "true" : "false";
-    }
-
-    @Override
-    public int javaInteger()
-    {
-        return val ? 1 : 0;
-    }
-
-    @Override
-    public long javaLong()
-    {
-        return val ? 1 : 0;
-    }
-
-    @Override
-    public float javaFloat()
-    {
-        return val ? 1 : 0;
-    }
-
-    @Override
-    public double javaDouble()
-    {
-        return val ? 1 : 0;
+        return Boolean.hashCode( javaBoolean() );
     }
 
     @Override
@@ -69,27 +47,90 @@ public class BooleanValue extends ValueAdapter
         return true;
     }
 
-    @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
+
+    private static class TrueValue extends BooleanValue {
+        @Override
+        public boolean javaBoolean()
         {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
+
+        @Override
+        public String javaString()
+        {
+            return"true";
+        }
+        @Override
+        public int javaInteger()
+        {
+            return 1;
+        }
+
+        @Override
+        public long javaLong()
+        {
+            return 1L;
+        }
+
+        @Override
+        public float javaFloat()
+        {
+            return 1f;
+        }
+
+        @Override
+        public double javaDouble()
+        {
+            return 1d;
+        }
+
+        @Override
+        public boolean equals( Object obj )
+        {
+            return obj == TRUE;
+        }
+    }
+
+    private static class FalseValue extends BooleanValue {
+        @Override
+        public boolean javaBoolean()
         {
             return false;
         }
 
-        BooleanValue values = (BooleanValue) o;
+        @Override
+        public String javaString()
+        {
+            return "false";
+        }
+        @Override
+        public int javaInteger()
+        {
+            return 0;
+        }
 
-        return val == values.val;
+        @Override
+        public long javaLong()
+        {
+            return 0L;
+        }
 
-    }
+        @Override
+        public float javaFloat()
+        {
+            return 0f;
+        }
 
-    @Override
-    public int hashCode()
-    {
-        return javaInteger();
+        @Override
+        public double javaDouble()
+        {
+            return 0d;
+        }
+
+        @Override
+        public boolean equals( Object obj )
+        {
+            return obj == FALSE;
+        }
     }
 }

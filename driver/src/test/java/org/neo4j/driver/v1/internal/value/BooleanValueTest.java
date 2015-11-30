@@ -23,6 +23,8 @@ import org.junit.Test;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.driver.v1.internal.value.BooleanValue.FALSE;
+import static org.neo4j.driver.v1.internal.value.BooleanValue.TRUE;
 
 public class BooleanValueTest
 {
@@ -31,7 +33,7 @@ public class BooleanValueTest
     public void testBooleanTrue() throws Exception
     {
         // Given
-        BooleanValue value = new BooleanValue( true );
+        BooleanValue value = TRUE;
 
         // Then
         assertThat( value.javaBoolean(), equalTo( true ) );
@@ -45,7 +47,7 @@ public class BooleanValueTest
     public void testBooleanFalse() throws Exception
     {
         // Given
-        BooleanValue value = new BooleanValue( false );
+        BooleanValue value = FALSE;
 
         // Then
         assertThat( value.javaBoolean(), equalTo( false ) );
@@ -59,7 +61,7 @@ public class BooleanValueTest
     public void testIsBoolean() throws Exception
     {
         // Given
-        BooleanValue value = new BooleanValue( true );
+        BooleanValue value = TRUE;
 
         // Then
         assertThat( value.isBoolean(), equalTo( true ) );
@@ -69,8 +71,8 @@ public class BooleanValueTest
     public void testEquals() throws Exception
     {
         // Given
-        BooleanValue firstValue = new BooleanValue( true );
-        BooleanValue secondValue = new BooleanValue( true );
+        BooleanValue firstValue = TRUE;
+        BooleanValue secondValue = TRUE;
 
         // Then
         assertThat( firstValue, equalTo( secondValue ) );
@@ -80,7 +82,7 @@ public class BooleanValueTest
     public void testHashCode() throws Exception
     {
         // Given
-        BooleanValue value = new BooleanValue( true );
+        BooleanValue value = TRUE;
 
         // Then
         assertThat( value.hashCode(), notNullValue() );
