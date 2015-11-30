@@ -194,14 +194,14 @@ public class FileTools
         System.gc();
     }
 
-    public static void updateProperty( File propFile, String key, Object value ) throws IOException
+    public static void updateProperty( File propFile, String key, String value ) throws IOException
     {
-        Map<String, Object> propertiesMap = new HashMap<>( 1 );
+        Map<String, String> propertiesMap = new HashMap<>( 1 );
         propertiesMap.put( key, value );
         updateProperties( propFile, propertiesMap );
     }
 
-    public static void updateProperties( File propFile, Map<String, Object> propertiesMap ) throws IOException
+    public static void updateProperties( File propFile, Map<String, String> propertiesMap ) throws IOException
     {
         Scanner in = new Scanner( propFile );
 
@@ -248,7 +248,7 @@ public class FileTools
                 }
             }
 
-            for ( Map.Entry<String,Object> entry : propertiesMap.entrySet() )
+            for ( Map.Entry<String,String> entry : propertiesMap.entrySet() )
             {
                 String name = entry.getKey();
                 Object value = entry.getValue();
