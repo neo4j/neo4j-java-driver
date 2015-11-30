@@ -36,6 +36,12 @@ public class DevNullLogger implements Logger
     }
 
     @Override
+    public void warn( String message, Object... params )
+    {
+
+    }
+
+    @Override
     public void debug( String message, Object... params )
     {
 

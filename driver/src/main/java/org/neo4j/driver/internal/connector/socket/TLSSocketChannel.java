@@ -32,14 +32,14 @@ import javax.net.ssl.SSLSession;
 
 import org.neo4j.driver.internal.spi.Logger;
 import org.neo4j.driver.internal.util.BytePrinter;
-import org.neo4j.driver.v1.Config.TlsAuthenticationConfig;
+import org.neo4j.driver.v1.Config.TrustStrategy;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.FINISHED;
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING;
 
 /**
- * A blocking SSL socket channel.
+ * A blocking TLS socket channel.
  *
  * When debugging, we could enable JSSE system debugging by setting system property:
  * {@code -Djavax.net.debug=all} to value more information about handshake messages and other operations underway.
@@ -49,7 +49,7 @@ import static javax.net.ssl.SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING;
  * http://docs.oracle.com/javase/1.5.0/docs/guide/security/jsse/JSSERefGuide.html#SSLENG
  * http://docs.oracle.com/javase/7/docs/api/javax/net/ssl/SSLEngine.html
  */
-public class SSLSocketChannel implements ByteChannel
+public class TLSSocketChannel implements ByteChannel
 {
     private final SocketChannel channel;      // The real channel the data is sent to and read from
     private final Logger logger;
@@ -64,8 +64,8 @@ public class SSLSocketChannel implements ByteChannel
     private ByteBuffer plainIn;
     private ByteBuffer plainOut;
 
-    public SSLSocketChannel( String host, int port, SocketChannel channel, Logger logger,
-            TlsAuthenticationConfig authConfig )
+    public TLSSocketChannel( String host, int port, SocketChannel channel, Logger logger,
+                             TrustStrategy trustStrategy )
             throws GeneralSecurityException, IOException
     {
         logger.debug( "TLS connection enabled" );
@@ -73,16 +73,16 @@ public class SSLSocketChannel implements ByteChannel
         this.channel = channel;
         this.channel.configureBlocking( true );
 
-        sslContext =  new SSLContextFactory( host, port, authConfig ).create();
+        sslContext =  new SSLContextFactory( host, port, trustStrategy, logger ).create();
         createSSLEngine( host, port );
         createBuffers();
-        runSSLHandShake();
+        runHandshake();
         logger.debug( "TLS connection established" );
     }
 
     /** Used in internal tests only */
-    SSLSocketChannel( SocketChannel channel, Logger logger, SSLEngine sslEngine,
-            ByteBuffer plainIn, ByteBuffer cipherIn, ByteBuffer plainOut, ByteBuffer cipherOut )
+    TLSSocketChannel( SocketChannel channel, Logger logger, SSLEngine sslEngine,
+                      ByteBuffer plainIn, ByteBuffer cipherIn, ByteBuffer plainOut, ByteBuffer cipherOut )
             throws GeneralSecurityException, IOException
     {
         logger.debug( "Testing TLS buffers" );
@@ -109,7 +109,7 @@ public class SSLSocketChannel implements ByteChannel
      *
      * @throws IOException
      */
-    private void runSSLHandShake() throws IOException
+    private void runHandshake() throws IOException
     {
         sslEngine.beginHandshake();
         HandshakeStatus handshakeStatus = sslEngine.getHandshakeStatus();

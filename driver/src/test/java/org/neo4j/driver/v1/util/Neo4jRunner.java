@@ -30,9 +30,7 @@ import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static java.lang.String.format;
-
 import static junit.framework.TestCase.assertFalse;
-
 import static org.neo4j.driver.internal.ConfigTest.deleteDefaultKnownCertFileIfExists;
 import static org.neo4j.driver.v1.util.FileTools.deleteRecursively;
 import static org.neo4j.driver.v1.util.FileTools.updateProperties;
@@ -320,7 +318,7 @@ public class Neo4jRunner
         Config config = Config.defaultConfig();
         if( cachedSettings.isUsingTLS() )
         {
-            config = Config.build().withTlsEnabled( true ).toConfig();
+            config = Config.build().withEncryptionLevel( Config.EncryptionLevel.REQUIRED ).toConfig();
         }
         return config;
     }

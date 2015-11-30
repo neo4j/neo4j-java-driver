@@ -18,20 +18,18 @@
  */
 package org.neo4j.driver.internal;
 
-import java.io.File;
-
 import org.junit.Test;
+
+import java.io.File;
 
 import org.neo4j.driver.v1.Config;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 public class ConfigTest
 {
-    private static final File DEFAULT_KNOWN_CERTS = new File( System.getProperty( "user.home" ),
-            "neo4j/neo4j_known_certs" );
+    private static final File DEFAULT_KNOWN_CERTS = new File( System.getProperty( "user.home" ), ".neo4j/neo4j_known_certs" );
+
     @Test
     public void shouldDefaultToKnownCerts()
     {
@@ -39,10 +37,10 @@ public class ConfigTest
         Config config = Config.defaultConfig();
 
         // When
-        Config.TlsAuthenticationConfig authConfig = config.tlsAuthConfig();
+        Config.TrustStrategy authConfig = config.trustStrategy();
 
         // Then
-        assertFalse( authConfig.isFullAuthEnabled() );
+        assertEquals( authConfig.strategy(), Config.TrustStrategy.Strategy.TRUST_ON_FIRST_USE );
         assertEquals( DEFAULT_KNOWN_CERTS.getAbsolutePath(), authConfig.certFile().getAbsolutePath() );
     }
 
@@ -51,13 +49,13 @@ public class ConfigTest
     {
         // Given
         File knownCerts = new File( "new_known_certs" );
-        Config config = Config.build().withTlsAuthConfig( Config.TlsAuthenticationConfig.usingKnownCerts( knownCerts ) ).toConfig();
+        Config config = Config.build().withTrustStrategy( Config.TrustStrategy.trustOnFirstUse( knownCerts ) ).toConfig();
 
         // When
-        Config.TlsAuthenticationConfig authConfig = config.tlsAuthConfig();
+        Config.TrustStrategy authConfig = config.trustStrategy();
 
         // Then
-        assertFalse( authConfig.isFullAuthEnabled() );
+        assertEquals( authConfig.strategy(), Config.TrustStrategy.Strategy.TRUST_ON_FIRST_USE );
         assertEquals( knownCerts.getAbsolutePath(), authConfig.certFile().getAbsolutePath() );
     }
 
@@ -66,13 +64,13 @@ public class ConfigTest
     {
         // Given
         File trustedCert = new File( "trusted_cert" );
-        Config config = Config.build().withTlsAuthConfig( Config.TlsAuthenticationConfig.usingTrustedCert( trustedCert ) ).toConfig();
+        Config config = Config.build().withTrustStrategy( Config.TrustStrategy.trustSignedBy( trustedCert ) ).toConfig();
 
         // When
-        Config.TlsAuthenticationConfig authConfig = config.tlsAuthConfig();
+        Config.TrustStrategy authConfig = config.trustStrategy();
 
         // Then
-        assertTrue( authConfig.isFullAuthEnabled() );
+        assertEquals( authConfig.strategy(), Config.TrustStrategy.Strategy.TRUST_SIGNED_CERTIFICATES );
         assertEquals( trustedCert.getAbsolutePath(), authConfig.certFile().getAbsolutePath() );
     }
 
