@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.v1.internal.value;
 
+import org.neo4j.driver.v1.internal.types.TypeConstructor;
+
 public class IntegerValue extends ValueAdapter
 {
     private final long val;
@@ -49,6 +51,12 @@ public class IntegerValue extends ValueAdapter
     public boolean javaBoolean()
     {
         return val != 0;
+    }
+
+    @Override
+    public TypeConstructor typeConstructor()
+    {
+        return TypeConstructor.INTEGER_TyCon;
     }
 
     @Override

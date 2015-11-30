@@ -20,6 +20,7 @@ package org.neo4j.driver.v1.internal.value;
 
 import org.neo4j.driver.v1.Node;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
 public class NodeValue extends ValueAdapter
 {
@@ -54,6 +55,12 @@ public class NodeValue extends ValueAdapter
     public Iterable<String> keys()
     {
         return adapted.propertyKeys();
+    }
+
+    @Override
+    public TypeConstructor typeConstructor()
+    {
+        return TypeConstructor.NODE_TyCon;
     }
 
     @Override

@@ -25,6 +25,7 @@ import java.util.List;
 
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Function;
+import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
 public class ListValue extends ValueAdapter
 {
@@ -62,6 +63,12 @@ public class ListValue extends ValueAdapter
     public long size()
     {
         return values.length;
+    }
+
+    @Override
+    public TypeConstructor typeConstructor()
+    {
+        return TypeConstructor.LIST_TyCon;
     }
 
     @Override

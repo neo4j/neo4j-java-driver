@@ -18,10 +18,19 @@
  */
 package org.neo4j.driver.v1.internal.value;
 
+import org.neo4j.driver.v1.internal.types.TypeConstructor;
+
 public abstract class BooleanValue extends ValueAdapter
 {
-    private BooleanValue() {
+    private BooleanValue()
+    {
         //do nothing
+    }
+
+    @Override
+    public TypeConstructor typeConstructor()
+    {
+        return TypeConstructor.BOOLEAN_TyCon;
     }
 
     public static BooleanValue TRUE = new TrueValue();

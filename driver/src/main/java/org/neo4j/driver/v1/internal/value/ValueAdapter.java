@@ -31,6 +31,7 @@ import org.neo4j.driver.v1.exceptions.value.NotMultiValued;
 import org.neo4j.driver.v1.exceptions.value.Uncoercible;
 import org.neo4j.driver.v1.exceptions.value.Unsizable;
 import org.neo4j.driver.v1.Function;
+import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
 import static java.util.Collections.emptyList;
 
@@ -131,6 +132,8 @@ public abstract class ValueAdapter implements Value
     {
         return emptyList();
     }
+
+    public abstract TypeConstructor typeConstructor();
 
     @Override
     public boolean isString()

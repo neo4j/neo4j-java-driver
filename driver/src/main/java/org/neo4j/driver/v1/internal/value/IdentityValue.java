@@ -19,6 +19,7 @@
 package org.neo4j.driver.v1.internal.value;
 
 import org.neo4j.driver.v1.Identity;
+import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
 public class IdentityValue extends ValueAdapter
 {
@@ -46,6 +47,12 @@ public class IdentityValue extends ValueAdapter
     public Identity asIdentity()
     {
         return val;
+    }
+
+    @Override
+    public TypeConstructor typeConstructor()
+    {
+        return TypeConstructor.IDENTITY_TyCon;
     }
 
     @Override
