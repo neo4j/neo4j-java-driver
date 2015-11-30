@@ -194,6 +194,25 @@ public class BytePrinter
         return hex( wrap( bytes ) );
     }
 
+    /**
+     * Convert a full byte buffer to a human readable string of nicely formatted hex numbers.
+     * Output looks like:
+     * <p>
+     * 0102030405060708
+     *
+     * @param bytes
+     * @return
+     */
+    public static String compactHex( byte[] bytes )
+    {
+        StringBuilder sb = new StringBuilder();
+        for ( byte b : bytes )
+        {
+            sb.append( hex(b) );
+        }
+        return sb.toString();
+    }
+
     public static byte[] hexStringToBytes( String s )
     {
         int len = s.length();

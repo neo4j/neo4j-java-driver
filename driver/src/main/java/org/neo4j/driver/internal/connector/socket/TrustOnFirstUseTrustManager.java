@@ -24,11 +24,14 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.net.InetAddress;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import javax.net.ssl.X509TrustManager;
-import javax.xml.bind.DatatypeConverter;
+
+import org.neo4j.driver.internal.spi.Logger;
+import org.neo4j.driver.internal.util.BytePrinter;
 
 import static org.neo4j.driver.internal.util.CertificateTool.X509CertToString;
 
@@ -36,12 +39,11 @@ import static org.neo4j.driver.internal.util.CertificateTool.X509CertToString;
  * References:
  * http://stackoverflow.com/questions/6802421/how-to-compare-distinct-implementations-of-java-security-cert-x509certificate?answertab=votes#tab-top
  */
-
 class TrustOnFirstUseTrustManager implements X509TrustManager
 {
     /**
-     * A list of pairs (known_server, certificate) are stored in this file.
-     * When establishing a SSL connection to a new server, we will save the server's ip:port and its certificate in this
+     * A list of pairs (known_server certificate) are stored in this file.
+     * When establishing a SSL connection to a new server, we will save the server's host:port and its certificate in this
      * file.
      * Then when we try to connect to a known server again, we will authenticate the server by checking if it provides
      * the same certificate as the one saved in this file.
@@ -50,15 +52,15 @@ class TrustOnFirstUseTrustManager implements X509TrustManager
 
     /** The server ip:port (in digits) of the server that we are currently connected to */
     private final String serverId;
+    private final Logger logger;
 
     /** The known certificate we've registered for this server */
-    private String cert;
+    private String fingerprint;
 
-    TrustOnFirstUseTrustManager( String host, int port, File knownCerts ) throws IOException
+    TrustOnFirstUseTrustManager( String host, int port, File knownCerts, Logger logger ) throws IOException
     {
-        String ip = InetAddress.getByName( host ).getHostAddress(); // localhost -> 127.0.0.1
-        this.serverId = ip + ":" + port;
-
+        this.logger = logger;
+        this.serverId = host + ":" + port;
         this.knownCerts = knownCerts;
         load();
     }
@@ -76,16 +78,16 @@ class TrustOnFirstUseTrustManager implements X509TrustManager
         }
 
         BufferedReader reader = new BufferedReader( new FileReader( knownCerts ) );
-        String line = null;
+        String line;
         while ( (line = reader.readLine()) != null )
         {
-            if ( (!line.trim().startsWith( "#" )) && line.contains( "," ) )
+            if ( (!line.trim().startsWith( "#" )) )
             {
-                String[] strings = line.split( "," );
+                String[] strings = line.split( " " );
                 if ( strings[0].trim().equals( serverId ) )
                 {
                     // load the certificate
-                    cert = strings[1].trim();
+                    fingerprint = strings[1].trim();
                     return;
                 }
             }
@@ -96,16 +98,17 @@ class TrustOnFirstUseTrustManager implements X509TrustManager
     /**
      * Save a new (server_ip, cert) pair into knownCerts file
      *
-     * @param cert
+     * @param fingerprint
      */
-    private void save( String cert ) throws IOException
+    private void saveTrustedHost( String fingerprint ) throws IOException
     {
-        this.cert = cert;
+        this.fingerprint = fingerprint;
 
+        logger.warn( "Adding %s as known and trusted certificate for %s.", fingerprint, serverId );
         createKnownCertFileIfNotExists();
 
         BufferedWriter writer = new BufferedWriter( new FileWriter( knownCerts, true ) );
-        writer.write( serverId + "," + this.cert );
+        writer.write( serverId + " " + this.fingerprint );
         writer.newLine();
         writer.close();
     }
@@ -126,15 +129,14 @@ class TrustOnFirstUseTrustManager implements X509TrustManager
             throws CertificateException
     {
         X509Certificate certificate = chain[0];
-        byte[] encoded = certificate.getEncoded();
 
-        String cert = DatatypeConverter.printBase64Binary( encoded );
+        String cert = fingerprint( certificate );
 
-        if ( this.cert == null )
+        if ( this.fingerprint == null )
         {
             try
             {
-                save( cert );
+                saveTrustedHost( cert );
             }
             catch ( IOException e )
             {
@@ -146,7 +148,7 @@ class TrustOnFirstUseTrustManager implements X509TrustManager
         }
         else
         {
-            if ( !this.cert.equals( cert ) )
+            if ( !this.fingerprint.equals( cert ) )
             {
                 throw new CertificateException( String.format(
                         "Unable to connect to neo4j at `%s`, because the certificate the server uses has changed. " +
@@ -156,8 +158,26 @@ class TrustOnFirstUseTrustManager implements X509TrustManager
                         "in the file `%s`.\n" +
                         "The old certificate saved in file is:\n%sThe New certificate received is:\n%s",
                         serverId, serverId, knownCerts.getAbsolutePath(),
-                        X509CertToString( this.cert ), X509CertToString( cert ) ) );
+                        X509CertToString( this.fingerprint ), X509CertToString( cert ) ) );
             }
+        }
+    }
+
+    /**
+     * Calculate the certificate fingerprint - simply the SHA-1 hash of the DER-encoded certificate.
+     */
+    public static String fingerprint( X509Certificate cert ) throws CertificateException
+    {
+        try
+        {
+            MessageDigest md = MessageDigest.getInstance( "SHA-1" );
+            md.update( cert.getEncoded() );
+            return BytePrinter.compactHex( md.digest() );
+        }
+        catch( NoSuchAlgorithmException e )
+        {
+            // SHA-1 not available
+            throw new CertificateException( "Cannot use TLS on this platform, because SHA-1 message digest algorithm is not available: " + e.getMessage(), e );
         }
     }
 
@@ -168,9 +188,17 @@ class TrustOnFirstUseTrustManager implements X509TrustManager
             File parentDir = knownCerts.getParentFile();
             if( parentDir != null && !parentDir.exists() )
             {
-                parentDir.mkdirs();
+                if(!parentDir.mkdirs()) {
+                    throw new IOException( "Failed to create directories for the known hosts file in " + knownCerts.getAbsolutePath() + ". This is usually " +
+                                           "because you do not have write permissions to the directory. Try configuring the Neo4j driver to use a file " +
+                                           "system location you do have write permissions to." );
+                }
             }
-            knownCerts.createNewFile();
+            if(!knownCerts.createNewFile()) {
+                throw new IOException( "Failed to create a known hosts file at " + knownCerts.getAbsolutePath() + ". This is usually " +
+                                       "because you do not have write permissions to the directory. Try configuring the Neo4j driver to use a file " +
+                                       "system location you do have write permissions to." );
+            }
             BufferedWriter writer = new BufferedWriter( new FileWriter( knownCerts ) );
             writer.write( "# This file contains trusted certificates for Neo4j servers, it's created by Neo4j drivers." );
             writer.newLine();

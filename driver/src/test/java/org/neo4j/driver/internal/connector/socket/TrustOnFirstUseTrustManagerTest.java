@@ -18,50 +18,62 @@
  */
 package org.neo4j.driver.internal.connector.socket;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+
 import java.io.File;
 import java.io.PrintWriter;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Scanner;
-import javax.xml.bind.DatatypeConverter;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.neo4j.driver.internal.spi.Logger;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.driver.internal.connector.socket.TrustOnFirstUseTrustManager.fingerprint;
 
 public class TrustOnFirstUseTrustManagerTest
 {
-    private static File knownCertsFile;
+    private File knownCertsFile;
 
-    private static String knownServerIp;
-    private static int knownServerPort;
-    private static String knownServer;
+    private String knownServerIp;
+    private int knownServerPort;
+    private String knownServer;
 
-    @BeforeClass
-    public static void setup() throws Throwable
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
+    private X509Certificate knownCertificate;
+
+    @Before
+    public void setup() throws Throwable
     {
         // create the cert file with one ip:port and some random "cert" in it
-        knownCertsFile = File.createTempFile( "neo4j_known_certs", ".tmp" );
+        knownCertsFile = testDir.newFile();
         knownServerIp = "1.2.3.4";
         knownServerPort = 100;
         knownServer = knownServerIp + ":" + knownServerPort;
-        String knownCert = DatatypeConverter.printBase64Binary( "certificate".getBytes() );
+
+        knownCertificate = mock( X509Certificate.class );
+        when( knownCertificate.getEncoded() ).thenReturn( "certificate".getBytes( "UTF-8" ) );
 
         PrintWriter writer = new PrintWriter( knownCertsFile );
         writer.println( " # I am a comment." );
-        writer.println( knownServer + "," + knownCert );
+        writer.println( knownServer + " " + fingerprint( knownCertificate ) );
         writer.close();
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
-    @AfterClass
-    public static void teardown()
+    @After
+    public void teardown()
     {
         knownCertsFile.delete();
     }
@@ -70,22 +82,24 @@ public class TrustOnFirstUseTrustManagerTest
     public void shouldLoadExistingCert() throws Throwable
     {
         // Given
+        Logger logger = mock(Logger.class);
         TrustOnFirstUseTrustManager manager =
-                new TrustOnFirstUseTrustManager( knownServerIp, knownServerPort, knownCertsFile );
+                new TrustOnFirstUseTrustManager( knownServerIp, knownServerPort, knownCertsFile, logger );
 
-        X509Certificate fakeCert = mock( X509Certificate.class );
-        when( fakeCert.getEncoded() ).thenReturn( "fake certificate".getBytes() );
+        X509Certificate wrongCertificate = mock( X509Certificate.class );
+        when( wrongCertificate.getEncoded() ).thenReturn( "fake certificate".getBytes() );
 
         // When & Then
         try
         {
-            manager.checkServerTrusted( new X509Certificate[]{fakeCert}, null );
+            manager.checkServerTrusted( new X509Certificate[]{wrongCertificate}, null );
             fail( "Should not trust the fake certificate" );
         }
         catch ( CertificateException e )
         {
             assertTrue( e.getMessage().contains(
                     "If you trust the certificate the server uses now, simply remove the line that starts with" ) );
+            verifyNoMoreInteractions( logger );
         }
     }
 
@@ -94,33 +108,26 @@ public class TrustOnFirstUseTrustManagerTest
     {
         // Given
         int newPort = 200;
-        TrustOnFirstUseTrustManager manager = new TrustOnFirstUseTrustManager( knownServerIp, newPort, knownCertsFile );
+        Logger logger = mock(Logger.class);
+        TrustOnFirstUseTrustManager manager = new TrustOnFirstUseTrustManager( knownServerIp, newPort, knownCertsFile, logger );
 
-        byte[] encoded = "certificate".getBytes();
-        String cert = DatatypeConverter.printBase64Binary( encoded );
+        String fingerprint = fingerprint( knownCertificate );
 
-        X509Certificate newCert = mock( X509Certificate.class );
-        when( newCert.getEncoded() ).thenReturn( encoded );
+        // When
+        manager.checkServerTrusted( new X509Certificate[]{knownCertificate}, null );
 
-        // When && Then
-        try
-        {
-            manager.checkServerTrusted( new X509Certificate[]{newCert}, null );
-        }
-        catch ( CertificateException e )
-        {
-            fail( "Should trust the certificate the first time it is seen" );
-            e.printStackTrace();
-        }
+        // Then no exception should've been thrown, and we should've logged that we now trust this certificate
+        verify(logger).warn( "Adding %s as known and trusted certificate for %s.", fingerprint, "1.2.3.4:200" );
 
+        // And the file should contain the right info
         Scanner reader = new Scanner( knownCertsFile );
 
         String line;
         line = nextLine( reader );
-        assertEquals( knownServer + "," + cert, line );
+        assertEquals( knownServer + " " + fingerprint, line );
         assertTrue( reader.hasNextLine() );
         line = nextLine( reader );
-        assertEquals( knownServerIp + ":" + newPort + "," + cert, line );
+        assertEquals( knownServerIp + ":" + newPort + " " + fingerprint, line );
     }
 
     private String nextLine( Scanner reader )

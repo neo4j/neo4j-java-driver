@@ -182,7 +182,8 @@ public class Neo4jRunner
      */
     private void updateServerSettingsFile()
     {
-        Map<String, Object> propertiesMap = currentSettings.propertiesMap();
+        Map<String, String> propertiesMap = currentSettings.propertiesMap();
+
         if ( propertiesMap.isEmpty() )
         {
             return;
@@ -192,7 +193,7 @@ public class Neo4jRunner
         try
         {
             debug( "Changing server properties file (for next start): " + oldFile.getCanonicalPath() );
-            for ( Map.Entry<String, Object> property : propertiesMap.entrySet() )
+            for ( Map.Entry<String, String> property : propertiesMap.entrySet() )
             {
                 String name = property.getKey();
                 Object value = property.getValue();
@@ -262,7 +263,7 @@ public class Neo4jRunner
         Config config = Config.defaultConfig();
         if( currentSettings.isUsingTLS() )
         {
-            config = Config.build().withTlsEnabled( true ).toConfig();
+            config = Config.build().withEncryptionLevel( Config.EncryptionLevel.REQUIRED ).toConfig();
         }
         return config;
     }
