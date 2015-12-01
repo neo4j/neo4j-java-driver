@@ -18,7 +18,9 @@
  */
 package org.neo4j.driver.v1.internal.value;
 
+import org.neo4j.driver.v1.CoarseType;
 import org.neo4j.driver.v1.Node;
+import org.neo4j.driver.v1.Types;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
@@ -85,6 +87,12 @@ public class NodeValue extends ValueAdapter
 
         return !(adapted != null ? !adapted.equals( values.adapted ) : values.adapted != null);
 
+    }
+
+    @Override
+    public CoarseType type()
+    {
+        return Types.NODE;
     }
 
     @Override

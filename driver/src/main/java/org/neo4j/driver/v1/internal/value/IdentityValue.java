@@ -18,7 +18,9 @@
  */
 package org.neo4j.driver.v1.internal.value;
 
+import org.neo4j.driver.v1.CoarseType;
 import org.neo4j.driver.v1.Identity;
+import org.neo4j.driver.v1.Types;
 import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
 public class IdentityValue extends ValueAdapter
@@ -59,6 +61,12 @@ public class IdentityValue extends ValueAdapter
     public boolean isIdentity()
     {
         return true;
+    }
+
+    @Override
+    public CoarseType type()
+    {
+        return Types.IDENTITY;
     }
 
     @Override

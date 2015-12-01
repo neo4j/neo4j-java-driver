@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.v1.internal.value;
 
+import org.neo4j.driver.v1.CoarseType;
+import org.neo4j.driver.v1.Types;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
@@ -32,9 +34,9 @@ public class NullValue extends ValueAdapter
     }
 
     @Override
-    public int hashCode()
+    public CoarseType type()
     {
-        return 0;
+        return Types.NULL;
     }
 
     @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
@@ -42,6 +44,12 @@ public class NullValue extends ValueAdapter
     public boolean equals( Object obj )
     {
         return obj == NULL;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return 0;
     }
 
     @Override

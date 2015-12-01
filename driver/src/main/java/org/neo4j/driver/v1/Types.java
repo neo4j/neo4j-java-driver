@@ -20,7 +20,6 @@ package org.neo4j.driver.v1;
 
 import org.neo4j.driver.v1.internal.types.TypeConstructor;
 import org.neo4j.driver.v1.internal.types.TypeRepresentation;
-import org.neo4j.driver.v1.internal.value.InternalValue;
 
 import static org.neo4j.driver.v1.internal.types.TypeConstructor.ANY_TyCon;
 import static org.neo4j.driver.v1.internal.types.TypeConstructor.BOOLEAN_TyCon;
@@ -43,57 +42,10 @@ import static org.neo4j.driver.v1.internal.types.TypeConstructor.STRING_TyCon;
  * @see Type
  * @see CoarseType
  */
-public final class CypherTypes
+public final class Types
 {
-    private CypherTypes() {
+    private Types() {
         throw new UnsupportedOperationException(  );
-    }
-
-    /**
-     * Determine the {@link CoarseType} of a given {@link Value}
-     *
-     * @param value the value
-     * @return the smallest coarse Cypher type of the value
-     */
-    public static CoarseType typeOf( Value value )
-    {
-        if ( value == null )
-        {
-            return NULL;
-        }
-
-        TypeConstructor constructor = ((InternalValue) value).typeConstructor();
-        switch ( constructor )
-        {
-        case ANY_TyCon:
-            return ANY;
-        case BOOLEAN_TyCon:
-            return BOOLEAN;
-        case STRING_TyCon:
-            return STRING;
-        case NUMBER_TyCon:
-            return NUMBER;
-        case INTEGER_TyCon:
-            return INTEGER;
-        case FLOAT_TyCon:
-            return FLOAT;
-        case LIST_TyCon:
-            return LIST;
-        case MAP_TyCon:
-            return MAP;
-        case IDENTITY_TyCon:
-            return IDENTITY;
-        case NODE_TyCon:
-            return NODE;
-        case RELATIONSHIP_TyCon:
-            return RELATIONSHIP;
-        case PATH_TyCon:
-            return PATH;
-        case NULL_TyCon:
-            return NULL;
-        default:
-            throw new UnsupportedOperationException( "Unsupported Cypher type" );
-        }
     }
 
     /** the Cypher type ANY */

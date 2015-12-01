@@ -38,20 +38,19 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
-import static org.neo4j.driver.v1.CypherTypes.ANY;
-import static org.neo4j.driver.v1.CypherTypes.BOOLEAN;
-import static org.neo4j.driver.v1.CypherTypes.FLOAT;
-import static org.neo4j.driver.v1.CypherTypes.IDENTITY;
-import static org.neo4j.driver.v1.CypherTypes.INTEGER;
-import static org.neo4j.driver.v1.CypherTypes.LIST;
-import static org.neo4j.driver.v1.CypherTypes.MAP;
-import static org.neo4j.driver.v1.CypherTypes.NODE;
-import static org.neo4j.driver.v1.CypherTypes.NULL;
-import static org.neo4j.driver.v1.CypherTypes.NUMBER;
-import static org.neo4j.driver.v1.CypherTypes.PATH;
-import static org.neo4j.driver.v1.CypherTypes.RELATIONSHIP;
-import static org.neo4j.driver.v1.CypherTypes.STRING;
-import static org.neo4j.driver.v1.CypherTypes.typeOf;
+import static org.neo4j.driver.v1.Types.ANY;
+import static org.neo4j.driver.v1.Types.BOOLEAN;
+import static org.neo4j.driver.v1.Types.FLOAT;
+import static org.neo4j.driver.v1.Types.IDENTITY;
+import static org.neo4j.driver.v1.Types.INTEGER;
+import static org.neo4j.driver.v1.Types.LIST;
+import static org.neo4j.driver.v1.Types.MAP;
+import static org.neo4j.driver.v1.Types.NODE;
+import static org.neo4j.driver.v1.Types.NULL;
+import static org.neo4j.driver.v1.Types.NUMBER;
+import static org.neo4j.driver.v1.Types.PATH;
+import static org.neo4j.driver.v1.Types.RELATIONSHIP;
+import static org.neo4j.driver.v1.Types.STRING;
 import static org.neo4j.driver.v1.Values.value;
 
 public class TypesTest
@@ -236,6 +235,11 @@ public class TypesTest
         assertThat( typeOf( relationshipValue ), equalTo( RELATIONSHIP ) );
         assertThat( typeOf( pathValue ), equalTo( PATH ) );
         assertThat( typeOf( nullValue ), equalTo( NULL ) );
+    }
+
+    private CoarseType typeOf( Value value )
+    {
+        return value.type();
     }
 
     private class TypeVerifier implements AutoCloseable

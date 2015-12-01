@@ -211,4 +211,6 @@ public interface Value extends Iterable<Value>
      * @return if the underlying value is a Neo4j map
      */
     boolean isMap();
+
+    CoarseType type();
 }

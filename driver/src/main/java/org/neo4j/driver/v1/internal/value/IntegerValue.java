@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.v1.internal.value;
 
+import org.neo4j.driver.v1.CoarseType;
+import org.neo4j.driver.v1.Types;
 import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
 public class IntegerValue extends ValueAdapter
@@ -75,6 +77,12 @@ public class IntegerValue extends ValueAdapter
     public double javaDouble()
     {
         return (double) val;
+    }
+
+    @Override
+    public CoarseType type()
+    {
+        return Types.INTEGER;
     }
 
     @Override

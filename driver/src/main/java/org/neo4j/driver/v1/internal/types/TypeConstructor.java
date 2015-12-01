@@ -149,7 +149,7 @@ public enum TypeConstructor
 
     private static TypeConstructor typeConstructorOf( Value value )
     {
-        return value == null ? NULL_TyCon : ( (InternalValue) value ).typeConstructor();
+        return ( (InternalValue) value ).typeConstructor();
     }
 
     public abstract String typeName();

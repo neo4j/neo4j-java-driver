@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.v1.internal.value;
 
+import org.neo4j.driver.v1.CoarseType;
+import org.neo4j.driver.v1.Types;
 import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
 public class StringValue extends ValueAdapter
@@ -58,6 +60,12 @@ public class StringValue extends ValueAdapter
     public TypeConstructor typeConstructor()
     {
         return TypeConstructor.STRING_TyCon;
+    }
+
+    @Override
+    public CoarseType type()
+    {
+        return Types.STRING;
     }
 
     @Override
