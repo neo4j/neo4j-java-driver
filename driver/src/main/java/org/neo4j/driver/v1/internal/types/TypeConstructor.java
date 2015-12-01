@@ -19,7 +19,7 @@
 package org.neo4j.driver.v1.internal.types;
 
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.internal.value.ValueAdapter;
+import org.neo4j.driver.v1.internal.value.InternalValue;
 
 public enum TypeConstructor
 {
@@ -149,7 +149,7 @@ public enum TypeConstructor
 
     private static TypeConstructor typeConstructorOf( Value value )
     {
-        return value == null ? NULL_TyCon : ( (ValueAdapter) value ).typeConstructor();
+        return value == null ? NULL_TyCon : ( (InternalValue) value ).typeConstructor();
     }
 
     public abstract String typeName();

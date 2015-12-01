@@ -20,16 +20,28 @@ package org.neo4j.driver.v1;
 
 import org.neo4j.driver.v1.internal.types.TypeConstructor;
 import org.neo4j.driver.v1.internal.types.TypeRepresentation;
-import org.neo4j.driver.v1.internal.value.ValueAdapter;
+import org.neo4j.driver.v1.internal.value.InternalValue;
 
-import static org.neo4j.driver.v1.internal.types.TypeConstructor.*;
+import static org.neo4j.driver.v1.internal.types.TypeConstructor.ANY_TyCon;
+import static org.neo4j.driver.v1.internal.types.TypeConstructor.BOOLEAN_TyCon;
+import static org.neo4j.driver.v1.internal.types.TypeConstructor.FLOAT_TyCon;
+import static org.neo4j.driver.v1.internal.types.TypeConstructor.IDENTITY_TyCon;
+import static org.neo4j.driver.v1.internal.types.TypeConstructor.INTEGER_TyCon;
+import static org.neo4j.driver.v1.internal.types.TypeConstructor.LIST_TyCon;
+import static org.neo4j.driver.v1.internal.types.TypeConstructor.MAP_TyCon;
+import static org.neo4j.driver.v1.internal.types.TypeConstructor.NODE_TyCon;
+import static org.neo4j.driver.v1.internal.types.TypeConstructor.NULL_TyCon;
+import static org.neo4j.driver.v1.internal.types.TypeConstructor.NUMBER_TyCon;
+import static org.neo4j.driver.v1.internal.types.TypeConstructor.PATH_TyCon;
+import static org.neo4j.driver.v1.internal.types.TypeConstructor.RELATIONSHIP_TyCon;
+import static org.neo4j.driver.v1.internal.types.TypeConstructor.STRING_TyCon;
 
 /**
  * Utility class for determining and working with the Cypher types of values
  *
  * @see Value
- * @see CypherType
- * @see CoarseCypherType
+ * @see Type
+ * @see CoarseType
  */
 public final class CypherTypes
 {
@@ -38,19 +50,19 @@ public final class CypherTypes
     }
 
     /**
-     * Determine the {@link CoarseCypherType} of a given {@link Value}
+     * Determine the {@link CoarseType} of a given {@link Value}
      *
      * @param value the value
      * @return the smallest coarse Cypher type of the value
      */
-    public static CoarseCypherType typeOf( Value value )
+    public static CoarseType typeOf( Value value )
     {
         if ( value == null )
         {
             return NULL;
         }
 
-        TypeConstructor constructor = ((ValueAdapter) value).typeConstructor();
+        TypeConstructor constructor = ((InternalValue) value).typeConstructor();
         switch ( constructor )
         {
         case ANY_TyCon:
@@ -85,43 +97,43 @@ public final class CypherTypes
     }
 
     /** the Cypher type ANY */
-    public static CoarseCypherType ANY = constructType( ANY_TyCon );
+    public static CoarseType ANY = constructType( ANY_TyCon );
 
     /** the Cypher type BOOLEAN */
-    public static CoarseCypherType BOOLEAN = constructType( BOOLEAN_TyCon );
+    public static CoarseType BOOLEAN = constructType( BOOLEAN_TyCon );
 
     /** the Cypher type STRING */
-    public static CoarseCypherType STRING = constructType( STRING_TyCon );
+    public static CoarseType STRING = constructType( STRING_TyCon );
 
     /** the Cypher type NUMBER */
-    public static CoarseCypherType NUMBER = constructType( NUMBER_TyCon );
+    public static CoarseType NUMBER = constructType( NUMBER_TyCon );
 
     /** the Cypher type INTEGER */
-    public static CoarseCypherType INTEGER = constructType( INTEGER_TyCon );
+    public static CoarseType INTEGER = constructType( INTEGER_TyCon );
 
     /** the Cypher type FLOAT */
-    public static CoarseCypherType FLOAT = constructType( FLOAT_TyCon );
+    public static CoarseType FLOAT = constructType( FLOAT_TyCon );
 
     /** the Cypher type LIST */
-    public static CoarseCypherType LIST = constructType( LIST_TyCon );
+    public static CoarseType LIST = constructType( LIST_TyCon );
 
     /** the Cypher type MAP */
-    public static CoarseCypherType MAP = constructType( MAP_TyCon );
+    public static CoarseType MAP = constructType( MAP_TyCon );
 
     /** the Cypher type IDENTITY */
-    public static CoarseCypherType IDENTITY = constructType( IDENTITY_TyCon );
+    public static CoarseType IDENTITY = constructType( IDENTITY_TyCon );
 
     /** the Cypher type NODE */
-    public static CoarseCypherType NODE = constructType( NODE_TyCon );
+    public static CoarseType NODE = constructType( NODE_TyCon );
 
     /** the Cypher type RELATIONSHIP */
-    public static CoarseCypherType RELATIONSHIP = constructType( RELATIONSHIP_TyCon );
+    public static CoarseType RELATIONSHIP = constructType( RELATIONSHIP_TyCon );
 
     /** the Cypher type PATH */
-    public static CoarseCypherType PATH = constructType( PATH_TyCon );
+    public static CoarseType PATH = constructType( PATH_TyCon );
 
     /** the Cypher type NULL */
-    public static CoarseCypherType NULL = constructType( NULL_TyCon );
+    public static CoarseType NULL = constructType( NULL_TyCon );
 
     private static TypeRepresentation constructType( TypeConstructor tyCon )
     {

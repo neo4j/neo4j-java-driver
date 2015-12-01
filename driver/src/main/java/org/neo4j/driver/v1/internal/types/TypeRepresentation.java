@@ -18,12 +18,12 @@
  */
 package org.neo4j.driver.v1.internal.types;
 
-import org.neo4j.driver.v1.CoarseCypherType;
+import org.neo4j.driver.v1.CoarseType;
 import org.neo4j.driver.v1.Value;
 
-import static org.neo4j.driver.v1.internal.types.TypeConstructor.*;
+import static org.neo4j.driver.v1.internal.types.TypeConstructor.LIST_TyCon;
 
-public class TypeRepresentation implements CoarseCypherType
+public class TypeRepresentation implements CoarseType
 {
     private final TypeConstructor tyCon;
 
@@ -50,7 +50,7 @@ public class TypeRepresentation implements CoarseCypherType
     }
 
     @Override
-    public CoarseCypherType erasedType()
+    public CoarseType coarseType()
     {
         return this;
     }

@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.driver.v1.Function;
 import org.neo4j.driver.v1.Identity;
 import org.neo4j.driver.v1.Node;
 import org.neo4j.driver.v1.Path;
@@ -30,13 +31,17 @@ import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.value.NotMultiValued;
 import org.neo4j.driver.v1.exceptions.value.Uncoercible;
 import org.neo4j.driver.v1.exceptions.value.Unsizable;
-import org.neo4j.driver.v1.Function;
-import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
 import static java.util.Collections.emptyList;
 
-public abstract class ValueAdapter implements Value
+public abstract class ValueAdapter implements InternalValue
 {
+    @Override
+    public boolean isNull()
+    {
+        return false;
+    }
+
     @Override
     public String javaString()
     {
@@ -133,8 +138,6 @@ public abstract class ValueAdapter implements Value
         return emptyList();
     }
 
-    public abstract TypeConstructor typeConstructor();
-
     @Override
     public boolean isString()
     {
@@ -209,6 +212,7 @@ public abstract class ValueAdapter implements Value
 
     protected String typeName()
     {
+        if ( isNull() ) { return "null"; }
         if ( isFloat() ) { return "float"; }
         if ( isInteger() ) { return "integer"; }
         if ( isBoolean() ) { return "boolean"; }

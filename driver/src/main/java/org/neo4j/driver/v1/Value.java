@@ -166,6 +166,8 @@ public interface Value extends Iterable<Value>
      */
     Iterable<String> keys();
 
+    boolean isNull();
+
     /** @return true if the underlying value is a Neo4j string value */
     boolean isString();
 

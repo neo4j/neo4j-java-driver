@@ -20,9 +20,13 @@ package org.neo4j.driver.v1.internal.value;
 
 import org.junit.Test;
 
+import org.neo4j.driver.v1.internal.types.TypeConstructor;
+
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+
 import static org.neo4j.driver.v1.internal.value.BooleanValue.FALSE;
 import static org.neo4j.driver.v1.internal.value.BooleanValue.TRUE;
 
@@ -86,5 +90,19 @@ public class BooleanValueTest
 
         // Then
         assertThat( value.hashCode(), notNullValue() );
+    }
+
+    @Test
+    public void shouldNotBeNull()
+    {
+        assertFalse( BooleanValue.TRUE.isNull() );
+        assertFalse( BooleanValue.FALSE.isNull() );
+    }
+
+    @Test
+    public void shouldTypeAsBoolean()
+    {
+        assertThat( BooleanValue.TRUE.typeConstructor(), equalTo( TypeConstructor.BOOLEAN_TyCon ) );
+        assertThat( BooleanValue.FALSE.typeConstructor(), equalTo( TypeConstructor.BOOLEAN_TyCon ) );
     }
 }

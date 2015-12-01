@@ -16,20 +16,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1;
+package org.neo4j.driver.v1.internal.value;
 
-/**
- * The Cypher type of a {@link Value}
- */
-public interface CypherType
+import org.junit.Test;
+
+import org.neo4j.driver.v1.internal.types.TypeConstructor;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertTrue;
+
+public class NullValueTest
 {
-    /**
-     * @return the name of the Cypher type (as defined by Cypher)
-     */
-    String name();
+    @Test
+    public void shouldEqualItself()
+    {
+        assertThat( NullValue.NULL, equalTo( NullValue.NULL ) );
+    }
 
-    /**
-     * @return the erased Cypher type of this type
-     */
-    CoarseCypherType erasedType();
+    @Test
+    public void shouldBeNull()
+    {
+        assertTrue( NullValue.NULL.isNull() );
+    }
+
+    @Test
+    public void shouldTypeAsNull()
+    {
+        assertThat( ( (InternalValue) NullValue.NULL ).typeConstructor(), equalTo( TypeConstructor.NULL_TyCon ) );
+    }
 }

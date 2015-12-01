@@ -20,16 +20,39 @@ package org.neo4j.driver.v1.internal.value;
 
 import org.junit.Test;
 
+import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.internal.SimpleRelationship;
+import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 
 public class RelationshipValueTest
 {
     @Test
     public void shouldHaveSensibleToString() throws Throwable
     {
-        assertEquals( "relationship<#1234>",
-                new RelationshipValue( new SimpleRelationship( 1234, 1, 2, "KNOWS" ) ).toString() );
+        assertEquals( "relationship<#1234>", relationshipValue().toString() );
+    }
+
+    @Test
+    public void shouldNotBeNull()
+    {
+        Value value = relationshipValue();
+        assertFalse( value.isNull() );
+    }
+
+    @Test
+    public void shouldTypeAsRelationship()
+    {
+        InternalValue value = relationshipValue();
+        assertThat( value.typeConstructor(), equalTo( TypeConstructor.RELATIONSHIP_TyCon ) );
+    }
+
+    private RelationshipValue relationshipValue()
+    {
+        return new RelationshipValue( new SimpleRelationship( 1234, 1, 2, "KNOWS" ) );
     }
 }

@@ -18,15 +18,15 @@
  */
 package org.neo4j.driver.v1;
 
-import org.hamcrest.BaseMatcher;
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-import org.junit.Test;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+
+import org.hamcrest.BaseMatcher;
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.junit.Test;
 
 import org.neo4j.driver.v1.internal.SimpleIdentity;
 import org.neo4j.driver.v1.internal.SimpleNode;
@@ -37,20 +37,24 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.driver.v1.CypherTypes.*;
+
 import static org.neo4j.driver.v1.CypherTypes.ANY;
 import static org.neo4j.driver.v1.CypherTypes.BOOLEAN;
 import static org.neo4j.driver.v1.CypherTypes.FLOAT;
+import static org.neo4j.driver.v1.CypherTypes.IDENTITY;
 import static org.neo4j.driver.v1.CypherTypes.INTEGER;
 import static org.neo4j.driver.v1.CypherTypes.LIST;
+import static org.neo4j.driver.v1.CypherTypes.MAP;
 import static org.neo4j.driver.v1.CypherTypes.NODE;
+import static org.neo4j.driver.v1.CypherTypes.NULL;
+import static org.neo4j.driver.v1.CypherTypes.NUMBER;
 import static org.neo4j.driver.v1.CypherTypes.PATH;
 import static org.neo4j.driver.v1.CypherTypes.RELATIONSHIP;
 import static org.neo4j.driver.v1.CypherTypes.STRING;
 import static org.neo4j.driver.v1.CypherTypes.typeOf;
 import static org.neo4j.driver.v1.Values.value;
 
-public class CypherTypesTest
+public class TypesTest
 {
     private final SimpleNode node = new SimpleNode( 42L );
     private final SimpleRelationship relationship = new SimpleRelationship( 42L, 42L, 43L, "T" );
@@ -67,7 +71,7 @@ public class CypherTypesTest
     private Value nullValue = null;
     private Value identityValue = value( new SimpleIdentity( 42L ) );
 
-    TypeVerifier newTypeVerifierFor( CoarseCypherType type )
+    TypeVerifier newTypeVerifierFor( CoarseType type )
     {
         HashSet<Value> allValues = new HashSet<>();
         allValues.add( integerValue );
@@ -236,10 +240,10 @@ public class CypherTypesTest
 
     private class TypeVerifier implements AutoCloseable
     {
-        private final CoarseCypherType type;
+        private final CoarseType type;
         private final Set<Value> values;
 
-        TypeVerifier( CoarseCypherType type, Set<Value> values )
+        TypeVerifier( CoarseType type, Set<Value> values )
         {
             this.type = type;
             this.values = values;
@@ -261,7 +265,7 @@ public class CypherTypesTest
         }
     }
 
-    private Matcher<? super Value> hasType( final CoarseCypherType type )
+    private Matcher<? super Value> hasType( final CoarseType type )
     {
         return new BaseMatcher<Value>()
         {

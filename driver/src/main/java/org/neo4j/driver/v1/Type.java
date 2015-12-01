@@ -19,19 +19,18 @@
 package org.neo4j.driver.v1;
 
 /**
- * The coarse Cypher type of a {@link Value}
- *
- * A coarse Cypher type is the type of a value that can be inferred without inspecting its elements, e.g.
- * the coarse type of a LIST OF INTEGER is LIST OF ANY?
+ * The type of a {@link Value} as defined by the Cypher language
  */
-public interface CoarseCypherType extends CypherType
+public interface Type
 {
     /**
-     * Test if a value has this Cypher type
-     *
-     * @param value the value
-     * @return <tt>true</tt> if the value is a value of this Cypher type otherwise <tt>false</tt>
+     * @return the name of the Cypher type (as defined by Cypher)
      */
-    boolean isTypeOf( Value value );
-}
+    String name();
 
+    /**
+     * @see CoarseType
+     * @return the {@link CoarseType} of this type
+     */
+    CoarseType coarseType();
+}
