@@ -18,6 +18,10 @@
  */
 package org.neo4j.driver.v1.internal.value;
 
+import org.neo4j.driver.v1.CoarseType;
+import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
+import org.neo4j.driver.v1.internal.types.TypeConstructor;
+
 public class FloatValue extends ValueAdapter
 {
     private final double val;
@@ -58,6 +62,12 @@ public class FloatValue extends ValueAdapter
     }
 
     @Override
+    public TypeConstructor typeConstructor()
+    {
+        return TypeConstructor.FLOAT_TyCon;
+    }
+
+    @Override
     public double javaDouble()
     {
         return val;
@@ -67,6 +77,12 @@ public class FloatValue extends ValueAdapter
     public boolean isFloat()
     {
         return true;
+    }
+
+    @Override
+    public CoarseType type()
+    {
+        return StandardTypeSystem.TYPE_SYSTEM.FLOAT();
     }
 
     @Override

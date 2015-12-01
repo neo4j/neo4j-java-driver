@@ -34,6 +34,7 @@ import org.neo4j.driver.v1.internal.value.IntegerValue;
 import org.neo4j.driver.v1.internal.value.ListValue;
 import org.neo4j.driver.v1.internal.value.MapValue;
 import org.neo4j.driver.v1.internal.value.NodeValue;
+import org.neo4j.driver.v1.internal.value.NullValue;
 import org.neo4j.driver.v1.internal.value.PathValue;
 import org.neo4j.driver.v1.internal.value.RelationshipValue;
 import org.neo4j.driver.v1.internal.value.StringValue;
@@ -46,10 +47,12 @@ public class Values
 {
     public static final Value EmptyMap = value( Collections.emptyMap() );
 
+    public static Value NULL = NullValue.NULL;
+
     @SuppressWarnings("unchecked")
     public static Value value( Object value )
     {
-        if ( value == null ) { return null; }
+        if ( value == null ) { return NullValue.NULL; }
         if ( value instanceof Value ) { return (Value) value; }
 
         if ( value instanceof Identity ) { return new IdentityValue( (Identity) value ); }

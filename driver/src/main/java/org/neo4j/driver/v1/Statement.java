@@ -111,7 +111,7 @@ public class Statement
             for ( Map.Entry<String, Value> entry : updates.entrySet() )
             {
                 Value value = entry.getValue();
-                if ( value == null )
+                if ( value.isNull() )
                 {
                     newParameters.remove( entry.getKey() );
                 }

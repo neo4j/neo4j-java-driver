@@ -215,7 +215,8 @@ public class PackStreamMessageFormatV1 implements MessageFormat
 
         private void packValue( Value value ) throws IOException
         {
-            if ( value == null )
+            // TODO: Use switch on type constructor
+            if ( value.isNull() )
             {
                 packer.packNull();
             }

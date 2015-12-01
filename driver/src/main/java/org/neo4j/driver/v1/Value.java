@@ -166,6 +166,8 @@ public interface Value extends Iterable<Value>
      */
     Iterable<String> keys();
 
+    boolean isNull();
+
     /** @return true if the underlying value is a Neo4j string value */
     boolean isString();
 
@@ -209,4 +211,6 @@ public interface Value extends Iterable<Value>
      * @return if the underlying value is a Neo4j map
      */
     boolean isMap();
+
+    CoarseType type();
 }

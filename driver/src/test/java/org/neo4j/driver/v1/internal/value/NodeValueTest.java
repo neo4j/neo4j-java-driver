@@ -18,22 +18,45 @@
  */
 package org.neo4j.driver.v1.internal.value;
 
-import org.junit.Test;
-
 import java.util.HashMap;
+
+import org.junit.Test;
 
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.internal.SimpleNode;
+import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
-import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
+
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 
 public class NodeValueTest
 {
     @Test
     public void shouldHaveSensibleToString() throws Throwable
     {
-        assertEquals("node<#1234>",
-                new NodeValue( new SimpleNode(1234, asList("User"), new HashMap<String, Value>() )).toString());
+        assertEquals("node<#1234>", nodeValue().toString());
+    }
+
+    private NodeValue nodeValue()
+    {
+        return new NodeValue( new SimpleNode( 1234, singletonList( "User" ), new HashMap<String, Value>() ) );
+    }
+
+    @Test
+    public void shouldNotBeNull()
+    {
+        Value value = nodeValue();
+        assertFalse( value.isNull() );
+    }
+
+    @Test
+    public void shouldTypeAsNode()
+    {
+        InternalValue value = nodeValue();
+        assertThat( value.typeConstructor(), equalTo( TypeConstructor.NODE_TyCon ) );
     }
 }

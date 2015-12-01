@@ -24,8 +24,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.CoarseType;
 import org.neo4j.driver.v1.Function;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
+import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
 public class MapValue extends ValueAdapter
 {
@@ -77,6 +80,12 @@ public class MapValue extends ValueAdapter
     }
 
     @Override
+    public TypeConstructor typeConstructor()
+    {
+        return TypeConstructor.MAP_TyCon;
+    }
+
+    @Override
     public boolean isMap()
     {
         return true;
@@ -113,6 +122,19 @@ public class MapValue extends ValueAdapter
         return val.get( key );
     }
 
+
+    @Override
+    public CoarseType type()
+    {
+        return StandardTypeSystem.TYPE_SYSTEM.MAP();
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format( "map<%s>", val.toString() );
+    }
+
     @Override
     public boolean equals( Object o )
     {
@@ -135,11 +157,5 @@ public class MapValue extends ValueAdapter
     public int hashCode()
     {
         return val != null ? val.hashCode() : 0;
-    }
-
-    @Override
-    public String toString()
-    {
-        return String.format( "map<%s>", val.toString() );
     }
 }

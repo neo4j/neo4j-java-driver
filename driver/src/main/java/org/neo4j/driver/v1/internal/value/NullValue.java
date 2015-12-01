@@ -19,70 +19,42 @@
 package org.neo4j.driver.v1.internal.value;
 
 import org.neo4j.driver.v1.CoarseType;
-import org.neo4j.driver.v1.Path;
+import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
 import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
-public class PathValue extends ValueAdapter
+public class NullValue extends ValueAdapter
 {
-    private final Path adapted;
-
-    public PathValue( Path adapted )
-    {
-        this.adapted = adapted;
-    }
-
-    @Override
-    public Path asPath()
-    {
-        return adapted;
-    }
-
-    @Override
-    public boolean isPath()
-    {
-        return true;
-    }
-
-    @Override
-    public long size()
-    {
-        return adapted.length();
-    }
+    public static Value NULL = new NullValue();
 
     @Override
     public TypeConstructor typeConstructor()
     {
-        return TypeConstructor.PATH_TyCon;
+        return TypeConstructor.NULL_TyCon;
     }
 
     @Override
     public CoarseType type()
     {
-        return StandardTypeSystem.TYPE_SYSTEM.PATH();
+        return StandardTypeSystem.TYPE_SYSTEM.NULL();
     }
 
+    @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
     @Override
-    public boolean equals( Object o )
+    public boolean equals( Object obj )
     {
-        if ( this == o )
-        {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() )
-        {
-            return false;
-        }
-
-        PathValue values = (PathValue) o;
-
-        return adapted.equals( values.adapted );
-
+        return obj == NULL;
     }
 
     @Override
     public int hashCode()
     {
-        return adapted.hashCode();
+        return 0;
+    }
+
+    @Override
+    public boolean isNull()
+    {
+        return true;
     }
 }

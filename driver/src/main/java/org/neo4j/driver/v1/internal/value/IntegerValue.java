@@ -18,6 +18,10 @@
  */
 package org.neo4j.driver.v1.internal.value;
 
+import org.neo4j.driver.v1.CoarseType;
+import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
+import org.neo4j.driver.v1.internal.types.TypeConstructor;
+
 public class IntegerValue extends ValueAdapter
 {
     private final long val;
@@ -52,6 +56,12 @@ public class IntegerValue extends ValueAdapter
     }
 
     @Override
+    public TypeConstructor typeConstructor()
+    {
+        return TypeConstructor.INTEGER_TyCon;
+    }
+
+    @Override
     public long javaLong()
     {
         return val;
@@ -67,6 +77,12 @@ public class IntegerValue extends ValueAdapter
     public double javaDouble()
     {
         return (double) val;
+    }
+
+    @Override
+    public CoarseType type()
+    {
+        return StandardTypeSystem.TYPE_SYSTEM.INTEGER();
     }
 
     @Override

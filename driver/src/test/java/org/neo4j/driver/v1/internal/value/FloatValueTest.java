@@ -20,8 +20,12 @@ package org.neo4j.driver.v1.internal.value;
 
 import org.junit.Test;
 
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.internal.types.TypeConstructor;
+
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 
 public class FloatValueTest
@@ -84,5 +88,19 @@ public class FloatValueTest
 
         // Then
         assertThat( value.hashCode(), notNullValue() );
+    }
+
+    @Test
+    public void shouldNotBeNull()
+    {
+        Value value = new FloatValue( 6.28 );
+        assertFalse( value.isNull() );
+    }
+
+    @Test
+    public void shouldTypeAsFloat()
+    {
+        InternalValue value = new FloatValue( 6.28 );
+        assertThat( value.typeConstructor(), equalTo( TypeConstructor.FLOAT_TyCon ) );
     }
 }

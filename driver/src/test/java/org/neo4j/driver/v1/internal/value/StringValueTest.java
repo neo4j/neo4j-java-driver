@@ -20,13 +20,16 @@ package org.neo4j.driver.v1.internal.value;
 
 import org.junit.Test;
 
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.internal.types.TypeConstructor;
+
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 
 public class StringValueTest
 {
-
     @Test
     public void testStringValue() throws Exception
     {
@@ -67,5 +70,19 @@ public class StringValueTest
 
         // Then
         assertThat( value.hashCode(), notNullValue() );
+    }
+
+    @Test
+    public void shouldNotBeNull()
+    {
+        Value value = new StringValue( "Spongebob" );
+        assertFalse( value.isNull() );
+    }
+
+    @Test
+    public void shouldTypeAsString()
+    {
+        InternalValue value = new StringValue( "Spongebob" );
+        assertThat( value.typeConstructor(), equalTo( TypeConstructor.STRING_TyCon ) );
     }
 }
