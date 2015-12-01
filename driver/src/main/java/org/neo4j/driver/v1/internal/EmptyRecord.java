@@ -22,14 +22,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.driver.v1.Function;
-import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.ImmutableRecord;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 
-public class EmptyRecord implements Record
+public class EmptyRecord implements ImmutableRecord
 {
     private final List<String> keys;
 
@@ -38,15 +38,15 @@ public class EmptyRecord implements Record
         this.keys = keys;
     }
 
-    public int fieldCount()
+    public int elementCount()
     {
         return keys.size();
     }
 
     @Override
-    public boolean hasFields()
+    public boolean hasElements()
     {
-        return fieldCount() > 0;
+        return elementCount() > 0;
     }
 
     public Value value( int index )
@@ -74,7 +74,7 @@ public class EmptyRecord implements Record
     @Override
     public <T> List<T> values( Function<Value, T> mapFunction )
     {
-        int size = fieldCount();
+        int size = elementCount();
         switch ( size )
         {
             case 0:

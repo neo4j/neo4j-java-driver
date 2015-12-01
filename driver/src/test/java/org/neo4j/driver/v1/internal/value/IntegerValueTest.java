@@ -30,7 +30,6 @@ import static org.junit.Assert.assertThat;
 
 public class IntegerValueTest
 {
-
     @Test
     public void testZeroIntegerValue() throws Exception
     {
@@ -38,11 +37,12 @@ public class IntegerValueTest
         IntegerValue value = new IntegerValue( 0 );
 
         // Then
-        assertThat( value.asBoolean(), equalTo( false ) );
-        assertThat( value.asInteger(), equalTo( 0 ) );
         assertThat( value.asLong(), equalTo( 0L ) );
-        assertThat( value.asFloat(), equalTo( (float) 0.0 ) );
+        assertThat( value.asInt(), equalTo( 0 ) );
+        assertThat( value.asShort(), equalTo( (short) 0 ) );
+        assertThat( value.asByte(), equalTo( (byte) 0 ) );
         assertThat( value.asDouble(), equalTo( 0.0 ) );
+        assertThat( value.asFloat(), equalTo( (float) 0.0 ) );
     }
 
     @Test
@@ -52,11 +52,12 @@ public class IntegerValueTest
         IntegerValue value = new IntegerValue( 1 );
 
         // Then
-        assertThat( value.asBoolean(), equalTo( true ) );
-        assertThat( value.asInteger(), equalTo( 1 ) );
         assertThat( value.asLong(), equalTo( 1L ) );
-        assertThat( value.asFloat(), equalTo( (float) 1.0 ) );
+        assertThat( value.asInt(), equalTo( 1 ) );
+        assertThat( value.asShort(), equalTo( (short) 1 ) );
+        assertThat( value.asByte(), equalTo( (byte) 1 ) );
         assertThat( value.asDouble(), equalTo( 1.0 ) );
+        assertThat( value.asFloat(), equalTo( (float) 1.0 ) );
     }
 
     @Test

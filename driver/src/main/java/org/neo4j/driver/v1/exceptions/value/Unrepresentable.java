@@ -18,13 +18,12 @@
  */
 package org.neo4j.driver.v1.exceptions.value;
 
-public class NotMultiValued extends ValueException
+public class Unrepresentable extends ValueException
 {
-    private static final long serialVersionUID = -7380569883011364090L;
+    private static final long serialVersionUID = 6561876319966967485L;
 
-    public NotMultiValued( String message )
+    public Unrepresentable( String message )
     {
         super( message );
     }
-
 }

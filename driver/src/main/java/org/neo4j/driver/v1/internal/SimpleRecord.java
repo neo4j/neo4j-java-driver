@@ -25,17 +25,17 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.driver.v1.Function;
-import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.ImmutableRecord;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.internal.util.Extract;
 
-public class SimpleRecord implements Record
+public class SimpleRecord implements ImmutableRecord
 {
     private final List<String> keys;
     private final Map<String, Integer> keyIndexLookup;
     private final Value[] values;
 
-    public static Record record( Object... alternatingFieldNameValue )
+    public static ImmutableRecord record( Object... alternatingFieldNameValue )
     {
         int length = alternatingFieldNameValue.length / 2;
         List<String> keys = new ArrayList<>( length );
@@ -60,7 +60,7 @@ public class SimpleRecord implements Record
 
 
     @Override
-    public int fieldCount()
+    public int elementCount()
     {
         return values.length;
     }
@@ -105,7 +105,7 @@ public class SimpleRecord implements Record
     }
 
     @Override
-    public boolean hasFields()
+    public boolean hasElements()
     {
         return values.length > 0;
     }

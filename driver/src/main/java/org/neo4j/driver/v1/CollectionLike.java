@@ -19,29 +19,31 @@
 package org.neo4j.driver.v1;
 
 /**
- * Access to the interior fields of an underlying collection like
+ * Access to the interior elements of an underlying collection like
  * data structure
+ *
+ * Each collection element represents (includes or is) a {@link Value}
  */
-public interface FieldAccess
+public interface CollectionLike
 {
     /**
-     * Get the size of the underlying collection
+     * Get the size of the underlying collection as a Java int
      *
-     * @return the number of accessible fields of the underlying collection
+     * @return the number of accessible elements of the underlying collection
      */
-    int fieldCount();
+    int elementCount();
 
     /**
-     * Test if there is at least one field available
+     * Test if there is at least one element available
      *
-     * @return true, iff fieldCount() > 0
+     * @return <tt>true</tt> if elementCount() is larger than 0, otherwise <tt>false</tt>
      */
-    boolean hasFields();
+    boolean hasElements();
 
     /**
-     * Retrieve all field values of the underlying collection
+     * Retrieve all values of the underlying collection
      *
-     * @return all field values in unspecified order
+     * @return all values in unspecified order
      */
     Iterable<Value> values();
 
@@ -50,6 +52,7 @@ public interface FieldAccess
      *
      * @param mapFunction a function to map from Value to T. See {@link Values} for some predefined functions, such
      * as {@link Values#valueAsBoolean()}, {@link Values#valueAsList(Function)}.
+     * @param <T> the type of collection elements
      * @return the result of mapping all field values in unspecified order
      */
     <T> Iterable<T> values( Function<Value, T> mapFunction );

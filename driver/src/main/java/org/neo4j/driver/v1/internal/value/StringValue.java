@@ -21,6 +21,7 @@ package org.neo4j.driver.v1.internal.value;
 import org.neo4j.driver.v1.Type;
 import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
 import org.neo4j.driver.v1.internal.types.TypeConstructor;
+import org.neo4j.driver.v1.exceptions.value.Unrepresentable;
 
 public class StringValue extends ValueAdapter
 {
@@ -33,15 +34,28 @@ public class StringValue extends ValueAdapter
     }
 
     @Override
-    public boolean asBoolean()
-    {
-        return !val.isEmpty();
-    }
-
-    @Override
     public String asString()
     {
         return val;
+    }
+
+    @Override
+    public char asChar()
+    {
+        if ( val.length() == 1 )
+        {
+            return val.charAt( 0 );
+        }
+        else
+        {
+            throw new Unrepresentable( "Only a STRING of exactly one character can be represented as a Java char" );
+        }
+    }
+
+    @Override
+    public char[] asCharArray()
+    {
+        return val.toCharArray();
     }
 
     @Override
@@ -51,7 +65,7 @@ public class StringValue extends ValueAdapter
     }
 
     @Override
-    public int fieldCount()
+    public int elementCount()
     {
         return val.length();
     }
@@ -79,6 +93,7 @@ public class StringValue extends ValueAdapter
         return asString();
     }
 
+    @SuppressWarnings("StringEquality")
     @Override
     public boolean equals( Object o )
     {
@@ -92,9 +107,7 @@ public class StringValue extends ValueAdapter
         }
 
         StringValue values = (StringValue) o;
-
-        return val.equals( values.val );
-
+        return val == values.val || val.equals( values.val );
     }
 
     @Override

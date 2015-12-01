@@ -32,15 +32,38 @@ public class IntegerValue extends NumberValueAdapter
     }
 
     @Override
-    public String asString()
+    public Number asNumber()
     {
-        return Long.toString( val );
+        return asInt();
     }
 
     @Override
-    public int asInteger()
+    public long asLong()
+    {
+        return val;
+    }
+
+    @Override
+    public int asInt()
     {
         return (int) val;
+    }
+
+    @Override
+    public short asShort()
+    {
+        return (short) val;
+    }
+
+    public byte asByte()
+    {
+        return (byte) val;
+    }
+
+    @Override
+    public double asDouble()
+    {
+        return (double) val;
     }
 
     @Override
@@ -50,43 +73,21 @@ public class IntegerValue extends NumberValueAdapter
     }
 
     @Override
-    public boolean asBoolean()
-    {
-        return val != 0;
-    }
-
-    @Override
-    public TypeConstructor typeConstructor()
-    {
-        return TypeConstructor.INTEGER_TyCon;
-    }
-
-    public long asLong()
-    {
-        return val;
-    }
-
-    @Override
     public boolean isInteger()
     {
         return true;
     }
 
     @Override
-    public double asDouble()
-    {
-        return (double) val;
-    }
-
-    public Number asNumber()
-    {
-        return asInteger();
-    }
-
-    @Override
     public Type type()
     {
         return StandardTypeSystem.TYPE_SYSTEM.INTEGER();
+    }
+
+    @Override
+    public TypeConstructor typeConstructor()
+    {
+        return TypeConstructor.INTEGER_TyCon;
     }
 
     @Override
@@ -108,9 +109,7 @@ public class IntegerValue extends NumberValueAdapter
         }
 
         IntegerValue values = (IntegerValue) o;
-
         return val == values.val;
-
     }
 
     @Override

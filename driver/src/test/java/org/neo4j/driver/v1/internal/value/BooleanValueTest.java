@@ -32,7 +32,6 @@ import static org.neo4j.driver.v1.internal.value.BooleanValue.TRUE;
 
 public class BooleanValueTest
 {
-
     @Test
     public void testBooleanTrue() throws Exception
     {
@@ -41,10 +40,6 @@ public class BooleanValueTest
 
         // Then
         assertThat( value.asBoolean(), equalTo( true ) );
-        assertThat( value.asInteger(), equalTo( 1 ) );
-        assertThat( value.asLong(), equalTo( 1L ) );
-        assertThat( value.asFloat(), equalTo( (float) 1.0 ) );
-        assertThat( value.asDouble(), equalTo( 1.0 ) );
     }
 
     @Test
@@ -55,10 +50,6 @@ public class BooleanValueTest
 
         // Then
         assertThat( value.asBoolean(), equalTo( false ) );
-        assertThat( value.asInteger(), equalTo( 0 ) );
-        assertThat( value.asLong(), equalTo( 0L ) );
-        assertThat( value.asFloat(), equalTo( (float) 0.0 ) );
-        assertThat( value.asDouble(), equalTo( 0.0 ) );
     }
 
     @Test

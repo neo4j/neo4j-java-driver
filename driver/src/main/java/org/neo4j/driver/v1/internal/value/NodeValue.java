@@ -52,7 +52,7 @@ public class NodeValue extends ValueAdapter
     }
 
     @Override
-    public int fieldCount()
+    public int elementCount()
     {
         int count = 0;
         for ( String ignore : adapted.keys() ) { count++; }
@@ -90,8 +90,7 @@ public class NodeValue extends ValueAdapter
         }
 
         NodeValue values = (NodeValue) o;
-
-        return !(adapted != null ? !adapted.equals( values.adapted ) : values.adapted != null);
+        return adapted == values.adapted || adapted.equals( values.adapted );
 
     }
 

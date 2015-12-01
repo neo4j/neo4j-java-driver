@@ -22,6 +22,7 @@ import static java.lang.String.format;
 
 public class Uncoercible extends ValueException
 {
+    private static final long serialVersionUID = -6259981390929065201L;
 
     public Uncoercible( String sourceTypeName, String destinationTypeName )
     {

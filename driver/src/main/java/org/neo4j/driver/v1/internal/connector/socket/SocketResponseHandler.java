@@ -132,15 +132,15 @@ public class SocketResponseHandler implements MessageHandler
     {
         if (fieldValue != null)
         {
-            if ( fieldValue.fieldCount() > 0 )
+            if ( fieldValue.elementCount() > 0 )
             {
-                String[] fields = new String[fieldValue.fieldCount()];
+                String[] fields = new String[fieldValue.elementCount()];
                 int idx = 0;
                 for ( Value value : fieldValue.values() )
                 {
                     fields[idx++] = value.asString();
                 }
-                collector.fieldKeys( fields );
+                collector.keys( fields );
             }
         }
     }
@@ -178,7 +178,7 @@ public class SocketResponseHandler implements MessageHandler
     private int statsValue( Value stats, String name )
     {
         Value value = stats.value( name );
-        return value == null ? 0 : value.asInteger();
+        return value == null ? 0 : value.asInt();
     }
 
     @Override

@@ -46,7 +46,7 @@ public class TransactionDocIT
         // Then a node should've been created
         Result cursor = session.run( "MATCH (n) RETURN count(n)" );
         assertTrue( cursor.single() );
-        assertEquals( 1, cursor.value( "count(n)" ).asInteger() );
+        assertEquals( 1, cursor.value( "count(n)" ).asInt() );
     }
 
     /** @see Transaction#failure()  */
@@ -61,6 +61,6 @@ public class TransactionDocIT
         // Then a node should've been created
         Result cursor = session.run( "MATCH (n) RETURN count(n)" );
         assertTrue( cursor.single() );
-        assertEquals( 0, cursor.value( "count(n)" ).asInteger() );
+        assertEquals( 0, cursor.value( "count(n)" ).asInt() );
     }
 }

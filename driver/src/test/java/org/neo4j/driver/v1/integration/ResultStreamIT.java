@@ -18,7 +18,6 @@
  */
 package org.neo4j.driver.v1.integration;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -64,7 +63,7 @@ public class ResultStreamIT
         assertEquals( "[n]", res.keys().toString() );
     }
 
-    @Ignore("revisit")
+    @Test
     public void shouldGiveHelpfulFailureMessageWhenCurrentRecordHasNotBeenSet() throws Throwable
     {
         // Given
@@ -86,7 +85,7 @@ public class ResultStreamIT
         }
     }
 
-    @Ignore("revisit")
+    @Test
     public void shouldGiveHelpfulFailureMessageWhenAccessNonExistingField() throws Throwable
     {
         // Given

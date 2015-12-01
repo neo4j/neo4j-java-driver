@@ -40,12 +40,6 @@ public class IdentityValue extends ValueAdapter
     }
 
     @Override
-    public String asString()
-    {
-        return val.toString();
-    }
-
-    @Override
     public Identity asIdentity()
     {
         return val;
@@ -88,8 +82,7 @@ public class IdentityValue extends ValueAdapter
         }
 
         IdentityValue values = (IdentityValue) o;
-
-        return val.equals( values.val );
+        return val == values.val || val.equals( values.val );
 
     }
 

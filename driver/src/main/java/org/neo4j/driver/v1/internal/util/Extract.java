@@ -25,8 +25,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.driver.v1.Function;
-import org.neo4j.driver.v1.ListAccess;
-import org.neo4j.driver.v1.RecordAccess;
+import org.neo4j.driver.v1.ListLike;
+import org.neo4j.driver.v1.RecordLike;
 import org.neo4j.driver.v1.Value;
 
 import static java.util.Collections.emptyList;
@@ -56,9 +56,9 @@ public final class Extract
         }
     }
 
-    public static <T> List<T> list( ListAccess data, Function<Value, T> mapFunction )
+    public static <T> List<T> list( ListLike data, Function<Value, T> mapFunction )
     {
-        int size = data.fieldCount();
+        int size = data.elementCount();
         switch ( size )
         {
             case 0:
@@ -107,9 +107,9 @@ public final class Extract
         }
     }
 
-    public static Map<String, Value> map( RecordAccess record )
+    public static Map<String, Value> map( RecordLike record )
     {
-        int size = record.fieldCount();
+        int size = record.elementCount();
         switch ( size )
         {
             case 0:

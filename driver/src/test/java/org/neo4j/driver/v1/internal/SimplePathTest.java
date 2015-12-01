@@ -18,13 +18,13 @@
  */
 package org.neo4j.driver.v1.internal;
 
+import java.util.Arrays;
+import java.util.List;
+
 import org.hamcrest.MatcherAssert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-
-import java.util.Arrays;
-import java.util.List;
 
 import org.neo4j.driver.v1.Node;
 import org.neo4j.driver.v1.Path;

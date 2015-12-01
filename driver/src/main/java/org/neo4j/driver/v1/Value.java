@@ -70,7 +70,7 @@ import java.util.Map;
  * }
  * </pre>
  */
-public interface Value extends MapAccess, ListAccess
+public interface Value extends MapLike, ListLike
 {
     /**
      * If the underlying value is a collection type, return the number of values in the collection.
@@ -87,7 +87,7 @@ public interface Value extends MapAccess, ListAccess
      * @return the number of values in an underlying collection
      */
     @Override
-    int fieldCount();
+    int elementCount();
 
     /**
      * If the underlying value supports {@link #value(String) key-based indexing}, return an iterable of the keys in the
@@ -113,14 +113,23 @@ public interface Value extends MapAccess, ListAccess
     /** @return the value as a Java String, if possible. */
     String asString();
 
+    /** @return the value as a Java char, if possible. */
+    char asChar();
+
     /** @return the value as a Java Number, if possible. */
     Number asNumber();
 
-    /** @return the value as a Java int, if possible. */
-    int asInteger();
-
     /** @return the value as a Java long, if possible. */
     long asLong();
+
+    /** @return the value as a Java int, if possible. */
+    int asInt();
+
+    /** @return the value as a Java short, if possible. */
+    short asShort();
+
+    /** @return the value as a Java byte, if possible. */
+    byte asByte();
 
     /** @return the value as a Java double, if possible. */
     double asDouble();
@@ -143,6 +152,24 @@ public interface Value extends MapAccess, ListAccess
      * @return the value as a list of T, if possible
      */
     <T> List<T> asList( Function<Value, T> mapFunction );
+
+    Value[] asArray();
+
+    <T> T[] asArray( Class<T> clazz, Function<Value, T> mapFunction );
+
+    char[] asCharArray();
+
+    long[] asLongArray();
+
+    int[] asIntArray();
+
+    short[] asShortArray();
+
+    byte[] asByteArray();
+
+    double[] asDoubleArray();
+
+    float[] asFloatArray();
 
     /**
      * @return the value as a value map, if possible
@@ -196,9 +223,9 @@ public interface Value extends MapAccess, ListAccess
 
     /**
      * Lists are an ordered collection of values. You can {@link #values() iterate} over a list as well as
-     * access specific values {@link ListAccess#value(int) by index}.
+     * access specific values {@link ListLike#value(int) by index}.
      * <p>
-     * {@link #fieldCount()} will give you the number of entries in the list.
+     * {@link #elementCount()} will give you the number of entries in the list.
      *
      * @return if the underlying value is a Neo4j list
      */
@@ -208,7 +235,7 @@ public interface Value extends MapAccess, ListAccess
      * Maps are key/value objects, similar to {@link java.util.Map java maps}. You can use {@link #value(String)} to
      * retrive values from the map, {@link #keys()} to list keys and {@link #values()} to iterate over the values.
      * <p>
-     * {@link #fieldCount()} will give you the number of entries in the map.
+     * {@link #elementCount()} will give you the number of entries in the map.
      *
      * @return if the underlying value is a Neo4j map
      */

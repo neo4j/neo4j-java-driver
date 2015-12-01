@@ -52,7 +52,7 @@ public class RelationshipValue extends ValueAdapter
     }
 
     @Override
-    public int fieldCount()
+    public int elementCount()
     {
         int count = 0;
         for ( String ignore : adapted.keys() ) { count++; }
@@ -95,15 +95,13 @@ public class RelationshipValue extends ValueAdapter
         }
 
         RelationshipValue values = (RelationshipValue) o;
-
-        return !(adapted != null ? !adapted.equals( values.adapted ) : values.adapted != null);
-
+        return adapted == values.adapted || adapted.equals( values.adapted );
     }
 
     @Override
     public int hashCode()
     {
-        return adapted != null ? adapted.hashCode() : 0;
+        return adapted == null ? 0 : adapted.hashCode();
     }
 
     @Override

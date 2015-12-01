@@ -30,7 +30,6 @@ import static org.junit.Assert.assertThat;
 
 public class FloatValueTest
 {
-
     @Test
     public void testZeroFloatValue() throws Exception
     {
@@ -38,8 +37,7 @@ public class FloatValueTest
         FloatValue value = new FloatValue( 0 );
 
         // Then
-        assertThat( value.asBoolean(), equalTo( false ) );
-        assertThat( value.asInteger(), equalTo( 0 ) );
+        assertThat( value.asInt(), equalTo( 0 ) );
         assertThat( value.asLong(), equalTo( 0L ) );
         assertThat( value.asFloat(), equalTo( (float) 0.0 ) );
         assertThat( value.asDouble(), equalTo( 0.0 ) );
@@ -52,8 +50,7 @@ public class FloatValueTest
         FloatValue value = new FloatValue( 6.28 );
 
         // Then
-        assertThat( value.asBoolean(), equalTo( true ) );
-        assertThat( value.asInteger(), equalTo( 6 ) );
+        assertThat( value.asInt(), equalTo( 6 ) );
         assertThat( value.asLong(), equalTo( 6L ) );
         assertThat( value.asFloat(), equalTo( (float) 6.28 ) );
         assertThat( value.asDouble(), equalTo( 6.28 ) );

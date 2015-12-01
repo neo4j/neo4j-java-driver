@@ -35,12 +35,12 @@ import java.util.List;
  * To keep a result around while further statements are run, or to use a result outside the scope
  * of the current transaction, see {@link #retain()}.
  */
-public interface Result extends RecordAccess, Resource
+public interface Result extends RecordLike, Resource
 {
     /**
      * @return an immutable copy of the currently viewed record
      */
-    Record record();
+    ImmutableRecord record();
 
     /**
      * Retrieve the zero based position of the cursor in the stream of records.
@@ -69,6 +69,7 @@ public interface Result extends RecordAccess, Resource
      * Advance the cursor as if calling next multiple times
      *
      * @throws IllegalArgumentException if records is negative
+     * @param records amount of records to be skipped
      * @return the actual number of records successfully skipped
      */
     int skip( int records );
@@ -93,8 +94,10 @@ public interface Result extends RecordAccess, Resource
      * whole result for later use.
      *
      * Calling this method exhausts the result cursor and moves it to the last record
+     *
+     * @return list of all remaining immutable records
      */
-    List<Record> retain();
+    List<ImmutableRecord> retain();
 
     /**
      * Summarize the result

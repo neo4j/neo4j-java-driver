@@ -41,7 +41,7 @@ import static org.junit.Assert.assertNotEquals;
 
 import static org.neo4j.driver.v1.Values.value;
 import static org.neo4j.driver.v1.Values.valueAsList;
-import static org.neo4j.driver.v1.Values.valueAsString;
+import static org.neo4j.driver.v1.Values.valueToString;
 import static org.neo4j.driver.v1.Values.values;
 
 public class ValuesTest
@@ -124,14 +124,14 @@ public class ValuesTest
         MapValue values = new MapValue( map );
 
         // When
-        Iterable<List<String>> list = values.values( valueAsList( valueAsString() ) );
+        Iterable<List<String>> list = values.values( valueAsList( valueToString() ) );
 
         // Then
-        assertEquals( 3, values.fieldCount() );
+        assertEquals( 3, values.elementCount() );
         Iterator<List<String>> listIterator = list.iterator();
         for ( Value value : values.values() )
         {
-            assertEquals( value.value( 0 ).asString(), listIterator.next().get( 0 ) );
+            assertEquals( value.value( 0 ).toString(), listIterator.next().get( 0 ) );
         }
     }
 
@@ -145,11 +145,11 @@ public class ValuesTest
         MapValue values = new MapValue( map );
 
         // When
-        Map<String, String> result = values.asMap( Values.valueAsString() );
+        Map<String, String> result = values.asMap( Values.valueToString() );
 
         // Then
         assertThat( result.size(), equalTo( 2 ) );
-        assertThat( result.get( "Dog" ), equalTo( "2" ) );
-        assertThat( result.get( "Cat" ), equalTo( "1" ) );
+        assertThat( result.get( "Dog" ), equalTo( "integer<2>" ) );
+        assertThat( result.get( "Cat" ), equalTo( "integer<1>" ) );
     }
 }

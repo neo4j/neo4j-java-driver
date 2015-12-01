@@ -20,10 +20,10 @@ package org.neo4j.driver.v1.exceptions.value;
 
 public class Unsizable extends ValueException
 {
+    private static final long serialVersionUID = 741487155344252339L;
 
     public Unsizable( String message )
     {
         super( message );
     }
-
 }

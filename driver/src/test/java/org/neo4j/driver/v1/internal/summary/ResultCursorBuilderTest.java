@@ -20,14 +20,12 @@ package org.neo4j.driver.v1.internal.summary;
 
 import java.util.List;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.ImmutableRecord;
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.internal.ParameterSupport;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -45,16 +43,16 @@ public class ResultCursorBuilderTest
     {
         // Given
         ResultBuilder builder = createResultBuilder();
-        builder.fieldKeys( new String[]{"a"} );
+        builder.keys( new String[]{"a"} );
         builder.record( new Value[]{value( "Admin" )} );
 
         // When
-        List<Record> result = builder.build().retain();
+        List<ImmutableRecord> result = builder.build().retain();
 
         // Then
         assertThat( result.size(), equalTo( 1 ) );
 
-        Record record = result.get( 0 );
+        ImmutableRecord record = result.get( 0 );
         assertThat( record.value( 0 ).asString(), equalTo( "Admin" ) );
     }
 
@@ -65,27 +63,10 @@ public class ResultCursorBuilderTest
         ResultBuilder builder = createResultBuilder();
 
         // When
-        List<Record> result = builder.build().retain();
+        List<ImmutableRecord> result = builder.build().retain();
 
         // Then
         assertThat( result.size(), equalTo( 0 ) );
-    }
-
-    @Ignore("revisit")
-    public void shouldThrowNoSuchSomething()
-    {
-        // Given
-        ResultBuilder builder = createResultBuilder();
-        builder.fieldKeys( new String[]{"a"} );
-        builder.record( new Value[]{value( "Admin" )} );
-
-        List<Record> result = builder.build().retain();
-
-        // Expect
-        exception.expect( ClientException.class );
-
-        // When
-        result.get( 2 );
     }
 
     private ResultBuilder createResultBuilder()

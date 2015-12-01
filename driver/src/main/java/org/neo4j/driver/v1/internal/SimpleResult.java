@@ -24,22 +24,23 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.driver.v1.Function;
-import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.ImmutableRecord;
 import org.neo4j.driver.v1.Result;
 import org.neo4j.driver.v1.ResultSummary;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.exceptions.ClientException;
 
 public class SimpleResult implements Result
 {
     private final List<String> keys;
-    private final Iterator<Record> iter;
+    private final Iterator<ImmutableRecord> iter;
     private final ResultSummary summary;
 
     private boolean open = true;
-    private Record current = null;
+    private ImmutableRecord current = null;
     private int position = -1;
 
-    public SimpleResult( List<String> keys, List<Record> body, ResultSummary summary )
+    public SimpleResult( List<String> keys, List<ImmutableRecord> body, ResultSummary summary )
     {
         this.keys = keys;
         this.iter = body.iterator();
@@ -53,20 +54,20 @@ public class SimpleResult implements Result
     }
 
     @Override
-    public int fieldCount()
+    public int elementCount()
     {
         return keys.size();
     }
 
     @Override
-    public boolean hasFields()
+    public boolean hasElements()
     {
         return ! keys.isEmpty();
     }
 
     public Value value( int index )
     {
-        return current == null ? null : current.value( index );
+        return current == null ? throwNoRecord() : current.value( index );
     }
 
     public List<String> keys()
@@ -77,7 +78,15 @@ public class SimpleResult implements Result
     public Value value( String key )
     {
         assertOpen();
-        return current == null ? null : current.value( key );
+        return current == null ? throwNoRecord() : current.value( key );
+    }
+
+    private Value throwNoRecord()
+    {
+        throw new ClientException(
+            "In order to access fields of a record in a result, " +
+            "you must first call next() to point the result to the next record in the result stream."
+        );
     }
 
     @Override
@@ -93,7 +102,7 @@ public class SimpleResult implements Result
     }
 
     @Override
-    public Record record()
+    public ImmutableRecord record()
     {
         assertOpen();
         if ( current == null )
@@ -168,11 +177,11 @@ public class SimpleResult implements Result
     }
 
     @Override
-    public List<Record> retain()
+    public List<ImmutableRecord> retain()
     {
         if ( first() )
         {
-            List<Record> result = new ArrayList<>();
+            List<ImmutableRecord> result = new ArrayList<>();
             do
             {
                 result.add( record() );

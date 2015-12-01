@@ -19,23 +19,17 @@
 package org.neo4j.driver.v1;
 
 /**
- * Access the fields of an underlying unordered map like data structure by key
+ * Access the fields of an underlying list like data structure by index
  */
-public interface MapAccess extends FieldAccess
+public interface ListLike extends CollectionLike
 {
-
     /**
-     * Retrieve the keys of the underlying map
+     * Retrieve the value of the field at the given index
      *
-     * @return all map keys in unspecified order
-     */
-    Iterable<String> keys();
-
-    /**
-     * Retrieve the value of the field with the given key
-     *
-     * @param key the key of the field
+     * @param index the index of the field
      * @return the field's value or null if no such field exists
      */
-    Value value( String key );
+    Value value( int index );
 }
+
+

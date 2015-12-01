@@ -238,7 +238,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             }
             else if ( value.isMap() )
             {
-                packer.packMapHeader( value.fieldCount() );
+                packer.packMapHeader( value.elementCount() );
                 for ( String s : value.keys() )
                 {
                     packer.pack( s );
@@ -247,7 +247,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             }
             else if ( value.isList() )
             {
-                packer.packListHeader( value.fieldCount() );
+                packer.packListHeader( value.elementCount() );
                 for ( Value item : value.values() )
                 {
                     packValue( item );
@@ -362,7 +362,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         private void packProperties( Entity entity ) throws IOException
         {
             Iterable<String> keys = entity.keys();
-            packer.packMapHeader( entity.fieldCount() );
+            packer.packMapHeader( entity.elementCount() );
             for ( String propKey : keys )
             {
                 packer.pack( propKey );

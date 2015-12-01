@@ -45,13 +45,13 @@ public abstract class SimpleEntity implements Entity
 
 
     @Override
-    public int fieldCount()
+    public int elementCount()
     {
         return properties.size();
     }
 
     @Override
-    public boolean hasFields()
+    public boolean hasElements()
     {
         return !properties.isEmpty();
     }

@@ -31,16 +31,9 @@ public class FloatValue extends NumberValueAdapter
         this.val = val;
     }
 
-    @Override
-    public String asString()
+    public Number asNumber()
     {
-        return Double.toString( val );
-    }
-
-    @Override
-    public int asInteger()
-    {
-        return (int) val;
+        return asFloat();
     }
 
     @Override
@@ -50,15 +43,21 @@ public class FloatValue extends NumberValueAdapter
     }
 
     @Override
-    public float asFloat()
+    public int asInt()
     {
-        return (float) val;
+        return (int) val;
     }
 
     @Override
-    public boolean asBoolean()
+    public short asShort()
     {
-        return val != 0;
+        return (short) val;
+    }
+
+    @Override
+    public byte asByte()
+    {
+        return (byte) val;
     }
 
     @Override
@@ -72,9 +71,10 @@ public class FloatValue extends NumberValueAdapter
         return val;
     }
 
-    public Number asNumber()
+    @Override
+    public float asFloat()
     {
-        return asFloat();
+        return (float) val;
     }
 
     @Override
@@ -108,9 +108,7 @@ public class FloatValue extends NumberValueAdapter
         }
 
         FloatValue values = (FloatValue) o;
-
         return Double.compare( values.val, val ) == 0;
-
     }
 
     @Override

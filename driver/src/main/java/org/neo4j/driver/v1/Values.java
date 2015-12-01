@@ -56,125 +56,133 @@ public class Values
         if ( value == null ) { return NullValue.NULL; }
         if ( value instanceof Value ) { return (Value) value; }
 
+        if ( value instanceof Boolean ) { return value( (boolean) value ); }
+        if ( value instanceof String ) { return value( (String) value ); }
+        if ( value instanceof Character ) { return value( (char) value ); }
+        if ( value instanceof Long ) { return value( (long) value ); }
+        if ( value instanceof Short ) { return value( (short) value ); }
+        if ( value instanceof Byte ) { return value( (byte) value ); }
+        if ( value instanceof Integer ) { return value( (int) value ); }
+        if ( value instanceof Double ) { return value( (double) value ); }
+        if ( value instanceof Float ) { return value( (float) value ); }
+
         if ( value instanceof Identity ) { return new IdentityValue( (Identity) value ); }
         if ( value instanceof Node ) { return new NodeValue( (Node) value ); }
         if ( value instanceof Relationship ) { return new RelationshipValue( (Relationship) value ); }
         if ( value instanceof Path ) { return new PathValue( (Path) value ); }
 
-        if ( value instanceof Map<?, ?> ) { return value( (Map<String,Object>) value ); }
         if ( value instanceof Collection<?> ) { return value( (List<Object>) value ); }
         if ( value instanceof Iterable<?> ) { return value( (Iterable<Object>) value ); }
+        if ( value instanceof Map<?, ?> ) { return value( (Map<String,Object>) value ); }
 
-        if ( value instanceof String ) { return value( (String) value ); }
-        if ( value instanceof Boolean ) { return value( (boolean) value ); }
-        if ( value instanceof Byte ) { return value( (byte) value ); }
-        if ( value instanceof Character ) { return value( (char) value ); }
-        if ( value instanceof Short ) { return value( (short) value ); }
-        if ( value instanceof Integer ) { return value( (int) value ); }
-        if ( value instanceof Long ) { return value( (long) value ); }
-        if ( value instanceof Float ) { return value( (float) value ); }
-        if ( value instanceof Double ) { return value( (double) value ); }
-
-        if ( value instanceof String[] ) { return value( (String[]) value ); }
         if ( value instanceof boolean[] ) { return value( (boolean[]) value ); }
+        if ( value instanceof String[] ) { return value( (String[]) value ); }
         if ( value instanceof char[] ) { return value( (char[]) value ); }
-        if ( value instanceof short[] ) { return value( (short[]) value ); }
-        if ( value instanceof int[] ) { return value( (int[]) value ); }
         if ( value instanceof long[] ) { return value( (long[]) value ); }
-        if ( value instanceof float[] ) { return value( (float[]) value ); }
+        if ( value instanceof int[] ) { return value( (int[]) value ); }
+        if ( value instanceof short[] ) { return value( (short[]) value ); }
         if ( value instanceof double[] ) { return value( (double[]) value ); }
+        if ( value instanceof float[] ) { return value( (float[]) value ); }
+        if ( value instanceof Value[] ) { return value( (Value[]) value ); }
         if ( value instanceof Object[] ) { return value( Arrays.asList( (Object[]) value )); }
-        if ( value instanceof RecordAccess ) { return value( (RecordAccess) value ); }
+        if ( value instanceof RecordLike ) { return value( (RecordLike) value ); }
 
         throw new ClientException( "Unable to convert " + value.getClass().getName() + " to Neo4j Value." );
     }
 
-    public static Value value( RecordAccess val )
+    public static Value value( RecordLike val )
     {
         return new MapValue( Extract.map( val ) );
     }
 
-    public static Value value( short[] val )
+    public static Value[] values( final Object... input )
     {
-        Value[] values = new Value[val.length];
-        for ( int i = 0; i < val.length; i++ )
+        Value[] values = new Value[input.length];
+        for ( int i = 0; i < input.length; i++ )
         {
-            values[i] = value( val[i] );
+            values[i] = value( input[i] );
+        }
+        return values;
+    }
+
+    public static Value value( Value... input )
+    {
+        int size = input.length;
+        Value[] values = new Value[size];
+        System.arraycopy( input, 0, values, 0, size );
+        return new ListValue( values );
+    }
+
+    public static Value value( String... input )
+    {
+        StringValue[] values = new StringValue[input.length];
+        for ( int i = 0; i < input.length; i++ )
+        {
+            values[i] = new StringValue( input[i] );
         }
         return new ListValue( values );
     }
 
-    public static Value value( int[] val )
+    public static Value value( char... input )
     {
-        Value[] values = new Value[val.length];
-        for ( int i = 0; i < val.length; i++ )
+        return new StringValue( String.valueOf( input ) );
+    }
+
+    public static Value value( boolean... input )
+    {
+        Value[] values = new Value[input.length];
+        for ( int i = 0; i < input.length; i++ )
         {
-            values[i] = value( val[i] );
+            values[i] = value( input[i] );
+        }
+        return new ListValue( values );
+    }
+    public static Value value( long... input )
+    {
+        Value[] values = new Value[input.length];
+        for ( int i = 0; i < input.length; i++ )
+        {
+            values[i] = value( input[i] );
         }
         return new ListValue( values );
     }
 
-    public static Value value( long[] val )
+    public static Value value( int... input )
     {
-        Value[] values = new Value[val.length];
-        for ( int i = 0; i < val.length; i++ )
+        Value[] values = new Value[input.length];
+        for ( int i = 0; i < input.length; i++ )
         {
-            values[i] = value( val[i] );
+            values[i] = value( input[i] );
         }
         return new ListValue( values );
     }
 
-    public static Value value( boolean[] val )
+    public static Value value( short... input )
     {
-        Value[] values = new Value[val.length];
-        for ( int i = 0; i < val.length; i++ )
+        Value[] values = new Value[input.length];
+        for ( int i = 0; i < input.length; i++ )
         {
-            values[i] = value( val[i] );
+            values[i] = value( input[i] );
         }
         return new ListValue( values );
     }
 
-    public static Value value( float[] val )
+    public static Value value( double... input )
     {
-        Value[] values = new Value[val.length];
-        for ( int i = 0; i < val.length; i++ )
+        Value[] values = new Value[input.length];
+        for ( int i = 0; i < input.length; i++ )
         {
-            values[i] = value( val[i] );
+            values[i] = value( input[i] );
         }
         return new ListValue( values );
     }
 
-    public static Value value( double[] val )
+    public static Value value( float... input )
     {
-        Value[] values = new Value[val.length];
-        for ( int i = 0; i < val.length; i++ )
+        Value[] values = new Value[input.length];
+        for ( int i = 0; i < input.length; i++ )
         {
-            values[i] = value( val[i] );
-        }
-        return new ListValue( values );
-    }
-
-    public static Value value( char[] val )
-    {
-        return new StringValue( new String( val ) );
-    }
-
-    public static Value value( String[] val )
-    {
-        StringValue[] values = new StringValue[val.length];
-        for ( int i = 0; i < val.length; i++ )
-        {
-            values[i] = new StringValue( val[i] );
-        }
-        return new ListValue( values );
-    }
-
-    public static Value value( Object[] val )
-    {
-        Value[] values = new Value[val.length];
-        for ( int i = 0; i < val.length; i++ )
-        {
-            values[i] = value( val[i] );
+            values[i] = value( input[i] );
         }
         return new ListValue( values );
     }
@@ -199,7 +207,32 @@ public class Values
         return new ListValue( values.toArray( new Value[values.size()] ) );
     }
 
+    public static Value value( final String val )
+    {
+        return new StringValue( val );
+    }
+
+    public static Value value( final char val )
+    {
+        return new StringValue( Character.toString( val ) );
+    }
+
     public static Value value( final long val )
+    {
+        return new IntegerValue( val );
+    }
+
+    public static Value value( final int val )
+    {
+        return new IntegerValue( val );
+    }
+
+    public static Value value( final short val )
+    {
+        return new IntegerValue( val );
+    }
+
+    public static Value value( final byte val )
     {
         return new IntegerValue( val );
     }
@@ -214,16 +247,6 @@ public class Values
         return BooleanValue.fromBoolean( val );
     }
 
-    public static Value value( final char val )
-    {
-        return new StringValue( Character.toString( val ) );
-    }
-
-    public static Value value( final String val )
-    {
-        return new StringValue( val );
-    }
-
     public static Value value( final Map<String,Object> val )
     {
         Map<String,Value> asValues = new HashMap<>( val.size() );
@@ -232,16 +255,6 @@ public class Values
             asValues.put( entry.getKey(), value( entry.getValue() ) );
         }
         return new MapValue( asValues );
-    }
-
-    public static Value[] values( final Object... vals )
-    {
-        Value[] values = new Value[vals.length];
-        for ( int i = 0; i < vals.length; i++ )
-        {
-            values[i] = value( vals[i] );
-        }
-        return values;
     }
 
     /**
@@ -281,6 +294,11 @@ public class Values
     public static Function<Value,String> valueAsString()
     {
         return STRING;
+    }
+
+    public static Function<Value,String> valueToString()
+    {
+        return TO_STRING;
     }
 
     public static Function<Value,Integer> valueAsInt()
@@ -354,11 +372,18 @@ public class Values
             return val.asString();
         }
     };
+    private static final Function<Value,String> TO_STRING = new Function<Value,String>()
+    {
+        public String apply( Value val )
+        {
+            return val.toString();
+        }
+    };
     private static final Function<Value,Integer> INTEGER = new Function<Value,Integer>()
     {
         public Integer apply( Value val )
         {
-            return val.asInteger();
+            return val.asInt();
         }
     };
     private static final Function<Value,Long> LONG = new Function<Value,Long>()

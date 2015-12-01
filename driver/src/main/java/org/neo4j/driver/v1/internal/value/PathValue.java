@@ -32,15 +32,15 @@ public class PathValue extends ValueAdapter
         this.adapted = adapted;
     }
 
+    public Object asObject()
+    {
+        return asPath();
+    }
+
     @Override
     public Path asPath()
     {
         return adapted;
-    }
-
-    public Object asObject()
-    {
-        return asPath();
     }
 
     @Override
@@ -50,7 +50,7 @@ public class PathValue extends ValueAdapter
     }
 
     @Override
-    public int fieldCount()
+    public int elementCount()
     {
         return adapted.length();
     }
@@ -80,7 +80,6 @@ public class PathValue extends ValueAdapter
         }
 
         PathValue values = (PathValue) o;
-
         return adapted.equals( values.adapted );
 
     }

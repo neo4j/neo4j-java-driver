@@ -79,7 +79,7 @@ public class DriverStresser
             Result result = session.run( statement, parameters );
             while ( result.next() )
             {
-                total += result.value( "n" ).asInteger();
+                total += result.value( "n" ).asInt();
             }
             return total;
         }

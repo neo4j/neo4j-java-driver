@@ -54,7 +54,7 @@ public class MapValue extends ValueAdapter
     }
 
     @Override
-    public int fieldCount()
+    public int elementCount()
     {
         return val.size();
     }
@@ -121,9 +121,7 @@ public class MapValue extends ValueAdapter
         }
 
         MapValue values = (MapValue) o;
-
-        return !(val != null ? !val.equals( values.val ) : values.val != null);
-
+        return val == values.val || val.equals( values.val );
     }
 
     @Override

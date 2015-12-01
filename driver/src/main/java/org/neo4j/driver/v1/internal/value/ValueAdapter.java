@@ -27,12 +27,13 @@ import org.neo4j.driver.v1.Node;
 import org.neo4j.driver.v1.Path;
 import org.neo4j.driver.v1.Relationship;
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.exceptions.value.NotMultiValued;
 import org.neo4j.driver.v1.exceptions.value.Uncoercible;
 import org.neo4j.driver.v1.exceptions.value.Unsizable;
 
 import static java.util.Collections.emptyList;
+
+import static org.neo4j.driver.v1.Values.valueAsIs;
 
 public abstract class ValueAdapter implements InternalValue
 {
@@ -49,15 +50,33 @@ public abstract class ValueAdapter implements InternalValue
     }
 
     @Override
-    public int asInteger()
+    public char asChar()
     {
-        throw new Uncoercible( typeName(), "Java int" );
+        throw new Uncoercible( typeName(), "Java char" );
     }
 
     @Override
     public long asLong()
     {
         throw new Uncoercible( typeName(), "Java long" );
+    }
+
+    @Override
+    public int asInt()
+    {
+        throw new Uncoercible( typeName(), "Java int" );
+    }
+
+    @Override
+    public short asShort()
+    {
+        throw new Uncoercible( typeName(), "Java short" );
+    }
+
+    @Override
+    public byte asByte()
+    {
+        throw new Uncoercible( typeName(), "Java byte" );
     }
 
     @Override
@@ -88,6 +107,66 @@ public abstract class ValueAdapter implements InternalValue
     public <T> Map<String, T> asMap( Function<Value,T> mapFunction )
     {
         throw new Uncoercible( typeName(), "Java Map" );
+    }
+
+    @Override
+    public Object asObject()
+    {
+        throw new Uncoercible( typeName(), "Java Object" );
+    }
+
+    @Override
+    public Value[] asArray()
+    {
+        return asArray( Value.class, valueAsIs() );
+    }
+
+    @Override
+    public <T> T[] asArray( Class<T> clazz, Function<Value, T> mapFunction )
+    {
+        throw new Uncoercible( typeName(), "Java T[]" );
+    }
+
+    @Override
+    public char[] asCharArray()
+    {
+        throw new Uncoercible( typeName(), "Java char[]" );
+    }
+
+    @Override
+    public long[] asLongArray()
+    {
+        throw new Uncoercible( typeName(), "Java long[]" );
+    }
+
+    @Override
+    public int[] asIntArray()
+    {
+        throw new Uncoercible( typeName(), "Java int[]" );
+    }
+
+    @Override
+    public short[] asShortArray()
+    {
+        throw new Uncoercible( typeName(), "Java short[]" );
+    }
+
+    @Override
+    public byte[] asByteArray()
+    {
+        throw new Uncoercible( typeName(), "Java byte[]" );
+    }
+
+    @Override
+    public double[] asDoubleArray()
+    {
+        return new double[0];
+    }
+
+    @Override
+    public float[] asFloatArray()
+    {
+        return new float[0];
     }
 
     @Override
@@ -133,7 +212,7 @@ public abstract class ValueAdapter implements InternalValue
     }
 
     @Override
-    public int fieldCount()
+    public int elementCount()
     {
         throw new Unsizable( typeName() + " does not have size" );
     }
@@ -205,7 +284,7 @@ public abstract class ValueAdapter implements InternalValue
     }
 
     @Override
-    public boolean hasFields()
+    public boolean hasElements()
     {
         return values().iterator().hasNext();
     }
@@ -220,19 +299,19 @@ public abstract class ValueAdapter implements InternalValue
     @Override
     public List<Value> asList()
     {
-        return asList( Values.valueAsIs() );
+        return asList( valueAsIs() );
     }
 
     @Override
     public Iterable<Value> values()
     {
-        return values( Values.valueAsIs() );
+        return values( valueAsIs() );
     }
 
     @Override
     public Map<String,Value> asMap()
     {
-        return asMap( Values.valueAsIs() );
+        return asMap( valueAsIs() );
     }
 
     @Override

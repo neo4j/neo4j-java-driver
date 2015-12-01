@@ -62,7 +62,7 @@ public class LoadCSVIT
 
         // Then
         assertTrue( result.next() );
-        assertThat( result.value( "c" ).asInteger(), equalTo( 150 ) );
+        assertThat( result.value( "c" ).asInt(), equalTo( 150 ) );
         assertFalse( result.next() );
     }
 

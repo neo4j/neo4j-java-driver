@@ -22,7 +22,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.ImmutableRecord;
 import org.neo4j.driver.v1.Result;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
@@ -49,7 +49,7 @@ public class ParametersIT
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", true ) );
 
         // Then
-        for ( Record record : result.retain() )
+        for ( ImmutableRecord record : result.retain() )
         {
             Value value = record.value( "a.value" );
             assertThat( value.isBoolean(), equalTo( true ) );
@@ -65,7 +65,7 @@ public class ParametersIT
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", (byte) 1 ) );
 
         // Then
-        for ( Record record : result.retain() )
+        for ( ImmutableRecord record : result.retain() )
         {
             Value value = record.value( "a.value" );
             assertThat( value.isInteger(), equalTo( true ) );
@@ -82,7 +82,7 @@ public class ParametersIT
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", (short) 1 ) );
 
         // Then
-        for ( Record record : result.retain() )
+        for ( ImmutableRecord record : result.retain() )
         {
             Value value = record.value( "a.value" );
             assertThat( value.isInteger(), equalTo( true ) );
@@ -99,7 +99,7 @@ public class ParametersIT
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", 1 ) );
 
         // Then
-        for ( Record record : result.retain() )
+        for ( ImmutableRecord record : result.retain() )
         {
             Value value = record.value( "a.value" );
             assertThat( value.isInteger(), equalTo( true ) );
@@ -116,7 +116,7 @@ public class ParametersIT
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", 1L ) );
 
         // Then
-        for ( Record record : result.retain() )
+        for ( ImmutableRecord record : result.retain() )
         {
             Value value = record.value( "a.value" );
             assertThat( value.isInteger(), equalTo( true ) );
@@ -133,7 +133,7 @@ public class ParametersIT
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", 6.28 ) );
 
         // Then
-        for ( Record record : result.retain() )
+        for ( ImmutableRecord record : result.retain() )
         {
             Value value = record.value( "a.value" );
             assertThat( value.isFloat(), equalTo( true ) );
@@ -150,7 +150,7 @@ public class ParametersIT
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", 'ö' ) );
 
         // Then
-        for ( Record record : result.retain() )
+        for ( ImmutableRecord record : result.retain() )
         {
             Value value = record.value( "a.value" );
             assertThat( value.isString(), equalTo( true ) );
@@ -168,7 +168,7 @@ public class ParametersIT
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", arrayValue ) );
 
         // Then
-        for ( Record record : result.retain() )
+        for ( ImmutableRecord record : result.retain() )
         {
             Value value = record.value( "a.value" );
             assertThat( value.isString(), equalTo( true ) );
@@ -185,7 +185,7 @@ public class ParametersIT
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", "Mjölnir" ) );
 
         // Then
-        for ( Record record : result.retain() )
+        for ( ImmutableRecord record : result.retain() )
         {
             Value value = record.value( "a.value" );
             assertThat( value.isString(), equalTo( true ) );
@@ -203,11 +203,11 @@ public class ParametersIT
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", arrayValue ) );
 
         // Then
-        for ( Record record : result.retain() )
+        for ( ImmutableRecord record : result.retain() )
         {
             Value value = record.value( "a.value" );
             assertThat( value.isList(), equalTo( true ) );
-            assertThat( value.fieldCount(), equalTo( 3 ) );
+            assertThat( value.elementCount(), equalTo( 3 ) );
             for ( Value item : value.asList() )
             {
                 assertThat( item.isBoolean(), equalTo( true ) );
@@ -226,11 +226,11 @@ public class ParametersIT
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", arrayValue ) );
 
         // Then
-        for ( Record record : result.retain() )
+        for ( ImmutableRecord record : result.retain() )
         {
             Value value = record.value( "a.value" );
             assertThat( value.isList(), equalTo( true ) );
-            assertThat( value.fieldCount(), equalTo( 3 ) );
+            assertThat( value.elementCount(), equalTo( 3 ) );
             for ( Value item : value.asList() )
             {
                 assertThat( item.isInteger(), equalTo( true ) );
@@ -249,11 +249,11 @@ public class ParametersIT
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", arrayValue ) );
 
         // Then
-        for ( Record record : result.retain() )
+        for ( ImmutableRecord record : result.retain() )
         {
             Value value = record.value( "a.value" );
             assertThat( value.isList(), equalTo( true ) );
-            assertThat( value.fieldCount(), equalTo( 3 ) );
+            assertThat( value.elementCount(), equalTo( 3 ) );
             for ( Value item : value.asList() )
             {
                 assertThat( item.isFloat(), equalTo( true ) );
@@ -272,11 +272,11 @@ public class ParametersIT
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", arrayValue ) );
 
         // Then
-        for ( Record record : result.retain() )
+        for ( ImmutableRecord record : result.retain() )
         {
             Value value = record.value( "a.value" );
             assertThat( value.isList(), equalTo( true ) );
-            assertThat( value.fieldCount(), equalTo( 3 ) );
+            assertThat( value.elementCount(), equalTo( 3 ) );
             for ( Value item : value.asList() )
             {
                 assertThat( item.isString(), equalTo( true ) );
@@ -294,11 +294,11 @@ public class ParametersIT
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", arrayValue ) );
 
         // Then
-        for ( Record record : result.retain() )
+        for ( ImmutableRecord record : result.retain() )
         {
             Value value = record.value( "a.value" );
             assertThat( value.isList(), equalTo( true ) );
-            assertThat( value.fieldCount(), equalTo( 3 ) );
+            assertThat( value.elementCount(), equalTo( 3 ) );
             for ( Value item : value.asList() )
             {
                 assertThat( item.isString(), equalTo( true ) );
@@ -317,7 +317,7 @@ public class ParametersIT
                 parameters( "value", parameters( "v", true ) ) );
 
         // Then
-        for ( Record record : result.retain() )
+        for ( ImmutableRecord record : result.retain() )
         {
             Value value = record.value( "a.value" );
             assertThat( value.isBoolean(), equalTo( true ) );
@@ -335,7 +335,7 @@ public class ParametersIT
                 parameters( "value", parameters( "v", 42 ) ) );
 
         // Then
-        for ( Record record : result.retain() )
+        for ( ImmutableRecord record : result.retain() )
         {
             Value value = record.value( "a.value" );
             assertThat( value.isInteger(), equalTo( true ) );
@@ -353,7 +353,7 @@ public class ParametersIT
                 parameters( "value", parameters( "v", 6.28 ) ) );
 
         // Then
-        for ( Record record : result.retain() )
+        for ( ImmutableRecord record : result.retain() )
         {
             Value value = record.value( "a.value" );
             assertThat( value.isFloat(), equalTo( true ) );
@@ -371,7 +371,7 @@ public class ParametersIT
                 parameters( "value", parameters( "v", "Mjölnir" ) ) );
 
         // Then
-        for ( Record record : result.retain() )
+        for ( ImmutableRecord record : result.retain() )
         {
             Value value = record.value( "a.value" );
             assertThat( value.isString(), equalTo( true ) );

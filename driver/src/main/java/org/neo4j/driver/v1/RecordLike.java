@@ -18,18 +18,31 @@
  */
 package org.neo4j.driver.v1;
 
+import java.util.List;
+
 /**
- * Access the fields of an underlying list like data structure by index
+ * Access the fields of an underlying ordered map like data structure by key and index
  */
-public interface ListAccess extends FieldAccess
+public interface RecordLike extends ListLike, MapLike
 {
+    @Override
+    List<String> keys();
+
     /**
-     * Retrieve the value of the field at the given index
+     * Retrieve all field values of the record
      *
-     * @param index the index of the field
-     * @return the field's value or null if no such field exists
+     * @return all field values in key order
      */
-    Value value( int index );
+    @Override
+    List<Value> values();
+
+    /**
+     * Map and retrieve all record field values
+     *
+     * @param mapFunction a function to map from Value to T. See {@link Values} for some predefined functions, such
+     * as {@link Values#valueAsBoolean()}, {@link Values#valueAsList(Function)}.
+     * @return the result of mapping all record field values in key order
+     */
+    @Override
+    <T> List<T> values( Function<Value, T> mapFunction );
 }
-
-

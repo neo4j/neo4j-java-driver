@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.v1.internal.value;
 
+import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -56,13 +57,101 @@ public class ListValue extends ValueAdapter
     }
 
     @Override
+    public Value[] asArray()
+    {
+        int size = elementCount();
+        Value[] result = new Value[size];
+        System.arraycopy( values, 0, result, 0, size );
+        return result;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> T[] asArray( Class<T> clazz, Function<Value, T> mapFunction )
+    {
+        int size = elementCount();
+        T[] result = (T[]) Array.newInstance( clazz, size );
+        for ( int i = 0; i < size; i++ )
+        {
+            result[i] = mapFunction.apply( values[i] );
+        }
+        return result;
+    }
+
+    @Override
+    public long[] asLongArray()
+    {
+        long[] result = new long[ elementCount() ];
+        for ( int i = 0; i < values.length; i++ )
+        {
+            result[i] = values[i].asLong();
+        }
+        return result;
+    }
+
+    @Override
+    public int[] asIntArray()
+    {
+        int[] result = new int[ elementCount() ];
+        for ( int i = 0; i < values.length; i++ )
+        {
+            result[i] = values[i].asInt();
+        }
+        return result;
+    }
+
+    @Override
+    public short[] asShortArray()
+    {
+        short[] result = new short[ elementCount() ];
+        for ( int i = 0; i < values.length; i++ )
+        {
+            result[i] = values[i].asShort();
+        }
+        return result;
+    }
+
+    @Override
+    public byte[] asByteArray()
+    {
+        byte[] result = new byte[ elementCount() ];
+        for ( int i = 0; i < values.length; i++ )
+        {
+            result[i] = values[i].asByte();
+        }
+        return result;
+    }
+
+    @Override
+    public double[] asDoubleArray()
+    {
+        double[] result = new double[ elementCount() ];
+        for ( int i = 0; i < values.length; i++ )
+        {
+            result[i] = values[i].asDouble();
+        }
+        return result;
+    }
+
+    @Override
+    public float[] asFloatArray()
+    {
+        float[] result = new float[ elementCount() ];
+        for ( int i = 0; i < values.length; i++ )
+        {
+            result[i] = values[i].asFloat();
+        }
+        return result;
+    }
+
+    @Override
     public boolean isList()
     {
         return true;
     }
 
     @Override
-    public int fieldCount()
+    public int elementCount()
     {
         return values.length;
     }
@@ -136,10 +225,8 @@ public class ListValue extends ValueAdapter
             return false;
         }
 
-        ListValue values1 = (ListValue) o;
-
-        return Arrays.equals( values, values1.values );
-
+        ListValue otherValues = (ListValue) o;
+        return Arrays.equals( values, otherValues.values );
     }
 
     @Override

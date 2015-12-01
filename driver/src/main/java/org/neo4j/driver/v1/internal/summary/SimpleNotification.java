@@ -38,13 +38,12 @@ public class SimpleNotification implements Notification
             InputPosition position = null;
             if( posValue != null )
             {
-                position = new SimpleInputPosition( posValue.value( "offset" ).asInteger(),
-                                                    posValue.value( "line" ).asInteger(),
-                                                    posValue.value( "column" ).asInteger() );
+                position = new SimpleInputPosition( posValue.value( "offset" ).asInt(),
+                                                    posValue.value( "line" ).asInt(),
+                                                    posValue.value( "column" ).asInt() );
             }
 
-            Notification notification = new SimpleNotification( code, title, description, position );
-            return notification;
+            return new SimpleNotification( code, title, description, position );
         }
     };
 
