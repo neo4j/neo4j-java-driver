@@ -26,8 +26,8 @@ import java.util.Map;
 
 import org.neo4j.driver.v1.CoarseType;
 import org.neo4j.driver.v1.Function;
-import org.neo4j.driver.v1.Types;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
 import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
 public class MapValue extends ValueAdapter
@@ -126,7 +126,7 @@ public class MapValue extends ValueAdapter
     @Override
     public CoarseType type()
     {
-        return Types.MAP;
+        return StandardTypeSystem.TYPE_SYSTEM.MAP();
     }
 
     @Override

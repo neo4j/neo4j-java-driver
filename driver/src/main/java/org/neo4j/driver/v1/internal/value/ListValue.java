@@ -25,8 +25,8 @@ import java.util.List;
 
 import org.neo4j.driver.v1.CoarseType;
 import org.neo4j.driver.v1.Function;
-import org.neo4j.driver.v1.Types;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
 import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
 public class ListValue extends ValueAdapter
@@ -108,7 +108,7 @@ public class ListValue extends ValueAdapter
     @Override
     public CoarseType type()
     {
-        return Types.LIST;
+        return StandardTypeSystem.TYPE_SYSTEM.LIST();
     }
 
     @Override

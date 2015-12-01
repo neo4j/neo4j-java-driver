@@ -33,27 +33,14 @@ import org.neo4j.driver.v1.internal.SimpleNode;
 import org.neo4j.driver.v1.internal.SimplePath;
 import org.neo4j.driver.v1.internal.SimpleRelationship;
 
-import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
-import static org.neo4j.driver.v1.Types.ANY;
-import static org.neo4j.driver.v1.Types.BOOLEAN;
-import static org.neo4j.driver.v1.Types.FLOAT;
-import static org.neo4j.driver.v1.Types.IDENTITY;
-import static org.neo4j.driver.v1.Types.INTEGER;
-import static org.neo4j.driver.v1.Types.LIST;
-import static org.neo4j.driver.v1.Types.MAP;
-import static org.neo4j.driver.v1.Types.NODE;
-import static org.neo4j.driver.v1.Types.NULL;
-import static org.neo4j.driver.v1.Types.NUMBER;
-import static org.neo4j.driver.v1.Types.PATH;
-import static org.neo4j.driver.v1.Types.RELATIONSHIP;
-import static org.neo4j.driver.v1.Types.STRING;
 import static org.neo4j.driver.v1.Values.value;
+import static org.neo4j.driver.v1.internal.types.StandardTypeSystem.TYPE_SYSTEM;
 
-public class TypesTest
+public class TypeSystemTest
 {
     private final SimpleNode node = new SimpleNode( 42L );
     private final SimpleRelationship relationship = new SimpleRelationship( 42L, 42L, 43L, "T" );
@@ -67,8 +54,10 @@ public class TypesTest
     private Value pathValue = value( new SimplePath( Arrays.<Entity>asList( node, relationship, node ) ) );
     private Value booleanValue = value( true );
     private Value listValue = value( Arrays.asList( 1, 2, 3 ) );
-    private Value nullValue = null;
+    private Value nullValue = value( (Object) null );
     private Value identityValue = value( new SimpleIdentity( 42L ) );
+
+    private TypeSystem typeSystem = TYPE_SYSTEM;
 
     TypeVerifier newTypeVerifierFor( CoarseType type )
     {
@@ -90,24 +79,24 @@ public class TypesTest
     @Test
     public void shouldNameTypeCorrectly()
     {
-        assertThat( ANY.name(), is( "ANY" ) );
-        assertThat( BOOLEAN.name(), is( "BOOLEAN" ) );
-        assertThat( STRING.name(), is( "STRING" ) );
-        assertThat( NUMBER.name(), is( "NUMBER" ) );
-        assertThat( INTEGER.name(), is( "INTEGER" ) );
-        assertThat( FLOAT.name(), is( "FLOAT" ) );
-        assertThat( LIST.name(), is( "LIST OF ANY?" ) );
-        assertThat( MAP.name(), is( "MAP" ) );
-        assertThat( IDENTITY.name(), is( "IDENTITY" ) );
-        assertThat( NODE.name(), is( "NODE" ) );
-        assertThat( RELATIONSHIP.name(), is( "RELATIONSHIP" ) );
-        assertThat( PATH.name(), is( "PATH" ) );
-        assertThat( NULL.name(), is( "NULL" ) );
+        assertThat( TYPE_SYSTEM.ANY().name(), is( "ANY" ) );
+        assertThat( TYPE_SYSTEM.BOOLEAN().name(), is( "BOOLEAN" ) );
+        assertThat( TYPE_SYSTEM.STRING().name(), is( "STRING" ) );
+        assertThat( TYPE_SYSTEM.NUMBER().name(), is( "NUMBER" ) );
+        assertThat( TYPE_SYSTEM.INTEGER().name(), is( "INTEGER" ) );
+        assertThat( TYPE_SYSTEM.FLOAT().name(), is( "FLOAT" ) );
+        assertThat( TYPE_SYSTEM.LIST().name(), is( "LIST OF ANY?" ) );
+        assertThat( TYPE_SYSTEM.MAP().name(), is( "MAP" ) );
+        assertThat( TYPE_SYSTEM.IDENTITY().name(), is( "IDENTITY" ) );
+        assertThat( TYPE_SYSTEM.NODE().name(), is( "NODE" ) );
+        assertThat( TYPE_SYSTEM.RELATIONSHIP().name(), is( "RELATIONSHIP" ) );
+        assertThat( TYPE_SYSTEM.PATH().name(), is( "PATH" ) );
+        assertThat( TYPE_SYSTEM.NULL().name(), is( "NULL" ) );
     }
 
     @Test
     public void shouldInferAnyTypeCorrectly() {
-        try ( TypeVerifier verifier = newTypeVerifierFor( ANY ) )
+        try ( TypeVerifier verifier = newTypeVerifierFor( TYPE_SYSTEM.ANY() ) )
         {
             verifier.assertIncludes( booleanValue );
             verifier.assertIncludes( stringValue );
@@ -124,7 +113,7 @@ public class TypesTest
 
     @Test
     public void shouldInferNumberTypeCorrectly() {
-        try ( TypeVerifier verifier = newTypeVerifierFor( NUMBER ) )
+        try ( TypeVerifier verifier = newTypeVerifierFor( TYPE_SYSTEM.NUMBER() ) )
         {
             verifier.assertIncludes( integerValue );
             verifier.assertIncludes( floatValue );
@@ -133,7 +122,7 @@ public class TypesTest
 
     @Test
     public void shouldInferNodesTypeCorrectly() {
-        try ( TypeVerifier verifier = newTypeVerifierFor( NODE ) )
+        try ( TypeVerifier verifier = newTypeVerifierFor( TYPE_SYSTEM.NODE() ) )
         {
             verifier.assertIncludes( nodeValue );
         }
@@ -141,7 +130,7 @@ public class TypesTest
 
     @Test
     public void shouldInferRelTypeCorrectly() {
-        try ( TypeVerifier verifier = newTypeVerifierFor( RELATIONSHIP ) )
+        try ( TypeVerifier verifier = newTypeVerifierFor( TYPE_SYSTEM.RELATIONSHIP() ) )
         {
             verifier.assertIncludes( relationshipValue );
         }
@@ -149,7 +138,7 @@ public class TypesTest
 
     @Test
     public void shouldInferStringTypeCorrectly() {
-        try ( TypeVerifier verifier = newTypeVerifierFor( STRING ) )
+        try ( TypeVerifier verifier = newTypeVerifierFor( TYPE_SYSTEM.STRING() ) )
         {
             verifier.assertIncludes( stringValue );
         }
@@ -157,7 +146,7 @@ public class TypesTest
 
     @Test
     public void shouldInferMapTypeCorrectly() {
-        try ( TypeVerifier verifier = newTypeVerifierFor( MAP ) )
+        try ( TypeVerifier verifier = newTypeVerifierFor( TYPE_SYSTEM.MAP() ) )
         {
             verifier.assertIncludes( nodeValue );
             verifier.assertIncludes( relationshipValue );
@@ -167,7 +156,7 @@ public class TypesTest
 
     @Test
     public void shouldInferPathTypeCorrectly() {
-        try ( TypeVerifier verifier = newTypeVerifierFor( PATH ) )
+        try ( TypeVerifier verifier = newTypeVerifierFor( TYPE_SYSTEM.PATH() ) )
         {
             verifier.assertIncludes( pathValue );
         }
@@ -175,7 +164,7 @@ public class TypesTest
 
     @Test
     public void shouldInferNullCorrectly() {
-        try ( TypeVerifier verifier = newTypeVerifierFor( NULL ) )
+        try ( TypeVerifier verifier = newTypeVerifierFor( TYPE_SYSTEM.NULL() ) )
         {
             verifier.assertIncludes( nullValue );
         }
@@ -183,7 +172,7 @@ public class TypesTest
 
     @Test
     public void shouldInferBooleanTypeCorrectly() {
-        try ( TypeVerifier verifier = newTypeVerifierFor( BOOLEAN ) )
+        try ( TypeVerifier verifier = newTypeVerifierFor( TYPE_SYSTEM.BOOLEAN() ) )
         {
             verifier.assertIncludes( booleanValue );
         }
@@ -191,7 +180,7 @@ public class TypesTest
 
     @Test
     public void shouldIntegerTypeCorrectly() {
-        try ( TypeVerifier verifier = newTypeVerifierFor( INTEGER ) )
+        try ( TypeVerifier verifier = newTypeVerifierFor( TYPE_SYSTEM.INTEGER() ) )
         {
             verifier.assertIncludes( integerValue );
         }
@@ -199,7 +188,7 @@ public class TypesTest
 
     @Test
     public void shouldInferFloatTypeCorrectly() {
-        try ( TypeVerifier verifier = newTypeVerifierFor( FLOAT ) )
+        try ( TypeVerifier verifier = newTypeVerifierFor( TYPE_SYSTEM.FLOAT() ) )
         {
             verifier.assertIncludes( floatValue );
         }
@@ -207,7 +196,7 @@ public class TypesTest
 
     @Test
     public void shouldInferListTypeCorrectly() {
-        try ( TypeVerifier verifier = newTypeVerifierFor( LIST ) )
+        try ( TypeVerifier verifier = newTypeVerifierFor( typeSystem.LIST() ) )
         {
             verifier.assertIncludes( listValue );
         }
@@ -215,7 +204,7 @@ public class TypesTest
 
     @Test
     public void shouldInferIdentityTypeCorrectly() {
-        try ( TypeVerifier verifier = newTypeVerifierFor( IDENTITY ) )
+        try ( TypeVerifier verifier = newTypeVerifierFor( TYPE_SYSTEM.IDENTITY() ) )
         {
             verifier.assertIncludes( identityValue );
         }
@@ -224,17 +213,17 @@ public class TypesTest
     @Test
     public void shouldDetermineTypeCorrectly()
     {
-        assertThat( typeOf( integerValue ), equalTo( INTEGER ) );
-        assertThat( typeOf( floatValue ), equalTo( FLOAT ) );
-        assertThat( typeOf( stringValue ), equalTo( STRING ) );
-        assertThat( typeOf( booleanValue ), equalTo( BOOLEAN ) );
-        assertThat( typeOf( listValue ), equalTo( LIST ) );
-        assertThat( typeOf( mapValue ), equalTo( MAP ) );
-        assertThat( typeOf( identityValue ), equalTo( IDENTITY ) );
-        assertThat( typeOf( nodeValue ), equalTo( NODE ) );
-        assertThat( typeOf( relationshipValue ), equalTo( RELATIONSHIP ) );
-        assertThat( typeOf( pathValue ), equalTo( PATH ) );
-        assertThat( typeOf( nullValue ), equalTo( NULL ) );
+        assertThat( integerValue, hasType( TYPE_SYSTEM.INTEGER() ) );
+        assertThat( floatValue, hasType( TYPE_SYSTEM.FLOAT() ) );
+        assertThat( stringValue, hasType( TYPE_SYSTEM.STRING() ) );
+        assertThat( booleanValue, hasType( TYPE_SYSTEM.BOOLEAN() ) );
+        assertThat( listValue, hasType( TYPE_SYSTEM.LIST() ) );
+        assertThat( mapValue, hasType( TYPE_SYSTEM.MAP() ) );
+        assertThat( identityValue, hasType( TYPE_SYSTEM.IDENTITY() ) );
+        assertThat( nodeValue, hasType( TYPE_SYSTEM.NODE() ) );
+        assertThat( relationshipValue, hasType( TYPE_SYSTEM.RELATIONSHIP() ) );
+        assertThat( pathValue, hasType( TYPE_SYSTEM.PATH() ) );
+        assertThat( nullValue, hasType( TYPE_SYSTEM.NULL() ) );
     }
 
     private CoarseType typeOf( Value value )
@@ -264,7 +253,7 @@ public class TypesTest
         {
             for ( Value value : values )
             {
-                assertThat( value, not(hasType( type )) );
+                assertThat( value, not( hasType( type )) );
             }
         }
     }

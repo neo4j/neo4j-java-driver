@@ -33,7 +33,7 @@ public enum TypeConstructor
         @Override
         public boolean covers( Value value )
         {
-            return value != null;
+            return ! value.isNull();
         }
     },
     BOOLEAN_TyCon {

@@ -16,10 +16,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1;
+package org.neo4j.driver.v1.internal.types;
 
-import org.neo4j.driver.v1.internal.types.TypeConstructor;
-import org.neo4j.driver.v1.internal.types.TypeRepresentation;
+import org.neo4j.driver.v1.CoarseType;
+import org.neo4j.driver.v1.Type;
+import org.neo4j.driver.v1.TypeSystem;
+import org.neo4j.driver.v1.Value;
 
 import static org.neo4j.driver.v1.internal.types.TypeConstructor.ANY_TyCon;
 import static org.neo4j.driver.v1.internal.types.TypeConstructor.BOOLEAN_TyCon;
@@ -42,52 +44,106 @@ import static org.neo4j.driver.v1.internal.types.TypeConstructor.STRING_TyCon;
  * @see Type
  * @see CoarseType
  */
-public final class Types
+public final class StandardTypeSystem implements TypeSystem
 {
-    private Types() {
-        throw new UnsupportedOperationException(  );
+    public static TypeSystem TYPE_SYSTEM = new StandardTypeSystem();
+
+    private StandardTypeSystem()
+    {
     }
 
     /** the Cypher type ANY */
-    public static CoarseType ANY = constructType( ANY_TyCon );
+    @Override
+    public CoarseType ANY()
+    {
+        return constructType( ANY_TyCon );
+    }
 
     /** the Cypher type BOOLEAN */
-    public static CoarseType BOOLEAN = constructType( BOOLEAN_TyCon );
+    @Override
+    public CoarseType BOOLEAN()
+    {
+        return constructType( BOOLEAN_TyCon );
+    }
 
     /** the Cypher type STRING */
-    public static CoarseType STRING = constructType( STRING_TyCon );
+    @Override
+    public CoarseType STRING()
+    {
+        return constructType( STRING_TyCon );
+    }
 
     /** the Cypher type NUMBER */
-    public static CoarseType NUMBER = constructType( NUMBER_TyCon );
+    @Override
+    public CoarseType NUMBER()
+    {
+        return constructType( NUMBER_TyCon );
+    }
 
     /** the Cypher type INTEGER */
-    public static CoarseType INTEGER = constructType( INTEGER_TyCon );
+    @Override
+    public CoarseType INTEGER()
+    {
+        return constructType( INTEGER_TyCon );
+    }
 
     /** the Cypher type FLOAT */
-    public static CoarseType FLOAT = constructType( FLOAT_TyCon );
+    @Override
+    public CoarseType FLOAT()
+    {
+        return constructType( FLOAT_TyCon );
+    }
 
     /** the Cypher type LIST */
-    public static CoarseType LIST = constructType( LIST_TyCon );
+    @Override
+    public CoarseType LIST()
+    {
+        return constructType( LIST_TyCon );
+    }
 
     /** the Cypher type MAP */
-    public static CoarseType MAP = constructType( MAP_TyCon );
+    @Override
+    public CoarseType MAP()
+    {
+        return constructType( MAP_TyCon );
+    }
 
     /** the Cypher type IDENTITY */
-    public static CoarseType IDENTITY = constructType( IDENTITY_TyCon );
+    @Override
+    public CoarseType IDENTITY()
+    {
+        return constructType( IDENTITY_TyCon );
+    }
 
     /** the Cypher type NODE */
-    public static CoarseType NODE = constructType( NODE_TyCon );
+    @Override
+    public CoarseType NODE()
+    {
+        return constructType( NODE_TyCon );
+    }
 
     /** the Cypher type RELATIONSHIP */
-    public static CoarseType RELATIONSHIP = constructType( RELATIONSHIP_TyCon );
+    @Override
+    public CoarseType RELATIONSHIP()
+    {
+        return constructType( RELATIONSHIP_TyCon );
+    }
 
     /** the Cypher type PATH */
-    public static CoarseType PATH = constructType( PATH_TyCon );
+    @Override
+    public CoarseType PATH()
+    {
+        return constructType( PATH_TyCon );
+    }
 
     /** the Cypher type NULL */
-    public static CoarseType NULL = constructType( NULL_TyCon );
+    @Override
+    public CoarseType NULL()
+    {
+        return constructType( NULL_TyCon );
+    }
 
-    private static TypeRepresentation constructType( TypeConstructor tyCon )
+    private TypeRepresentation constructType( TypeConstructor tyCon )
     {
         return new TypeRepresentation( tyCon );
     }
