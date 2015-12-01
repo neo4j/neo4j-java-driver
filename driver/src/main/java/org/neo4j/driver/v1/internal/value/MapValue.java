@@ -60,6 +60,12 @@ public class MapValue extends ValueAdapter
     }
 
     @Override
+    public boolean containsKey( String key )
+    {
+        return val.containsKey( key );
+    }
+
+    @Override
     public Iterable<String> keys()
     {
         return val.keySet();

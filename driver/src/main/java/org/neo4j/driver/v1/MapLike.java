@@ -32,10 +32,55 @@ public interface MapLike extends CollectionLike
     Iterable<String> keys();
 
     /**
+     * Check if this map like contains a given key
+     *
+     * @param key the key
+     * @return <tt>true</tt> if this map like contains the key otherwise <tt>false</tt>
+     */
+    boolean containsKey( String key );
+
+    /**
      * Retrieve the value of the field with the given key
      *
      * @param key the key of the field
-     * @return the field's value or null if no such field exists
+     * @return the field's value or a null value if no such key exists
      */
     Value value( String key );
+
+    /**
+     * Retrieve the entries of the underlying map
+     *
+     * @see org.neo4j.driver.v1.MapLike.Entry
+     * @return all map entries in unspecified order
+     */
+    Iterable<Entry<Value>> entries();
+
+    /**
+     * Retrieve the entries of the underlying map
+     *
+     * @see org.neo4j.driver.v1.MapLike.Entry
+     * @param mapFunction a function to map from Value to T. See {@link Values} for some predefined functions, such
+     * as {@link Values#valueAsBoolean()}, {@link Values#valueAsList(Function)}.
+     * @param <V> the target type of mapping
+     * @return all mapped map entries in unspecified order
+     */
+    <V> Iterable<Entry<V>> entries( Function<Value, V> mapFunction );
+
+    /**
+     * Immutable pair of a key and a value
+     *
+     * @param <V> the Java type of the contained value
+     */
+    interface Entry<V>
+    {
+        /**
+         * @return the key of the entry
+         */
+        String key();
+
+        /**
+         * @return the value of the entry
+         */
+        V value();
+    }
 }

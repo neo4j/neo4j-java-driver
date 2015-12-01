@@ -23,6 +23,7 @@ import java.util.Map;
 
 import org.neo4j.driver.v1.Function;
 import org.neo4j.driver.v1.Identity;
+import org.neo4j.driver.v1.MapLike;
 import org.neo4j.driver.v1.Node;
 import org.neo4j.driver.v1.Path;
 import org.neo4j.driver.v1.Relationship;
@@ -30,6 +31,7 @@ import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.value.NotMultiValued;
 import org.neo4j.driver.v1.exceptions.value.Uncoercible;
 import org.neo4j.driver.v1.exceptions.value.Unsizable;
+import org.neo4j.driver.v1.internal.util.Extract;
 
 import static java.util.Collections.emptyList;
 
@@ -41,6 +43,11 @@ public abstract class ValueAdapter implements InternalValue
     public boolean isNull()
     {
         return false;
+    }
+    
+    public boolean containsKey( String key )
+    {
+        throw new NotMultiValued( typeName() + " is not a keyed collection" );
     }
 
     @Override
@@ -98,9 +105,21 @@ public abstract class ValueAdapter implements InternalValue
     }
 
     @Override
+    public List<Value> asList()
+    {
+        return asList( valueAsIs() );
+    }
+
+    @Override
     public <T> List<T> asList( Function<Value,T> mapFunction )
     {
         throw new Uncoercible( typeName(), "Java List" );
+    }
+
+    @Override
+    public Map<String,Value> asMap()
+    {
+        return asMap( valueAsIs() );
     }
 
     @Override
@@ -290,28 +309,27 @@ public abstract class ValueAdapter implements InternalValue
     }
 
     @Override
-    public <T> Iterable<T> values( Function<Value,T> mapFunction )
-    {
-
-        throw new NotMultiValued( typeName() + " is not iterable" );
-    }
-
-    @Override
-    public List<Value> asList()
-    {
-        return asList( valueAsIs() );
-    }
-
-    @Override
     public Iterable<Value> values()
     {
         return values( valueAsIs() );
     }
 
     @Override
-    public Map<String,Value> asMap()
+    public <T> Iterable<T> values( Function<Value,T> mapFunction )
     {
-        return asMap( valueAsIs() );
+        throw new NotMultiValued( typeName() + " is not iterable" );
+    }
+
+    @Override
+    public Iterable<MapLike.Entry<Value>> entries()
+    {
+        return entries( valueAsIs() );
+    }
+
+    @Override
+    public <V> Iterable<MapLike.Entry<V>> entries( final Function<Value, V> Function )
+    {
+        return Extract.entries( this, Function );
     }
 
     @Override

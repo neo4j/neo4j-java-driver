@@ -23,8 +23,12 @@ import java.util.Map;
 import org.neo4j.driver.v1.Entity;
 import org.neo4j.driver.v1.Function;
 import org.neo4j.driver.v1.Identity;
+import org.neo4j.driver.v1.MapLike;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.internal.util.Extract;
 import org.neo4j.driver.v1.internal.util.Iterables;
+
+import static org.neo4j.driver.v1.Values.valueAsIs;
 
 public abstract class SimpleEntity implements Entity
 {
@@ -42,7 +46,6 @@ public abstract class SimpleEntity implements Entity
     {
         return id;
     }
-
 
     @Override
     public int elementCount()
@@ -90,6 +93,12 @@ public abstract class SimpleEntity implements Entity
     }
 
     @Override
+    public boolean containsKey( String key )
+    {
+        return properties.containsKey( key );
+    }
+
+    @Override
     public Iterable<String> keys()
     {
         return properties.keySet();
@@ -111,5 +120,17 @@ public abstract class SimpleEntity implements Entity
     public <T> Iterable<T> values( Function<Value,T> mapFunction )
     {
         return Iterables.map( properties.values(), mapFunction );
+    }
+
+    @Override
+    public Iterable<MapLike.Entry<Value>> entries()
+    {
+        return entries( valueAsIs() );
+    }
+
+    @Override
+    public <V> Iterable<MapLike.Entry<V>> entries( final Function<Value, V> Function )
+    {
+        return Extract.entries( this, Function );
     }
 }

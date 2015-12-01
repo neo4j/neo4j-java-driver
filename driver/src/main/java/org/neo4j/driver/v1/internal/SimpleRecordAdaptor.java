@@ -20,42 +20,43 @@ package org.neo4j.driver.v1.internal;
 
 import java.util.List;
 
-import org.neo4j.driver.v1.ImmutableRecord;
+import org.neo4j.driver.v1.Function;
+import org.neo4j.driver.v1.MapLike;
+import org.neo4j.driver.v1.RecordLike;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.internal.util.Extract;
 
-public class EmptyRecord extends SimpleRecordAdaptor implements ImmutableRecord
+import static org.neo4j.driver.v1.Values.valueAsIs;
+
+public abstract class SimpleRecordAdaptor implements RecordLike
 {
-    private final List<String> keys;
-
-    EmptyRecord( List<String> keys )
+    @Override
+    public boolean hasElements()
     {
-        this.keys = keys;
-    }
-
-    public int elementCount()
-    {
-        return keys.size();
-    }
-
-    public Value value( int index )
-    {
-        return null;
+        return elementCount() > 0;
     }
 
     @Override
-    public boolean containsKey( String key )
+    public List<Value> values()
     {
-        return keys.contains( key );
-    }
-
-    public List<String> keys()
-    {
-        return keys;
+        return Extract.list( this, valueAsIs() );
     }
 
     @Override
-    public Value value( String key )
+    public <T> List<T> values( Function<Value, T> mapFunction )
     {
-        return null;
+        return Extract.list( this, mapFunction );
+    }
+
+    @Override
+    public List<MapLike.Entry<Value>> entries()
+    {
+        return entries( valueAsIs() );
+    }
+
+    @Override
+    public <V> List<MapLike.Entry<V>> entries( final Function<Value, V> mapFunction )
+    {
+        return Extract.entriesList( this, mapFunction );
     }
 }

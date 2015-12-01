@@ -23,14 +23,13 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-import org.neo4j.driver.v1.Function;
 import org.neo4j.driver.v1.ImmutableRecord;
 import org.neo4j.driver.v1.Result;
 import org.neo4j.driver.v1.ResultSummary;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
-public class SimpleResult implements Result
+public class SimpleResult extends SimpleRecordAdaptor implements Result
 {
     private final List<String> keys;
     private final Iterator<ImmutableRecord> iter;
@@ -70,6 +69,12 @@ public class SimpleResult implements Result
         return current == null ? throwNoRecord() : current.value( index );
     }
 
+    @Override
+    public boolean containsKey( String key )
+    {
+        return keys.contains( key );
+    }
+
     public List<String> keys()
     {
         return keys;
@@ -87,18 +92,6 @@ public class SimpleResult implements Result
             "In order to access fields of a record in a result, " +
             "you must first call next() to point the result to the next record in the result stream."
         );
-    }
-
-    @Override
-    public List<Value> values()
-    {
-        return record().values();
-    }
-
-    @Override
-    public <T> List<T> values( Function<Value, T> mapFunction )
-    {
-        return record().values( mapFunction );
     }
 
     @Override

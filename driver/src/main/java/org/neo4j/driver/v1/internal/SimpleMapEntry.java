@@ -16,20 +16,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1;
+package org.neo4j.driver.v1.internal;
 
-/**
- * Access the fields of an underlying list like data structure by index
- */
-public interface ListLike extends CollectionLike
+import org.neo4j.driver.v1.MapLike;
+
+public class SimpleMapEntry<V> implements MapLike.Entry<V>
 {
-    /**
-     * Retrieve the value of the field at the given index
-     *
-     * @param index the index of the field
-     * @return the field's value or a null value if no such field exists
-     */
-    Value value( int index );
+    private final String key;
+    private final V value;
+
+    protected SimpleMapEntry( String key, V value )
+    {
+        this.key = key;
+        this.value = value;
+    }
+
+    public String key()
+    {
+        return key;
+    }
+
+    public V value()
+    {
+        return value;
+    }
+
+    public static <V> MapLike.Entry<V> of( String key, V value )
+    {
+        return new SimpleMapEntry<>( key, value );
+    }
 }
-
-

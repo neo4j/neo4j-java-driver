@@ -21,13 +21,16 @@ package org.neo4j.driver.v1.internal.util;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import org.neo4j.driver.v1.Function;
 import org.neo4j.driver.v1.ListLike;
+import org.neo4j.driver.v1.MapLike;
 import org.neo4j.driver.v1.RecordLike;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.internal.SimpleMapEntry;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
@@ -123,9 +126,67 @@ public final class Extract
                 List<String> keys = record.keys();
                 for ( int i = 0; i < size; i++ )
                 {
-                    map.put( keys.get( 0 ), record.value( 0 ) );
+                    map.put( keys.get( i ), record.value( i ) );
                 }
                 return unmodifiableMap( map );
+        }
+    }
+
+    public static <V> Iterable<MapLike.Entry<V>> entries( final MapLike map, final Function<Value, V> mapFunction )
+    {
+        return new Iterable<MapLike.Entry<V>>()
+        {
+            @Override
+            public Iterator<MapLike.Entry<V>> iterator()
+            {
+                final Iterator<String> keys = map.keys().iterator();
+                return new Iterator<MapLike.Entry<V>>()
+                {
+                    @Override
+                    public boolean hasNext()
+                    {
+                        return keys.hasNext();
+                    }
+
+                    @Override
+                    public MapLike.Entry<V> next()
+                    {
+                        String key = keys.next();
+                        Value value = map.value( key );
+                        return SimpleMapEntry.of( key, mapFunction.apply( value ) );
+                    }
+                };
+            }
+        };
+    }
+
+    public static <V> List<MapLike.Entry<V>> entriesList( final RecordLike map, final Function<Value, V> mapFunction )
+    {
+        int size = map.elementCount();
+        switch ( size )
+        {
+            case 0:
+                return emptyList();
+
+            case 1:
+            {
+                String key = map.keys().iterator().next();
+                Value value = map.value( key );
+                return singletonList( SimpleMapEntry.of( key, mapFunction.apply( value ) ) );
+            }
+
+            default:
+            {
+                List<MapLike.Entry<V>> list = new ArrayList<>( size );
+                List<String> keys = map.keys();
+                for ( int i = 0; i < size; i++ )
+                {
+                    String key = keys.get( i );
+                    Value value = map.value( i );
+                    list.add( SimpleMapEntry.of( key, mapFunction.apply( value ) ) );
+                }
+                return unmodifiableList( list );
+            }
         }
     }
 }

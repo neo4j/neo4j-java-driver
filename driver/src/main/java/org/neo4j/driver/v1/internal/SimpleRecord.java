@@ -24,12 +24,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.driver.v1.Function;
 import org.neo4j.driver.v1.ImmutableRecord;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.internal.util.Extract;
 
-public class SimpleRecord implements ImmutableRecord
+public class SimpleRecord extends SimpleRecordAdaptor implements ImmutableRecord
 {
     private final List<String> keys;
     private final Map<String, Integer> keyIndexLookup;
@@ -72,6 +71,12 @@ public class SimpleRecord implements ImmutableRecord
     }
 
     @Override
+    public boolean containsKey( String key )
+    {
+        return keyIndexLookup.containsKey( key );
+    }
+
+    @Override
     public List<String> keys()
     {
         return keys;
@@ -96,18 +101,6 @@ public class SimpleRecord implements ImmutableRecord
     public List<Value> values()
     {
         return Extract.list( values );
-    }
-
-    @Override
-    public <T> List<T> values( Function<Value, T> mapFunction )
-    {
-        return Extract.list( this, mapFunction );
-    }
-
-    @Override
-    public boolean hasElements()
-    {
-        return values.length > 0;
     }
 
     @Override
