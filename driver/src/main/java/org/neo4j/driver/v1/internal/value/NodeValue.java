@@ -50,7 +50,7 @@ public class NodeValue extends ValueAdapter
     }
 
     @Override
-    public int elementCount()
+    public int countElements()
     {
         int count = 0;
         for ( String ignore : adapted.keys() ) { count++; }

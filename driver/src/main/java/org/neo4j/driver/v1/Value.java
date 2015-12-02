@@ -87,7 +87,7 @@ public interface Value extends MapLike, ListLike
      * @return the number of values in an underlying collection
      */
     @Override
-    int elementCount();
+    int countElements();
 
     /**
      * If the underlying value supports {@link #value(String) key-based indexing}, return an iterable of the keys in the

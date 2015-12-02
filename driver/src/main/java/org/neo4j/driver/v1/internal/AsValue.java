@@ -18,44 +18,15 @@
  */
 package org.neo4j.driver.v1.internal;
 
-import java.util.List;
-
-import org.neo4j.driver.v1.ImmutableRecord;
 import org.neo4j.driver.v1.Value;
 
-public class EmptyRecord extends SimpleRecordAdaptor implements ImmutableRecord
+public interface AsValue
 {
-    private final List<String> keys;
-
-    EmptyRecord( List<String> keys )
-    {
-        this.keys = keys;
-    }
-
-    public int countElements()
-    {
-        return keys.size();
-    }
-
-    public Value value( int index )
-    {
-        return null;
-    }
-
-    @Override
-    public boolean hasKey( String key )
-    {
-        return keys.contains( key );
-    }
-
-    public List<String> keys()
-    {
-        return keys;
-    }
-
-    @Override
-    public Value value( String key )
-    {
-        return null;
-    }
+    /**
+     * Retrieve a value representation of this
+     *
+     * @see Value
+     * @return {@link Value} that represents this
+     */
+    Value asValue();
 }

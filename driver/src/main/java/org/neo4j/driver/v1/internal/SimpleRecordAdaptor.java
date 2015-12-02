@@ -25,15 +25,21 @@ import org.neo4j.driver.v1.MapLike;
 import org.neo4j.driver.v1.RecordLike;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.internal.util.Extract;
+import org.neo4j.driver.v1.internal.value.MapValue;
 
 import static org.neo4j.driver.v1.Values.valueAsIs;
 
-public abstract class SimpleRecordAdaptor implements RecordLike
+public abstract class SimpleRecordAdaptor implements RecordLike, AsValue
 {
+    public Value asValue()
+    {
+        return new MapValue( Extract.map( this ) );
+    }
+
     @Override
     public boolean hasElements()
     {
-        return elementCount() > 0;
+        return countElements() > 0;
     }
 
     @Override

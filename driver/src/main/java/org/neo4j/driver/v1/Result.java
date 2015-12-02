@@ -52,6 +52,15 @@ public interface Result extends RecordLike, Resource
     int position();
 
     /**
+     * Count all records in this result.
+     *
+     * Calling this method exhausts the result cursor and moves it to the last record.
+     *
+     * @return the number of records in this result
+     */
+    int countRecords();
+
+    /**
      * Test if the cursor is positioned at the last stream record of if the stream is empty.
      *
      * @return true if the cursor is at the last record or the stream is empty.
@@ -66,7 +75,7 @@ public interface Result extends RecordLike, Resource
     boolean next();
 
     /**
-     * Advance the cursor as if calling next multiple times
+     * Advance the cursor as if calling next multiple times.
      *
      * @throws IllegalArgumentException if records is negative
      * @param records amount of records to be skipped
@@ -75,14 +84,14 @@ public interface Result extends RecordLike, Resource
     int skip( int records );
 
     /**
-     * Move to the first record if possible, otherwise do nothing
+     * Move to the first record if possible, otherwise do nothing.
      *
      * @return true if the cursor was successfully placed at the first record
      */
     boolean first();
 
     /**
-     * Move to the first record if possible and verify that it is the only record
+     * Move to the first record if possible and verify that it is the only record.
      *
      * @return true if the cursor was successfully placed at the single first and only record
      */
@@ -100,9 +109,9 @@ public interface Result extends RecordLike, Resource
     List<ImmutableRecord> retain();
 
     /**
-     * Summarize the result
+     * Summarize the result.
      *
-     * Calling this method exhausts the result cursor and moves it to the last record
+     * Calling this method exhausts the result cursor and moves it to the last record.
      *
      * <pre class="doctest:ResultDocIT#summarizeUsage">
      * {@code

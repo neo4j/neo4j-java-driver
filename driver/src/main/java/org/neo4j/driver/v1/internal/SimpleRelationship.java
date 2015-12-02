@@ -24,6 +24,7 @@ import java.util.Map;
 import org.neo4j.driver.v1.Identity;
 import org.neo4j.driver.v1.Relationship;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.internal.value.RelationshipValue;
 
 /**
  * {@link Relationship} implementation that directly contains type and properties
@@ -87,6 +88,12 @@ public class SimpleRelationship extends SimpleEntity implements Relationship
     public String type()
     {
         return type;
+    }
+
+    @Override
+    public Value asValue()
+    {
+        return new RelationshipValue( this );
     }
 
     @Override

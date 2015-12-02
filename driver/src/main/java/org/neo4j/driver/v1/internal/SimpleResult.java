@@ -53,9 +53,17 @@ public class SimpleResult extends SimpleRecordAdaptor implements Result
     }
 
     @Override
-    public int elementCount()
+    public int countElements()
     {
         return keys.size();
+    }
+
+    @SuppressWarnings("StatementWithEmptyBody")
+    @Override
+    public int countRecords()
+    {
+        while ( next() ) ;
+        return position() + 1;
     }
 
     @Override

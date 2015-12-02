@@ -27,17 +27,13 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.internal.util.Extract;
+import org.neo4j.driver.v1.internal.AsValue;
 import org.neo4j.driver.v1.internal.value.BooleanValue;
 import org.neo4j.driver.v1.internal.value.FloatValue;
-import org.neo4j.driver.v1.internal.value.IdentityValue;
 import org.neo4j.driver.v1.internal.value.IntegerValue;
 import org.neo4j.driver.v1.internal.value.ListValue;
 import org.neo4j.driver.v1.internal.value.MapValue;
-import org.neo4j.driver.v1.internal.value.NodeValue;
 import org.neo4j.driver.v1.internal.value.NullValue;
-import org.neo4j.driver.v1.internal.value.PathValue;
-import org.neo4j.driver.v1.internal.value.RelationshipValue;
 import org.neo4j.driver.v1.internal.value.StringValue;
 
 /**
@@ -54,8 +50,8 @@ public class Values
     public static Value value( Object value )
     {
         if ( value == null ) { return NullValue.NULL; }
-        if ( value instanceof Value ) { return (Value) value; }
 
+        if ( value instanceof AsValue ) { return ( (AsValue) value ).asValue(); }
         if ( value instanceof Boolean ) { return value( (boolean) value ); }
         if ( value instanceof String ) { return value( (String) value ); }
         if ( value instanceof Character ) { return value( (char) value ); }
@@ -65,11 +61,6 @@ public class Values
         if ( value instanceof Integer ) { return value( (int) value ); }
         if ( value instanceof Double ) { return value( (double) value ); }
         if ( value instanceof Float ) { return value( (float) value ); }
-
-        if ( value instanceof Identity ) { return new IdentityValue( (Identity) value ); }
-        if ( value instanceof Node ) { return new NodeValue( (Node) value ); }
-        if ( value instanceof Relationship ) { return new RelationshipValue( (Relationship) value ); }
-        if ( value instanceof Path ) { return new PathValue( (Path) value ); }
 
         if ( value instanceof Collection<?> ) { return value( (List<Object>) value ); }
         if ( value instanceof Iterable<?> ) { return value( (Iterable<Object>) value ); }
@@ -85,14 +76,8 @@ public class Values
         if ( value instanceof float[] ) { return value( (float[]) value ); }
         if ( value instanceof Value[] ) { return value( (Value[]) value ); }
         if ( value instanceof Object[] ) { return value( Arrays.asList( (Object[]) value )); }
-        if ( value instanceof RecordLike ) { return value( (RecordLike) value ); }
 
         throw new ClientException( "Unable to convert " + value.getClass().getName() + " to Neo4j Value." );
-    }
-
-    public static Value value( RecordLike val )
-    {
-        return new MapValue( Extract.map( val ) );
     }
 
     public static Value[] values( final Object... input )

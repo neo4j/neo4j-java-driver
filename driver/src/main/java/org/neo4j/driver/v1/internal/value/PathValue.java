@@ -48,7 +48,7 @@ public class PathValue extends ValueAdapter
     }
 
     @Override
-    public int elementCount()
+    public int countElements()
     {
         return adapted.length();
     }

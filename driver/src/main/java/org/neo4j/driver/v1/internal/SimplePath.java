@@ -28,11 +28,13 @@ import org.neo4j.driver.v1.Entity;
 import org.neo4j.driver.v1.Node;
 import org.neo4j.driver.v1.Path;
 import org.neo4j.driver.v1.Relationship;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.internal.value.PathValue;
 
 /**
  * {@link Path} implementation that directly contains all nodes and relationships.
  */
-public class SimplePath implements Path
+public class SimplePath implements Path, AsValue
 {
     public static class SelfContainedSegment implements Segment
     {
@@ -245,6 +247,12 @@ public class SimplePath implements Path
     public Iterator<Segment> iterator()
     {
         return segments.iterator();
+    }
+
+    @Override
+    public Value asValue()
+    {
+        return new PathValue( this );
     }
 
     @Override

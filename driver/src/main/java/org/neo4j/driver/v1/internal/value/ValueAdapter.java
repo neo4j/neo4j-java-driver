@@ -43,6 +43,12 @@ import static org.neo4j.driver.v1.Values.valueAsIs;
 public abstract class ValueAdapter implements InternalValue
 {
     @Override
+    public Value asValue()
+    {
+        return this;
+    }
+
+    @Override
     public boolean hasType( Type type )
     {
         return type.isTypeOf( this );
@@ -240,7 +246,7 @@ public abstract class ValueAdapter implements InternalValue
     }
 
     @Override
-    public int elementCount()
+    public int countElements()
     {
         throw new Unsizable( type().name() + " does not have size" );
     }
