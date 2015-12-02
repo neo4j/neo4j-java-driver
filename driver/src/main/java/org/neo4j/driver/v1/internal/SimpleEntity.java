@@ -93,7 +93,7 @@ public abstract class SimpleEntity implements Entity
     }
 
     @Override
-    public boolean containsKey( String key )
+    public boolean hasKey( String key )
     {
         return properties.containsKey( key );
     }

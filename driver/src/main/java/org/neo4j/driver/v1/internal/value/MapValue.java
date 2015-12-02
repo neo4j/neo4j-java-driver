@@ -59,7 +59,7 @@ public class MapValue extends ValueAdapter
     }
 
     @Override
-    public boolean containsKey( String key )
+    public boolean hasKey( String key )
     {
         return val.containsKey( key );
     }

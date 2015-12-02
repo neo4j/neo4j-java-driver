@@ -54,7 +54,7 @@ public abstract class ValueAdapter implements InternalValue
         return false;
     }
 
-    public boolean containsKey( String key )
+    public boolean hasKey( String key )
     {
         throw new NotMultiValued( type().name() + " is not a keyed collection" );
     }

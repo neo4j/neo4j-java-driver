@@ -56,6 +56,12 @@ public class SimpleNode extends SimpleEntity implements Node
     }
 
     @Override
+    public boolean hasLabel( String label )
+    {
+        return labels.contains( label );
+    }
+
+    @Override
     public String toString()
     {
         return "node<" + identity() + '>';

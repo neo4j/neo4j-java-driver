@@ -58,6 +58,12 @@ public class SimpleRelationship extends SimpleEntity implements Relationship
         this.type = type;
     }
 
+    @Override
+    public boolean hasType( String relationshipType )
+    {
+        return type().equals( relationshipType );
+    }
+
     /** Modify the start/end identities of this relationship */
     public void setStartAndEnd( Identity start, Identity end )
     {

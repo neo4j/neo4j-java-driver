@@ -43,7 +43,7 @@ public class EmptyRecord extends SimpleRecordAdaptor implements ImmutableRecord
     }
 
     @Override
-    public boolean containsKey( String key )
+    public boolean hasKey( String key )
     {
         return keys.contains( key );
     }
