@@ -214,7 +214,7 @@ public class ParametersIT
             assertThat( value.elementCount(), equalTo( 3 ) );
             for ( Value item : value.asList() )
             {
-                assertThat( typeSystem.BOOLEAN().isTypeOf( value ), equalTo( true ) );
+                assertThat( typeSystem.BOOLEAN().isTypeOf( item ), equalTo( true ) );
                 assertThat( item.asBoolean(), equalTo( true ) );
             }
         }
@@ -237,7 +237,7 @@ public class ParametersIT
             assertThat( value.elementCount(), equalTo( 3 ) );
             for ( Value item : value.asList() )
             {
-                assertThat( typeSystem.INTEGER().isTypeOf( value ), equalTo( true ) );
+                assertThat( typeSystem.INTEGER().isTypeOf( item ), equalTo( true ) );
                 assertThat( item.asLong(), equalTo( 42L ) );
             }
         }
@@ -256,11 +256,11 @@ public class ParametersIT
         for ( ImmutableRecord record : result.retain() )
         {
             Value value = record.value( "a.value" );
-            assertThat( typeSystem.BOOLEAN().isTypeOf( value ), equalTo( true ) );
+            assertThat( typeSystem.LIST().isTypeOf( value ), equalTo( true ) );
             assertThat( value.elementCount(), equalTo( 3 ) );
             for ( Value item : value.asList() )
             {
-                assertThat( typeSystem.FLOAT().isTypeOf( value ), equalTo( true ) );
+                assertThat( typeSystem.FLOAT().isTypeOf( item ), equalTo( true ) );
                 assertThat( item.asDouble(), equalTo( 6.28 ) );
             }
         }
@@ -283,7 +283,7 @@ public class ParametersIT
             assertThat( value.elementCount(), equalTo( 3 ) );
             for ( Value item : value.asList() )
             {
-                assertThat( typeSystem.STRING().isTypeOf( value ), equalTo( true ) );
+                assertThat( typeSystem.STRING().isTypeOf( item ), equalTo( true ) );
                 assertThat( item.asString(), equalTo( "Mjölnir" ) );
             }
         }
@@ -305,7 +305,7 @@ public class ParametersIT
             assertThat( value.elementCount(), equalTo( 3 ) );
             for ( Value item : value.asList() )
             {
-                assertThat( typeSystem.STRING().isTypeOf( value ), equalTo( true ) );
+                assertThat( typeSystem.STRING().isTypeOf( item ), equalTo( true ) );
                 assertThat( item.asString(), equalTo( "cat" ) );
             }
         }
