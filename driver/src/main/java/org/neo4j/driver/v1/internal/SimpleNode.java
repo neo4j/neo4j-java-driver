@@ -25,6 +25,7 @@ import java.util.Map;
 import org.neo4j.driver.v1.Identity;
 import org.neo4j.driver.v1.Node;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.internal.value.NodeValue;
 
 /**
  * {@link Node} implementation that directly contains labels and properties.
@@ -59,6 +60,12 @@ public class SimpleNode extends SimpleEntity implements Node
     public boolean hasLabel( String label )
     {
         return labels.contains( label );
+    }
+
+    @Override
+    public Value asValue()
+    {
+        return new NodeValue( this );
     }
 
     @Override

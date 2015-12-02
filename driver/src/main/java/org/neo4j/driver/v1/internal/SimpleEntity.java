@@ -27,10 +27,11 @@ import org.neo4j.driver.v1.MapLike;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.internal.util.Extract;
 import org.neo4j.driver.v1.internal.util.Iterables;
+import org.neo4j.driver.v1.internal.value.MapValue;
 
 import static org.neo4j.driver.v1.Values.valueAsIs;
 
-public abstract class SimpleEntity implements Entity
+public abstract class SimpleEntity implements Entity, AsValue
 {
     private final Identity id;
     private final Map<String,Value> properties;
@@ -57,6 +58,11 @@ public abstract class SimpleEntity implements Entity
     public boolean hasElements()
     {
         return !properties.isEmpty();
+    }
+
+    public Value asValue()
+    {
+        return new MapValue( properties );
     }
 
     @Override

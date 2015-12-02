@@ -16,13 +16,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1.internal.value;
+package org.neo4j.driver.v1.internal;
 
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.internal.AsValue;
-import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
-public interface InternalValue extends Value, AsValue
+public interface AsValue
 {
-    TypeConstructor typeConstructor();
+    /**
+     * Retrieve a value representation of this
+     *
+     * @see Value
+     * @return {@link Value} that represents this
+     */
+    Value asValue();
 }

@@ -19,14 +19,22 @@
 package org.neo4j.driver.v1.internal;
 
 import org.neo4j.driver.v1.Identity;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.internal.value.IdentityValue;
 
-public class SimpleIdentity implements Identity
+public class SimpleIdentity implements Identity, AsValue
 {
     private final long raw;
 
     public SimpleIdentity( long raw )
     {
         this.raw = raw;
+    }
+
+    @Override
+    public Value asValue()
+    {
+        return new IdentityValue( this );
     }
 
     @Override
