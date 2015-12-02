@@ -18,10 +18,21 @@
  */
 package org.neo4j.driver.v1.internal.value;
 
+import org.neo4j.driver.v1.Type;
+import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
+import org.neo4j.driver.v1.internal.types.TypeConstructor;
+
 public abstract class BooleanValue extends ValueAdapter
 {
-    private BooleanValue() {
+    private BooleanValue()
+    {
         //do nothing
+    }
+
+    @Override
+    public TypeConstructor typeConstructor()
+    {
+        return TypeConstructor.BOOLEAN_TyCon;
     }
 
     public static BooleanValue TRUE = new TrueValue();
@@ -34,15 +45,21 @@ public abstract class BooleanValue extends ValueAdapter
     }
 
     @Override
-    public int hashCode()
-    {
-        return javaBoolean() ? 1231 : 1237;
-    }
-
-    @Override
     public boolean isBoolean()
     {
         return true;
+    }
+
+    @Override
+    public Type type()
+    {
+        return StandardTypeSystem.TYPE_SYSTEM.BOOLEAN();
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return javaBoolean() ? 1231 : 1237;
     }
 
     private static class TrueValue extends BooleanValue {
@@ -81,6 +98,7 @@ public abstract class BooleanValue extends ValueAdapter
             return 1d;
         }
 
+        @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
         @Override
         public boolean equals( Object obj )
         {
@@ -124,6 +142,7 @@ public abstract class BooleanValue extends ValueAdapter
             return 0d;
         }
 
+        @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
         @Override
         public boolean equals( Object obj )
         {

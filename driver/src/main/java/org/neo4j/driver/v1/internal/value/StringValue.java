@@ -18,6 +18,10 @@
  */
 package org.neo4j.driver.v1.internal.value;
 
+import org.neo4j.driver.v1.Type;
+import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
+import org.neo4j.driver.v1.internal.types.TypeConstructor;
+
 public class StringValue extends ValueAdapter
 {
     private final String val;
@@ -50,6 +54,18 @@ public class StringValue extends ValueAdapter
     public long size()
     {
         return val.length();
+    }
+
+    @Override
+    public TypeConstructor typeConstructor()
+    {
+        return TypeConstructor.STRING_TyCon;
+    }
+
+    @Override
+    public Type type()
+    {
+        return StandardTypeSystem.TYPE_SYSTEM.STRING();
     }
 
     @Override

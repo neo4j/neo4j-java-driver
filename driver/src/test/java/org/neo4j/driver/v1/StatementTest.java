@@ -109,7 +109,7 @@ public class StatementTest
         Map<String, Value> initialParameters = parameters( "a", 1, "b", 2, "c", 3 );
         Statement statement =
                 new Statement( "MATCH (n) RETURN n", initialParameters )
-                .withUpdatedParameters( parameters( "a", 0, "b", null ) );
+                .withUpdatedParameters( parameters( "a", 0, "b", Values.NULL ) );
 
         // then
         assertThat( statement.text(), equalTo( text ) );

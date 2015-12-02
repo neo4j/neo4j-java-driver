@@ -18,9 +18,9 @@
  */
 package org.neo4j.driver.v1.internal.connector.socket;
 
-import org.junit.Test;
-
 import java.util.HashMap;
+
+import org.junit.Test;
 
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.internal.logging.DevNullLogger;
@@ -36,7 +36,8 @@ import org.neo4j.driver.v1.internal.messaging.RecordMessage;
 import org.neo4j.driver.v1.internal.messaging.RunMessage;
 import org.neo4j.driver.v1.internal.messaging.SuccessMessage;
 
-import static junit.framework.Assert.assertEquals;
+import static org.junit.Assert.assertEquals;
+
 import static org.neo4j.driver.v1.Values.parameters;
 
 public class LoggingResponseHandlerTest

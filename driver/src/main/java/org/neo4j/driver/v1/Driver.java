@@ -23,6 +23,7 @@ import java.net.URI;
 import org.neo4j.driver.v1.internal.StandardSession;
 import org.neo4j.driver.v1.internal.pool.StandardConnectionPool;
 import org.neo4j.driver.v1.internal.spi.ConnectionPool;
+import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
 
 /**
  * A Neo4j database driver, through which you can create {@link Session sessions} to run statements against the database.
@@ -93,6 +94,14 @@ public class Driver implements AutoCloseable
         // ConnectionPool connections = new StandardConnectionPool( logging, url );
         // And to get a connection from the pool could be
         // connections.acquire();
+    }
+
+    /**
+     * @return type system used by this driver for classifying values
+     */
+    public TypeSystem typeSystem()
+    {
+        return StandardTypeSystem.TYPE_SYSTEM;
     }
 
     /**

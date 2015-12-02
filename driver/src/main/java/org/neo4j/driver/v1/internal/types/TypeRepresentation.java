@@ -16,73 +16,55 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1.internal.value;
+package org.neo4j.driver.v1.internal.types;
 
-import org.neo4j.driver.v1.Path;
 import org.neo4j.driver.v1.Type;
-import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
-import org.neo4j.driver.v1.internal.types.TypeConstructor;
+import org.neo4j.driver.v1.Value;
 
-public class PathValue extends ValueAdapter
+import static org.neo4j.driver.v1.internal.types.TypeConstructor.LIST_TyCon;
+
+public class TypeRepresentation implements Type
 {
-    private final Path adapted;
+    private final TypeConstructor tyCon;
 
-    public PathValue( Path adapted )
+    public TypeRepresentation( TypeConstructor tyCon )
     {
-        this.adapted = adapted;
+        this.tyCon = tyCon;
     }
 
     @Override
-    public Path asPath()
+    public boolean isTypeOf( Value value )
     {
-        return adapted;
+        return tyCon.covers( value );
     }
 
     @Override
-    public boolean isPath()
+    public String name()
     {
-        return true;
-    }
+        if (tyCon == LIST_TyCon)
+        {
+            return "LIST OF ANY?";
+        }
 
-    @Override
-    public long size()
-    {
-        return adapted.length();
-    }
-
-    @Override
-    public TypeConstructor typeConstructor()
-    {
-        return TypeConstructor.PATH_TyCon;
-    }
-
-    @Override
-    public Type type()
-    {
-        return StandardTypeSystem.TYPE_SYSTEM.PATH();
+        return tyCon.typeName();
     }
 
     @Override
     public boolean equals( Object o )
     {
         if ( this == o )
-        {
-            return true;
-        }
+        { return true; }
         if ( o == null || getClass() != o.getClass() )
-        {
-            return false;
-        }
+        { return false; }
 
-        PathValue values = (PathValue) o;
+        TypeRepresentation that = (TypeRepresentation) o;
 
-        return adapted.equals( values.adapted );
-
+        return tyCon == that.tyCon;
     }
 
     @Override
     public int hashCode()
     {
-        return adapted.hashCode();
+        return tyCon.hashCode();
     }
 }

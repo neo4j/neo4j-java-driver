@@ -21,15 +21,17 @@ package org.neo4j.driver.v1.internal.value;
 import org.junit.Test;
 
 import org.neo4j.driver.v1.Identity;
+import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.internal.Identities;
+import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 
 public class IdentityValueTest
 {
-
     @Test
     public void testValueAsIdentity() throws Exception
     {
@@ -73,5 +75,19 @@ public class IdentityValueTest
 
         // Then
         assertThat( value.hashCode(), notNullValue() );
+    }
+
+    @Test
+    public void shouldNotBeNull()
+    {
+        Value value = new IdentityValue( Identities.identity( 1 ) );
+        assertFalse( value.isNull() );
+    }
+
+    @Test
+    public void shouldTypeAsIdentity()
+    {
+        InternalValue value = new IdentityValue( Identities.identity( 1 ) );
+        assertThat( value.typeConstructor(), equalTo( TypeConstructor.IDENTITY_TyCon ) );
     }
 }

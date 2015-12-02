@@ -23,8 +23,11 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
-import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Function;
+import org.neo4j.driver.v1.Type;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
+import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
 public class ListValue extends ValueAdapter
 {
@@ -65,6 +68,12 @@ public class ListValue extends ValueAdapter
     }
 
     @Override
+    public TypeConstructor typeConstructor()
+    {
+        return TypeConstructor.LIST_TyCon;
+    }
+
+    @Override
     public Value get( long index )
     {
         return values[(int) index];
@@ -97,6 +106,18 @@ public class ListValue extends ValueAdapter
     }
 
     @Override
+    public Type type()
+    {
+        return StandardTypeSystem.TYPE_SYSTEM.LIST();
+    }
+
+    @Override
+    public String toString()
+    {
+        return "ListValue" + Arrays.toString( values ) + "";
+    }
+
+    @Override
     public boolean equals( Object o )
     {
         if ( this == o )
@@ -118,11 +139,5 @@ public class ListValue extends ValueAdapter
     public int hashCode()
     {
         return Arrays.hashCode( values );
-    }
-
-    @Override
-    public String toString()
-    {
-        return "ListValue" + Arrays.toString( values ) + "";
     }
 }

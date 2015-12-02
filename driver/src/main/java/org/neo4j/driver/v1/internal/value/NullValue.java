@@ -18,84 +18,43 @@
  */
 package org.neo4j.driver.v1.internal.value;
 
-import org.neo4j.driver.v1.Identity;
 import org.neo4j.driver.v1.Type;
+import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
 import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
-public class IdentityValue extends ValueAdapter
+public class NullValue extends ValueAdapter
 {
-    private final Identity val;
-
-    public IdentityValue( Identity val )
-    {
-        assert val != null;
-        this.val = val;
-    }
-
-    @Override
-    public boolean javaBoolean()
-    {
-        return true;
-    }
-
-    @Override
-    public String javaString()
-    {
-        return val.toString();
-    }
-
-    @Override
-    public Identity asIdentity()
-    {
-        return val;
-    }
+    public static Value NULL = new NullValue();
 
     @Override
     public TypeConstructor typeConstructor()
     {
-        return TypeConstructor.IDENTITY_TyCon;
-    }
-
-    @Override
-    public boolean isIdentity()
-    {
-        return true;
+        return TypeConstructor.NULL_TyCon;
     }
 
     @Override
     public Type type()
     {
-        return StandardTypeSystem.TYPE_SYSTEM.INTEGER();
+        return StandardTypeSystem.TYPE_SYSTEM.NULL();
     }
 
+    @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
     @Override
-    public String toString()
+    public boolean equals( Object obj )
     {
-        return val.toString();
-    }
-
-    @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() )
-        {
-            return false;
-        }
-
-        IdentityValue values = (IdentityValue) o;
-
-        return val.equals( values.val );
-
+        return obj == NULL;
     }
 
     @Override
     public int hashCode()
     {
-        return val.hashCode();
+        return 0;
+    }
+
+    @Override
+    public boolean isNull()
+    {
+        return true;
     }
 }

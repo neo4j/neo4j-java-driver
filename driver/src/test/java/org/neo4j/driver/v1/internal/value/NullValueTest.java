@@ -20,39 +20,29 @@ package org.neo4j.driver.v1.internal.value;
 
 import org.junit.Test;
 
-import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.internal.SimpleRelationship;
 import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertTrue;
 
-public class RelationshipValueTest
+public class NullValueTest
 {
     @Test
-    public void shouldHaveSensibleToString() throws Throwable
+    public void shouldEqualItself()
     {
-        assertEquals( "relationship<#1234>", relationshipValue().toString() );
+        assertThat( NullValue.NULL, equalTo( NullValue.NULL ) );
     }
 
     @Test
-    public void shouldNotBeNull()
+    public void shouldBeNull()
     {
-        Value value = relationshipValue();
-        assertFalse( value.isNull() );
+        assertTrue( NullValue.NULL.isNull() );
     }
 
     @Test
-    public void shouldTypeAsRelationship()
+    public void shouldTypeAsNull()
     {
-        InternalValue value = relationshipValue();
-        assertThat( value.typeConstructor(), equalTo( TypeConstructor.RELATIONSHIP_TyCon ) );
-    }
-
-    private RelationshipValue relationshipValue()
-    {
-        return new RelationshipValue( new SimpleRelationship( 1234, 1, 2, "KNOWS" ) );
+        assertThat( ( (InternalValue) NullValue.NULL ).typeConstructor(), equalTo( TypeConstructor.NULL_TyCon ) );
     }
 }

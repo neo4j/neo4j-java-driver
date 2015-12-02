@@ -20,8 +20,12 @@ package org.neo4j.driver.v1.internal.value;
 
 import org.junit.Test;
 
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.internal.types.TypeConstructor;
+
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 
 public class IntegerValueTest
@@ -84,5 +88,19 @@ public class IntegerValueTest
 
         // Then
         assertThat( value.hashCode(), notNullValue() );
+    }
+
+    @Test
+    public void shouldNotBeNull()
+    {
+        Value value = new IntegerValue( 1L );
+        assertFalse( value.isNull() );
+    }
+
+    @Test
+    public void shouldTypeAsInteger()
+    {
+        InternalValue value = new IntegerValue( 1L );
+        assertThat( value.typeConstructor(), equalTo( TypeConstructor.INTEGER_TyCon ) );
     }
 }
