@@ -21,9 +21,9 @@ package org.neo4j.driver.v1.internal;
 import java.util.Map;
 
 import org.neo4j.driver.v1.Entity;
+import org.neo4j.driver.v1.Field;
 import org.neo4j.driver.v1.Function;
 import org.neo4j.driver.v1.Identity;
-import org.neo4j.driver.v1.MapLike;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.internal.util.Extract;
 import org.neo4j.driver.v1.internal.util.Iterables;
@@ -49,15 +49,21 @@ public abstract class SimpleEntity implements Entity, AsValue
     }
 
     @Override
-    public int countElements()
+    public Field field( String key )
+    {
+        return SimpleField.of( key, value( key ) );
+    }
+
+    @Override
+    public int size()
     {
         return properties.size();
     }
 
     @Override
-    public boolean hasElements()
+    public boolean isEmpty()
     {
-        return !properties.isEmpty();
+        return properties.isEmpty();
     }
 
     public Value asValue()
@@ -129,13 +135,13 @@ public abstract class SimpleEntity implements Entity, AsValue
     }
 
     @Override
-    public Iterable<MapLike.Entry<Value>> entries()
+    public Iterable<Field<Value>> fields()
     {
-        return entries( valueAsIs() );
+        return fields( valueAsIs() );
     }
 
     @Override
-    public <V> Iterable<MapLike.Entry<V>> entries( final Function<Value, V> Function )
+    public <V> Iterable<Field<V>> fields( final Function<Value, V> Function )
     {
         return Extract.entries( this, Function );
     }

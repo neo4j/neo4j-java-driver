@@ -21,6 +21,10 @@ package org.neo4j.driver.v1;
 /**
  * A record is an immutable copy of an ordered map
  */
-public interface ImmutableRecord extends RecordLike
+public interface ImmutableRecord extends RecordAccessor
 {
+    /**
+     * @return this as a map {@link Value}
+     */
+    Value asMapValue();
 }

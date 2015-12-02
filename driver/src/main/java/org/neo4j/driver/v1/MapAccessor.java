@@ -19,11 +19,10 @@
 package org.neo4j.driver.v1;
 
 /**
- * Access the fields of an underlying unordered map like data structure by key
+ * Access the keys, fields and values of an underlying unordered map by key
  */
-public interface MapLike extends CollectionLike
+public interface MapAccessor
 {
-
     /**
      * Retrieve the keys of the underlying map
      *
@@ -32,10 +31,10 @@ public interface MapLike extends CollectionLike
     Iterable<String> keys();
 
     /**
-     * Check if this map like contains a given key
+     * Check if the list of keys contains the given key
      *
      * @param key the key
-     * @return <tt>true</tt> if this map like contains the key otherwise <tt>false</tt>
+     * @return <tt>true</tt> if this map keys contains the given key otherwise <tt>false</tt>
      */
     boolean hasKey( String key );
 
@@ -48,39 +47,29 @@ public interface MapLike extends CollectionLike
     Value value( String key );
 
     /**
-     * Retrieve the entries of the underlying map
+     * Retrieve the field for the given key
      *
-     * @see org.neo4j.driver.v1.MapLike.Entry
-     * @return all map entries in unspecified order
+     * @param key the key of the field
+     * @return the field for the given key or a field with a null value if the key is unknown
      */
-    Iterable<Entry<Value>> entries();
+    Field field( String key );
 
     /**
-     * Retrieve the entries of the underlying map
+     * Retrieve all fields of the underlying map
      *
-     * @see org.neo4j.driver.v1.MapLike.Entry
+     * @see Field
+     * @return all fields in unspecified order
+     */
+    Iterable<Field<Value>> fields();
+
+    /**
+     * Retrieve all fields of the underlying map
+     *
+     * @see Field
      * @param mapFunction a function to map from Value to T. See {@link Values} for some predefined functions, such
      * as {@link Values#valueAsBoolean()}, {@link Values#valueAsList(Function)}.
      * @param <V> the target type of mapping
-     * @return all mapped map entries in unspecified order
+     * @return all mapped fields in unspecified order
      */
-    <V> Iterable<Entry<V>> entries( Function<Value, V> mapFunction );
-
-    /**
-     * Immutable pair of a key and a value
-     *
-     * @param <V> the Java type of the contained value
-     */
-    interface Entry<V>
-    {
-        /**
-         * @return the key of the entry
-         */
-        String key();
-
-        /**
-         * @return the value of the entry
-         */
-        V value();
-    }
+    <V> Iterable<Field<V>> fields( Function<Value, V> mapFunction );
 }

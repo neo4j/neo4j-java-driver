@@ -132,9 +132,9 @@ public class SocketResponseHandler implements MessageHandler
     {
         if (fieldValue != null)
         {
-            if ( fieldValue.countElements() > 0 )
+            if ( !fieldValue.isEmpty() )
             {
-                String[] fields = new String[fieldValue.countElements()];
+                String[] fields = new String[fieldValue.size()];
                 int idx = 0;
                 for ( Value value : fieldValue.values() )
                 {

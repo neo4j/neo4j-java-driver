@@ -20,49 +20,32 @@ package org.neo4j.driver.v1.internal;
 
 import java.util.List;
 
+import org.neo4j.driver.v1.Field;
 import org.neo4j.driver.v1.Function;
-import org.neo4j.driver.v1.MapLike;
-import org.neo4j.driver.v1.RecordLike;
+import org.neo4j.driver.v1.RecordAccessor;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.internal.util.Extract;
-import org.neo4j.driver.v1.internal.value.MapValue;
 
 import static org.neo4j.driver.v1.Values.valueAsIs;
 
-public abstract class SimpleRecordAdaptor implements RecordLike, AsValue
+public abstract class SimpleRecordAccessor implements RecordAccessor
 {
-    public Value asValue()
+    @Override
+    public Field field( String key )
     {
-        return new MapValue( Extract.map( this ) );
+        return SimpleField.of( key, value( key ) );
     }
 
     @Override
-    public boolean hasElements()
+    public List<Field<Value>> fields()
     {
-        return countElements() > 0;
+        return fields( valueAsIs() );
     }
 
     @Override
-    public List<Value> values()
+    public <V> List<Field<V>> fields( final Function<Value, V> mapFunction )
     {
-        return Extract.list( this, valueAsIs() );
-    }
-
-    @Override
-    public <T> List<T> values( Function<Value, T> mapFunction )
-    {
-        return Extract.list( this, mapFunction );
-    }
-
-    @Override
-    public List<MapLike.Entry<Value>> entries()
-    {
-        return entries( valueAsIs() );
-    }
-
-    @Override
-    public <V> List<MapLike.Entry<V>> entries( final Function<Value, V> mapFunction )
-    {
-        return Extract.entriesList( this, mapFunction );
+        return Extract.fields( this, mapFunction );
     }
 }
+

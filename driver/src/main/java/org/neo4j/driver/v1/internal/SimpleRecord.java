@@ -27,8 +27,9 @@ import java.util.Map;
 import org.neo4j.driver.v1.ImmutableRecord;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.internal.util.Extract;
+import org.neo4j.driver.v1.internal.value.MapValue;
 
-public class SimpleRecord extends SimpleRecordAdaptor implements ImmutableRecord
+public class SimpleRecord extends SimpleRecordAccessor implements ImmutableRecord
 {
     private final List<String> keys;
     private final Map<String, Integer> keyIndexLookup;
@@ -55,13 +56,6 @@ public class SimpleRecord extends SimpleRecordAdaptor implements ImmutableRecord
         this.keys = keys;
         this.keyIndexLookup = keyIndexLookup;
         this.values = values;
-    }
-
-
-    @Override
-    public int countElements()
-    {
-        return values.length;
     }
 
     @Override
@@ -98,9 +92,9 @@ public class SimpleRecord extends SimpleRecordAdaptor implements ImmutableRecord
     }
 
     @Override
-    public List<Value> values()
+    public Value asMapValue()
     {
-        return Extract.list( values );
+        return new MapValue( Extract.map( this ) );
     }
 
     @Override

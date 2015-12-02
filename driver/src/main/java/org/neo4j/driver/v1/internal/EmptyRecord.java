@@ -22,19 +22,16 @@ import java.util.List;
 
 import org.neo4j.driver.v1.ImmutableRecord;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.internal.util.Extract;
+import org.neo4j.driver.v1.internal.value.MapValue;
 
-public class EmptyRecord extends SimpleRecordAdaptor implements ImmutableRecord
+public class EmptyRecord extends SimpleRecordAccessor implements ImmutableRecord
 {
     private final List<String> keys;
 
     EmptyRecord( List<String> keys )
     {
         this.keys = keys;
-    }
-
-    public int countElements()
-    {
-        return keys.size();
     }
 
     public Value value( int index )
@@ -57,5 +54,11 @@ public class EmptyRecord extends SimpleRecordAdaptor implements ImmutableRecord
     public Value value( String key )
     {
         return null;
+    }
+
+    @Override
+    public Value asMapValue()
+    {
+        return new MapValue( Extract.map( this ) );
     }
 }

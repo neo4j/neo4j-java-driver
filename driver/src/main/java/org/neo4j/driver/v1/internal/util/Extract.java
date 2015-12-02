@@ -25,12 +25,14 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.driver.v1.CollectionAccessor;
+import org.neo4j.driver.v1.Field;
 import org.neo4j.driver.v1.Function;
-import org.neo4j.driver.v1.ListLike;
-import org.neo4j.driver.v1.MapLike;
-import org.neo4j.driver.v1.RecordLike;
+import org.neo4j.driver.v1.ListAccessor;
+import org.neo4j.driver.v1.MapAccessor;
+import org.neo4j.driver.v1.RecordAccessor;
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.internal.SimpleMapEntry;
+import org.neo4j.driver.v1.internal.SimpleField;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
@@ -59,22 +61,25 @@ public final class Extract
         }
     }
 
-    public static <T> List<T> list( ListLike data, Function<Value, T> mapFunction )
+    public static <T, L extends ListAccessor & CollectionAccessor> List<T> list( L data, Function<Value, T> mapFunction )
     {
-        int size = data.countElements();
-        switch ( size )
+        if ( data.isEmpty() )
         {
-            case 0:
-                return emptyList();
-            case 1:
+            return emptyList();
+        }
+        else {
+
+            int size = data.size();
+            if ( size == 1 ) {
                 return singletonList( mapFunction.apply( data.value( 0 ) ) );
-            default:
+            } else {
                 List<T> list = new ArrayList<>( size );
                 for ( Value value : data.values() )
                 {
                     list.add( mapFunction.apply( value ) );
                 }
                 return unmodifiableList( list );
+            }
         }
     }
 
@@ -92,27 +97,27 @@ public final class Extract
 
     public static <T> Map<String, T> map( Map<String, Value> data, Function<Value, T> mapFunction )
     {
-        int size = data.size();
-        switch ( size )
-        {
-            case 0:
-                return emptyMap();
-            case 1:
+        if ( data.isEmpty() ) {
+            return emptyMap();
+        } else {
+            int size = data.size();
+            if ( size == 1 ) {
                 Map.Entry<String, Value> head = data.entrySet().iterator().next();
                 return singletonMap( head.getKey(), mapFunction.apply( head.getValue() ) );
-            default:
+            } else {
                 Map<String, T> map = new HashMap<>( size );
                 for ( Map.Entry<String, Value> entry : data.entrySet() )
                 {
                     map.put( entry.getKey(), mapFunction.apply( entry.getValue() ) );
                 }
                 return unmodifiableMap( map );
+            }
         }
     }
 
-    public static Map<String, Value> map( RecordLike record )
+    public static Map<String, Value> map( RecordAccessor record )
     {
-        int size = record.countElements();
+        int size = record.keys().size();
         switch ( size )
         {
             case 0:
@@ -132,15 +137,15 @@ public final class Extract
         }
     }
 
-    public static <V> Iterable<MapLike.Entry<V>> entries( final MapLike map, final Function<Value, V> mapFunction )
+    public static <V> Iterable<Field<V>> entries( final MapAccessor map, final Function<Value, V> mapFunction )
     {
-        return new Iterable<MapLike.Entry<V>>()
+        return new Iterable<Field<V>>()
         {
             @Override
-            public Iterator<MapLike.Entry<V>> iterator()
+            public Iterator<Field<V>> iterator()
             {
                 final Iterator<String> keys = map.keys().iterator();
-                return new Iterator<MapLike.Entry<V>>()
+                return new Iterator<Field<V>>()
                 {
                     @Override
                     public boolean hasNext()
@@ -149,20 +154,20 @@ public final class Extract
                     }
 
                     @Override
-                    public MapLike.Entry<V> next()
+                    public Field<V> next()
                     {
                         String key = keys.next();
                         Value value = map.value( key );
-                        return SimpleMapEntry.of( key, mapFunction.apply( value ) );
+                        return SimpleField.of( key, mapFunction.apply( value ) );
                     }
                 };
             }
         };
     }
 
-    public static <V> List<MapLike.Entry<V>> entriesList( final RecordLike map, final Function<Value, V> mapFunction )
+    public static <V> List<Field<V>> fields( final RecordAccessor map, final Function<Value, V> mapFunction )
     {
-        int size = map.countElements();
+        int size = map.keys().size();
         switch ( size )
         {
             case 0:
@@ -172,18 +177,18 @@ public final class Extract
             {
                 String key = map.keys().iterator().next();
                 Value value = map.value( key );
-                return singletonList( SimpleMapEntry.of( key, mapFunction.apply( value ) ) );
+                return singletonList( SimpleField.of( key, mapFunction.apply( value ) ) );
             }
 
             default:
             {
-                List<MapLike.Entry<V>> list = new ArrayList<>( size );
+                List<Field<V>> list = new ArrayList<>( size );
                 List<String> keys = map.keys();
                 for ( int i = 0; i < size; i++ )
                 {
                     String key = keys.get( i );
                     Value value = map.value( i );
-                    list.add( SimpleMapEntry.of( key, mapFunction.apply( value ) ) );
+                    list.add( SimpleField.of( key, mapFunction.apply( value ) ) );
                 }
                 return unmodifiableList( list );
             }

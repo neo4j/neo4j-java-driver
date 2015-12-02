@@ -16,14 +16,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1.internal;
+package org.neo4j.driver.v1;
 
-import org.neo4j.driver.v1.Identity;
-
-public class Identities
+/**
+ * Immutable pair of a key and a value
+ *
+ * @see MapAccessor
+ * @param <V> the Java type of the contained value
+ */
+public interface Field<V>
 {
-    public static Identity identity( long raw )
-    {
-        return new SimpleIdentity( raw );
-    }
+    /**
+     * @return the field key
+     */
+    String key();
+
+    /**
+     * @return the field value
+     */
+    V value();
 }

@@ -70,7 +70,7 @@ import java.util.Map;
  * }
  * </pre>
  */
-public interface Value extends MapLike, ListLike
+public interface Value extends CollectionAccessor, MapAccessor, ListAccessor
 {
     /**
      * If the underlying value is a collection type, return the number of values in the collection.
@@ -87,7 +87,7 @@ public interface Value extends MapLike, ListLike
      * @return the number of values in an underlying collection
      */
     @Override
-    int countElements();
+    int size();
 
     /**
      * If the underlying value supports {@link #value(String) key-based indexing}, return an iterable of the keys in the

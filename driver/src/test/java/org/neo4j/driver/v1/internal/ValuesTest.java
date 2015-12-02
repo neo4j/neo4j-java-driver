@@ -127,7 +127,7 @@ public class ValuesTest
         Iterable<List<String>> list = values.values( valueAsList( valueToString() ) );
 
         // Then
-        assertEquals( 3, values.countElements() );
+        assertEquals( 3, values.size() );
         Iterator<List<String>> listIterator = list.iterator();
         for ( Value value : values.values() )
         {
@@ -166,7 +166,5 @@ public class ValuesTest
         assertThat(value.asLong(), equalTo( 42L));
         assertThat(value.asDouble(), equalTo( 42D));
         assertThat(value.asFloat(), equalTo( 42F));
-
-
     }
 }

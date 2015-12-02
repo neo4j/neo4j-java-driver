@@ -21,9 +21,9 @@ package org.neo4j.driver.v1.internal.value;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.driver.v1.Field;
 import org.neo4j.driver.v1.Function;
 import org.neo4j.driver.v1.Identity;
-import org.neo4j.driver.v1.MapLike;
 import org.neo4j.driver.v1.Node;
 import org.neo4j.driver.v1.Path;
 import org.neo4j.driver.v1.Relationship;
@@ -32,6 +32,7 @@ import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.value.NotMultiValued;
 import org.neo4j.driver.v1.exceptions.value.Uncoercible;
 import org.neo4j.driver.v1.exceptions.value.Unsizable;
+import org.neo4j.driver.v1.internal.SimpleField;
 import org.neo4j.driver.v1.internal.types.TypeConstructor;
 import org.neo4j.driver.v1.internal.types.TypeRepresentation;
 import org.neo4j.driver.v1.internal.util.Extract;
@@ -246,7 +247,7 @@ public abstract class ValueAdapter implements InternalValue
     }
 
     @Override
-    public int countElements()
+    public int size()
     {
         throw new Unsizable( type().name() + " does not have size" );
     }
@@ -258,9 +259,9 @@ public abstract class ValueAdapter implements InternalValue
     }
 
     @Override
-    public boolean hasElements()
+    public boolean isEmpty()
     {
-        return values().iterator().hasNext();
+        return ! values().iterator().hasNext();
     }
 
     @Override
@@ -276,13 +277,19 @@ public abstract class ValueAdapter implements InternalValue
     }
 
     @Override
-    public Iterable<MapLike.Entry<Value>> entries()
+    public Field field( String key )
     {
-        return entries( valueAsIs() );
+        return SimpleField.of( key, value( key ) );
     }
 
     @Override
-    public <V> Iterable<MapLike.Entry<V>> entries( final Function<Value, V> Function )
+    public Iterable<Field<Value>> fields()
+    {
+        return fields( valueAsIs() );
+    }
+
+    @Override
+    public <V> Iterable<Field<V>> fields( final Function<Value, V> Function )
     {
         return Extract.entries( this, Function );
     }
