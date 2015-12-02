@@ -61,16 +61,16 @@ public interface Result extends RecordLike, Resource
     int countRecords();
 
     /**
-     * Test if the cursor is positioned at the last stream record of if the stream is empty.
+     * Test if the cursor is positioned at the last stream record or if the stream is empty.
      *
-     * @return true if the cursor is at the last record or the stream is empty.
+     * @return <tt>true</tt> if the cursor is at the last record or the stream is empty.
      */
     boolean atEnd();
 
     /**
      * Move to the next record in the result.
      *
-     * @return true if there was another record, false if the stream is exhausted.
+     * @return <tt>true</tt> if there was another record, <tt>false</tt> if the stream is exhausted.
      */
     boolean next();
 
@@ -86,14 +86,14 @@ public interface Result extends RecordLike, Resource
     /**
      * Move to the first record if possible, otherwise do nothing.
      *
-     * @return true if the cursor was successfully placed at the first record
+     * @return <tt>true</tt> if the cursor is placed on the first record
      */
     boolean first();
 
     /**
      * Move to the first record if possible and verify that it is the only record.
      *
-     * @return true if the cursor was successfully placed at the single first and only record
+     * @return <tt>true</tt> if the cursor was successfully placed at the single first and only record
      */
     boolean single();
 
