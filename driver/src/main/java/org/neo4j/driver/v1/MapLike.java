@@ -37,7 +37,7 @@ public interface MapLike extends CollectionLike
      * @param key the key
      * @return <tt>true</tt> if this map like contains the key otherwise <tt>false</tt>
      */
-    boolean containsKey( String key );
+    boolean hasKey( String key );
 
     /**
      * Retrieve the value of the field with the given key

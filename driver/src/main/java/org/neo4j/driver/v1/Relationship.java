@@ -29,4 +29,12 @@ public interface Relationship extends Directed<Identity>, Entity
      * @return the type name
      */
     String type();
+
+    /**
+     * Test if this relationship has the given type
+     *
+     * @param relationshipType the give relationship type
+     * @return <tt>true</tt> if this relationship has the given relationship type otherwise <tt>false</tt>
+     */
+    boolean hasType( String relationshipType );
 }
