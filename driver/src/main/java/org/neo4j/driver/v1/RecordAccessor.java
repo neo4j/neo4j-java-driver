@@ -21,7 +21,9 @@ package org.neo4j.driver.v1;
 import java.util.List;
 
 /**
- * Access an underlying record
+ * Access an underlying record (which is an ordered map of fields)
+ *
+ * @see Field
  */
 public interface RecordAccessor extends ListAccessor, MapAccessor
 {
@@ -33,7 +35,6 @@ public interface RecordAccessor extends ListAccessor, MapAccessor
      *
      * @return all fields in key order
      */
-    @Override
     List<Field<Value>> fields();
 
     /**
@@ -44,6 +45,5 @@ public interface RecordAccessor extends ListAccessor, MapAccessor
      * as {@link Values#valueAsBoolean()}, {@link Values#valueAsList(Function)}.
      * @return the result of mapping all record fields in key order
      */
-    @Override
     <V> List<Field<V>> fields( Function<Value, V> mapFunction );
 }

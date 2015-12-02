@@ -20,29 +20,24 @@ package org.neo4j.driver.v1.internal;
 
 import org.neo4j.driver.v1.Field;
 
-public class SimpleField<V> implements Field<V>
+public class SimpleField<V> extends SimpleProperty<V> implements Field<V>
 {
-    private final String key;
-    private final V value;
+    private final int index;
 
-    protected SimpleField( String key, V value )
+    public SimpleField( String key, int index, V value )
     {
-        this.key = key;
-        this.value = value;
+        super( key, value );
+        this.index = index;
     }
 
-    public String key()
+    @Override
+    public int index()
     {
-        return key;
+        return index;
     }
 
-    public V value()
+    public static <V> Field<V> of( String key, int index, V value )
     {
-        return value;
-    }
-
-    public static <V> Field<V> of( String key, V value )
-    {
-        return new SimpleField<>( key, value );
+        return new SimpleField<>( key, index, value );
     }
 }

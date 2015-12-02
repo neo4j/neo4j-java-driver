@@ -70,7 +70,7 @@ import java.util.Map;
  * }
  * </pre>
  */
-public interface Value extends CollectionAccessor, MapAccessor, ListAccessor
+public interface Value extends PropertyAccessor, ListAccessor
 {
     /**
      * If the underlying value is a collection type, return the number of values in the collection.
@@ -86,8 +86,14 @@ public interface Value extends CollectionAccessor, MapAccessor, ListAccessor
      *
      * @return the number of values in an underlying collection
      */
-    @Override
     int size();
+
+    /**
+     * Test if the underlying collection is empty
+     *
+     * @return <tt>true</tt> if size() is 0, otherwise <tt>false</tt>
+     */
+    boolean isEmpty();
 
     /**
      * If the underlying value supports {@link #value(String) key-based indexing}, return an iterable of the keys in the

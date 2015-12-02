@@ -26,6 +26,7 @@ import java.util.List;
 import org.neo4j.driver.v1.Function;
 import org.neo4j.driver.v1.Type;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
 import org.neo4j.driver.v1.internal.util.Extract;
 
@@ -47,7 +48,7 @@ public class ListValue extends ValueAdapter
     @Override
     public <T> List<T> asList( Function<Value,T> mapFunction )
     {
-        return Extract.list( this, mapFunction );
+        return Extract.list( values, mapFunction );
     }
 
     public Object asObject()
@@ -152,7 +153,7 @@ public class ListValue extends ValueAdapter
     @Override
     public Value value( int index )
     {
-        return values[index];
+        return index >= 0 && index < values.length ? values[index] : Values.NULL;
     }
 
     @Override

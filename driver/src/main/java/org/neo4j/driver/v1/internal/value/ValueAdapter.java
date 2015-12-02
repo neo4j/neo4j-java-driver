@@ -21,18 +21,18 @@ package org.neo4j.driver.v1.internal.value;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.driver.v1.Field;
 import org.neo4j.driver.v1.Function;
 import org.neo4j.driver.v1.Identity;
 import org.neo4j.driver.v1.Node;
 import org.neo4j.driver.v1.Path;
+import org.neo4j.driver.v1.Property;
 import org.neo4j.driver.v1.Relationship;
 import org.neo4j.driver.v1.Type;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.value.NotMultiValued;
 import org.neo4j.driver.v1.exceptions.value.Uncoercible;
 import org.neo4j.driver.v1.exceptions.value.Unsizable;
-import org.neo4j.driver.v1.internal.SimpleField;
+import org.neo4j.driver.v1.internal.SimpleProperty;
 import org.neo4j.driver.v1.internal.types.TypeConstructor;
 import org.neo4j.driver.v1.internal.types.TypeRepresentation;
 import org.neo4j.driver.v1.internal.util.Extract;
@@ -61,7 +61,7 @@ public abstract class ValueAdapter implements InternalValue
         return false;
     }
 
-    public boolean hasKey( String key )
+    public boolean containsKey( String key )
     {
         throw new NotMultiValued( type().name() + " is not a keyed collection" );
     }
@@ -277,21 +277,21 @@ public abstract class ValueAdapter implements InternalValue
     }
 
     @Override
-    public Field field( String key )
+    public Property property( String key )
     {
-        return SimpleField.of( key, value( key ) );
+        return SimpleProperty.of( key, value( key ) );
     }
 
     @Override
-    public Iterable<Field<Value>> fields()
+    public Iterable<Property<Value>> properties()
     {
-        return fields( valueAsIs() );
+        return properties( valueAsIs() );
     }
 
     @Override
-    public <V> Iterable<Field<V>> fields( final Function<Value, V> Function )
+    public <V> Iterable<Property<V>> properties( final Function<Value, V> mapFunction )
     {
-        return Extract.entries( this, Function );
+        return Extract.properties( this, mapFunction );
     }
 
     @Override

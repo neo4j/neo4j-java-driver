@@ -16,21 +16,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1;
+package org.neo4j.driver.v1.internal;
 
-/**
- * A field is a property of an ordered map or record
- *
- * @param <V> the type of value stored
- *
- * @see Property
- * @see PropertyAccessor
- * @see RecordAccessor
- */
-public interface Field<V> extends Property<V>
+import org.neo4j.driver.v1.Property;
+
+public class SimpleProperty<V> implements Property<V>
 {
-    /**
-     * @return the index of the field in the original record
-     */
-    int index();
+    private final String key;
+    private final V value;
+
+    protected SimpleProperty( String key, V value )
+    {
+        this.key = key;
+        this.value = value;
+    }
+
+    public String key()
+    {
+        return key;
+    }
+
+    public V value()
+    {
+        return value;
+    }
+
+    public static <V> Property<V> of( String key, V value )
+    {
+        return new SimpleProperty<>( key, value );
+    }
 }

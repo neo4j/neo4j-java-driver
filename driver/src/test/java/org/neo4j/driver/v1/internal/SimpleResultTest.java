@@ -25,8 +25,8 @@ import java.util.List;
 
 import org.junit.Test;
 
-import org.neo4j.driver.v1.Field;
 import org.neo4j.driver.v1.ImmutableRecord;
+import org.neo4j.driver.v1.Property;
 import org.neo4j.driver.v1.Result;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.internal.summary.ResultBuilder;
@@ -162,9 +162,9 @@ public class SimpleResultTest
     private List<Value> values( ImmutableRecord record )
     {
         List<Value> result = new ArrayList<>( record.keys().size() );
-        for ( Field<Value> field : record.fields() )
+        for ( Property<Value> property : record.fields() )
         {
-            result.add( field.value() );
+            result.add( property.value() );
         }
         return result;
     }

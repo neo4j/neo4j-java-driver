@@ -25,14 +25,14 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.driver.v1.CollectionAccessor;
 import org.neo4j.driver.v1.Field;
 import org.neo4j.driver.v1.Function;
-import org.neo4j.driver.v1.ListAccessor;
 import org.neo4j.driver.v1.MapAccessor;
+import org.neo4j.driver.v1.Property;
 import org.neo4j.driver.v1.RecordAccessor;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.internal.SimpleField;
+import org.neo4j.driver.v1.internal.SimpleProperty;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
@@ -61,25 +61,22 @@ public final class Extract
         }
     }
 
-    public static <T, L extends ListAccessor & CollectionAccessor> List<T> list( L data, Function<Value, T> mapFunction )
+    public static <T> List<T> list( Value[] data, Function<Value, T> mapFunction )
     {
-        if ( data.isEmpty() )
+        int size = data.length;
+        switch ( size )
         {
-            return emptyList();
-        }
-        else {
-
-            int size = data.size();
-            if ( size == 1 ) {
-                return singletonList( mapFunction.apply( data.value( 0 ) ) );
-            } else {
-                List<T> list = new ArrayList<>( size );
-                for ( Value value : data.values() )
+            case 0:
+                return emptyList();
+            case 1:
+                return singletonList( mapFunction.apply( data[0] ) );
+            default:
+                List<T> result = new ArrayList<>( size );
+                for ( Value value : data )
                 {
-                    list.add( mapFunction.apply( value ) );
+                    result.add( mapFunction.apply( value ) );
                 }
-                return unmodifiableList( list );
-            }
+                return unmodifiableList( result );
         }
     }
 
@@ -115,7 +112,7 @@ public final class Extract
         }
     }
 
-    public static Map<String, Value> map( RecordAccessor record )
+    public static <T> Map<String, T> map( RecordAccessor record, Function<Value, T> mapFunction )
     {
         int size = record.keys().size();
         switch ( size )
@@ -124,28 +121,28 @@ public final class Extract
                 return emptyMap();
 
             case 1:
-                return singletonMap( record.keys().get( 0 ), record.value( 0 ) );
+                return singletonMap( record.keys().get( 0 ), mapFunction.apply( record.value( 0 ) ) );
 
             default:
-                Map<String, Value> map = new HashMap<>( size );
+                Map<String, T> map = new HashMap<>( size );
                 List<String> keys = record.keys();
                 for ( int i = 0; i < size; i++ )
                 {
-                    map.put( keys.get( i ), record.value( i ) );
+                    map.put( keys.get( i ), mapFunction.apply( record.value( i ) ) );
                 }
                 return unmodifiableMap( map );
         }
     }
 
-    public static <V> Iterable<Field<V>> entries( final MapAccessor map, final Function<Value, V> mapFunction )
+    public static <V> Iterable<Property<V>> properties( final MapAccessor map, final Function<Value, V> mapFunction )
     {
-        return new Iterable<Field<V>>()
+        return new Iterable<Property<V>>()
         {
             @Override
-            public Iterator<Field<V>> iterator()
+            public Iterator<Property<V>> iterator()
             {
                 final Iterator<String> keys = map.keys().iterator();
-                return new Iterator<Field<V>>()
+                return new Iterator<Property<V>>()
                 {
                     @Override
                     public boolean hasNext()
@@ -154,11 +151,11 @@ public final class Extract
                     }
 
                     @Override
-                    public Field<V> next()
+                    public Property<V> next()
                     {
                         String key = keys.next();
                         Value value = map.value( key );
-                        return SimpleField.of( key, mapFunction.apply( value ) );
+                        return SimpleProperty.of( key, mapFunction.apply( value ) );
                     }
                 };
             }
@@ -177,7 +174,7 @@ public final class Extract
             {
                 String key = map.keys().iterator().next();
                 Value value = map.value( key );
-                return singletonList( SimpleField.of( key, mapFunction.apply( value ) ) );
+                return singletonList( SimpleField.of( key, 0, mapFunction.apply( value ) ) );
             }
 
             default:
@@ -188,7 +185,7 @@ public final class Extract
                 {
                     String key = keys.get( i );
                     Value value = map.value( i );
-                    list.add( SimpleField.of( key, mapFunction.apply( value ) ) );
+                    list.add( SimpleField.of( key, i, mapFunction.apply( value ) ) );
                 }
                 return unmodifiableList( list );
             }

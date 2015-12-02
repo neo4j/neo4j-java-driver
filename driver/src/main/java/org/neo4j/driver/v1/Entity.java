@@ -21,7 +21,7 @@ package org.neo4j.driver.v1;
 /**
  * A uniquely identifiable property container that can form part of a Neo4j graph.
  */
-public interface Entity extends CollectionAccessor, MapAccessor
+public interface Entity extends PropertyAccessor
 {
     /**
      * A unique {@link Identity identity} for this Entity. Identities are guaranteed

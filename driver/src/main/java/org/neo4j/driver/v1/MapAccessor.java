@@ -19,7 +19,7 @@
 package org.neo4j.driver.v1;
 
 /**
- * Access the keys, fields and values of an underlying unordered map by key
+ * Access the keys, properties and values of an underlying unordered map by key
  */
 public interface MapAccessor
 {
@@ -36,40 +36,13 @@ public interface MapAccessor
      * @param key the key
      * @return <tt>true</tt> if this map keys contains the given key otherwise <tt>false</tt>
      */
-    boolean hasKey( String key );
+    boolean containsKey( String key );
 
     /**
-     * Retrieve the value of the field with the given key
+     * Retrieve the value of the property with the given key
      *
-     * @param key the key of the field
-     * @return the field's value or a null value if no such key exists
+     * @param key the key of the property
+     * @return the property's value or a null value if no such key exists
      */
     Value value( String key );
-
-    /**
-     * Retrieve the field for the given key
-     *
-     * @param key the key of the field
-     * @return the field for the given key or a field with a null value if the key is unknown
-     */
-    Field field( String key );
-
-    /**
-     * Retrieve all fields of the underlying map
-     *
-     * @see Field
-     * @return all fields in unspecified order
-     */
-    Iterable<Field<Value>> fields();
-
-    /**
-     * Retrieve all fields of the underlying map
-     *
-     * @see Field
-     * @param mapFunction a function to map from Value to T. See {@link Values} for some predefined functions, such
-     * as {@link Values#valueAsBoolean()}, {@link Values#valueAsList(Function)}.
-     * @param <V> the target type of mapping
-     * @return all mapped fields in unspecified order
-     */
-    <V> Iterable<Field<V>> fields( Function<Value, V> mapFunction );
 }

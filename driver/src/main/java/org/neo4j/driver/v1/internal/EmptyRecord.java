@@ -19,11 +19,14 @@
 package org.neo4j.driver.v1.internal;
 
 import java.util.List;
+import java.util.Map;
 
+import org.neo4j.driver.v1.Function;
 import org.neo4j.driver.v1.ImmutableRecord;
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.internal.util.Extract;
-import org.neo4j.driver.v1.internal.value.MapValue;
+import org.neo4j.driver.v1.Values;
+
+import static java.util.Collections.emptyMap;
 
 public class EmptyRecord extends SimpleRecordAccessor implements ImmutableRecord
 {
@@ -36,11 +39,11 @@ public class EmptyRecord extends SimpleRecordAccessor implements ImmutableRecord
 
     public Value value( int index )
     {
-        return null;
+        return Values.NULL;
     }
 
     @Override
-    public boolean hasKey( String key )
+    public boolean containsKey( String key )
     {
         return keys.contains( key );
     }
@@ -53,12 +56,18 @@ public class EmptyRecord extends SimpleRecordAccessor implements ImmutableRecord
     @Override
     public Value value( String key )
     {
-        return null;
+        return Values.NULL;
     }
 
     @Override
-    public Value asMapValue()
+    public Map<String, Value> asMap()
     {
-        return new MapValue( Extract.map( this ) );
+        return emptyMap();
+    }
+
+    @Override
+    public <T> Map<String, T> asMap( Function<Value, T> mapFunction )
+    {
+        return emptyMap();
     }
 }

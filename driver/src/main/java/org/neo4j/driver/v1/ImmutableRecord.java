@@ -18,13 +18,23 @@
  */
 package org.neo4j.driver.v1;
 
+import java.util.Map;
+
 /**
  * A record is an immutable copy of an ordered map
  */
 public interface ImmutableRecord extends RecordAccessor
 {
     /**
-     * @return this as a map {@link Value}
+     * @return the value as a value map
      */
-    Value asMapValue();
+    Map<String, Value> asMap();
+
+    /**
+     * @param mapFunction a function to map from Value to T. See {@link Values} for some predefined functions, such
+     * as {@link Values#valueAsBoolean()}, {@link Values#valueAsList(Function)}.
+     * @param <T> the type of map values
+     * @return the value as a map from string keys to values of type T
+     */
+    <T> Map<String, T> asMap( Function<Value, T> mapFunction );
 }

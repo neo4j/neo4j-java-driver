@@ -31,12 +31,6 @@ import static org.neo4j.driver.v1.Values.valueAsIs;
 public abstract class SimpleRecordAccessor implements RecordAccessor
 {
     @Override
-    public Field field( String key )
-    {
-        return SimpleField.of( key, value( key ) );
-    }
-
-    @Override
     public List<Field<Value>> fields()
     {
         return fields( valueAsIs() );
@@ -48,4 +42,3 @@ public abstract class SimpleRecordAccessor implements RecordAccessor
         return Extract.fields( this, mapFunction );
     }
 }
-

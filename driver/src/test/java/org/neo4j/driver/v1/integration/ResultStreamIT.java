@@ -26,7 +26,6 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -95,7 +94,7 @@ public class ResultStreamIT
         assertTrue( rs.single() );
 
         // Then
-        assertNull( rs.value( "m" ) );
+        assertTrue( rs.value( "m" ).isNull() );
     }
 
     @Test
@@ -108,6 +107,6 @@ public class ResultStreamIT
         assertTrue( rs.single() );
 
         // Then
-        assertNull( rs.value( "n" ).value( "age" ) );
+        assertTrue( rs.value( "n" ).value( "age" ).isNull() );
     }
 }

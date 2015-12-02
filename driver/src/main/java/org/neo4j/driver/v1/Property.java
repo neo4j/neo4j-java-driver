@@ -19,18 +19,20 @@
 package org.neo4j.driver.v1;
 
 /**
- * A field is a property of an ordered map or record
+ * Immutable pair of a key and a value
  *
- * @param <V> the type of value stored
- *
- * @see Property
  * @see PropertyAccessor
- * @see RecordAccessor
+ * @param <V> the Java type of the contained value
  */
-public interface Field<V> extends Property<V>
+public interface Property<V>
 {
     /**
-     * @return the index of the field in the original record
+     * @return the property key
      */
-    int index();
+    String key();
+
+    /**
+     * @return the property value
+     */
+    V value();
 }

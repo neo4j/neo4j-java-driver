@@ -21,10 +21,11 @@ package org.neo4j.driver.v1.internal;
 import java.util.Map;
 
 import org.neo4j.driver.v1.Entity;
-import org.neo4j.driver.v1.Field;
 import org.neo4j.driver.v1.Function;
 import org.neo4j.driver.v1.Identity;
+import org.neo4j.driver.v1.Property;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.internal.util.Extract;
 import org.neo4j.driver.v1.internal.util.Iterables;
 import org.neo4j.driver.v1.internal.value.MapValue;
@@ -49,21 +50,14 @@ public abstract class SimpleEntity implements Entity, AsValue
     }
 
     @Override
-    public Field field( String key )
+    public Property property( String key )
     {
-        return SimpleField.of( key, value( key ) );
+        return SimpleProperty.of( key, value( key ) );
     }
 
-    @Override
     public int size()
     {
         return properties.size();
-    }
-
-    @Override
-    public boolean isEmpty()
-    {
-        return properties.isEmpty();
     }
 
     public Value asValue()
@@ -105,7 +99,7 @@ public abstract class SimpleEntity implements Entity, AsValue
     }
 
     @Override
-    public boolean hasKey( String key )
+    public boolean containsKey( String key )
     {
         return properties.containsKey( key );
     }
@@ -119,7 +113,8 @@ public abstract class SimpleEntity implements Entity, AsValue
     @Override
     public Value value( String key )
     {
-        return properties.get( key );
+        Value value = properties.get( key );
+        return value == null ? Values.NULL : value;
     }
 
     @Override
@@ -135,14 +130,14 @@ public abstract class SimpleEntity implements Entity, AsValue
     }
 
     @Override
-    public Iterable<Field<Value>> fields()
+    public Iterable<Property<Value>> properties()
     {
-        return fields( valueAsIs() );
+        return properties( valueAsIs() );
     }
 
     @Override
-    public <V> Iterable<Field<V>> fields( final Function<Value, V> Function )
+    public <V> Iterable<Property<V>> properties( final Function<Value, V> Function )
     {
-        return Extract.entries( this, Function );
+        return Extract.properties( this, Function );
     }
 }

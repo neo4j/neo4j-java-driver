@@ -57,9 +57,10 @@ public class SimpleResult extends SimpleRecordAccessor implements Result
     public long count()
     {
         long start = position();
+        long offset = start < 0 ? 0 : 1;
         while ( next() ) ;
         long end = position();
-        return end - start;
+        return end - start + offset;
     }
 
     public Value value( int index )
@@ -68,7 +69,7 @@ public class SimpleResult extends SimpleRecordAccessor implements Result
     }
 
     @Override
-    public boolean hasKey( String key )
+    public boolean containsKey( String key )
     {
         return keys.contains( key );
     }

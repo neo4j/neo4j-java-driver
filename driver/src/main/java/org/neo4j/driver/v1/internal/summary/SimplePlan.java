@@ -164,17 +164,17 @@ public class SimplePlan<T extends Plan> implements Plan
             final String operatorType = plan.value( "operatorType" ).asString();
 
             final Value argumentsValue = plan.value( "args" );
-            final Map<String, Value> arguments = argumentsValue == null
+            final Map<String, Value> arguments = argumentsValue.isNull()
                     ? Collections.<String, Value>emptyMap()
                     : argumentsValue.asMap( valueAsIs() );
 
             final Value identifiersValue = plan.value( "identifiers" );
-            final List<String> identifiers = identifiersValue == null
+            final List<String> identifiers = identifiersValue.isNull()
                     ? Collections.<String>emptyList()
                     : identifiersValue.asList( valueAsString() );
 
             final Value childrenValue = plan.value( "children" );
-            final List<T> children = childrenValue == null
+            final List<T> children = childrenValue.isNull()
                     ? Collections.<T>emptyList()
                     : childrenValue.asList( this );
 
