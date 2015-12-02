@@ -59,7 +59,7 @@ public class SimpleRecord extends SimpleRecordAdaptor implements ImmutableRecord
 
 
     @Override
-    public int elementCount()
+    public int countElements()
     {
         return values.length;
     }

@@ -53,7 +53,7 @@ public class MapValue extends ValueAdapter
     }
 
     @Override
-    public int elementCount()
+    public int countElements()
     {
         return val.size();
     }

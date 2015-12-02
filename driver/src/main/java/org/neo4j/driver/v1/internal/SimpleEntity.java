@@ -49,7 +49,7 @@ public abstract class SimpleEntity implements Entity, AsValue
     }
 
     @Override
-    public int elementCount()
+    public int countElements()
     {
         return properties.size();
     }

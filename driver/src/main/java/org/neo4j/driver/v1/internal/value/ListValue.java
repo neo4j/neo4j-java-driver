@@ -58,7 +58,7 @@ public class ListValue extends ValueAdapter
     @Override
     public Value[] asArray()
     {
-        int size = elementCount();
+        int size = countElements();
         Value[] result = new Value[size];
         System.arraycopy( values, 0, result, 0, size );
         return result;
@@ -68,7 +68,7 @@ public class ListValue extends ValueAdapter
     @Override
     public <T> T[] asArray( Class<T> clazz, Function<Value, T> mapFunction )
     {
-        int size = elementCount();
+        int size = countElements();
         T[] result = (T[]) Array.newInstance( clazz, size );
         for ( int i = 0; i < size; i++ )
         {
@@ -80,7 +80,7 @@ public class ListValue extends ValueAdapter
     @Override
     public long[] asLongArray()
     {
-        long[] result = new long[ elementCount() ];
+        long[] result = new long[ countElements() ];
         for ( int i = 0; i < values.length; i++ )
         {
             result[i] = values[i].asLong();
@@ -91,7 +91,7 @@ public class ListValue extends ValueAdapter
     @Override
     public int[] asIntArray()
     {
-        int[] result = new int[ elementCount() ];
+        int[] result = new int[ countElements() ];
         for ( int i = 0; i < values.length; i++ )
         {
             result[i] = values[i].asInt();
@@ -102,7 +102,7 @@ public class ListValue extends ValueAdapter
     @Override
     public short[] asShortArray()
     {
-        short[] result = new short[ elementCount() ];
+        short[] result = new short[ countElements() ];
         for ( int i = 0; i < values.length; i++ )
         {
             result[i] = values[i].asShort();
@@ -113,7 +113,7 @@ public class ListValue extends ValueAdapter
     @Override
     public byte[] asByteArray()
     {
-        byte[] result = new byte[ elementCount() ];
+        byte[] result = new byte[ countElements() ];
         for ( int i = 0; i < values.length; i++ )
         {
             result[i] = values[i].asByte();
@@ -124,7 +124,7 @@ public class ListValue extends ValueAdapter
     @Override
     public double[] asDoubleArray()
     {
-        double[] result = new double[ elementCount() ];
+        double[] result = new double[ countElements() ];
         for ( int i = 0; i < values.length; i++ )
         {
             result[i] = values[i].asDouble();
@@ -135,7 +135,7 @@ public class ListValue extends ValueAdapter
     @Override
     public float[] asFloatArray()
     {
-        float[] result = new float[ elementCount() ];
+        float[] result = new float[ countElements() ];
         for ( int i = 0; i < values.length; i++ )
         {
             result[i] = values[i].asFloat();
@@ -144,7 +144,7 @@ public class ListValue extends ValueAdapter
     }
 
     @Override
-    public int elementCount()
+    public int countElements()
     {
         return values.length;
     }

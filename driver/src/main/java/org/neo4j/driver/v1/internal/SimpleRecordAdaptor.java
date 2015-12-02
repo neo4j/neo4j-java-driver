@@ -39,7 +39,7 @@ public abstract class SimpleRecordAdaptor implements RecordLike, AsValue
     @Override
     public boolean hasElements()
     {
-        return elementCount() > 0;
+        return countElements() > 0;
     }
 
     @Override

@@ -239,7 +239,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                     break;
 
                 case MAP_TyCon:
-                    packer.packMapHeader( value.elementCount() );
+                    packer.packMapHeader( value.countElements() );
                     for ( String s : value.keys() )
                     {
                         packer.pack( s );
@@ -248,7 +248,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                     break;
 
                 case LIST_TyCon:
-                    packer.packListHeader( value.elementCount() );
+                    packer.packListHeader( value.countElements() );
                     for ( Value item : value.values() )
                     {
                         packValue( item );
@@ -367,7 +367,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         private void packProperties( Entity entity ) throws IOException
         {
             Iterable<String> keys = entity.keys();
-            packer.packMapHeader( entity.elementCount() );
+            packer.packMapHeader( entity.countElements() );
             for ( String propKey : keys )
             {
                 packer.pack( propKey );

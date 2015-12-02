@@ -32,7 +32,7 @@ public class EmptyRecord extends SimpleRecordAdaptor implements ImmutableRecord
         this.keys = keys;
     }
 
-    public int elementCount()
+    public int countElements()
     {
         return keys.size();
     }

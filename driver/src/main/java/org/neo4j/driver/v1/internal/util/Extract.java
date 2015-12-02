@@ -61,7 +61,7 @@ public final class Extract
 
     public static <T> List<T> list( ListLike data, Function<Value, T> mapFunction )
     {
-        int size = data.elementCount();
+        int size = data.countElements();
         switch ( size )
         {
             case 0:
@@ -112,7 +112,7 @@ public final class Extract
 
     public static Map<String, Value> map( RecordLike record )
     {
-        int size = record.elementCount();
+        int size = record.countElements();
         switch ( size )
         {
             case 0:
@@ -162,7 +162,7 @@ public final class Extract
 
     public static <V> List<MapLike.Entry<V>> entriesList( final RecordLike map, final Function<Value, V> mapFunction )
     {
-        int size = map.elementCount();
+        int size = map.countElements();
         switch ( size )
         {
             case 0:

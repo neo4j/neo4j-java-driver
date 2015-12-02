@@ -31,7 +31,7 @@ public interface CollectionLike
      *
      * @return the number of accessible elements of the underlying collection
      */
-    int elementCount();
+    int countElements();
 
     /**
      * Test if there is at least one element available

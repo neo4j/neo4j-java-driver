@@ -246,7 +246,7 @@ public abstract class ValueAdapter implements InternalValue
     }
 
     @Override
-    public int elementCount()
+    public int countElements()
     {
         throw new Unsizable( type().name() + " does not have size" );
     }

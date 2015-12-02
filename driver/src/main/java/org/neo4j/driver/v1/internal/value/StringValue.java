@@ -58,7 +58,7 @@ public class StringValue extends ValueAdapter
     }
 
     @Override
-    public int elementCount()
+    public int countElements()
     {
         return val.length();
     }
