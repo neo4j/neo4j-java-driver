@@ -18,25 +18,25 @@
  */
 package org.neo4j.driver.v1;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.junit.Test;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
 import org.neo4j.driver.v1.internal.SimpleIdentity;
 import org.neo4j.driver.v1.internal.SimpleNode;
 import org.neo4j.driver.v1.internal.SimplePath;
 import org.neo4j.driver.v1.internal.SimpleRelationship;
+import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
 
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.driver.v1.Values.value;
 import static org.neo4j.driver.v1.internal.types.StandardTypeSystem.TYPE_SYSTEM;
 
@@ -57,9 +57,9 @@ public class TypeSystemTest
     private Value nullValue = value( (Object) null );
     private Value identityValue = value( new SimpleIdentity( 42L ) );
 
-    private TypeSystem typeSystem = TYPE_SYSTEM;
+    private StandardTypeSystem typeSystem = TYPE_SYSTEM;
 
-    TypeVerifier newTypeVerifierFor( CoarseType type )
+    TypeVerifier newTypeVerifierFor( Type type )
     {
         HashSet<Value> allValues = new HashSet<>();
         allValues.add( integerValue );
@@ -226,17 +226,12 @@ public class TypeSystemTest
         assertThat( nullValue, hasType( TYPE_SYSTEM.NULL() ) );
     }
 
-    private CoarseType typeOf( Value value )
-    {
-        return value.type();
-    }
-
     private class TypeVerifier implements AutoCloseable
     {
-        private final CoarseType type;
+        private final Type type;
         private final Set<Value> values;
 
-        TypeVerifier( CoarseType type, Set<Value> values )
+        TypeVerifier( Type type, Set<Value> values )
         {
             this.type = type;
             this.values = values;
@@ -258,7 +253,7 @@ public class TypeSystemTest
         }
     }
 
-    private Matcher<? super Value> hasType( final CoarseType type )
+    private Matcher<? super Value> hasType( final Type type )
     {
         return new BaseMatcher<Value>()
         {

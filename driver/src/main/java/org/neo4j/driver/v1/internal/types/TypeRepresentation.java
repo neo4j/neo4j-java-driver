@@ -18,12 +18,12 @@
  */
 package org.neo4j.driver.v1.internal.types;
 
-import org.neo4j.driver.v1.CoarseType;
+import org.neo4j.driver.v1.Type;
 import org.neo4j.driver.v1.Value;
 
 import static org.neo4j.driver.v1.internal.types.TypeConstructor.LIST_TyCon;
 
-public class TypeRepresentation implements CoarseType
+public class TypeRepresentation implements Type
 {
     private final TypeConstructor tyCon;
 
@@ -47,12 +47,6 @@ public class TypeRepresentation implements CoarseType
         }
 
         return tyCon.typeName();
-    }
-
-    @Override
-    public CoarseType coarseType()
-    {
-        return this;
     }
 
     @Override

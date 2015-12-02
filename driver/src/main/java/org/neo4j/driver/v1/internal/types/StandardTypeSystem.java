@@ -18,7 +18,6 @@
  */
 package org.neo4j.driver.v1.internal.types;
 
-import org.neo4j.driver.v1.CoarseType;
 import org.neo4j.driver.v1.Type;
 import org.neo4j.driver.v1.TypeSystem;
 import org.neo4j.driver.v1.Value;
@@ -42,11 +41,10 @@ import static org.neo4j.driver.v1.internal.types.TypeConstructor.STRING_TyCon;
  *
  * @see Value
  * @see Type
- * @see CoarseType
  */
 public final class StandardTypeSystem implements TypeSystem
 {
-    public static TypeSystem TYPE_SYSTEM = new StandardTypeSystem();
+    public static StandardTypeSystem TYPE_SYSTEM = new StandardTypeSystem();
 
     private StandardTypeSystem()
     {
@@ -54,91 +52,91 @@ public final class StandardTypeSystem implements TypeSystem
 
     /** the Cypher type ANY */
     @Override
-    public CoarseType ANY()
+    public Type ANY()
     {
         return constructType( ANY_TyCon );
     }
 
     /** the Cypher type BOOLEAN */
     @Override
-    public CoarseType BOOLEAN()
+    public Type BOOLEAN()
     {
         return constructType( BOOLEAN_TyCon );
     }
 
     /** the Cypher type STRING */
     @Override
-    public CoarseType STRING()
+    public Type STRING()
     {
         return constructType( STRING_TyCon );
     }
 
     /** the Cypher type NUMBER */
     @Override
-    public CoarseType NUMBER()
+    public Type NUMBER()
     {
         return constructType( NUMBER_TyCon );
     }
 
     /** the Cypher type INTEGER */
     @Override
-    public CoarseType INTEGER()
+    public Type INTEGER()
     {
         return constructType( INTEGER_TyCon );
     }
 
     /** the Cypher type FLOAT */
     @Override
-    public CoarseType FLOAT()
+    public Type FLOAT()
     {
         return constructType( FLOAT_TyCon );
     }
 
     /** the Cypher type LIST */
     @Override
-    public CoarseType LIST()
+    public Type LIST()
     {
         return constructType( LIST_TyCon );
     }
 
     /** the Cypher type MAP */
     @Override
-    public CoarseType MAP()
+    public Type MAP()
     {
         return constructType( MAP_TyCon );
     }
 
     /** the Cypher type IDENTITY */
     @Override
-    public CoarseType IDENTITY()
+    public Type IDENTITY()
     {
         return constructType( IDENTITY_TyCon );
     }
 
     /** the Cypher type NODE */
     @Override
-    public CoarseType NODE()
+    public Type NODE()
     {
         return constructType( NODE_TyCon );
     }
 
     /** the Cypher type RELATIONSHIP */
     @Override
-    public CoarseType RELATIONSHIP()
+    public Type RELATIONSHIP()
     {
         return constructType( RELATIONSHIP_TyCon );
     }
 
     /** the Cypher type PATH */
     @Override
-    public CoarseType PATH()
+    public Type PATH()
     {
         return constructType( PATH_TyCon );
     }
 
     /** the Cypher type NULL */
     @Override
-    public CoarseType NULL()
+    public Type NULL()
     {
         return constructType( NULL_TyCon );
     }

@@ -20,29 +20,29 @@ package org.neo4j.driver.v1;
 
 public interface TypeSystem
 {
-    CoarseType ANY();
+    Type ANY();
 
-    CoarseType BOOLEAN();
+    Type BOOLEAN();
 
-    CoarseType STRING();
+    Type STRING();
 
-    CoarseType NUMBER();
+    Type NUMBER();
 
-    CoarseType INTEGER();
+    Type INTEGER();
 
-    CoarseType FLOAT();
+    Type FLOAT();
 
-    CoarseType LIST();
+    Type LIST();
 
-    CoarseType MAP();
+    Type MAP();
 
-    CoarseType IDENTITY();
+    Type IDENTITY();
 
-    CoarseType NODE();
+    Type NODE();
 
-    CoarseType RELATIONSHIP();
+    Type RELATIONSHIP();
 
-    CoarseType PATH();
+    Type PATH();
 
-    CoarseType NULL();
+    Type NULL();
 }

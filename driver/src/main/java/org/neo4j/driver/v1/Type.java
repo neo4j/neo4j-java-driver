@@ -29,8 +29,10 @@ public interface Type
     String name();
 
     /**
-     * @see CoarseType
-     * @return the {@link CoarseType} of this type
+     * Test if the given value has this type
+     *
+     * @param value the value
+     * @return <tt>true</tt> if the value is a value of this type otherwise <tt>false</tt>
      */
-    CoarseType coarseType();
+    boolean isTypeOf( Value value );
 }

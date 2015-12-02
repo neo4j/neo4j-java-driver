@@ -212,5 +212,6 @@ public interface Value extends Iterable<Value>
      */
     boolean isMap();
 
-    CoarseType type();
+    /** @return The type of this value as defined in the Cypher language */
+    Type type();
 }

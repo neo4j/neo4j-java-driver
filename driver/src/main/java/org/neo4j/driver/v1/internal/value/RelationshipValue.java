@@ -18,8 +18,8 @@
  */
 package org.neo4j.driver.v1.internal.value;
 
-import org.neo4j.driver.v1.CoarseType;
 import org.neo4j.driver.v1.Relationship;
+import org.neo4j.driver.v1.Type;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
 import org.neo4j.driver.v1.internal.types.TypeConstructor;
@@ -72,7 +72,7 @@ public class RelationshipValue extends ValueAdapter
     }
 
     @Override
-    public CoarseType type()
+    public Type type()
     {
         return StandardTypeSystem.TYPE_SYSTEM.RELATIONSHIP();
     }
