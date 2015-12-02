@@ -26,6 +26,7 @@ import org.junit.runners.model.Statement;
 import org.neo4j.driver.v1.Result;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.v1.TypeSystem;
 import org.neo4j.driver.v1.Value;
 
 /**
@@ -114,5 +115,11 @@ public class TestNeo4jSession extends TestNeo4j implements Session
     public Result run( org.neo4j.driver.v1.Statement statement )
     {
         return realSession.run( statement.text(), statement.parameters() );
+    }
+
+    @Override
+    public TypeSystem typeSystem()
+    {
+        return realSession.typeSystem();
     }
 }

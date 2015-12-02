@@ -24,11 +24,13 @@ import java.util.Map;
 import org.neo4j.driver.v1.Result;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.v1.TypeSystem;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.internal.spi.Connection;
 import org.neo4j.driver.v1.internal.summary.ResultBuilder;
+import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
 
 public class StandardTransaction implements Transaction
 {
@@ -165,5 +167,11 @@ public class StandardTransaction implements Transaction
                 " transaction to run another statement."
             );
         }
+    }
+
+    @Override
+    public TypeSystem typeSystem()
+    {
+        return StandardTypeSystem.TYPE_SYSTEM;
     }
 }

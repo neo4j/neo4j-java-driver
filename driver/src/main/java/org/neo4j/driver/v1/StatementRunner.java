@@ -73,4 +73,8 @@ public interface StatementRunner
      */
     Result run( Statement statement );
 
+    /**
+     * @return type system used by this statement runner for classifying values
+     */
+    TypeSystem typeSystem();
 }
