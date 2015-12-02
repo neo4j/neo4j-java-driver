@@ -19,25 +19,25 @@
 package org.neo4j.driver.v1.internal;
 
 
-import org.junit.Test;
-
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.junit.Test;
+
 import org.neo4j.driver.v1.ImmutableRecord;
+import org.neo4j.driver.v1.Property;
 import org.neo4j.driver.v1.Result;
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.internal.summary.ResultBuilder;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
-import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.driver.v1.Values.value;
-import static org.neo4j.driver.v1.internal.util.Iterables.map;
 
 public class SimpleResultTest
 {
@@ -48,26 +48,26 @@ public class SimpleResultTest
         Result result = createResult( 3 );
 
         // WHEN
-        assertThat( result.position(), equalTo( -1 ) );
+        assertThat( result.position(), equalTo( -1l ) );
         assertTrue( result.next() ); //-1 -> 0
         assertTrue( result.first() );
         assertFalse( result.atEnd() );
-        assertThat( result.record().values(), equalTo(Arrays.asList(value("v1-1"), value( "v2-1" ))));
+        assertThat( values( result.record() ), equalTo(Arrays.asList(value("v1-1"), value( "v2-1" ))));
 
-        assertThat( result.position(), equalTo( 0 ) );
+        assertThat( result.position(), equalTo( 0l ) );
         assertTrue( result.next() ); //0 -> 1
         assertFalse( result.first() );
         assertFalse( result.atEnd() );
-        assertThat( result.record().values(), equalTo(Arrays.asList(value("v1-2"), value( "v2-2" ))));
+        assertThat( values( result.record() ), equalTo(Arrays.asList(value("v1-2"), value( "v2-2" ))));
 
-        assertThat( result.position(), equalTo( 1 ) );
+        assertThat( result.position(), equalTo( 1l ) );
         assertTrue( result.next() ); //1 -> 2
 
         // THEN
-        assertThat( result.position(), equalTo( 2) );
+        assertThat( result.position(), equalTo( 2l ) );
         assertTrue( result.atEnd() );
         assertFalse( result.first() );
-        assertThat( result.record().values(), equalTo(Arrays.asList(value("v1-3"), value( "v2-3" ))));
+        assertThat( values( result.record() ), equalTo(Arrays.asList(value("v1-3"), value( "v2-3" ))));
         assertFalse( result.next() );
     }
 
@@ -84,18 +84,18 @@ public class SimpleResultTest
         Result result = createResult( 3 );
 
         // WHEN
-        assertThat(result.position(), equalTo( -1 ));
+        assertThat(result.position(), equalTo( -1l ));
         assertTrue( result.first() );
-        assertThat(result.position(), equalTo( 0 ));
+        assertThat(result.position(), equalTo( 0l ));
         assertTrue( result.first() );
-        assertThat(result.position(), equalTo( 0 ));
+        assertThat(result.position(), equalTo( 0l ));
     }
 
     @Test
     public void countRecordsShouldGetTheCountRight()
     {
-        assertThat( createResult( 3 ).countRecords(), equalTo( 3 ) );
-        assertThat( createResult( 0 ).countRecords(), equalTo( 0 ) );
+        assertThat( createResult( 3 ).count(), equalTo( 3l ) );
+        assertThat( createResult( 0 ).count(), equalTo( 0l ) );
     }
 
     @Test
@@ -105,11 +105,11 @@ public class SimpleResultTest
         Result result = createResult( 42 );
 
         // WHEN
-        assertThat( result.countRecords(), equalTo( 42 ) );
+        assertThat( result.count(), equalTo( 42l ) );
 
         // THEN
         assertTrue( result.atEnd() );
-        assertThat( result.position(), equalTo( 41 ) );
+        assertThat( result.position(), equalTo( 41l ) );
     }
 
     @Test
@@ -130,8 +130,8 @@ public class SimpleResultTest
         result.skip( 22 );
 
         // THEN
-        assertThat(result.position(), equalTo( 21 ));
-        assertThat(result.record().values(), equalTo( Arrays.asList( value( "v1-22" ), value( "v2-22" ) ) ));
+        assertThat( result.position(), equalTo( 21l ));
+        assertThat( values( result.record() ), equalTo( Arrays.asList( value( "v1-22" ), value( "v2-22" ) ) ));
     }
 
     @Test
@@ -159,4 +159,13 @@ public class SimpleResultTest
         return builder.build();
     }
 
+    private List<Value> values( ImmutableRecord record )
+    {
+        List<Value> result = new ArrayList<>( record.keys().size() );
+        for ( Property<Value> property : record.fields() )
+        {
+            result.add( property.value() );
+        }
+        return result;
+    }
 }

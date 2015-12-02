@@ -19,17 +19,20 @@
 package org.neo4j.driver.v1;
 
 /**
- * A uniquely identifiable property container that can form part of a Neo4j graph.
+ * Immutable pair of a key and a value
+ *
+ * @see PropertyAccessor
+ * @param <V> the Java type of the contained value
  */
-public interface Entity extends PropertyAccessor
+public interface Property<V>
 {
     /**
-     * A unique {@link Identity identity} for this Entity. Identities are guaranteed
-     * to remain stable for the duration of the session they were found in, but may be re-used for other
-     * entities after that. As such, if you want a public identity to use for your entities, attaching
-     * an explicit 'id' property or similar persistent and unique identifier is a better choice.
-     *
-     * @return an identity object
+     * @return the property key
      */
-    Identity identity();
+    String key();
+
+    /**
+     * @return the property value
+     */
+    V value();
 }

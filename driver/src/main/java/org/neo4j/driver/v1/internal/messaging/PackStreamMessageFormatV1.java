@@ -36,6 +36,7 @@ import org.neo4j.driver.v1.Relationship;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.internal.Identities;
+import org.neo4j.driver.v1.internal.SimpleEntity;
 import org.neo4j.driver.v1.internal.SimpleNode;
 import org.neo4j.driver.v1.internal.SimplePath;
 import org.neo4j.driver.v1.internal.SimpleRelationship;
@@ -239,7 +240,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                     break;
 
                 case MAP_TyCon:
-                    packer.packMapHeader( value.countElements() );
+                    packer.packMapHeader( value.size() );
                     for ( String s : value.keys() )
                     {
                         packer.pack( s );
@@ -248,7 +249,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                     break;
 
                 case LIST_TyCon:
-                    packer.packListHeader( value.countElements() );
+                    packer.packListHeader( value.size() );
                     for ( Value item : value.values() )
                     {
                         packValue( item );
@@ -367,7 +368,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         private void packProperties( Entity entity ) throws IOException
         {
             Iterable<String> keys = entity.keys();
-            packer.packMapHeader( entity.countElements() );
+            packer.packMapHeader( ( (SimpleEntity) entity ).size() );
             for ( String propKey : keys )
             {
                 packer.pack( propKey );

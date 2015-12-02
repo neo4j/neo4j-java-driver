@@ -19,17 +19,19 @@
 package org.neo4j.driver.v1;
 
 /**
- * A uniquely identifiable property container that can form part of a Neo4j graph.
+ * Access an underlying list of values by index
+ *
+ * @see Value
  */
-public interface Entity extends PropertyAccessor
+public interface ListAccessor
 {
     /**
-     * A unique {@link Identity identity} for this Entity. Identities are guaranteed
-     * to remain stable for the duration of the session they were found in, but may be re-used for other
-     * entities after that. As such, if you want a public identity to use for your entities, attaching
-     * an explicit 'id' property or similar persistent and unique identifier is a better choice.
+     * Retrieve the value at the given index
      *
-     * @return an identity object
+     * @param index the index of the value
+     * @return the value or a null value if the index is out of bounds
      */
-    Identity identity();
+    Value value( int index );
 }
+
+

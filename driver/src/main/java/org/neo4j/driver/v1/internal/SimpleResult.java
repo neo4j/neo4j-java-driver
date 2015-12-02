@@ -29,7 +29,7 @@ import org.neo4j.driver.v1.ResultSummary;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
-public class SimpleResult extends SimpleRecordAdaptor implements Result
+public class SimpleResult extends SimpleRecordAccessor implements Result
 {
     private final List<String> keys;
     private final Iterator<ImmutableRecord> iter;
@@ -37,7 +37,7 @@ public class SimpleResult extends SimpleRecordAdaptor implements Result
 
     private boolean open = true;
     private ImmutableRecord current = null;
-    private int position = -1;
+    private long position = -1;
 
     public SimpleResult( List<String> keys, List<ImmutableRecord> body, ResultSummary summary )
     {
@@ -52,24 +52,15 @@ public class SimpleResult extends SimpleRecordAdaptor implements Result
         return open;
     }
 
-    @Override
-    public int countElements()
-    {
-        return keys.size();
-    }
-
     @SuppressWarnings("StatementWithEmptyBody")
     @Override
-    public int countRecords()
+    public long count()
     {
+        long start = position();
+        long offset = start < 0 ? 0 : 1;
         while ( next() ) ;
-        return position() + 1;
-    }
-
-    @Override
-    public boolean hasElements()
-    {
-        return ! keys.isEmpty();
+        long end = position();
+        return end - start + offset;
     }
 
     public Value value( int index )
@@ -78,7 +69,7 @@ public class SimpleResult extends SimpleRecordAdaptor implements Result
     }
 
     @Override
-    public boolean hasKey( String key )
+    public boolean containsKey( String key )
     {
         return keys.contains( key );
     }
@@ -114,7 +105,7 @@ public class SimpleResult extends SimpleRecordAdaptor implements Result
     }
 
     @Override
-    public int position()
+    public long position()
     {
         assertOpen();
 
@@ -147,7 +138,7 @@ public class SimpleResult extends SimpleRecordAdaptor implements Result
     }
 
     @Override
-    public int skip( int elements )
+    public long skip( long elements )
     {
         if ( elements < 0 )
         {
@@ -167,8 +158,8 @@ public class SimpleResult extends SimpleRecordAdaptor implements Result
     @Override
     public boolean first()
     {
-        int pos = position();
-        return pos == -1 ? next() : pos == 0;
+        long pos = position();
+        return pos < 0 ? next() : pos == 0;
     }
 
     @Override

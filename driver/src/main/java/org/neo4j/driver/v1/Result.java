@@ -35,7 +35,7 @@ import java.util.List;
  * To keep a result around while further statements are run, or to use a result outside the scope
  * of the current transaction, see {@link #retain()}.
  */
-public interface Result extends RecordLike, Resource
+public interface Result extends RecordAccessor, Resource
 {
     /**
      * @return an immutable copy of the currently viewed record
@@ -49,16 +49,7 @@ public interface Result extends RecordLike, Resource
      *
      * @return the current position of the cursor
      */
-    int position();
-
-    /**
-     * Count all records in this result.
-     *
-     * Calling this method exhausts the result cursor and moves it to the last record.
-     *
-     * @return the number of records in this result
-     */
-    int countRecords();
+    long position();
 
     /**
      * Test if the cursor is positioned at the last stream record or if the stream is empty.
@@ -81,7 +72,7 @@ public interface Result extends RecordLike, Resource
      * @param records amount of records to be skipped
      * @return the actual number of records successfully skipped
      */
-    int skip( int records );
+    long skip( long records );
 
     /**
      * Move to the first record if possible, otherwise do nothing.
@@ -96,6 +87,15 @@ public interface Result extends RecordLike, Resource
      * @return <tt>true</tt> if the cursor was successfully placed at the single first and only record
      */
     boolean single();
+
+    /**
+     * Count all remaining records (including the current record) records in this result.
+     *
+     * Calling this method exhausts the result cursor and moves it to the last record.
+     *
+     * @return the number of remaining records (including the current record)
+     */
+    long count();
 
     /**
      * Retrieve and store the entire remaining result stream (including the current record).

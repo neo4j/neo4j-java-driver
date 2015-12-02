@@ -19,17 +19,30 @@
 package org.neo4j.driver.v1;
 
 /**
- * A uniquely identifiable property container that can form part of a Neo4j graph.
+ * Access the keys, properties and values of an underlying unordered map by key
  */
-public interface Entity extends PropertyAccessor
+public interface MapAccessor
 {
     /**
-     * A unique {@link Identity identity} for this Entity. Identities are guaranteed
-     * to remain stable for the duration of the session they were found in, but may be re-used for other
-     * entities after that. As such, if you want a public identity to use for your entities, attaching
-     * an explicit 'id' property or similar persistent and unique identifier is a better choice.
+     * Retrieve the keys of the underlying map
      *
-     * @return an identity object
+     * @return all map keys in unspecified order
      */
-    Identity identity();
+    Iterable<String> keys();
+
+    /**
+     * Check if the list of keys contains the given key
+     *
+     * @param key the key
+     * @return <tt>true</tt> if this map keys contains the given key otherwise <tt>false</tt>
+     */
+    boolean containsKey( String key );
+
+    /**
+     * Retrieve the value of the property with the given key
+     *
+     * @param key the key of the property
+     * @return the property's value or a null value if no such key exists
+     */
+    Value value( String key );
 }

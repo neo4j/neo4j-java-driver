@@ -23,8 +23,9 @@ import java.util.Map;
 import org.neo4j.driver.v1.Entity;
 import org.neo4j.driver.v1.Function;
 import org.neo4j.driver.v1.Identity;
-import org.neo4j.driver.v1.MapLike;
+import org.neo4j.driver.v1.Property;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.internal.util.Extract;
 import org.neo4j.driver.v1.internal.util.Iterables;
 import org.neo4j.driver.v1.internal.value.MapValue;
@@ -49,15 +50,14 @@ public abstract class SimpleEntity implements Entity, AsValue
     }
 
     @Override
-    public int countElements()
+    public Property property( String key )
     {
-        return properties.size();
+        return SimpleProperty.of( key, value( key ) );
     }
 
-    @Override
-    public boolean hasElements()
+    public int size()
     {
-        return !properties.isEmpty();
+        return properties.size();
     }
 
     public Value asValue()
@@ -99,7 +99,7 @@ public abstract class SimpleEntity implements Entity, AsValue
     }
 
     @Override
-    public boolean hasKey( String key )
+    public boolean containsKey( String key )
     {
         return properties.containsKey( key );
     }
@@ -113,7 +113,8 @@ public abstract class SimpleEntity implements Entity, AsValue
     @Override
     public Value value( String key )
     {
-        return properties.get( key );
+        Value value = properties.get( key );
+        return value == null ? Values.NULL : value;
     }
 
     @Override
@@ -129,14 +130,14 @@ public abstract class SimpleEntity implements Entity, AsValue
     }
 
     @Override
-    public Iterable<MapLike.Entry<Value>> entries()
+    public Iterable<Property<Value>> properties()
     {
-        return entries( valueAsIs() );
+        return properties( valueAsIs() );
     }
 
     @Override
-    public <V> Iterable<MapLike.Entry<V>> entries( final Function<Value, V> Function )
+    public <V> Iterable<Property<V>> properties( final Function<Value, V> Function )
     {
-        return Extract.entries( this, Function );
+        return Extract.properties( this, Function );
     }
 }

@@ -19,17 +19,18 @@
 package org.neo4j.driver.v1;
 
 /**
- * Access the fields of an underlying list like data structure by index
+ * A field is a property of an ordered map or record
+ *
+ * @param <V> the type of value stored
+ *
+ * @see Property
+ * @see PropertyAccessor
+ * @see RecordAccessor
  */
-public interface ListLike extends CollectionLike
+public interface Field<V> extends Property<V>
 {
     /**
-     * Retrieve the value of the field at the given index
-     *
-     * @param index the index of the field
-     * @return the field's value or a null value if no such field exists
+     * @return the index of the field in the original record
      */
-    Value value( int index );
+    int index();
 }
-
-

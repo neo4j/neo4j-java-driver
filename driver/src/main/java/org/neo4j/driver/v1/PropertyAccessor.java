@@ -18,51 +18,52 @@
  */
 package org.neo4j.driver.v1;
 
-import java.util.List;
-
 /**
- * Access the entries of an underlying ordered map like data structure by key and index
+ * Access the properties of an underlying unordered map
  */
-public interface RecordLike extends ListLike, MapLike
+public interface PropertyAccessor extends MapAccessor
 {
-    @Override
-    List<String> keys();
-
     /**
-     * Retrieve all entry values of the record
+     * Retrieve all values of the underlying collection
      *
-     * @return all entry values in key order
+     * @return all values in unspecified order
      */
-    @Override
-    List<Value> values();
+    Iterable<Value> values();
 
     /**
-     * Map and retrieve all entry values of the record
+     * Map and retrieve all values of the underlying collection
      *
-     * @param <T> the target type of the map function
      * @param mapFunction a function to map from Value to T. See {@link Values} for some predefined functions, such
      * as {@link Values#valueAsBoolean()}, {@link Values#valueAsList(Function)}.
-     * @return the result of mapping all entry values of the record in key order
+     * @param <T> the target type of mapping
+     * @return the result of mapping all values in unspecified order
      */
-    @Override
-    <T> List<T> values( Function<Value, T> mapFunction );
+    <T> Iterable<T> values( Function<Value, T> mapFunction );
 
     /**
-     * Retrieve all entries of the record
+     * Retrieve the property for the given key
      *
-     * @return all entries in key order
+     * @param key the key of the property
+     * @return the property for the given key or a property with a null value if the key is unknown
      */
-    @Override
-    List<Entry<Value>> entries();
+    Property property( String key );
 
     /**
-     * Map and retrieve all entries of the record
+     * Retrieve all properties of the underlying map
      *
-     * @param <V> the target type of the map function
+     * @see Property
+     * @return all properties in unspecified order
+     */
+    Iterable<Property<Value>> properties();
+
+    /**
+     * Retrieve all properties of the underlying map
+     *
+     * @see Property
      * @param mapFunction a function to map from Value to T. See {@link Values} for some predefined functions, such
      * as {@link Values#valueAsBoolean()}, {@link Values#valueAsList(Function)}.
-     * @return the result of mapping all entries of the record in key order
+     * @param <V> the target type of mapping
+     * @return all mapped properties in unspecified order
      */
-    @Override
-    <V> List<Entry<V>> entries( Function<Value, V> mapFunction );
+    <V> Iterable<Property<V>> properties( Function<Value, V> mapFunction );
 }

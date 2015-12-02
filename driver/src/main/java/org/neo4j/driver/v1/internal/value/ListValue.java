@@ -26,6 +26,7 @@ import java.util.List;
 import org.neo4j.driver.v1.Function;
 import org.neo4j.driver.v1.Type;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
 import org.neo4j.driver.v1.internal.util.Extract;
 
@@ -47,7 +48,7 @@ public class ListValue extends ValueAdapter
     @Override
     public <T> List<T> asList( Function<Value,T> mapFunction )
     {
-        return Extract.list( this, mapFunction );
+        return Extract.list( values, mapFunction );
     }
 
     public Object asObject()
@@ -58,7 +59,7 @@ public class ListValue extends ValueAdapter
     @Override
     public Value[] asArray()
     {
-        int size = countElements();
+        int size = size();
         Value[] result = new Value[size];
         System.arraycopy( values, 0, result, 0, size );
         return result;
@@ -68,7 +69,7 @@ public class ListValue extends ValueAdapter
     @Override
     public <T> T[] asArray( Class<T> clazz, Function<Value, T> mapFunction )
     {
-        int size = countElements();
+        int size = size();
         T[] result = (T[]) Array.newInstance( clazz, size );
         for ( int i = 0; i < size; i++ )
         {
@@ -80,7 +81,7 @@ public class ListValue extends ValueAdapter
     @Override
     public long[] asLongArray()
     {
-        long[] result = new long[ countElements() ];
+        long[] result = new long[ size() ];
         for ( int i = 0; i < values.length; i++ )
         {
             result[i] = values[i].asLong();
@@ -91,7 +92,7 @@ public class ListValue extends ValueAdapter
     @Override
     public int[] asIntArray()
     {
-        int[] result = new int[ countElements() ];
+        int[] result = new int[ size() ];
         for ( int i = 0; i < values.length; i++ )
         {
             result[i] = values[i].asInt();
@@ -102,7 +103,7 @@ public class ListValue extends ValueAdapter
     @Override
     public short[] asShortArray()
     {
-        short[] result = new short[ countElements() ];
+        short[] result = new short[ size() ];
         for ( int i = 0; i < values.length; i++ )
         {
             result[i] = values[i].asShort();
@@ -113,7 +114,7 @@ public class ListValue extends ValueAdapter
     @Override
     public byte[] asByteArray()
     {
-        byte[] result = new byte[ countElements() ];
+        byte[] result = new byte[ size() ];
         for ( int i = 0; i < values.length; i++ )
         {
             result[i] = values[i].asByte();
@@ -124,7 +125,7 @@ public class ListValue extends ValueAdapter
     @Override
     public double[] asDoubleArray()
     {
-        double[] result = new double[ countElements() ];
+        double[] result = new double[ size() ];
         for ( int i = 0; i < values.length; i++ )
         {
             result[i] = values[i].asDouble();
@@ -135,7 +136,7 @@ public class ListValue extends ValueAdapter
     @Override
     public float[] asFloatArray()
     {
-        float[] result = new float[ countElements() ];
+        float[] result = new float[ size() ];
         for ( int i = 0; i < values.length; i++ )
         {
             result[i] = values[i].asFloat();
@@ -144,7 +145,7 @@ public class ListValue extends ValueAdapter
     }
 
     @Override
-    public int countElements()
+    public int size()
     {
         return values.length;
     }
@@ -152,7 +153,7 @@ public class ListValue extends ValueAdapter
     @Override
     public Value value( int index )
     {
-        return values[index];
+        return index >= 0 && index < values.length ? values[index] : Values.NULL;
     }
 
     @Override

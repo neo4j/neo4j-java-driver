@@ -16,20 +16,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1;
+package org.neo4j.driver.v1.internal;
 
-/**
- * A uniquely identifiable property container that can form part of a Neo4j graph.
- */
-public interface Entity extends PropertyAccessor
+import org.neo4j.driver.v1.Field;
+
+public class SimpleField<V> extends SimpleProperty<V> implements Field<V>
 {
-    /**
-     * A unique {@link Identity identity} for this Entity. Identities are guaranteed
-     * to remain stable for the duration of the session they were found in, but may be re-used for other
-     * entities after that. As such, if you want a public identity to use for your entities, attaching
-     * an explicit 'id' property or similar persistent and unique identifier is a better choice.
-     *
-     * @return an identity object
-     */
-    Identity identity();
+    private final int index;
+
+    public SimpleField( String key, int index, V value )
+    {
+        super( key, value );
+        this.index = index;
+    }
+
+    @Override
+    public int index()
+    {
+        return index;
+    }
+
+    public static <V> Field<V> of( String key, int index, V value )
+    {
+        return new SimpleField<>( key, index, value );
+    }
 }

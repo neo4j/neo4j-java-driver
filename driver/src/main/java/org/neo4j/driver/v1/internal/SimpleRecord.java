@@ -24,11 +24,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.driver.v1.Function;
 import org.neo4j.driver.v1.ImmutableRecord;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.internal.util.Extract;
 
-public class SimpleRecord extends SimpleRecordAdaptor implements ImmutableRecord
+import static org.neo4j.driver.v1.Values.valueAsIs;
+
+public class SimpleRecord extends SimpleRecordAccessor implements ImmutableRecord
 {
     private final List<String> keys;
     private final Map<String, Integer> keyIndexLookup;
@@ -57,23 +61,10 @@ public class SimpleRecord extends SimpleRecordAdaptor implements ImmutableRecord
         this.values = values;
     }
 
-
-    @Override
-    public int countElements()
-    {
-        return values.length;
-    }
-
     @Override
     public Value value( int index )
     {
-        return values[index];
-    }
-
-    @Override
-    public boolean hasKey( String key )
-    {
-        return keyIndexLookup.containsKey( key );
+        return index >= 0 && index < values.length ? values[index] : Values.NULL;
     }
 
     @Override
@@ -83,13 +74,19 @@ public class SimpleRecord extends SimpleRecordAdaptor implements ImmutableRecord
     }
 
     @Override
+    public boolean containsKey( String key )
+    {
+        return keyIndexLookup.containsKey( key );
+    }
+
+    @Override
     public Value value( String key )
     {
         Integer fieldIndex = keyIndexLookup.get( key );
 
         if ( fieldIndex == null )
         {
-            return null;
+            return Values.NULL;
         }
         else
         {
@@ -98,9 +95,14 @@ public class SimpleRecord extends SimpleRecordAdaptor implements ImmutableRecord
     }
 
     @Override
-    public List<Value> values()
+    public Map<String, Value> asMap()
     {
-        return Extract.list( values );
+        return asMap( valueAsIs() );
+    }
+
+    public <T> Map<String, T> asMap( Function<Value, T> mapFunction )
+    {
+        return Extract.map( this, mapFunction );
     }
 
     @Override

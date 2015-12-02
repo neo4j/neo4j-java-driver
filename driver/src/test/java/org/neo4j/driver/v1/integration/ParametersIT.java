@@ -205,7 +205,7 @@ public class ParametersIT
         {
             Value value = record.value( "a.value" );
             assertThat( value.hasType( session.typeSystem().LIST() ), equalTo( true ) );
-            assertThat( value.countElements(), equalTo( 3 ) );
+            assertThat( value.size(), equalTo( 3 ) );
             for ( Value item : value.asList() )
             {
                 assertThat( item.hasType( session.typeSystem().BOOLEAN() ), equalTo( true ) );
@@ -228,7 +228,7 @@ public class ParametersIT
         {
             Value value = record.value( "a.value" );
             assertThat( value.hasType( session.typeSystem().LIST() ), equalTo( true ) );
-            assertThat( value.countElements(), equalTo( 3 ) );
+            assertThat( value.size(), equalTo( 3 ) );
             for ( Value item : value.asList() )
             {
                 assertThat( item.hasType( session.typeSystem().INTEGER() ), equalTo( true ) );
@@ -251,7 +251,7 @@ public class ParametersIT
         {
             Value value = record.value( "a.value" );
             assertThat( value.hasType( session.typeSystem().LIST() ), equalTo( true ) );
-            assertThat( value.countElements(), equalTo( 3 ) );
+            assertThat( value.size(), equalTo( 3 ) );
             for ( Value item : value.asList() )
             {
                 assertThat( item.hasType( session.typeSystem().FLOAT() ), equalTo( true ) );
@@ -274,7 +274,7 @@ public class ParametersIT
         {
             Value value = record.value( "a.value" );
             assertThat( value.hasType( session.typeSystem().LIST() ), equalTo( true ) );
-            assertThat( value.countElements(), equalTo( 3 ) );
+            assertThat( value.size(), equalTo( 3 ) );
             for ( Value item : value.asList() )
             {
                 assertThat( item.hasType( session.typeSystem().STRING() ), equalTo( true ) );
@@ -296,7 +296,7 @@ public class ParametersIT
         {
             Value value = record.value( "a.value" );
             assertThat( value.hasType( session.typeSystem().LIST() ), equalTo( true ) );
-            assertThat( value.countElements(), equalTo( 3 ) );
+            assertThat( value.size(), equalTo( 3 ) );
             for ( Value item : value.asList() )
             {
                 assertThat( item.hasType( session.typeSystem().STRING() ), equalTo( true ) );

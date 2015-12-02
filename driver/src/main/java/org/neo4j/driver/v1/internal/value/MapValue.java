@@ -23,6 +23,7 @@ import java.util.Map;
 import org.neo4j.driver.v1.Function;
 import org.neo4j.driver.v1.Type;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
 import org.neo4j.driver.v1.internal.util.Extract;
 
@@ -53,13 +54,13 @@ public class MapValue extends ValueAdapter
     }
 
     @Override
-    public int countElements()
+    public int size()
     {
         return val.size();
     }
 
     @Override
-    public boolean hasKey( String key )
+    public boolean containsKey( String key )
     {
         return val.containsKey( key );
     }
@@ -79,9 +80,8 @@ public class MapValue extends ValueAdapter
     @Override
     public Value value( String key )
     {
-        return val.get( key );
+        return val.getOrDefault( key, Values.NULL );
     }
-
 
     @Override
     public Type type()
@@ -98,7 +98,7 @@ public class MapValue extends ValueAdapter
     @Override
     public <T> Iterable<T> values( Function<Value, T> mapFunction )
     {
-        return Extract.list( this, mapFunction );
+        return Extract.map( val, mapFunction ).values();
     }
 
     @Override

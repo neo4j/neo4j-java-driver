@@ -18,14 +18,14 @@
  */
 package org.neo4j.driver.v1.internal;
 
-import org.neo4j.driver.v1.MapLike;
+import org.neo4j.driver.v1.Property;
 
-public class SimpleMapEntry<V> implements MapLike.Entry<V>
+public class SimpleProperty<V> implements Property<V>
 {
     private final String key;
     private final V value;
 
-    protected SimpleMapEntry( String key, V value )
+    protected SimpleProperty( String key, V value )
     {
         this.key = key;
         this.value = value;
@@ -41,8 +41,8 @@ public class SimpleMapEntry<V> implements MapLike.Entry<V>
         return value;
     }
 
-    public static <V> MapLike.Entry<V> of( String key, V value )
+    public static <V> Property<V> of( String key, V value )
     {
-        return new SimpleMapEntry<>( key, value );
+        return new SimpleProperty<>( key, value );
     }
 }
