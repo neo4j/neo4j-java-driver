@@ -21,7 +21,6 @@ package org.neo4j.driver.v1.internal.value;
 import org.neo4j.driver.v1.Path;
 import org.neo4j.driver.v1.Type;
 import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
-import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
 public class PathValue extends ValueAdapter
 {
@@ -43,8 +42,7 @@ public class PathValue extends ValueAdapter
         return adapted;
     }
 
-    @Override
-    public boolean isPath()
+    private boolean isPath()
     {
         return true;
     }
@@ -53,12 +51,6 @@ public class PathValue extends ValueAdapter
     public int elementCount()
     {
         return adapted.length();
-    }
-
-    @Override
-    public TypeConstructor typeConstructor()
-    {
-        return TypeConstructor.PATH_TyCon;
     }
 
     @Override

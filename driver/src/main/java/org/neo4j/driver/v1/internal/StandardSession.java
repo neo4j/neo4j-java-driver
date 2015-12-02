@@ -24,10 +24,12 @@ import org.neo4j.driver.v1.Result;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.v1.TypeSystem;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.internal.spi.Connection;
 import org.neo4j.driver.v1.internal.summary.ResultBuilder;
+import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
 
 public class StandardSession implements Session
 {
@@ -111,6 +113,12 @@ public class StandardSession implements Session
     {
         ensureNoOpenTransaction();
         return currentTransaction = new StandardTransaction( connection, txCleanup );
+    }
+
+    @Override
+    public TypeSystem typeSystem()
+    {
+        return StandardTypeSystem.TYPE_SYSTEM;
     }
 
     private void ensureNoOpenTransaction()

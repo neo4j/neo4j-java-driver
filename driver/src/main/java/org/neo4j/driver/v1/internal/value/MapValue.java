@@ -24,7 +24,6 @@ import org.neo4j.driver.v1.Function;
 import org.neo4j.driver.v1.Type;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
-import org.neo4j.driver.v1.internal.types.TypeConstructor;
 import org.neo4j.driver.v1.internal.util.Extract;
 
 public class MapValue extends ValueAdapter
@@ -69,18 +68,6 @@ public class MapValue extends ValueAdapter
     public Iterable<String> keys()
     {
         return val.keySet();
-    }
-
-    @Override
-    public TypeConstructor typeConstructor()
-    {
-        return TypeConstructor.MAP_TyCon;
-    }
-
-    @Override
-    public boolean isMap()
-    {
-        return true;
     }
 
     @Override

@@ -20,7 +20,9 @@ package org.neo4j.driver.v1.internal.value;
 
 import org.junit.Test;
 
+import org.neo4j.driver.v1.TypeSystem;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
 import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -30,6 +32,8 @@ import static org.junit.Assert.assertThat;
 
 public class IntegerValueTest
 {
+    TypeSystem typeSystem = StandardTypeSystem.TYPE_SYSTEM;
+
     @Test
     public void testZeroIntegerValue() throws Exception
     {
@@ -67,7 +71,7 @@ public class IntegerValueTest
         IntegerValue value = new IntegerValue( 1L );
 
         // Then
-        assertThat( value.isInteger(), equalTo( true ) );
+        assertThat( typeSystem.INTEGER().isTypeOf( value ), equalTo( true ) );
     }
 
     @Test

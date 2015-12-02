@@ -22,7 +22,6 @@ import org.neo4j.driver.v1.Relationship;
 import org.neo4j.driver.v1.Type;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
-import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
 public class RelationshipValue extends ValueAdapter
 {
@@ -45,8 +44,7 @@ public class RelationshipValue extends ValueAdapter
         return adapted;
     }
 
-    @Override
-    public boolean isRelationship()
+    private boolean isRelationship()
     {
         return true;
     }
@@ -63,12 +61,6 @@ public class RelationshipValue extends ValueAdapter
     public Iterable<String> keys()
     {
         return adapted.keys();
-    }
-
-    @Override
-    public TypeConstructor typeConstructor()
-    {
-        return TypeConstructor.RELATIONSHIP_TyCon;
     }
 
     public Value value( String key )

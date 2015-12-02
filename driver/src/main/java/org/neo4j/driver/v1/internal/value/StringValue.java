@@ -19,9 +19,8 @@
 package org.neo4j.driver.v1.internal.value;
 
 import org.neo4j.driver.v1.Type;
-import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
-import org.neo4j.driver.v1.internal.types.TypeConstructor;
 import org.neo4j.driver.v1.exceptions.value.Unrepresentable;
+import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
 
 public class StringValue extends ValueAdapter
 {
@@ -59,21 +58,9 @@ public class StringValue extends ValueAdapter
     }
 
     @Override
-    public boolean isString()
-    {
-        return true;
-    }
-
-    @Override
     public int elementCount()
     {
         return val.length();
-    }
-
-    @Override
-    public TypeConstructor typeConstructor()
-    {
-        return TypeConstructor.STRING_TyCon;
     }
 
     @Override

@@ -20,7 +20,9 @@ package org.neo4j.driver.v1.internal.value;
 
 import org.junit.Test;
 
+import org.neo4j.driver.v1.TypeSystem;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
 import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -30,6 +32,8 @@ import static org.junit.Assert.assertThat;
 
 public class FloatValueTest
 {
+    TypeSystem typeSystem = StandardTypeSystem.TYPE_SYSTEM;
+
     @Test
     public void testZeroFloatValue() throws Exception
     {
@@ -63,7 +67,7 @@ public class FloatValueTest
         FloatValue value = new FloatValue( 6.28 );
 
         // Then
-        assertThat( value.isFloat(), equalTo( true ) );
+        assertThat( typeSystem.FLOAT().isTypeOf( value ), equalTo( true ) );
     }
 
     @Test

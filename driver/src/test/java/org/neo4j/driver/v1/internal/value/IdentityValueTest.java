@@ -21,8 +21,10 @@ package org.neo4j.driver.v1.internal.value;
 import org.junit.Test;
 
 import org.neo4j.driver.v1.Identity;
+import org.neo4j.driver.v1.TypeSystem;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.internal.Identities;
+import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
 import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -32,6 +34,8 @@ import static org.junit.Assert.assertThat;
 
 public class IdentityValueTest
 {
+    TypeSystem typeSystem = StandardTypeSystem.TYPE_SYSTEM;
+
     @Test
     public void testValueAsIdentity() throws Exception
     {
@@ -51,7 +55,7 @@ public class IdentityValueTest
         IdentityValue value = new IdentityValue( id );
 
         // Then
-        assertThat( value.isIdentity(), equalTo( true ) );
+        assertThat( typeSystem.IDENTITY().isTypeOf( value ), equalTo( true ) );
     }
 
     @Test

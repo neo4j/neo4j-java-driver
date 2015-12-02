@@ -20,7 +20,6 @@ package org.neo4j.driver.v1.internal.value;
 
 import org.neo4j.driver.v1.Type;
 import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
-import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
 public class FloatValue extends NumberValueAdapter
 {
@@ -29,6 +28,12 @@ public class FloatValue extends NumberValueAdapter
     public FloatValue( double val )
     {
         this.val = val;
+    }
+
+    @Override
+    public Type type()
+    {
+        return StandardTypeSystem.TYPE_SYSTEM.FLOAT();
     }
 
     public Number asNumber()
@@ -60,12 +65,6 @@ public class FloatValue extends NumberValueAdapter
         return (byte) val;
     }
 
-    @Override
-    public TypeConstructor typeConstructor()
-    {
-        return TypeConstructor.FLOAT_TyCon;
-    }
-
     public double asDouble()
     {
         return val;
@@ -75,18 +74,6 @@ public class FloatValue extends NumberValueAdapter
     public float asFloat()
     {
         return (float) val;
-    }
-
-    @Override
-    public boolean isFloat()
-    {
-        return true;
-    }
-
-    @Override
-    public Type type()
-    {
-        return StandardTypeSystem.TYPE_SYSTEM.FLOAT();
     }
 
     @Override

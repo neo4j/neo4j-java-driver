@@ -20,7 +20,6 @@ package org.neo4j.driver.v1.internal.value;
 
 import org.neo4j.driver.v1.Type;
 import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
-import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
 public abstract class BooleanValue extends ValueAdapter
 {
@@ -29,24 +28,12 @@ public abstract class BooleanValue extends ValueAdapter
         //do nothing
     }
 
-    @Override
-    public TypeConstructor typeConstructor()
-    {
-        return TypeConstructor.BOOLEAN_TyCon;
-    }
-
     public static BooleanValue TRUE = new TrueValue();
     public static BooleanValue FALSE = new FalseValue();
 
     public static BooleanValue fromBoolean( boolean value )
     {
         return value ? TRUE : FALSE;
-    }
-
-    @Override
-    public boolean isBoolean()
-    {
-        return true;
     }
 
     @Override
