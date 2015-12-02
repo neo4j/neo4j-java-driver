@@ -27,7 +27,6 @@ import org.neo4j.driver.v1.Function;
 import org.neo4j.driver.v1.Type;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
-import org.neo4j.driver.v1.internal.types.TypeConstructor;
 import org.neo4j.driver.v1.internal.util.Extract;
 
 public class ListValue extends ValueAdapter
@@ -145,21 +144,9 @@ public class ListValue extends ValueAdapter
     }
 
     @Override
-    public boolean isList()
-    {
-        return true;
-    }
-
-    @Override
     public int elementCount()
     {
         return values.length;
-    }
-
-    @Override
-    public TypeConstructor typeConstructor()
-    {
-        return TypeConstructor.LIST_TyCon;
     }
 
     @Override

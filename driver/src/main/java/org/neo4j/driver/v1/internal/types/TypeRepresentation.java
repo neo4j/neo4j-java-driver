@@ -49,6 +49,11 @@ public class TypeRepresentation implements Type
         return tyCon.typeName();
     }
 
+    public TypeConstructor constructor()
+    {
+        return tyCon;
+    }
+
     @Override
     public boolean equals( Object o )
     {

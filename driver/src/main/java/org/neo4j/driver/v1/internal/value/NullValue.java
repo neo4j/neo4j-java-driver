@@ -21,7 +21,6 @@ package org.neo4j.driver.v1.internal.value;
 import org.neo4j.driver.v1.Type;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
-import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
 public class NullValue extends ValueAdapter
 {
@@ -37,12 +36,6 @@ public class NullValue extends ValueAdapter
     public Object asObject()
     {
         return null;
-    }
-
-    @Override
-    public TypeConstructor typeConstructor()
-    {
-        return TypeConstructor.NULL_TyCon;
     }
 
     @Override

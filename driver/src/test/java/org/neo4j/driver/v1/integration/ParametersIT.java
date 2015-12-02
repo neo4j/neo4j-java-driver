@@ -24,8 +24,10 @@ import org.junit.rules.ExpectedException;
 
 import org.neo4j.driver.v1.ImmutableRecord;
 import org.neo4j.driver.v1.Result;
+import org.neo4j.driver.v1.TypeSystem;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -41,6 +43,8 @@ public class ParametersIT
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
+    private TypeSystem typeSystem = StandardTypeSystem.TYPE_SYSTEM;
+
     @Test
     public void shouldBeAbleToSetAndReturnBooleanProperty()
     {
@@ -52,7 +56,7 @@ public class ParametersIT
         for ( ImmutableRecord record : result.retain() )
         {
             Value value = record.value( "a.value" );
-            assertThat( value.isBoolean(), equalTo( true ) );
+            assertThat( typeSystem.BOOLEAN().isTypeOf( value ), equalTo( true ) );
             assertThat( value.asBoolean(), equalTo( true ) );
         }
     }
@@ -68,7 +72,7 @@ public class ParametersIT
         for ( ImmutableRecord record : result.retain() )
         {
             Value value = record.value( "a.value" );
-            assertThat( value.isInteger(), equalTo( true ) );
+            assertThat( typeSystem.INTEGER().isTypeOf( value ), equalTo( true ) );
             assertThat( value.asLong(), equalTo( 1L ) );
         }
 
@@ -85,7 +89,7 @@ public class ParametersIT
         for ( ImmutableRecord record : result.retain() )
         {
             Value value = record.value( "a.value" );
-            assertThat( value.isInteger(), equalTo( true ) );
+            assertThat( typeSystem.INTEGER().isTypeOf( value ), equalTo( true ) );
             assertThat( value.asLong(), equalTo( 1L ) );
         }
 
@@ -102,7 +106,7 @@ public class ParametersIT
         for ( ImmutableRecord record : result.retain() )
         {
             Value value = record.value( "a.value" );
-            assertThat( value.isInteger(), equalTo( true ) );
+            assertThat( typeSystem.INTEGER().isTypeOf( value ), equalTo( true ) );
             assertThat( value.asLong(), equalTo( 1L ) );
         }
 
@@ -119,7 +123,7 @@ public class ParametersIT
         for ( ImmutableRecord record : result.retain() )
         {
             Value value = record.value( "a.value" );
-            assertThat( value.isInteger(), equalTo( true ) );
+            assertThat( typeSystem.INTEGER().isTypeOf( value ), equalTo( true ) );
             assertThat( value.asLong(), equalTo( 1L ) );
         }
 
@@ -136,7 +140,7 @@ public class ParametersIT
         for ( ImmutableRecord record : result.retain() )
         {
             Value value = record.value( "a.value" );
-            assertThat( value.isFloat(), equalTo( true ) );
+            assertThat( typeSystem.FLOAT().isTypeOf( value ), equalTo( true ) );
             assertThat( value.asDouble(), equalTo( 6.28 ) );
         }
 
@@ -153,7 +157,7 @@ public class ParametersIT
         for ( ImmutableRecord record : result.retain() )
         {
             Value value = record.value( "a.value" );
-            assertThat( value.isString(), equalTo( true ) );
+            assertThat( typeSystem.STRING().isTypeOf( value ), equalTo( true ) );
             assertThat( value.asString(), equalTo( "ö" ) );
         }
 
@@ -171,7 +175,7 @@ public class ParametersIT
         for ( ImmutableRecord record : result.retain() )
         {
             Value value = record.value( "a.value" );
-            assertThat( value.isString(), equalTo( true ) );
+            assertThat( typeSystem.STRING().isTypeOf( value ), equalTo( true ) );
             assertThat( value.asString(), equalTo( "Mjölnir" ) );
         }
 
@@ -188,7 +192,7 @@ public class ParametersIT
         for ( ImmutableRecord record : result.retain() )
         {
             Value value = record.value( "a.value" );
-            assertThat( value.isString(), equalTo( true ) );
+            assertThat( typeSystem.STRING().isTypeOf( value ), equalTo( true ) );
             assertThat( value.asString(), equalTo( "Mjölnir" ) );
         }
 
@@ -206,11 +210,11 @@ public class ParametersIT
         for ( ImmutableRecord record : result.retain() )
         {
             Value value = record.value( "a.value" );
-            assertThat( value.isList(), equalTo( true ) );
+            assertThat( typeSystem.LIST().isTypeOf( value ), equalTo( true ) );
             assertThat( value.elementCount(), equalTo( 3 ) );
             for ( Value item : value.asList() )
             {
-                assertThat( item.isBoolean(), equalTo( true ) );
+                assertThat( typeSystem.BOOLEAN().isTypeOf( value ), equalTo( true ) );
                 assertThat( item.asBoolean(), equalTo( true ) );
             }
         }
@@ -229,11 +233,11 @@ public class ParametersIT
         for ( ImmutableRecord record : result.retain() )
         {
             Value value = record.value( "a.value" );
-            assertThat( value.isList(), equalTo( true ) );
+            assertThat( typeSystem.LIST().isTypeOf( value ), equalTo( true ) );
             assertThat( value.elementCount(), equalTo( 3 ) );
             for ( Value item : value.asList() )
             {
-                assertThat( item.isInteger(), equalTo( true ) );
+                assertThat( typeSystem.INTEGER().isTypeOf( value ), equalTo( true ) );
                 assertThat( item.asLong(), equalTo( 42L ) );
             }
         }
@@ -252,11 +256,11 @@ public class ParametersIT
         for ( ImmutableRecord record : result.retain() )
         {
             Value value = record.value( "a.value" );
-            assertThat( value.isList(), equalTo( true ) );
+            assertThat( typeSystem.BOOLEAN().isTypeOf( value ), equalTo( true ) );
             assertThat( value.elementCount(), equalTo( 3 ) );
             for ( Value item : value.asList() )
             {
-                assertThat( item.isFloat(), equalTo( true ) );
+                assertThat( typeSystem.FLOAT().isTypeOf( value ), equalTo( true ) );
                 assertThat( item.asDouble(), equalTo( 6.28 ) );
             }
         }
@@ -275,11 +279,11 @@ public class ParametersIT
         for ( ImmutableRecord record : result.retain() )
         {
             Value value = record.value( "a.value" );
-            assertThat( value.isList(), equalTo( true ) );
+            assertThat( typeSystem.LIST().isTypeOf( value ), equalTo( true ) );
             assertThat( value.elementCount(), equalTo( 3 ) );
             for ( Value item : value.asList() )
             {
-                assertThat( item.isString(), equalTo( true ) );
+                assertThat( typeSystem.STRING().isTypeOf( value ), equalTo( true ) );
                 assertThat( item.asString(), equalTo( "Mjölnir" ) );
             }
         }
@@ -297,11 +301,11 @@ public class ParametersIT
         for ( ImmutableRecord record : result.retain() )
         {
             Value value = record.value( "a.value" );
-            assertThat( value.isList(), equalTo( true ) );
+            assertThat( typeSystem.LIST().isTypeOf( value ), equalTo( true ) );
             assertThat( value.elementCount(), equalTo( 3 ) );
             for ( Value item : value.asList() )
             {
-                assertThat( item.isString(), equalTo( true ) );
+                assertThat( typeSystem.STRING().isTypeOf( value ), equalTo( true ) );
                 assertThat( item.asString(), equalTo( "cat" ) );
             }
         }
@@ -320,7 +324,7 @@ public class ParametersIT
         for ( ImmutableRecord record : result.retain() )
         {
             Value value = record.value( "a.value" );
-            assertThat( value.isBoolean(), equalTo( true ) );
+            assertThat( typeSystem.BOOLEAN().isTypeOf( value ), equalTo( true ) );
             assertThat( value.asBoolean(), equalTo( true ) );
         }
 
@@ -338,7 +342,7 @@ public class ParametersIT
         for ( ImmutableRecord record : result.retain() )
         {
             Value value = record.value( "a.value" );
-            assertThat( value.isInteger(), equalTo( true ) );
+            assertThat( typeSystem.INTEGER().isTypeOf( value ), equalTo( true ) );
             assertThat( value.asLong(), equalTo( 42L ) );
         }
 
@@ -356,7 +360,7 @@ public class ParametersIT
         for ( ImmutableRecord record : result.retain() )
         {
             Value value = record.value( "a.value" );
-            assertThat( value.isFloat(), equalTo( true ) );
+            assertThat( typeSystem.FLOAT().isTypeOf( value ), equalTo( true ) );
             assertThat( value.asDouble(), equalTo( 6.28 ) );
         }
 
@@ -374,7 +378,7 @@ public class ParametersIT
         for ( ImmutableRecord record : result.retain() )
         {
             Value value = record.value( "a.value" );
-            assertThat( value.isString(), equalTo( true ) );
+            assertThat( typeSystem.STRING().isTypeOf( value ), equalTo( true ) );
             assertThat( value.asString(), equalTo( "Mjölnir" ) );
         }
     }

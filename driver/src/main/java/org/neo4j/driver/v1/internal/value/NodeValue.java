@@ -22,7 +22,6 @@ import org.neo4j.driver.v1.Node;
 import org.neo4j.driver.v1.Type;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
-import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
 public class NodeValue extends ValueAdapter
 {
@@ -45,8 +44,7 @@ public class NodeValue extends ValueAdapter
         return adapted;
     }
 
-    @Override
-    public boolean isNode()
+    private boolean isNode()
     {
         return true;
     }
@@ -63,12 +61,6 @@ public class NodeValue extends ValueAdapter
     public Iterable<String> keys()
     {
         return adapted.keys();
-    }
-
-    @Override
-    public TypeConstructor typeConstructor()
-    {
-        return TypeConstructor.NODE_TyCon;
     }
 
     @Override

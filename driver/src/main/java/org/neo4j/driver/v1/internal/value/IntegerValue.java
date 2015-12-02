@@ -20,7 +20,6 @@ package org.neo4j.driver.v1.internal.value;
 
 import org.neo4j.driver.v1.Type;
 import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
-import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
 public class IntegerValue extends NumberValueAdapter
 {
@@ -29,6 +28,12 @@ public class IntegerValue extends NumberValueAdapter
     public IntegerValue( long val )
     {
         this.val = val;
+    }
+
+    @Override
+    public Type type()
+    {
+        return StandardTypeSystem.TYPE_SYSTEM.INTEGER();
     }
 
     @Override
@@ -70,24 +75,6 @@ public class IntegerValue extends NumberValueAdapter
     public float asFloat()
     {
         return (float) val;
-    }
-
-    @Override
-    public boolean isInteger()
-    {
-        return true;
-    }
-
-    @Override
-    public Type type()
-    {
-        return StandardTypeSystem.TYPE_SYSTEM.INTEGER();
-    }
-
-    @Override
-    public TypeConstructor typeConstructor()
-    {
-        return TypeConstructor.INTEGER_TyCon;
     }
 
     @Override

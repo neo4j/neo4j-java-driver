@@ -21,7 +21,6 @@ package org.neo4j.driver.v1.internal.value;
 import org.neo4j.driver.v1.Identity;
 import org.neo4j.driver.v1.Type;
 import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
-import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
 public class IdentityValue extends ValueAdapter
 {
@@ -34,6 +33,12 @@ public class IdentityValue extends ValueAdapter
     }
 
     @Override
+    public Type type()
+    {
+        return StandardTypeSystem.TYPE_SYSTEM.IDENTITY();
+    }
+
+    @Override
     public Object asObject()
     {
         return asIdentity();
@@ -43,24 +48,6 @@ public class IdentityValue extends ValueAdapter
     public Identity asIdentity()
     {
         return val;
-    }
-
-    @Override
-    public TypeConstructor typeConstructor()
-    {
-        return TypeConstructor.IDENTITY_TyCon;
-    }
-
-    @Override
-    public boolean isIdentity()
-    {
-        return true;
-    }
-
-    @Override
-    public Type type()
-    {
-        return StandardTypeSystem.TYPE_SYSTEM.INTEGER();
     }
 
     @Override

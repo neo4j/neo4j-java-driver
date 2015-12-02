@@ -27,10 +27,13 @@ import org.neo4j.driver.v1.MapLike;
 import org.neo4j.driver.v1.Node;
 import org.neo4j.driver.v1.Path;
 import org.neo4j.driver.v1.Relationship;
+import org.neo4j.driver.v1.Type;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.value.NotMultiValued;
 import org.neo4j.driver.v1.exceptions.value.Uncoercible;
 import org.neo4j.driver.v1.exceptions.value.Unsizable;
+import org.neo4j.driver.v1.internal.types.TypeConstructor;
+import org.neo4j.driver.v1.internal.types.TypeRepresentation;
 import org.neo4j.driver.v1.internal.util.Extract;
 
 import static java.util.Collections.emptyList;
@@ -40,68 +43,74 @@ import static org.neo4j.driver.v1.Values.valueAsIs;
 public abstract class ValueAdapter implements InternalValue
 {
     @Override
+    public boolean hasType( Type type )
+    {
+        return type.isTypeOf( this );
+    }
+
+    @Override
     public boolean isNull()
     {
         return false;
     }
-    
+
     public boolean containsKey( String key )
     {
-        throw new NotMultiValued( typeName() + " is not a keyed collection" );
+        throw new NotMultiValued( type().name() + " is not a keyed collection" );
     }
 
     @Override
     public String asString()
     {
-        throw new Uncoercible( typeName(), "Java String" );
+        throw new Uncoercible( type().name(), "Java String" );
     }
 
     @Override
     public char asChar()
     {
-        throw new Uncoercible( typeName(), "Java char" );
+        throw new Uncoercible( type().name(), "Java char" );
     }
 
     @Override
     public long asLong()
     {
-        throw new Uncoercible( typeName(), "Java long" );
+        throw new Uncoercible( type().name(), "Java long" );
     }
 
     @Override
     public int asInt()
     {
-        throw new Uncoercible( typeName(), "Java int" );
+        throw new Uncoercible( type().name(), "Java int" );
     }
 
     @Override
     public short asShort()
     {
-        throw new Uncoercible( typeName(), "Java short" );
+        throw new Uncoercible( type().name(), "Java short" );
     }
 
     @Override
     public byte asByte()
     {
-        throw new Uncoercible( typeName(), "Java byte" );
+        throw new Uncoercible( type().name(), "Java byte" );
     }
 
     @Override
     public float asFloat()
     {
-        throw new Uncoercible( typeName(), "Java float" );
+        throw new Uncoercible( type().name(), "Java float" );
     }
 
     @Override
     public double asDouble()
     {
-        throw new Uncoercible( typeName(), "Java double" );
+        throw new Uncoercible( type().name(), "Java double" );
     }
 
     @Override
     public boolean asBoolean()
     {
-        throw new Uncoercible( typeName(), "Java boolean" );
+        throw new Uncoercible( type().name(), "Java boolean" );
     }
 
     @Override
@@ -113,7 +122,7 @@ public abstract class ValueAdapter implements InternalValue
     @Override
     public <T> List<T> asList( Function<Value,T> mapFunction )
     {
-        throw new Uncoercible( typeName(), "Java List" );
+        throw new Uncoercible( type().name(), "Java List" );
     }
 
     @Override
@@ -125,13 +134,13 @@ public abstract class ValueAdapter implements InternalValue
     @Override
     public <T> Map<String, T> asMap( Function<Value,T> mapFunction )
     {
-        throw new Uncoercible( typeName(), "Java Map" );
+        throw new Uncoercible( type().name(), "Java Map" );
     }
 
     @Override
     public Object asObject()
     {
-        throw new Uncoercible( typeName(), "Java Object" );
+        throw new Uncoercible( type().name(), "Java Object" );
     }
 
     @Override
@@ -143,37 +152,37 @@ public abstract class ValueAdapter implements InternalValue
     @Override
     public <T> T[] asArray( Class<T> clazz, Function<Value, T> mapFunction )
     {
-        throw new Uncoercible( typeName(), "Java T[]" );
+        throw new Uncoercible( type().name(), "Java T[]" );
     }
 
     @Override
     public char[] asCharArray()
     {
-        throw new Uncoercible( typeName(), "Java char[]" );
+        throw new Uncoercible( type().name(), "Java char[]" );
     }
 
     @Override
     public long[] asLongArray()
     {
-        throw new Uncoercible( typeName(), "Java long[]" );
+        throw new Uncoercible( type().name(), "Java long[]" );
     }
 
     @Override
     public int[] asIntArray()
     {
-        throw new Uncoercible( typeName(), "Java int[]" );
+        throw new Uncoercible( type().name(), "Java int[]" );
     }
 
     @Override
     public short[] asShortArray()
     {
-        throw new Uncoercible( typeName(), "Java short[]" );
+        throw new Uncoercible( type().name(), "Java short[]" );
     }
 
     @Override
     public byte[] asByteArray()
     {
-        throw new Uncoercible( typeName(), "Java byte[]" );
+        throw new Uncoercible( type().name(), "Java byte[]" );
     }
 
     @Override
@@ -191,115 +200,55 @@ public abstract class ValueAdapter implements InternalValue
     @Override
     public Number asNumber()
     {
-        throw new Uncoercible( typeName(), "Java Number" );
+        throw new Uncoercible( type().name(), "Java Number" );
     }
 
     @Override
     public Identity asIdentity()
     {
-        throw new Uncoercible( typeName(), "Identity" );
+        throw new Uncoercible( type().name(), "Identity" );
     }
 
     @Override
     public Node asNode()
     {
-        throw new Uncoercible( typeName(), "Node" );
+        throw new Uncoercible( type().name(), "Node" );
     }
 
     @Override
     public Path asPath()
     {
-        throw new Uncoercible( typeName(), "Path" );
+        throw new Uncoercible( type().name(), "Path" );
     }
 
     @Override
     public Relationship asRelationship()
     {
-        throw new Uncoercible( typeName(), "Relationship" );
+        throw new Uncoercible( type().name(), "Relationship" );
     }
 
     @Override
     public Value value( int index )
     {
-        throw new NotMultiValued( typeName() + " is not an indexed collection" );
+        throw new NotMultiValued( type().name() + " is not an indexed collection" );
     }
 
     @Override
     public Value value( String key )
     {
-        throw new NotMultiValued( typeName() + " is not a keyed collection" );
+        throw new NotMultiValued( type().name() + " is not a keyed collection" );
     }
 
     @Override
     public int elementCount()
     {
-        throw new Unsizable( typeName() + " does not have size" );
+        throw new Unsizable( type().name() + " does not have size" );
     }
 
     @Override
     public Iterable<String> keys()
     {
         return emptyList();
-    }
-
-    @Override
-    public boolean isString()
-    {
-        return false;
-    }
-
-    @Override
-    public boolean isInteger()
-    {
-        return false;
-    }
-
-    @Override
-    public boolean isFloat()
-    {
-        return false;
-    }
-
-    @Override
-    public boolean isBoolean()
-    {
-        return false;
-    }
-
-    @Override
-    public boolean isIdentity()
-    {
-        return false;
-    }
-
-    @Override
-    public boolean isNode()
-    {
-        return false;
-    }
-
-    @Override
-    public boolean isPath()
-    {
-        return false;
-    }
-
-    @Override
-    public boolean isRelationship()
-    {
-        return false;
-    }
-
-    @Override
-    public boolean isList()
-    {
-        return false;
-    }
-
-    @Override
-    public boolean isMap()
-    {
-        return false;
     }
 
     @Override
@@ -317,7 +266,7 @@ public abstract class ValueAdapter implements InternalValue
     @Override
     public <T> Iterable<T> values( Function<Value,T> mapFunction )
     {
-        throw new NotMultiValued( typeName() + " is not iterable" );
+        throw new NotMultiValued( type().name() + " is not iterable" );
     }
 
     @Override
@@ -335,23 +284,13 @@ public abstract class ValueAdapter implements InternalValue
     @Override
     public String toString()
     {
-        return String.format( "%s<>", typeName() );
+        return String.format( "%s<>", type().name() );
     }
 
-    protected String typeName()
+    @Override
+    public final TypeConstructor typeConstructor()
     {
-        if ( isNull() ) { return "null"; }
-        if ( isFloat() ) { return "float"; }
-        if ( isInteger() ) { return "integer"; }
-        if ( isBoolean() ) { return "boolean"; }
-        if ( isString() ) { return "string"; }
-        if ( isList() ) { return "list"; }
-        if ( isMap() ) { return "map"; }
-        if ( isIdentity() ) { return "identity"; }
-        if ( isNode() ) { return "node"; }
-        if ( isRelationship() ) { return "relationship"; }
-        if ( isPath() ) { return "path"; }
-        return "unknown";
+        return ( (TypeRepresentation) type() ).constructor();
     }
 }
 

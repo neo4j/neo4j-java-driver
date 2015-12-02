@@ -75,14 +75,14 @@ public interface Value extends MapLike, ListLike
     /**
      * If the underlying value is a collection type, return the number of values in the collection.
      * <p>
-     * For {@link #isList() list} values, this will return the size of the list.
+     * For {@link TypeSystem#LIST()}  list} values, this will return the size of the list.
      * <p>
-     * For {@link #isMap() map} values, this will return the number of entries in the map.
+     * For {@link TypeSystem#MAP() map} values, this will return the number of entries in the map.
      * <p>
-     * For {@link #isNode() node} and {@link #isRelationship() relationship} values,
+     * For {@link TypeSystem#NODE() node} and {@link TypeSystem#RELATIONSHIP()}  relationship} values,
      * this will return the number of properties.
      * <p>
-     * For {@link #isPath() path} values, this returns the length (number of relationships) in the path.
+     * For {@link TypeSystem#PATH() path} values, this returns the length (number of relationships) in the path.
      *
      * @return the number of values in an underlying collection
      */
@@ -91,13 +91,26 @@ public interface Value extends MapLike, ListLike
 
     /**
      * If the underlying value supports {@link #value(String) key-based indexing}, return an iterable of the keys in the
-     * map, this applies to {@link #isMap() map}, {@link #asNode() node} and {@link
-     * #isRelationship() relationship} values.
+     * map, this applies to {@link TypeSystem#MAP() map}, {@link #asNode() node} and {@link
+     * TypeSystem#RELATIONSHIP()}  relationship} values.
      *
      * @return the keys in the value
      */
     @Override
     Iterable<String> keys();
+
+    /** @return The type of this value as defined in the Cypher language */
+    Type type();
+
+    /**
+     * Test if this value is a value of the given type
+     *
+     * @param type the given type
+     * @return type.isTypeOf( this )
+     */
+    boolean hasType( Type type );
+
+    boolean isNull();
 
     /** @return the value as a Java Object */
     Object asObject();
@@ -192,55 +205,4 @@ public interface Value extends MapLike, ListLike
 
     /** @return the value as a {@link Path}, if possible. */
     Path asPath();
-
-    // TODO: This should go away and be replaced by type introspection
-
-    boolean isNull();
-
-    /** @return true if the underlying value is a Neo4j string value */
-    boolean isString();
-
-    /** @return if the underlying value is a Neo4j 64-bit integer */
-    boolean isInteger();
-
-    /** @return if the underlying value is a Neo4j 64-bit float */
-    boolean isFloat();
-
-    /** @return if the underlying value is a Neo4j boolean */
-    boolean isBoolean();
-
-    /** @return if the underlying value is a Neo4j identity */
-    boolean isIdentity();
-
-    /** @return if the underlying value is a Neo4j node */
-    boolean isNode();
-
-    /** @return if the underlying value is a Neo4j path */
-    boolean isPath();
-
-    /** @return if the underlying value is a Neo4j relationship */
-    boolean isRelationship();
-
-    /**
-     * Lists are an ordered collection of values. You can {@link #values() iterate} over a list as well as
-     * access specific values {@link ListLike#value(int) by index}.
-     * <p>
-     * {@link #elementCount()} will give you the number of entries in the list.
-     *
-     * @return if the underlying value is a Neo4j list
-     */
-    boolean isList();
-
-    /**
-     * Maps are key/value objects, similar to {@link java.util.Map java maps}. You can use {@link #value(String)} to
-     * retrive values from the map, {@link #keys()} to list keys and {@link #values()} to iterate over the values.
-     * <p>
-     * {@link #elementCount()} will give you the number of entries in the map.
-     *
-     * @return if the underlying value is a Neo4j map
-     */
-    boolean isMap();
-
-    /** @return The type of this value as defined in the Cypher language */
-    Type type();
 }

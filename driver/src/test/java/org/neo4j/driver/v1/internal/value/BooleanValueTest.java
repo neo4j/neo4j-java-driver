@@ -20,6 +20,8 @@ package org.neo4j.driver.v1.internal.value;
 
 import org.junit.Test;
 
+import org.neo4j.driver.v1.TypeSystem;
+import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
 import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -32,6 +34,8 @@ import static org.neo4j.driver.v1.internal.value.BooleanValue.TRUE;
 
 public class BooleanValueTest
 {
+    TypeSystem typeSystem = StandardTypeSystem.TYPE_SYSTEM;
+
     @Test
     public void testBooleanTrue() throws Exception
     {
@@ -59,7 +63,7 @@ public class BooleanValueTest
         BooleanValue value = TRUE;
 
         // Then
-        assertThat( value.isBoolean(), equalTo( true ) );
+        assertThat( typeSystem.BOOLEAN().isTypeOf( value ), equalTo( true ) );
     }
 
     @Test
