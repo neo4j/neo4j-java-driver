@@ -27,9 +27,11 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import org.neo4j.driver.v1.Function;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.value.Uncoercible;
 import org.neo4j.driver.v1.internal.value.ListValue;
 import org.neo4j.driver.v1.internal.value.MapValue;
 import org.neo4j.driver.v1.internal.value.StringValue;
@@ -153,18 +155,5 @@ public class ValuesTest
         assertThat( result.get( "Cat" ), equalTo( "integer<1>" ) );
     }
 
-    @Test
-    public void convertIntegerValue()
-    {
-        // GIVEN
-        Value value = value( 42 );
 
-        // THEN
-        assertThat(value.asByte(), equalTo((byte) 42));
-        assertThat(value.asShort(), equalTo((short) 42));
-        assertThat(value.asInt(), equalTo( 42));
-        assertThat(value.asLong(), equalTo( 42L));
-        assertThat(value.asDouble(), equalTo( 42D));
-        assertThat(value.asFloat(), equalTo( 42F));
-    }
 }

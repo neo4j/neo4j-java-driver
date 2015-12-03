@@ -29,6 +29,7 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.driver.v1.internal.value.BooleanValue.FALSE;
 import static org.neo4j.driver.v1.internal.value.BooleanValue.TRUE;
 
@@ -90,14 +91,24 @@ public class BooleanValueTest
     @Test
     public void shouldNotBeNull()
     {
-        assertFalse( BooleanValue.TRUE.isNull() );
+        assertFalse( TRUE.isNull() );
         assertFalse( BooleanValue.FALSE.isNull() );
     }
 
     @Test
     public void shouldTypeAsBoolean()
     {
-        assertThat( BooleanValue.TRUE.typeConstructor(), equalTo( TypeConstructor.BOOLEAN_TyCon ) );
+        assertThat( TRUE.typeConstructor(), equalTo( TypeConstructor.BOOLEAN_TyCon ) );
         assertThat( BooleanValue.FALSE.typeConstructor(), equalTo( TypeConstructor.BOOLEAN_TyCon ) );
     }
+
+    @Test
+    public void shouldConvertToBooleanAndObject()
+    {
+        assertTrue( TRUE.asBoolean());
+        assertFalse( BooleanValue.FALSE.asBoolean());
+        assertThat( TRUE.asObject(), equalTo( (Object) Boolean.TRUE ));
+        assertThat( FALSE.asObject(), equalTo( (Object) Boolean.FALSE ));
+    }
+
 }

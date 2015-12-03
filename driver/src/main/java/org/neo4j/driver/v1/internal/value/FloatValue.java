@@ -38,7 +38,7 @@ public class FloatValue extends NumberValueAdapter
 
     public Number asNumber()
     {
-        return asFloat();
+        return val;
     }
 
     @Override

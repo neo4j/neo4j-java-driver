@@ -42,11 +42,6 @@ public class PathValue extends ValueAdapter
         return adapted;
     }
 
-    private boolean isPath()
-    {
-        return true;
-    }
-
     @Override
     public int size()
     {
@@ -80,5 +75,11 @@ public class PathValue extends ValueAdapter
     public int hashCode()
     {
         return adapted.hashCode();
+    }
+
+    @Override
+    public String toString()
+    {
+        return adapted.toString();
     }
 }
