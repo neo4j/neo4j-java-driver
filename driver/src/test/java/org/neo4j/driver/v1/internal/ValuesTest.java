@@ -19,19 +19,19 @@
 package org.neo4j.driver.v1.internal;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import org.neo4j.driver.v1.Function;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.exceptions.value.Uncoercible;
 import org.neo4j.driver.v1.internal.value.ListValue;
 import org.neo4j.driver.v1.internal.value.MapValue;
 import org.neo4j.driver.v1.internal.value.StringValue;
@@ -123,18 +123,24 @@ public class ValuesTest
         map.put( "Cat", new ListValue( values( "meow", "miaow" ) ) );
         map.put( "Dog", new ListValue( values( "wow" ) ) );
         map.put( "Wrong", new ListValue( values( -1 ) ) );
-        MapValue values = new MapValue( map );
+        MapValue mapValue = new MapValue( map );
 
         // When
-        Iterable<List<String>> list = values.values( valueAsList( valueToString() ) );
+        Iterable<List<String>> list = mapValue.values( valueAsList( valueToString() ) );
 
         // Then
-        assertEquals( 3, values.size() );
+        assertEquals( 3, mapValue.size() );
         Iterator<List<String>> listIterator = list.iterator();
-        for ( Value value : values.values() )
+        Set<String> setA = new HashSet<>( 3 );
+        Set<String> setB = new HashSet<>( 3 );
+        for ( Value value : mapValue.values() )
         {
-            assertEquals( value.value( 0 ).toString(), listIterator.next().get( 0 ) );
+            String a = value.value( 0 ).toString();
+            String b = listIterator.next().get( 0 );
+            setA.add( a );
+            setB.add( b );
         }
+        assertThat( setA, equalTo( setB ) );
     }
 
     @Test

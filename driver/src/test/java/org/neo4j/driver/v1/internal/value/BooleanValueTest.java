@@ -28,8 +28,8 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
-
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.driver.v1.internal.value.BooleanValue.FALSE;
 import static org.neo4j.driver.v1.internal.value.BooleanValue.TRUE;
 
@@ -45,6 +45,8 @@ public class BooleanValueTest
 
         // Then
         assertThat( value.asBoolean(), equalTo( true ) );
+        assertThat( value.isTrue(), equalTo( true ) );
+        assertThat( value.isFalse(), equalTo( false ) );
     }
 
     @Test
@@ -55,6 +57,8 @@ public class BooleanValueTest
 
         // Then
         assertThat( value.asBoolean(), equalTo( false ) );
+        assertThat( value.isTrue(), equalTo( false ) );
+        assertThat( value.isFalse(), equalTo( true ) );
     }
 
     @Test
@@ -110,5 +114,4 @@ public class BooleanValueTest
         assertThat( TRUE.asObject(), equalTo( (Object) Boolean.TRUE ));
         assertThat( FALSE.asObject(), equalTo( (Object) Boolean.FALSE ));
     }
-
 }

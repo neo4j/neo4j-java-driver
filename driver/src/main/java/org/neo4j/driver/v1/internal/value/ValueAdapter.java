@@ -56,6 +56,18 @@ public abstract class ValueAdapter implements InternalValue
     }
 
     @Override
+    public boolean isTrue()
+    {
+        return false;
+    }
+
+    @Override
+    public boolean isFalse()
+    {
+        return false;
+    }
+
+    @Override
     public boolean isNull()
     {
         return false;
