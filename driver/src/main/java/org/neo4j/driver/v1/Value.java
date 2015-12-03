@@ -116,15 +116,16 @@ public interface Value extends PropertyAccessor, ListAccessor
      */
     boolean hasType( Type type );
 
+    boolean isTrue();
+
+    boolean isFalse();
+
     boolean isNull();
 
     /** @return the value as a Java Object */
     Object asObject();
 
     /**
-     * If the value represents a number, this method will return true if the number is not equals to 0.
-     * If the value represents a collection, this method will return true if the collection is not empty.
-     * If the value represents a string, this method will return true, if the string is not empty.
      * @return the value as a Java boolean, if possible.
      */
     boolean asBoolean();
