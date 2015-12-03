@@ -34,8 +34,15 @@ import org.neo4j.driver.v1.internal.messaging.Message;
 import org.neo4j.driver.v1.internal.spi.Logger;
 import org.neo4j.driver.v1.internal.messaging.MessageFormat;
 
+import static java.nio.ByteOrder.*;
+
 public class SocketClient
 {
+    private static final int MAGIC_PREAMBLE = 0x6060B017;
+    private static final int VERSION1 = 1;
+    private static final int NO_VERSION = 0;
+    private static final int[] SUPPORTED_VERSIONS = new int[]{VERSION1, NO_VERSION, NO_VERSION, NO_VERSION};
+
     private final String host;
     private final int port;
     private final Logger logger;
@@ -121,14 +128,15 @@ public class SocketClient
 
     private SocketProtocol negotiateProtocol() throws IOException
     {
-        // TODO make this not so hard-coded
-        logger.debug( "~~ [HANDSHAKE] [1, 0, 0, 0]." );
-        // Propose protocol versions
-        ByteBuffer buf = ByteBuffer.wrap( new byte[]{
-                0, 0, 0, 1,
-                0, 0, 0, 0,
-                0, 0, 0, 0,
-                0, 0, 0, 0} );
+        logger.debug( "~~ [HANDSHAKE] [0x6060B017, 1, 0, 0, 0]." );
+        //Propose protocol versions
+        ByteBuffer buf = ByteBuffer.allocate( 5 * 4 ).order( BIG_ENDIAN);
+        buf.putInt( MAGIC_PREAMBLE );
+        for ( int version : SUPPORTED_VERSIONS )
+        {
+            buf.putInt( version );
+        }
+        buf.flip();
 
         channel.write( buf );
 
@@ -141,13 +149,12 @@ public class SocketClient
         // Choose protocol, or fail
         buf.flip();
         final int proposal = buf.getInt();
-
         switch ( proposal )
         {
-        case 1:
+        case VERSION1:
             logger.debug( "~~ [HANDSHAKE] 1" );
             return new SocketProtocolV1( channel );
-        case 0: throw new ClientException( "The server does not support any of the protocol versions supported by " +
+        case NO_VERSION: throw new ClientException( "The server does not support any of the protocol versions supported by " +
                                            "this driver. Ensure that you are using driver and server versions that " +
                                            "are compatible with one another." );
         default: throw new ClientException( "Protocol error, server suggested unexpected protocol version: " +
