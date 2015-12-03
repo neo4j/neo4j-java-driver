@@ -133,4 +133,15 @@ public class TransactionIT
         assertTrue( tx.isOpen() );
     }
 
+    @Test
+    public void shouldHandleNullParametersGracefully()
+    {
+        // When
+        session.run("match (n) return count(n)", null);
+
+        // Then
+        // pass - no exception thrown
+
+    }
+
 }
