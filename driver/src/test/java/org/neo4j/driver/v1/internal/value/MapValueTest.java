@@ -1,15 +1,15 @@
 /**
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
- *
+ * <p/>
  * This file is part of Neo4j.
- *
+ * <p/>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p/>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p/>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,52 +18,51 @@
  */
 package org.neo4j.driver.v1.internal.value;
 
-import java.util.HashMap;
-
 import org.junit.Test;
 
-import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.internal.SimpleNode;
-import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
-import org.neo4j.driver.v1.internal.types.TypeConstructor;
+import java.util.HashMap;
 
-import static java.util.Collections.singletonList;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.driver.v1.Values.value;
 
-public class NodeValueTest
+public class MapValueTest
 {
     @Test
     public void shouldHaveSensibleToString() throws Throwable
     {
-        assertEquals("node<#1234>", nodeValue().toString());
-    }
-
-    @Test
-    public void shouldNotBeNull()
-    {
-        assertFalse( nodeValue().isNull() );
+        MapValue mapValue = mapValue();
+        assertThat( mapValue.toString(), equalTo( "map<{k1=v1, k2=integer<42>}>" ) );
     }
 
     @Test
     public void shouldHaveCorrectType() throws Throwable
     {
-        assertThat(nodeValue().type(), equalTo( StandardTypeSystem.TYPE_SYSTEM.NODE() ));
-    }
 
+        MapValue map = mapValue();
+
+        assertThat(map.type(), equalTo( StandardTypeSystem.TYPE_SYSTEM.MAP() ));
+    }
 
     @Test
-    public void shouldTypeAsNode()
+    public void shouldNotBeNull() throws Throwable
     {
-        InternalValue value = nodeValue();
-        assertThat( value.typeConstructor(), equalTo( TypeConstructor.NODE_TyCon ) );
+        MapValue map = mapValue();
+
+       assertFalse(map.isNull());
     }
 
-    private NodeValue nodeValue()
+
+
+    private MapValue mapValue()
     {
-        return new NodeValue( new SimpleNode( 1234, singletonList( "User" ), new HashMap<String, Value>() ) );
+        HashMap<String,Value> map =  new HashMap<>();
+        map.put( "k1", value( "v1" ) );
+        map.put( "k2", value( 42 ) );
+        return new MapValue( map );
     }
 }

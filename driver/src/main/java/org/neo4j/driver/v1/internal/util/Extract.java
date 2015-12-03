@@ -41,6 +41,9 @@ import static java.util.Collections.singletonMap;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableMap;
 
+/**
+ * Utility class for extracting data.
+ */
 public final class Extract
 {
     private Extract()

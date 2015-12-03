@@ -18,52 +18,48 @@
  */
 package org.neo4j.driver.v1.internal.value;
 
-import java.util.HashMap;
-
 import org.junit.Test;
+
+import java.util.HashMap;
 
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.internal.SimpleNode;
+import org.neo4j.driver.v1.internal.SimplePath;
+import org.neo4j.driver.v1.internal.SimpleRelationship;
 import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
 import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
 import static java.util.Collections.singletonList;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 
-public class NodeValueTest
+public class PathValueTest
 {
     @Test
     public void shouldHaveSensibleToString() throws Throwable
     {
-        assertEquals("node<#1234>", nodeValue().toString());
+        assertEquals("Path[[(#42)-[#43:T]->(#44)]]", pathValue().toString());
     }
 
     @Test
     public void shouldNotBeNull()
     {
-        assertFalse( nodeValue().isNull() );
+        Value value = pathValue();
+        assertFalse( value.isNull() );
     }
+
 
     @Test
     public void shouldHaveCorrectType() throws Throwable
     {
-        assertThat(nodeValue().type(), equalTo( StandardTypeSystem.TYPE_SYSTEM.NODE() ));
+
+        assertThat(pathValue().type(), equalTo( StandardTypeSystem.TYPE_SYSTEM.PATH() ));
     }
 
-
-    @Test
-    public void shouldTypeAsNode()
+    private PathValue pathValue()
     {
-        InternalValue value = nodeValue();
-        assertThat( value.typeConstructor(), equalTo( TypeConstructor.NODE_TyCon ) );
-    }
-
-    private NodeValue nodeValue()
-    {
-        return new NodeValue( new SimpleNode( 1234, singletonList( "User" ), new HashMap<String, Value>() ) );
+        return new PathValue( new SimplePath( new SimpleNode(42L), new SimpleRelationship( 43L, 42L, 44L, "T" ), new SimpleNode( 44L ) ) );
     }
 }
