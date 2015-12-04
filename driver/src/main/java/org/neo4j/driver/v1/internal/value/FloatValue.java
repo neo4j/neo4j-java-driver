@@ -108,12 +108,6 @@ public class FloatValue extends NumberValueAdapter
     }
 
     @Override
-    public String toString()
-    {
-        return "float<" + val + ">";
-    }
-
-    @Override
     public boolean equals( Object o )
     {
         if ( this == o )
@@ -134,5 +128,11 @@ public class FloatValue extends NumberValueAdapter
     {
         long temp = Double.doubleToLongBits( val );
         return (int) (temp ^ (temp >>> 32));
+    }
+
+    @Override
+    protected String valueAsString()
+    {
+        return Double.toString( val );
     }
 }

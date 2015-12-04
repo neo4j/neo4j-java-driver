@@ -78,7 +78,7 @@ public class PathValue extends ValueAdapter
     }
 
     @Override
-    public String toString()
+    public String valueAsString()
     {
         return adapted.toString();
     }

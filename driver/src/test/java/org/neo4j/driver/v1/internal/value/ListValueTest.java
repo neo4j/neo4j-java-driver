@@ -20,17 +20,10 @@ package org.neo4j.driver.v1.internal.value;
 
 import org.junit.Test;
 
-import java.util.HashMap;
-
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.internal.SimpleNode;
 import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
-import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
-import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.driver.v1.Values.value;
 
@@ -40,7 +33,7 @@ public class ListValueTest
     public void shouldHaveSensibleToString() throws Throwable
     {
         ListValue listValue = listValue( value( 1 ), value( 2 ), value( 3 ) );
-        assertThat( listValue.toString(), equalTo( "ListValue[integer<1>, integer<2>, integer<3>]" ) );
+        assertThat( listValue.toString(), equalTo( "[1 :: INTEGER, 2 :: INTEGER, 3 :: INTEGER] :: LIST OF ANY?" ) );
     }
 
     @Test

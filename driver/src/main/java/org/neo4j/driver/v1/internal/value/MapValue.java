@@ -90,9 +90,9 @@ public class MapValue extends ValueAdapter
     }
 
     @Override
-    public String toString()
+    public String valueAsString()
     {
-        return String.format( "map<%s>", val.toString() );
+        return val.toString();
     }
 
     @Override

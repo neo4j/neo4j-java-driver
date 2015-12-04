@@ -69,12 +69,6 @@ public class StringValue extends ValueAdapter
         return StandardTypeSystem.TYPE_SYSTEM.STRING();
     }
 
-    @Override
-    public String toString()
-    {
-        return val;
-    }
-
     public Object asObject()
     {
         return asString();
@@ -101,5 +95,11 @@ public class StringValue extends ValueAdapter
     public int hashCode()
     {
         return val.hashCode();
+    }
+
+    @Override
+    protected String valueAsString()
+    {
+        return val;
     }
 }

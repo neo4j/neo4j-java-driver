@@ -97,9 +97,9 @@ public class IntegerValue extends NumberValueAdapter
     }
 
     @Override
-    public String toString()
+    public String valueAsString()
     {
-        return "integer<" + val + ">";
+        return Long.toString( val );
     }
 
     @Override

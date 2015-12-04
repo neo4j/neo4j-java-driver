@@ -97,7 +97,7 @@ public class RelationshipValue extends ValueAdapter
     }
 
     @Override
-    public String toString()
+    public String valueAsString()
     {
         return adapted.toString();
     }

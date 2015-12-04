@@ -196,9 +196,9 @@ public class ListValue extends ValueAdapter
     }
 
     @Override
-    public String toString()
+    public String valueAsString()
     {
-        return "ListValue" + Arrays.toString( values ) + "";
+        return Arrays.toString( values );
     }
 
     @Override
