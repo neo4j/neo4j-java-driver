@@ -19,6 +19,7 @@
 package org.neo4j.driver.v1.internal.value;
 
 import org.neo4j.driver.v1.Type;
+import org.neo4j.driver.v1.exceptions.value.LossyCoercion;
 import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
 
 public class IntegerValue extends NumberValueAdapter
@@ -39,7 +40,7 @@ public class IntegerValue extends NumberValueAdapter
     @Override
     public Number asNumber()
     {
-        return asInt();
+        return val;
     }
 
     @Override
@@ -51,23 +52,41 @@ public class IntegerValue extends NumberValueAdapter
     @Override
     public int asInt()
     {
+        if (val > Integer.MAX_VALUE || val < Integer.MIN_VALUE)
+        {
+            throw new LossyCoercion( type().name(), "Java int" );
+        }
         return (int) val;
     }
 
     @Override
     public short asShort()
     {
+        if (val > Short.MAX_VALUE || val < Short.MIN_VALUE)
+        {
+            throw new LossyCoercion( type().name(), "Java short" );
+        }
         return (short) val;
     }
 
     public byte asByte()
     {
+        if (val > Byte.MAX_VALUE || val < Byte.MIN_VALUE)
+        {
+            throw new LossyCoercion( type().name(), "Java byte" );
+        }
         return (byte) val;
     }
 
     @Override
     public double asDouble()
     {
+        double doubleVal = (double) val;
+        if ( (long) doubleVal != val)
+        {
+            throw new LossyCoercion( type().name(), "Java double" );
+        }
+
         return (double) val;
     }
 
