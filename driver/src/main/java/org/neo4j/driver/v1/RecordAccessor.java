@@ -20,6 +20,8 @@ package org.neo4j.driver.v1;
 
 import java.util.List;
 
+import org.neo4j.driver.v1.exceptions.ClientException;
+
 /**
  * Access an underlying record (which is an ordered map of fields)
  *
@@ -34,6 +36,7 @@ public interface RecordAccessor extends ListAccessor, MapAccessor
      * Retrieve all record fields
      *
      * @return all fields in key order
+     * @throws ClientException if record has not been initialized.
      */
     List<Field<Value>> fields();
 
@@ -44,6 +47,7 @@ public interface RecordAccessor extends ListAccessor, MapAccessor
      * @param mapFunction a function to map from Value to T. See {@link Values} for some predefined functions, such
      * as {@link Values#valueAsBoolean()}, {@link Values#valueAsList(Function)}.
      * @return the result of mapping all record fields in key order
+     * @throws ClientException if record has not been initialized.
      */
     <V> List<Field<V>> fields( Function<Value, V> mapFunction );
 }

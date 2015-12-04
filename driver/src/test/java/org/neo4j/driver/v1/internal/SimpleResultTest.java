@@ -31,6 +31,7 @@ import org.neo4j.driver.v1.ImmutableRecord;
 import org.neo4j.driver.v1.Property;
 import org.neo4j.driver.v1.Result;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.internal.summary.ResultBuilder;
 import org.neo4j.driver.v1.internal.value.NullValue;
 
@@ -161,7 +162,7 @@ public class SimpleResultTest
         Result result = createResult( 17 );
         result.skip( 5 );
 
-        expectedException.expect( IllegalStateException.class );
+        expectedException.expect( ClientException.class );
         result.retain();
     }
 
@@ -179,6 +180,61 @@ public class SimpleResultTest
         assertThat( result.value( 1 ), equalTo( value( "v2-1" ) ) );
         assertThat( result.value( 2 ), equalTo( NullValue.NULL ) );
         assertThat( result.value( -37 ), equalTo( NullValue.NULL ) );
+    }
+
+    @Test
+    public void accessingRecordsWithoutCallingNextShouldFail()
+    {
+        // GIVEN
+        Result result = createResult( 11 );
+
+        // WHEN
+        // not calling next, first, nor skip
+
+        // THEN
+        expectedException.expect( ClientException.class );
+        result.record();
+    }
+
+    @Test
+    public void accessingValueWithoutCallingNextShouldFail()
+    {
+        // GIVEN
+        Result result = createResult( 11 );
+
+        // WHEN
+        // not calling next, first, nor skip
+
+        // THEN
+        expectedException.expect( ClientException.class );
+        result.value( 1 );
+    }
+
+    @Test
+    public void accessingFieldsWithoutCallingNextShouldFail()
+    {
+        // GIVEN
+        Result result = createResult( 11 );
+
+        // WHEN
+        // not calling next, first, nor skip
+
+        // THEN
+        expectedException.expect( ClientException.class );
+        result.fields( );
+    }
+
+    @Test
+    public void accessingKeysWithoutCallingNextShouldNotFail()
+    {
+        // GIVEN
+        Result result = createResult( 11 );
+
+        // WHEN
+        // not calling next, first, nor skip
+
+        // THEN
+        assertThat(result.keys( ), equalTo(Arrays.asList( "k1", "k2" )));
     }
 
     private Result createResult( int numberOfRecords )

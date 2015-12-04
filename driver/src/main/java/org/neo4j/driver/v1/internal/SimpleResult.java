@@ -88,7 +88,7 @@ public class SimpleResult extends SimpleRecordAccessor implements Result
         assertOpen();
         if ( current == null )
         {
-            current = new EmptyRecord( keys );
+            throwNoRecord();
         }
         return current;
     }
@@ -177,7 +177,7 @@ public class SimpleResult extends SimpleRecordAccessor implements Result
         else
         {
             throw new
-                    IllegalStateException( String.format(
+                    ClientException( String.format(
                     "Can't retain records when cursor is not pointing at the first record (currently at position %d)",
                     position ) );
         }

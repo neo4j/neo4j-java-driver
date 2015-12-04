@@ -20,6 +20,8 @@ package org.neo4j.driver.v1;
 
 import java.util.List;
 
+import org.neo4j.driver.v1.exceptions.ClientException;
+
 
 /**
  * The result of running a statement, a stream of records represented as a cursor.
@@ -39,6 +41,7 @@ public interface Result extends RecordAccessor, Resource
 {
     /**
      * @return an immutable copy of the currently viewed record
+     * @throws ClientException if no calls has been made to {@link #next()}, {@link #first()}, nor {@link #skip(long)}
      */
     ImmutableRecord record();
 
@@ -94,7 +97,7 @@ public interface Result extends RecordAccessor, Resource
      * whole result for later use.
      *
      * Calling this method exhausts the result cursor and moves it to the last record
-     *@throws IllegalStateException if the cursor can't be positioned at the first record
+     * @throws ClientException if the cursor can't be positioned at the first record
      * @return list of all immutable records
      */
     List<ImmutableRecord> retain();
