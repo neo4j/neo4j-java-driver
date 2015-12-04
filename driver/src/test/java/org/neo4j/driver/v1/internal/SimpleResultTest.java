@@ -97,27 +97,6 @@ public class SimpleResultTest
     }
 
     @Test
-    public void countRecordsShouldGetTheCountRight()
-    {
-        assertThat( createResult( 3 ).count(), equalTo( 3L ) );
-        assertThat( createResult( 0 ).count(), equalTo( 0L ) );
-    }
-
-    @Test
-    public void countRecordsShouldMoveToTheEnd()
-    {
-        // GIVEN
-        Result result = createResult( 42 );
-
-        // WHEN
-        assertThat( result.count(), equalTo( 42L ) );
-
-        // THEN
-        assertTrue( result.atEnd() );
-        assertThat( result.position(), equalTo( 41L ) );
-    }
-
-    @Test
     public void singleShouldWorkAsExpected()
     {
         assertFalse( createResult( 42 ).single() );

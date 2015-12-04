@@ -52,17 +52,6 @@ public class SimpleResult extends SimpleRecordAccessor implements Result
         return open;
     }
 
-    @SuppressWarnings("StatementWithEmptyBody")
-    @Override
-    public long count()
-    {
-        long start = position();
-        long offset = start < 0 ? 0 : 1;
-        while ( next() ) ;
-        long end = position();
-        return end - start + offset;
-    }
-
     public Value value( int index )
     {
         return current == null ? throwNoRecord() : current.value( index );
