@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.v1;
 
+import org.neo4j.driver.v1.internal.value.NullValue;
+
 /**
  * Access the keys, properties and values of an underlying unordered map by key
  */
@@ -42,7 +44,7 @@ public interface MapAccessor
      * Retrieve the value of the property with the given key
      *
      * @param key the key of the property
-     * @return the property's value or a null value if no such key exists
+     * @return the property's value or a {@link NullValue} if no such key exists
      */
     Value value( String key );
 }
