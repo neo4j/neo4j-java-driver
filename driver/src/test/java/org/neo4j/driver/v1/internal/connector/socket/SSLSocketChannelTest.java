@@ -55,13 +55,12 @@ public class SSLSocketChannelTest
 
     private static int bufferSize;
     private static SSLEngine sslEngine;
-    private static SSLSession session;
 
     @BeforeClass
     public static void setup()
     {
         sslEngine = mock( SSLEngine.class );
-        session = mock( SSLSession.class );
+        SSLSession session = mock( SSLSession.class );
         when( sslEngine.getSession() ).thenReturn( session );
 
         // The strategy to enlarge the application buffer: double the size

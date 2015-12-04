@@ -25,7 +25,7 @@ import org.neo4j.driver.v1.Value;
 
 public final class ParameterSupport
 {
-    public static final Map<String,Value> NO_PARAMETERS = Collections.<String, Value>emptyMap();
+    public static final Map<String,Value> NO_PARAMETERS = Collections.emptyMap();
 
     private ParameterSupport()
     {

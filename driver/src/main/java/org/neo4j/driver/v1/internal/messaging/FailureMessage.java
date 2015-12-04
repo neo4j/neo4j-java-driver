@@ -66,16 +66,9 @@ public class FailureMessage implements Message
 
         FailureMessage that = (FailureMessage) o;
 
-        if ( code != null ? !code.equals( that.code ) : that.code != null )
-        {
-            return false;
-        }
-        if ( message != null ? !message.equals( that.message ) : that.message != null )
-        {
-            return false;
-        }
+        return !(code != null ? !code.equals( that.code ) : that.code != null) &&
+               !(message != null ? !message.equals( that.message ) : that.message != null);
 
-        return true;
     }
 
     @Override

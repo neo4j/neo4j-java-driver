@@ -18,16 +18,16 @@
  */
 package org.neo4j.driver.v1.internal.connector.socket;
 
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.PrintWriter;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Scanner;
 import javax.xml.bind.DatatypeConverter;
-
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -43,8 +43,6 @@ public class TrustOnFirstUseTrustManagerTest
     private static int knownServerPort;
     private static String knownServer;
 
-    private static String knownCert;
-
     @BeforeClass
     public static void setup() throws Throwable
     {
@@ -53,7 +51,7 @@ public class TrustOnFirstUseTrustManagerTest
         knownServerIp = "1.2.3.4";
         knownServerPort = 100;
         knownServer = knownServerIp + ":" + knownServerPort;
-        knownCert = DatatypeConverter.printBase64Binary( "certificate".getBytes() );
+        String knownCert = DatatypeConverter.printBase64Binary( "certificate".getBytes() );
 
         PrintWriter writer = new PrintWriter( knownCertsFile );
         writer.println( " # I am a comment." );

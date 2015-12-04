@@ -27,7 +27,7 @@ import java.util.Map;
 
 import static java.lang.Integer.toHexString;
 import static java.lang.String.format;
-import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 
 /**
  * PackStream is a messaging serialisation format heavily inspired by MessagePack.
@@ -286,23 +286,23 @@ public class PackStream
         {
             if ( value == null ) { packNull(); }
             else if ( value instanceof Boolean ) { pack( (boolean) value ); }
-            else if ( value instanceof boolean[] ) { pack( asList( value ) ); }
+            else if ( value instanceof boolean[] ) { pack( singletonList( value ) ); }
             else if ( value instanceof Byte ) { pack( (byte) value ); }
             else if ( value instanceof byte[] ) { pack( (byte[]) value ); }
             else if ( value instanceof Short ) { pack( (short) value ); }
-            else if ( value instanceof short[] ) { pack( asList( value ) ); }
+            else if ( value instanceof short[] ) { pack( singletonList( value ) ); }
             else if ( value instanceof Integer ) { pack( (int) value ); }
-            else if ( value instanceof int[] ) { pack( asList( value ) ); }
+            else if ( value instanceof int[] ) { pack( singletonList( value ) ); }
             else if ( value instanceof Long ) { pack( (long) value ); }
-            else if ( value instanceof long[] ) { pack( asList( value ) ); }
+            else if ( value instanceof long[] ) { pack( singletonList( value ) ); }
             else if ( value instanceof Float ) { pack( (float) value ); }
-            else if ( value instanceof float[] ) { pack( asList( value ) ); }
+            else if ( value instanceof float[] ) { pack( singletonList( value ) ); }
             else if ( value instanceof Double ) { pack( (double) value ); }
-            else if ( value instanceof double[] ) { pack( asList( value ) ); }
+            else if ( value instanceof double[] ) { pack( singletonList( value ) ); }
             else if ( value instanceof Character ) { pack( Character.toString( (char) value ) ); }
             else if ( value instanceof char[] ) { pack( new String( (char[]) value ) ); }
             else if ( value instanceof String ) { pack( (String) value ); }
-            else if ( value instanceof String[] ) { pack( asList( value ) ); }
+            else if ( value instanceof String[] ) { pack( singletonList( value ) ); }
             else if ( value instanceof List ) { pack( (List) value ); }
             else if ( value instanceof Map ) { pack( (Map) value ); }
             else { throw new Unpackable( format( "Cannot pack object %s", value ) );}

@@ -21,6 +21,9 @@ package org.neo4j.driver.v1;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.driver.v1.exceptions.value.LossyCoercion;
+import org.neo4j.driver.v1.exceptions.value.Uncoercible;
+
 /**
  * Represents a value from Neo4j.
  *
@@ -105,7 +108,7 @@ public interface Value extends PropertyAccessor, ListAccessor
     @Override
     Iterable<String> keys();
 
-    /** @return The type of this value as defined in the Cypher language */
+    /** @return The type of this value as defined in the Neo4j type system */
     Type type();
 
     /**
@@ -116,10 +119,19 @@ public interface Value extends PropertyAccessor, ListAccessor
      */
     boolean hasType( Type type );
 
+    /**
+     * @return <tt>true</tt> if the value is a Boolean value and has the value True.
+     */
     boolean isTrue();
 
+    /**
+     * @return <tt>true</tt> if the value is a Boolean value and has the value False.
+     */
     boolean isFalse();
 
+    /**
+     * @return <tt>true</tt> if the value is a Null, otherwise <tt>false</tt>
+     */
     boolean isNull();
 
     /** @return the value as a Java Object */
@@ -127,37 +139,86 @@ public interface Value extends PropertyAccessor, ListAccessor
 
     /**
      * @return the value as a Java boolean, if possible.
+     * @throws Uncoercible if value types are incompatible.
      */
     boolean asBoolean();
 
-    /** @return the value as a Java String, if possible. */
+    /**
+     *  @return the value as a Java String, if possible.
+     *  @throws Uncoercible if value types are incompatible.
+     */
     String asString();
 
-    /** @return the value as a Java char, if possible. */
+    /**
+     * @return the value as a Java char, if possible.
+     * @throws Uncoercible if value types are incompatible.
+     */
     char asChar();
 
-    /** @return the value as a Java Number, if possible. */
+    /**
+     * @return the value as a Java Number, if possible.
+     * @throws Uncoercible if value types are incompatible.
+     */
     Number asNumber();
 
-    /** @return the value as a Java long, if possible. */
+    /**
+     * Returns a Java long if no precision is lost in the conversion.
+     *
+     * @return the value as a Java long.
+     * @throws LossyCoercion if it is not possible to convert the value without loosing precision.
+     * @throws Uncoercible if value types are incompatible.
+     */
     long asLong();
 
-    /** @return the value as a Java int, if possible. */
+    /**
+     * Returns a Java int if no precision is lost in the conversion.
+     *
+     * @return the value as a Java int.
+     * @throws LossyCoercion if it is not possible to convert the value without loosing precision.
+     * @throws Uncoercible if value types are incompatible.
+     */
     int asInt();
 
-    /** @return the value as a Java short, if possible. */
+    /**
+     * Returns a Java short if no precision is lost in the conversion.
+     *
+     * @return the value as a Java short.
+     * @throws LossyCoercion if it is not possible to convert the value without loosing precision.
+     * @throws Uncoercible if value types are incompatible.
+     */
     short asShort();
 
-    /** @return the value as a Java byte, if possible. */
+    /**
+     * Returns a Java byte if no precision is lost in the conversion.
+     *
+     * @return the value as a Java byte.
+     * @throws LossyCoercion if it is not possible to convert the value without loosing precision.
+     * @throws Uncoercible if value types are incompatible.
+     */
     byte asByte();
 
-    /** @return the value as a Java double, if possible. */
+    /**
+     * Returns a Java double if no precision is lost in the conversion.
+     *
+     * @return the value as a Java double.
+     * @throws LossyCoercion if it is not possible to convert the value without loosing precision.
+     * @throws Uncoercible if value types are incompatible.
+     */
     double asDouble();
 
-    /** @return the value as a Java float, if possible. */
+    /**
+     * Returns a Java float if no precision is lost in the conversion.
+     *
+     * @return the value as a Java float.
+     * @throws LossyCoercion if it is not possible to convert the value without loosing precision.
+     * @throws Uncoercible if value types are incompatible.
+     */
     float asFloat();
 
-    /** @return the value as an {@link Identity}, if possible. */
+    /**
+     * @return the value as an {@link Identity}, if possible.
+     * @throws Uncoercible if value types are incompatible.
+     */
     Identity asIdentity();
 
     /**
@@ -173,22 +234,66 @@ public interface Value extends PropertyAccessor, ListAccessor
      */
     <T> List<T> asList( Function<Value, T> mapFunction );
 
+    /**
+     * If the Value is for example a List, returns the value as an array of values instead.
+     * @return an array of Values.
+     * @throws Uncoercible if the Value cannot be turned into an array.
+     */
     Value[] asArray();
 
+
+    /**
+     * Map the value with provided function. See {@link Values} for some predefined functions, such
+     * as {@link Values#valueAsBoolean()}, {@link Values#valueAsList(Function)}.
+     *
+     * @param clazz the class of T
+     * @param mapFunction a function mapping Values into T
+     * @param <T> The type of the array
+     * @return an array of T
+     * @throws Uncoercible if the Value cannot be turned into an array.
+     */
     <T> T[] asArray( Class<T> clazz, Function<Value, T> mapFunction );
 
+    /**
+     * @return the value as an array of chars.
+     * @throws Uncoercible if the value cannot be coerced to a char array.
+     */
     char[] asCharArray();
 
+    /**
+     * @return the value as an array of longs.
+     * @throws Uncoercible if the value cannot be coerced to a long array.
+     */
     long[] asLongArray();
 
+    /**
+     * @return the value as an array of ints.
+     * @throws Uncoercible if the value cannot be coerced to a int array.
+     */
     int[] asIntArray();
 
+    /**
+     * @return the value as an array of shorts.
+     * @throws Uncoercible if the value cannot be coerced to a short array.
+     */
     short[] asShortArray();
 
+    /**
+     * @return the value as an array of bytes.
+     * @throws Uncoercible if the value cannot be coerced to a byte array.
+     */
     byte[] asByteArray();
 
+    /**
+     * @return the value as an array of doubles.
+     * @throws Uncoercible if the value cannot be coerced to a double array.
+     */
     double[] asDoubleArray();
 
+    /**
+     * @return the value as an array of floats.
+     * @throws Uncoercible if the value cannot be coerced to a float array.
+     */
     float[] asFloatArray();
 
     /**
@@ -204,12 +309,21 @@ public interface Value extends PropertyAccessor, ListAccessor
      */
     <T> Map<String, T> asMap( Function<Value, T> mapFunction );
 
-    /** @return the value as a {@link Node}, if possible. */
+    /**
+     * @return the value as a {@link Node}, if possible.
+     * @throws Uncoercible if value types are incompatible.
+     */
     Node asNode();
 
-    /** @return the value as a {@link Relationship}, if possible. */
+    /**
+     * @return the value as a {@link Relationship}, if possible.
+     * @throws Uncoercible if value types are incompatible.
+     */
     Relationship asRelationship();
 
-    /** @return the value as a {@link Path}, if possible. */
+    /**
+     * @return the value as a {@link Path}, if possible.
+     * @throws Uncoercible if value types are incompatible.
+     */
     Path asPath();
 }
