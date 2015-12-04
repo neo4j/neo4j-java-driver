@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.v1;
 
+import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.internal.value.NullValue;
 
 /**
@@ -45,6 +46,7 @@ public interface MapAccessor
      *
      * @param key the key of the property
      * @return the property's value or a {@link NullValue} if no such key exists
+     * @throws ClientException if record has not been initialized
      */
     Value value( String key );
 }

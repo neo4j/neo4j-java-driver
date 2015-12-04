@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.v1;
 
+import org.neo4j.driver.v1.exceptions.ClientException;
+
 /**
  * Access an underlying list of values by index
  *
@@ -30,6 +32,7 @@ public interface ListAccessor
      *
      * @param index the index of the value
      * @return the value or a {@link org.neo4j.driver.v1.internal.value.NullValue} if the index is out of bounds
+     * @throws ClientException if record has not been initialized
      */
     Value value( int index );
 }
