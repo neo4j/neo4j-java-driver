@@ -160,18 +160,26 @@ public class SimpleResult extends SimpleRecordAccessor implements Result
     @Override
     public List<ImmutableRecord> retain()
     {
-        if ( first() )
+        if ( isEmpty() )
+        {
+            return Collections.emptyList();
+        }
+        else if ( first() )
         {
             List<ImmutableRecord> result = new ArrayList<>();
             do
             {
                 result.add( record() );
-            } while ( next() );
+            }
+            while ( next() );
             return result;
         }
         else
         {
-            return Collections.emptyList();
+            throw new
+                    IllegalStateException( String.format(
+                    "Can't retain records when cursor is not pointing at the first record (currently at position %d)",
+                    position ) );
         }
     }
 
@@ -194,6 +202,11 @@ public class SimpleResult extends SimpleRecordAccessor implements Result
         {
             throw new IllegalStateException( "Already closed" );
         }
+    }
+
+    private boolean isEmpty()
+    {
+        return position == -1 && !iter.hasNext();
     }
 
     private void assertOpen()
