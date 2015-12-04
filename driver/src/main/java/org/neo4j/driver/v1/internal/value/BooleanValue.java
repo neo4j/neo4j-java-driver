@@ -80,6 +80,12 @@ public abstract class BooleanValue extends ValueAdapter
         {
             return obj == TRUE;
         }
+
+        @Override
+        protected String valueAsString()
+        {
+            return "TRUE";
+        }
     }
 
     private static class FalseValue extends BooleanValue
@@ -113,6 +119,12 @@ public abstract class BooleanValue extends ValueAdapter
         public boolean equals( Object obj )
         {
             return obj == FALSE;
+        }
+
+        @Override
+        protected String valueAsString()
+        {
+            return "FALSE";
         }
     }
 }

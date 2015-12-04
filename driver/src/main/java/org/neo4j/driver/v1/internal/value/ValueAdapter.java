@@ -38,7 +38,6 @@ import org.neo4j.driver.v1.internal.types.TypeRepresentation;
 import org.neo4j.driver.v1.internal.util.Extract;
 
 import static java.util.Collections.emptyList;
-
 import static org.neo4j.driver.v1.Values.valueAsIs;
 
 public abstract class ValueAdapter implements InternalValue
@@ -309,7 +308,7 @@ public abstract class ValueAdapter implements InternalValue
     @Override
     public String toString()
     {
-        return String.format( "%s<>", type().name() );
+        return String.format( "%s :: %s", valueAsString(), type().name() );
     }
 
     @Override
@@ -317,6 +316,8 @@ public abstract class ValueAdapter implements InternalValue
     {
         return ( (TypeRepresentation) type() ).constructor();
     }
+
+    protected abstract String valueAsString();
 }
 
 

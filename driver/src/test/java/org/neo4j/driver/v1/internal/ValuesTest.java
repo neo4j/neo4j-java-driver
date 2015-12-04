@@ -18,16 +18,16 @@
  */
 package org.neo4j.driver.v1.internal;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
@@ -40,7 +40,6 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
-
 import static org.neo4j.driver.v1.Values.value;
 import static org.neo4j.driver.v1.Values.valueAsList;
 import static org.neo4j.driver.v1.Values.valueToString;
@@ -157,8 +156,8 @@ public class ValuesTest
 
         // Then
         assertThat( result.size(), equalTo( 2 ) );
-        assertThat( result.get( "Dog" ), equalTo( "integer<2>" ) );
-        assertThat( result.get( "Cat" ), equalTo( "integer<1>" ) );
+        assertThat( result.get( "Dog" ), equalTo( "2 :: INTEGER" ) );
+        assertThat( result.get( "Cat" ), equalTo( "1 :: INTEGER" ) );
     }
 
 

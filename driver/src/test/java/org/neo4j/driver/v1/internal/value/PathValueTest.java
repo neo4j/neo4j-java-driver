@@ -20,16 +20,12 @@ package org.neo4j.driver.v1.internal.value;
 
 import org.junit.Test;
 
-import java.util.HashMap;
-
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.internal.SimpleNode;
 import org.neo4j.driver.v1.internal.SimplePath;
 import org.neo4j.driver.v1.internal.SimpleRelationship;
 import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
-import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
-import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -40,7 +36,7 @@ public class PathValueTest
     @Test
     public void shouldHaveSensibleToString() throws Throwable
     {
-        assertEquals("Path[[(#42)-[#43:T]->(#44)]]", pathValue().toString());
+        assertEquals("Path[[(#42)-[#43:T]->(#44)]] :: PATH", pathValue().toString());
     }
 
     @Test

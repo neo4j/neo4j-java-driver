@@ -36,7 +36,7 @@ public class MapValueTest
     public void shouldHaveSensibleToString() throws Throwable
     {
         MapValue mapValue = mapValue();
-        assertThat( mapValue.toString(), equalTo( "map<{k1=v1, k2=integer<42>}>" ) );
+        assertThat( mapValue.toString(), equalTo( "{k1=v1 :: STRING, k2=42 :: INTEGER} :: MAP" ) );
     }
 
     @Test

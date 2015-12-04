@@ -18,9 +18,9 @@
  */
 package org.neo4j.driver.v1.internal.value;
 
-import java.util.HashMap;
-
 import org.junit.Test;
+
+import java.util.HashMap;
 
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.internal.SimpleNode;
@@ -28,7 +28,6 @@ import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
 import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
 import static java.util.Collections.singletonList;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -39,7 +38,7 @@ public class NodeValueTest
     @Test
     public void shouldHaveSensibleToString() throws Throwable
     {
-        assertEquals("node<#1234>", nodeValue().toString());
+        assertEquals("node<#1234> :: NODE", nodeValue().toString());
     }
 
     @Test

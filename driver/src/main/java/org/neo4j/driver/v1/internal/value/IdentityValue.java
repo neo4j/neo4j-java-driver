@@ -51,12 +51,6 @@ public class IdentityValue extends ValueAdapter
     }
 
     @Override
-    public String toString()
-    {
-        return val.toString();
-    }
-
-    @Override
     public boolean equals( Object o )
     {
         if ( this == o )
@@ -77,5 +71,11 @@ public class IdentityValue extends ValueAdapter
     public int hashCode()
     {
         return val.hashCode();
+    }
+
+    @Override
+    protected String valueAsString()
+    {
+        return val.toString();
     }
 }

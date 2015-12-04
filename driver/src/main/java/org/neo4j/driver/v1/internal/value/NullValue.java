@@ -56,4 +56,10 @@ public class NullValue extends ValueAdapter
     {
         return 0;
     }
+
+    @Override
+    protected String valueAsString()
+    {
+        return "NULL";
+    }
 }
