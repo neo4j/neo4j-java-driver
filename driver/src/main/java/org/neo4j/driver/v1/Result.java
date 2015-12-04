@@ -89,13 +89,13 @@ public interface Result extends RecordAccessor, Resource
     boolean single();
 
     /**
-     * Retrieve and store the entire remaining result stream (including the current record).
+     * Retrieve and store the entire result stream.
      * This can be used if you want to iterate over the stream multiple times or to store the
      * whole result for later use.
      *
      * Calling this method exhausts the result cursor and moves it to the last record
-     *
-     * @return list of all remaining immutable records
+     *@throws IllegalStateException if the cursor can't be positioned at the first record
+     * @return list of all immutable records
      */
     List<ImmutableRecord> retain();
 

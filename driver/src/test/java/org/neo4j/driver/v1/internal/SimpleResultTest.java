@@ -156,6 +156,16 @@ public class SimpleResultTest
     }
 
     @Test
+    public void retainFailsIfItCannotRetainEntireResult()
+    {
+        Result result = createResult( 17 );
+        result.skip( 5 );
+
+        expectedException.expect( IllegalStateException.class );
+        result.retain();
+    }
+
+    @Test
     public void accessingOutOfBoundsShouldBeNull()
     {
         // GIVEN
