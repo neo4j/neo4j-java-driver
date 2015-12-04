@@ -52,7 +52,7 @@ public class ResultBuilder implements StreamCollector
     public ResultBuilder( String statement, Map<String, Value> parameters )
     {
         Map<String, Value> unmodifiableParameters =
-            parameters.isEmpty() ? NO_PARAMETERS : unmodifiableMap( parameters );
+            (parameters == null) || (parameters.isEmpty()) ? NO_PARAMETERS : unmodifiableMap( parameters );
         this.summaryBuilder = new SummaryBuilder( new Statement( statement, unmodifiableParameters ) );
     }
 
