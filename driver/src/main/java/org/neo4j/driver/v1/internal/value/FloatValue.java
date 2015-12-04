@@ -19,6 +19,7 @@
 package org.neo4j.driver.v1.internal.value;
 
 import org.neo4j.driver.v1.Type;
+import org.neo4j.driver.v1.exceptions.value.LossyCoercion;
 import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
 
 public class FloatValue extends NumberValueAdapter
@@ -44,25 +45,49 @@ public class FloatValue extends NumberValueAdapter
     @Override
     public long asLong()
     {
-        return (long) val;
+        long longVal = (long) val;
+        if ((double) longVal != val)
+        {
+            throw new LossyCoercion( type().name(), "Java long" );
+        }
+
+        return longVal;
     }
 
     @Override
     public int asInt()
     {
-        return (int) val;
+        int intVal = (int) val;
+        if ((double) intVal != val)
+        {
+            throw new LossyCoercion( type().name(), "Java int" );
+        }
+
+        return intVal;
     }
 
     @Override
     public short asShort()
     {
-        return (short) val;
+        short shortVal = (short) val;
+        if ((double) shortVal != val)
+        {
+            throw new LossyCoercion( type().name(), "Java short" );
+        }
+
+        return shortVal;
     }
 
     @Override
     public byte asByte()
     {
-        return (byte) val;
+        byte byteVal = (byte) val;
+        if ((double) byteVal != val)
+        {
+            throw new LossyCoercion( type().name(), "Java byte" );
+        }
+
+        return byteVal;
     }
 
     public double asDouble()
@@ -73,7 +98,13 @@ public class FloatValue extends NumberValueAdapter
     @Override
     public float asFloat()
     {
-        return (float) val;
+        float floatVal = (float) val;
+        if ((double) floatVal != val)
+        {
+            throw new LossyCoercion( type().name(), "Java float" );
+        }
+
+        return floatVal;
     }
 
     @Override

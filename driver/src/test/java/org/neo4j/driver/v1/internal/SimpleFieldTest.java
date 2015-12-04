@@ -16,22 +16,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1;
+package org.neo4j.driver.v1.internal;
 
-/**
- * Access an underlying list of values by index
- *
- * @see Value
- */
-public interface ListAccessor
+import org.junit.Test;
+
+import org.neo4j.driver.v1.Field;
+import org.neo4j.driver.v1.Value;
+
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertThat;
+import static org.neo4j.driver.v1.Values.value;
+
+
+public class SimpleFieldTest
 {
-    /**
-     * Retrieve the value at the given index
-     *
-     * @param index the index of the value
-     * @return the value or a {@link org.neo4j.driver.v1.internal.value.NullValue} if the index is out of bounds
-     */
-    Value value( int index );
+    @Test
+    public void testMethods()
+    {
+        Field<Value> field = SimpleField.of( "k", 42, value( "v" ) );
+        assertThat(field.key(), equalTo("k"));
+        assertThat(field.index(), equalTo(42));
+        assertThat(field.value(), equalTo(value("v")));
+    }
+
 }
-
-

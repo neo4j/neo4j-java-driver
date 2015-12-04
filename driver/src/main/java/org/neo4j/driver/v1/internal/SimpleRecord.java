@@ -18,9 +18,7 @@
  */
 package org.neo4j.driver.v1.internal;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -37,22 +35,6 @@ public class SimpleRecord extends SimpleRecordAccessor implements ImmutableRecor
     private final List<String> keys;
     private final Map<String, Integer> keyIndexLookup;
     private final Value[] values;
-
-    public static ImmutableRecord record( Object... alternatingFieldNameValue )
-    {
-        int length = alternatingFieldNameValue.length / 2;
-        List<String> keys = new ArrayList<>( length );
-        Map<String, Integer> keyIndexLookup = new HashMap<>( length );
-        Value[] fields = new Value[length];
-        for ( int i = 0; i < alternatingFieldNameValue.length; i += 2 )
-        {
-            String key = alternatingFieldNameValue[i].toString();
-            keys.add( key  );
-            keyIndexLookup.put( key, i / 2 );
-            fields[i / 2] = (Value) alternatingFieldNameValue[i + 1];
-        }
-        return new SimpleRecord( keys, keyIndexLookup, fields );
-    }
 
     public SimpleRecord( List<String> keys, Map<String, Integer> keyIndexLookup, Value[] values )
     {
