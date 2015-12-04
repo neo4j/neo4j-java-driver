@@ -25,6 +25,6 @@ import java.io.IOException;
  */
 public interface Message
 {
-    public abstract void dispatch( MessageHandler handler ) throws IOException;
+    void dispatch( MessageHandler handler ) throws IOException;
 
 }

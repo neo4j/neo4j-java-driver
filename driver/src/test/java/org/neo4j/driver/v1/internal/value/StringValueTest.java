@@ -136,4 +136,18 @@ public class StringValueTest
         InternalValue value = new StringValue( "Spongebob" );
         assertThat( value.typeConstructor(), equalTo( TypeConstructor.STRING_TyCon ) );
     }
+
+    @Test
+    public void shouldHaveStringType()
+    {
+        InternalValue value = new StringValue( "Spongebob" );
+        assertThat( value.type(), equalTo( StandardTypeSystem.TYPE_SYSTEM.STRING() ) );
+    }
+
+    @Test
+    public void testAsCharArray()
+    {
+        InternalValue value = new StringValue( "Spongebob" );
+        assertThat( value.asCharArray(), equalTo( new char[]{'S', 'p', 'o', 'n', 'g', 'e', 'b', 'o', 'b'} ) );
+    }
 }

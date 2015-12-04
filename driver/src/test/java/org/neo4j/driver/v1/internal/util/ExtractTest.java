@@ -18,17 +18,15 @@
  */
 package org.neo4j.driver.v1.internal.util;
 
-import org.hamcrest.Matchers;
-import org.hamcrest.collection.IsIterableContainingInAnyOrder;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -41,16 +39,15 @@ import org.neo4j.driver.v1.internal.ParameterSupport;
 import org.neo4j.driver.v1.internal.SimpleField;
 import org.neo4j.driver.v1.internal.SimpleNode;
 import org.neo4j.driver.v1.internal.SimpleProperty;
-import org.neo4j.driver.v1.internal.SimpleRecord;
 import org.neo4j.driver.v1.internal.summary.ResultBuilder;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.isA;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.neo4j.driver.v1.Values.value;
 
 public class ExtractTest
@@ -142,7 +139,10 @@ public class ExtractTest
         Iterable<Property<Integer>> properties = Extract.properties( node, integerExtractor() );
 
         // THEN
-        assertThat( properties, containsInAnyOrder( SimpleProperty.of( "k1", 43 ), SimpleProperty.of( "k2", 42 ) ) );
+        Iterator<Property<Integer>> iterator = properties.iterator();
+        assertThat( iterator.next(), equalTo( SimpleProperty.of( "k1", 43 ) ) );
+        assertThat( iterator.next(), equalTo( SimpleProperty.of( "k2", 42 ) ) );
+        assertFalse( iterator.hasNext() );
     }
 
     @Test
@@ -160,7 +160,7 @@ public class ExtractTest
 
 
         // THEN
-        assertThat(fields, equalTo(Arrays.asList( SimpleField.of( "k1", 0, 42 ) )));
+        assertThat( fields, equalTo( Collections.singletonList( SimpleField.of( "k1", 0, 42 ) ) ) );
     }
 
     private Function<Value,Integer> integerExtractor()
