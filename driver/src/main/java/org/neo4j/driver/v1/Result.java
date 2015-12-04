@@ -89,15 +89,6 @@ public interface Result extends RecordAccessor, Resource
     boolean single();
 
     /**
-     * Count all remaining records (including the current record) records in this result.
-     *
-     * Calling this method exhausts the result cursor and moves it to the last record.
-     *
-     * @return the number of remaining records (including the current record)
-     */
-    long count();
-
-    /**
      * Retrieve and store the entire remaining result stream (including the current record).
      * This can be used if you want to iterate over the stream multiple times or to store the
      * whole result for later use.
