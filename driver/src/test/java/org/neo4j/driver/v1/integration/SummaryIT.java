@@ -67,7 +67,7 @@ public class SummaryIT
         // Then
         assertFalse( result.next() );
         assertThat( summary.statementType(), equalTo( StatementType.READ_ONLY ) );
-        assertThat( summary.statement().text(), equalTo( statementText ) );
+        assertThat( summary.statement().template(), equalTo( statementText ) );
         assertThat( summary.statement().parameters(), equalTo( statementParameters ) );
         assertFalse( summary.hasPlan() );
         assertFalse( summary.hasProfile() );

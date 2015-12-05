@@ -100,21 +100,21 @@ public class TestNeo4jSession extends TestNeo4j implements Session
     }
 
     @Override
-    public Result run( String statementText, Map<String,Value> parameters )
+    public Result run( String statementText, Map<String,Value> statementParameters )
     {
-        return realSession.run( statementText, parameters );
+        return realSession.run( statementText, statementParameters );
     }
 
     @Override
-    public Result run( String statementText )
+    public Result run( String statementTemplate )
     {
-        return realSession.run( statementText );
+        return realSession.run( statementTemplate );
     }
 
     @Override
     public Result run( org.neo4j.driver.v1.Statement statement )
     {
-        return realSession.run( statement.text(), statement.parameters() );
+        return realSession.run( statement.template(), statement.parameters() );
     }
 
     @Override
