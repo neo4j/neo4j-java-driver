@@ -43,7 +43,7 @@ public interface Result extends RecordAccessor, Resource
      * @return an immutable copy of the currently viewed record
      * @throws ClientException if no calls has been made to {@link #next()}, {@link #first()}, nor {@link #skip(long)}
      */
-    ImmutableRecord record();
+    Record record();
 
     /**
      * Retrieve the zero based position of the cursor in the stream of records.
@@ -100,7 +100,7 @@ public interface Result extends RecordAccessor, Resource
      * @throws ClientException if the cursor can't be positioned at the first record
      * @return list of all immutable records
      */
-    List<ImmutableRecord> retain();
+    List<Record> retain();
 
     /**
      * Summarize the result.

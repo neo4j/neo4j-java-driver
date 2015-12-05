@@ -25,6 +25,9 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 /**
  * Access an underlying record (which is an ordered map of fields)
  *
+ * This provides only read methods. Subclasses may chose to provide additional methods
+ * for changing the underlying record.
+ *
  * @see Field
  */
 public interface RecordAccessor extends ListAccessor, MapAccessor

@@ -29,6 +29,7 @@ import java.util.List;
  *
  * Keeping the result summary around does not influence the lifecycle of any associated session and/or transaction.
  */
+@Immutable
 public interface ResultSummary
 {
     /**

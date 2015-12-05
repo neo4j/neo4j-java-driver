@@ -23,7 +23,7 @@ import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.driver.v1.ImmutableRecord;
+import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Result;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
@@ -45,7 +45,7 @@ public class StatementIT
     public void shouldRunWithResult() throws Throwable
     {
         // When I execute a statement that yields a result
-        List<ImmutableRecord> result = session.run( "UNWIND [1,2,3] AS k RETURN k" ).retain();
+        List<Record> result = session.run( "UNWIND [1,2,3] AS k RETURN k" ).retain();
 
         // Then the result object should contain the returned values
         assertThat( result.size(), equalTo( 3 ) );
@@ -57,7 +57,7 @@ public class StatementIT
 
         // And it should allow iteration
         long expected = 0;
-        for ( ImmutableRecord value : result )
+        for ( Record value : result )
         {
             expected += 1;
             assertThat( value.value( "k" ), equalTo( Values.value( expected ) ) );
@@ -87,7 +87,7 @@ public class StatementIT
     public void shouldRunParameterizedWithResult() throws Throwable
     {
         // When
-        List<ImmutableRecord> result =
+        List<Record> result =
                 session.run( "UNWIND {list} AS k RETURN k", parameters( "list", asList( 1, 2, 3 ) ) ).retain();
 
         // Then

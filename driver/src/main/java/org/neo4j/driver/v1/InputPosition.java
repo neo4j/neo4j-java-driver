@@ -21,6 +21,7 @@ package org.neo4j.driver.v1;
 /**
  * An input position refers to a specific character in a statement.
  */
+@Immutable
 public interface InputPosition
 {
     /**
