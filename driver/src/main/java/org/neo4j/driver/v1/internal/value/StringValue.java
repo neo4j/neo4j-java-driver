@@ -33,6 +33,12 @@ public class StringValue extends ValueAdapter
     }
 
     @Override
+    public boolean isEmpty()
+    {
+        return val.isEmpty();
+    }
+
+    @Override
     public String asString()
     {
         return val;
@@ -98,8 +104,8 @@ public class StringValue extends ValueAdapter
     }
 
     @Override
-    protected String valueAsString()
+    protected String asLiteralString()
     {
-        return val;
+        return String.format( "\"%s\"", val.replace( "\"", "\\\"" ) );
     }
 }

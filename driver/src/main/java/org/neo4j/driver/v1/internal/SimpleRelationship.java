@@ -99,6 +99,6 @@ public class SimpleRelationship extends SimpleEntity implements Relationship
     @Override
     public String toString()
     {
-        return "relationship<" + identity() + '>';
+        return String.format( "relationship<%s>", identity() );
     }
 }

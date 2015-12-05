@@ -55,7 +55,7 @@ public abstract class SimpleEntity implements Entity, AsValue
         return SimpleProperty.of( key, value( key ) );
     }
 
-    public int size()
+    public int propertyCount()
     {
         return properties.size();
     }

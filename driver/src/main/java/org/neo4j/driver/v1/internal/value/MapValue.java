@@ -26,6 +26,9 @@ import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
 import org.neo4j.driver.v1.internal.util.Extract;
+import org.neo4j.driver.v1.internal.util.Format;
+
+import static org.neo4j.driver.v1.Values.valueAsString;
 
 public class MapValue extends ValueAdapter
 {
@@ -34,6 +37,12 @@ public class MapValue extends ValueAdapter
     public MapValue( Map<String, Value> val )
     {
         this.val = val;
+    }
+
+    @Override
+    public boolean isEmpty()
+    {
+        return val.isEmpty();
     }
 
     @Override
@@ -55,6 +64,12 @@ public class MapValue extends ValueAdapter
 
     @Override
     public int size()
+    {
+        return propertyCount();
+    }
+
+    @Override
+    public int propertyCount()
     {
         return val.size();
     }
@@ -90,9 +105,15 @@ public class MapValue extends ValueAdapter
     }
 
     @Override
-    public String valueAsString()
+    public String asString()
     {
-        return val.toString();
+        return asMap( valueAsString() ).toString();
+    }
+
+    @Override
+    public String asLiteralString()
+    {
+        return Format.properties( propertyCount(), properties() );
     }
 
     @Override

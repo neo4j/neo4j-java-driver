@@ -50,16 +50,17 @@ public class SimpleProperty<V> implements Property<V>
     public boolean equals( Object o )
     {
         if ( this == o )
-        { return true; }
+        {
+            return true;
+        }
         if ( o == null || getClass() != o.getClass() )
-        { return false; }
+        {
+            return false;
+        }
 
         SimpleProperty<?> that = (SimpleProperty<?>) o;
 
-        if ( !key.equals( that.key ) )
-        { return false; }
-        return value.equals( that.value );
-
+        return key.equals( that.key ) && value.equals( that.value );
     }
 
     @Override
@@ -68,5 +69,11 @@ public class SimpleProperty<V> implements Property<V>
         int result = key.hashCode();
         result = 31 * result + value.hashCode();
         return result;
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format( "%s: %s", key, value.toString() );
     }
 }

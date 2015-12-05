@@ -44,17 +44,16 @@ public class NodeValue extends ValueAdapter
         return adapted;
     }
 
-    private boolean isNode()
-    {
-        return true;
-    }
-
     @Override
     public int size()
     {
-        int count = 0;
-        for ( String ignore : adapted.keys() ) { count++; }
-        return count;
+        return propertyCount();
+    }
+
+    @Override
+    public int propertyCount()
+    {
+        return adapted.propertyCount();
     }
 
     @Override
@@ -99,7 +98,7 @@ public class NodeValue extends ValueAdapter
     }
 
     @Override
-    public String valueAsString()
+    public String asLiteralString()
     {
         return adapted.toString();
     }

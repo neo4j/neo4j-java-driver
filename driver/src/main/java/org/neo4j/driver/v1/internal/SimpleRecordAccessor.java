@@ -31,6 +31,12 @@ import static org.neo4j.driver.v1.Values.valueAsIs;
 public abstract class SimpleRecordAccessor implements RecordAccessor
 {
     @Override
+    public int fieldCount()
+    {
+        return keys().size();
+    }
+
+    @Override
     public List<Field<Value>> fields()
     {
         return fields( valueAsIs() );
