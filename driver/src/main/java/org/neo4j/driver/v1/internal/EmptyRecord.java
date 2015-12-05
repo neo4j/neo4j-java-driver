@@ -22,13 +22,13 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.driver.v1.Function;
-import org.neo4j.driver.v1.ImmutableRecord;
+import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 
 import static java.util.Collections.emptyMap;
 
-public class EmptyRecord extends SimpleRecordAccessor implements ImmutableRecord
+public class EmptyRecord extends SimpleRecordAccessor implements Record
 {
     private final List<String> keys;
 

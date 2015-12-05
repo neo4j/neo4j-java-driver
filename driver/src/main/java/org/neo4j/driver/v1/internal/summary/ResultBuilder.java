@@ -24,10 +24,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.driver.v1.ImmutableRecord;
 import org.neo4j.driver.v1.Notification;
 import org.neo4j.driver.v1.Plan;
 import org.neo4j.driver.v1.ProfiledPlan;
+import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Result;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementType;
@@ -46,7 +46,7 @@ public class ResultBuilder implements StreamCollector
 {
     private final SummaryBuilder summaryBuilder;
 
-    private List<ImmutableRecord> body = new ArrayList<>();
+    private List<Record> body = new ArrayList<>();
     private List<String> keys = null;
     private Map<String, Integer> keyIndexLookup = null;
 

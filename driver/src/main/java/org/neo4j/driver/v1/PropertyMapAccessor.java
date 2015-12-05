@@ -20,6 +20,9 @@ package org.neo4j.driver.v1;
 
 /**
  * Access the properties of an underlying unordered map
+ *
+ * This provides only read methods. Subclasses may chose to provide additional methods
+ * for changing the underlying map.
  */
 public interface PropertyMapAccessor extends MapAccessor
 {

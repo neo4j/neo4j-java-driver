@@ -26,6 +26,7 @@ package org.neo4j.driver.v1;
  * stable 'ids' for your entities, you may choose to add an 'id' property with a {@link java.util.UUID} or similar
  * unique value.
  */
+@Immutable
 public interface Identity
 {
     // Force implementation

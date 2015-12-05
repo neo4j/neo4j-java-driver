@@ -23,6 +23,9 @@ import org.neo4j.driver.v1.internal.value.NullValue;
 
 /**
  * Access the keys, properties and values of an underlying unordered map by key
+ *
+ * This provides only read methods. Subclasses may chose to provide additional methods
+ * for changing the underlying map.
  */
 public interface MapAccessor
 {

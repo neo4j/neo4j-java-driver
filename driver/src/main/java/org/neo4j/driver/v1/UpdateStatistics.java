@@ -21,6 +21,7 @@ package org.neo4j.driver.v1;
 /**
  * Contains counters for the number of update operations performed by a statement.
  */
+@Immutable
 public interface UpdateStatistics
 {
     /**

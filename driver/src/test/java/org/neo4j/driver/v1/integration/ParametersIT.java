@@ -22,7 +22,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import org.neo4j.driver.v1.ImmutableRecord;
+import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Result;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
@@ -49,7 +49,7 @@ public class ParametersIT
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", true ) );
 
         // Then
-        for ( ImmutableRecord record : result.retain() )
+        for ( Record record : result.retain() )
         {
             Value value = record.value( "a.value" );
             assertThat( value.hasType( session.typeSystem().BOOLEAN() ), equalTo( true ) );
@@ -65,7 +65,7 @@ public class ParametersIT
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", (byte) 1 ) );
 
         // Then
-        for ( ImmutableRecord record : result.retain() )
+        for ( Record record : result.retain() )
         {
             Value value = record.value( "a.value" );
             assertThat( value.hasType( session.typeSystem().INTEGER() ), equalTo( true ) );
@@ -81,7 +81,7 @@ public class ParametersIT
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", (short) 1 ) );
 
         // Then
-        for ( ImmutableRecord record : result.retain() )
+        for ( Record record : result.retain() )
         {
             Value value = record.value( "a.value" );
             assertThat( value.hasType( session.typeSystem().INTEGER() ), equalTo( true ) );
@@ -97,7 +97,7 @@ public class ParametersIT
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", 1 ) );
 
         // Then
-        for ( ImmutableRecord record : result.retain() )
+        for ( Record record : result.retain() )
         {
             Value value = record.value( "a.value" );
             assertThat( value.hasType( session.typeSystem().INTEGER() ), equalTo( true ) );
@@ -114,7 +114,7 @@ public class ParametersIT
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", 1L ) );
 
         // Then
-        for ( ImmutableRecord record : result.retain() )
+        for ( Record record : result.retain() )
         {
             Value value = record.value( "a.value" );
             assertThat( value.hasType( session.typeSystem().INTEGER() ), equalTo( true ) );
@@ -131,7 +131,7 @@ public class ParametersIT
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", 6.28 ) );
 
         // Then
-        for ( ImmutableRecord record : result.retain() )
+        for ( Record record : result.retain() )
         {
             Value value = record.value( "a.value" );
             assertThat( value.hasType( session.typeSystem().FLOAT() ), equalTo( true ) );
@@ -148,7 +148,7 @@ public class ParametersIT
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", 'ö' ) );
 
         // Then
-        for ( ImmutableRecord record : result.retain() )
+        for ( Record record : result.retain() )
         {
             Value value = record.value( "a.value" );
             assertThat( value.hasType( session.typeSystem().STRING() ), equalTo( true ) );
@@ -166,7 +166,7 @@ public class ParametersIT
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", arrayValue ) );
 
         // Then
-        for ( ImmutableRecord record : result.retain() )
+        for ( Record record : result.retain() )
         {
             Value value = record.value( "a.value" );
             assertThat( value.hasType( session.typeSystem().STRING() ), equalTo( true ) );
@@ -183,7 +183,7 @@ public class ParametersIT
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", "Mjölnir" ) );
 
         // Then
-        for ( ImmutableRecord record : result.retain() )
+        for ( Record record : result.retain() )
         {
             Value value = record.value( "a.value" );
             assertThat( value.hasType( session.typeSystem().STRING() ), equalTo( true ) );
@@ -201,7 +201,7 @@ public class ParametersIT
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", arrayValue ) );
 
         // Then
-        for ( ImmutableRecord record : result.retain() )
+        for ( Record record : result.retain() )
         {
             Value value = record.value( "a.value" );
             assertThat( value.hasType( session.typeSystem().LIST() ), equalTo( true ) );
@@ -224,7 +224,7 @@ public class ParametersIT
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", arrayValue ) );
 
         // Then
-        for ( ImmutableRecord record : result.retain() )
+        for ( Record record : result.retain() )
         {
             Value value = record.value( "a.value" );
             assertThat( value.hasType( session.typeSystem().LIST() ), equalTo( true ) );
@@ -247,7 +247,7 @@ public class ParametersIT
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", arrayValue ) );
 
         // Then
-        for ( ImmutableRecord record : result.retain() )
+        for ( Record record : result.retain() )
         {
             Value value = record.value( "a.value" );
             assertThat( value.hasType( session.typeSystem().LIST() ), equalTo( true ) );
@@ -270,7 +270,7 @@ public class ParametersIT
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", arrayValue ) );
 
         // Then
-        for ( ImmutableRecord record : result.retain() )
+        for ( Record record : result.retain() )
         {
             Value value = record.value( "a.value" );
             assertThat( value.hasType( session.typeSystem().LIST() ), equalTo( true ) );
@@ -292,7 +292,7 @@ public class ParametersIT
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", arrayValue ) );
 
         // Then
-        for ( ImmutableRecord record : result.retain() )
+        for ( Record record : result.retain() )
         {
             Value value = record.value( "a.value" );
             assertThat( value.hasType( session.typeSystem().LIST() ), equalTo( true ) );
@@ -315,7 +315,7 @@ public class ParametersIT
                 parameters( "value", parameters( "v", true ) ) );
 
         // Then
-        for ( ImmutableRecord record : result.retain() )
+        for ( Record record : result.retain() )
         {
             Value value = record.value( "a.value" );
             assertThat( value.hasType( session.typeSystem().BOOLEAN() ), equalTo( true ) );
@@ -333,7 +333,7 @@ public class ParametersIT
                 parameters( "value", parameters( "v", 42 ) ) );
 
         // Then
-        for ( ImmutableRecord record : result.retain() )
+        for ( Record record : result.retain() )
         {
             Value value = record.value( "a.value" );
             assertThat( value.hasType( session.typeSystem().INTEGER() ), equalTo( true ) );
@@ -351,7 +351,7 @@ public class ParametersIT
                 parameters( "value", parameters( "v", 6.28 ) ) );
 
         // Then
-        for ( ImmutableRecord record : result.retain() )
+        for ( Record record : result.retain() )
         {
             Value value = record.value( "a.value" );
             assertThat( value.hasType( session.typeSystem().FLOAT() ), equalTo( true ) );
@@ -369,7 +369,7 @@ public class ParametersIT
                 parameters( "value", parameters( "v", "Mjölnir" ) ) );
 
         // Then
-        for ( ImmutableRecord record : result.retain() )
+        for ( Record record : result.retain() )
         {
             Value value = record.value( "a.value" );
             assertThat( value.hasType( session.typeSystem().STRING() ), equalTo( true ) );

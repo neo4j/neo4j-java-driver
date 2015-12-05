@@ -24,7 +24,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import org.neo4j.driver.v1.ImmutableRecord;
+import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.internal.ParameterSupport;
 
@@ -47,12 +47,12 @@ public class ResultCursorBuilderTest
         builder.record( new Value[]{value( "Admin" )} );
 
         // When
-        List<ImmutableRecord> result = builder.build().retain();
+        List<Record> result = builder.build().retain();
 
         // Then
         assertThat( result.size(), equalTo( 1 ) );
 
-        ImmutableRecord record = result.get( 0 );
+        Record record = result.get( 0 );
         assertThat( record.value( 0 ).asString(), equalTo( "Admin" ) );
     }
 
@@ -63,7 +63,7 @@ public class ResultCursorBuilderTest
         ResultBuilder builder = createResultBuilder();
 
         // When
-        List<ImmutableRecord> result = builder.build().retain();
+        List<Record> result = builder.build().retain();
 
         // Then
         assertThat( result.size(), equalTo( 0 ) );

@@ -27,6 +27,7 @@ package org.neo4j.driver.v1;
  * @see PropertyMapAccessor
  * @see RecordAccessor
  */
+@Immutable
 public interface Field<V> extends Property<V>
 {
     /**

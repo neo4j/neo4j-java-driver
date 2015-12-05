@@ -36,6 +36,7 @@ package org.neo4j.driver.v1;
  *     }
  * </pre>
  */
+@Immutable
 public interface Path extends Iterable<Path.Segment>
 {
     /**

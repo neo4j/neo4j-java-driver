@@ -24,6 +24,7 @@ package org.neo4j.driver.v1;
  *
  * @param <T> the type of the objects at the start and end of this directed item
  */
+@Immutable
 public interface Directed<T>
 {
     /** @return the start item from this directed sequence */

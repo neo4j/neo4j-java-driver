@@ -73,6 +73,7 @@ import org.neo4j.driver.v1.exceptions.value.Uncoercible;
  * }
  * </pre>
  */
+@Immutable
 public interface Value extends PropertyMapAccessor, ListAccessor
 {
     /**

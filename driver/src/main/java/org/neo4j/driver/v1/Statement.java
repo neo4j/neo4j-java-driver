@@ -35,6 +35,7 @@ import static java.lang.String.format;
  * @see Result#summarize()
  * @see ResultSummary
  */
+@Immutable
 public class Statement
 {
     private final String text;

@@ -18,19 +18,12 @@
  */
 package org.neo4j.driver.v1;
 
+import java.lang.annotation.Inherited;
+
 /**
- * A uniquely identifiable property container that can form part of a Neo4j graph.
+ * Indicates that instances of an annotated class are immutable
  */
-@Immutable
-public interface Entity extends PropertyMapAccessor
+@Inherited
+public @interface Immutable
 {
-    /**
-     * A unique {@link Identity identity} for this Entity. Identities are guaranteed
-     * to remain stable for the duration of the session they were found in, but may be re-used for other
-     * entities after that. As such, if you want a public identity to use for your entities, attaching
-     * an explicit 'id' property or similar persistent and unique identifier is a better choice.
-     *
-     * @return an identity object
-     */
-    Identity identity();
 }

@@ -23,7 +23,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-import org.neo4j.driver.v1.ImmutableRecord;
+import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Result;
 import org.neo4j.driver.v1.ResultSummary;
 import org.neo4j.driver.v1.Value;
@@ -32,14 +32,14 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 public class SimpleResult extends SimpleRecordAccessor implements Result
 {
     private final List<String> keys;
-    private final Iterator<ImmutableRecord> iter;
+    private final Iterator<Record> iter;
     private final ResultSummary summary;
 
     private boolean open = true;
-    private ImmutableRecord current = null;
+    private Record current = null;
     private long position = -1;
 
-    public SimpleResult( List<String> keys, List<ImmutableRecord> body, ResultSummary summary )
+    public SimpleResult( List<String> keys, List<Record> body, ResultSummary summary )
     {
         this.keys = keys;
         this.iter = body.iterator();
@@ -83,7 +83,7 @@ public class SimpleResult extends SimpleRecordAccessor implements Result
     }
 
     @Override
-    public ImmutableRecord record()
+    public Record record()
     {
         assertOpen();
         if ( current == null )
@@ -158,7 +158,7 @@ public class SimpleResult extends SimpleRecordAccessor implements Result
     }
 
     @Override
-    public List<ImmutableRecord> retain()
+    public List<Record> retain()
     {
         if ( isEmpty() )
         {
@@ -166,7 +166,7 @@ public class SimpleResult extends SimpleRecordAccessor implements Result
         }
         else if ( first() )
         {
-            List<ImmutableRecord> result = new ArrayList<>();
+            List<Record> result = new ArrayList<>();
             do
             {
                 result.add( record() );

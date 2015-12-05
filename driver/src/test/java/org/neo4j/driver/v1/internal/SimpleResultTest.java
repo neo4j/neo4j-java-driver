@@ -27,8 +27,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import org.neo4j.driver.v1.ImmutableRecord;
 import org.neo4j.driver.v1.Property;
+import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Result;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
@@ -150,7 +150,7 @@ public class SimpleResultTest
         Result result = createResult( 3 );
 
         // WHEN
-        List<ImmutableRecord> records = result.retain();
+        List<Record> records = result.retain();
 
         // THEN
         assertTrue(result.atEnd());
@@ -255,7 +255,7 @@ public class SimpleResultTest
         return builder.build();
     }
 
-    private List<Value> values( ImmutableRecord record )
+    private List<Value> values( Record record )
     {
         List<Value> result = new ArrayList<>( record.keys().size() );
         for ( Property<Value> property : record.fields() )

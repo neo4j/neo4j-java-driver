@@ -23,6 +23,9 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 /**
  * Access an underlying list of values by index
  *
+ * This provides only read methods. Subclasses may chose to provide additional methods
+ * for changing the underlying list.
+ * *
  * @see Value
  */
 public interface ListAccessor
