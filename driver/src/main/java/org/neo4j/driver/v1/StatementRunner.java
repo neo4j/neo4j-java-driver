@@ -44,19 +44,19 @@ public interface StatementRunner
      * }
      * </pre>
      *
-     * @param statementText text of a Neo4j statement
-     * @param parameters input data for the statement, see {@link Values#parameters(Object...)}
+     * @param statementTemplate template of a Neo4j statement
+     * @param statementParameters input data for the statement, see {@link Values#parameters(Object...)}
      * @return a stream of result values and associated metadata
      */
-    Result run( String statementText, Map<String, Value> parameters );
+    Result run( String statementTemplate, Map<String, Value> statementParameters );
 
     /**
      * Run a statement and return a result stream.
      *
-     * @param statementText text of a Neo4j statement
+     * @param statementTemplate template of a Neo4j statement
      * @return a stream of result values and associated metadata
      */
-    Result run( String statementText );
+    Result run( String statementTemplate );
 
     /**
      * Run a statement and return a result stream.

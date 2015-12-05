@@ -120,14 +120,14 @@ public class StandardTransaction implements Transaction
 
     @Override
     @SuppressWarnings( "unchecked" )
-    public Result run( String statementText, Map<String,Value> parameters )
+    public Result run( String statementText, Map<String,Value> statementParameters )
     {
         ensureNotFailed();
 
         try
         {
-            ResultBuilder resultBuilder = new ResultBuilder( statementText, parameters );
-            conn.run( statementText, parameters, resultBuilder );
+            ResultBuilder resultBuilder = new ResultBuilder( statementText, statementParameters );
+            conn.run( statementText, statementParameters, resultBuilder );
             conn.pullAll( resultBuilder );
             conn.sync();
             return resultBuilder.build();
@@ -140,15 +140,15 @@ public class StandardTransaction implements Transaction
     }
 
     @Override
-    public Result run( String statementText )
+    public Result run( String statementTemplate )
     {
-        return run( statementText, ParameterSupport.NO_PARAMETERS );
+        return run( statementTemplate, ParameterSupport.NO_PARAMETERS );
     }
 
     @Override
     public Result run( Statement statement )
     {
-        return run( statement.text(), statement.parameters() );
+        return run( statement.template(), statement.parameters() );
     }
 
     @Override

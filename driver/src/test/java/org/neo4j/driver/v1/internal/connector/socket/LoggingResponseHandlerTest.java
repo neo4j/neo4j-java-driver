@@ -18,9 +18,9 @@
  */
 package org.neo4j.driver.v1.internal.connector.socket;
 
-import org.junit.Test;
-
 import java.util.HashMap;
+
+import org.junit.Test;
 
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.internal.logging.DevNullLogger;
@@ -37,6 +37,7 @@ import org.neo4j.driver.v1.internal.messaging.RunMessage;
 import org.neo4j.driver.v1.internal.messaging.SuccessMessage;
 
 import static org.junit.Assert.assertEquals;
+
 import static org.neo4j.driver.v1.Values.parameters;
 
 public class LoggingResponseHandlerTest
@@ -71,7 +72,7 @@ public class LoggingResponseHandlerTest
         handler.handleRunMessage( "stat", parameters( "value", new String[]{"cat", "cat", "cat"} ) );
 
         // Then
-        assertEquals( "S: [RUN \"stat\" {value=[cat :: STRING, cat :: STRING, cat :: STRING] :: LIST OF ANY?}]", log );
+        assertEquals( "S: [RUN \"stat\" {value=[\"cat\" :: STRING, \"cat\" :: STRING, \"cat\" :: STRING] :: LIST OF ANY?}]", log );
         assertEquals( format( new RunMessage( "stat", parameters( "value", new String[]{"cat", "cat", "cat"} ) ) ),
                 log );
     }

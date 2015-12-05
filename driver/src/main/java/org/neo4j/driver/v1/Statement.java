@@ -38,28 +38,28 @@ import static java.lang.String.format;
 @Immutable
 public class Statement
 {
-    private final String text;
+    private final String template;
     private final Map<String, Value> parameters;
 
-    public Statement( String text, Map<String, Value> parameters )
+    public Statement( String template, Map<String, Value> parameters )
     {
-        this.text = text;
+        this.template = template;
         this.parameters = parameters == null || parameters.isEmpty()
             ? ParameterSupport.NO_PARAMETERS
             : Collections.unmodifiableMap( parameters );
     }
 
-    public Statement( String text )
+    public Statement( String template )
     {
-        this( text, null );
+        this( template, null );
     }
 
     /**
-     * @return the statement's text
+     * @return the statement's template
      */
-    public String text()
+    public String template()
     {
-        return text;
+        return template;
     }
 
     /**
@@ -71,12 +71,12 @@ public class Statement
     }
 
     /**
-     * @param newText the new statement's text
-     * @return a new statement with updated text
+     * @param newTemplate the new statement's template
+     * @return a new statement with updated template
      */
-    public Statement withText( String newText )
+    public Statement withTemplate( String newTemplate )
     {
-        return new Statement( newText, parameters );
+        return new Statement( newTemplate, parameters );
     }
 
     /**
@@ -85,7 +85,7 @@ public class Statement
      */
     public Statement withParameters( Map<String, Value> newParameters )
     {
-        return new Statement( text, newParameters );
+        return new Statement( template, newParameters );
     }
 
     /**
@@ -138,14 +138,14 @@ public class Statement
         }
 
         Statement statement = (Statement) o;
-        return text.equals( statement.text ) && parameters.equals( statement.parameters );
+        return template.equals( statement.template ) && parameters.equals( statement.parameters );
 
     }
 
     @Override
     public int hashCode()
     {
-        int result = text.hashCode();
+        int result = template.hashCode();
         result = 31 * result + parameters.hashCode();
         return result;
     }
@@ -153,6 +153,6 @@ public class Statement
     @Override
     public String toString()
     {
-        return format( "Statement{text='%s', parameters=%s}", text, parameters );
+        return format( "Statement{template='%s', parameters=%s}", template, parameters );
     }
 }

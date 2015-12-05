@@ -54,11 +54,11 @@ public class StandardSession implements Session
     }
 
     @Override
-    public Result run( String statementText, Map<String,Value> parameters )
+    public Result run( String statementText, Map<String,Value> statementParameters )
     {
         ensureNoOpenTransaction();
-        ResultBuilder resultBuilder = new ResultBuilder( statementText, parameters );
-        connection.run( statementText, parameters, resultBuilder );
+        ResultBuilder resultBuilder = new ResultBuilder( statementText, statementParameters );
+        connection.run( statementText, statementParameters, resultBuilder );
 
         connection.pullAll( resultBuilder );
         connection.sync();
@@ -66,15 +66,15 @@ public class StandardSession implements Session
     }
 
     @Override
-    public Result run( String statementText )
+    public Result run( String statementTemplate )
     {
-        return run( statementText, ParameterSupport.NO_PARAMETERS );
+        return run( statementTemplate, ParameterSupport.NO_PARAMETERS );
     }
 
     @Override
     public Result run( Statement statement )
     {
-        return run( statement.text(), statement.parameters() );
+        return run( statement.template(), statement.parameters() );
     }
 
     @Override
