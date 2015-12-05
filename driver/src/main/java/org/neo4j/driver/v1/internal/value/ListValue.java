@@ -30,6 +30,8 @@ import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
 import org.neo4j.driver.v1.internal.util.Extract;
 
+import static org.neo4j.driver.v1.Values.valueAsString;
+
 public class ListValue extends ValueAdapter
 {
     private final Value[] values;
@@ -37,6 +39,12 @@ public class ListValue extends ValueAdapter
     public ListValue( Value... values )
     {
         this.values = values;
+    }
+
+    @Override
+    public boolean isEmpty()
+    {
+        return values.length == 0;
     }
 
     @Override
@@ -196,7 +204,13 @@ public class ListValue extends ValueAdapter
     }
 
     @Override
-    public String valueAsString()
+    public String asString()
+    {
+        return asList( valueAsString() ).toString();
+    }
+
+    @Override
+    public String asLiteralString()
     {
         return Arrays.toString( values );
     }

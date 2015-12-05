@@ -283,7 +283,7 @@ public class SimplePath implements Path, AsValue
     public String toString()
     {
 
-        return "Path[" + segments + ']';
+        return "path[" + segments + ']';
     }
 
     private void buildSegments()

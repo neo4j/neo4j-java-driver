@@ -19,12 +19,12 @@
 package org.neo4j.driver.v1.internal;
 
 
-import org.junit.Test;
-
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.junit.Test;
 
 import org.neo4j.driver.v1.Function;
 import org.neo4j.driver.v1.Value;
@@ -35,6 +35,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.driver.v1.Values.value;
 
 public class SimpleRecordTest
@@ -47,6 +48,13 @@ public class SimpleRecordTest
         assertThat( record.value( "k1" ), equalTo( value( 0 ) ) );
         assertThat( record.value( "k2" ), equalTo( value( 1 ) ) );
         assertThat( record.value( "k3" ), equalTo( NullValue.NULL ) );
+    }
+
+    @Test
+    public void shouldHaveCorrectFieldCount()
+    {
+        SimpleRecord record = createRecord();
+        assertThat( record.fieldCount(), equalTo( 2 ) );
     }
 
     @Test

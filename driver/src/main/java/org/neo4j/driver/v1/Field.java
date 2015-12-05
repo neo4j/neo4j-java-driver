@@ -24,7 +24,7 @@ package org.neo4j.driver.v1;
  * @param <V> the type of value stored
  *
  * @see Property
- * @see PropertyAccessor
+ * @see PropertyMapAccessor
  * @see RecordAccessor
  */
 public interface Field<V> extends Property<V>

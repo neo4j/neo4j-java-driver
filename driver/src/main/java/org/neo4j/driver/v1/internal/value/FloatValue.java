@@ -131,7 +131,7 @@ public class FloatValue extends NumberValueAdapter
     }
 
     @Override
-    protected String valueAsString()
+    protected String asLiteralString()
     {
         return Double.toString( val );
     }

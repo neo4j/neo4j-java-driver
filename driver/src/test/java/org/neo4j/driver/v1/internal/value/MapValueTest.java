@@ -18,9 +18,9 @@
  */
 package org.neo4j.driver.v1.internal.value;
 
-import org.junit.Test;
-
 import java.util.HashMap;
+
+import org.junit.Test;
 
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
@@ -28,6 +28,7 @@ import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+
 import static org.neo4j.driver.v1.Values.value;
 
 public class MapValueTest
@@ -36,7 +37,14 @@ public class MapValueTest
     public void shouldHaveSensibleToString() throws Throwable
     {
         MapValue mapValue = mapValue();
-        assertThat( mapValue.toString(), equalTo( "{k1=v1 :: STRING, k2=42 :: INTEGER} :: MAP" ) );
+        assertThat( mapValue.toString(), equalTo( "{k1: \"v1\" :: STRING, k2: 42 :: INTEGER} :: MAP" ) );
+    }
+
+    @Test
+    public void shouldHaveCorrectPropertyCount() throws Throwable
+    {
+        MapValue mapValue = mapValue();
+        assertThat( mapValue.propertyCount(), equalTo( 2 ) );
     }
 
     @Test

@@ -74,7 +74,7 @@ public class IdentityValue extends ValueAdapter
     }
 
     @Override
-    protected String valueAsString()
+    protected String asLiteralString()
     {
         return val.toString();
     }

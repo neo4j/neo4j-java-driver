@@ -21,7 +21,7 @@ package org.neo4j.driver.v1;
 /**
  * Immutable pair of a key and a value
  *
- * @see PropertyAccessor
+ * @see PropertyMapAccessor
  * @param <V> the Java type of the contained value
  */
 public interface Property<V>

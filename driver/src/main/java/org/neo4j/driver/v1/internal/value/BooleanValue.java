@@ -82,7 +82,7 @@ public abstract class BooleanValue extends ValueAdapter
         }
 
         @Override
-        protected String valueAsString()
+        protected String asLiteralString()
         {
             return "TRUE";
         }
@@ -122,7 +122,7 @@ public abstract class BooleanValue extends ValueAdapter
         }
 
         @Override
-        protected String valueAsString()
+        protected String asLiteralString()
         {
             return "FALSE";
         }

@@ -19,13 +19,13 @@
 package org.neo4j.driver.v1.internal;
 
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import org.neo4j.driver.v1.ImmutableRecord;
 import org.neo4j.driver.v1.Property;
@@ -40,6 +40,7 @@ import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.driver.v1.Values.value;
 
 public class SimpleResultTest
@@ -234,7 +235,13 @@ public class SimpleResultTest
         // not calling next, first, nor skip
 
         // THEN
-        assertThat(result.keys( ), equalTo(Arrays.asList( "k1", "k2" )));
+        assertThat( result.keys( ), equalTo( Arrays.asList( "k1", "k2" ) ) );
+    }
+
+    @Test
+    public void shouldHaveCorrectFieldCount()
+    {
+        assertThat( createResult( 4 ).fieldCount(), equalTo( 2 ) );
     }
 
     private Result createResult( int numberOfRecords )

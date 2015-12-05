@@ -33,6 +33,11 @@ public interface RecordAccessor extends ListAccessor, MapAccessor
     List<String> keys();
 
     /**
+     * @return number of fields in this record
+     */
+    int fieldCount();
+
+    /**
      * Retrieve all record fields
      *
      * @return all fields in key order

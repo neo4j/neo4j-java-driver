@@ -21,7 +21,7 @@ package org.neo4j.driver.v1;
 /**
  * Access the properties of an underlying unordered map
  */
-public interface PropertyAccessor extends MapAccessor
+public interface PropertyMapAccessor extends MapAccessor
 {
     /**
      * Retrieve all values of the underlying collection
@@ -39,6 +39,11 @@ public interface PropertyAccessor extends MapAccessor
      * @return the result of mapping all values in unspecified order
      */
     <T> Iterable<T> values( Function<Value, T> mapFunction );
+
+    /**
+     * @return number of properties in this property map
+     */
+    int propertyCount();
 
     /**
      * Retrieve the property for the given key

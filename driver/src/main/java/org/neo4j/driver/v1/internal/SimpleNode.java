@@ -71,7 +71,7 @@ public class SimpleNode extends SimpleEntity implements Node
     @Override
     public String toString()
     {
-        return "node<" + identity() + '>';
+        return String.format( "node<%s>", identity()  );
     }
 
     @Override

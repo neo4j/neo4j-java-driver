@@ -36,7 +36,6 @@ import org.neo4j.driver.v1.Relationship;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.internal.Identities;
-import org.neo4j.driver.v1.internal.SimpleEntity;
 import org.neo4j.driver.v1.internal.SimpleNode;
 import org.neo4j.driver.v1.internal.SimplePath;
 import org.neo4j.driver.v1.internal.SimpleRelationship;
@@ -368,7 +367,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         private void packProperties( Entity entity ) throws IOException
         {
             Iterable<String> keys = entity.keys();
-            packer.packMapHeader( ( (SimpleEntity) entity ).size() );
+            packer.packMapHeader( entity.propertyCount() );
             for ( String propKey : keys )
             {
                 packer.pack( propKey );
