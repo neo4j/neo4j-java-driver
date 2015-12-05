@@ -24,6 +24,7 @@ import java.util.Map;
 import org.neo4j.driver.v1.Identity;
 import org.neo4j.driver.v1.Relationship;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.internal.value.RelationshipValue;
 
 /**
  * {@link Relationship} implementation that directly contains type and properties
@@ -58,6 +59,12 @@ public class SimpleRelationship extends SimpleEntity implements Relationship
         this.type = type;
     }
 
+    @Override
+    public boolean hasType( String relationshipType )
+    {
+        return type().equals( relationshipType );
+    }
+
     /** Modify the start/end identities of this relationship */
     public void setStartAndEnd( Identity start, Identity end )
     {
@@ -84,8 +91,14 @@ public class SimpleRelationship extends SimpleEntity implements Relationship
     }
 
     @Override
+    public Value asValue()
+    {
+        return new RelationshipValue( this );
+    }
+
+    @Override
     public String toString()
     {
-        return "relationship<" + identity() + '>';
+        return String.format( "relationship<%s>", identity() );
     }
 }

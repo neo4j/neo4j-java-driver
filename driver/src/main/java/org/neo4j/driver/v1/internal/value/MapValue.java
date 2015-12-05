@@ -18,59 +18,66 @@
  */
 package org.neo4j.driver.v1.internal.value;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 
 import org.neo4j.driver.v1.Function;
 import org.neo4j.driver.v1.Type;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
-import org.neo4j.driver.v1.internal.types.TypeConstructor;
+import org.neo4j.driver.v1.internal.util.Extract;
+import org.neo4j.driver.v1.internal.util.Format;
+
+import static org.neo4j.driver.v1.Values.valueAsString;
 
 public class MapValue extends ValueAdapter
 {
-    private final Map<String,Value> val;
+    private final Map<String, Value> val;
 
-    public MapValue( Map<String,Value> val )
+    public MapValue( Map<String, Value> val )
     {
         this.val = val;
     }
 
     @Override
-    public boolean javaBoolean()
+    public boolean isEmpty()
     {
-        return !val.isEmpty();
+        return val.isEmpty();
     }
 
     @Override
-    public <T> List<T> javaList( Function<Value,T> mapFunction )
+    public <T> Map<String, T> asMap( Function<Value, T> mapFunction )
     {
-        List<T> list = new ArrayList<>( val.size() );
-        for ( Value value : val.values() )
-        {
-            list.add( mapFunction.apply( value ) );
-        }
-        return list;
+        return Extract.map( val, mapFunction );
     }
 
     @Override
-    public <T> Map<String, T> javaMap( Function<Value,T> mapFunction )
+    public Map<String,Value> asMap()
     {
-        Map<String, T> map = new HashMap<>( val.size() );
-        for ( Map.Entry<String, Value> entry : val.entrySet() )
-        {
-            map.put( entry.getKey(), mapFunction.apply( entry.getValue() ) );
-        }
-        return map;
+        return Extract.map( val );
+    }
+
+    public Object asObject()
+    {
+        return asMap();
     }
 
     @Override
-    public long size()
+    public int size()
+    {
+        return propertyCount();
+    }
+
+    @Override
+    public int propertyCount()
     {
         return val.size();
+    }
+
+    @Override
+    public boolean containsKey( String key )
+    {
+        return val.containsKey( key );
     }
 
     @Override
@@ -80,48 +87,16 @@ public class MapValue extends ValueAdapter
     }
 
     @Override
-    public TypeConstructor typeConstructor()
+    public Iterable<Value> values()
     {
-        return TypeConstructor.MAP_TyCon;
+        return val.values();
     }
 
     @Override
-    public boolean isMap()
+    public Value value( String key )
     {
-        return true;
+        return val.getOrDefault( key, Values.NULL );
     }
-
-    @Override
-    public Iterator<Value> iterator()
-    {
-        final Iterator<Value> raw = val.values().iterator();
-        return new Iterator<Value>()
-        {
-            @Override
-            public boolean hasNext()
-            {
-                return raw.hasNext();
-            }
-
-            @Override
-            public Value next()
-            {
-                return raw.next();
-            }
-
-            @Override
-            public void remove()
-            {
-            }
-        };
-    }
-
-    @Override
-    public Value get( String key )
-    {
-        return val.get( key );
-    }
-
 
     @Override
     public Type type()
@@ -130,9 +105,21 @@ public class MapValue extends ValueAdapter
     }
 
     @Override
-    public String toString()
+    public String asString()
     {
-        return String.format( "map<%s>", val.toString() );
+        return asMap( valueAsString() ).toString();
+    }
+
+    @Override
+    public String asLiteralString()
+    {
+        return Format.properties( propertyCount(), properties() );
+    }
+
+    @Override
+    public <T> Iterable<T> values( Function<Value, T> mapFunction )
+    {
+        return Extract.map( val, mapFunction ).values();
     }
 
     @Override
@@ -148,9 +135,7 @@ public class MapValue extends ValueAdapter
         }
 
         MapValue values = (MapValue) o;
-
-        return !(val != null ? !val.equals( values.val ) : values.val != null);
-
+        return val == values.val || val.equals( values.val );
     }
 
     @Override

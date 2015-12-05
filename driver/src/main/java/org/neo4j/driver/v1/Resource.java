@@ -19,32 +19,24 @@
 package org.neo4j.driver.v1;
 
 /**
- * A {@link Result} that has been fully retrieved and stored from the server.
- * It can therefore be kept outside the scope of the current transaction, iterated over multiple times and used while
- * other statements are issued.
- * For instance:
- * <p>
- * {@code
- * for(Record v : session.run( ".." ).retain() )
- * {
- * session.run( ".." );
- * }
- * }
+ * A Resource is an {@link AutoCloseable} that allows introspecting if it
+ * already has been closed through its {@link #isOpen()} method.
+ *
+ * Additionally, calling {@link AutoCloseable#close()} twice is expected to fail
+ * (i.e. is not idempotent).
  */
-public interface ReusableResult extends Iterable<Record>
+public interface Resource extends AutoCloseable
 {
     /**
-     * The number of values in this result.
+     * Detect whether this resource is still open
      *
-     * @return the result record count
+     * @return true if the resource is open
      */
-    long size();
+    boolean isOpen();
 
     /**
-     * Retrieve a record from this result based on its position in the original result stream.
-     *
-     * @param index retrieve an item in the result by index
-     * @return the requested record
+     * @throws IllegalStateException if already closed
      */
-    Record get( long index );
+    @Override
+    void close();
 }

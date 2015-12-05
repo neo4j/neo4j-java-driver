@@ -26,5 +26,4 @@ public class Identities
     {
         return new SimpleIdentity( raw );
     }
-
 }

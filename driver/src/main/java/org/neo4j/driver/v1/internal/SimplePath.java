@@ -20,6 +20,7 @@ package org.neo4j.driver.v1.internal;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -27,11 +28,13 @@ import org.neo4j.driver.v1.Entity;
 import org.neo4j.driver.v1.Node;
 import org.neo4j.driver.v1.Path;
 import org.neo4j.driver.v1.Relationship;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.internal.value.PathValue;
 
 /**
  * {@link Path} implementation that directly contains all nodes and relationships.
  */
-public class SimplePath implements Path
+public class SimplePath implements Path, AsValue
 {
     public static class SelfContainedSegment implements Segment
     {
@@ -77,7 +80,6 @@ public class SimplePath implements Path
             }
 
             SelfContainedSegment that = (SelfContainedSegment) other;
-
             return start.equals( that.start ) && end.equals( that.end ) && relationship.equals( that.relationship );
 
         }
@@ -111,9 +113,9 @@ public class SimplePath implements Path
 
     public SimplePath( List<Entity> alternatingNodeAndRel )
     {
-        nodes = new ArrayList<>(alternatingNodeAndRel.size() / 2 + 1);
-        relationships = new ArrayList<>(alternatingNodeAndRel.size() / 2);
-        segments = new ArrayList<>(alternatingNodeAndRel.size() / 2);
+        nodes = newList( alternatingNodeAndRel.size() / 2 + 1 );
+        relationships = newList( alternatingNodeAndRel.size() / 2 );
+        segments = newList( alternatingNodeAndRel.size() / 2 );
 
         if ( alternatingNodeAndRel.size() % 2 == 0 )
         {
@@ -194,8 +196,13 @@ public class SimplePath implements Path
         this.relationships = relationships;
     }
 
+    private <T> List<T> newList( int size )
+    {
+        return size == 0 ? Collections.<T>emptyList() : new ArrayList<T>( size );
+    }
+
     @Override
-    public long length()
+    public int length()
     {
         return relationships.size();
     }
@@ -243,6 +250,12 @@ public class SimplePath implements Path
     }
 
     @Override
+    public Value asValue()
+    {
+        return new PathValue( this );
+    }
+
+    @Override
     public boolean equals( Object o )
     {
         if ( this == o )
@@ -270,7 +283,7 @@ public class SimplePath implements Path
     public String toString()
     {
 
-        return "Path[" + segments + ']';
+        return "path[" + segments + ']';
     }
 
     private void buildSegments()

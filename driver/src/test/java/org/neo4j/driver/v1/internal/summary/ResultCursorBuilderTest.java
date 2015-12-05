@@ -18,21 +18,22 @@
  */
 package org.neo4j.driver.v1.internal.summary;
 
+import java.util.List;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.ReusableResult;
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.internal.ParameterSupport;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
+
 import static org.neo4j.driver.v1.Values.value;
 
-public class ResultBuilderTest
+public class ResultCursorBuilderTest
 {
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -42,17 +43,17 @@ public class ResultBuilderTest
     {
         // Given
         ResultBuilder builder = createResultBuilder();
-        builder.fieldNames( new String[]{"a"} );
+        builder.keys( new String[]{"a"} );
         builder.record( new Value[]{value( "Admin" )} );
 
         // When
-        ReusableResult result = builder.build().retain();
+        List<Record> result = builder.build().retain();
 
         // Then
-        assertThat( result.size(), equalTo( 1l ) );
+        assertThat( result.size(), equalTo( 1 ) );
 
         Record record = result.get( 0 );
-        assertThat( record.get( 0 ).javaString(), equalTo( "Admin" ) );
+        assertThat( record.value( 0 ).asString(), equalTo( "Admin" ) );
     }
 
     @Test
@@ -62,27 +63,10 @@ public class ResultBuilderTest
         ResultBuilder builder = createResultBuilder();
 
         // When
-        ReusableResult result = builder.build().retain();
+        List<Record> result = builder.build().retain();
 
         // Then
-        assertThat( result.size(), equalTo( 0l ) );
-    }
-
-    @Test
-    public void shouldThrowNoSuchSomething()
-    {
-        // Given
-        ResultBuilder builder = createResultBuilder();
-        builder.fieldNames( new String[]{"a"} );
-        builder.record( new Value[]{value( "Admin" )} );
-
-        ReusableResult result = builder.build().retain();
-
-        // Expect
-        exception.expect( ClientException.class );
-
-        // When
-        result.get( 2 );
+        assertThat( result.size(), equalTo( 0 ) );
     }
 
     private ResultBuilder createResultBuilder()

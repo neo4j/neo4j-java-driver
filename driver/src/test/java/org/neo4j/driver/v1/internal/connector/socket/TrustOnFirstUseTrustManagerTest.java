@@ -29,9 +29,9 @@ import java.security.cert.X509Certificate;
 import java.util.Scanner;
 import javax.xml.bind.DatatypeConverter;
 
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertTrue;
-import static junit.framework.TestCase.fail;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -43,8 +43,6 @@ public class TrustOnFirstUseTrustManagerTest
     private static int knownServerPort;
     private static String knownServer;
 
-    private static String knownCert;
-
     @BeforeClass
     public static void setup() throws Throwable
     {
@@ -53,7 +51,7 @@ public class TrustOnFirstUseTrustManagerTest
         knownServerIp = "1.2.3.4";
         knownServerPort = 100;
         knownServer = knownServerIp + ":" + knownServerPort;
-        knownCert = DatatypeConverter.printBase64Binary( "certificate".getBytes() );
+        String knownCert = DatatypeConverter.printBase64Binary( "certificate".getBytes() );
 
         PrintWriter writer = new PrintWriter( knownCertsFile );
         writer.println( " # I am a comment." );
@@ -61,6 +59,7 @@ public class TrustOnFirstUseTrustManagerTest
         writer.close();
     }
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     @AfterClass
     public static void teardown()
     {

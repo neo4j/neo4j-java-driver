@@ -18,34 +18,27 @@
  */
 package org.neo4j.driver.v1;
 
+import java.util.Map;
+
 /**
- * A record is a collection of named fields, and is what makes up the individual items in a {@link
- * Result}
+ * A record is an immutable copy of an ordered map
+ *
+ * @see Result#record()
+ * @see Result#retain()
  */
-public interface Record
+@Immutable
+public interface Record extends RecordAccessor
 {
     /**
-     * From the current record the result is pointing to, retrieve the value in the specified field.
-     *
-     * @param fieldIndex the field index into the current record
-     * @return the value in the specified field
+     * @return the value as a value map
      */
-    Value get( int fieldIndex );
+    Map<String, Value> asMap();
 
     /**
-     * From the current record the result is pointing to, retrieve the value in the specified field.
-     * If no value could be found in the specified filed, null will be returned.
-     *
-     * @param fieldName the field to retrieve the value from
-     * @return the value in the specified field or null if no value could be found in the field.
+     * @param mapFunction a function to map from Value to T. See {@link Values} for some predefined functions, such
+     * as {@link Values#valueAsBoolean()}, {@link Values#valueAsList(Function)}.
+     * @param <T> the type of map values
+     * @return the value as a map from string keys to values of type T
      */
-    Value get( String fieldName );
-
-    /**
-     * Get an ordered sequence of the field names in this result.
-     *
-     * @return field names
-     */
-    Iterable<String> fieldNames();
-
+    <T> Map<String, T> asMap( Function<Value, T> mapFunction );
 }

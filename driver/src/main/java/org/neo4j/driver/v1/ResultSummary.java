@@ -29,6 +29,7 @@ import java.util.List;
  *
  * Keeping the result summary around does not influence the lifecycle of any associated session and/or transaction.
  */
+@Immutable
 public interface ResultSummary
 {
     /**
@@ -78,7 +79,9 @@ public interface ResultSummary
      * A list of notifications that might arise when executing the statement.
      * Notifications can be warnings about problematic statements or other valuable information that can be presented
      * in a client.
+     *
      * Unlike failures or errors, notifications do not affect the execution of a statement.
+     *
      * @return a list of notifications produced while executing the statement. The list will be empty if no
      * notifications produced while executing the statement.
      */

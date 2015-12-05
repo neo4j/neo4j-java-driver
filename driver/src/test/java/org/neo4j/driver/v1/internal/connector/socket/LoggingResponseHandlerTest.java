@@ -72,7 +72,7 @@ public class LoggingResponseHandlerTest
         handler.handleRunMessage( "stat", parameters( "value", new String[]{"cat", "cat", "cat"} ) );
 
         // Then
-        assertEquals( "S: [RUN \"stat\" {value=ListValue[cat, cat, cat]}]", log );
+        assertEquals( "S: [RUN \"stat\" {value=[\"cat\" :: STRING, \"cat\" :: STRING, \"cat\" :: STRING] :: LIST OF ANY?}]", log );
         assertEquals( format( new RunMessage( "stat", parameters( "value", new String[]{"cat", "cat", "cat"} ) ) ),
                 log );
     }

@@ -20,14 +20,13 @@ package org.neo4j.driver.v1.internal.connector.socket;
 
 import java.net.URI;
 import java.util.Collection;
+import java.util.Collections;
 
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.internal.Version;
 import org.neo4j.driver.v1.internal.spi.Connection;
 import org.neo4j.driver.v1.internal.spi.Connector;
-
-import static java.util.Arrays.asList;
 
 public class SocketConnector implements Connector
 {
@@ -49,6 +48,6 @@ public class SocketConnector implements Connector
     @Override
     public Collection<String> supportedSchemes()
     {
-        return asList( Config.SCHEME );
+        return Collections.singletonList( Config.SCHEME );
     }
 }

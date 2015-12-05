@@ -19,8 +19,8 @@
 package org.neo4j.driver.v1.internal.value;
 
 import org.neo4j.driver.v1.Type;
+import org.neo4j.driver.v1.exceptions.value.Unrepresentable;
 import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
-import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
 public class StringValue extends ValueAdapter
 {
@@ -33,33 +33,40 @@ public class StringValue extends ValueAdapter
     }
 
     @Override
-    public boolean javaBoolean()
+    public boolean isEmpty()
     {
-        return !val.isEmpty();
+        return val.isEmpty();
     }
 
     @Override
-    public String javaString()
+    public String asString()
     {
         return val;
     }
 
     @Override
-    public boolean isString()
+    public char asChar()
     {
-        return true;
+        if ( val.length() == 1 )
+        {
+            return val.charAt( 0 );
+        }
+        else
+        {
+            throw new Unrepresentable( "Only a STRING of exactly one character can be represented as a Java char" );
+        }
     }
 
     @Override
-    public long size()
+    public char[] asCharArray()
+    {
+        return val.toCharArray();
+    }
+
+    @Override
+    public int size()
     {
         return val.length();
-    }
-
-    @Override
-    public TypeConstructor typeConstructor()
-    {
-        return TypeConstructor.STRING_TyCon;
     }
 
     @Override
@@ -68,12 +75,12 @@ public class StringValue extends ValueAdapter
         return StandardTypeSystem.TYPE_SYSTEM.STRING();
     }
 
-    @Override
-    public String toString()
+    public Object asObject()
     {
-        return val;
+        return asString();
     }
 
+    @SuppressWarnings("StringEquality")
     @Override
     public boolean equals( Object o )
     {
@@ -87,14 +94,18 @@ public class StringValue extends ValueAdapter
         }
 
         StringValue values = (StringValue) o;
-
-        return val.equals( values.val );
-
+        return val == values.val || val.equals( values.val );
     }
 
     @Override
     public int hashCode()
     {
         return val.hashCode();
+    }
+
+    @Override
+    protected String asLiteralString()
+    {
+        return String.format( "\"%s\"", val.replace( "\"", "\\\"" ) );
     }
 }

@@ -18,14 +18,14 @@
  */
 package org.neo4j.driver.v1.util;
 
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URL;
+
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
 
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Result;

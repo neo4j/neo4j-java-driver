@@ -58,12 +58,7 @@ public class RecordMessage implements Message
 
         RecordMessage that = (RecordMessage) o;
 
-        if ( !Arrays.equals( fields, that.fields ) )
-        {
-            return false;
-        }
-
-        return true;
+        return Arrays.equals( fields, that.fields );
     }
 
     @Override

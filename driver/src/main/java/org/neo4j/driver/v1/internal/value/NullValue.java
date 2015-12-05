@@ -21,16 +21,31 @@ package org.neo4j.driver.v1.internal.value;
 import org.neo4j.driver.v1.Type;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
-import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
-public class NullValue extends ValueAdapter
+public final class NullValue extends ValueAdapter
 {
     public static Value NULL = new NullValue();
 
-    @Override
-    public TypeConstructor typeConstructor()
+    private NullValue()
     {
-        return TypeConstructor.NULL_TyCon;
+    }
+
+    @Override
+    public boolean isNull()
+    {
+        return true;
+    }
+
+    @Override
+    public Object asObject()
+    {
+        return null;
+    }
+
+    @Override
+    public String asString()
+    {
+        return "null";
     }
 
     @Override
@@ -53,8 +68,8 @@ public class NullValue extends ValueAdapter
     }
 
     @Override
-    public boolean isNull()
+    protected String asLiteralString()
     {
-        return true;
+        return "NULL";
     }
 }

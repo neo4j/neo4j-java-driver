@@ -39,7 +39,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  * <li>
  * The pool caches a reference for each thread who uses this pool to the resource that has ever been assigned to the
  * thread by the pool.
- * Next time when the same thread wants to get a resource from the pool again, if the cached resource happens to be
+ * Next time when the same thread wants to value a resource from the pool again, if the cached resource happens to be
  * free, the same resource will be assigned directly to the thread to avoid searching from the global pool.
  * </li>
  * <li>
@@ -96,7 +96,7 @@ public class ThreadCachingPool<T> implements AutoCloseable
     {
         long deadline = clock.millis() + unit.toMillis( timeout );
 
-        // 1. Try and get an object from our local slot
+        // 1. Try and value an object from our local slot
         Slot<T> slot = local.get();
 
         if ( slot != null && slot.availableToClaimed() )

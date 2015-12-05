@@ -18,11 +18,11 @@
  */
 package org.neo4j.driver.v1.internal.connector.socket;
 
-import org.junit.Before;
-import org.junit.Test;
-
 import java.util.Collections;
 import java.util.Map;
+
+import org.junit.Before;
+import org.junit.Test;
 
 import org.neo4j.driver.v1.Plan;
 import org.neo4j.driver.v1.StatementType;
@@ -33,10 +33,12 @@ import org.neo4j.driver.v1.internal.summary.SimpleUpdateStatistics;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
+
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
+
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.Values.value;
 import static org.neo4j.driver.v1.Values.values;
@@ -82,7 +84,7 @@ public class SocketResponseHandlerTest
         handler.handleSuccessMessage( data );
 
         // Then
-        verify( collector ).fieldNames( fieldNames );
+        verify( collector ).keys( fieldNames );
         verifyNoMoreInteractions( collector );
         verifyZeroInteractions( otherCollector );
     }

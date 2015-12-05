@@ -24,11 +24,13 @@ import java.util.Map;
 import org.neo4j.driver.v1.Result;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.v1.TypeSystem;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.internal.spi.Connection;
 import org.neo4j.driver.v1.internal.summary.ResultBuilder;
+import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
 
 public class StandardTransaction implements Transaction
 {
@@ -40,7 +42,7 @@ public class StandardTransaction implements Transaction
         /** The transaction is running with no explicit success or failure marked */
         ACTIVE,
 
-        /** Running, user marked for success, meaning it'll get committed */
+        /** Running, user marked for success, meaning it'll value committed */
         MARKED_SUCCESS,
 
         /** User marked as failed, meaning it'll be rolled back. */
@@ -66,7 +68,7 @@ public class StandardTransaction implements Transaction
         this.conn = conn;
         this.cleanup = cleanup;
 
-        // Note there is no sync here, so this will just get queued locally
+        // Note there is no sync here, so this will just value queued locally
         conn.run( "BEGIN", Collections.<String, Value>emptyMap(), null );
         conn.discardAll();
     }
@@ -118,14 +120,14 @@ public class StandardTransaction implements Transaction
 
     @Override
     @SuppressWarnings( "unchecked" )
-    public Result run( String statementText, Map<String,Value> parameters )
+    public Result run( String statementText, Map<String,Value> statementParameters )
     {
         ensureNotFailed();
 
         try
         {
-            ResultBuilder resultBuilder = new ResultBuilder( statementText, parameters );
-            conn.run( statementText, parameters, resultBuilder );
+            ResultBuilder resultBuilder = new ResultBuilder( statementText, statementParameters );
+            conn.run( statementText, statementParameters, resultBuilder );
             conn.pullAll( resultBuilder );
             conn.sync();
             return resultBuilder.build();
@@ -138,15 +140,15 @@ public class StandardTransaction implements Transaction
     }
 
     @Override
-    public Result run( String statementText )
+    public Result run( String statementTemplate )
     {
-        return run( statementText, ParameterSupport.NO_PARAMETERS );
+        return run( statementTemplate, ParameterSupport.NO_PARAMETERS );
     }
 
     @Override
     public Result run( Statement statement )
     {
-        return run( statement.text(), statement.parameters() );
+        return run( statement.template(), statement.parameters() );
     }
 
     @Override
@@ -165,5 +167,11 @@ public class StandardTransaction implements Transaction
                 " transaction to run another statement."
             );
         }
+    }
+
+    @Override
+    public TypeSystem typeSystem()
+    {
+        return StandardTypeSystem.TYPE_SYSTEM;
     }
 }

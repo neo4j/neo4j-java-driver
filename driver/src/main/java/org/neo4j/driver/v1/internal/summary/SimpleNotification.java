@@ -30,21 +30,20 @@ public class SimpleNotification implements Notification
         @Override
         public Notification apply( Value value )
         {
-            String code = value.get( "code" ).javaString();
-            String title = value.get( "title" ).javaString();
-            String description = value.get( "description" ).javaString();
+            String code = value.value( "code" ).asString();
+            String title = value.value( "title" ).asString();
+            String description = value.value( "description" ).asString();
 
-            Value posValue = value.get( "position" );
+            Value posValue = value.value( "position" );
             InputPosition position = null;
             if( posValue != null )
             {
-                position = new SimpleInputPosition( posValue.get( "offset" ).javaInteger(),
-                                                    posValue.get( "line" ).javaInteger(),
-                                                    posValue.get( "column" ).javaInteger() );
+                position = new SimpleInputPosition( posValue.value( "offset" ).asInt(),
+                                                    posValue.value( "line" ).asInt(),
+                                                    posValue.value( "column" ).asInt() );
             }
 
-            Notification notification = new SimpleNotification( code, title, description, position );
-            return notification;
+            return new SimpleNotification( code, title, description, position );
         }
     };
 

@@ -26,7 +26,7 @@ import org.neo4j.driver.v1.Node;
 import org.neo4j.driver.v1.internal.util.Iterables;
 import org.neo4j.driver.v1.Values;
 
-import static java.util.Arrays.asList;
+import static java.util.Collections.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.neo4j.driver.v1.Values.parameters;
@@ -36,7 +36,7 @@ public class SelfContainedNodeTest
 
     private Node adamTheNode()
     {
-        return new SimpleNode( 1, asList( "Person" ),
+        return new SimpleNode( 1, singletonList( "Person" ),
                 parameters( "name", Values.value( "Adam" ) ) );
     }
 
@@ -57,7 +57,7 @@ public class SelfContainedNodeTest
         Node node = adamTheNode();
 
         // Then
-        List<String> labels = Iterables.toList( node.labels() );
+        List<String> labels = Iterables.asList( node.labels() );
         assertThat( labels.size(), equalTo( 1 ) );
         assertThat( labels.contains( "Person" ), equalTo( true ) );
     }
@@ -69,7 +69,7 @@ public class SelfContainedNodeTest
         Node node = adamTheNode();
 
         // Then
-        List<String> keys = Iterables.toList( node.propertyKeys() );
+        List<String> keys = Iterables.asList( node.keys() );
         assertThat( keys.size(), equalTo( 1 ) );
         assertThat( keys.contains( "name" ), equalTo( true ) );
     }
@@ -81,6 +81,6 @@ public class SelfContainedNodeTest
         Node node = adamTheNode();
 
         // Then
-        assertThat( node.property( "name" ).javaString(), equalTo( "Adam" ) );
+        assertThat( node.value( "name" ).asString(), equalTo( "Adam" ) );
     }
 }

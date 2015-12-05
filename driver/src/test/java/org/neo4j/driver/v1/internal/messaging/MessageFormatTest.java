@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 
 import org.neo4j.driver.v1.Value;
@@ -68,7 +69,7 @@ public class MessageFormatTest
     @Test
     public void shouldUnpackAllResponses() throws Throwable
     {
-        assertSerializes( new RecordMessage( new Value[]{value( 1337l )} ) );
+        assertSerializes( new RecordMessage( new Value[]{value( 1337L )} ) );
         assertSerializes( new SuccessMessage( new HashMap<String,Value>() ) );
     }
 
@@ -79,7 +80,7 @@ public class MessageFormatTest
         assertSerializesValue( value( parameters( "k", 12, "a", "banana" ) ) );
         assertSerializesValue( value( asList( "k", 12, "a", "banana" ) ) );
         assertSerializesValue( value(
-                new SimpleNode( 1, asList( "User" ), parameters( "name", "Bob", "age", 45 ) ) ) );
+                new SimpleNode( 1, Collections.singletonList( "User" ), parameters( "name", "Bob", "age", 45 ) ) ) );
         assertSerializesValue( value( new SimpleNode( 1 ) ) );
         assertSerializesValue( value(
                 new SimpleRelationship( 1, 1, 1,

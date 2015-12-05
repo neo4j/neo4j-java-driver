@@ -19,10 +19,10 @@
 package org.neo4j.driver.v1.internal.value;
 
 import org.neo4j.driver.v1.Type;
+import org.neo4j.driver.v1.exceptions.value.LossyCoercion;
 import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
-import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
-public class IntegerValue extends ValueAdapter
+public class IntegerValue extends NumberValueAdapter
 {
     private final long val;
 
@@ -32,63 +32,74 @@ public class IntegerValue extends ValueAdapter
     }
 
     @Override
-    public String javaString()
-    {
-        return Long.toString( val );
-    }
-
-    @Override
-    public int javaInteger()
-    {
-        return (int) val;
-    }
-
-    @Override
-    public float javaFloat()
-    {
-        return (float) val;
-    }
-
-    @Override
-    public boolean javaBoolean()
-    {
-        return val != 0;
-    }
-
-    @Override
-    public TypeConstructor typeConstructor()
-    {
-        return TypeConstructor.INTEGER_TyCon;
-    }
-
-    @Override
-    public long javaLong()
-    {
-        return val;
-    }
-
-    @Override
-    public boolean isInteger()
-    {
-        return true;
-    }
-
-    @Override
-    public double javaDouble()
-    {
-        return (double) val;
-    }
-
-    @Override
     public Type type()
     {
         return StandardTypeSystem.TYPE_SYSTEM.INTEGER();
     }
 
     @Override
-    public String toString()
+    public Number asNumber()
     {
-        return "integer<" + val + ">";
+        return val;
+    }
+
+    @Override
+    public long asLong()
+    {
+        return val;
+    }
+
+    @Override
+    public int asInt()
+    {
+        if (val > Integer.MAX_VALUE || val < Integer.MIN_VALUE)
+        {
+            throw new LossyCoercion( type().name(), "Java int" );
+        }
+        return (int) val;
+    }
+
+    @Override
+    public short asShort()
+    {
+        if (val > Short.MAX_VALUE || val < Short.MIN_VALUE)
+        {
+            throw new LossyCoercion( type().name(), "Java short" );
+        }
+        return (short) val;
+    }
+
+    public byte asByte()
+    {
+        if (val > Byte.MAX_VALUE || val < Byte.MIN_VALUE)
+        {
+            throw new LossyCoercion( type().name(), "Java byte" );
+        }
+        return (byte) val;
+    }
+
+    @Override
+    public double asDouble()
+    {
+        double doubleVal = (double) val;
+        if ( (long) doubleVal != val)
+        {
+            throw new LossyCoercion( type().name(), "Java double" );
+        }
+
+        return (double) val;
+    }
+
+    @Override
+    public float asFloat()
+    {
+        return (float) val;
+    }
+
+    @Override
+    public String asLiteralString()
+    {
+        return Long.toString( val );
     }
 
     @Override
@@ -104,9 +115,7 @@ public class IntegerValue extends ValueAdapter
         }
 
         IntegerValue values = (IntegerValue) o;
-
         return val == values.val;
-
     }
 
     @Override

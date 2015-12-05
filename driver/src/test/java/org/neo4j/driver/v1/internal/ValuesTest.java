@@ -23,8 +23,11 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
@@ -38,7 +41,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.neo4j.driver.v1.Values.value;
-import static org.neo4j.driver.v1.Values.valueToList;
+import static org.neo4j.driver.v1.Values.valueAsList;
 import static org.neo4j.driver.v1.Values.valueToString;
 import static org.neo4j.driver.v1.Values.values;
 
@@ -119,19 +122,24 @@ public class ValuesTest
         map.put( "Cat", new ListValue( values( "meow", "miaow" ) ) );
         map.put( "Dog", new ListValue( values( "wow" ) ) );
         map.put( "Wrong", new ListValue( values( -1 ) ) );
-        MapValue values = new MapValue( map );
+        MapValue mapValue = new MapValue( map );
 
         // When
-        List<List<String>> list = values.javaList( valueToList( valueToString() ) );
+        Iterable<List<String>> list = mapValue.values( valueAsList( valueToString() ) );
 
         // Then
-        assertEquals( 3, list.size() );
-        int i = 0;
-        for ( Value value : values )
+        assertEquals( 3, mapValue.size() );
+        Iterator<List<String>> listIterator = list.iterator();
+        Set<String> setA = new HashSet<>( 3 );
+        Set<String> setB = new HashSet<>( 3 );
+        for ( Value value : mapValue.values() )
         {
-            assertEquals( value.get( 0 ).javaString(), list.get( i ).get( 0 ) );
-            i++;
+            String a = value.value( 0 ).toString();
+            String b = listIterator.next().get( 0 );
+            setA.add( a );
+            setB.add( b );
         }
+        assertThat( setA, equalTo( setB ) );
     }
 
     @Test
@@ -144,11 +152,13 @@ public class ValuesTest
         MapValue values = new MapValue( map );
 
         // When
-        Map<String, String> result = values.javaMap( Values.valueToString() );
+        Map<String, String> result = values.asMap( Values.valueToString() );
 
         // Then
         assertThat( result.size(), equalTo( 2 ) );
-        assertThat( result.get( "Dog" ), equalTo( "2" ) );
-        assertThat( result.get( "Cat" ), equalTo( "1" ) );
+        assertThat( result.get( "Dog" ), equalTo( "2 :: INTEGER" ) );
+        assertThat( result.get( "Cat" ), equalTo( "1 :: INTEGER" ) );
     }
+
+
 }

@@ -24,39 +24,61 @@ import org.junit.Test;
 
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.internal.SimpleNode;
+import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
 import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
 import static java.util.Collections.singletonList;
+import static java.util.Collections.singletonMap;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 
+import static org.neo4j.driver.v1.Values.value;
+
 public class NodeValueTest
 {
     @Test
     public void shouldHaveSensibleToString() throws Throwable
     {
-        assertEquals("node<#1234>", nodeValue().toString());
+        assertEquals( "node<#1234> :: NODE", emptyNodeValue().toString() );
+        assertEquals( "node<#1234> :: NODE", filledNodeValue().toString() );
     }
 
-    private NodeValue nodeValue()
+    @Test
+    public void shouldHaveCorrectPropertyCount() throws Throwable
     {
-        return new NodeValue( new SimpleNode( 1234, singletonList( "User" ), new HashMap<String, Value>() ) );
+        assertEquals( 0, emptyNodeValue().propertyCount()) ;
+        assertEquals( 1, filledNodeValue().propertyCount()) ;
     }
 
     @Test
     public void shouldNotBeNull()
     {
-        Value value = nodeValue();
-        assertFalse( value.isNull() );
+        assertFalse( emptyNodeValue().isNull() );
+    }
+
+    @Test
+    public void shouldHaveCorrectType() throws Throwable
+    {
+        assertThat( emptyNodeValue().type(), equalTo( StandardTypeSystem.TYPE_SYSTEM.NODE() ));
     }
 
     @Test
     public void shouldTypeAsNode()
     {
-        InternalValue value = nodeValue();
+        InternalValue value = emptyNodeValue();
         assertThat( value.typeConstructor(), equalTo( TypeConstructor.NODE_TyCon ) );
+    }
+
+    private NodeValue emptyNodeValue()
+    {
+        return new NodeValue( new SimpleNode( 1234, singletonList( "User" ), new HashMap<String, Value>() ) );
+    }
+
+    private NodeValue filledNodeValue()
+    {
+        return new NodeValue( new SimpleNode( 1234, singletonList( "User" ), singletonMap( "name", value( "Dodo" ) ) ) );
     }
 }

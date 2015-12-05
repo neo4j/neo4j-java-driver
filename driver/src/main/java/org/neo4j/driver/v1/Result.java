@@ -18,81 +18,94 @@
  */
 package org.neo4j.driver.v1;
 
+import java.util.List;
+
 import org.neo4j.driver.v1.exceptions.ClientException;
 
+
 /**
- * The result of running a statement, a stream of records. The result interface can be used to iterate over all the
- * records in the stream, and for each record to access the fields within it using the {@link #get(int) get} methods.
+ * The result of running a statement, a stream of records represented as a cursor.
  *
- * Results are valid until the next statement is run or until the end of the current transaction, whichever comes
- * first.
+ * The result cursor can be used to iterate over all the records in the stream and provide access
+ * to their content.
  *
- * To keep a result around while further statements are run, or to use a result outside the scope of the current
- * transaction, see {@link #retain()}.
+ * Results are valid until the next statement is run or until the end of the current transaction,
+ * whichever comes first.
+ *
+ * Initially, before {@link #next()} has been called at least once, all field values are null.
+ *
+ * To keep a result around while further statements are run, or to use a result outside the scope
+ * of the current transaction, see {@link #retain()}.
  */
-public interface Result
+public interface Result extends RecordAccessor, Resource
 {
     /**
-     * Retrieve and store the entire result stream. This can be used if you want to
-     * iterate over the stream multiple times or to store the whole result for later use.
-     *
-     * This cannot be used if you have already started iterating through the stream using {@link #next()}.
-     *
-     * @return {@link ReusableResult}
+     * @return an immutable copy of the currently viewed record
+     * @throws ClientException if no calls has been made to {@link #next()}, {@link #first()}, nor {@link #skip(long)}
      */
-    ReusableResult retain();
+    Record record();
+
+    /**
+     * Retrieve the zero based position of the cursor in the stream of records.
+     *
+     * Initially, before {@link #next()} has been called at least once, the position is -1.
+     *
+     * @return the current position of the cursor
+     */
+    long position();
+
+    /**
+     * Test if the cursor is positioned at the last stream record or if the stream is empty.
+     *
+     * @return <tt>true</tt> if the cursor is at the last record or the stream is empty.
+     */
+    boolean atEnd();
 
     /**
      * Move to the next record in the result.
      *
-     * @return true if there was another record, false if the stream is exhausted.
+     * @return <tt>true</tt> if there was another record, <tt>false</tt> if the stream is exhausted.
      */
     boolean next();
 
     /**
-     * From the current record the result is pointing to, retrieve the value in the specified field.
+     * Advance the cursor as if calling next multiple times.
      *
-     * @param fieldIndex the field index into the current record
-     * @return the value in the specified field
+     * @throws IllegalArgumentException if records is negative
+     * @param records amount of records to be skipped
+     * @return the actual number of records successfully skipped
      */
-    Value get( int fieldIndex );
+    long skip( long records );
 
     /**
-     * From the current record the result is pointing to, retrieve the value in the specified field.
-     * If no value could be found in the specified filed, null will be returned.
+     * Move to the first record if possible, otherwise do nothing.
      *
-     * @param fieldName the field to retrieve the value from
-     * @return the value in the specified field or null if no value could be found in the specified filed
+     * @return <tt>true</tt> if the cursor is placed on the first record
      */
-    Value get( String fieldName );
+    boolean first();
 
     /**
-     * Get an ordered sequence of the field names in this result.
+     * Move to the first record if possible and verify that it is the only record.
      *
-     * @return field names
+     * @return <tt>true</tt> if the cursor was successfully placed at the single first and only record
      */
-    Iterable<String> fieldNames();
+    boolean single();
 
     /**
-     * Retrieve the first field of the next record in the stream, and close the stream.
+     * Retrieve and store the entire result stream.
+     * This can be used if you want to iterate over the stream multiple times or to store the
+     * whole result for later use.
      *
-     * This is a utility for the common case of statements that are expected to yield a single output value.
-     *
-     * <pre>
-     * {@code
-     * Record record = statement.run( "MATCH (n:User {uid:..}) RETURN n.name" ).single();
-     * }
-     * </pre>
-     *
-     * @return a single record from the stream
-     * @throws ClientException if the stream is empty
+     * Calling this method exhausts the result cursor and moves it to the last record
+     * @throws ClientException if the cursor can't be positioned at the first record
+     * @return list of all immutable records
      */
-    Record single();
+    List<Record> retain();
 
     /**
-     * Summarize the result
+     * Summarize the result.
      *
-     * Any remaining (unprocessed) result records will be consumed.
+     * Calling this method exhausts the result cursor and moves it to the last record.
      *
      * <pre class="doctest:ResultDocIT#summarizeUsage">
      * {@code

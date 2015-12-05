@@ -178,7 +178,7 @@ public class ChunkedInput implements PackInput
     }
 
     /**
-     * Return the size of bytes in a buffer.
+     * Return the width of bytes in a buffer.
      * E.g. Given a buffer with pointers 0 <= position <= limit <= capacity,
      * Buffer: | 0, 0, 1, 2, 3, 4, 0, 0, 0, 0, 0 |
      *           |     |        |              |

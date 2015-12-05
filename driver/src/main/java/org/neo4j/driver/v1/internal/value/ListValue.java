@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.v1.internal.value;
 
-import java.util.ArrayList;
+import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -26,8 +26,11 @@ import java.util.List;
 import org.neo4j.driver.v1.Function;
 import org.neo4j.driver.v1.Type;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
-import org.neo4j.driver.v1.internal.types.TypeConstructor;
+import org.neo4j.driver.v1.internal.util.Extract;
+
+import static org.neo4j.driver.v1.Values.valueAsString;
 
 public class ListValue extends ValueAdapter
 {
@@ -39,68 +42,157 @@ public class ListValue extends ValueAdapter
     }
 
     @Override
-    public boolean javaBoolean()
+    public boolean isEmpty()
     {
-        return values.length > 0;
+        return values.length == 0;
     }
 
     @Override
-    public <T> List<T> javaList( Function<Value,T> mapFunction )
+    public List<Value> asList()
     {
-        List<T> list = new ArrayList<>( values.length );
-        for ( Value value : values )
+        return Extract.list( values );
+    }
+
+    @Override
+    public <T> List<T> asList( Function<Value,T> mapFunction )
+    {
+        return Extract.list( values, mapFunction );
+    }
+
+    public Object asObject()
+    {
+        return asList();
+    }
+
+    @Override
+    public Value[] asArray()
+    {
+        int size = size();
+        Value[] result = new Value[size];
+        System.arraycopy( values, 0, result, 0, size );
+        return result;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> T[] asArray( Class<T> clazz, Function<Value, T> mapFunction )
+    {
+        int size = size();
+        T[] result = (T[]) Array.newInstance( clazz, size );
+        for ( int i = 0; i < size; i++ )
         {
-            list.add( mapFunction.apply( value ) );
+            result[i] = mapFunction.apply( values[i] );
         }
-        return list;
+        return result;
     }
 
     @Override
-    public boolean isList()
+    public long[] asLongArray()
     {
-        return true;
+        long[] result = new long[ size() ];
+        for ( int i = 0; i < values.length; i++ )
+        {
+            result[i] = values[i].asLong();
+        }
+        return result;
     }
 
     @Override
-    public long size()
+    public int[] asIntArray()
+    {
+        int[] result = new int[ size() ];
+        for ( int i = 0; i < values.length; i++ )
+        {
+            result[i] = values[i].asInt();
+        }
+        return result;
+    }
+
+    @Override
+    public short[] asShortArray()
+    {
+        short[] result = new short[ size() ];
+        for ( int i = 0; i < values.length; i++ )
+        {
+            result[i] = values[i].asShort();
+        }
+        return result;
+    }
+
+    @Override
+    public byte[] asByteArray()
+    {
+        byte[] result = new byte[ size() ];
+        for ( int i = 0; i < values.length; i++ )
+        {
+            result[i] = values[i].asByte();
+        }
+        return result;
+    }
+
+    @Override
+    public double[] asDoubleArray()
+    {
+        double[] result = new double[ size() ];
+        for ( int i = 0; i < values.length; i++ )
+        {
+            result[i] = values[i].asDouble();
+        }
+        return result;
+    }
+
+    @Override
+    public float[] asFloatArray()
+    {
+        float[] result = new float[ size() ];
+        for ( int i = 0; i < values.length; i++ )
+        {
+            result[i] = values[i].asFloat();
+        }
+        return result;
+    }
+
+    @Override
+    public int size()
     {
         return values.length;
     }
 
     @Override
-    public TypeConstructor typeConstructor()
+    public Value value( int index )
     {
-        return TypeConstructor.LIST_TyCon;
+        return index >= 0 && index < values.length ? values[index] : Values.NULL;
     }
 
     @Override
-    public Value get( long index )
+    public <T> Iterable<T> values( final Function<Value,T> mapFunction )
     {
-        return values[(int) index];
-    }
-
-    @Override
-    public Iterator<Value> iterator()
-    {
-        return new Iterator<Value>()
+        return new Iterable<T>()
         {
-            private int cursor = 0;
-
             @Override
-            public boolean hasNext()
+            public Iterator<T> iterator()
             {
-                return cursor < values.length;
-            }
+                return new Iterator<T>()
+                {
+                    private int cursor = 0;
 
-            @Override
-            public Value next()
-            {
-                return values[cursor++];
-            }
+                    @Override
+                    public boolean hasNext()
+                    {
+                        return cursor < values.length;
+                    }
 
-            @Override
-            public void remove()
-            {
+                    @Override
+                    public T next()
+                    {
+                        return mapFunction.apply( values[cursor++] );
+                    }
+
+                    @Override
+                    public void remove()
+                    {
+                    }
+                };
             }
         };
     }
@@ -112,9 +204,15 @@ public class ListValue extends ValueAdapter
     }
 
     @Override
-    public String toString()
+    public String asString()
     {
-        return "ListValue" + Arrays.toString( values ) + "";
+        return asList( valueAsString() ).toString();
+    }
+
+    @Override
+    public String asLiteralString()
+    {
+        return Arrays.toString( values );
     }
 
     @Override
@@ -129,10 +227,8 @@ public class ListValue extends ValueAdapter
             return false;
         }
 
-        ListValue values1 = (ListValue) o;
-
-        return Arrays.equals( values, values1.values );
-
+        ListValue otherValues = (ListValue) o;
+        return Arrays.equals( values, otherValues.values );
     }
 
     @Override

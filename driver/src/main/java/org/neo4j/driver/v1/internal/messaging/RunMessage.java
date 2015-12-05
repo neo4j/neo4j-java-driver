@@ -68,16 +68,9 @@ public class RunMessage implements Message
 
         RunMessage that = (RunMessage) o;
 
-        if ( parameters != null ? !parameters.equals( that.parameters ) : that.parameters != null )
-        {
-            return false;
-        }
-        if ( statement != null ? !statement.equals( that.statement ) : that.statement != null )
-        {
-            return false;
-        }
+        return !(parameters != null ? !parameters.equals( that.parameters ) : that.parameters != null) &&
+               !(statement != null ? !statement.equals( that.statement ) : that.statement != null);
 
-        return true;
     }
 
     @Override

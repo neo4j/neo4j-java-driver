@@ -19,9 +19,10 @@
 package org.neo4j.driver.v1.internal.value;
 
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.internal.AsValue;
 import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
-public interface InternalValue extends Value
+public interface InternalValue extends Value, AsValue
 {
     TypeConstructor typeConstructor();
 }

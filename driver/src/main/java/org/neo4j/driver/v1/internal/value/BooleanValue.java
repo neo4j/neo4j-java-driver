@@ -20,7 +20,6 @@ package org.neo4j.driver.v1.internal.value;
 
 import org.neo4j.driver.v1.Type;
 import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
-import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
 public abstract class BooleanValue extends ValueAdapter
 {
@@ -29,25 +28,12 @@ public abstract class BooleanValue extends ValueAdapter
         //do nothing
     }
 
-    @Override
-    public TypeConstructor typeConstructor()
-    {
-        return TypeConstructor.BOOLEAN_TyCon;
-    }
-
     public static BooleanValue TRUE = new TrueValue();
-
     public static BooleanValue FALSE = new FalseValue();
 
     public static BooleanValue fromBoolean( boolean value )
     {
         return value ? TRUE : FALSE;
-    }
-
-    @Override
-    public boolean isBoolean()
-    {
-        return true;
     }
 
     @Override
@@ -59,43 +45,33 @@ public abstract class BooleanValue extends ValueAdapter
     @Override
     public int hashCode()
     {
-        return javaBoolean() ? 1231 : 1237;
+        return Boolean.hashCode( asBoolean() );
     }
 
     private static class TrueValue extends BooleanValue {
+
         @Override
-        public boolean javaBoolean()
+        public Object asObject()
+        {
+            return Boolean.TRUE;
+        }
+
+        @Override
+        public boolean asBoolean()
         {
             return true;
         }
 
         @Override
-        public String javaString()
+        public boolean isTrue()
         {
-            return"true";
-        }
-        @Override
-        public int javaInteger()
-        {
-            return 1;
+            return true;
         }
 
         @Override
-        public long javaLong()
+        public boolean isFalse()
         {
-            return 1L;
-        }
-
-        @Override
-        public float javaFloat()
-        {
-            return 1f;
-        }
-
-        @Override
-        public double javaDouble()
-        {
-            return 1d;
+            return false;
         }
 
         @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
@@ -104,42 +80,38 @@ public abstract class BooleanValue extends ValueAdapter
         {
             return obj == TRUE;
         }
+
+        @Override
+        protected String asLiteralString()
+        {
+            return "TRUE";
+        }
     }
 
-    private static class FalseValue extends BooleanValue {
+    private static class FalseValue extends BooleanValue
+    {
         @Override
-        public boolean javaBoolean()
+        public Object asObject()
+        {
+            return Boolean.FALSE;
+        }
+
+        @Override
+        public boolean asBoolean()
         {
             return false;
         }
 
         @Override
-        public String javaString()
+        public boolean isTrue()
         {
-            return "false";
-        }
-        @Override
-        public int javaInteger()
-        {
-            return 0;
+            return false;
         }
 
         @Override
-        public long javaLong()
+        public boolean isFalse()
         {
-            return 0L;
-        }
-
-        @Override
-        public float javaFloat()
-        {
-            return 0f;
-        }
-
-        @Override
-        public double javaDouble()
-        {
-            return 0d;
+            return true;
         }
 
         @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
@@ -147,6 +119,12 @@ public abstract class BooleanValue extends ValueAdapter
         public boolean equals( Object obj )
         {
             return obj == FALSE;
+        }
+
+        @Override
+        protected String asLiteralString()
+        {
+            return "FALSE";
         }
     }
 }

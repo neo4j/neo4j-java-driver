@@ -18,9 +18,16 @@
  */
 package org.neo4j.driver.v1.internal.value;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
+import java.util.Random;
+
+import org.neo4j.driver.v1.TypeSystem;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.exceptions.value.LossyCoercion;
+import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
 import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -30,6 +37,10 @@ import static org.junit.Assert.assertThat;
 
 public class IntegerValueTest
 {
+    TypeSystem typeSystem = StandardTypeSystem.TYPE_SYSTEM;
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
+
 
     @Test
     public void testZeroIntegerValue() throws Exception
@@ -38,11 +49,13 @@ public class IntegerValueTest
         IntegerValue value = new IntegerValue( 0 );
 
         // Then
-        assertThat( value.javaBoolean(), equalTo( false ) );
-        assertThat( value.javaInteger(), equalTo( 0 ) );
-        assertThat( value.javaLong(), equalTo( 0L ) );
-        assertThat( value.javaFloat(), equalTo( (float) 0.0 ) );
-        assertThat( value.javaDouble(), equalTo( 0.0 ) );
+        assertThat( value.asLong(), equalTo( 0L ) );
+        assertThat( value.asInt(), equalTo( 0 ) );
+        assertThat( value.asShort(), equalTo( (short) 0 ) );
+        assertThat( value.asByte(), equalTo( (byte) 0 ) );
+        assertThat( value.asDouble(), equalTo( 0.0 ) );
+        assertThat( value.asFloat(), equalTo( (float) 0.0 ) );
+        assertThat( value.asNumber(), equalTo( (Number) 0L ) );
     }
 
     @Test
@@ -52,11 +65,13 @@ public class IntegerValueTest
         IntegerValue value = new IntegerValue( 1 );
 
         // Then
-        assertThat( value.javaBoolean(), equalTo( true ) );
-        assertThat( value.javaInteger(), equalTo( 1 ) );
-        assertThat( value.javaLong(), equalTo( 1L ) );
-        assertThat( value.javaFloat(), equalTo( (float) 1.0 ) );
-        assertThat( value.javaDouble(), equalTo( 1.0 ) );
+        assertThat( value.asLong(), equalTo( 1L ) );
+        assertThat( value.asInt(), equalTo( 1 ) );
+        assertThat( value.asShort(), equalTo( (short) 1 ) );
+        assertThat( value.asByte(), equalTo( (byte) 1 ) );
+        assertThat( value.asDouble(), equalTo( 1.0 ) );
+        assertThat( value.asFloat(), equalTo( (float) 1.0 ) );
+        assertThat( value.asNumber(), equalTo( (Number) 1L ) );
     }
 
     @Test
@@ -66,7 +81,7 @@ public class IntegerValueTest
         IntegerValue value = new IntegerValue( 1L );
 
         // Then
-        assertThat( value.isInteger(), equalTo( true ) );
+        assertThat( typeSystem.INTEGER().isTypeOf( value ), equalTo( true ) );
     }
 
     @Test
@@ -102,5 +117,82 @@ public class IntegerValueTest
     {
         InternalValue value = new IntegerValue( 1L );
         assertThat( value.typeConstructor(), equalTo( TypeConstructor.INTEGER_TyCon ) );
+    }
+
+    @Test
+    public void shouldThrowIfLargerThanByteMax()
+    {
+        IntegerValue value1 = new IntegerValue( 127 );
+        IntegerValue value2 = new IntegerValue( 128 );
+
+        assertThat(value1.asByte(), equalTo((byte) 127));
+        exception.expect( LossyCoercion.class );
+        value2.asByte();
+    }
+
+    @Test
+    public void shouldThrowIfSmallerThanByteMin()
+    {
+        IntegerValue value1 = new IntegerValue( -128 );
+        IntegerValue value2 = new IntegerValue( -129 );
+
+        assertThat(value1.asByte(), equalTo((byte) -128));
+        exception.expect( LossyCoercion.class );
+        value2.asByte();
+    }
+
+    @Test
+    public void shouldThrowIfLargerThanShortMax()
+    {
+        IntegerValue value1 = new IntegerValue( Short.MAX_VALUE );
+        IntegerValue value2 = new IntegerValue( Short.MAX_VALUE + 1);
+
+        assertThat(value1.asShort(), equalTo(Short.MAX_VALUE));
+        exception.expect( LossyCoercion.class );
+        value2.asShort();
+    }
+
+    @Test
+    public void shouldThrowIfSmallerThanShortMin()
+    {
+        IntegerValue value1 = new IntegerValue( Short.MIN_VALUE );
+        IntegerValue value2 = new IntegerValue( Short.MIN_VALUE - 1 );
+
+        assertThat(value1.asShort(), equalTo(Short.MIN_VALUE));
+        exception.expect( LossyCoercion.class );
+        value2.asShort();
+    }
+
+    @Test
+    public void shouldThrowIfLargerThanIntegerMax()
+    {
+        IntegerValue value1 = new IntegerValue( Integer.MAX_VALUE );
+        IntegerValue value2 = new IntegerValue( Integer.MAX_VALUE + 1L);
+
+        assertThat(value1.asInt(), equalTo(Integer.MAX_VALUE));
+        exception.expect( LossyCoercion.class );
+        value2.asInt();
+    }
+
+    @Test
+    public void shouldThrowIfSmallerThanIntegerMin()
+    {
+        IntegerValue value1 = new IntegerValue( Integer.MIN_VALUE );
+        IntegerValue value2 = new IntegerValue( Integer.MIN_VALUE - 1L );
+
+        assertThat(value1.asInt(), equalTo(Integer.MIN_VALUE));
+        exception.expect( LossyCoercion.class );
+        value2.asInt();
+    }
+
+    @Test
+    public void shouldThrowIfLargerThan()
+    {
+        IntegerValue value1 = new IntegerValue( 9007199254740992L);
+        IntegerValue value2 = new IntegerValue(9007199254740993L );
+
+        assertThat(value1.asDouble(), equalTo(9007199254740992D));
+        exception.expect( LossyCoercion.class );
+        value2.asDouble();
     }
 }

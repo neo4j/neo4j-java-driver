@@ -56,8 +56,8 @@ public class SimpleProfiledPlan extends SimplePlan<ProfiledPlan> implements Prof
         public ProfiledPlan create( String operatorType, Map<String,Value> arguments, List<String> identifiers, List<ProfiledPlan> children, Value originalPlanValue )
         {
             return new SimpleProfiledPlan( operatorType, arguments, identifiers, children,
-                    originalPlanValue.get( "dbHits" ).javaLong(),
-                    originalPlanValue.get( "rows" ).javaLong() );
+                    originalPlanValue.value( "dbHits" ).asLong(),
+                    originalPlanValue.value( "rows" ).asLong() );
         }
     };
 

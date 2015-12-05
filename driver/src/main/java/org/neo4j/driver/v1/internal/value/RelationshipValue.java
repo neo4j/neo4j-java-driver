@@ -22,7 +22,6 @@ import org.neo4j.driver.v1.Relationship;
 import org.neo4j.driver.v1.Type;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
-import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
 public class RelationshipValue extends ValueAdapter
 {
@@ -34,41 +33,38 @@ public class RelationshipValue extends ValueAdapter
     }
 
     @Override
+    public Object asObject()
+    {
+        return asRelationship();
+    }
+
+    @Override
     public Relationship asRelationship()
     {
         return adapted;
     }
 
     @Override
-    public boolean isRelationship()
+    public int size()
     {
-        return true;
+        return propertyCount();
     }
 
     @Override
-    public long size()
+    public int propertyCount()
     {
-        int count = 0;
-        for ( String ignore : adapted.propertyKeys() ) { count++; }
-        return count;
+        return adapted.propertyCount();
     }
 
     @Override
     public Iterable<String> keys()
     {
-        return adapted.propertyKeys();
+        return adapted.keys();
     }
 
-    @Override
-    public TypeConstructor typeConstructor()
+    public Value value( String key )
     {
-        return TypeConstructor.RELATIONSHIP_TyCon;
-    }
-
-    @Override
-    public Value get( String key )
-    {
-        return adapted.property( key );
+        return adapted.value( key );
     }
 
     @Override
@@ -90,19 +86,17 @@ public class RelationshipValue extends ValueAdapter
         }
 
         RelationshipValue values = (RelationshipValue) o;
-
-        return !(adapted != null ? !adapted.equals( values.adapted ) : values.adapted != null);
-
+        return adapted == values.adapted || adapted.equals( values.adapted );
     }
 
     @Override
     public int hashCode()
     {
-        return adapted != null ? adapted.hashCode() : 0;
+        return adapted == null ? 0 : adapted.hashCode();
     }
 
     @Override
-    public String toString()
+    public String asLiteralString()
     {
         return adapted.toString();
     }

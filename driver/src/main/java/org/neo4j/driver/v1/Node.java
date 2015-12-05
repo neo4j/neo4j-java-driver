@@ -29,4 +29,12 @@ public interface Node extends Entity
      * @return a label Collection
      */
     Iterable<String> labels();
+
+    /**
+     * Test if this node has a given label
+     *
+     * @param label the label
+     * @return <tt>true</tt> if this node has the label otherwise <tt>false</tt>
+     */
+    boolean hasLabel( String label );
 }

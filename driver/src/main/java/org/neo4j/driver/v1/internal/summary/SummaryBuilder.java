@@ -48,7 +48,7 @@ public class SummaryBuilder implements StreamCollector
     }
 
     @Override
-    public void fieldNames( String[] names )
+    public void keys( String[] names )
     {
         // intentionally empty
     }

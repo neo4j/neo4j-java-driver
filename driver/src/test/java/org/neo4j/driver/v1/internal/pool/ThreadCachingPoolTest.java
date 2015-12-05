@@ -179,7 +179,7 @@ public class ThreadCachingPoolTest
     @Test
     public void shouldRecoverFromItemCreationFailure() throws Throwable
     {
-        // Given a pool where creation will fail from the get-go
+        // Given a pool where creation will fail from the value-go
         ThreadCachingPool<PooledObject>
                 pool = new ThreadCachingPool<>( 4, trackAllocator, checkInvalidateFlag, Clock.SYSTEM );
 
@@ -215,7 +215,7 @@ public class ThreadCachingPoolTest
     @Test
     public void shouldRecovedDisposedItemReallocationFailing() throws Throwable
     {
-        // Given a pool where creation will fail from the get-go
+        // Given a pool where creation will fail from the value-go
         ThreadCachingPool<PooledObject>
                 pool = new ThreadCachingPool<>( 2, trackAllocator, checkInvalidateFlag, Clock.SYSTEM );
 
@@ -255,7 +255,7 @@ public class ThreadCachingPoolTest
         }
         assertThat( inPool, equalTo( none() ) );
         assertThat( inUse, equalTo( items( 2, 3 ) ) );
-        // only the first two items get onDispose called, since allocation fails after that
+        // only the first two items value onDispose called, since allocation fails after that
         assertThat( disposed, equalTo( items( 0, 1) ) );
     }
 

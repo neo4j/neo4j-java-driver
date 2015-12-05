@@ -42,9 +42,23 @@ import static org.neo4j.driver.v1.internal.types.TypeConstructor.STRING_TyCon;
  * @see Value
  * @see Type
  */
-public final class StandardTypeSystem implements TypeSystem
+public class StandardTypeSystem implements TypeSystem
 {
     public static StandardTypeSystem TYPE_SYSTEM = new StandardTypeSystem();
+
+    private final TypeRepresentation anyType = constructType( ANY_TyCon );
+    private final TypeRepresentation booleanType = constructType( BOOLEAN_TyCon );
+    private final TypeRepresentation stringType = constructType( STRING_TyCon );
+    private final TypeRepresentation numberType = constructType( NUMBER_TyCon );
+    private final TypeRepresentation integerType = constructType( INTEGER_TyCon );
+    private final TypeRepresentation floatType = constructType( FLOAT_TyCon );
+    private final TypeRepresentation listType = constructType( LIST_TyCon );
+    private final TypeRepresentation mapType = constructType( MAP_TyCon );
+    private final TypeRepresentation identityType = constructType( IDENTITY_TyCon );
+    private final TypeRepresentation nodeType = constructType( NODE_TyCon );
+    private final TypeRepresentation relationshipType = constructType( RELATIONSHIP_TyCon );
+    private final TypeRepresentation pathType = constructType( PATH_TyCon );
+    private final TypeRepresentation nullType = constructType( NULL_TyCon );
 
     private StandardTypeSystem()
     {
@@ -54,91 +68,91 @@ public final class StandardTypeSystem implements TypeSystem
     @Override
     public Type ANY()
     {
-        return constructType( ANY_TyCon );
+        return anyType;
     }
 
     /** the Cypher type BOOLEAN */
     @Override
     public Type BOOLEAN()
     {
-        return constructType( BOOLEAN_TyCon );
+        return booleanType;
     }
 
     /** the Cypher type STRING */
     @Override
     public Type STRING()
     {
-        return constructType( STRING_TyCon );
+        return stringType;
     }
 
     /** the Cypher type NUMBER */
     @Override
     public Type NUMBER()
     {
-        return constructType( NUMBER_TyCon );
+        return numberType;
     }
 
     /** the Cypher type INTEGER */
     @Override
     public Type INTEGER()
     {
-        return constructType( INTEGER_TyCon );
+        return integerType;
     }
 
     /** the Cypher type FLOAT */
     @Override
     public Type FLOAT()
     {
-        return constructType( FLOAT_TyCon );
+        return floatType;
     }
 
     /** the Cypher type LIST */
     @Override
     public Type LIST()
     {
-        return constructType( LIST_TyCon );
+        return listType;
     }
 
     /** the Cypher type MAP */
     @Override
     public Type MAP()
     {
-        return constructType( MAP_TyCon );
+        return mapType;
     }
 
     /** the Cypher type IDENTITY */
     @Override
     public Type IDENTITY()
     {
-        return constructType( IDENTITY_TyCon );
+        return identityType;
     }
 
     /** the Cypher type NODE */
     @Override
     public Type NODE()
     {
-        return constructType( NODE_TyCon );
+        return nodeType;
     }
 
     /** the Cypher type RELATIONSHIP */
     @Override
     public Type RELATIONSHIP()
     {
-        return constructType( RELATIONSHIP_TyCon );
+        return relationshipType;
     }
 
     /** the Cypher type PATH */
     @Override
     public Type PATH()
     {
-        return constructType( PATH_TyCon );
+        return pathType;
     }
 
     /** the Cypher type NULL */
     @Override
     public Type NULL()
     {
-        return constructType( NULL_TyCon );
+        return nullType;
     }
 
     private TypeRepresentation constructType( TypeConstructor tyCon )

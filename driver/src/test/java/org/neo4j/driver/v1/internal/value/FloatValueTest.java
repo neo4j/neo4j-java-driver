@@ -18,9 +18,17 @@
  */
 package org.neo4j.driver.v1.internal.value;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
+import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
+
+import org.neo4j.driver.v1.TypeSystem;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.exceptions.value.LossyCoercion;
+import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
 import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -30,6 +38,10 @@ import static org.junit.Assert.assertThat;
 
 public class FloatValueTest
 {
+    TypeSystem typeSystem = StandardTypeSystem.TYPE_SYSTEM;
+
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
 
     @Test
     public void testZeroFloatValue() throws Exception
@@ -38,11 +50,10 @@ public class FloatValueTest
         FloatValue value = new FloatValue( 0 );
 
         // Then
-        assertThat( value.javaBoolean(), equalTo( false ) );
-        assertThat( value.javaInteger(), equalTo( 0 ) );
-        assertThat( value.javaLong(), equalTo( 0L ) );
-        assertThat( value.javaFloat(), equalTo( (float) 0.0 ) );
-        assertThat( value.javaDouble(), equalTo( 0.0 ) );
+        assertThat( value.asInt(), equalTo( 0 ) );
+        assertThat( value.asLong(), equalTo( 0L ) );
+        assertThat( value.asFloat(), equalTo( (float) 0.0 ) );
+        assertThat( value.asDouble(), equalTo( 0.0 ) );
     }
 
     @Test
@@ -52,11 +63,7 @@ public class FloatValueTest
         FloatValue value = new FloatValue( 6.28 );
 
         // Then
-        assertThat( value.javaBoolean(), equalTo( true ) );
-        assertThat( value.javaInteger(), equalTo( 6 ) );
-        assertThat( value.javaLong(), equalTo( 6L ) );
-        assertThat( value.javaFloat(), equalTo( (float) 6.28 ) );
-        assertThat( value.javaDouble(), equalTo( 6.28 ) );
+        assertThat( value.asDouble(), equalTo( 6.28 ) );
     }
 
     @Test
@@ -66,7 +73,7 @@ public class FloatValueTest
         FloatValue value = new FloatValue( 6.28 );
 
         // Then
-        assertThat( value.isFloat(), equalTo( true ) );
+        assertThat( typeSystem.FLOAT().isTypeOf( value ), equalTo( true ) );
     }
 
     @Test
@@ -102,5 +109,80 @@ public class FloatValueTest
     {
         InternalValue value = new FloatValue( 6.28 );
         assertThat( value.typeConstructor(), equalTo( TypeConstructor.FLOAT_TyCon ) );
+    }
+
+    @Test
+    public void shouldThrowIfFloatContainsDecimalWhenConverting()
+    {
+        FloatValue value = new FloatValue( 1.1 );
+
+        exception.expect( LossyCoercion.class );
+        value.asInt();
+    }
+
+    @Test
+    public void shouldThrowIfLargerThanByteMax()
+    {
+        FloatValue value1 = new FloatValue( 127 );
+        FloatValue value2 = new FloatValue( 128 );
+
+        assertThat(value1.asByte(), equalTo((byte) 127));
+        exception.expect( LossyCoercion.class );
+        value2.asByte();
+    }
+
+    @Test
+    public void shouldThrowIfSmallerThanByteMin()
+    {
+        FloatValue value1 = new FloatValue( -128 );
+        FloatValue value2 = new FloatValue( -129 );
+
+        assertThat(value1.asByte(), equalTo((byte) -128));
+        exception.expect( LossyCoercion.class );
+        value2.asByte();
+    }
+
+    @Test
+    public void shouldThrowIfLargerThanShortMax()
+    {
+        FloatValue value1 = new FloatValue( Short.MAX_VALUE );
+        FloatValue value2 = new FloatValue( Short.MAX_VALUE + 1);
+
+        assertThat(value1.asShort(), equalTo(Short.MAX_VALUE));
+        exception.expect( LossyCoercion.class );
+        value2.asShort();
+    }
+
+    @Test
+    public void shouldThrowIfSmallerThanShortMin()
+    {
+        FloatValue value1 = new FloatValue( Short.MIN_VALUE );
+        FloatValue value2 = new FloatValue( Short.MIN_VALUE - 1 );
+
+        assertThat(value1.asShort(), equalTo(Short.MIN_VALUE));
+        exception.expect( LossyCoercion.class );
+        value2.asShort();
+    }
+
+    @Test
+    public void shouldThrowIfLargerThanIntegerMax()
+    {
+        FloatValue value1 = new FloatValue( Integer.MAX_VALUE );
+        FloatValue value2 = new FloatValue( Integer.MAX_VALUE + 1L);
+
+        assertThat(value1.asInt(), equalTo(Integer.MAX_VALUE));
+        exception.expect( LossyCoercion.class );
+        value2.asInt();
+    }
+
+    @Test
+    public void shouldThrowIfSmallerThanIntegerMin()
+    {
+        FloatValue value1 = new FloatValue( Integer.MIN_VALUE );
+        FloatValue value2 = new FloatValue( Integer.MIN_VALUE - 1L );
+
+        assertThat(value1.asInt(), equalTo(Integer.MIN_VALUE));
+        exception.expect( LossyCoercion.class );
+        value2.asInt();
     }
 }

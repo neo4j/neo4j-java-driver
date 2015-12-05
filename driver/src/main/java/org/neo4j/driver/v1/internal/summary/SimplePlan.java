@@ -27,8 +27,9 @@ import org.neo4j.driver.v1.Plan;
 import org.neo4j.driver.v1.Value;
 
 import static java.lang.String.format;
+
 import static org.neo4j.driver.v1.Values.valueAsIs;
-import static org.neo4j.driver.v1.Values.valueToString;
+import static org.neo4j.driver.v1.Values.valueAsString;
 
 public class SimplePlan<T extends Plan> implements Plan
 {
@@ -127,7 +128,7 @@ public class SimplePlan<T extends Plan> implements Plan
         @Override
         public Plan create( String operatorType, Map<String,Value> arguments, List<String> identifiers, List<Plan> children, Value originalPlanValue )
         {
-            return new SimplePlan( operatorType, arguments, identifiers, children );
+            return new SimplePlan<>( operatorType, arguments, identifiers, children );
         }
     };
 
@@ -160,22 +161,22 @@ public class SimplePlan<T extends Plan> implements Plan
         @Override
         public T apply( Value plan )
         {
-            final String operatorType = plan.get( "operatorType" ).javaString();
+            final String operatorType = plan.value( "operatorType" ).asString();
 
-            final Value argumentsValue = plan.get( "args" );
-            final Map<String, Value> arguments = argumentsValue == null
+            final Value argumentsValue = plan.value( "args" );
+            final Map<String, Value> arguments = argumentsValue.isNull()
                     ? Collections.<String, Value>emptyMap()
-                    : argumentsValue.javaMap( valueAsIs() );
+                    : argumentsValue.asMap( valueAsIs() );
 
-            final Value identifiersValue = plan.get( "identifiers" );
-            final List<String> identifiers = identifiersValue == null
+            final Value identifiersValue = plan.value( "identifiers" );
+            final List<String> identifiers = identifiersValue.isNull()
                     ? Collections.<String>emptyList()
-                    : identifiersValue.javaList( valueToString() );
+                    : identifiersValue.asList( valueAsString() );
 
-            final Value childrenValue = plan.get( "children" );
-            final List<T> children = childrenValue == null
+            final Value childrenValue = plan.value( "children" );
+            final List<T> children = childrenValue.isNull()
                     ? Collections.<T>emptyList()
-                    : childrenValue.javaList( this );
+                    : childrenValue.asList( this );
 
             return planCreator.create( operatorType, arguments, identifiers, children, plan );
         }

@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.internal.connector.socket.ChunkedInput;
 import org.neo4j.driver.v1.internal.messaging.AckFailureMessage;
 import org.neo4j.driver.v1.internal.messaging.DiscardAllMessage;
@@ -58,15 +57,15 @@ public class DumpMessage
             return;
         }
         StringBuilder hexStr = new StringBuilder();
-        for( int i = 0; i < args.length; i ++ )
+        for ( String arg : args )
         {
-            hexStr.append( args[i] );
+            hexStr.append( arg );
         }
 
         byte[] bytes = BytePrinter.hexStringToBytes( hexStr.toString() );
 
         // for now we only handle PackStreamV1
-        ArrayList<Message> messages = null;
+        ArrayList<Message> messages;
         try
         {
             // first try to interpret as a message with chunk header and 00 00 ending
@@ -166,28 +165,18 @@ public class DumpMessage
         byte[] bytesWithHeadAndTail = new byte[bytes.length + 2 + 2]; // 2 for head and 2 for tail
         bytesWithHeadAndTail[0] = (byte) (bytes.length >>> 8);
         bytesWithHeadAndTail[1] = (byte) bytes.length;
-        for ( int i = 0; i < bytes.length; i++ )
-        {
-            bytesWithHeadAndTail[i + 2] = bytes[i];
-        }
+        System.arraycopy( bytes, 0, bytesWithHeadAndTail, 2, bytes.length );
         return bytesWithHeadAndTail;
     }
 
     public static List<Message> unpack( List<Message> outcome, MessageFormat.Reader reader )
             throws IOException
     {
-        try
+        do
         {
-            do
-            {
-                reader.read( new MessageRecordedMessageHandler( outcome ) );
-            }
-            while ( reader.hasNext() );
+            reader.read( new MessageRecordedMessageHandler( outcome ) );
         }
-        catch ( Neo4jException e )
-        {
-            throw e;
-        }
+        while ( reader.hasNext() );
         return outcome;
     }
 

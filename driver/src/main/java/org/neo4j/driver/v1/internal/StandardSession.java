@@ -24,10 +24,12 @@ import org.neo4j.driver.v1.Result;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.v1.TypeSystem;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.internal.spi.Connection;
 import org.neo4j.driver.v1.internal.summary.ResultBuilder;
+import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
 
 public class StandardSession implements Session
 {
@@ -52,11 +54,11 @@ public class StandardSession implements Session
     }
 
     @Override
-    public Result run( String statementText, Map<String,Value> parameters )
+    public Result run( String statementText, Map<String,Value> statementParameters )
     {
         ensureNoOpenTransaction();
-        ResultBuilder resultBuilder = new ResultBuilder( statementText, parameters );
-        connection.run( statementText, parameters, resultBuilder );
+        ResultBuilder resultBuilder = new ResultBuilder( statementText, statementParameters );
+        connection.run( statementText, statementParameters, resultBuilder );
 
         connection.pullAll( resultBuilder );
         connection.sync();
@@ -64,15 +66,15 @@ public class StandardSession implements Session
     }
 
     @Override
-    public Result run( String statementText )
+    public Result run( String statementTemplate )
     {
-        return run( statementText, ParameterSupport.NO_PARAMETERS );
+        return run( statementTemplate, ParameterSupport.NO_PARAMETERS );
     }
 
     @Override
     public Result run( Statement statement )
     {
-        return run( statement.text(), statement.parameters() );
+        return run( statement.template(), statement.parameters() );
     }
 
     @Override
@@ -111,6 +113,12 @@ public class StandardSession implements Session
     {
         ensureNoOpenTransaction();
         return currentTransaction = new StandardTransaction( connection, txCleanup );
+    }
+
+    @Override
+    public TypeSystem typeSystem()
+    {
+        return StandardTypeSystem.TYPE_SYSTEM;
     }
 
     private void ensureNoOpenTransaction()

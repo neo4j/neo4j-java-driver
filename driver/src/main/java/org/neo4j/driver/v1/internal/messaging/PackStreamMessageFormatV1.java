@@ -47,6 +47,7 @@ import org.neo4j.driver.v1.internal.packstream.PackOutput;
 import org.neo4j.driver.v1.internal.packstream.PackStream;
 import org.neo4j.driver.v1.internal.packstream.PackType;
 import org.neo4j.driver.v1.internal.util.Iterables;
+import org.neo4j.driver.v1.internal.value.InternalValue;
 import org.neo4j.driver.v1.internal.value.ListValue;
 import org.neo4j.driver.v1.internal.value.MapValue;
 import org.neo4j.driver.v1.internal.value.NodeValue;
@@ -215,111 +216,115 @@ public class PackStreamMessageFormatV1 implements MessageFormat
 
         private void packValue( Value value ) throws IOException
         {
-            // TODO: Use switch on type constructor
-            if ( value.isNull() )
+            switch ( ( (InternalValue) value ).typeConstructor() )
             {
-                packer.packNull();
-            }
-            else if ( value.isBoolean() )
-            {
-                packer.pack( value.javaBoolean() );
-            }
-            else if ( value.isInteger() )
-            {
-                packer.pack( value.javaLong() );
-            }
-            else if ( value.isFloat() )
-            {
-                packer.pack( value.javaDouble() );
-            }
-            else if ( value.isString() )
-            {
-                packer.pack( value.javaString() );
-            }
-            else if ( value.isMap() )
-            {
-                packer.packMapHeader( (int) value.size() );
-                for ( String s : value.keys() )
-                {
-                    packer.pack( s );
-                    packValue( value.get( s ) );
-                }
-            }
-            else if ( value.isList() )
-            {
-                packer.packListHeader( (int) value.size() );
-                for ( Value item : value )
-                {
-                    packValue( item );
-                }
-            }
-            else if ( value.isNode() )
-            {
-                Node node = value.asNode();
-                packNode( node );
-            }
-            else if ( value.isRelationship() )
-            {
-                Relationship rel = value.asRelationship();
-                packer.packStructHeader( 5, RELATIONSHIP );
-                packer.pack( rel.identity().asLong() );
-                packer.pack( rel.start().asLong() );
-                packer.pack( rel.end().asLong() );
+                case NULL_TyCon:
+                    packer.packNull();
+                    break;
 
-                packer.pack( rel.type() );
+                case STRING_TyCon:
+                    packer.pack( value.asString() );
+                    break;
 
-                packProperties( rel );
-            }
-            else if ( value.isPath() )
-            {
-                Path path = value.asPath();
-                packer.packStructHeader( 3, PATH );
+                case BOOLEAN_TyCon:
+                    packer.pack( value.asBoolean() );
+                    break;
 
-                // Uniq nodes
-                Map<Node, Integer> nodeIdx = new LinkedHashMap<>();
-                for ( Node node : path.nodes() )
-                {
-                    if( !nodeIdx.containsKey( node ) )
+                case INTEGER_TyCon:
+                    packer.pack( value.asLong() );
+                    break;
+
+                case FLOAT_TyCon:
+                    packer.pack( value.asDouble() );
+                    break;
+
+                case MAP_TyCon:
+                    packer.packMapHeader( value.size() );
+                    for ( String s : value.keys() )
                     {
-                        nodeIdx.put( node, nodeIdx.size() );
+                        packer.pack( s );
+                        packValue( value.value( s ) );
                     }
-                }
-                packer.packListHeader( nodeIdx.size() );
-                for ( Node node : nodeIdx.keySet() )
-                {
-                    packNode( node );
-                }
+                    break;
 
-                // Uniq rels
-                Map<Relationship, Integer> relIdx = new LinkedHashMap<>();
-                for ( Relationship rel : path.relationships() )
-                {
-                    if( !relIdx.containsKey( rel ) )
+                case LIST_TyCon:
+                    packer.packListHeader( value.size() );
+                    for ( Value item : value.values() )
                     {
-                        relIdx.put( rel, relIdx.size() + 1 );
+                        packValue( item );
                     }
-                }
-                packer.packListHeader( relIdx.size() );
-                for ( Relationship rel : relIdx.keySet() )
-                {
-                    packer.packStructHeader( 3, UNBOUND_RELATIONSHIP );
-                    packer.pack( rel.identity().asLong() );
-                    packer.pack( rel.type() );
-                    packProperties( rel );
-                }
+                    break;
 
-                // Sequence
-                packer.packListHeader( (int) path.length() * 2 );
-                for ( Path.Segment seg : path )
-                {
-                    Relationship rel = seg.relationship();
-                    packer.pack( rel.end().equals( seg.end() ) ? relIdx.get( rel ) : -relIdx.get( rel ) );
-                    packer.pack( nodeIdx.get( seg.end() ) );
-                }
-            }
-            else
-            {
-                throw new UnsupportedOperationException( "Unknown type: " + value );
+                case NODE_TyCon:
+                    {
+                        Node node = value.asNode();
+                        packNode( node );
+                    }
+                    break;
+
+                case RELATIONSHIP_TyCon:
+                    {
+                        Relationship rel = value.asRelationship();
+                        packer.packStructHeader( 5, RELATIONSHIP );
+                        packer.pack( rel.identity().asLong() );
+                        packer.pack( rel.start().asLong() );
+                        packer.pack( rel.end().asLong() );
+
+                        packer.pack( rel.type() );
+
+                        packProperties( rel );
+                    }
+                    break;
+
+                case PATH_TyCon:
+                    Path path = value.asPath();
+                    packer.packStructHeader( 3, PATH );
+
+                    // Unique nodes
+                    Map<Node, Integer> nodeIdx = new LinkedHashMap<>();
+                    for ( Node node : path.nodes() )
+                    {
+                        if ( !nodeIdx.containsKey( node ) )
+                        {
+                            nodeIdx.put( node, nodeIdx.size() );
+                        }
+                    }
+                    packer.packListHeader( nodeIdx.size() );
+                    for ( Node node : nodeIdx.keySet() )
+                    {
+                        packNode( node );
+                    }
+
+                    // Unique rels
+                    Map<Relationship, Integer> relIdx = new LinkedHashMap<>();
+                    for ( Relationship rel : path.relationships() )
+                    {
+                        if ( !relIdx.containsKey( rel ) )
+                        {
+                            relIdx.put( rel, relIdx.size() + 1 );
+                        }
+                    }
+                    packer.packListHeader( relIdx.size() );
+                    for ( Relationship rel : relIdx.keySet() )
+                    {
+                        packer.packStructHeader( 3, UNBOUND_RELATIONSHIP );
+                        packer.pack( rel.identity().asLong() );
+                        packer.pack( rel.type() );
+                        packProperties( rel );
+                    }
+
+                    // Sequence
+                    packer.packListHeader( path.length() * 2 );
+                    for ( Path.Segment seg : path )
+                    {
+                        Relationship rel = seg.relationship();
+                        packer.pack( rel.end().equals( seg.end() ) ? relIdx.get( rel ) : -relIdx.get( rel ) );
+                        packer.pack( nodeIdx.get( seg.end() ) );
+                    }
+                    break;
+
+                default:
+                    throw new UnsupportedOperationException( "Unknown type: " + value );
             }
         }
 
@@ -361,12 +366,12 @@ public class PackStreamMessageFormatV1 implements MessageFormat
 
         private void packProperties( Entity entity ) throws IOException
         {
-            Iterable<String> keys = entity.propertyKeys();
+            Iterable<String> keys = entity.keys();
             packer.packMapHeader( entity.propertyCount() );
             for ( String propKey : keys )
             {
                 packer.pack( propKey );
-                packValue( entity.property( propKey ) );
+                packValue( entity.value( propKey ) );
             }
         }
     }
@@ -442,8 +447,8 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         private void unpackFailureMessage( MessageHandler output ) throws IOException
         {
             Map<String,Value> params = unpackMap();
-            String code = params.get( "code" ).javaString();
-            String message = params.get( "message" ).javaString();
+            String code = params.get( "code" ).asString();
+            String message = params.get( "message" ).asString();
             output.handleFailureMessage( code, message );
             onMessageComplete.run();
         }

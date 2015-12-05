@@ -19,10 +19,10 @@
 package org.neo4j.driver.v1.internal.value;
 
 import org.neo4j.driver.v1.Type;
+import org.neo4j.driver.v1.exceptions.value.LossyCoercion;
 import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
-import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
-public class FloatValue extends ValueAdapter
+public class FloatValue extends NumberValueAdapter
 {
     private final double val;
 
@@ -32,63 +32,79 @@ public class FloatValue extends ValueAdapter
     }
 
     @Override
-    public String javaString()
-    {
-        return Double.toString( val );
-    }
-
-    @Override
-    public int javaInteger()
-    {
-        return (int) val;
-    }
-
-    @Override
-    public long javaLong()
-    {
-        return (long) val;
-    }
-
-    @Override
-    public float javaFloat()
-    {
-        return (float) val;
-    }
-
-    @Override
-    public boolean javaBoolean()
-    {
-        return val != 0;
-    }
-
-    @Override
-    public TypeConstructor typeConstructor()
-    {
-        return TypeConstructor.FLOAT_TyCon;
-    }
-
-    @Override
-    public double javaDouble()
-    {
-        return val;
-    }
-
-    @Override
-    public boolean isFloat()
-    {
-        return true;
-    }
-
-    @Override
     public Type type()
     {
         return StandardTypeSystem.TYPE_SYSTEM.FLOAT();
     }
 
-    @Override
-    public String toString()
+    public Number asNumber()
     {
-        return "float<" + val + ">";
+        return val;
+    }
+
+    @Override
+    public long asLong()
+    {
+        long longVal = (long) val;
+        if ((double) longVal != val)
+        {
+            throw new LossyCoercion( type().name(), "Java long" );
+        }
+
+        return longVal;
+    }
+
+    @Override
+    public int asInt()
+    {
+        int intVal = (int) val;
+        if ((double) intVal != val)
+        {
+            throw new LossyCoercion( type().name(), "Java int" );
+        }
+
+        return intVal;
+    }
+
+    @Override
+    public short asShort()
+    {
+        short shortVal = (short) val;
+        if ((double) shortVal != val)
+        {
+            throw new LossyCoercion( type().name(), "Java short" );
+        }
+
+        return shortVal;
+    }
+
+    @Override
+    public byte asByte()
+    {
+        byte byteVal = (byte) val;
+        if ((double) byteVal != val)
+        {
+            throw new LossyCoercion( type().name(), "Java byte" );
+        }
+
+        return byteVal;
+    }
+
+    public double asDouble()
+    {
+        return val;
+    }
+
+    @Override
+    public float asFloat()
+    {
+        float floatVal = (float) val;
+        if ((double) floatVal != val)
+        {
+            throw new LossyCoercion( type().name(), "Java float" );
+        }
+
+        return floatVal;
     }
 
     @Override
@@ -104,9 +120,7 @@ public class FloatValue extends ValueAdapter
         }
 
         FloatValue values = (FloatValue) o;
-
         return Double.compare( values.val, val ) == 0;
-
     }
 
     @Override
@@ -114,5 +128,11 @@ public class FloatValue extends ValueAdapter
     {
         long temp = Double.doubleToLongBits( val );
         return (int) (temp ^ (temp >>> 32));
+    }
+
+    @Override
+    protected String asLiteralString()
+    {
+        return Double.toString( val );
     }
 }

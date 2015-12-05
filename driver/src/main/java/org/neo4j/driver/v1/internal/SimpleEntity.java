@@ -18,14 +18,21 @@
  */
 package org.neo4j.driver.v1.internal;
 
-import java.util.Collection;
 import java.util.Map;
 
 import org.neo4j.driver.v1.Entity;
+import org.neo4j.driver.v1.Function;
 import org.neo4j.driver.v1.Identity;
+import org.neo4j.driver.v1.Property;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.Values;
+import org.neo4j.driver.v1.internal.util.Extract;
+import org.neo4j.driver.v1.internal.util.Iterables;
+import org.neo4j.driver.v1.internal.value.MapValue;
 
-public abstract class SimpleEntity implements Entity
+import static org.neo4j.driver.v1.Values.valueAsIs;
+
+public abstract class SimpleEntity implements Entity, AsValue
 {
     private final Identity id;
     private final Map<String,Value> properties;
@@ -43,21 +50,19 @@ public abstract class SimpleEntity implements Entity
     }
 
     @Override
-    public Collection<String> propertyKeys()
+    public Property property( String key )
     {
-        return properties.keySet();
+        return SimpleProperty.of( key, value( key ) );
     }
 
-    @Override
-    public Value property( String key )
-    {
-        return properties.get( key );
-    }
-
-    @Override
     public int propertyCount()
     {
         return properties.size();
+    }
+
+    public Value asValue()
+    {
+        return new MapValue( properties );
     }
 
     @Override
@@ -91,5 +96,48 @@ public abstract class SimpleEntity implements Entity
                "id=" + id +
                ", properties=" + properties +
                '}';
+    }
+
+    @Override
+    public boolean containsKey( String key )
+    {
+        return properties.containsKey( key );
+    }
+
+    @Override
+    public Iterable<String> keys()
+    {
+        return properties.keySet();
+    }
+
+    @Override
+    public Value value( String key )
+    {
+        Value value = properties.get( key );
+        return value == null ? Values.NULL : value;
+    }
+
+    @Override
+    public Iterable<Value> values()
+    {
+        return properties.values();
+    }
+
+    @Override
+    public <T> Iterable<T> values( Function<Value,T> mapFunction )
+    {
+        return Iterables.map( properties.values(), mapFunction );
+    }
+
+    @Override
+    public Iterable<Property<Value>> properties()
+    {
+        return properties( valueAsIs() );
+    }
+
+    @Override
+    public <V> Iterable<Property<V>> properties( final Function<Value, V> Function )
+    {
+        return Extract.properties( this, Function );
     }
 }

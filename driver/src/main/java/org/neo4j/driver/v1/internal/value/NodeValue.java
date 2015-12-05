@@ -22,7 +22,6 @@ import org.neo4j.driver.v1.Node;
 import org.neo4j.driver.v1.Type;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
-import org.neo4j.driver.v1.internal.types.TypeConstructor;
 
 public class NodeValue extends ValueAdapter
 {
@@ -34,41 +33,39 @@ public class NodeValue extends ValueAdapter
     }
 
     @Override
+    public Object asObject()
+    {
+        return asNode();
+    }
+
+    @Override
     public Node asNode()
     {
         return adapted;
     }
 
     @Override
-    public boolean isNode()
+    public int size()
     {
-        return true;
+        return propertyCount();
     }
 
     @Override
-    public long size()
+    public int propertyCount()
     {
-        int count = 0;
-        for ( String ignore : adapted.propertyKeys() ) { count++; }
-        return count;
+        return adapted.propertyCount();
     }
 
     @Override
     public Iterable<String> keys()
     {
-        return adapted.propertyKeys();
+        return adapted.keys();
     }
 
     @Override
-    public TypeConstructor typeConstructor()
+    public Value value( String key )
     {
-        return TypeConstructor.NODE_TyCon;
-    }
-
-    @Override
-    public Value get( String key )
-    {
-        return adapted.property( key );
+        return adapted.value( key );
     }
 
     @Override
@@ -84,8 +81,7 @@ public class NodeValue extends ValueAdapter
         }
 
         NodeValue values = (NodeValue) o;
-
-        return !(adapted != null ? !adapted.equals( values.adapted ) : values.adapted != null);
+        return adapted == values.adapted || adapted.equals( values.adapted );
 
     }
 
@@ -102,7 +98,7 @@ public class NodeValue extends ValueAdapter
     }
 
     @Override
-    public String toString()
+    public String asLiteralString()
     {
         return adapted.toString();
     }

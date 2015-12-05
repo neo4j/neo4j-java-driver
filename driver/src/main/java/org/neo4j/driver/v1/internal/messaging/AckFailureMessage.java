@@ -20,8 +20,6 @@ package org.neo4j.driver.v1.internal.messaging;
 
 import java.io.IOException;
 
-import static java.lang.String.format;
-
 /**
  * ACK_FAILURE request message
  * <p>
@@ -48,7 +46,7 @@ public class AckFailureMessage implements Message
     @Override
     public String toString()
     {
-        return format( "[ACK_FAILURE]" );
+        return "[ACK_FAILURE]";
     }
 
     @Override
