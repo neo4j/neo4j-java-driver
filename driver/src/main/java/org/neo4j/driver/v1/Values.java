@@ -281,6 +281,16 @@ public abstract class Values
         return VALUE;
     }
 
+    public static Function<Value,Object> valueAsObject()
+    {
+        return OBJECT;
+    }
+
+    public static Function<Value,Number> valueAsNumber()
+    {
+        return NUMBER;
+    }
+
     public static Function<Value,String> valueAsString()
     {
         return STRING;
@@ -291,7 +301,7 @@ public abstract class Values
         return TO_STRING;
     }
 
-    public static Function<Value,Integer> valueAsInt()
+    public static Function<Value,Integer> valueAsInteger()
     {
         return INTEGER;
     }
@@ -321,6 +331,16 @@ public abstract class Values
         return MAP;
     }
 
+    public static Function<Value, Entity> valueAsEntity()
+    {
+        return ENTITY;
+    }
+
+    public static Function<Value, Identity> valueAsEntityIdentity()
+    {
+        return ENTITY_IDENTITY;
+    }
+
     public static Function<Value, Node> valueAsNode()
     {
         return NODE;
@@ -347,12 +367,25 @@ public abstract class Values
             }
         };
     }
-
+    private static final Function<Value,Object> OBJECT = new Function<Value,Object>()
+    {
+        public Object apply( Value val )
+        {
+            return val.asObject();
+        }
+    };
     private static final Function<Value,Value> VALUE = new Function<Value,Value>()
     {
         public Value apply( Value val )
         {
             return val;
+        }
+    };
+    private static final Function<Value,Number> NUMBER = new Function<Value,Number>()
+    {
+        public Number apply( Value val )
+        {
+            return val.asNumber();
         }
     };
     private static final Function<Value,String> STRING = new Function<Value,String>()
@@ -409,6 +442,20 @@ public abstract class Values
         public Map<String,Value> apply( Value val )
         {
             return val.asMap();
+        }
+    };
+    private static final Function<Value,Identity> ENTITY_IDENTITY = new Function<Value,Identity>()
+    {
+        public Identity apply( Value val )
+        {
+            return val.asEntity().identity();
+        }
+    };
+    private static final Function<Value,Entity> ENTITY = new Function<Value,Entity>()
+    {
+        public Entity apply( Value val )
+        {
+            return val.asEntity();
         }
     };
     private static final Function<Value,Node> NODE = new Function<Value,Node>()

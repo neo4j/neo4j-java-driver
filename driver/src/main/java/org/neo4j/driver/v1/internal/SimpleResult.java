@@ -19,7 +19,6 @@
 package org.neo4j.driver.v1.internal;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -30,6 +29,8 @@ import org.neo4j.driver.v1.Result;
 import org.neo4j.driver.v1.ResultSummary;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
+
+import static java.util.Collections.emptyList;
 
 import static org.neo4j.driver.v1.Records.recordAsIs;
 
@@ -172,7 +173,8 @@ public class SimpleResult extends SimpleRecordAccessor implements Result
     {
         if ( isEmpty() )
         {
-            return Collections.emptyList();
+            assertOpen();
+            return emptyList();
         }
         else if ( first() )
         {

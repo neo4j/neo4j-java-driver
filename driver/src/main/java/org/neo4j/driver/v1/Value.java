@@ -311,6 +311,12 @@ public interface Value extends PropertyMapAccessor, ListAccessor
     <T> Map<String, T> asMap( Function<Value, T> mapFunction );
 
     /**
+     * @return the value as a {@link Entity}, if possible.
+     * @throws Uncoercible if value types are incompatible.
+     */
+    Entity asEntity();
+
+    /**
      * @return the value as a {@link Node}, if possible.
      * @throws Uncoercible if value types are incompatible.
      */

@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.v1.internal.value;
 
+import org.neo4j.driver.v1.Entity;
 import org.neo4j.driver.v1.Node;
 import org.neo4j.driver.v1.Type;
 import org.neo4j.driver.v1.Value;
@@ -34,6 +35,12 @@ public class NodeValue extends ValueAdapter
 
     @Override
     public Object asObject()
+    {
+        return asNode();
+    }
+
+    @Override
+    public Entity asEntity()
     {
         return asNode();
     }

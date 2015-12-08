@@ -21,6 +21,7 @@ package org.neo4j.driver.v1.internal.value;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.driver.v1.Entity;
 import org.neo4j.driver.v1.Function;
 import org.neo4j.driver.v1.Identity;
 import org.neo4j.driver.v1.Node;
@@ -226,6 +227,12 @@ public abstract class ValueAdapter implements InternalValue
     public Identity asIdentity()
     {
         throw new Uncoercible( type().name(), "Identity" );
+    }
+
+    @Override
+    public Entity asEntity()
+    {
+        throw new Uncoercible( type().name(), "Entity" );
     }
 
     @Override

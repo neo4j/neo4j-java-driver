@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.v1.internal.value;
 
+import org.neo4j.driver.v1.Entity;
 import org.neo4j.driver.v1.Relationship;
 import org.neo4j.driver.v1.Type;
 import org.neo4j.driver.v1.Value;
@@ -34,6 +35,12 @@ public class RelationshipValue extends ValueAdapter
 
     @Override
     public Object asObject()
+    {
+        return asRelationship();
+    }
+
+    @Override
+    public Entity asEntity()
     {
         return asRelationship();
     }
