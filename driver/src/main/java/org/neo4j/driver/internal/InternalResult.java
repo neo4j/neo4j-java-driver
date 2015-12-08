@@ -59,7 +59,7 @@ public class InternalResult extends InternalRecordAccessor implements Result
 
     public Value value( int index )
     {
-        return current == null ? throwNoRecord() : current.value( index );
+        return record().value( index );
     }
 
     @Override
@@ -73,10 +73,15 @@ public class InternalResult extends InternalRecordAccessor implements Result
         return keys;
     }
 
+    @Override
+    public int fieldIndex( String key )
+    {
+        return record().fieldIndex( key );
+    }
+
     public Value value( String key )
     {
-        assertOpen();
-        return current == null ? throwNoRecord() : current.value( key );
+        return record().value( key );
     }
 
     private Value throwNoRecord()
@@ -102,7 +107,6 @@ public class InternalResult extends InternalRecordAccessor implements Result
     public long position()
     {
         assertOpen();
-
         return position;
     }
 
@@ -110,7 +114,6 @@ public class InternalResult extends InternalRecordAccessor implements Result
     public boolean atEnd()
     {
         assertOpen();
-
         return !iter.hasNext();
     }
 
@@ -118,7 +121,6 @@ public class InternalResult extends InternalRecordAccessor implements Result
     public boolean next()
     {
         assertOpen();
-
         if ( iter.hasNext() )
         {
             current = iter.next();

@@ -21,6 +21,7 @@ package org.neo4j.driver.internal;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 import org.neo4j.driver.internal.util.Extract;
 import org.neo4j.driver.v1.Function;
@@ -53,6 +54,20 @@ public class InternalRecord extends InternalRecordAccessor implements Record
     public List<String> keys()
     {
         return keys;
+    }
+
+    @Override
+    public int fieldIndex( String key )
+    {
+        Integer result = keyIndexLookup.get( key );
+        if ( result == null )
+        {
+            throw new NoSuchElementException( "Unknown key: " + key );
+        }
+        else
+        {
+            return result;
+        }
     }
 
     @Override

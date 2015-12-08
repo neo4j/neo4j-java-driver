@@ -41,6 +41,15 @@ public interface RecordAccessor extends ListAccessor, MapAccessor
     int fieldCount();
 
     /**
+     * Retrieve the index of the field with the given key
+     *
+     * @throws java.util.NoSuchElementException if the given key is not from {@link #keys()}
+     * @param key the give key
+     * @return the index of the field as used by {@link #value(int)}
+     */
+    int fieldIndex( String key );
+
+    /**
      * Retrieve all record fields
      *
      * @return all fields in key order

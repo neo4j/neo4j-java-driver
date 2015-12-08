@@ -18,11 +18,11 @@
  */
 package org.neo4j.driver.internal;
 
-
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 import org.junit.Test;
 
@@ -35,6 +35,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import static org.neo4j.driver.v1.Values.value;
 
@@ -55,6 +56,29 @@ public class InternalRecordTest
     {
         InternalRecord record = createRecord();
         assertThat( record.fieldCount(), equalTo( 2 ) );
+    }
+
+    @Test
+    public void shouldHaveCorrectFieldIndices()
+    {
+        InternalRecord record = createRecord();
+        assertThat( record.fieldIndex( "k1" ), equalTo( 0 ) );
+        assertThat( record.fieldIndex( "k2" ), equalTo( 1 ) );
+    }
+
+    @Test
+    public void shouldThrowWhenAskingForIndexOfUnknownField()
+    {
+        InternalRecord record = createRecord();
+        try
+        {
+            record.fieldIndex( "BATMAN" );
+            fail( "Expected NoSuchElementException to be thrown" );
+        }
+        catch ( NoSuchElementException e )
+        {
+            // yay
+        }
     }
 
     @Test
