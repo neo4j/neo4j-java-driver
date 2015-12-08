@@ -41,4 +41,12 @@ public interface Record extends RecordAccessor
      * @return the value as a map from string keys to values of type T
      */
     <T> Map<String, T> asMap( Function<Value, T> mapFunction );
+
+    // Force implementation
+    @Override
+    boolean equals( Object other );
+
+    // Force implementation
+    @Override
+    int hashCode();
 }

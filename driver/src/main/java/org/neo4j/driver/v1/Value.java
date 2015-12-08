@@ -333,4 +333,12 @@ public interface Value extends PropertyMapAccessor, ListAccessor
      * @throws Uncoercible if value types are incompatible.
      */
     Path asPath();
+
+    // Force implementation
+    @Override
+    boolean equals( Object other );
+
+    // Force implementation
+    @Override
+    int hashCode();
 }

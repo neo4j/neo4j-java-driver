@@ -36,6 +36,7 @@ public class InternalRecord extends InternalRecordAccessor implements Record
     private final List<String> keys;
     private final Map<String, Integer> keyIndexLookup;
     private final Value[] values;
+    private int hashcode = 0;
 
     public InternalRecord( List<String> keys, Map<String, Integer> keyIndexLookup, Value[] values )
     {
@@ -108,11 +109,47 @@ public class InternalRecord extends InternalRecordAccessor implements Record
         return Extract.map( this, mapFunction );
     }
 
-    @Override
-    public int hashCode()
+    public int hashcode()
     {
-        int result = keys.hashCode();
-        result = 31 * result + Arrays.hashCode( values );
-        return result;
+        if ( hashcode == 0 )
+        {
+            hashcode = 31 * keys.hashCode() + Arrays.hashCode( values );
+        }
+        return hashcode;
+    }
+
+    public boolean equals( Object other )
+    {
+        if ( this == other )
+        {
+            return true;
+        }
+        else if ( other instanceof Record )
+        {
+            Record otherRecord = (Record) other;
+            int size = fieldCount();
+            if ( ! ( size == otherRecord.fieldCount() ) )
+            {
+                return false;
+            }
+            if ( ! keys.equals( otherRecord.keys() ) )
+            {
+                return false;
+            }
+            for ( int i = 0; i < size; i++ )
+            {
+                Value value = value( i );
+                Value otherValue = otherRecord.value( i );
+                if ( ! value.equals( otherValue ) )
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+        else
+        {
+            return false;
+        }
     }
 }
