@@ -23,15 +23,17 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Map;
 
+import org.neo4j.driver.internal.connector.socket.SocketClient;
+import org.neo4j.driver.internal.logging.DevNullLogger;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.internal.connector.socket.SocketClient;
-import org.neo4j.driver.v1.internal.logging.DevNullLogger;
 
 import static java.lang.String.format;
+
 import static junit.framework.TestCase.assertFalse;
-import static org.neo4j.driver.v1.internal.ConfigTest.deleteDefaultKnownCertFileIfExists;
+
+import static org.neo4j.driver.internal.ConfigTest.deleteDefaultKnownCertFileIfExists;
 import static org.neo4j.driver.v1.util.FileTools.deleteRecursively;
 import static org.neo4j.driver.v1.util.FileTools.updateProperties;
 

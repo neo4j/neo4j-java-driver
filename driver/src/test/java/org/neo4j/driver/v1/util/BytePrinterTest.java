@@ -18,15 +18,15 @@
  */
 package org.neo4j.driver.v1.util;
 
-import org.junit.Assert;
-import org.junit.Test;
-
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
-import org.neo4j.driver.v1.internal.util.BytePrinter;
+import org.junit.Assert;
+import org.junit.Test;
+
+import org.neo4j.driver.internal.util.BytePrinter;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;

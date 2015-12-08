@@ -21,8 +21,8 @@ package org.neo4j.driver.v1;
 import java.io.File;
 import java.util.logging.Level;
 
-import org.neo4j.driver.v1.internal.logging.JULogging;
-import org.neo4j.driver.v1.internal.spi.Logging;
+import org.neo4j.driver.internal.logging.JULogging;
+import org.neo4j.driver.internal.spi.Logging;
 
 import static org.neo4j.driver.v1.Config.TlsAuthenticationConfig.usingKnownCerts;
 

@@ -18,8 +18,8 @@
  */
 package org.neo4j.driver.v1;
 
+import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.internal.value.NullValue;
 
 /**
  * Access the keys, properties and values of an underlying unordered map by key

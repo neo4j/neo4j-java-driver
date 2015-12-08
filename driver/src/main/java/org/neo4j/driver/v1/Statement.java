@@ -22,7 +22,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.driver.v1.internal.ParameterSupport;
+import org.neo4j.driver.internal.ParameterSupport;
 
 import static java.lang.String.format;
 

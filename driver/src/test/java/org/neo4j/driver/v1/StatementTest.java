@@ -25,8 +25,8 @@ import org.junit.Test;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 
+import static org.neo4j.driver.internal.ParameterSupport.NO_PARAMETERS;
 import static org.neo4j.driver.v1.Values.parameters;
-import static org.neo4j.driver.v1.internal.ParameterSupport.NO_PARAMETERS;
 
 public class StatementTest
 {

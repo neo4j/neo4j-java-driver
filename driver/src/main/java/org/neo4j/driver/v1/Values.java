@@ -26,15 +26,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.driver.internal.AsValue;
+import org.neo4j.driver.internal.value.BooleanValue;
+import org.neo4j.driver.internal.value.FloatValue;
+import org.neo4j.driver.internal.value.IntegerValue;
+import org.neo4j.driver.internal.value.ListValue;
+import org.neo4j.driver.internal.value.MapValue;
+import org.neo4j.driver.internal.value.NullValue;
+import org.neo4j.driver.internal.value.StringValue;
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.internal.AsValue;
-import org.neo4j.driver.v1.internal.value.BooleanValue;
-import org.neo4j.driver.v1.internal.value.FloatValue;
-import org.neo4j.driver.v1.internal.value.IntegerValue;
-import org.neo4j.driver.v1.internal.value.ListValue;
-import org.neo4j.driver.v1.internal.value.MapValue;
-import org.neo4j.driver.v1.internal.value.NullValue;
-import org.neo4j.driver.v1.internal.value.StringValue;
 
 /**
  * Utility for wrapping regular Java types and exposing them as {@link Value}

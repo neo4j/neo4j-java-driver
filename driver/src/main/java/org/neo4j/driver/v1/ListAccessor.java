@@ -34,7 +34,7 @@ public interface ListAccessor
      * Retrieve the value at the given index
      *
      * @param index the index of the value
-     * @return the value or a {@link org.neo4j.driver.v1.internal.value.NullValue} if the index is out of bounds
+     * @return the value or a {@link org.neo4j.driver.internal.value.NullValue} if the index is out of bounds
      * @throws ClientException if record has not been initialized
      */
     Value value( int index );

@@ -18,6 +18,20 @@
  */
 package org.neo4j.driver.v1.util;
 
+import java.io.File;
+import java.io.IOException;
+import java.math.BigInteger;
+import java.security.GeneralSecurityException;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.KeyStore;
+import java.security.SecureRandom;
+import java.security.Security;
+import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
+import java.util.Date;
+import java.util.Enumeration;
+
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
@@ -34,25 +48,12 @@ import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.bc.BcRSAContentSignerBuilder;
 import org.junit.Test;
 
-import java.io.File;
-import java.io.IOException;
-import java.math.BigInteger;
-import java.security.GeneralSecurityException;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.KeyStore;
-import java.security.SecureRandom;
-import java.security.Security;
-import java.security.cert.Certificate;
-import java.security.cert.X509Certificate;
-import java.util.Date;
-import java.util.Enumeration;
-
-import org.neo4j.driver.v1.internal.util.CertificateTool;
+import org.neo4j.driver.internal.util.CertificateTool;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.driver.v1.internal.util.CertificateTool.saveX509Cert;
+
+import static org.neo4j.driver.internal.util.CertificateTool.saveX509Cert;
 
 public class CertificateToolTest
 {
@@ -65,7 +66,7 @@ public class CertificateToolTest
     /**
      * Create a random certificate
      *
-     * @return
+     * @return a random certificate
      * @throws GeneralSecurityException, IOException, OperatorCreationException
      */
     public static X509Certificate generateSelfSignedCertificate()

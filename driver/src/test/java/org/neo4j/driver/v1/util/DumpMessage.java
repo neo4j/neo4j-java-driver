@@ -27,23 +27,23 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.driver.internal.connector.socket.ChunkedInput;
+import org.neo4j.driver.internal.messaging.AckFailureMessage;
+import org.neo4j.driver.internal.messaging.DiscardAllMessage;
+import org.neo4j.driver.internal.messaging.FailureMessage;
+import org.neo4j.driver.internal.messaging.IgnoredMessage;
+import org.neo4j.driver.internal.messaging.InitMessage;
+import org.neo4j.driver.internal.messaging.Message;
+import org.neo4j.driver.internal.messaging.MessageFormat;
+import org.neo4j.driver.internal.messaging.MessageHandler;
+import org.neo4j.driver.internal.messaging.PackStreamMessageFormatV1;
+import org.neo4j.driver.internal.messaging.PullAllMessage;
+import org.neo4j.driver.internal.messaging.RecordMessage;
+import org.neo4j.driver.internal.messaging.RunMessage;
+import org.neo4j.driver.internal.messaging.SuccessMessage;
+import org.neo4j.driver.internal.packstream.PackInput;
+import org.neo4j.driver.internal.util.BytePrinter;
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.internal.connector.socket.ChunkedInput;
-import org.neo4j.driver.v1.internal.messaging.AckFailureMessage;
-import org.neo4j.driver.v1.internal.messaging.DiscardAllMessage;
-import org.neo4j.driver.v1.internal.messaging.FailureMessage;
-import org.neo4j.driver.v1.internal.messaging.IgnoredMessage;
-import org.neo4j.driver.v1.internal.messaging.InitMessage;
-import org.neo4j.driver.v1.internal.messaging.Message;
-import org.neo4j.driver.v1.internal.messaging.MessageFormat;
-import org.neo4j.driver.v1.internal.messaging.MessageHandler;
-import org.neo4j.driver.v1.internal.messaging.PackStreamMessageFormatV1;
-import org.neo4j.driver.v1.internal.messaging.PullAllMessage;
-import org.neo4j.driver.v1.internal.messaging.RecordMessage;
-import org.neo4j.driver.v1.internal.messaging.RunMessage;
-import org.neo4j.driver.v1.internal.messaging.SuccessMessage;
-import org.neo4j.driver.v1.internal.packstream.PackInput;
-import org.neo4j.driver.v1.internal.util.BytePrinter;
 
 public class DumpMessage
 {

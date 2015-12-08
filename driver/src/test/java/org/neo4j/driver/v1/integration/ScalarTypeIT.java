@@ -27,11 +27,11 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import org.neo4j.driver.internal.value.ListValue;
+import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.v1.Result;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
-import org.neo4j.driver.v1.internal.value.ListValue;
-import org.neo4j.driver.v1.internal.value.MapValue;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
 import static org.hamcrest.CoreMatchers.equalTo;
