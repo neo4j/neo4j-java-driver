@@ -58,4 +58,9 @@ public interface RecordAccessor extends ListAccessor, MapAccessor
      * @throws ClientException if record has not been initialized.
      */
     <V> List<Field<V>> fields( Function<Value, V> mapFunction );
+
+    /**
+     * @return an immutable copy of the currently viewed record
+     */
+    Record record();
 }

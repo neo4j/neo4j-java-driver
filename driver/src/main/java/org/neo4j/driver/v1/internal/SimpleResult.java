@@ -23,11 +23,15 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
+import org.neo4j.driver.v1.Function;
 import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.RecordAccessor;
 import org.neo4j.driver.v1.Result;
 import org.neo4j.driver.v1.ResultSummary;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
+
+import static org.neo4j.driver.v1.Records.recordAsIs;
 
 public class SimpleResult extends SimpleRecordAccessor implements Result
 {
@@ -160,16 +164,22 @@ public class SimpleResult extends SimpleRecordAccessor implements Result
     @Override
     public List<Record> retain()
     {
+        return retain( recordAsIs() );
+    }
+
+    @Override
+    public <T> List<T> retain( Function<RecordAccessor, T> mapFunction )
+    {
         if ( isEmpty() )
         {
             return Collections.emptyList();
         }
         else if ( first() )
         {
-            List<Record> result = new ArrayList<>();
+            List<T> result = new ArrayList<>();
             do
             {
-                result.add( record() );
+                result.add( mapFunction.apply( this ) );
             }
             while ( next() );
             return result;
@@ -177,9 +187,9 @@ public class SimpleResult extends SimpleRecordAccessor implements Result
         else
         {
             throw new
-                    ClientException( String.format(
-                    "Can't retain records when cursor is not pointing at the first record (currently at position %d)",
-                    position ) );
+                ClientException( String.format(
+                "Can't retain records when cursor is not pointing at the first record (currently at position %d)",
+                position ) );
         }
     }
 

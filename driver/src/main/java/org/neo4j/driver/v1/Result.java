@@ -43,6 +43,7 @@ public interface Result extends RecordAccessor, Resource
      * @return an immutable copy of the currently viewed record
      * @throws ClientException if no calls has been made to {@link #next()}, {@link #first()}, nor {@link #skip(long)}
      */
+    @Override
     Record record();
 
     /**
@@ -101,6 +102,17 @@ public interface Result extends RecordAccessor, Resource
      * @return list of all immutable records
      */
     List<Record> retain();
+
+    /**
+     * Retrieve and store a projection of the entire result stream.
+     * This can be used if you want to iterate over the stream multiple times or to store the
+     * whole result for later use.
+     *
+     * Calling this method exhausts the result cursor and moves it to the last record
+     * @throws ClientException if the cursor can't be positioned at the first record
+     * @return list of all immutable records
+     */
+    <T> List<T> retain( Function<RecordAccessor, T> mapFunction );
 
     /**
      * Summarize the result.

@@ -77,6 +77,12 @@ public class SimpleRecord extends SimpleRecordAccessor implements Record
     }
 
     @Override
+    public Record record()
+    {
+        return this;
+    }
+
+    @Override
     public Map<String, Value> asMap()
     {
         return asMap( valueAsIs() );

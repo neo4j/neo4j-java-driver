@@ -40,11 +40,16 @@ import org.neo4j.driver.v1.internal.value.StringValue;
  * Utility for wrapping regular Java types and exposing them as {@link Value}
  * objects.
  */
-public class Values
+public abstract class Values
 {
     public static final Value EmptyMap = value( Collections.emptyMap() );
 
     public static Value NULL = NullValue.NULL;
+
+    private Values()
+    {
+        throw new UnsupportedOperationException();
+    }
 
     @SuppressWarnings("unchecked")
     public static Value value( Object value )

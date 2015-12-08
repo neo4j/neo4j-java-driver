@@ -29,6 +29,7 @@ import org.junit.rules.ExpectedException;
 
 import org.neo4j.driver.v1.Property;
 import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.Records;
 import org.neo4j.driver.v1.Result;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
@@ -151,6 +152,34 @@ public class SimpleResultTest
 
         // WHEN
         List<Record> records = result.retain();
+
+        // THEN
+        assertTrue(result.atEnd());
+        assertThat(records, hasSize( 3 ) );
+    }
+
+    @Test
+    public void retainAndMapByKeyShouldWorkAsExpected()
+    {
+        // GIVEN
+        Result result = createResult( 3 );
+
+        // WHEN
+        List<Value> records = result.retain( Records.columnAsIs( "k1" ) );
+
+        // THEN
+        assertTrue(result.atEnd());
+        assertThat(records, hasSize( 3 ) );
+    }
+
+    @Test
+    public void retainAndMapByIndexShouldWorkAsExpected()
+    {
+        // GIVEN
+        Result result = createResult( 3 );
+
+        // WHEN
+        List<Value> records = result.retain( Records.columnAsIs( 0 ) );
 
         // THEN
         assertTrue(result.atEnd());
