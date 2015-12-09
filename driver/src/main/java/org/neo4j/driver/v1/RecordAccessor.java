@@ -36,9 +36,12 @@ public interface RecordAccessor extends ListAccessor, MapAccessor
     List<String> keys();
 
     /**
-     * @return number of fields in this record
+     * Retrieve the key of the field for the given index
+     *
+     * @param index the index of the key
+     * @return the key of the field for the given index
      */
-    int fieldCount();
+    String key( int index );
 
     /**
      * Retrieve the index of the field with the given key
@@ -47,7 +50,28 @@ public interface RecordAccessor extends ListAccessor, MapAccessor
      * @param key the give key
      * @return the index of the field as used by {@link #value(int)}
      */
-    int fieldIndex( String key );
+    int index( String key );
+
+    /**
+     * Retrieve the field for the given key
+     *
+     * @param key the key
+     * @return the field for the given key
+     */
+    Field field( String key );
+
+    /**
+     * Retrieve the field at the given index
+     *
+     * @param index the index
+     * @return the field at the given index
+     */
+    Field field( int index );
+
+    /**
+     * @return number of fields in this record
+     */
+    int fieldCount();
 
     /**
      * Retrieve all record fields

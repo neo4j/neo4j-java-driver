@@ -20,10 +20,11 @@ package org.neo4j.driver.internal.util;
 
 import java.util.Iterator;
 
+import org.neo4j.driver.internal.InternalField;
 import org.neo4j.driver.internal.InternalProperty;
+import org.neo4j.driver.v1.Field;
 import org.neo4j.driver.v1.Function;
 import org.neo4j.driver.v1.Property;
-import org.neo4j.driver.v1.Value;
 
 public abstract class Format
 {
@@ -32,9 +33,9 @@ public abstract class Format
         throw new UnsupportedOperationException();
     }
 
-    public static <V extends Property<Value>> String formatProperties( Function<Value, String> printValue,
-                                                                       int propertyCount,
-                                                                       Iterable<V> properties )
+    public static <V> String formatProperties( Function<V, String> printValue,
+                                               int propertyCount,
+                                               Iterable<Property<V>> properties )
     {
         switch ( propertyCount ) {
             case 0:
@@ -49,7 +50,7 @@ public abstract class Format
             {
                 StringBuilder builder = new StringBuilder();
                 builder.append( "{" );
-                Iterator<V> iterator = properties.iterator();
+                Iterator<Property<V>> iterator = properties.iterator();
                 builder.append( internalProperty( iterator.next() ).toString( printValue ) );
                 while ( iterator.hasNext() )
                 {
@@ -64,12 +65,49 @@ public abstract class Format
     }
 
     @SuppressWarnings("unchecked")
-    private static <V extends Property<Value>> InternalProperty<Value> internalProperty( V property )
+    private static <V> InternalProperty<V> internalProperty( Property<V> property )
     {
-        return (InternalProperty<Value>) property;
+        return (InternalProperty<V>) property;
     }
 
-    public static String formatElements( Function<Value, String> printValue, Value[] elements )
+    public static <V> String formatFields( Function<V, String> printValue,
+                                               int propertyCount,
+                                               Iterable<Field<V>> fields )
+    {
+        switch ( propertyCount ) {
+            case 0:
+                return "{}";
+
+            case 1:
+            {
+                return String.format( "{%s}", internalField( fields.iterator().next() ).toString( printValue ) );
+            }
+
+            default:
+            {
+                StringBuilder builder = new StringBuilder();
+                builder.append( "{" );
+                Iterator<Field<V>> iterator = fields.iterator();
+                builder.append( internalField( iterator.next() ).toString( printValue ) );
+                while ( iterator.hasNext() )
+                {
+                    builder.append( ',' );
+                    builder.append( ' ' );
+                    builder.append( internalField( iterator.next() ).toString( printValue ) );
+                }
+                builder.append( "}" );
+                return builder.toString();
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <V> InternalField<V> internalField( Field<V> property )
+    {
+        return (InternalField<V>) property;
+    }
+
+    public static <V> String formatElements( Function<V, String> printValue, V[] elements )
     {
         int elementCount = elements.length;
         switch ( elementCount ) {

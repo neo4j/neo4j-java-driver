@@ -37,6 +37,19 @@ public abstract class InternalRecordAccessor implements RecordAccessor
     }
 
     @Override
+    public Field field( String key )
+    {
+        int index = index( key );
+        return InternalField.of( key, index, value( index ) );
+    }
+
+    @Override
+    public Field field( int index )
+    {
+        return InternalField.of( key( index ), index, value( index) );
+    }
+
+    @Override
     public List<Field<Value>> fields()
     {
         return fields( valueAsIs() );

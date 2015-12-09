@@ -229,15 +229,15 @@ public interface Value extends PropertyMapAccessor, ListAccessor
     Identity asIdentity();
 
     /**
-     * @return the value as a list of values, if possible
+     * @return the value as a Java list of values, if possible
      */
     List<Value> asList();
 
     /**
      * @param mapFunction a function to map from Value to T. See {@link Values} for some predefined functions, such
      * as {@link Values#valueAsBoolean()}, {@link Values#valueAsList(Function)}.
-     * @param <T> the type of list elements
-     * @return the value as a list of T, if possible
+     * @param <T> the type of target list elements
+     * @return the value as a list of T obtained by mapping from the list elements, if possible
      */
     <T> List<T> asList( Function<Value, T> mapFunction );
 
@@ -304,7 +304,7 @@ public interface Value extends PropertyMapAccessor, ListAccessor
     float[] asFloatArray();
 
     /**
-     * @return the value as a value map, if possible
+     * @return the value as a Java value map, if possible
      */
     Map<String, Value> asMap();
 
@@ -312,7 +312,7 @@ public interface Value extends PropertyMapAccessor, ListAccessor
      * @param mapFunction a function to map from Value to T. See {@link Values} for some predefined functions, such
      * as {@link Values#valueAsBoolean()}, {@link Values#valueAsList(Function)}.
      * @param <T> the type of map values
-     * @return the value as a map from string keys to values of type T, if possible
+     * @return the value as a map from string keys to values of type T obtained from mapping he original map values, if possible
      */
     <T> Map<String, T> asMap( Function<Value, T> mapFunction );
 

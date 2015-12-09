@@ -62,26 +62,32 @@ public class InternalResult extends InternalRecordAccessor implements Result
         return record().value( index );
     }
 
+    public Value value( String key )
+    {
+        return record().value( key );
+    }
+
     @Override
     public boolean containsKey( String key )
     {
         return keys.contains( key );
     }
 
-    public List<String> keys()
+    @Override
+    public String key( int index )
     {
-        return keys;
+        return record().key( index );
     }
 
     @Override
-    public int fieldIndex( String key )
+    public int index( String key )
     {
-        return record().fieldIndex( key );
+        return record().index( key );
     }
 
-    public Value value( String key )
+    public List<String> keys()
     {
-        return record().value( key );
+        return keys;
     }
 
     private Value throwNoRecord()

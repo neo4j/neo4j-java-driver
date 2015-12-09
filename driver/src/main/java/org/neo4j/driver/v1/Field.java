@@ -28,10 +28,22 @@ package org.neo4j.driver.v1;
  * @see RecordAccessor
  */
 @Immutable
-public interface Field<V> extends Property<V>
+public interface Field<V>
 {
+    /**
+     * @return the property key
+     */
+    String key();
+
+    /**
+     * @return the property value
+     */
+    V value();
+
     /**
      * @return the index of the field in the original record
      */
     int index();
+
+    Property<V> asProperty();
 }

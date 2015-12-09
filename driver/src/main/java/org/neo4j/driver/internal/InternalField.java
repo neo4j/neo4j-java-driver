@@ -18,22 +18,89 @@
  */
 package org.neo4j.driver.internal;
 
-import org.neo4j.driver.v1.Field;
+import java.util.Objects;
 
-public class InternalField<V> extends InternalProperty<V> implements Field<V>
+import org.neo4j.driver.v1.Field;
+import org.neo4j.driver.v1.Function;
+import org.neo4j.driver.v1.Property;
+
+public class InternalField<V> implements Field<V>
 {
     private final int index;
+    private final String key;
+    private final V value;
 
     public InternalField( String key, int index, V value )
     {
-        super( key, value );
+        if ( key == null )
+        {
+            throw new IllegalArgumentException( "null key" );
+        }
+        if ( value == null )
+        {
+            throw new IllegalArgumentException( "null value" );
+        }
         this.index = index;
+        this.key = key;
+        this.value = value;
+    }
+
+    public String key()
+    {
+        return key;
+    }
+
+    public V value()
+    {
+        return value;
     }
 
     @Override
     public int index()
     {
         return index;
+    }
+
+    @Override
+    public Property<V> asProperty()
+    {
+        return InternalProperty.of( key, value );
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format( "%s: %s", key, Objects.toString( value ) );
+    }
+
+    public String toString( Function<V, String> printValue )
+    {
+        return String.format( "%s: %s", key, printValue.apply( value ) );
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+
+        InternalField<?> that = (InternalField<?>) o;
+        return index == that.index && key.equals( that.key ) && value.equals( that.value );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = index;
+        result = 31 * result + key.hashCode();
+        result = 31 * result + value.hashCode();
+        return result;
     }
 
     public static <V> Field<V> of( String key, int index, V value )

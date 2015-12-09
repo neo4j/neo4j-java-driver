@@ -62,8 +62,8 @@ public class InternalRecordTest
     public void shouldHaveCorrectFieldIndices()
     {
         InternalRecord record = createRecord();
-        assertThat( record.fieldIndex( "k1" ), equalTo( 0 ) );
-        assertThat( record.fieldIndex( "k2" ), equalTo( 1 ) );
+        assertThat( record.index( "k1" ), equalTo( 0 ) );
+        assertThat( record.index( "k2" ), equalTo( 1 ) );
     }
 
     @Test
@@ -72,7 +72,7 @@ public class InternalRecordTest
         InternalRecord record = createRecord();
         try
         {
-            record.fieldIndex( "BATMAN" );
+            record.index( "BATMAN" );
             fail( "Expected NoSuchElementException to be thrown" );
         }
         catch ( NoSuchElementException e )
@@ -100,6 +100,24 @@ public class InternalRecordTest
         assertTrue( record.containsKey( "k1" ) );
         assertTrue( record.containsKey( "k2" ) );
         assertFalse( record.containsKey( "k3" ) );
+    }
+
+    @Test
+    public void testIndex()
+    {
+        InternalRecord record = createRecord();
+
+        assertThat( record.index( "k1" ), equalTo( 0 ) );
+        assertThat( record.index( "k2" ), equalTo( 1 ) );
+    }
+
+    @Test
+    public void testField()
+    {
+        InternalRecord record = createRecord();
+
+        assertThat( record.field( "k1" ), equalTo( record.field( 0 ) ) );
+        assertThat( record.field( "k2" ), equalTo( record.field( 1 ) ) );
     }
 
     @Test

@@ -30,6 +30,14 @@ public class InternalProperty<V> implements Property<V>
 
     protected InternalProperty( String key, V value )
     {
+        if ( key == null )
+        {
+            throw new IllegalArgumentException( "null key" );
+        }
+        if ( value == null )
+        {
+            throw new IllegalArgumentException( "null value" );
+        }
         this.key = key;
         this.value = value;
     }
