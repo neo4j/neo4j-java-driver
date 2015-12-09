@@ -18,58 +18,36 @@
  */
 package org.neo4j.driver.internal.value;
 
-import org.neo4j.driver.internal.types.InternalTypeSystem;
-import org.neo4j.driver.v1.Type;
+import org.neo4j.driver.v1.Entity;
 import org.neo4j.driver.v1.Value;
 
-public final class NullValue extends ScalarValueAdapter
+public abstract class EntityValueAdapter<V extends Entity> extends GraphValueAdapter<V>
 {
-    public static Value NULL = new NullValue();
-
-    private NullValue()
+    protected EntityValueAdapter( V adapted )
     {
+        super( adapted );
+    }
+
+    public V asEntity()
+    {
+        return asObject();
     }
 
     @Override
-    public boolean isNull()
+    public int propertyCount()
     {
-        return true;
+        return asEntity().propertyCount();
     }
 
     @Override
-    public Object asObject()
+    public Iterable<String> keys()
     {
-        return null;
+        return asEntity().keys();
     }
 
     @Override
-    public String asString()
+    public Value value( String key )
     {
-        return "null";
-    }
-
-    @Override
-    public Type type()
-    {
-        return InternalTypeSystem.TYPE_SYSTEM.NULL();
-    }
-
-    @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
-    @Override
-    public boolean equals( Object obj )
-    {
-        return obj == NULL;
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return 0;
-    }
-
-    @Override
-    public String asLiteralString()
-    {
-        return "NULL";
+        return asEntity().value( key );
     }
 }

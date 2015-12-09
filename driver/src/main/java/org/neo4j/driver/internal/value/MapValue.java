@@ -22,13 +22,14 @@ import java.util.Map;
 
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.internal.util.Extract;
-import org.neo4j.driver.internal.util.Format;
 import org.neo4j.driver.v1.Function;
 import org.neo4j.driver.v1.Type;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 
-import static org.neo4j.driver.v1.Values.valueAsString;
+import static org.neo4j.driver.internal.util.Format.formatProperties;
+import static org.neo4j.driver.internal.value.InternalValue.Format.VALUE_ONLY;
+import static org.neo4j.driver.v1.Values.valueAsObject;
 
 public class MapValue extends ValueAdapter
 {
@@ -36,6 +37,10 @@ public class MapValue extends ValueAdapter
 
     public MapValue( Map<String, Value> val )
     {
+        if ( val == null )
+        {
+            throw new IllegalArgumentException( "Cannot construct MapValue from null" );
+        }
         this.val = val;
     }
 
@@ -46,9 +51,9 @@ public class MapValue extends ValueAdapter
     }
 
     @Override
-    public <T> Map<String, T> asMap( Function<Value, T> mapFunction )
+    public Map<String, Object> asObject()
     {
-        return Extract.map( val, mapFunction );
+        return asMap( valueAsObject() );
     }
 
     @Override
@@ -57,9 +62,10 @@ public class MapValue extends ValueAdapter
         return Extract.map( val );
     }
 
-    public Object asObject()
+    @Override
+    public <T> Map<String, T> asMap( Function<Value, T> mapFunction )
     {
-        return asMap();
+        return Extract.map( val, mapFunction );
     }
 
     @Override
@@ -93,33 +99,36 @@ public class MapValue extends ValueAdapter
     }
 
     @Override
+    public <T> Iterable<T> values( Function<Value, T> mapFunction )
+    {
+        return Extract.map( val, mapFunction ).values();
+    }
+
+    @Override
     public Value value( String key )
     {
         return val.getOrDefault( key, Values.NULL );
     }
 
     @Override
+    public String asLiteralString()
+    {
+        return toString( VALUE_ONLY );
+    }
+
+    @Override
+    public String toString( Format valueFormat )
+    {
+        return maybeWithType(
+            valueFormat.includeType(),
+            formatProperties( valueFormat.inner(), propertyCount(), properties() )
+        );
+    }
+
+    @Override
     public Type type()
     {
         return InternalTypeSystem.TYPE_SYSTEM.MAP();
-    }
-
-    @Override
-    public String asString()
-    {
-        return asMap( valueAsString() ).toString();
-    }
-
-    @Override
-    public String asLiteralString()
-    {
-        return Format.properties( propertyCount(), properties() );
-    }
-
-    @Override
-    public <T> Iterable<T> values( Function<Value, T> mapFunction )
-    {
-        return Extract.map( val, mapFunction ).values();
     }
 
     @Override
@@ -135,12 +144,12 @@ public class MapValue extends ValueAdapter
         }
 
         MapValue values = (MapValue) o;
-        return val == values.val || val.equals( values.val );
+        return val.equals( values.val );
     }
 
     @Override
     public int hashCode()
     {
-        return val != null ? val.hashCode() : 0;
+        return val.hashCode();
     }
 }

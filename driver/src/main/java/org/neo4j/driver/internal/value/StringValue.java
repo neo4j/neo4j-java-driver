@@ -22,13 +22,16 @@ import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.v1.Type;
 import org.neo4j.driver.v1.exceptions.value.Unrepresentable;
 
-public class StringValue extends ValueAdapter
+public class StringValue extends ScalarValueAdapter
 {
     private final String val;
 
     public StringValue( String val )
     {
-        assert val != null;
+        if ( val == null )
+        {
+            throw new IllegalArgumentException( "Cannot construct StringValue from null" );
+        }
         this.val = val;
     }
 
@@ -39,9 +42,33 @@ public class StringValue extends ValueAdapter
     }
 
     @Override
+    public int size()
+    {
+        return val.length();
+    }
+
+    @Override
+    public String asObject()
+    {
+        return asString();
+    }
+
+    @Override
     public String asString()
     {
         return val;
+    }
+
+    @Override
+    public String asLiteralString()
+    {
+        return String.format( "\"%s\"", val.replace( "\"", "\\\"" ) );
+    }
+
+    @Override
+    public char[] asCharArray()
+    {
+        return val.toCharArray();
     }
 
     @Override
@@ -58,26 +85,9 @@ public class StringValue extends ValueAdapter
     }
 
     @Override
-    public char[] asCharArray()
-    {
-        return val.toCharArray();
-    }
-
-    @Override
-    public int size()
-    {
-        return val.length();
-    }
-
-    @Override
     public Type type()
     {
         return InternalTypeSystem.TYPE_SYSTEM.STRING();
-    }
-
-    public Object asObject()
-    {
-        return asString();
     }
 
     @SuppressWarnings("StringEquality")
@@ -101,11 +111,5 @@ public class StringValue extends ValueAdapter
     public int hashCode()
     {
         return val.hashCode();
-    }
-
-    @Override
-    protected String asLiteralString()
-    {
-        return String.format( "\"%s\"", val.replace( "\"", "\\\"" ) );
     }
 }

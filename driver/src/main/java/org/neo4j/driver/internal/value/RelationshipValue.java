@@ -19,92 +19,25 @@
 package org.neo4j.driver.internal.value;
 
 import org.neo4j.driver.internal.types.InternalTypeSystem;
-import org.neo4j.driver.v1.Entity;
 import org.neo4j.driver.v1.Relationship;
 import org.neo4j.driver.v1.Type;
-import org.neo4j.driver.v1.Value;
 
-public class RelationshipValue extends ValueAdapter
+public class RelationshipValue extends EntityValueAdapter<Relationship>
 {
-    private final Relationship adapted;
-
     public RelationshipValue( Relationship adapted )
     {
-        this.adapted = adapted;
-    }
-
-    @Override
-    public Object asObject()
-    {
-        return asRelationship();
-    }
-
-    @Override
-    public Entity asEntity()
-    {
-        return asRelationship();
+        super( adapted );
     }
 
     @Override
     public Relationship asRelationship()
     {
-        return adapted;
-    }
-
-    @Override
-    public int size()
-    {
-        return propertyCount();
-    }
-
-    @Override
-    public int propertyCount()
-    {
-        return adapted.propertyCount();
-    }
-
-    @Override
-    public Iterable<String> keys()
-    {
-        return adapted.keys();
-    }
-
-    public Value value( String key )
-    {
-        return adapted.value( key );
+        return asEntity();
     }
 
     @Override
     public Type type()
     {
         return InternalTypeSystem.TYPE_SYSTEM.RELATIONSHIP();
-    }
-
-    @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() )
-        {
-            return false;
-        }
-
-        RelationshipValue values = (RelationshipValue) o;
-        return adapted == values.adapted || adapted.equals( values.adapted );
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return adapted == null ? 0 : adapted.hashCode();
-    }
-
-    @Override
-    public String asLiteralString()
-    {
-        return adapted.toString();
     }
 }

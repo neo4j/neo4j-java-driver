@@ -296,6 +296,11 @@ public abstract class Values
         return STRING;
     }
 
+    public static Function<Value,String> valueAsLiteral()
+    {
+        return LITERAL_STRING;
+    }
+
     public static Function<Value,String> valueToString()
     {
         return TO_STRING;
@@ -393,6 +398,13 @@ public abstract class Values
         public String apply( Value val )
         {
             return val.asString();
+        }
+    };
+    private static final Function<Value,String> LITERAL_STRING = new Function<Value,String>()
+    {
+        public String apply( Value val )
+        {
+            return val.asLiteralString();
         }
     };
     private static final Function<Value,String> TO_STRING = new Function<Value,String>()

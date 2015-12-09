@@ -18,26 +18,14 @@
  */
 package org.neo4j.driver.internal.value;
 
-import org.neo4j.driver.internal.types.InternalTypeSystem;
-import org.neo4j.driver.v1.Node;
-import org.neo4j.driver.v1.Type;
-
-public class NodeValue extends EntityValueAdapter<Node>
+public abstract class ScalarValueAdapter extends ValueAdapter
 {
-    public NodeValue( Node adapted )
-    {
-        super( adapted );
-    }
+    @Override
+    public abstract String asLiteralString();
 
     @Override
-    public Node asNode()
+    public String toString( Format valueFormat )
     {
-        return asEntity();
-    }
-
-    @Override
-    public Type type()
-    {
-        return InternalTypeSystem.TYPE_SYSTEM.NODE();
+        return maybeWithType( valueFormat.includeType(), asLiteralString() );
     }
 }

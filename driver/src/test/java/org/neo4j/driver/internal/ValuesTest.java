@@ -160,6 +160,4 @@ public class ValuesTest
         assertThat( result.get( "Dog" ), equalTo( "2 :: INTEGER" ) );
         assertThat( result.get( "Cat" ), equalTo( "1 :: INTEGER" ) );
     }
-
-
 }

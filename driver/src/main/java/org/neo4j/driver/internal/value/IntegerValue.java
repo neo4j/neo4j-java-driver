@@ -22,7 +22,7 @@ import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.v1.Type;
 import org.neo4j.driver.v1.exceptions.value.LossyCoercion;
 
-public class IntegerValue extends NumberValueAdapter
+public class IntegerValue extends NumberValueAdapter<Long>
 {
     private final long val;
 
@@ -38,7 +38,7 @@ public class IntegerValue extends NumberValueAdapter
     }
 
     @Override
-    public Number asNumber()
+    public Long asNumber()
     {
         return val;
     }

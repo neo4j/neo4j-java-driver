@@ -38,8 +38,10 @@ import org.neo4j.driver.v1.exceptions.value.NotMultiValued;
 import org.neo4j.driver.v1.exceptions.value.Uncoercible;
 import org.neo4j.driver.v1.exceptions.value.Unsizable;
 
+import static java.lang.String.format;
 import static java.util.Collections.emptyList;
 
+import static org.neo4j.driver.internal.value.InternalValue.Format.VALUE_WITH_TYPE;
 import static org.neo4j.driver.v1.Values.valueAsIs;
 
 public abstract class ValueAdapter implements InternalValue
@@ -82,7 +84,12 @@ public abstract class ValueAdapter implements InternalValue
     @Override
     public String asString()
     {
-        return asObject().toString();
+        throw new Uncoercible( type().name(), "Java String" );
+    }
+
+    public String asLiteralString()
+    {
+        throw new Uncoercible( type().name(), "Java String representation of Cypher literal" );
     }
 
     @Override
@@ -319,10 +326,19 @@ public abstract class ValueAdapter implements InternalValue
         return Extract.properties( this, mapFunction );
     }
 
-    @Override
     public String toString()
     {
-        return String.format( "%s :: %s", asLiteralString(), type().name() );
+        return toString( VALUE_WITH_TYPE );
+    }
+
+    protected String maybeWithType( boolean includeType, String text )
+    {
+        return includeType ? withType( text ) : text;
+    }
+
+    private String withType( String text )
+    {
+        return format( "%s :: %s", text, type().name() );
     }
 
     @Override
@@ -330,8 +346,6 @@ public abstract class ValueAdapter implements InternalValue
     {
         return ( (TypeRepresentation) type() ).constructor();
     }
-
-    protected abstract String asLiteralString();
 }
 
 

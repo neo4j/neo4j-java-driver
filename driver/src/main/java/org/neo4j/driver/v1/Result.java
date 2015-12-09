@@ -110,7 +110,10 @@ public interface Result extends RecordAccessor, Resource
      *
      * Calling this method exhausts the result cursor and moves it to the last record
      * @throws ClientException if the cursor can't be positioned at the first record
-     * @return list of all immutable records
+     * @param mapFunction a function to map from Value to T. See {@link Values} for some predefined functions, such
+     * as {@link Values#valueAsBoolean()}, {@link Values#valueAsList(Function)}.
+     * @param <T> the type of result list elements
+     * @return list of all mapped immutable records
      */
     <T> List<T> retain( Function<RecordAccessor, T> mapFunction );
 

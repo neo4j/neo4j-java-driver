@@ -18,6 +18,9 @@
  */
 package org.neo4j.driver.internal;
 
+import java.util.Objects;
+
+import org.neo4j.driver.v1.Function;
 import org.neo4j.driver.v1.Property;
 
 public class InternalProperty<V> implements Property<V>
@@ -47,6 +50,17 @@ public class InternalProperty<V> implements Property<V>
     }
 
     @Override
+    public String toString()
+    {
+        return String.format( "%s: %s", key, Objects.toString( value ) );
+    }
+
+    public String toString( Function<V, String> printValue )
+    {
+        return String.format( "%s: %s", key, printValue.apply( value ) );
+    }
+
+    @Override
     public boolean equals( Object o )
     {
         if ( this == o )
@@ -69,11 +83,5 @@ public class InternalProperty<V> implements Property<V>
         int result = key.hashCode();
         result = 31 * result + value.hashCode();
         return result;
-    }
-
-    @Override
-    public String toString()
-    {
-        return String.format( "%s: %s", key, value.toString() );
     }
 }

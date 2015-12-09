@@ -29,6 +29,10 @@ import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 
+import static java.lang.String.format;
+
+import static org.neo4j.driver.internal.util.Format.formatProperties;
+import static org.neo4j.driver.internal.value.InternalValue.Format.VALUE_WITH_TYPE;
 import static org.neo4j.driver.v1.Values.valueAsIs;
 
 public class InternalRecord extends InternalRecordAccessor implements Record
@@ -109,13 +113,10 @@ public class InternalRecord extends InternalRecordAccessor implements Record
         return Extract.map( this, mapFunction );
     }
 
-    public int hashcode()
+    @Override
+    public String toString()
     {
-        if ( hashcode == 0 )
-        {
-            hashcode = 31 * keys.hashCode() + Arrays.hashCode( values );
-        }
-        return hashcode;
+        return format( "Record<%s>", formatProperties( VALUE_WITH_TYPE, fieldCount(), fields() ) );
     }
 
     public boolean equals( Object other )
@@ -151,5 +152,14 @@ public class InternalRecord extends InternalRecordAccessor implements Record
         {
             return false;
         }
+    }
+
+    public int hashcode()
+    {
+        if ( hashcode == 0 )
+        {
+            hashcode = 31 * keys.hashCode() + Arrays.hashCode( values );
+        }
+        return hashcode;
     }
 }

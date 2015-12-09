@@ -140,6 +140,15 @@ public class InternalRecordTest
         assertThat( map.get( "k2" ), equalTo( 2 ) );
     }
 
+    @Test
+    public void testToString()
+    {
+        InternalRecord record = createRecord();
+
+        assertThat( record.toString(), equalTo( "Record<{k1: 0 :: INTEGER, k2: 1 :: INTEGER}>" ) );
+    }
+
+
     private InternalRecord createRecord()
     {
         List<String> keys = Arrays.asList( "k1", "k2" );

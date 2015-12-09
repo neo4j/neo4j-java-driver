@@ -18,45 +18,37 @@
  */
 package org.neo4j.driver.internal.value;
 
-import org.neo4j.driver.internal.types.InternalTypeSystem;
-import org.neo4j.driver.v1.Identity;
-import org.neo4j.driver.v1.Type;
+import static java.lang.String.format;
 
-public class IdentityValue extends ScalarValueAdapter
+public abstract class GraphValueAdapter<V> extends ValueAdapter
 {
-    private final Identity val;
+    private final V adapted;
 
-    public IdentityValue( Identity val )
+    protected GraphValueAdapter( V adapted )
     {
-        if ( val == null )
+        if ( adapted == null )
         {
-            throw new IllegalArgumentException( "Cannot construct IdentityValue from null" );
+            throw new IllegalArgumentException( format( "Cannot construct %s from null", getClass().getSimpleName() ) );
         }
-        this.val = val;
+        this.adapted = adapted;
     }
 
     @Override
-    public Type type()
+    public int size()
     {
-        return InternalTypeSystem.TYPE_SYSTEM.IDENTITY();
+        return propertyCount();
     }
 
     @Override
-    public Identity asObject()
+    public V asObject()
     {
-        return asIdentity();
+        return adapted;
     }
 
     @Override
-    public Identity asIdentity()
+    public String toString( Format valueFormat )
     {
-        return val;
-    }
-
-    @Override
-    public String asLiteralString()
-    {
-        return val.toString();
+        return maybeWithType( valueFormat.includeType(), adapted.toString() );
     }
 
     @Override
@@ -71,14 +63,14 @@ public class IdentityValue extends ScalarValueAdapter
             return false;
         }
 
-        IdentityValue values = (IdentityValue) o;
-        return val == values.val || val.equals( values.val );
+        GraphValueAdapter<?> values = (GraphValueAdapter<?>) o;
+        return adapted.equals( values.adapted );
 
     }
 
     @Override
     public int hashCode()
     {
-        return val.hashCode();
+        return adapted.hashCode();
     }
 }

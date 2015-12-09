@@ -22,7 +22,7 @@ import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.v1.Type;
 import org.neo4j.driver.v1.exceptions.value.LossyCoercion;
 
-public class FloatValue extends NumberValueAdapter
+public class FloatValue extends NumberValueAdapter<Double>
 {
     private final double val;
 
@@ -37,7 +37,8 @@ public class FloatValue extends NumberValueAdapter
         return InternalTypeSystem.TYPE_SYSTEM.FLOAT();
     }
 
-    public Number asNumber()
+    @Override
+    public Double asNumber()
     {
         return val;
     }
@@ -131,7 +132,7 @@ public class FloatValue extends NumberValueAdapter
     }
 
     @Override
-    protected String asLiteralString()
+    public String asLiteralString()
     {
         return Double.toString( val );
     }

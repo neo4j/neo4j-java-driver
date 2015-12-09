@@ -151,6 +151,12 @@ public interface Value extends PropertyMapAccessor, ListAccessor
     String asString();
 
     /**
+     *  @return the value as a Cypher literal, if possible
+     *  @throws Uncoercible if value types are incompatible.
+     */
+    String asLiteralString();
+
+    /**
      * @return the value as a Java char, if possible.
      * @throws Uncoercible if value types are incompatible.
      */

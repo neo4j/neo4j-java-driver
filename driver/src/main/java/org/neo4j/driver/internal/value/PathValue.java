@@ -22,30 +22,22 @@ import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.v1.Path;
 import org.neo4j.driver.v1.Type;
 
-public class PathValue extends ValueAdapter
+public class PathValue extends GraphValueAdapter<Path>
 {
-    private final Path adapted;
-
     public PathValue( Path adapted )
     {
-        this.adapted = adapted;
+        super( adapted );
     }
 
-    public Object asObject()
-    {
-        return asPath();
-    }
-
-    @Override
     public Path asPath()
     {
-        return adapted;
+        return asObject();
     }
 
     @Override
     public int size()
     {
-        return adapted.length();
+        return asObject().length();
     }
 
     @Override
@@ -54,32 +46,4 @@ public class PathValue extends ValueAdapter
         return InternalTypeSystem.TYPE_SYSTEM.PATH();
     }
 
-    @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() )
-        {
-            return false;
-        }
-
-        PathValue values = (PathValue) o;
-        return adapted.equals( values.adapted );
-
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return adapted.hashCode();
-    }
-
-    @Override
-    public String asLiteralString()
-    {
-        return adapted.toString();
-    }
 }

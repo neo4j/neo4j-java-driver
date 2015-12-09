@@ -20,6 +20,8 @@ package org.neo4j.driver.internal.util;
 
 import java.util.Iterator;
 
+import org.neo4j.driver.internal.InternalProperty;
+import org.neo4j.driver.v1.Function;
 import org.neo4j.driver.v1.Property;
 import org.neo4j.driver.v1.Value;
 
@@ -30,27 +32,64 @@ public abstract class Format
         throw new UnsupportedOperationException();
     }
 
-    public static <V extends Property<Value>> String properties( int propertyCount, Iterable<V> properties )
+    public static <V extends Property<Value>> String formatProperties( Function<Value, String> printValue,
+                                                                       int propertyCount,
+                                                                       Iterable<V> properties )
     {
-        switch (propertyCount) {
+        switch ( propertyCount ) {
             case 0:
                 return "{}";
 
             case 1:
-                return String.format( "{%s}", properties.iterator().next() );
+            {
+                return String.format( "{%s}", internalProperty( properties.iterator().next() ).toString( printValue ) );
+            }
 
             default:
+            {
                 StringBuilder builder = new StringBuilder();
-                builder.append("{");
+                builder.append( "{" );
                 Iterator<V> iterator = properties.iterator();
-                builder.append( iterator.next() );
-                while( iterator.hasNext() )
+                builder.append( internalProperty( iterator.next() ).toString( printValue ) );
+                while ( iterator.hasNext() )
                 {
                     builder.append( ',' );
                     builder.append( ' ' );
-                    builder.append( iterator.next() );
+                    builder.append( internalProperty( iterator.next() ).toString( printValue ) );
                 }
-                builder.append("}");
+                builder.append( "}" );
+                return builder.toString();
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <V extends Property<Value>> InternalProperty<Value> internalProperty( V property )
+    {
+        return (InternalProperty<Value>) property;
+    }
+
+    public static String formatElements( Function<Value, String> printValue, Value[] elements )
+    {
+        int elementCount = elements.length;
+        switch ( elementCount ) {
+            case 0:
+                return "[]";
+
+            case 1:
+                return String.format( "[%s]", printValue.apply( elements[0] ) );
+
+            default:
+                StringBuilder builder = new StringBuilder();
+                builder.append("[");
+                builder.append( printValue.apply( elements[0] ) );
+                for (int i = 1; i < elementCount; i++ )
+                {
+                    builder.append( ',' );
+                    builder.append( ' ' );
+                    builder.append( printValue.apply( elements[i] ) );
+                }
+                builder.append("]");
                 return builder.toString();
         }
     }

@@ -30,7 +30,9 @@ import org.neo4j.driver.v1.Type;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 
-import static org.neo4j.driver.v1.Values.valueAsString;
+import static org.neo4j.driver.internal.util.Format.formatElements;
+import static org.neo4j.driver.internal.value.InternalValue.Format.VALUE_ONLY;
+import static org.neo4j.driver.v1.Values.valueAsObject;
 
 public class ListValue extends ValueAdapter
 {
@@ -38,6 +40,10 @@ public class ListValue extends ValueAdapter
 
     public ListValue( Value... values )
     {
+        if ( values == null )
+        {
+            throw new IllegalArgumentException( "Cannot construct ListValue from null" );
+        }
         this.values = values;
     }
 
@@ -45,6 +51,12 @@ public class ListValue extends ValueAdapter
     public boolean isEmpty()
     {
         return values.length == 0;
+    }
+
+    @Override
+    public List<Object> asObject()
+    {
+        return asList( valueAsObject() );
     }
 
     @Override
@@ -57,11 +69,6 @@ public class ListValue extends ValueAdapter
     public <T> List<T> asList( Function<Value,T> mapFunction )
     {
         return Extract.list( values, mapFunction );
-    }
-
-    public Object asObject()
-    {
-        return asList();
     }
 
     @Override
@@ -198,21 +205,24 @@ public class ListValue extends ValueAdapter
     }
 
     @Override
+    public String asLiteralString()
+    {
+        return toString( VALUE_ONLY );
+    }
+
+    @Override
     public Type type()
     {
         return InternalTypeSystem.TYPE_SYSTEM.LIST();
     }
 
     @Override
-    public String asString()
+    public String toString( Format valueFormat )
     {
-        return asList( valueAsString() ).toString();
-    }
-
-    @Override
-    public String asLiteralString()
-    {
-        return Arrays.toString( values );
+        return maybeWithType(
+            valueFormat.includeType(),
+            formatElements( valueFormat.inner(), values )
+        );
     }
 
     @Override

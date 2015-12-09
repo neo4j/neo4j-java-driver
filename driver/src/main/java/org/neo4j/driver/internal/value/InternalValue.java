@@ -20,9 +20,33 @@ package org.neo4j.driver.internal.value;
 
 import org.neo4j.driver.internal.AsValue;
 import org.neo4j.driver.internal.types.TypeConstructor;
+import org.neo4j.driver.v1.Function;
 import org.neo4j.driver.v1.Value;
 
 public interface InternalValue extends Value, AsValue
 {
     TypeConstructor typeConstructor();
+    String toString( Format valueFormat );
+
+    enum Format implements Function<Value, String>
+    {
+        VALUE_ONLY,
+        VALUE_WITH_TYPE;
+
+        public boolean includeType()
+        {
+            return this != VALUE_ONLY;
+        }
+
+        public Format inner()
+        {
+            return VALUE_ONLY;
+        }
+
+        @Override
+        public String apply( Value value )
+        {
+            return ( (InternalValue) value ).toString( this );
+        }
+    }
 }

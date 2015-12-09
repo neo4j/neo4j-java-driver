@@ -44,7 +44,7 @@ import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.driver.v1.Values.value;
 
-public class SimpleResultTest
+public class InternalResultTest
 {
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
