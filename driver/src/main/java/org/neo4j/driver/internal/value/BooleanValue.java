@@ -48,7 +48,8 @@ public abstract class BooleanValue extends ScalarValueAdapter
     @Override
     public int hashCode()
     {
-        return Boolean.hashCode( asBoolean() );
+        Boolean value = asBoolean() ? Boolean.TRUE : Boolean.FALSE;
+        return value.hashCode();
     }
 
     private static class TrueValue extends BooleanValue {

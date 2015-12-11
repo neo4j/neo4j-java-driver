@@ -73,6 +73,12 @@ public class Iterables
                     {
                         return f.apply( aIterator.next() );
                     }
+
+                    @Override
+                    public void remove()
+                    {
+                        aIterator.remove();
+                    }
                 };
             }
         };

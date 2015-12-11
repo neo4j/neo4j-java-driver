@@ -107,7 +107,8 @@ public class MapValue extends ValueAdapter
     @Override
     public Value value( String key )
     {
-        return val.getOrDefault( key, Values.NULL );
+        Value value = val.get( key );
+        return value == null ? Values.NULL: value;
     }
 
     @Override

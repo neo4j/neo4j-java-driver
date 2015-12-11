@@ -160,6 +160,12 @@ public final class Extract
                         Value value = map.value( key );
                         return InternalProperty.of( key, mapFunction.apply( value ) );
                     }
+
+                    @Override
+                    public void remove()
+                    {
+                        keys.remove();
+                    }
                 };
             }
         };
