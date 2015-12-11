@@ -20,10 +20,9 @@ package org.neo4j.driver.v1;
 
 import java.net.URI;
 
-import org.neo4j.driver.v1.internal.StandardSession;
-import org.neo4j.driver.v1.internal.pool.StandardConnectionPool;
-import org.neo4j.driver.v1.internal.spi.ConnectionPool;
-import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
+import org.neo4j.driver.internal.InternalSession;
+import org.neo4j.driver.internal.pool.InternalConnectionPool;
+import org.neo4j.driver.internal.spi.ConnectionPool;
 
 /**
  * A Neo4j database driver, through which you can create {@link Session sessions} to run statements against the database.
@@ -53,7 +52,7 @@ import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
  * List<String> names = new LinkedList<>();
  * while( result.next() )
  * {
- *     names.add( result.get("n.name").javaString() );
+ *     names.add( result.value("n.name").asString() );
  * }
  *
  * // Sessions are pooled, to avoid the overhead of creating new connections - this means
@@ -79,7 +78,7 @@ public class Driver implements AutoCloseable
     public Driver( URI url, Config config )
     {
         this.url = url;
-        this.connections = new StandardConnectionPool( config );
+        this.connections = new InternalConnectionPool( config );
     }
 
     /**
@@ -89,19 +88,11 @@ public class Driver implements AutoCloseable
      */
     public Session session()
     {
-        return new StandardSession( connections.acquire( url ) );
+        return new InternalSession( connections.acquire( url ) );
         // TODO a ConnectionPool per URL
-        // ConnectionPool connections = new StandardConnectionPool( logging, url );
-        // And to get a connection from the pool could be
+        // ConnectionPool connections = new InternalConnectionPool( logging, url );
+        // And to value a connection from the pool could be
         // connections.acquire();
-    }
-
-    /**
-     * @return type system used by this driver for classifying values
-     */
-    public TypeSystem typeSystem()
-    {
-        return StandardTypeSystem.TYPE_SYSTEM;
     }
 
     /**

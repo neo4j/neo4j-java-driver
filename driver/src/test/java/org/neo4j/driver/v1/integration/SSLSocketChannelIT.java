@@ -34,14 +34,14 @@ import javax.xml.bind.DatatypeConverter;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.driver.internal.ConfigTest;
+import org.neo4j.driver.internal.connector.socket.SSLSocketChannel;
+import org.neo4j.driver.internal.spi.Logger;
+import org.neo4j.driver.internal.util.CertificateTool;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Result;
-import org.neo4j.driver.v1.internal.ConfigTest;
-import org.neo4j.driver.v1.internal.connector.socket.SSLSocketChannel;
-import org.neo4j.driver.v1.internal.spi.Logger;
-import org.neo4j.driver.v1.internal.util.CertificateTool;
 import org.neo4j.driver.v1.util.CertificateToolTest;
 import org.neo4j.driver.v1.util.Neo4jRunner;
 import org.neo4j.driver.v1.util.Neo4jSettings;
@@ -230,7 +230,7 @@ public class SSLSocketChannelIT
 
         Result result = driver.session().run( "RETURN 1" );
         assertTrue( result.next() );
-        assertEquals( 1, result.get( 0 ).javaInteger() );
+        assertEquals( 1, result.value( 0 ).asInt() );
         assertFalse( result.next() );
 
         driver.close();

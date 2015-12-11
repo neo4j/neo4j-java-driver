@@ -23,6 +23,7 @@ package org.neo4j.driver.v1;
  *
  * A notification can be visualized in a client pinpointing problems or other information about the statement.
  */
+@Immutable
 public interface Notification
 {
     /**

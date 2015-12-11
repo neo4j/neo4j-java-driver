@@ -21,6 +21,7 @@ package org.neo4j.driver.v1;
 /**
  * The type of a {@link Value} as defined by the Cypher language
  */
+@Immutable
 public interface Type
 {
     /**

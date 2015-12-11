@@ -18,32 +18,33 @@
  */
 package org.neo4j.driver.v1;
 
-import org.hamcrest.BaseMatcher;
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-import org.junit.Test;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.neo4j.driver.v1.internal.SimpleIdentity;
-import org.neo4j.driver.v1.internal.SimpleNode;
-import org.neo4j.driver.v1.internal.SimplePath;
-import org.neo4j.driver.v1.internal.SimpleRelationship;
-import org.neo4j.driver.v1.internal.types.StandardTypeSystem;
+import org.hamcrest.BaseMatcher;
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.junit.Test;
+
+import org.neo4j.driver.internal.InternalIdentity;
+import org.neo4j.driver.internal.InternalNode;
+import org.neo4j.driver.internal.InternalPath;
+import org.neo4j.driver.internal.InternalRelationship;
+import org.neo4j.driver.internal.types.InternalTypeSystem;
 
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
+
+import static org.neo4j.driver.internal.types.InternalTypeSystem.TYPE_SYSTEM;
 import static org.neo4j.driver.v1.Values.value;
-import static org.neo4j.driver.v1.internal.types.StandardTypeSystem.TYPE_SYSTEM;
 
 public class TypeSystemTest
 {
-    private final SimpleNode node = new SimpleNode( 42L );
-    private final SimpleRelationship relationship = new SimpleRelationship( 42L, 42L, 43L, "T" );
+    private final InternalNode node = new InternalNode( 42L );
+    private final InternalRelationship relationship = new InternalRelationship( 42L, 42L, 43L, "T" );
 
     private Value integerValue = value( 13 );
     private Value floatValue = value( 13.1 );
@@ -51,13 +52,13 @@ public class TypeSystemTest
     private Value nodeValue = value( node );
     private Value relationshipValue = value( relationship );
     private Value mapValue = value( Collections.singletonMap( "type", "r" ) );
-    private Value pathValue = value( new SimplePath( Arrays.<Entity>asList( node, relationship, node ) ) );
+    private Value pathValue = value( new InternalPath( Arrays.<Entity>asList( node, relationship, node ) ) );
     private Value booleanValue = value( true );
     private Value listValue = value( Arrays.asList( 1, 2, 3 ) );
     private Value nullValue = value( (Object) null );
-    private Value identityValue = value( new SimpleIdentity( 42L ) );
+    private Value identityValue = value( new InternalIdentity( 42L ) );
 
-    private StandardTypeSystem typeSystem = TYPE_SYSTEM;
+    private InternalTypeSystem typeSystem = TYPE_SYSTEM;
 
     TypeVerifier newTypeVerifierFor( Type type )
     {

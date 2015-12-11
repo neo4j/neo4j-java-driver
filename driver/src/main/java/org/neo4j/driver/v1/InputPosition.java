@@ -21,6 +21,7 @@ package org.neo4j.driver.v1;
 /**
  * An input position refers to a specific character in a statement.
  */
+@Immutable
 public interface InputPosition
 {
     /**
@@ -28,19 +29,19 @@ public interface InputPosition
      *
      * @return the offset of this position.
      */
-    public int offset();
+    int offset();
 
     /**
      * The line number referred to by the position; line numbers start at 1.
      *
      * @return the line number of this position.
      */
-    public int line();
+    int line();
 
     /**
      * The column number referred to by the position; column numbers start at 1.
      *
      * @return the column number of this position.
      */
-    public int column();
+    int column();
 }

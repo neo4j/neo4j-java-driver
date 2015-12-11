@@ -22,13 +22,13 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.driver.v1.Result;
-import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.driver.v1.Values.parameters;
 
 public class ResultStreamIT
@@ -46,7 +46,7 @@ public class ResultStreamIT
         int idx = 1;
         while ( res.next() )
         {
-            assertEquals( idx++, res.get( "a" ).javaLong() );
+            assertEquals( idx++, res.value( "a" ).asLong() );
         }
     }
 
@@ -57,8 +57,9 @@ public class ResultStreamIT
         Result res = session.run( "CREATE (n:TestNode {name:'test'}) RETURN n" );
 
         // Then
-        assertEquals( "[n]", res.fieldNames().toString() );
-        assertEquals( "[n]", res.single().fieldNames().toString() );
+        assertEquals( "[n]", res.keys().toString() );
+        assertTrue( res.single() );
+        assertEquals( "[n]", res.keys().toString() );
     }
 
     @Test
@@ -70,7 +71,7 @@ public class ResultStreamIT
         // When & Then
         try
         {
-            rs.get( "n" );
+            rs.value( "n" );
             fail( "The test should fail with a proper message to indicate `next` method should be called first" );
         }
         catch( ClientException e )
@@ -90,10 +91,10 @@ public class ResultStreamIT
         Result rs = session.run( "CREATE (n:Person {name:{name}}) RETURN n", parameters( "name", "Tom Hanks" ) );
 
         // When
-        Value m = rs.single().get( "m" );
+        assertTrue( rs.single() );
 
         // Then
-        assertNull( m );
+        assertTrue( rs.value( "m" ).isNull() );
     }
 
     @Test
@@ -103,10 +104,9 @@ public class ResultStreamIT
         Result rs = session.run( "CREATE (n:Person {name:{name}}) RETURN n", parameters( "name", "Tom Hanks" ) );
 
         // When
-        Value n = rs.single().get( "n" );
-        Value age = n.get( "age" );
+        assertTrue( rs.single() );
 
         // Then
-        assertNull( age );
+        assertTrue( rs.value( "n" ).value( "age" ).isNull() );
     }
 }

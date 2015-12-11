@@ -33,6 +33,7 @@ import java.util.Map;
  *
  * For a simple view of a plan, the {@code toString} method will give a human-readable rendering of the tree.
  */
+@Immutable
 public interface Plan
 {
     /**

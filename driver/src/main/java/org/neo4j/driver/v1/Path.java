@@ -36,6 +36,7 @@ package org.neo4j.driver.v1;
  *     }
  * </pre>
  */
+@Immutable
 public interface Path extends Iterable<Path.Segment>
 {
     /**
@@ -61,7 +62,7 @@ public interface Path extends Iterable<Path.Segment>
     Node end();
 
     /** @return the number of segments in this path, which will be the same as the number of relationships */
-    long length();
+    int length();
 
     /**
      * @param node the node to check for

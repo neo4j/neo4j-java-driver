@@ -39,24 +39,24 @@ public interface StatementRunner
      * <h2>Example</h2>
      * <pre class="doctest:StatementRunnerDocIT#parameterTest">
      * {@code
-     * Result res = session.run( "MATCH (n) WHERE n.name = {myNameParam} RETURN (n)",
-     *              Values.parameters( "myNameParam", "Bob" ) );
+     * Result cursor = session.run( "MATCH (n) WHERE n.name = {myNameParam} RETURN (n)",
+     *                              Values.parameters( "myNameParam", "Bob" ) );
      * }
      * </pre>
      *
-     * @param statementText text of a Neo4j statement
-     * @param parameters input data for the statement, see {@link Values#parameters(Object...)}
+     * @param statementTemplate template of a Neo4j statement
+     * @param statementParameters input data for the statement, see {@link Values#parameters(Object...)}
      * @return a stream of result values and associated metadata
      */
-    Result run( String statementText, Map<String, Value> parameters );
+    Result run( String statementTemplate, Map<String, Value> statementParameters );
 
     /**
      * Run a statement and return a result stream.
      *
-     * @param statementText text of a Neo4j statement
+     * @param statementTemplate template of a Neo4j statement
      * @return a stream of result values and associated metadata
      */
-    Result run( String statementText );
+    Result run( String statementTemplate );
 
     /**
      * Run a statement and return a result stream.
@@ -64,7 +64,7 @@ public interface StatementRunner
      * <pre class="doctest:StatementRunnerDocIT#statementObjectTest">
      * {@code
      * Statement statement = new Statement( "MATCH (n) WHERE n.name={myNameParam} RETURN n.age" );
-     * Result res = session.run( statement.withParameters( Values.parameters( "myNameParam", "Bob" )  ) );
+     * Result cursor = session.run( statement.withParameters( Values.parameters( "myNameParam", "Bob" )  ) );
      * }
      * </pre>
      *
@@ -74,9 +74,7 @@ public interface StatementRunner
     Result run( Statement statement );
 
     /**
-     * Detect whether this statement runner can be used, of if it has been closed.
-     *
-     * @return true if you can currently {@link #run(String) run} statements with this
+     * @return type system used by this statement runner for classifying values
      */
-    boolean isOpen();
+    TypeSystem typeSystem();
 }

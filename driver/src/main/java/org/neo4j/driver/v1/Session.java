@@ -30,7 +30,7 @@ package org.neo4j.driver.v1;
  * Session objects are not thread safe, if you want to run concurrent operations against the database,
  * simply create multiple sessions objects.
  */
-public interface Session extends AutoCloseable, StatementRunner
+public interface Session extends Resource, StatementRunner
 {
     /**
      * Begin a new transaction in this session. A session can have at most one transaction running at a time, if you
@@ -46,7 +46,4 @@ public interface Session extends AutoCloseable, StatementRunner
      * @return a new transaction
      */
     Transaction beginTransaction();
-
-    @Override
-    void close();
 }

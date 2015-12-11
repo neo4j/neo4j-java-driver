@@ -25,8 +25,8 @@ import org.junit.Test;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 
+import static org.neo4j.driver.internal.ParameterSupport.NO_PARAMETERS;
 import static org.neo4j.driver.v1.Values.parameters;
-import static org.neo4j.driver.v1.internal.ParameterSupport.NO_PARAMETERS;
 
 public class StatementTest
 {
@@ -40,7 +40,7 @@ public class StatementTest
         Statement statement = new Statement( text, NO_PARAMETERS );
 
         // then
-        assertThat( statement.text(), equalTo( text ) );
+        assertThat( statement.template(), equalTo( text ) );
         assertThat( statement.parameters(), equalTo( NO_PARAMETERS ) );
     }
 
@@ -54,7 +54,7 @@ public class StatementTest
         Statement statement = new Statement( text );
 
         // then
-        assertThat( statement.text(), equalTo( text ) );
+        assertThat( statement.template(), equalTo( text ) );
         assertThat( statement.parameters(), equalTo( NO_PARAMETERS ) );
     }
 
@@ -68,7 +68,7 @@ public class StatementTest
         Statement statement = new Statement( text, null );
 
         // then
-        assertThat( statement.text(), equalTo( text ) );
+        assertThat( statement.template(), equalTo( text ) );
         assertThat( statement.parameters(), equalTo( NO_PARAMETERS ) );
     }
 
@@ -79,10 +79,10 @@ public class StatementTest
         // when
         Statement statement =
                 new Statement( "MATCH (n) RETURN n" )
-                .withText( "BOO" );
+                .withTemplate( "BOO" );
 
         // then
-        assertThat( statement.text(), equalTo( "BOO" ) );
+        assertThat( statement.template(), equalTo( "BOO" ) );
         assertThat( statement.parameters(), equalTo( NO_PARAMETERS ) );
     }
 
@@ -96,7 +96,7 @@ public class StatementTest
         Statement statement = new Statement( "MATCH (n) RETURN n" ).withParameters( initialParameters );
 
         // then
-        assertThat( statement.text(), equalTo( text ) );
+        assertThat( statement.template(), equalTo( text ) );
         assertThat( statement.parameters(), equalTo( initialParameters ) );
     }
 
@@ -112,7 +112,7 @@ public class StatementTest
                 .withUpdatedParameters( parameters( "a", 0, "b", Values.NULL ) );
 
         // then
-        assertThat( statement.text(), equalTo( text ) );
+        assertThat( statement.template(), equalTo( text ) );
         assertThat( statement.parameters(), equalTo( parameters( "a", 0, "c", 3 ) ) );
     }
 }

@@ -21,6 +21,9 @@ package org.neo4j.driver.v1;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.driver.v1.exceptions.value.LossyCoercion;
+import org.neo4j.driver.v1.exceptions.value.Uncoercible;
+
 /**
  * Represents a value from Neo4j.
  *
@@ -54,7 +57,7 @@ import java.util.Map;
  *
  * <pre class="docTest:ValueDocIT#classDocTreeExample">
  * {@code
- * String username = value.get("users").get(1).get("name").javaString();
+ * String username = value.value("users").value(1).value("name").asString();
  * }
  * </pre>
  *
@@ -63,155 +66,285 @@ import java.util.Map;
  * <pre class="docTest:ValueDocIT#classDocIterationExample">
  * {@code
  * List<String> names = new LinkedList<>();
- * for(Value user : value.get("users") )
+ * for(Value user : value.value("users").values() )
  * {
- *     names.add(user.get("name").javaString());
+ *     names.add(user.value("name").asString());
  * }
  * }
  * </pre>
  */
-public interface Value extends Iterable<Value>
+@Immutable
+public interface Value extends PropertyMapAccessor, ListAccessor
 {
-    /** @return the value as a Java String, if possible. */
-    String javaString();
-
-    /** @return the value as a Java int, if possible. */
-    int javaInteger();
-
-    /** @return the value as a Java long, if possible. */
-    long javaLong();
-
-    /** @return the value as a Java float, if possible. */
-    float javaFloat();
-
-    /** @return the value as a Java double, if possible. */
-    double javaDouble();
-
-    /**
-     * If the value represents a number, this method will return true if the number is not equals to 0.
-     * If the value represents a collection, this method will return true if the collection is not empty.
-     * If the value represents a string, this method will return true, if the string is not empty.
-     * @return the value as a Java boolean, if possible.
-     */
-    boolean javaBoolean();
-
-    /**
-     * @param mapFunction a function to map from Value to T. See {@link Values} for some predefined functions, such
-     * as {@link Values#valueToBoolean()}, {@link Values#valueToList(Function)}.
-     * @param <T> the type of list elements
-     * @return the value as a list of T, if possible
-     */
-    <T> List<T> javaList( Function<Value, T> mapFunction );
-
-    /**
-     * @param mapFunction a function to map from Value to T. See {@link Values} for some predefined functions, such
-     * as {@link Values#valueToBoolean()}, {@link Values#valueToList(Function)}.
-     * @param <T> the type of map values
-     * @return the value as a map from string keys to values of type T, if possible
-     */
-    <T> Map<String, T> javaMap( Function<Value, T> mapFunction );
-
-    /** @return the value as an {@link Identity}, if possible. */
-    Identity asIdentity();
-
-    /** @return the value as a {@link Node}, if possible. */
-    Node asNode();
-
-    /** @return the value as a {@link Relationship}, if possible. */
-    Relationship asRelationship();
-
-    /** @return the value as a {@link Path}, if possible. */
-    Path asPath();
-
-    /**
-     * Retrieve an inner value by index. This can be used for {@link #isList() lists}.
-     *
-     * @param index the index to look up a value by
-     * @return the value at the specified index
-     */
-    Value get( long index );
-
-    /**
-     * Retrieve an inner value by key. This can be used for {@link #isMap() maps},
-     * {@link #isNode() nodes} and {@link #isRelationship() relationships}. For nodes and relationships, this method
-     * returns property values. If no value could be found with the specified key, then null will be returned.
-     *
-     * @param key the key to find a value by
-     * @return the value with the specified key or null if no value could be found with the key
-     */
-    Value get( String key );
-
     /**
      * If the underlying value is a collection type, return the number of values in the collection.
      * <p>
-     * For {@link #isList() list} values, this will return the size of the list.
+     * For {@link TypeSystem#LIST()}  list} values, this will return the size of the list.
      * <p>
-     * For {@link #isMap() map} values, this will return the number of entries in the map.
+     * For {@link TypeSystem#MAP() map} values, this will return the number of entries in the map.
      * <p>
-     * For {@link #isNode() node} and {@link #isRelationship() relationship} values,
+     * For {@link TypeSystem#NODE() node} and {@link TypeSystem#RELATIONSHIP()}  relationship} values,
      * this will return the number of properties.
      * <p>
-     * For {@link #isPath() path} values, this returns the length (number of relationships) in the path.
+     * For {@link TypeSystem#PATH() path} values, this returns the length (number of relationships) in the path.
      *
      * @return the number of values in an underlying collection
      */
-    long size();
+    int size();
 
     /**
-     * If the underlying value supports {@link #get(String) key-based indexing}, return an iterable of the keys in the
-     * map, this applies to {@link #isMap() map}, {@link #asNode() node} and {@link
-     * #isRelationship() relationship} values.
+     * Test if the underlying collection is empty
+     *
+     * @return <tt>true</tt> if size() is 0, otherwise <tt>false</tt>
+     */
+    boolean isEmpty();
+
+    /**
+     * If the underlying value supports {@link #value(String) key-based indexing}, return an iterable of the keys in the
+     * map, this applies to {@link TypeSystem#MAP() map}, {@link #asNode() node} and {@link
+     * TypeSystem#RELATIONSHIP()}  relationship} values.
      *
      * @return the keys in the value
      */
+    @Override
     Iterable<String> keys();
 
+    /** @return The type of this value as defined in the Neo4j type system */
+    Type type();
+
+    /**
+     * Test if this value is a value of the given type
+     *
+     * @param type the given type
+     * @return type.isTypeOf( this )
+     */
+    boolean hasType( Type type );
+
+    /**
+     * @return <tt>true</tt> if the value is a Boolean value and has the value True.
+     */
+    boolean isTrue();
+
+    /**
+     * @return <tt>true</tt> if the value is a Boolean value and has the value False.
+     */
+    boolean isFalse();
+
+    /**
+     * @return <tt>true</tt> if the value is a Null, otherwise <tt>false</tt>
+     */
     boolean isNull();
 
-    /** @return true if the underlying value is a Neo4j string value */
-    boolean isString();
-
-    /** @return if the underlying value is a Neo4j 64-bit integer */
-    boolean isInteger();
-
-    /** @return if the underlying value is a Neo4j 64-bit float */
-    boolean isFloat();
-
-    /** @return if the underlying value is a Neo4j boolean */
-    boolean isBoolean();
-
-    /** @return if the underlying value is a Neo4j identity */
-    boolean isIdentity();
-
-    /** @return if the underlying value is a Neo4j node */
-    boolean isNode();
-
-    /** @return if the underlying value is a Neo4j path */
-    boolean isPath();
-
-    /** @return if the underlying value is a Neo4j relationship */
-    boolean isRelationship();
+    /** @return the value as a Java Object */
+    Object asObject();
 
     /**
-     * Lists are an ordered collection of values. You can {@link #iterator() iterate} over a list as well as
-     * access specific values {@link #get(long) by index}.
-     * <p>
-     * {@link #size()} will give you the number of entries in the list.
-     *
-     * @return if the underlying value is a Neo4j list
+     * @return the value as a Java boolean, if possible.
+     * @throws Uncoercible if value types are incompatible.
      */
-    boolean isList();
+    boolean asBoolean();
 
     /**
-     * Maps are key/value objects, similar to {@link java.util.Map java maps}. You can use {@link #get(String)} to
-     * retrive values from the map, {@link #keys()} to list keys and {@link #iterator()} to iterate over the values.
-     * <p>
-     * {@link #size()} will give you the number of entries in the map.
-     *
-     * @return if the underlying value is a Neo4j map
+     *  @return the value as a Java String, if possible.
+     *  @throws Uncoercible if value types are incompatible.
      */
-    boolean isMap();
+    String asString();
 
-    /** @return The type of this value as defined in the Cypher language */
-    Type type();
+    /**
+     *  @return the value as a Cypher literal, if possible
+     *  @throws Uncoercible if value types are incompatible.
+     */
+    String asLiteralString();
+
+    /**
+     * @return the value as a Java char, if possible.
+     * @throws Uncoercible if value types are incompatible.
+     */
+    char asChar();
+
+    /**
+     * @return the value as a Java Number, if possible.
+     * @throws Uncoercible if value types are incompatible.
+     */
+    Number asNumber();
+
+    /**
+     * Returns a Java long if no precision is lost in the conversion.
+     *
+     * @return the value as a Java long.
+     * @throws LossyCoercion if it is not possible to convert the value without loosing precision.
+     * @throws Uncoercible if value types are incompatible.
+     */
+    long asLong();
+
+    /**
+     * Returns a Java int if no precision is lost in the conversion.
+     *
+     * @return the value as a Java int.
+     * @throws LossyCoercion if it is not possible to convert the value without loosing precision.
+     * @throws Uncoercible if value types are incompatible.
+     */
+    int asInt();
+
+    /**
+     * Returns a Java short if no precision is lost in the conversion.
+     *
+     * @return the value as a Java short.
+     * @throws LossyCoercion if it is not possible to convert the value without loosing precision.
+     * @throws Uncoercible if value types are incompatible.
+     */
+    short asShort();
+
+    /**
+     * Returns a Java byte if no precision is lost in the conversion.
+     *
+     * @return the value as a Java byte.
+     * @throws LossyCoercion if it is not possible to convert the value without loosing precision.
+     * @throws Uncoercible if value types are incompatible.
+     */
+    byte asByte();
+
+    /**
+     * Returns a Java double if no precision is lost in the conversion.
+     *
+     * @return the value as a Java double.
+     * @throws LossyCoercion if it is not possible to convert the value without loosing precision.
+     * @throws Uncoercible if value types are incompatible.
+     */
+    double asDouble();
+
+    /**
+     * Returns a Java float if no precision is lost in the conversion.
+     *
+     * @return the value as a Java float.
+     * @throws LossyCoercion if it is not possible to convert the value without loosing precision.
+     * @throws Uncoercible if value types are incompatible.
+     */
+    float asFloat();
+
+    /**
+     * @return the value as an {@link Identity}, if possible.
+     * @throws Uncoercible if value types are incompatible.
+     */
+    Identity asIdentity();
+
+    /**
+     * @return the value as a Java list of values, if possible
+     */
+    List<Value> asList();
+
+    /**
+     * @param mapFunction a function to map from Value to T. See {@link Values} for some predefined functions, such
+     * as {@link Values#valueAsBoolean()}, {@link Values#valueAsList(Function)}.
+     * @param <T> the type of target list elements
+     * @return the value as a list of T obtained by mapping from the list elements, if possible
+     */
+    <T> List<T> asList( Function<Value, T> mapFunction );
+
+    /**
+     * If the Value is for example a List, returns the value as an array of values instead.
+     * @return an array of Values.
+     * @throws Uncoercible if the Value cannot be turned into an array.
+     */
+    Value[] asArray();
+
+
+    /**
+     * Map the value with provided function. See {@link Values} for some predefined functions, such
+     * as {@link Values#valueAsBoolean()}, {@link Values#valueAsList(Function)}.
+     *
+     * @param clazz the class of T
+     * @param mapFunction a function mapping Values into T
+     * @param <T> The type of the array
+     * @return an array of T
+     * @throws Uncoercible if the Value cannot be turned into an array.
+     */
+    <T> T[] asArray( Class<T> clazz, Function<Value, T> mapFunction );
+
+    /**
+     * @return the value as an array of chars.
+     * @throws Uncoercible if the value cannot be coerced to a char array.
+     */
+    char[] asCharArray();
+
+    /**
+     * @return the value as an array of longs.
+     * @throws Uncoercible if the value cannot be coerced to a long array.
+     */
+    long[] asLongArray();
+
+    /**
+     * @return the value as an array of ints.
+     * @throws Uncoercible if the value cannot be coerced to a int array.
+     */
+    int[] asIntArray();
+
+    /**
+     * @return the value as an array of shorts.
+     * @throws Uncoercible if the value cannot be coerced to a short array.
+     */
+    short[] asShortArray();
+
+    /**
+     * @return the value as an array of bytes.
+     * @throws Uncoercible if the value cannot be coerced to a byte array.
+     */
+    byte[] asByteArray();
+
+    /**
+     * @return the value as an array of doubles.
+     * @throws Uncoercible if the value cannot be coerced to a double array.
+     */
+    double[] asDoubleArray();
+
+    /**
+     * @return the value as an array of floats.
+     * @throws Uncoercible if the value cannot be coerced to a float array.
+     */
+    float[] asFloatArray();
+
+    /**
+     * @return the value as a Java value map, if possible
+     */
+    Map<String, Value> asMap();
+
+    /**
+     * @param mapFunction a function to map from Value to T. See {@link Values} for some predefined functions, such
+     * as {@link Values#valueAsBoolean()}, {@link Values#valueAsList(Function)}.
+     * @param <T> the type of map values
+     * @return the value as a map from string keys to values of type T obtained from mapping he original map values, if possible
+     */
+    <T> Map<String, T> asMap( Function<Value, T> mapFunction );
+
+    /**
+     * @return the value as a {@link Entity}, if possible.
+     * @throws Uncoercible if value types are incompatible.
+     */
+    Entity asEntity();
+
+    /**
+     * @return the value as a {@link Node}, if possible.
+     * @throws Uncoercible if value types are incompatible.
+     */
+    Node asNode();
+
+    /**
+     * @return the value as a {@link Relationship}, if possible.
+     * @throws Uncoercible if value types are incompatible.
+     */
+    Relationship asRelationship();
+
+    /**
+     * @return the value as a {@link Path}, if possible.
+     * @throws Uncoercible if value types are incompatible.
+     */
+    Path asPath();
+
+    // Force implementation
+    @Override
+    boolean equals( Object other );
+
+    // Force implementation
+    @Override
+    int hashCode();
 }
