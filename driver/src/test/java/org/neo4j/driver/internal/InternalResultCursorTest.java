@@ -148,6 +148,64 @@ public class InternalResultCursorTest
     }
 
     @Test
+    public void limitShouldWorkAsExpected()
+    {
+        // GIVEN
+        ResultCursor result = createResult( 42 );
+        result.limit( 10 );
+
+        // THEN
+        assertThat( result.retain().size(), equalTo( 10 ) );
+    }
+
+    @Test
+    public void limitZeroShouldWorkAsExpected1()
+    {
+        // GIVEN
+        ResultCursor result = createResult( 42 );
+        result.limit( 0 );
+
+        // THEN
+        assertThat( result.retain().size(), equalTo( 0 ) );
+    }
+
+    @Test
+    public void limitZeroShouldWorkAsExpected2()
+    {
+        // GIVEN
+        ResultCursor result = createResult( 10 );
+        result.skip( 4 );
+        result.limit( 0 );
+
+        // THEN
+        assertTrue( result.atEnd() );
+        assertFalse( result.next() );
+    }
+
+    @Test
+    public void limitOnEmptyResultShouldWorkAsExpected()
+    {
+        // GIVEN
+        ResultCursor result = createResult( 0 );
+        result.limit( 10 );
+
+        // THEN
+        assertThat( result.retain().size(), equalTo( 0 ) );
+    }
+
+    @Test
+    public void changingLimitShouldWorkAsExpected()
+    {
+        // GIVEN
+        ResultCursor result = createResult( 6 );
+        result.limit( 1 );
+        result.limit( 60 );
+
+        // THEN
+        assertThat( result.retain().size(), equalTo( 6 ) );
+    }
+
+    @Test
     public void retainShouldWorkAsExpected()
     {
         // GIVEN

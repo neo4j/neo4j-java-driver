@@ -45,6 +45,7 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
     private boolean open = true;
     private Record current = null;
     private long position = -1;
+    private long limit = -1;
 
     public InternalResultCursor( List<String> keys, List<Record> body, ResultSummary summary )
     {
@@ -137,6 +138,10 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
         {
             current = iter.next();
             position += 1;
+            if ( position == limit )
+            {
+                discard();
+            }
             return true;
         }
         else
@@ -161,6 +166,22 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
             }
             return skipped;
         }
+    }
+
+    @Override
+    public long limit( long records )
+    {
+        if ( records < 0 )
+        {
+            throw new ClientException( "Cannot limit negative number of elements" );
+        }
+        else if ( records == 0) {
+            this.limit = position;
+            discard();
+        } else {
+            this.limit = records + position;
+        }
+        return this.limit;
     }
 
     @Override

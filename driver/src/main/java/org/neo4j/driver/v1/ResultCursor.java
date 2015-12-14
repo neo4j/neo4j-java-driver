@@ -72,11 +72,22 @@ public interface ResultCursor extends RecordAccessor, Resource
     /**
      * Advance the cursor as if calling next multiple times.
      *
-     * @throws IllegalArgumentException if records is negative
+     * @throws ClientException if records is negative
      * @param records amount of records to be skipped
      * @return the actual number of records successfully skipped
      */
     long skip( long records );
+
+    /**
+     * Limit this cursor to return no more than the given number of records after the current record.
+     * As soon as the described amount of records have been returned, all further records are discarded.
+     * Calling limit again before the described amount of records have been returned, replaces the limit (overwriting the previous limit).
+     *
+     * @throws ClientException if records is negative
+     * @param records the maximum number of records to return from future calls to {@link #next()}
+     * @return the actual position of the last record to be returned
+     */
+    long limit( long records );
 
     /**
      * Move to the first record if possible, otherwise do nothing.
