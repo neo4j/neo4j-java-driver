@@ -32,7 +32,7 @@ import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.v1.Entry;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Records;
-import org.neo4j.driver.v1.Result;
+import org.neo4j.driver.v1.ResultCursor;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
@@ -44,7 +44,7 @@ import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.driver.v1.Values.value;
 
-public class InternalResultTest
+public class InternalResultCursorTest
 {
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
@@ -53,7 +53,7 @@ public class InternalResultTest
     public void iterationShouldWorksAsExpected()
     {
         // GIVEN
-        Result result = createResult( 3 );
+        ResultCursor result = createResult( 3 );
 
         // WHEN
         assertThat( result.position(), equalTo( -1L ) );
@@ -89,7 +89,7 @@ public class InternalResultTest
     public void firstMovesCursorOnce()
     {
         // GIVEN
-        Result result = createResult( 3 );
+        ResultCursor result = createResult( 3 );
 
         // WHEN
         assertThat( result.position(), equalTo( -1L ) );
@@ -111,7 +111,7 @@ public class InternalResultTest
     public void skipShouldWorkAsExpected()
     {
         // GIVEN
-        Result result = createResult( 42 );
+        ResultCursor result = createResult( 42 );
 
         // WHEN
         assertThat(result.skip( 22 ), equalTo(22L));
@@ -125,7 +125,7 @@ public class InternalResultTest
     public void skipBeyondNumberOfRecords()
     {
         // GIVEN
-        Result result = createResult( 10 );
+        ResultCursor result = createResult( 10 );
 
         // WHEN
         assertThat(result.skip( 20 ), equalTo(10L));
@@ -137,7 +137,7 @@ public class InternalResultTest
     @Test
     public void skipThrowsIfNegativeNumber()
     {
-        Result result = createResult( 10 );
+        ResultCursor result = createResult( 10 );
         result.skip( 5 );
 
         expectedException.expect( IllegalArgumentException.class );
@@ -148,7 +148,7 @@ public class InternalResultTest
     public void retainShouldWorkAsExpected()
     {
         // GIVEN
-        Result result = createResult( 3 );
+        ResultCursor result = createResult( 3 );
 
         // WHEN
         List<Record> records = result.retain();
@@ -162,7 +162,7 @@ public class InternalResultTest
     public void retainAndMapByKeyShouldWorkAsExpected()
     {
         // GIVEN
-        Result result = createResult( 3 );
+        ResultCursor result = createResult( 3 );
 
         // WHEN
         List<Value> records = result.retain( Records.columnAsIs( "k1" ) );
@@ -176,7 +176,7 @@ public class InternalResultTest
     public void retainAndMapByIndexShouldWorkAsExpected()
     {
         // GIVEN
-        Result result = createResult( 3 );
+        ResultCursor result = createResult( 3 );
 
         // WHEN
         List<Value> records = result.retain( Records.columnAsIs( 0 ) );
@@ -189,7 +189,7 @@ public class InternalResultTest
     @Test
     public void retainFailsIfItCannotRetainEntireResult()
     {
-        Result result = createResult( 17 );
+        ResultCursor result = createResult( 17 );
         result.skip( 5 );
 
         expectedException.expect( ClientException.class );
@@ -200,7 +200,7 @@ public class InternalResultTest
     public void accessingOutOfBoundsShouldBeNull()
     {
         // GIVEN
-        Result result = createResult( 1 );
+        ResultCursor result = createResult( 1 );
 
         // WHEN
         result.first();
@@ -216,7 +216,7 @@ public class InternalResultTest
     public void accessingRecordsWithoutCallingNextShouldFail()
     {
         // GIVEN
-        Result result = createResult( 11 );
+        ResultCursor result = createResult( 11 );
 
         // WHEN
         // not calling next, first, nor skip
@@ -230,7 +230,7 @@ public class InternalResultTest
     public void accessingValueWithoutCallingNextShouldFail()
     {
         // GIVEN
-        Result result = createResult( 11 );
+        ResultCursor result = createResult( 11 );
 
         // WHEN
         // not calling next, first, nor skip
@@ -244,7 +244,7 @@ public class InternalResultTest
     public void accessingFieldsWithoutCallingNextShouldFail()
     {
         // GIVEN
-        Result result = createResult( 11 );
+        ResultCursor result = createResult( 11 );
 
         // WHEN
         // not calling next, first, nor skip
@@ -258,7 +258,7 @@ public class InternalResultTest
     public void accessingKeysWithoutCallingNextShouldNotFail()
     {
         // GIVEN
-        Result result = createResult( 11 );
+        ResultCursor result = createResult( 11 );
 
         // WHEN
         // not calling next, first, nor skip
@@ -273,7 +273,7 @@ public class InternalResultTest
         assertThat( createResult( 4 ).size(), equalTo( 2 ) );
     }
 
-    private Result createResult( int numberOfRecords )
+    private ResultCursor createResult( int numberOfRecords )
     {
         ResultBuilder builder = new ResultBuilder( "<unknown>", ParameterSupport.NO_PARAMETERS );
         builder.keys( new String[]{"k1", "k2"} );

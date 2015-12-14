@@ -23,8 +23,8 @@ import java.util.Map;
 /**
  * A record is an immutable copy of an ordered map
  *
- * @see Result#record()
- * @see Result#retain()
+ * @see ResultCursor#record()
+ * @see ResultCursor#retain()
  */
 @Immutable
 public interface Record extends RecordAccessor

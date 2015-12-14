@@ -128,7 +128,7 @@ public class InternalRecord extends InternalRecordAccessor implements Record
         else if ( other instanceof Record )
         {
             Record otherRecord = (Record) other;
-            int size = fieldCount();
+            int size = size();
             if ( ! ( size == otherRecord.size() ) )
             {
                 return false;

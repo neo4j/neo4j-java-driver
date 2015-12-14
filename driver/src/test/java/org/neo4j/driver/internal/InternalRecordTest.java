@@ -53,10 +53,10 @@ public class InternalRecordTest
     }
 
     @Test
-    public void shouldHaveCorrectFieldCount()
+    public void shouldHaveCorrectSize()
     {
         InternalRecord record = createRecord();
-        assertThat( record.fieldCount(), equalTo( 2 ) );
+        assertThat( record.size(), equalTo( 2 ) );
     }
 
     @Test

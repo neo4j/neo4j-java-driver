@@ -53,7 +53,7 @@ public class DriverDocIT
         snippet.run();
 
         // then it should've created a bunch of data
-        Result result = session.run( "MATCH (n) RETURN count(n)" );
+        ResultCursor result = session.run( "MATCH (n) RETURN count(n)" );
         assertTrue( result.single() );
         assertEquals( 3, result.value( 0 ).asInt() );
         assertThat( (List<String>)snippet.get( "names" ), equalTo( asList("Bob", "Alice", "Tina")) );

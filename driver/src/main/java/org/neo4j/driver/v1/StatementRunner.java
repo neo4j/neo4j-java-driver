@@ -39,8 +39,8 @@ public interface StatementRunner
      * <h2>Example</h2>
      * <pre class="doctest:StatementRunnerDocIT#parameterTest">
      * {@code
-     * Result cursor = session.run( "MATCH (n) WHERE n.name = {myNameParam} RETURN (n)",
-     *                              Values.parameters( "myNameParam", "Bob" ) );
+     * ResultCursor cursor = session.run( "MATCH (n) WHERE n.name = {myNameParam} RETURN (n)",
+     *                                    Values.parameters( "myNameParam", "Bob" ) );
      * }
      * </pre>
      *
@@ -48,7 +48,7 @@ public interface StatementRunner
      * @param statementParameters input data for the statement, see {@link Values#parameters(Object...)}
      * @return a stream of result values and associated metadata
      */
-    Result run( String statementTemplate, Map<String, Value> statementParameters );
+    ResultCursor run( String statementTemplate, Map<String, Value> statementParameters );
 
     /**
      * Run a statement and return a result stream.
@@ -56,7 +56,7 @@ public interface StatementRunner
      * @param statementTemplate template of a Neo4j statement
      * @return a stream of result values and associated metadata
      */
-    Result run( String statementTemplate );
+    ResultCursor run( String statementTemplate );
 
     /**
      * Run a statement and return a result stream.
@@ -64,14 +64,14 @@ public interface StatementRunner
      * <pre class="doctest:StatementRunnerDocIT#statementObjectTest">
      * {@code
      * Statement statement = new Statement( "MATCH (n) WHERE n.name={myNameParam} RETURN n.age" );
-     * Result cursor = session.run( statement.withParameters( Values.parameters( "myNameParam", "Bob" )  ) );
+     * ResultCursor cursor = session.run( statement.withParameters( Values.parameters( "myNameParam", "Bob" )  ) );
      * }
      * </pre>
      *
      * @param statement a Neo4j statement
      * @return a stream of result values and associated metadata
      */
-    Result run( Statement statement );
+    ResultCursor run( Statement statement );
 
     /**
      * @return type system used by this statement runner for classifying values

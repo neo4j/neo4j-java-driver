@@ -25,7 +25,7 @@ import org.junit.Test;
 
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
-import org.neo4j.driver.v1.Result;
+import org.neo4j.driver.v1.ResultCursor;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
@@ -50,7 +50,7 @@ public class LoadCSVIT
         String csvFileUrl = createLocalIrisData( session );
 
         // When
-        Result result = session.run(
+        ResultCursor result = session.run(
             "USING PERIODIC COMMIT 40\n" +
             "LOAD CSV WITH HEADERS FROM {csvFileUrl} AS l\n" +
             "MATCH (c:Class {name: l.class_name})\n" +
@@ -79,7 +79,7 @@ public class LoadCSVIT
     }
 
     @SuppressWarnings("StatementWithEmptyBody")
-    private static void consume( Result result )
+    private static void consume( ResultCursor result )
     {
         while ( result.next() )
         {

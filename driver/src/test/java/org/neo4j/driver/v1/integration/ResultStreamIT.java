@@ -21,7 +21,7 @@ package org.neo4j.driver.v1.integration;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.driver.v1.Result;
+import org.neo4j.driver.v1.ResultCursor;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
@@ -40,7 +40,7 @@ public class ResultStreamIT
     public void shouldAllowIteratingOverResultStream() throws Throwable
     {
         // When
-        Result res = session.run( "UNWIND [1,2,3,4] AS a RETURN a" );
+        ResultCursor res = session.run( "UNWIND [1,2,3,4] AS a RETURN a" );
 
         // Then I should be able to iterate over the result
         int idx = 1;
@@ -54,7 +54,7 @@ public class ResultStreamIT
     public void shouldHaveFieldNamesInResult()
     {
         // When
-        Result res = session.run( "CREATE (n:TestNode {name:'test'}) RETURN n" );
+        ResultCursor res = session.run( "CREATE (n:TestNode {name:'test'}) RETURN n" );
 
         // Then
         assertEquals( "[n]", res.keys().toString() );
@@ -66,7 +66,7 @@ public class ResultStreamIT
     public void shouldGiveHelpfulFailureMessageWhenCurrentRecordHasNotBeenSet() throws Throwable
     {
         // Given
-        Result rs = session.run( "CREATE (n:Person {name:{name}}) RETURN n", parameters( "name", "Tom Hanks" ) );
+        ResultCursor rs = session.run( "CREATE (n:Person {name:{name}}) RETURN n", parameters( "name", "Tom Hanks" ) );
 
         // When & Then
         try
@@ -88,7 +88,7 @@ public class ResultStreamIT
     public void shouldGiveHelpfulFailureMessageWhenAccessNonExistingField() throws Throwable
     {
         // Given
-        Result rs = session.run( "CREATE (n:Person {name:{name}}) RETURN n", parameters( "name", "Tom Hanks" ) );
+        ResultCursor rs = session.run( "CREATE (n:Person {name:{name}}) RETURN n", parameters( "name", "Tom Hanks" ) );
 
         // When
         assertTrue( rs.single() );
@@ -101,7 +101,7 @@ public class ResultStreamIT
     public void shouldGiveHelpfulFailureMessageWhenAccessNonExistingPropertyOnNode() throws Throwable
     {
         // Given
-        Result rs = session.run( "CREATE (n:Person {name:{name}}) RETURN n", parameters( "name", "Tom Hanks" ) );
+        ResultCursor rs = session.run( "CREATE (n:Person {name:{name}}) RETURN n", parameters( "name", "Tom Hanks" ) );
 
         // When
         assertTrue( rs.single() );

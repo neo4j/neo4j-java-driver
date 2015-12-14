@@ -27,7 +27,7 @@ import org.junit.Test;
 import org.neo4j.driver.v1.Notification;
 import org.neo4j.driver.v1.Plan;
 import org.neo4j.driver.v1.ProfiledPlan;
-import org.neo4j.driver.v1.Result;
+import org.neo4j.driver.v1.ResultCursor;
 import org.neo4j.driver.v1.ResultSummary;
 import org.neo4j.driver.v1.StatementType;
 import org.neo4j.driver.v1.Value;
@@ -56,7 +56,7 @@ public class SummaryIT
         String statementText = "UNWIND [1, 2, 3, 4] AS n RETURN n AS number LIMIT {limit}";
 
         // When
-        Result result = session.run( statementText, statementParameters );
+        ResultCursor result = session.run( statementText, statementParameters );
 
         // Then
         assertTrue( result.next() );

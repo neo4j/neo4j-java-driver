@@ -25,7 +25,7 @@ import java.util.List;
 import org.neo4j.driver.v1.Function;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.RecordAccessor;
-import org.neo4j.driver.v1.Result;
+import org.neo4j.driver.v1.ResultCursor;
 import org.neo4j.driver.v1.ResultSummary;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
@@ -34,7 +34,7 @@ import static java.util.Collections.emptyList;
 
 import static org.neo4j.driver.v1.Records.recordAsIs;
 
-public class InternalResult extends InternalRecordAccessor implements Result
+public class InternalResultCursor extends InternalRecordAccessor implements ResultCursor
 {
     private final List<String> keys;
     private final Iterator<Record> iter;
@@ -44,7 +44,7 @@ public class InternalResult extends InternalRecordAccessor implements Result
     private Record current = null;
     private long position = -1;
 
-    public InternalResult( List<String> keys, List<Record> body, ResultSummary summary )
+    public InternalResultCursor( List<String> keys, List<Record> body, ResultSummary summary )
     {
         this.keys = keys;
         this.iter = body.iterator();

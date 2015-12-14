@@ -29,11 +29,6 @@ import static org.neo4j.driver.v1.Values.valueAsIs;
 
 public abstract class InternalRecordAccessor implements RecordAccessor
 {
-    public int fieldCount()
-    {
-        return keys().size();
-    }
-
     @Override
     public List<Entry<Value>> fields()
     {

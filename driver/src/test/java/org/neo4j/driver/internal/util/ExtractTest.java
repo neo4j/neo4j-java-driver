@@ -36,7 +36,7 @@ import org.neo4j.driver.internal.ParameterSupport;
 import org.neo4j.driver.internal.summary.ResultBuilder;
 import org.neo4j.driver.v1.Entry;
 import org.neo4j.driver.v1.Function;
-import org.neo4j.driver.v1.Result;
+import org.neo4j.driver.v1.ResultCursor;
 import org.neo4j.driver.v1.Value;
 
 import static java.util.Arrays.asList;
@@ -152,7 +152,7 @@ public class ExtractTest
         ResultBuilder builder = new ResultBuilder( "<unknown>", ParameterSupport.NO_PARAMETERS );
         builder.keys( new String[]{"k1"} );
         builder.record( new Value[]{value(42)} );
-        Result result = builder.build();
+        ResultCursor result = builder.build();
         result.first();
 
         // WHEN

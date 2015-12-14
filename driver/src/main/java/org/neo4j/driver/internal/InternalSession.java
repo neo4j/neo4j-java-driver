@@ -23,7 +23,7 @@ import java.util.Map;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.summary.ResultBuilder;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
-import org.neo4j.driver.v1.Result;
+import org.neo4j.driver.v1.ResultCursor;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Transaction;
@@ -54,7 +54,7 @@ public class InternalSession implements Session
     }
 
     @Override
-    public Result run( String statementText, Map<String,Value> statementParameters )
+    public ResultCursor run( String statementText, Map<String,Value> statementParameters )
     {
         ensureNoOpenTransaction();
         ResultBuilder resultBuilder = new ResultBuilder( statementText, statementParameters );
@@ -66,13 +66,13 @@ public class InternalSession implements Session
     }
 
     @Override
-    public Result run( String statementTemplate )
+    public ResultCursor run( String statementTemplate )
     {
         return run( statementTemplate, ParameterSupport.NO_PARAMETERS );
     }
 
     @Override
-    public Result run( Statement statement )
+    public ResultCursor run( Statement statement )
     {
         return run( statement.template(), statement.parameters() );
     }

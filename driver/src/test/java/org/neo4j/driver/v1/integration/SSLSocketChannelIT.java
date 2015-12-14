@@ -41,7 +41,7 @@ import org.neo4j.driver.internal.util.CertificateTool;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
-import org.neo4j.driver.v1.Result;
+import org.neo4j.driver.v1.ResultCursor;
 import org.neo4j.driver.v1.util.CertificateToolTest;
 import org.neo4j.driver.v1.util.Neo4jRunner;
 import org.neo4j.driver.v1.util.Neo4jSettings;
@@ -228,7 +228,7 @@ public class SSLSocketChannelIT
                 URI.create( Neo4jRunner.DEFAULT_URL ),
                 config );
 
-        Result result = driver.session().run( "RETURN 1" );
+        ResultCursor result = driver.session().run( "RETURN 1" );
         assertTrue( result.next() );
         assertEquals( 1, result.value( 0 ).asInt() );
         assertFalse( result.next() );

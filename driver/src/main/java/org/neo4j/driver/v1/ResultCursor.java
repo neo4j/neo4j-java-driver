@@ -37,7 +37,7 @@ import org.neo4j.driver.v1.exceptions.ClientException;
  * To keep a result around while further statements are run, or to use a result outside the scope
  * of the current transaction, see {@link #retain()}.
  */
-public interface Result extends RecordAccessor, Resource
+public interface ResultCursor extends RecordAccessor, Resource
 {
     /**
      * @return an immutable copy of the currently viewed record
