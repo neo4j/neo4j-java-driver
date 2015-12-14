@@ -77,7 +77,7 @@ public class ResultStreamIT
         catch( ClientException e )
         {
             assertEquals(
-                    "In order to access fields of a record in a result, " +
+                    "In order to access the fields of a record in a result, " +
                     "you must first call next() to point the result to the next record in the result stream.",
                     e.getMessage() );
 

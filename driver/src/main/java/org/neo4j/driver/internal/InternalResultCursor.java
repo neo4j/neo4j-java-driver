@@ -19,9 +19,9 @@
 package org.neo4j.driver.internal;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
+import org.neo4j.driver.v1.Entry;
 import org.neo4j.driver.v1.Function;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.RecordAccessor;
@@ -29,7 +29,9 @@ import org.neo4j.driver.v1.ResultCursor;
 import org.neo4j.driver.v1.ResultSummary;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.NoRecordException;
 
+import static java.lang.String.format;
 import static java.util.Collections.emptyList;
 
 import static org.neo4j.driver.v1.Records.recordAsIs;
@@ -37,7 +39,7 @@ import static org.neo4j.driver.v1.Records.recordAsIs;
 public class InternalResultCursor extends InternalRecordAccessor implements ResultCursor
 {
     private final List<String> keys;
-    private final Iterator<Record> iter;
+    private final PeekingIterator<Record> iter;
     private final ResultSummary summary;
 
     private boolean open = true;
@@ -47,7 +49,7 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
     public InternalResultCursor( List<String> keys, List<Record> body, ResultSummary summary )
     {
         this.keys = keys;
-        this.iter = body.iterator();
+        this.iter = new PeekingIterator<>( body.iterator() );
         this.summary = summary;
     }
 
@@ -90,23 +92,27 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
         return keys.size();
     }
 
-    private Value throwNoRecord()
+    @Override
+    public boolean hasRecord()
     {
-        throw new ClientException(
-            "In order to access fields of a record in a result, " +
-            "you must first call next() to point the result to the next record in the result stream."
-        );
+        assertOpen();
+        return current != null && current.hasRecord();
     }
 
     @Override
     public Record record()
     {
-        assertOpen();
-        if ( current == null )
+        if ( hasRecord() )
         {
-            throwNoRecord();
+            return current;
         }
-        return current;
+        else
+        {
+            throw new NoRecordException(
+                "In order to access the fields of a record in a result, " +
+                "you must first call next() to point the result to the next record in the result stream."
+            );
+        }
     }
 
     @Override
@@ -144,7 +150,7 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
     {
         if ( elements < 0 )
         {
-            throw new IllegalArgumentException( "Cannot skip negative number of elements" );
+            throw new ClientException( "Cannot skip negative number of elements" );
         }
         else
         {
@@ -171,6 +177,12 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
     }
 
     @Override
+    public RecordAccessor peek()
+    {
+        return new PeekingRecordAccessor();
+    }
+
+    @Override
     public List<Record> retain()
     {
         return retain( recordAsIs() );
@@ -192,14 +204,14 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
                 result.add( mapFunction.apply( this ) );
             }
             while ( next() );
+            discard();
             return result;
         }
         else
         {
-            throw new
-                ClientException( String.format(
-                "Can't retain records when cursor is not pointing at the first record (currently at position %d)",
-                position ) );
+            throw new ClientException(
+                format( "Can't retain records when cursor is not pointing at the first record (currently at position %d)", position )
+            );
         }
     }
 
@@ -208,6 +220,7 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
     public ResultSummary summarize()
     {
         while ( next() ) ;
+        discard();
         return summary;
     }
 
@@ -216,11 +229,20 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
     {
         if ( open )
         {
+            discard();
             open = false;
         }
         else
         {
-            throw new IllegalStateException( "Already closed" );
+            throw new ClientException( "Already closed" );
+        }
+    }
+
+    private void assertOpen()
+    {
+        if ( !open )
+        {
+            throw new ClientException( "Cursor already closed" );
         }
     }
 
@@ -229,11 +251,73 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
         return position == -1 && !iter.hasNext();
     }
 
-    private void assertOpen()
+    private void discard()
     {
-        if ( !open )
+        iter.discard();
+    }
+
+    private class PeekingRecordAccessor implements RecordAccessor
+    {
+        @Override
+        public List<String> keys()
         {
-            throw new IllegalStateException( "Cursor already closed" );
+            return InternalResultCursor.this.keys();
+        }
+
+        @Override
+        public boolean containsKey( String key )
+        {
+            return InternalResultCursor.this.containsKey( key );
+        }
+
+        @Override
+        public int index( String key )
+        {
+            return InternalResultCursor.this.index( key );
+        }
+
+        @Override
+        public Value value( String key )
+        {
+            return record().value( key );
+        }
+
+        @Override
+        public int size()
+        {
+            return InternalResultCursor.this.size();
+        }
+
+        @Override
+        public List<Entry<Value>> fields()
+        {
+            return record().fields();
+        }
+
+        @Override
+        public boolean hasRecord()
+        {
+            return iter.hasNext();
+        }
+
+        @Override
+        public Record record()
+        {
+            Record record = iter.peek();
+            if ( record == null )
+            {
+                throw new NoRecordException( "Cannot peek past last record" );
+            }
+            else
+            {
+                return record;
+            }
+        }
+
+        @Override
+        public Value value( int index )
+        {
+            return record().value( index );
         }
     }
 }

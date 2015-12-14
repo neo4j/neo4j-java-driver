@@ -93,6 +93,16 @@ public interface ResultCursor extends RecordAccessor, Resource
     boolean single();
 
     /**
+     * Investigate the next upcoming record.
+     *
+     * The returned {@link RecordAccessor} is updated consistently whenever this associated cursor
+     * is moved.
+     *
+     * @return a view on the next record
+     */
+    RecordAccessor peek();
+
+    /**
      * Retrieve and store the entire result stream.
      * This can be used if you want to iterate over the stream multiple times or to store the
      * whole result for later use.

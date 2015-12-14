@@ -49,18 +49,6 @@ public class InternalRecord extends InternalRecordAccessor implements Record
     }
 
     @Override
-    public Value value( int index )
-    {
-        return index >= 0 && index < values.length ? values[index] : Values.NULL;
-    }
-
-    @Override
-    public int size()
-    {
-        return values.length;
-    }
-
-    @Override
     public List<String> keys()
     {
         return keys;
@@ -99,6 +87,24 @@ public class InternalRecord extends InternalRecordAccessor implements Record
         {
             return values[fieldIndex];
         }
+    }
+
+    @Override
+    public Value value( int index )
+    {
+        return index >= 0 && index < values.length ? values[index] : Values.NULL;
+    }
+
+    @Override
+    public int size()
+    {
+        return values.length;
+    }
+
+    @Override
+    public boolean hasRecord()
+    {
+        return true;
     }
 
     @Override

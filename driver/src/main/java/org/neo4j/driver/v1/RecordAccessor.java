@@ -21,7 +21,7 @@ package org.neo4j.driver.v1;
 import java.util.List;
 
 import org.neo4j.driver.internal.value.NullValue;
-import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.NoRecordException;
 
 /**
  * Access an underlying record (which is an ordered map of fields)
@@ -62,14 +62,14 @@ public interface RecordAccessor extends ListAccessor
      *
      * @param key the key of the property
      * @return the property's value or a {@link NullValue} if no such key exists
-     * @throws ClientException if record has not been initialized
+     * @throws NoRecordException if the associated underlying record is not available
      */
     Value value( String key );
 
     /**
-     * Retrieve the number of fields in this map
+     * Retrieve the number of fields in this record
      *
-     * @return the number of fields in this map
+     * @return the number of fields in this record
      */
     @Override
     int size();
@@ -78,12 +78,18 @@ public interface RecordAccessor extends ListAccessor
      * Retrieve all record fields
      *
      * @return all fields in key order
-     * @throws ClientException if record has not been initialized.
+     * @throws NoRecordException if the associated underlying record is not available
      */
     List<Entry<Value>> fields();
 
     /**
-     * @return an immutable copy of the currently viewed record
+     * @return if this record accessor is currently associated with an underlying record
+     */
+    boolean hasRecord();
+
+    /**
+     * @throws NoRecordException if the associated underlying record is not available
+     * @return an immutable copy of the currently associated underlying record
      */
     Record record();
 }

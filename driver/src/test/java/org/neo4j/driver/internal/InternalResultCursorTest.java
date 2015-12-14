@@ -31,16 +31,19 @@ import org.neo4j.driver.internal.summary.ResultBuilder;
 import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.v1.Entry;
 import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.RecordAccessor;
 import org.neo4j.driver.v1.Records;
 import org.neo4j.driver.v1.ResultCursor;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.NoRecordException;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import static org.neo4j.driver.v1.Values.value;
 
@@ -140,7 +143,7 @@ public class InternalResultCursorTest
         ResultCursor result = createResult( 10 );
         result.skip( 5 );
 
-        expectedException.expect( IllegalArgumentException.class );
+        expectedException.expect( ClientException.class );
         result.skip( -1 );
     }
 
@@ -268,9 +271,62 @@ public class InternalResultCursorTest
     }
 
     @Test
-    public void shouldHaveCorrectFieldCount()
+    public void shouldHaveCorrectSize()
     {
         assertThat( createResult( 4 ).size(), equalTo( 2 ) );
+    }
+
+    @Test
+    public void shouldPeekIntoTheFuture()
+    {
+        // GIVEN
+        ResultCursor result = createResult( 2 );
+
+        // WHEN
+        RecordAccessor future = result.peek();
+
+        // THEN
+        assertTrue( future.hasRecord() );
+        assertThat( future.value( "k1" ), equalTo( value( "v1-1" ) ) );
+
+        // WHEN
+        result.next();
+
+        // THEN
+        assertTrue( future.hasRecord() );
+        assertThat( result.value( "k1" ), equalTo( value( "v1-1" ) ) );
+        assertThat( future.value( "k1" ), equalTo( value( "v1-2" ) ) );
+
+        // WHEN
+        result.next();
+
+        // THEN
+        assertFalse( future.hasRecord() );
+        assertThat( result.value( "k1" ), equalTo( value( "v1-2" ) ) );
+
+        // AND THEN
+        try
+        {
+            future.value( "k1" );
+            fail( "Expected NoRecordException" );
+        }
+        catch ( NoRecordException e )
+        {
+            // yay
+        }
+
+    }
+
+    @Test
+    public void shouldNotPeekIntoTheFutureWhenResultIsEmpty()
+    {
+        // GIVEN
+        ResultCursor result = createResult( 0 );
+        RecordAccessor future = result.peek();
+
+        // WHEN
+        assertFalse( result.hasRecord() );
+        assertFalse( future.hasRecord() );
     }
 
     private ResultCursor createResult( int numberOfRecords )
