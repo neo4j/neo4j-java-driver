@@ -45,8 +45,8 @@ public class RelationshipValueTest
     @Test
     public void shouldHaveCorrectPropertyCount() throws Throwable
     {
-        assertEquals( 0, emptyRelationshipValue().propertyCount()) ;
-        assertEquals( 1, filledRelationshipValue().propertyCount()) ;
+        assertEquals( 0, emptyRelationshipValue().size()) ;
+        assertEquals( 1, filledRelationshipValue().size()) ;
     }
 
     @Test

@@ -16,34 +16,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1;
+package org.neo4j.driver.internal;
 
-/**
- * A field is a property of an ordered map or record
- *
- * @param <V> the type of value stored
- *
- * @see Property
- * @see PropertyMapAccessor
- * @see RecordAccessor
- */
-@Immutable
-public interface Field<V>
+import org.junit.Test;
+
+import org.neo4j.driver.v1.Entry;
+import org.neo4j.driver.v1.Value;
+
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertThat;
+
+import static org.neo4j.driver.v1.Values.value;
+
+
+public class InternalEntryTest
 {
-    /**
-     * @return the property key
-     */
-    String key();
-
-    /**
-     * @return the property value
-     */
-    V value();
-
-    /**
-     * @return the index of the field in the original record
-     */
-    int index();
-
-    Property<V> asProperty();
+    @Test
+    public void testMethods()
+    {
+        Entry<Value> entry = InternalEntry.of( "k", value( "v" ) );
+        assertThat(entry.key(), equalTo("k"));
+        assertThat(entry.value(), equalTo(value("v")));
+    }
 }

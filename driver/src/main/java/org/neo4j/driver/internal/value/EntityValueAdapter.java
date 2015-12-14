@@ -34,9 +34,9 @@ public abstract class EntityValueAdapter<V extends Entity> extends GraphValueAda
     }
 
     @Override
-    public int propertyCount()
+    public int size()
     {
-        return asEntity().propertyCount();
+        return asEntity().size();
     }
 
     @Override

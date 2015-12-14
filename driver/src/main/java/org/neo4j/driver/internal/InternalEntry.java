@@ -20,17 +20,15 @@ package org.neo4j.driver.internal;
 
 import java.util.Objects;
 
-import org.neo4j.driver.v1.Field;
+import org.neo4j.driver.v1.Entry;
 import org.neo4j.driver.v1.Function;
-import org.neo4j.driver.v1.Property;
 
-public class InternalField<V> implements Field<V>
+public class InternalEntry<V> implements Entry<V>
 {
-    private final int index;
     private final String key;
     private final V value;
 
-    public InternalField( String key, int index, V value )
+    protected InternalEntry( String key, V value )
     {
         if ( key == null )
         {
@@ -40,7 +38,6 @@ public class InternalField<V> implements Field<V>
         {
             throw new IllegalArgumentException( "null value" );
         }
-        this.index = index;
         this.key = key;
         this.value = value;
     }
@@ -55,16 +52,9 @@ public class InternalField<V> implements Field<V>
         return value;
     }
 
-    @Override
-    public int index()
+    public static <V> Entry<V> of( String key, V value )
     {
-        return index;
-    }
-
-    @Override
-    public Property<V> asProperty()
-    {
-        return InternalProperty.of( key, value );
+        return new InternalEntry<>( key, value );
     }
 
     @Override
@@ -90,21 +80,16 @@ public class InternalField<V> implements Field<V>
             return false;
         }
 
-        InternalField<?> that = (InternalField<?>) o;
-        return index == that.index && key.equals( that.key ) && value.equals( that.value );
+        InternalEntry<?> that = (InternalEntry<?>) o;
+
+        return key.equals( that.key ) && value.equals( that.value );
     }
 
     @Override
     public int hashCode()
     {
-        int result = index;
-        result = 31 * result + key.hashCode();
+        int result = key.hashCode();
         result = 31 * result + value.hashCode();
         return result;
-    }
-
-    public static <V> Field<V> of( String key, int index, V value )
-    {
-        return new InternalField<>( key, index, value );
     }
 }

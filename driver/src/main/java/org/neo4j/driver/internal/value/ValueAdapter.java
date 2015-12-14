@@ -21,16 +21,15 @@ package org.neo4j.driver.internal.value;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.driver.internal.InternalProperty;
 import org.neo4j.driver.internal.types.TypeConstructor;
 import org.neo4j.driver.internal.types.TypeRepresentation;
 import org.neo4j.driver.internal.util.Extract;
 import org.neo4j.driver.v1.Entity;
+import org.neo4j.driver.v1.Entry;
 import org.neo4j.driver.v1.Function;
 import org.neo4j.driver.v1.Identity;
 import org.neo4j.driver.v1.Node;
 import org.neo4j.driver.v1.Path;
-import org.neo4j.driver.v1.Property;
 import org.neo4j.driver.v1.Relationship;
 import org.neo4j.driver.v1.Type;
 import org.neo4j.driver.v1.Value;
@@ -303,25 +302,13 @@ public abstract class ValueAdapter implements InternalValue
     }
 
     @Override
-    public int propertyCount()
-    {
-        throw new NotMultiValued( type().name() + " is not a property map" );
-    }
-
-    @Override
-    public Property property( String key )
-    {
-        return InternalProperty.of( key, value( key ) );
-    }
-
-    @Override
-    public Iterable<Property<Value>> properties()
+    public Iterable<Entry<Value>> properties()
     {
         return properties( valueAsIs() );
     }
 
     @Override
-    public <V> Iterable<Property<V>> properties( final Function<Value, V> mapFunction )
+    public <V> Iterable<Entry<V>> properties( final Function<Value, V> mapFunction )
     {
         return Extract.properties( this, mapFunction );
     }

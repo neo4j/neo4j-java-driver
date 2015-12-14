@@ -20,6 +20,7 @@ package org.neo4j.driver.v1;
 
 import java.util.List;
 
+import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
 /**
@@ -28,20 +29,24 @@ import org.neo4j.driver.v1.exceptions.ClientException;
  * This provides only read methods. Subclasses may chose to provide additional methods
  * for changing the underlying record.
  *
- * @see Field
+ * @see Entry
  */
-public interface RecordAccessor extends ListAccessor, MapAccessor
+public interface RecordAccessor extends ListAccessor
 {
-    @Override
+    /**
+     * Retrieve the keys of the underlying map
+     *
+     * @return all map keys in unspecified order
+     */
     List<String> keys();
 
     /**
-     * Retrieve the key of the field for the given index
+     * Check if the list of keys contains the given key
      *
-     * @param index the index of the key
-     * @return the key of the field for the given index
+     * @param key the key
+     * @return <tt>true</tt> if this map keys contains the given key otherwise <tt>false</tt>
      */
-    String key( int index );
+    boolean containsKey( String key );
 
     /**
      * Retrieve the index of the field with the given key
@@ -53,25 +58,21 @@ public interface RecordAccessor extends ListAccessor, MapAccessor
     int index( String key );
 
     /**
-     * Retrieve the field for the given key
+     * Retrieve the value of the property with the given key
      *
-     * @param key the key
-     * @return the field for the given key
+     * @param key the key of the property
+     * @return the property's value or a {@link NullValue} if no such key exists
+     * @throws ClientException if record has not been initialized
      */
-    Field field( String key );
+    Value value( String key );
 
     /**
-     * Retrieve the field at the given index
+     * Retrieve the number of fields in this map
      *
-     * @param index the index
-     * @return the field at the given index
+     * @return the number of fields in this map
      */
-    Field field( int index );
-
-    /**
-     * @return number of fields in this record
-     */
-    int fieldCount();
+    @Override
+    int size();
 
     /**
      * Retrieve all record fields
@@ -79,18 +80,7 @@ public interface RecordAccessor extends ListAccessor, MapAccessor
      * @return all fields in key order
      * @throws ClientException if record has not been initialized.
      */
-    List<Field<Value>> fields();
-
-    /**
-     * Map and retrieve all record fields
-     *
-     * @param <V> the target type of the map function
-     * @param mapFunction a function to map from Value to T. See {@link Values} for some predefined functions, such
-     * as {@link Values#valueAsBoolean()}, {@link Values#valueAsList(Function)}.
-     * @return the result of mapping all record fields in key order
-     * @throws ClientException if record has not been initialized.
-     */
-    <V> List<Field<V>> fields( Function<Value, V> mapFunction );
+    List<Entry<Value>> fields();
 
     /**
      * @return an immutable copy of the currently viewed record

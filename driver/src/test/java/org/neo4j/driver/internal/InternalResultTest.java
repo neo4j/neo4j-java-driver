@@ -29,7 +29,7 @@ import org.junit.rules.ExpectedException;
 
 import org.neo4j.driver.internal.summary.ResultBuilder;
 import org.neo4j.driver.internal.value.NullValue;
-import org.neo4j.driver.v1.Field;
+import org.neo4j.driver.v1.Entry;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Records;
 import org.neo4j.driver.v1.Result;
@@ -270,7 +270,7 @@ public class InternalResultTest
     @Test
     public void shouldHaveCorrectFieldCount()
     {
-        assertThat( createResult( 4 ).fieldCount(), equalTo( 2 ) );
+        assertThat( createResult( 4 ).size(), equalTo( 2 ) );
     }
 
     private Result createResult( int numberOfRecords )
@@ -287,7 +287,7 @@ public class InternalResultTest
     private List<Value> values( Record record )
     {
         List<Value> result = new ArrayList<>( record.keys().size() );
-        for ( Field<Value> property : record.fields() )
+        for ( Entry<Value> property : record.fields() )
         {
             result.add( property.value() );
         }

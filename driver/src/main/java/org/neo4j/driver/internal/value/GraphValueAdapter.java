@@ -34,12 +34,6 @@ public abstract class GraphValueAdapter<V> extends ValueAdapter
     }
 
     @Override
-    public int size()
-    {
-        return propertyCount();
-    }
-
-    @Override
     public V asObject()
     {
         return adapted;

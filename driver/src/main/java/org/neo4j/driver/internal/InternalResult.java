@@ -74,12 +74,6 @@ public class InternalResult extends InternalRecordAccessor implements Result
     }
 
     @Override
-    public String key( int index )
-    {
-        return record().key( index );
-    }
-
-    @Override
     public int index( String key )
     {
         return record().index( key );
@@ -88,6 +82,12 @@ public class InternalResult extends InternalRecordAccessor implements Result
     public List<String> keys()
     {
         return keys;
+    }
+
+    @Override
+    public int size()
+    {
+        return keys.size();
     }
 
     private Value throwNoRecord()

@@ -30,14 +30,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import org.neo4j.driver.internal.InternalField;
+import org.neo4j.driver.internal.InternalEntry;
 import org.neo4j.driver.internal.InternalNode;
-import org.neo4j.driver.internal.InternalProperty;
 import org.neo4j.driver.internal.ParameterSupport;
 import org.neo4j.driver.internal.summary.ResultBuilder;
-import org.neo4j.driver.v1.Field;
+import org.neo4j.driver.v1.Entry;
 import org.neo4j.driver.v1.Function;
-import org.neo4j.driver.v1.Property;
 import org.neo4j.driver.v1.Result;
 import org.neo4j.driver.v1.Value;
 
@@ -138,12 +136,12 @@ public class ExtractTest
         InternalNode node = new InternalNode( 42L, Collections.singletonList( "L" ), props );
 
         // WHEN
-        Iterable<Property<Integer>> properties = Extract.properties( node, integerExtractor() );
+        Iterable<Entry<Integer>> properties = Extract.properties( node, integerExtractor() );
 
         // THEN
-        Iterator<Property<Integer>> iterator = properties.iterator();
-        assertThat( iterator.next(), equalTo( InternalProperty.of( "k1", 43 ) ) );
-        assertThat( iterator.next(), equalTo( InternalProperty.of( "k2", 42 ) ) );
+        Iterator<Entry<Integer>> iterator = properties.iterator();
+        assertThat( iterator.next(), equalTo( InternalEntry.of( "k1", 43 ) ) );
+        assertThat( iterator.next(), equalTo( InternalEntry.of( "k2", 42 ) ) );
         assertFalse( iterator.hasNext() );
     }
 
@@ -158,11 +156,11 @@ public class ExtractTest
         result.first();
 
         // WHEN
-        List<Field<Integer>> fields = Extract.fields( result, integerExtractor() );
+        List<Entry<Integer>> fields = Extract.fields( result, integerExtractor() );
 
 
         // THEN
-        assertThat( fields, equalTo( Collections.singletonList( InternalField.of( "k1", 0, 42 ) ) ) );
+        assertThat( fields, equalTo( Collections.singletonList( InternalEntry.of( "k1", 42 ) ) ) );
     }
 
     private Function<Value,Integer> integerExtractor()

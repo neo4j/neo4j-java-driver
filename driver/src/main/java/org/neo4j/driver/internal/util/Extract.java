@@ -21,16 +21,13 @@ package org.neo4j.driver.internal.util;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.driver.internal.InternalField;
-import org.neo4j.driver.internal.InternalProperty;
-import org.neo4j.driver.v1.Field;
+import org.neo4j.driver.internal.InternalEntry;
+import org.neo4j.driver.v1.Entry;
 import org.neo4j.driver.v1.Function;
 import org.neo4j.driver.v1.MapAccessor;
-import org.neo4j.driver.v1.Property;
 import org.neo4j.driver.v1.RecordAccessor;
 import org.neo4j.driver.v1.Value;
 
@@ -117,7 +114,7 @@ public final class Extract
 
     public static <T> Map<String, T> map( RecordAccessor record, Function<Value, T> mapFunction )
     {
-        int size = record.keys().size();
+        int size = record.size();
         switch ( size )
         {
             case 0:
@@ -137,41 +134,35 @@ public final class Extract
         }
     }
 
-    public static <V> Iterable<Property<V>> properties( final MapAccessor map, final Function<Value, V> mapFunction )
+    public static <V> Iterable<Entry<V>> properties( final MapAccessor map, final Function<Value, V> mapFunction )
     {
-        return new Iterable<Property<V>>()
+        int size = map.size();
+        switch ( size )
         {
-            @Override
-            public Iterator<Property<V>> iterator()
+            case 0:
+                return emptyList();
+
+            case 1:
             {
-                final Iterator<String> keys = map.keys().iterator();
-                return new Iterator<Property<V>>()
-                {
-                    @Override
-                    public boolean hasNext()
-                    {
-                        return keys.hasNext();
-                    }
-
-                    @Override
-                    public Property<V> next()
-                    {
-                        String key = keys.next();
-                        Value value = map.value( key );
-                        return InternalProperty.of( key, mapFunction.apply( value ) );
-                    }
-
-                    @Override
-                    public void remove()
-                    {
-                        keys.remove();
-                    }
-                };
+                String key = map.keys().iterator().next();
+                Value value = map.value( key );
+                return singletonList( InternalEntry.of( key, mapFunction.apply( value ) ) );
             }
-        };
+
+            default:
+            {
+                List<Entry<V>> list = new ArrayList<>( size );
+                for ( String key : map.keys() )
+                {
+                    Value value = map.value( key );
+                    list.add( InternalEntry.of( key, mapFunction.apply( value ) ) );
+                }
+                return unmodifiableList( list );
+            }
+        }
     }
 
-    public static <V> List<Field<V>> fields( final RecordAccessor map, final Function<Value, V> mapFunction )
+    public static <V> List<Entry<V>> fields( final RecordAccessor map, final Function<Value, V> mapFunction )
     {
         int size = map.keys().size();
         switch ( size )
@@ -183,18 +174,18 @@ public final class Extract
             {
                 String key = map.keys().iterator().next();
                 Value value = map.value( key );
-                return singletonList( InternalField.of( key, 0, mapFunction.apply( value ) ) );
+                return singletonList( InternalEntry.of( key, mapFunction.apply( value ) ) );
             }
 
             default:
             {
-                List<Field<V>> list = new ArrayList<>( size );
+                List<Entry<V>> list = new ArrayList<>( size );
                 List<String> keys = map.keys();
                 for ( int i = 0; i < size; i++ )
                 {
                     String key = keys.get( i );
                     Value value = map.value( i );
-                    list.add( InternalField.of( key, i, mapFunction.apply( value ) ) );
+                    list.add( InternalEntry.of( key, mapFunction.apply( value ) ) );
                 }
                 return unmodifiableList( list );
             }

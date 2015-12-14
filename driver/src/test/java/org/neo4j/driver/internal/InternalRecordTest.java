@@ -26,6 +26,7 @@ import java.util.NoSuchElementException;
 
 import org.junit.Test;
 
+import org.neo4j.driver.internal.util.Extract;
 import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.v1.Function;
 import org.neo4j.driver.v1.Value;
@@ -112,15 +113,6 @@ public class InternalRecordTest
     }
 
     @Test
-    public void testField()
-    {
-        InternalRecord record = createRecord();
-
-        assertThat( record.field( "k1" ), equalTo( record.field( 0 ) ) );
-        assertThat( record.field( "k2" ), equalTo( record.field( 1 ) ) );
-    }
-
-    @Test
     public void testAsMap()
     {
         // GIVEN
@@ -150,7 +142,7 @@ public class InternalRecordTest
         };
 
         // WHEN
-        Map<String,Integer> map = record.asMap( addOne );
+        Map<String,Integer> map = Extract.map( record, addOne );
 
         // THEN
         assertThat( map.keySet(), containsInAnyOrder( "k1", "k2" ) );

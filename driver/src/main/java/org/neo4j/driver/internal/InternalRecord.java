@@ -24,15 +24,14 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 
 import org.neo4j.driver.internal.util.Extract;
-import org.neo4j.driver.v1.Function;
+import org.neo4j.driver.internal.value.InternalValue;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 
 import static java.lang.String.format;
 
-import static org.neo4j.driver.internal.util.Format.formatFields;
-import static org.neo4j.driver.internal.value.InternalValue.Format.VALUE_WITH_TYPE;
+import static org.neo4j.driver.internal.util.Format.formatEntries;
 import static org.neo4j.driver.v1.Values.valueAsIs;
 
 public class InternalRecord extends InternalRecordAccessor implements Record
@@ -56,9 +55,9 @@ public class InternalRecord extends InternalRecordAccessor implements Record
     }
 
     @Override
-    public String key( int index )
+    public int size()
     {
-        return keys.get( index );
+        return values.length;
     }
 
     @Override
@@ -111,18 +110,13 @@ public class InternalRecord extends InternalRecordAccessor implements Record
     @Override
     public Map<String, Value> asMap()
     {
-        return asMap( valueAsIs() );
-    }
-
-    public <T> Map<String, T> asMap( Function<Value, T> mapFunction )
-    {
-        return Extract.map( this, mapFunction );
+        return Extract.map( this, valueAsIs() );
     }
 
     @Override
     public String toString()
     {
-        return format( "Record<%s>", formatFields( VALUE_WITH_TYPE, fieldCount(), fields() ) );
+        return format( "Record<%s>", formatEntries( InternalValue.Format.VALUE_WITH_TYPE, size(), fields() ) );
     }
 
     public boolean equals( Object other )
@@ -135,7 +129,7 @@ public class InternalRecord extends InternalRecordAccessor implements Record
         {
             Record otherRecord = (Record) other;
             int size = fieldCount();
-            if ( ! ( size == otherRecord.fieldCount() ) )
+            if ( ! ( size == otherRecord.size() ) )
             {
                 return false;
             }
