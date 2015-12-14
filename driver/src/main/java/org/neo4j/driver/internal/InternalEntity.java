@@ -24,9 +24,9 @@ import org.neo4j.driver.internal.util.Extract;
 import org.neo4j.driver.internal.util.Iterables;
 import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.v1.Entity;
-import org.neo4j.driver.v1.Entry;
 import org.neo4j.driver.v1.Function;
 import org.neo4j.driver.v1.Identity;
+import org.neo4j.driver.v1.Pair;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 
@@ -125,13 +125,13 @@ public abstract class InternalEntity implements Entity, AsValue
     }
 
     @Override
-    public Iterable<Entry<Value>> properties()
+    public Iterable<Pair<String, Value>> properties()
     {
         return properties( valueAsIs() );
     }
 
     @Override
-    public <V> Iterable<Entry<V>> properties( final Function<Value, V> Function )
+    public <V> Iterable<Pair<String, V>> properties( final Function<Value, V> Function )
     {
         return Extract.properties( this, Function );
     }

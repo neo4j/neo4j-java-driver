@@ -29,7 +29,7 @@ import org.junit.rules.ExpectedException;
 
 import org.neo4j.driver.internal.summary.ResultBuilder;
 import org.neo4j.driver.internal.value.NullValue;
-import org.neo4j.driver.v1.Entry;
+import org.neo4j.driver.v1.Pair;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.RecordAccessor;
 import org.neo4j.driver.v1.Records;
@@ -401,7 +401,7 @@ public class InternalResultCursorTest
     private List<Value> values( Record record )
     {
         List<Value> result = new ArrayList<>( record.keys().size() );
-        for ( Entry<Value> property : record.fields() )
+        for ( Pair<String, Value> property : record.fields() )
         {
             result.add( property.value() );
         }

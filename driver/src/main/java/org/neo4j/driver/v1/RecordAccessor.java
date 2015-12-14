@@ -29,7 +29,7 @@ import org.neo4j.driver.v1.exceptions.NoRecordException;
  * This provides only read methods. Subclasses may chose to provide additional methods
  * for changing the underlying record.
  *
- * @see Entry
+ * @see Pair
  */
 public interface RecordAccessor extends ListAccessor
 {
@@ -80,7 +80,7 @@ public interface RecordAccessor extends ListAccessor
      * @return all fields in key order
      * @throws NoRecordException if the associated underlying record is not available
      */
-    List<Entry<Value>> fields();
+    List<Pair<String, Value>> fields();
 
     /**
      * @return if this record accessor is currently associated with an underlying record

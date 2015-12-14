@@ -80,19 +80,19 @@ public interface MapAccessor
     /**
      * Retrieve all properties of the underlying map
      *
-     * @see Entry
+     * @see Pair
      * @return all properties in unspecified order
      */
-    Iterable<Entry<Value>> properties();
+    Iterable<Pair<String, Value>> properties();
 
     /**
      * Retrieve all properties of the underlying map
      *
-     * @see Entry
+     * @see Pair
      * @param mapFunction a function to map from Value to T. See {@link Values} for some predefined functions, such
      * as {@link Values#valueAsBoolean()}, {@link Values#valueAsList(Function)}.
      * @param <V> the target type of mapping
      * @return all mapped properties in unspecified order
      */
-    <V> Iterable<Entry<V>> properties( Function<Value, V> mapFunction );
+    <V> Iterable<Pair<String, V>> properties( Function<Value, V> mapFunction );
 }

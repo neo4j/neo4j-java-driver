@@ -26,12 +26,12 @@ package org.neo4j.driver.v1;
  * @param <V> the Java type of the contained value
  */
 @Immutable
-public interface Entry<V>
+public interface Pair<K, V>
 {
     /**
      * @return the property key
      */
-    String key();
+    K key();
 
     /**
      * @return the property value

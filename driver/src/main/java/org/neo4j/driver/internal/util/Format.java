@@ -20,9 +20,9 @@ package org.neo4j.driver.internal.util;
 
 import java.util.Iterator;
 
-import org.neo4j.driver.internal.InternalEntry;
-import org.neo4j.driver.v1.Entry;
+import org.neo4j.driver.internal.InternalPair;
 import org.neo4j.driver.v1.Function;
+import org.neo4j.driver.v1.Pair;
 
 public abstract class Format
 {
@@ -31,9 +31,9 @@ public abstract class Format
         throw new UnsupportedOperationException();
     }
 
-    public static <V> String formatEntries( Function<V, String> printValue,
-                                            int propertyCount,
-                                            Iterable<Entry<V>> Entries )
+    public static <V> String formatPairs( Function<V, String> printValue,
+                                          int propertyCount,
+                                          Iterable<Pair<String, V>> Entries )
     {
         switch ( propertyCount ) {
             case 0:
@@ -41,20 +41,20 @@ public abstract class Format
 
             case 1:
             {
-                return String.format( "{%s}", internalEntry( Entries.iterator().next() ).toString( printValue ) );
+                return String.format( "{%s}", internalPair( Entries.iterator().next() ).toString( printValue ) );
             }
 
             default:
             {
                 StringBuilder builder = new StringBuilder();
                 builder.append( "{" );
-                Iterator<Entry<V>> iterator = Entries.iterator();
-                builder.append( internalEntry( iterator.next() ).toString( printValue ) );
+                Iterator<Pair<String, V>> iterator = Entries.iterator();
+                builder.append( internalPair( iterator.next() ).toString( printValue ) );
                 while ( iterator.hasNext() )
                 {
                     builder.append( ',' );
                     builder.append( ' ' );
-                    builder.append( internalEntry( iterator.next() ).toString( printValue ) );
+                    builder.append( internalPair( iterator.next() ).toString( printValue ) );
                 }
                 builder.append( "}" );
                 return builder.toString();
@@ -63,9 +63,9 @@ public abstract class Format
     }
 
     @SuppressWarnings("unchecked")
-    private static <V> InternalEntry<V> internalEntry( Entry<V> property )
+    private static <V> InternalPair<String, V> internalPair( Pair<String, V> property )
     {
-        return (InternalEntry<V>) property;
+        return (InternalPair<String, V>) property;
     }
 
     public static <V> String formatElements( Function<V, String> printValue, V[] elements )

@@ -21,7 +21,7 @@ package org.neo4j.driver.internal;
 import java.util.List;
 
 import org.neo4j.driver.internal.util.Extract;
-import org.neo4j.driver.v1.Entry;
+import org.neo4j.driver.v1.Pair;
 import org.neo4j.driver.v1.RecordAccessor;
 import org.neo4j.driver.v1.Value;
 
@@ -30,7 +30,7 @@ import static org.neo4j.driver.v1.Values.valueAsIs;
 public abstract class InternalRecordAccessor implements RecordAccessor
 {
     @Override
-    public List<Entry<Value>> fields()
+    public List<Pair<String, Value>> fields()
     {
         return Extract.fields( this, valueAsIs() );
     }

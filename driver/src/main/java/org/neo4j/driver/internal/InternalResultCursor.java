@@ -21,8 +21,8 @@ package org.neo4j.driver.internal;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.driver.v1.Entry;
 import org.neo4j.driver.v1.Function;
+import org.neo4j.driver.v1.Pair;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.RecordAccessor;
 import org.neo4j.driver.v1.ResultCursor;
@@ -310,7 +310,7 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
         }
 
         @Override
-        public List<Entry<Value>> fields()
+        public List<Pair<String, Value>> fields()
         {
             return record().fields();
         }

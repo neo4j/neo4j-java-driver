@@ -27,7 +27,7 @@ import org.neo4j.driver.v1.Type;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 
-import static org.neo4j.driver.internal.util.Format.formatEntries;
+import static org.neo4j.driver.internal.util.Format.formatPairs;
 import static org.neo4j.driver.internal.value.InternalValue.Format.VALUE_ONLY;
 import static org.neo4j.driver.v1.Values.valueAsObject;
 
@@ -116,7 +116,7 @@ public class MapValue extends ValueAdapter
     {
         return maybeWithType(
             valueFormat.includeType(),
-            formatEntries( valueFormat.inner(), size(), properties() )
+            formatPairs( valueFormat.inner(), size(), properties() )
         );
     }
 

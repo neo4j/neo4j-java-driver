@@ -24,10 +24,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.driver.internal.InternalEntry;
-import org.neo4j.driver.v1.Entry;
+import org.neo4j.driver.internal.InternalPair;
 import org.neo4j.driver.v1.Function;
 import org.neo4j.driver.v1.MapAccessor;
+import org.neo4j.driver.v1.Pair;
 import org.neo4j.driver.v1.RecordAccessor;
 import org.neo4j.driver.v1.Value;
 
@@ -134,7 +134,7 @@ public final class Extract
         }
     }
 
-    public static <V> Iterable<Entry<V>> properties( final MapAccessor map, final Function<Value, V> mapFunction )
+    public static <V> Iterable<Pair<String, V>> properties( final MapAccessor map, final Function<Value, V> mapFunction )
     {
         int size = map.size();
         switch ( size )
@@ -146,23 +146,23 @@ public final class Extract
             {
                 String key = map.keys().iterator().next();
                 Value value = map.value( key );
-                return singletonList( InternalEntry.of( key, mapFunction.apply( value ) ) );
+                return singletonList( InternalPair.of( key, mapFunction.apply( value ) ) );
             }
 
             default:
             {
-                List<Entry<V>> list = new ArrayList<>( size );
+                List<Pair<String, V>> list = new ArrayList<>( size );
                 for ( String key : map.keys() )
                 {
                     Value value = map.value( key );
-                    list.add( InternalEntry.of( key, mapFunction.apply( value ) ) );
+                    list.add( InternalPair.of( key, mapFunction.apply( value ) ) );
                 }
                 return unmodifiableList( list );
             }
         }
     }
 
-    public static <V> List<Entry<V>> fields( final RecordAccessor map, final Function<Value, V> mapFunction )
+    public static <V> List<Pair<String, V>> fields( final RecordAccessor map, final Function<Value, V> mapFunction )
     {
         int size = map.keys().size();
         switch ( size )
@@ -174,18 +174,18 @@ public final class Extract
             {
                 String key = map.keys().iterator().next();
                 Value value = map.value( key );
-                return singletonList( InternalEntry.of( key, mapFunction.apply( value ) ) );
+                return singletonList( InternalPair.of( key, mapFunction.apply( value ) ) );
             }
 
             default:
             {
-                List<Entry<V>> list = new ArrayList<>( size );
+                List<Pair<String, V>> list = new ArrayList<>( size );
                 List<String> keys = map.keys();
                 for ( int i = 0; i < size; i++ )
                 {
                     String key = keys.get( i );
                     Value value = map.value( i );
-                    list.add( InternalEntry.of( key, mapFunction.apply( value ) ) );
+                    list.add( InternalPair.of( key, mapFunction.apply( value ) ) );
                 }
                 return unmodifiableList( list );
             }

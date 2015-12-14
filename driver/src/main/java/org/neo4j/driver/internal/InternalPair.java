@@ -20,29 +20,23 @@ package org.neo4j.driver.internal;
 
 import java.util.Objects;
 
-import org.neo4j.driver.v1.Entry;
 import org.neo4j.driver.v1.Function;
+import org.neo4j.driver.v1.Pair;
 
-public class InternalEntry<V> implements Entry<V>
+public class InternalPair<K, V> implements Pair<K, V>
 {
-    private final String key;
+    private final K key;
     private final V value;
 
-    protected InternalEntry( String key, V value )
+    protected InternalPair( K key, V value )
     {
-        if ( key == null )
-        {
-            throw new IllegalArgumentException( "null key" );
-        }
-        if ( value == null )
-        {
-            throw new IllegalArgumentException( "null value" );
-        }
+        Objects.requireNonNull( key );
+        Objects.requireNonNull( value );
         this.key = key;
         this.value = value;
     }
 
-    public String key()
+    public K key()
     {
         return key;
     }
@@ -52,15 +46,15 @@ public class InternalEntry<V> implements Entry<V>
         return value;
     }
 
-    public static <V> Entry<V> of( String key, V value )
+    public static <K, V> Pair<K, V> of( K key, V value )
     {
-        return new InternalEntry<>( key, value );
+        return new InternalPair<>( key, value );
     }
 
     @Override
     public String toString()
     {
-        return String.format( "%s: %s", key, Objects.toString( value ) );
+        return String.format( "%s: %s", Objects.toString( key ), Objects.toString( value ) );
     }
 
     public String toString( Function<V, String> printValue )
@@ -80,7 +74,7 @@ public class InternalEntry<V> implements Entry<V>
             return false;
         }
 
-        InternalEntry<?> that = (InternalEntry<?>) o;
+        InternalPair<?, ?> that = (InternalPair<?, ?>) o;
 
         return key.equals( that.key ) && value.equals( that.value );
     }

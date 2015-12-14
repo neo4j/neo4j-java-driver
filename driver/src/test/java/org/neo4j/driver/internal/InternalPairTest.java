@@ -20,7 +20,7 @@ package org.neo4j.driver.internal;
 
 import org.junit.Test;
 
-import org.neo4j.driver.v1.Entry;
+import org.neo4j.driver.v1.Pair;
 import org.neo4j.driver.v1.Value;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -29,13 +29,13 @@ import static org.junit.Assert.assertThat;
 import static org.neo4j.driver.v1.Values.value;
 
 
-public class InternalEntryTest
+public class InternalPairTest
 {
     @Test
     public void testMethods()
     {
-        Entry<Value> entry = InternalEntry.of( "k", value( "v" ) );
-        assertThat(entry.key(), equalTo("k"));
-        assertThat(entry.value(), equalTo(value("v")));
+        Pair<String, Value> pair = InternalPair.of( "k", value( "v" ) );
+        assertThat( pair.key(), equalTo("k"));
+        assertThat( pair.value(), equalTo(value("v")));
     }
 }

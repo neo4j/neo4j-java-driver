@@ -31,7 +31,7 @@ import org.neo4j.driver.v1.Values;
 
 import static java.lang.String.format;
 
-import static org.neo4j.driver.internal.util.Format.formatEntries;
+import static org.neo4j.driver.internal.util.Format.formatPairs;
 import static org.neo4j.driver.v1.Values.valueAsIs;
 
 public class InternalRecord extends InternalRecordAccessor implements Record
@@ -122,7 +122,7 @@ public class InternalRecord extends InternalRecordAccessor implements Record
     @Override
     public String toString()
     {
-        return format( "Record<%s>", formatEntries( InternalValue.Format.VALUE_WITH_TYPE, size(), fields() ) );
+        return format( "Record<%s>", formatPairs( InternalValue.Format.VALUE_WITH_TYPE, size(), fields() ) );
     }
 
     public boolean equals( Object other )

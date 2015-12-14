@@ -25,10 +25,10 @@ import org.neo4j.driver.internal.types.TypeConstructor;
 import org.neo4j.driver.internal.types.TypeRepresentation;
 import org.neo4j.driver.internal.util.Extract;
 import org.neo4j.driver.v1.Entity;
-import org.neo4j.driver.v1.Entry;
 import org.neo4j.driver.v1.Function;
 import org.neo4j.driver.v1.Identity;
 import org.neo4j.driver.v1.Node;
+import org.neo4j.driver.v1.Pair;
 import org.neo4j.driver.v1.Path;
 import org.neo4j.driver.v1.Relationship;
 import org.neo4j.driver.v1.Type;
@@ -302,13 +302,13 @@ public abstract class ValueAdapter implements InternalValue
     }
 
     @Override
-    public Iterable<Entry<Value>> properties()
+    public Iterable<Pair<String, Value>> properties()
     {
         return properties( valueAsIs() );
     }
 
     @Override
-    public <V> Iterable<Entry<V>> properties( final Function<Value, V> mapFunction )
+    public <V> Iterable<Pair<String, V>> properties( final Function<Value, V> mapFunction )
     {
         return Extract.properties( this, mapFunction );
     }
