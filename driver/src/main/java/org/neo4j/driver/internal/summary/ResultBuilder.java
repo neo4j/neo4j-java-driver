@@ -25,13 +25,13 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.driver.internal.InternalRecord;
-import org.neo4j.driver.internal.InternalResult;
+import org.neo4j.driver.internal.InternalResultCursor;
 import org.neo4j.driver.internal.spi.StreamCollector;
 import org.neo4j.driver.v1.Notification;
 import org.neo4j.driver.v1.Plan;
 import org.neo4j.driver.v1.ProfiledPlan;
 import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.Result;
+import org.neo4j.driver.v1.ResultCursor;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementType;
 import org.neo4j.driver.v1.UpdateStatistics;
@@ -124,8 +124,8 @@ public class ResultBuilder implements StreamCollector
         summaryBuilder.notifications( notifications );
     }
 
-    public Result build()
+    public ResultCursor build()
     {
-        return new InternalResult( keys, body, summaryBuilder.build() );
+        return new InternalResultCursor( keys, body, summaryBuilder.build() );
     }
 }

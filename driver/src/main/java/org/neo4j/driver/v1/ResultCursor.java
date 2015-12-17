@@ -37,7 +37,7 @@ import org.neo4j.driver.v1.exceptions.ClientException;
  * To keep a result around while further statements are run, or to use a result outside the scope
  * of the current transaction, see {@link #retain()}.
  */
-public interface Result extends RecordAccessor, Resource
+public interface ResultCursor extends RecordAccessor, Resource
 {
     /**
      * @return an immutable copy of the currently viewed record
@@ -72,11 +72,22 @@ public interface Result extends RecordAccessor, Resource
     /**
      * Advance the cursor as if calling next multiple times.
      *
-     * @throws IllegalArgumentException if records is negative
+     * @throws ClientException if records is negative
      * @param records amount of records to be skipped
      * @return the actual number of records successfully skipped
      */
     long skip( long records );
+
+    /**
+     * Limit this cursor to return no more than the given number of records after the current record.
+     * As soon as the described amount of records have been returned, all further records are discarded.
+     * Calling limit again before the described amount of records have been returned, replaces the limit (overwriting the previous limit).
+     *
+     * @throws ClientException if records is negative
+     * @param records the maximum number of records to return from future calls to {@link #next()}
+     * @return the actual position of the last record to be returned
+     */
+    long limit( long records );
 
     /**
      * Move to the first record if possible, otherwise do nothing.
@@ -91,6 +102,16 @@ public interface Result extends RecordAccessor, Resource
      * @return <tt>true</tt> if the cursor was successfully placed at the single first and only record
      */
     boolean single();
+
+    /**
+     * Investigate the next upcoming record.
+     *
+     * The returned {@link RecordAccessor} is updated consistently whenever this associated cursor
+     * is moved.
+     *
+     * @return a view on the next record
+     */
+    RecordAccessor peek();
 
     /**
      * Retrieve and store the entire result stream.

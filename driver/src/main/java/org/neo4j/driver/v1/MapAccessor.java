@@ -52,4 +52,47 @@ public interface MapAccessor
      * @throws ClientException if record has not been initialized
      */
     Value value( String key );
+
+    /**
+     * Retrieve the number of entries in this map
+     *
+     * @return the number of entries in this map
+     */
+    int size();
+
+    /**
+     * Retrieve all values of the underlying collection
+     *
+     * @return all values in unspecified order
+     */
+    Iterable<Value> values();
+
+    /**
+     * Map and retrieve all values of the underlying collection
+     *
+     * @param mapFunction a function to map from Value to T. See {@link Values} for some predefined functions, such
+     * as {@link Values#valueAsBoolean()}, {@link Values#valueAsList(Function)}.
+     * @param <T> the target type of mapping
+     * @return the result of mapping all values in unspecified order
+     */
+    <T> Iterable<T> values( Function<Value, T> mapFunction );
+
+    /**
+     * Retrieve all properties of the underlying map
+     *
+     * @see Pair
+     * @return all properties in unspecified order
+     */
+    Iterable<Pair<String, Value>> properties();
+
+    /**
+     * Retrieve all properties of the underlying map
+     *
+     * @see Pair
+     * @param mapFunction a function to map from Value to T. See {@link Values} for some predefined functions, such
+     * as {@link Values#valueAsBoolean()}, {@link Values#valueAsList(Function)}.
+     * @param <V> the target type of mapping
+     * @return all mapped properties in unspecified order
+     */
+    <V> Iterable<Pair<String, V>> properties( Function<Value, V> mapFunction );
 }

@@ -23,24 +23,17 @@ import java.util.Map;
 /**
  * A record is an immutable copy of an ordered map
  *
- * @see Result#record()
- * @see Result#retain()
+ * @see ResultCursor#record()
+ * @see ResultCursor#retain()
  */
 @Immutable
 public interface Record extends RecordAccessor
 {
     /**
-     * @return the value as a value map
+     * Return this record as a value map, e.g. for use as parameters for executing a follow-up statement
+     * @return this record as a value map
      */
     Map<String, Value> asMap();
-
-    /**
-     * @param mapFunction a function to map from Value to T. See {@link Values} for some predefined functions, such
-     * as {@link Values#valueAsBoolean()}, {@link Values#valueAsList(Function)}.
-     * @param <T> the type of map values
-     * @return the value as a map from string keys to values of type T
-     */
-    <T> Map<String, T> asMap( Function<Value, T> mapFunction );
 
     // Force implementation
     @Override

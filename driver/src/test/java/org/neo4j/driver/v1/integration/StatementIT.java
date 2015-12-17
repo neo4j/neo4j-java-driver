@@ -24,7 +24,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.Result;
+import org.neo4j.driver.v1.ResultCursor;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
@@ -99,14 +99,14 @@ public class StatementIT
     public void shouldRunSimpleStatement() throws Throwable
     {
         // When I run a simple write statement
-        Result result1 = session.run( "CREATE (a {name:'Adam'})" );
+        ResultCursor result1 = session.run( "CREATE (a {name:'Adam'})" );
         while ( result1.next() )
         {
             // ignored
         }
 
         // And I run a read statement
-        Result result2 = session.run( "MATCH (a) RETURN a.name" );
+        ResultCursor result2 = session.run( "MATCH (a) RETURN a.name" );
 
         // Then I expect to value the name back
         Value name = null;

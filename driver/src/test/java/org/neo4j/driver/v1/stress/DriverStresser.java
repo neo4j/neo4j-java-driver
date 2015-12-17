@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
-import org.neo4j.driver.v1.Result;
+import org.neo4j.driver.v1.ResultCursor;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.util.Neo4jRunner;
@@ -76,7 +76,7 @@ public class DriverStresser
             Map<String,Value> parameters = parameters();          // = Values.parameters( "n", "Bob" );
 
             int total = 0;
-            Result result = session.run( statement, parameters );
+            ResultCursor result = session.run( statement, parameters );
             while ( result.next() )
             {
                 total += result.value( "n" ).asInt();

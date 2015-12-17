@@ -21,8 +21,7 @@ package org.neo4j.driver.internal;
 import java.util.List;
 
 import org.neo4j.driver.internal.util.Extract;
-import org.neo4j.driver.v1.Field;
-import org.neo4j.driver.v1.Function;
+import org.neo4j.driver.v1.Pair;
 import org.neo4j.driver.v1.RecordAccessor;
 import org.neo4j.driver.v1.Value;
 
@@ -31,33 +30,8 @@ import static org.neo4j.driver.v1.Values.valueAsIs;
 public abstract class InternalRecordAccessor implements RecordAccessor
 {
     @Override
-    public int fieldCount()
+    public List<Pair<String, Value>> fields()
     {
-        return keys().size();
-    }
-
-    @Override
-    public Field field( String key )
-    {
-        int index = index( key );
-        return InternalField.of( key, index, value( index ) );
-    }
-
-    @Override
-    public Field field( int index )
-    {
-        return InternalField.of( key( index ), index, value( index) );
-    }
-
-    @Override
-    public List<Field<Value>> fields()
-    {
-        return fields( valueAsIs() );
-    }
-
-    @Override
-    public <V> List<Field<V>> fields( final Function<Value, V> mapFunction )
-    {
-        return Extract.fields( this, mapFunction );
+        return Extract.fields( this, valueAsIs() );
     }
 }

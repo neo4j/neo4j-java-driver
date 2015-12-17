@@ -22,7 +22,7 @@ package org.neo4j.driver.v1;
  * A uniquely identifiable property container that can form part of a Neo4j graph.
  */
 @Immutable
-public interface Entity extends PropertyMapAccessor
+public interface Entity extends MapAccessor
 {
     /**
      * A unique {@link Identity identity} for this Entity. Identities are guaranteed

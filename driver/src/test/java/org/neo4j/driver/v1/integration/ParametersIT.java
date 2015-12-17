@@ -23,7 +23,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.Result;
+import org.neo4j.driver.v1.ResultCursor;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
@@ -45,7 +45,7 @@ public class ParametersIT
     public void shouldBeAbleToSetAndReturnBooleanProperty()
     {
         // When
-        Result result = session.run(
+        ResultCursor result = session.run(
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", true ) );
 
         // Then
@@ -61,7 +61,7 @@ public class ParametersIT
     public void shouldBeAbleToSetAndReturnByteProperty()
     {
         // When
-        Result result = session.run(
+        ResultCursor result = session.run(
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", (byte) 1 ) );
 
         // Then
@@ -77,7 +77,7 @@ public class ParametersIT
     public void shouldBeAbleToSetAndReturnShortProperty()
     {
         // When
-        Result result = session.run(
+        ResultCursor result = session.run(
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", (short) 1 ) );
 
         // Then
@@ -93,7 +93,7 @@ public class ParametersIT
     public void shouldBeAbleToSetAndReturnIntegerProperty()
     {
         // When
-        Result result = session.run(
+        ResultCursor result = session.run(
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", 1 ) );
 
         // Then
@@ -110,7 +110,7 @@ public class ParametersIT
     public void shouldBeAbleToSetAndReturnLongProperty()
     {
         // When
-        Result result = session.run(
+        ResultCursor result = session.run(
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", 1L ) );
 
         // Then
@@ -127,7 +127,7 @@ public class ParametersIT
     public void shouldBeAbleToSetAndReturnDoubleProperty()
     {
         // When
-        Result result = session.run(
+        ResultCursor result = session.run(
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", 6.28 ) );
 
         // Then
@@ -144,7 +144,7 @@ public class ParametersIT
     public void shouldBeAbleToSetAndReturnCharacterProperty()
     {
         // When
-        Result result = session.run(
+        ResultCursor result = session.run(
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", 'ö' ) );
 
         // Then
@@ -162,7 +162,7 @@ public class ParametersIT
     {
         // When
         char[] arrayValue = new char[]{'M', 'j', 'ö', 'l', 'n', 'i', 'r'};
-        Result result = session.run(
+        ResultCursor result = session.run(
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", arrayValue ) );
 
         // Then
@@ -179,7 +179,7 @@ public class ParametersIT
     public void shouldBeAbleToSetAndReturnStringProperty()
     {
         // When
-        Result result = session.run(
+        ResultCursor result = session.run(
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", "Mjölnir" ) );
 
         // Then
@@ -197,7 +197,7 @@ public class ParametersIT
     {
         // When
         boolean[] arrayValue = new boolean[]{true, true, true};
-        Result result = session.run(
+        ResultCursor result = session.run(
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", arrayValue ) );
 
         // Then
@@ -220,7 +220,7 @@ public class ParametersIT
     {
         // When
         int[] arrayValue = new int[]{42, 42, 42};
-        Result result = session.run(
+        ResultCursor result = session.run(
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", arrayValue ) );
 
         // Then
@@ -243,7 +243,7 @@ public class ParametersIT
     {
         // When
         double[] arrayValue = new double[]{6.28, 6.28, 6.28};
-        Result result = session.run(
+        ResultCursor result = session.run(
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", arrayValue ) );
 
         // Then
@@ -266,7 +266,7 @@ public class ParametersIT
         // When
         String[] arrayValue = new String[]{"Mjölnir", "Mjölnir", "Mjölnir"};
 
-        Result result = session.run(
+        ResultCursor result = session.run(
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", arrayValue ) );
 
         // Then
@@ -288,7 +288,7 @@ public class ParametersIT
     {
         // When
         String[] arrayValue = new String[]{"cat", "cat", "cat"};
-        Result result = session.run(
+        ResultCursor result = session.run(
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", arrayValue ) );
 
         // Then
@@ -310,7 +310,7 @@ public class ParametersIT
     public void shouldBeAbleToSetAndReturnBooleanPropertyWithinMap()
     {
         // When
-        Result result = session.run(
+        ResultCursor result = session.run(
                 "CREATE (a {value:{value}.v}) RETURN a.value",
                 parameters( "value", parameters( "v", true ) ) );
 
@@ -328,7 +328,7 @@ public class ParametersIT
     public void shouldBeAbleToSetAndReturnIntegerPropertyWithinMap()
     {
         // When
-        Result result = session.run(
+        ResultCursor result = session.run(
                 "CREATE (a {value:{value}.v}) RETURN a.value",
                 parameters( "value", parameters( "v", 42 ) ) );
 
@@ -346,7 +346,7 @@ public class ParametersIT
     public void shouldBeAbleToSetAndReturnDoublePropertyWithinMap()
     {
         // When
-        Result result = session.run(
+        ResultCursor result = session.run(
                 "CREATE (a {value:{value}.v}) RETURN a.value",
                 parameters( "value", parameters( "v", 6.28 ) ) );
 
@@ -364,7 +364,7 @@ public class ParametersIT
     public void shouldBeAbleToSetAndReturnStringPropertyWithinMap()
     {
         // When
-        Result result = session.run(
+        ResultCursor result = session.run(
                 "CREATE (a {value:{value}.v}) RETURN a.value",
                 parameters( "value", parameters( "v", "Mjölnir" ) ) );
 

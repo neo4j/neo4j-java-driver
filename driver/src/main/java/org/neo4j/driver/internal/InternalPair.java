@@ -20,32 +20,23 @@ package org.neo4j.driver.internal;
 
 import java.util.Objects;
 
-import org.neo4j.driver.v1.Field;
 import org.neo4j.driver.v1.Function;
-import org.neo4j.driver.v1.Property;
+import org.neo4j.driver.v1.Pair;
 
-public class InternalField<V> implements Field<V>
+public class InternalPair<K, V> implements Pair<K, V>
 {
-    private final int index;
-    private final String key;
+    private final K key;
     private final V value;
 
-    public InternalField( String key, int index, V value )
+    protected InternalPair( K key, V value )
     {
-        if ( key == null )
-        {
-            throw new IllegalArgumentException( "null key" );
-        }
-        if ( value == null )
-        {
-            throw new IllegalArgumentException( "null value" );
-        }
-        this.index = index;
+        Objects.requireNonNull( key );
+        Objects.requireNonNull( value );
         this.key = key;
         this.value = value;
     }
 
-    public String key()
+    public K key()
     {
         return key;
     }
@@ -55,22 +46,15 @@ public class InternalField<V> implements Field<V>
         return value;
     }
 
-    @Override
-    public int index()
+    public static <K, V> Pair<K, V> of( K key, V value )
     {
-        return index;
-    }
-
-    @Override
-    public Property<V> asProperty()
-    {
-        return InternalProperty.of( key, value );
+        return new InternalPair<>( key, value );
     }
 
     @Override
     public String toString()
     {
-        return String.format( "%s: %s", key, Objects.toString( value ) );
+        return String.format( "%s: %s", Objects.toString( key ), Objects.toString( value ) );
     }
 
     public String toString( Function<V, String> printValue )
@@ -90,21 +74,16 @@ public class InternalField<V> implements Field<V>
             return false;
         }
 
-        InternalField<?> that = (InternalField<?>) o;
-        return index == that.index && key.equals( that.key ) && value.equals( that.value );
+        InternalPair<?, ?> that = (InternalPair<?, ?>) o;
+
+        return key.equals( that.key ) && value.equals( that.value );
     }
 
     @Override
     public int hashCode()
     {
-        int result = index;
-        result = 31 * result + key.hashCode();
+        int result = key.hashCode();
         result = 31 * result + value.hashCode();
         return result;
-    }
-
-    public static <V> Field<V> of( String key, int index, V value )
-    {
-        return new InternalField<>( key, index, value );
     }
 }

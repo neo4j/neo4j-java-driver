@@ -20,11 +20,9 @@ package org.neo4j.driver.internal.util;
 
 import java.util.Iterator;
 
-import org.neo4j.driver.internal.InternalField;
-import org.neo4j.driver.internal.InternalProperty;
-import org.neo4j.driver.v1.Field;
+import org.neo4j.driver.internal.InternalPair;
 import org.neo4j.driver.v1.Function;
-import org.neo4j.driver.v1.Property;
+import org.neo4j.driver.v1.Pair;
 
 public abstract class Format
 {
@@ -33,9 +31,9 @@ public abstract class Format
         throw new UnsupportedOperationException();
     }
 
-    public static <V> String formatProperties( Function<V, String> printValue,
-                                               int propertyCount,
-                                               Iterable<Property<V>> properties )
+    public static <V> String formatPairs( Function<V, String> printValue,
+                                          int propertyCount,
+                                          Iterable<Pair<String, V>> Entries )
     {
         switch ( propertyCount ) {
             case 0:
@@ -43,20 +41,20 @@ public abstract class Format
 
             case 1:
             {
-                return String.format( "{%s}", internalProperty( properties.iterator().next() ).toString( printValue ) );
+                return String.format( "{%s}", internalPair( Entries.iterator().next() ).toString( printValue ) );
             }
 
             default:
             {
                 StringBuilder builder = new StringBuilder();
                 builder.append( "{" );
-                Iterator<Property<V>> iterator = properties.iterator();
-                builder.append( internalProperty( iterator.next() ).toString( printValue ) );
+                Iterator<Pair<String, V>> iterator = Entries.iterator();
+                builder.append( internalPair( iterator.next() ).toString( printValue ) );
                 while ( iterator.hasNext() )
                 {
                     builder.append( ',' );
                     builder.append( ' ' );
-                    builder.append( internalProperty( iterator.next() ).toString( printValue ) );
+                    builder.append( internalPair( iterator.next() ).toString( printValue ) );
                 }
                 builder.append( "}" );
                 return builder.toString();
@@ -65,46 +63,9 @@ public abstract class Format
     }
 
     @SuppressWarnings("unchecked")
-    private static <V> InternalProperty<V> internalProperty( Property<V> property )
+    private static <V> InternalPair<String, V> internalPair( Pair<String, V> property )
     {
-        return (InternalProperty<V>) property;
-    }
-
-    public static <V> String formatFields( Function<V, String> printValue,
-                                               int propertyCount,
-                                               Iterable<Field<V>> fields )
-    {
-        switch ( propertyCount ) {
-            case 0:
-                return "{}";
-
-            case 1:
-            {
-                return String.format( "{%s}", internalField( fields.iterator().next() ).toString( printValue ) );
-            }
-
-            default:
-            {
-                StringBuilder builder = new StringBuilder();
-                builder.append( "{" );
-                Iterator<Field<V>> iterator = fields.iterator();
-                builder.append( internalField( iterator.next() ).toString( printValue ) );
-                while ( iterator.hasNext() )
-                {
-                    builder.append( ',' );
-                    builder.append( ' ' );
-                    builder.append( internalField( iterator.next() ).toString( printValue ) );
-                }
-                builder.append( "}" );
-                return builder.toString();
-            }
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private static <V> InternalField<V> internalField( Field<V> property )
-    {
-        return (InternalField<V>) property;
+        return (InternalPair<String, V>) property;
     }
 
     public static <V> String formatElements( Function<V, String> printValue, V[] elements )

@@ -16,28 +16,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal;
+package org.neo4j.driver.v1.exceptions;
 
-import org.junit.Test;
-
-import org.neo4j.driver.v1.Field;
-import org.neo4j.driver.v1.Value;
-
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
-
-import static org.neo4j.driver.v1.Values.value;
-
-
-public class InternalFieldTest
+public class NoRecordException extends ClientException
 {
-    @Test
-    public void testMethods()
+    private static final long serialVersionUID = 9091962868264042491L;
+
+    public NoRecordException( String message )
     {
-        Field<Value> field = InternalField.of( "k", 42, value( "v" ) );
-        assertThat(field.key(), equalTo("k"));
-        assertThat(field.index(), equalTo(42));
-        assertThat(field.value(), equalTo(value("v")));
+        super( message );
     }
 
+    public NoRecordException( String message, Throwable cause )
+    {
+        super( message, cause );
+    }
 }

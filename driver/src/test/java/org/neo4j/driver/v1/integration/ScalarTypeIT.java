@@ -29,7 +29,7 @@ import org.junit.runners.Parameterized;
 
 import org.neo4j.driver.internal.value.ListValue;
 import org.neo4j.driver.internal.value.MapValue;
-import org.neo4j.driver.v1.Result;
+import org.neo4j.driver.v1.ResultCursor;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
@@ -71,7 +71,7 @@ public class ScalarTypeIT
     public void shouldHandleType() throws Throwable
     {
         // When
-        Result cursor = session.run( statement );
+        ResultCursor cursor = session.run( statement );
 
         // Then
         assertTrue( cursor.next() );

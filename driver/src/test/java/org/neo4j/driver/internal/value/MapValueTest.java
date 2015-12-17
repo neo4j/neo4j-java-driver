@@ -44,7 +44,7 @@ public class MapValueTest
     public void shouldHaveCorrectPropertyCount() throws Throwable
     {
         MapValue mapValue = mapValue();
-        assertThat( mapValue.propertyCount(), equalTo( 2 ) );
+        assertThat( mapValue.size(), equalTo( 2 ) );
     }
 
     @Test

@@ -367,7 +367,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         private void packProperties( Entity entity ) throws IOException
         {
             Iterable<String> keys = entity.keys();
-            packer.packMapHeader( entity.propertyCount() );
+            packer.packMapHeader( entity.size() );
             for ( String propKey : keys )
             {
                 packer.pack( propKey );

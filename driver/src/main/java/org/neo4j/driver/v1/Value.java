@@ -74,7 +74,7 @@ import org.neo4j.driver.v1.exceptions.value.Uncoercible;
  * </pre>
  */
 @Immutable
-public interface Value extends PropertyMapAccessor, ListAccessor
+public interface Value extends MapAccessor, ListAccessor
 {
     /**
      * If the underlying value is a collection type, return the number of values in the collection.

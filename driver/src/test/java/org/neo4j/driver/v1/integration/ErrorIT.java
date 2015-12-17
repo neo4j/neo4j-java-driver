@@ -24,7 +24,7 @@ import org.junit.rules.ExpectedException;
 
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
-import org.neo4j.driver.v1.Result;
+import org.neo4j.driver.v1.ResultCursor;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
@@ -69,7 +69,7 @@ public class ErrorIT
                                  "because previous statements in the" );
 
         // When
-        Result cursor = tx.run( "RETURN 1" );
+        ResultCursor cursor = tx.run( "RETURN 1" );
         assertTrue( cursor.single() );
         cursor.value( "1" ).asInt();
     }
@@ -81,7 +81,7 @@ public class ErrorIT
         try { session.run( "invalid" ); } catch ( ClientException e ) {}
 
         // When
-        Result cursor = session.run( "RETURN 1" );
+        ResultCursor cursor = session.run( "RETURN 1" );
         assertTrue( cursor.single() );
         int val = cursor.value( "1" ).asInt();
 
@@ -102,7 +102,7 @@ public class ErrorIT
         // When
         try ( Transaction tx = session.beginTransaction() )
         {
-            Result cursor = tx.run( "RETURN 1" );
+            ResultCursor cursor = tx.run( "RETURN 1" );
             assertTrue( cursor.single() );
             int val = cursor.value( "1" ).asInt();
 

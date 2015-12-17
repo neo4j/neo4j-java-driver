@@ -49,8 +49,8 @@ public class NodeValueTest
     @Test
     public void shouldHaveCorrectPropertyCount() throws Throwable
     {
-        assertEquals( 0, emptyNodeValue().propertyCount()) ;
-        assertEquals( 1, filledNodeValue().propertyCount()) ;
+        assertEquals( 0, emptyNodeValue().size()) ;
+        assertEquals( 1, filledNodeValue().size()) ;
     }
 
     @Test

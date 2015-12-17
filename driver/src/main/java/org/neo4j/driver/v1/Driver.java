@@ -48,11 +48,11 @@ import org.neo4j.driver.internal.spi.ConnectionPool;
  * }
  *
  * // Retrieve results
- * Result result = session.run( "MATCH (n) RETURN n.name" );
+ * ResultCursor cursor = session.run( "MATCH (n) RETURN n.name" );
  * List<String> names = new LinkedList<>();
- * while( result.next() )
+ * while( cursor.next() )
  * {
- *     names.add( result.value("n.name").asString() );
+ *     names.add( cursor.value("n.name").asString() );
  * }
  *
  * // Sessions are pooled, to avoid the overhead of creating new connections - this means

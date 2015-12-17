@@ -24,15 +24,14 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 
 import org.neo4j.driver.internal.util.Extract;
-import org.neo4j.driver.v1.Function;
+import org.neo4j.driver.internal.value.InternalValue;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 
 import static java.lang.String.format;
 
-import static org.neo4j.driver.internal.util.Format.formatFields;
-import static org.neo4j.driver.internal.value.InternalValue.Format.VALUE_WITH_TYPE;
+import static org.neo4j.driver.internal.util.Format.formatPairs;
 import static org.neo4j.driver.v1.Values.valueAsIs;
 
 public class InternalRecord extends InternalRecordAccessor implements Record
@@ -47,18 +46,6 @@ public class InternalRecord extends InternalRecordAccessor implements Record
         this.keys = keys;
         this.keyIndexLookup = keyIndexLookup;
         this.values = values;
-    }
-
-    @Override
-    public Value value( int index )
-    {
-        return index >= 0 && index < values.length ? values[index] : Values.NULL;
-    }
-
-    @Override
-    public String key( int index )
-    {
-        return keys.get( index );
     }
 
     @Override
@@ -103,6 +90,24 @@ public class InternalRecord extends InternalRecordAccessor implements Record
     }
 
     @Override
+    public Value value( int index )
+    {
+        return index >= 0 && index < values.length ? values[index] : Values.NULL;
+    }
+
+    @Override
+    public int size()
+    {
+        return values.length;
+    }
+
+    @Override
+    public boolean hasRecord()
+    {
+        return true;
+    }
+
+    @Override
     public Record record()
     {
         return this;
@@ -111,18 +116,13 @@ public class InternalRecord extends InternalRecordAccessor implements Record
     @Override
     public Map<String, Value> asMap()
     {
-        return asMap( valueAsIs() );
-    }
-
-    public <T> Map<String, T> asMap( Function<Value, T> mapFunction )
-    {
-        return Extract.map( this, mapFunction );
+        return Extract.map( this, valueAsIs() );
     }
 
     @Override
     public String toString()
     {
-        return format( "Record<%s>", formatFields( VALUE_WITH_TYPE, fieldCount(), fields() ) );
+        return format( "Record<%s>", formatPairs( InternalValue.Format.VALUE_WITH_TYPE, size(), fields() ) );
     }
 
     public boolean equals( Object other )
@@ -134,8 +134,8 @@ public class InternalRecord extends InternalRecordAccessor implements Record
         else if ( other instanceof Record )
         {
             Record otherRecord = (Record) other;
-            int size = fieldCount();
-            if ( ! ( size == otherRecord.fieldCount() ) )
+            int size = size();
+            if ( ! ( size == otherRecord.size() ) )
             {
                 return false;
             }

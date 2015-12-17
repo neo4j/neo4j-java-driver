@@ -38,6 +38,13 @@ public interface ListAccessor
      * @throws ClientException if record has not been initialized
      */
     Value value( int index );
+
+    /**
+     * Retrieve the number of elements in this list
+     *
+     * @return the number of elements in this list
+     */
+    int size();
 }
 
 
