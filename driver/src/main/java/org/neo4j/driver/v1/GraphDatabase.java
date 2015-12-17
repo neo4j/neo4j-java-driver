@@ -59,4 +59,16 @@ public class GraphDatabase
     {
         return new Driver( url, config );
     }
+
+    /**
+     * Return a driver for a Neo4j instance with custom configuration.
+     *
+     * @param url the URL to a Neo4j instance
+     * @param config user defined configuration
+     * @return a new driver to the database instance specified by the URL
+     */
+    public static Driver driver( String url, Config config )
+    {
+        return driver( URI.create( url ), config );
+    }
 }
