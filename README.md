@@ -13,24 +13,9 @@ Add the driver to your project:
         <dependency>
             <groupId>org.neo4j.driver</groupId>
             <artifactId>neo4j-java-driver</artifactId>
-            <version>1.0-SNAPSHOT</version>
+            <version>1.0.0-M01</version>
         </dependency>
     </dependencies>
-    
-    <repositories>
-        <repository>
-            <id>neo4j-snapshot-repository</id>
-            <name>Neo4j Maven 2 snapshot repository</name>
-            <url>http://m2.neo4j.org/content/repositories/snapshots</url>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-        </repository>
-    </repositories>
-    
 
 Connect to a Neo4j 3.0.0+ database
 
