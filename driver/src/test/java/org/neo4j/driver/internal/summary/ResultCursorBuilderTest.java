@@ -47,7 +47,7 @@ public class ResultCursorBuilderTest
         builder.record( new Value[]{value( "Admin" )} );
 
         // When
-        List<Record> result = builder.build().retain();
+        List<Record> result = builder.build().list();
 
         // Then
         assertThat( result.size(), equalTo( 1 ) );
@@ -63,7 +63,7 @@ public class ResultCursorBuilderTest
         ResultBuilder builder = createResultBuilder();
 
         // When
-        List<Record> result = builder.build().retain();
+        List<Record> result = builder.build().list();
 
         // Then
         assertThat( result.size(), equalTo( 0 ) );

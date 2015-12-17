@@ -45,7 +45,7 @@ public class StatementIT
     public void shouldRunWithResult() throws Throwable
     {
         // When I execute a statement that yields a result
-        List<Record> result = session.run( "UNWIND [1,2,3] AS k RETURN k" ).retain();
+        List<Record> result = session.run( "UNWIND [1,2,3] AS k RETURN k" ).list();
 
         // Then the result object should contain the returned values
         assertThat( result.size(), equalTo( 3 ) );
@@ -88,7 +88,7 @@ public class StatementIT
     {
         // When
         List<Record> result =
-                session.run( "UNWIND {list} AS k RETURN k", parameters( "list", asList( 1, 2, 3 ) ) ).retain();
+                session.run( "UNWIND {list} AS k RETURN k", parameters( "list", asList( 1, 2, 3 ) ) ).list();
 
         // Then
         assertThat( result.size(), equalTo( 3 ) );

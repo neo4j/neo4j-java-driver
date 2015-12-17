@@ -204,13 +204,13 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
     }
 
     @Override
-    public List<Record> retain()
+    public List<Record> list()
     {
-        return retain( recordAsIs() );
+        return list( recordAsIs() );
     }
 
     @Override
-    public <T> List<T> retain( Function<RecordAccessor, T> mapFunction )
+    public <T> List<T> list( Function<RecordAccessor, T> mapFunction )
     {
         if ( isEmpty() )
         {

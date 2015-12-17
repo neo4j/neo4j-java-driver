@@ -24,7 +24,7 @@ import java.util.Map;
  * A record is an immutable copy of an ordered map
  *
  * @see ResultCursor#record()
- * @see ResultCursor#retain()
+ * @see ResultCursor#list()
  */
 @Immutable
 public interface Record extends RecordAccessor

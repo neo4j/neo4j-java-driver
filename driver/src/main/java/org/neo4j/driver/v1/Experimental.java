@@ -18,22 +18,20 @@
  */
 package org.neo4j.driver.v1;
 
-/**
- * The type of a {@link Value} as defined by the Cypher language
- */
-@Immutable @Experimental
-public interface Type
-{
-    /**
-     * @return the name of the Cypher type (as defined by Cypher)
-     */
-    String name();
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-    /**
-     * Test if the given value has this type
-     *
-     * @param value the value
-     * @return <tt>true</tt> if the value is a value of this type otherwise <tt>false</tt>
-     */
-    boolean isTypeOf( Value value );
+/**
+ * Annotated elements are experimental and may change without deprecation across driver releases
+ */
+@Inherited
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+@Target( { ElementType.TYPE, ElementType.METHOD } )
+public @interface Experimental
+{
 }
