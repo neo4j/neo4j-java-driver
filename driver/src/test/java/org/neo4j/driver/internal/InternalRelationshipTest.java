@@ -65,9 +65,9 @@ public class InternalRelationshipTest
     {
         InternalRelationship relationship = createRelationship();
 
-        assertThat( relationship.value( "k1" ), equalTo( value( 1 ) ) );
-        assertThat( relationship.value( "k2" ), equalTo( value( 2 ) ) );
-        assertThat( relationship.value( "k3" ), equalTo( NULL ) );
+        assertThat( relationship.get( "k1" ), equalTo( value( 1 ) ) );
+        assertThat( relationship.get( "k2" ), equalTo( value( 2 ) ) );
+        assertThat( relationship.get( "k3" ), equalTo( NULL ) );
     }
 
     private InternalRelationship createRelationship()

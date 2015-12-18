@@ -53,7 +53,7 @@ public interface RecordAccessor extends ListAccessor
      *
      * @throws java.util.NoSuchElementException if the given key is not from {@link #keys()}
      * @param key the give key
-     * @return the index of the field as used by {@link #value(int)}
+     * @return the index of the field as used by {@link #get(int)}
      */
     int index( String key );
 
@@ -64,7 +64,7 @@ public interface RecordAccessor extends ListAccessor
      * @return the property's value or a {@link NullValue} if no such key exists
      * @throws NoRecordException if the associated underlying record is not available
      */
-    Value value( String key );
+    Value get( String key );
 
     /**
      * Retrieve the number of fields in this record

@@ -224,7 +224,7 @@ public class Neo4jRunner
      */
     private void updateServerSettingsFile()
     {
-        Map<String, Object> propertiesMap = cachedSettings.propertiesMap();
+        Map<String, String> propertiesMap = cachedSettings.propertiesMap();
         if ( propertiesMap.isEmpty() )
         {
             return;
@@ -234,7 +234,7 @@ public class Neo4jRunner
         try
         {
             debug( "Changing server properties file (for next start): " + oldFile.getCanonicalPath() );
-            for ( Map.Entry<String, Object> property : propertiesMap.entrySet() )
+            for ( Map.Entry<String, String> property : propertiesMap.entrySet() )
             {
                 String name = property.getKey();
                 Object value = property.getValue();

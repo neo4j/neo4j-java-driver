@@ -71,7 +71,7 @@ public class ErrorIT
         // When
         ResultCursor cursor = tx.run( "RETURN 1" );
         assertTrue( cursor.single() );
-        cursor.value( "1" ).asInt();
+        cursor.get( "1" ).asInt();
     }
 
     @Test
@@ -83,7 +83,7 @@ public class ErrorIT
         // When
         ResultCursor cursor = session.run( "RETURN 1" );
         assertTrue( cursor.single() );
-        int val = cursor.value( "1" ).asInt();
+        int val = cursor.get( "1" ).asInt();
 
         // Then
         assertThat( val, equalTo( 1 ) );
@@ -104,7 +104,7 @@ public class ErrorIT
         {
             ResultCursor cursor = tx.run( "RETURN 1" );
             assertTrue( cursor.single() );
-            int val = cursor.value( "1" ).asInt();
+            int val = cursor.get( "1" ).asInt();
 
             // Then
             assertThat( val, equalTo( 1 ) );

@@ -52,12 +52,10 @@ public class ListValueTest
         ListValue listValue = listValue( value( 1 ), value( 2 ), value( 3 ) );
 
         assertThat( listValue.asArray(), equalTo( new Value[]{value( 1 ), value( 2 ), value( 3 )} ) );
-        assertThat( listValue.asByteArray(), equalTo( new byte[]{1, 2, 3} ) );
         assertThat( listValue.asDoubleArray(), equalTo( new double[]{1D, 2D, 3D} ) );
         assertThat( listValue.asFloatArray(), equalTo( new float[]{1F, 2F, 3F} ) );
         assertThat( listValue.asIntArray(), equalTo( new int[]{1, 2, 3} ) );
         assertThat( listValue.asLongArray(), equalTo( new long[]{1L, 2L, 3L} ) );
-        assertThat( listValue.asShortArray(), equalTo( new short[]{1, 2, 3} ) );
     }
 
 
