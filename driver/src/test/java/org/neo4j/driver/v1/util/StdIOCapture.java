@@ -51,8 +51,8 @@ public class StdIOCapture
             {
                 System.setOut( originalStdOut );
                 System.setErr( originalStdErr );
-                stdout.addAll( asList( capturedStdOut.toString( "UTF-8" ).split( "\n" ) ) );
-                stderr.addAll( asList( capturedStdErr.toString( "UTF-8" ).split( "\n" ) ) );
+                stdout.addAll( asList( capturedStdOut.toString( "UTF-8" ).split( System.lineSeparator() ) ) );
+                stderr.addAll( asList( capturedStdErr.toString( "UTF-8" ).split( System.lineSeparator() ) ) );
             }
         };
     }
