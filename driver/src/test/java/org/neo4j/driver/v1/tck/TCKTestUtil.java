@@ -1,15 +1,15 @@
 /**
  * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
- *
+ * <p>
  * This file is part of Neo4j.
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,6 +26,9 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Random;
 
+import org.neo4j.driver.internal.InternalNode;
+import org.neo4j.driver.internal.InternalPath;
+import org.neo4j.driver.internal.InternalRelationship;
 import org.neo4j.driver.internal.value.BooleanValue;
 import org.neo4j.driver.internal.value.FloatValue;
 import org.neo4j.driver.internal.value.IntegerValue;
@@ -33,6 +36,7 @@ import org.neo4j.driver.internal.value.ListValue;
 import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.internal.value.StringValue;
+import org.neo4j.driver.v1.Entity;
 import org.neo4j.driver.v1.ResultCursor;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Value;
@@ -51,7 +55,8 @@ public class TCKTestUtil
         return session.run( input );
     }
 
-    public static ResultCursor runSessionWithParameters( String string, Map<String,Value> params ) throws ClientException
+    public static ResultCursor runSessionWithParameters( String string, Map<String,Value> params )
+            throws ClientException
     {
         assertNotNull( session() );
         return session.run( string, params );
@@ -63,7 +68,8 @@ public class TCKTestUtil
         return session.run( statement );
     }
 
-    public static ResultCursor runSessionWithParameter( String statement, String key, Value value ) throws ClientException
+    public static ResultCursor runSessionWithParameter( String statement, String key, Value value )
+            throws ClientException
     {
         Map<String,Value> params = new HashMap<>( 1 );
         params.put( key, value );
@@ -176,7 +182,81 @@ public class TCKTestUtil
         return stringBuilder.toString();
     }
 
-    public static String boltValueAsCypherString(Value value)
+    public static List<Object> getListOfTypes( String type, long size )
+    {
+        List<Object> list = new ArrayList<>();
+        while ( size-- > 0 )
+        {
+            list.add( getRandomValue( type ) );
+        }
+        return list;
+    }
+
+    public static Map<String, Object> getMapOfTypes( String type, long size )
+    {
+        Map<String, Object> map = new HashMap<>();
+        while ( size-- > 0 )
+        {
+            map.put( "a" + size, getRandomValue( type ) );
+        }
+        return map;
+    }
+
+    public static InternalPath getPathOfEmptyNodesWithSize(long size)
+    {
+        List<Entity> entities = new ArrayList<>(  );
+        for ( int i = 1; i < size+1; i++ )
+        {
+            if ( i % 2 != 0 )
+            {
+                entities.add( new InternalNode( i ) );
+            }
+            else
+            {
+                entities.add( new InternalRelationship( i, i-1, i+1, "type" ) );
+            }
+        }
+        return new InternalPath( entities );
+    }
+
+    public static Object getRandomValue(String type)
+    {
+        switch ( type )
+        {
+        case "Integer":
+            return getRandomLong();
+        case "String":
+            return getRandomString( 3 );
+        case "Boolean":
+            return getRandomBoolean();
+        case "Float":
+            return getRandomDouble();
+        case "Null":
+            return null;
+        default:
+            throw new NoSuchElementException( format( "Not supported type: %s", type ) );
+        }
+    }
+
+    public static long getRandomLong()
+    {
+        Random random = new Random();
+        return random.nextLong();
+    }
+
+    public static double getRandomDouble()
+    {
+        Random random = new Random();
+        return random.nextDouble();
+    }
+
+    public static boolean getRandomBoolean()
+    {
+        Random random = new Random();
+        return random.nextBoolean();
+    }
+
+    public static String boltValueAsCypherString( Value value )
     {
         return value.asLiteralString();
     }

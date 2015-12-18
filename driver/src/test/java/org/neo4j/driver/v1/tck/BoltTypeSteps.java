@@ -38,7 +38,6 @@ import org.neo4j.driver.internal.InternalNode;
 import org.neo4j.driver.internal.InternalPath;
 import org.neo4j.driver.internal.InternalRelationship;
 import org.neo4j.driver.internal.value.NodeValue;
-import org.neo4j.driver.v1.Entity;
 import org.neo4j.driver.v1.Node;
 import org.neo4j.driver.v1.Path;
 import org.neo4j.driver.v1.Relationship;
@@ -66,6 +65,10 @@ import static org.neo4j.driver.v1.tck.TCKTestUtil.boltValuetoJavaObject;
 import static org.neo4j.driver.v1.tck.TCKTestUtil.databaseRunning;
 import static org.neo4j.driver.v1.tck.TCKTestUtil.getBoltValue;
 import static org.neo4j.driver.v1.tck.TCKTestUtil.getListFromString;
+import static org.neo4j.driver.v1.tck.TCKTestUtil.getListOfTypes;
+import static org.neo4j.driver.v1.tck.TCKTestUtil.getMapOfTypes;
+import static org.neo4j.driver.v1.tck.TCKTestUtil.getPathOfEmptyNodesWithSize;
+import static org.neo4j.driver.v1.tck.TCKTestUtil.getRandomString;
 
 
 public class BoltTypeSteps
@@ -122,19 +125,33 @@ public class BoltTypeSteps
         expectedBoltValue = getBoltValue( type, value );
     }
 
+    @Given( "^a String of size (\\d+)$" )
+    public void a_String_of_size(long size) throws Throwable
+    {
+        expectedJavaValue = getRandomString( size );
+        expectedBoltValue = Values.value( expectedJavaValue );
+    }
+
+    @Given( "^a List of size (\\d+) and type ([^\"]*)$" )
+    public void a_List_of_size_and_type_Type( long size, String type ) throws Throwable
+    {
+        expectedJavaValue = getListOfTypes( type, size );
+        expectedBoltValue = Values.value( expectedJavaValue );
+    }
+
+    @Given( "^a Map of size (\\d+) and type ([^\"]*)$" )
+    public void a_Map_of_size_and_type_Type( long size, String type) throws Throwable
+    {
+        expectedJavaValue = getMapOfTypes( type, size );
+        expectedBoltValue = Values.value( expectedJavaValue );
+    }
+
     @Given( "^a list value ([^\"]*) of type ([^\"]*)$" )
     public void a_list_value_of_Type( String value, String type )
             throws Throwable
     {
         expectedJavaValue = asJavaArrayList( type, getListFromString( value ) );
         expectedBoltValue = Values.value( expectedJavaValue );
-    }
-
-    @Given( "^an empty node N$" )
-    public void an_empty_node_N() throws Throwable
-    {
-        long id = 1;
-        expectedBoltValue = new NodeValue(new InternalNode( id ));
     }
 
     @Given( "^a relationship R$" )
@@ -160,6 +177,22 @@ public class BoltTypeSteps
         expectedBoltValue = new NodeValue( new InternalNode( id, Collections.singletonList( "L" ), props ) );
     }
 
+    @Given( "^an empty node N$" )
+    public void an_empty_node_N() throws Throwable
+    {
+        long id = 1;
+        expectedBoltValue = new NodeValue(new InternalNode( id ));
+    }
+
+    @Given( "^a Node with great amount of properties and labels$" )
+    public void a_Node_with_great_amount_of_properties() throws Throwable
+    {
+        long id = 42L;
+        Map<String,Value> props = Values.value( getMapOfTypes( "String", 1000 ) ).asMap();
+        List<String> labels = (List<String>)(List<?>)getListOfTypes( "String", 1000 );
+        expectedBoltValue = new NodeValue( new InternalNode( id, labels , props ) );
+    }
+
 
     @Given( "^a zero length path P$" )
     public void an_empty_path_P() throws Throwable
@@ -170,19 +203,12 @@ public class BoltTypeSteps
     @Given( "^a arbitrary long path P$" )
     public void a_arbitrary_long_path_P() throws Throwable
     {
-        List<Entity> entities = new ArrayList<>(  );
-        for ( int i = 1; i < 8; i++ )
-        {
-            if ( i % 2 != 0 )
-            {
-                entities.add( new InternalNode( i ) );
-            }
-            else
-            {
-                entities.add( new InternalRelationship( i, i-1, i+1, "type" ) );
-            }
-        }
-        expectedBoltValue = new InternalPath( entities ).asValue();
+        expectedBoltValue = getPathOfEmptyNodesWithSize(7).asValue();
+    }
+    @Given( "^a path P of size (\\d+)$" )
+    public void a_path_P_of_size( long size ) throws Throwable
+    {
+        expectedBoltValue = getPathOfEmptyNodesWithSize( size ).asValue();
     }
 
     @And( "^the expected result is a bolt \"([^\"]*)\" of \"([^\"]*)\"$" )
