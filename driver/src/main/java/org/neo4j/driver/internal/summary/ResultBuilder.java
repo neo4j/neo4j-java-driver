@@ -39,16 +39,17 @@ import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static java.util.Collections.unmodifiableMap;
-
 import static org.neo4j.driver.internal.ParameterSupport.NO_PARAMETERS;
 
 public class ResultBuilder implements StreamCollector
 {
+    private final static List<String> NO_KEYS = new ArrayList<>();
+
     private final SummaryBuilder summaryBuilder;
 
     private List<Record> body = new ArrayList<>();
-    private List<String> keys = null;
-    private Map<String, Integer> keyIndexLookup = null;
+    private List<String> keys = NO_KEYS;
+    private Map<String,Integer> keyIndexLookup = null;
 
     public ResultBuilder( String statement, Map<String, Value> parameters )
     {
@@ -60,7 +61,7 @@ public class ResultBuilder implements StreamCollector
     @Override
     public void keys( String[] names )
     {
-        if ( keys == null )
+        if ( keys == NO_KEYS )
         {
             int numFields = names.length;
             if ( numFields == 0 )

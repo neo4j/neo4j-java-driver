@@ -78,4 +78,34 @@ public class InternalSessionTest
         // Then we should've gotten a transaction object back
         assertNotNull( tx );
     }
+
+    @Test
+    public void shouldNotBeAbleToUseSessionWhileOngoingTransaction() throws Throwable
+    {
+        // Given
+        Connection mock = mock( Connection.class );
+        InternalSession sess = new InternalSession( mock );
+        sess.beginTransaction();
+
+        // Expect
+        exception.expect( ClientException.class );
+
+        // When
+        sess.run( "whatever" );
+    }
+
+    @Test
+    public void shouldBeAbleToUseSessionAgainWhenTransactionIsClosed() throws Throwable
+    {
+        // Given
+        Connection mock = mock( Connection.class );
+        InternalSession sess = new InternalSession( mock );
+        sess.beginTransaction().close();
+
+        // When
+        sess.run( "whatever" );
+
+        // Then
+        verify( mock ).sync();
+    }
 }

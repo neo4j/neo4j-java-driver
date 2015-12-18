@@ -26,9 +26,9 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.driver.v1.Values.parameters;
 
 public class ResultStreamIT
@@ -108,5 +108,15 @@ public class ResultStreamIT
 
         // Then
         assertTrue( rs.value( "n" ).value( "age" ).isNull() );
+    }
+
+    @Test
+    public void shouldNotReturnNullKeysOnEmptyResult()
+    {
+        // Given
+        ResultCursor rs = session.run( "CREATE (n:Person {name:{name}})", parameters( "name", "Tom Hanks" ) );
+
+        // THEN
+        assertNotNull( rs.keys() );
     }
 }
