@@ -29,10 +29,19 @@ import cucumber.api.java.en.When;
 import cucumber.runtime.CucumberException;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.driver.internal.InternalNode;
+import org.neo4j.driver.internal.InternalPath;
+import org.neo4j.driver.internal.InternalRelationship;
+import org.neo4j.driver.internal.value.NodeValue;
+import org.neo4j.driver.v1.Entity;
+import org.neo4j.driver.v1.Node;
+import org.neo4j.driver.v1.Path;
+import org.neo4j.driver.v1.Relationship;
 import org.neo4j.driver.v1.ResultCursor;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Value;
@@ -45,6 +54,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.driver.v1.Values.value;
 import static org.neo4j.driver.v1.tck.TCKTestUtil.CypherStatementRunner;
 import static org.neo4j.driver.v1.tck.TCKTestUtil.MappedParametersRunner;
 import static org.neo4j.driver.v1.tck.TCKTestUtil.StatementRunner;
@@ -120,6 +130,61 @@ public class BoltTypeSteps
         expectedBoltValue = Values.value( expectedJavaValue );
     }
 
+    @Given( "^an empty node N$" )
+    public void an_empty_node_N() throws Throwable
+    {
+        long id = 1;
+        expectedBoltValue = new NodeValue(new InternalNode( id ));
+    }
+
+    @Given( "^a relationship R$" )
+    public void a_relationship_R() throws Throwable
+    {
+        long start = 1;
+        long end = 2;
+        long id = 3;
+        String type = "type";
+        Map<String,Value> props = new HashMap<>();
+        props.put( "k1", value( 1 ) );
+        props.put( "k2", value( 2 ) );
+        expectedBoltValue = new InternalRelationship( id, start, end, type, props ).asValue();
+    }
+
+    @Given( "^a node N with properties and labels$" )
+    public void a_node_N_with_properties_and_labels() throws Throwable
+    {
+        long id = 42L;
+        Map<String,Value> props = new HashMap<>();
+        props.put( "k1", value( 1 ) );
+        props.put( "k2", value( 2 ) );
+        expectedBoltValue = new NodeValue( new InternalNode( id, Collections.singletonList( "L" ), props ) );
+    }
+
+
+    @Given( "^a zero length path P$" )
+    public void an_empty_path_P() throws Throwable
+    {
+        long nodeId = 33L;
+        expectedBoltValue = new InternalPath( new InternalNode( nodeId ) ).asValue();
+    }
+    @Given( "^a arbitrary long path P$" )
+    public void a_arbitrary_long_path_P() throws Throwable
+    {
+        List<Entity> entities = new ArrayList<>(  );
+        for ( int i = 1; i < 8; i++ )
+        {
+            if ( i % 2 != 0 )
+            {
+                entities.add( new InternalNode( i ) );
+            }
+            else
+            {
+                entities.add( new InternalRelationship( i, i-1, i+1, "type" ) );
+            }
+        }
+        expectedBoltValue = new InternalPath( entities ).asValue();
+    }
+
     @And( "^the expected result is a bolt \"([^\"]*)\" of \"([^\"]*)\"$" )
     public void the_expected_result_is_a_of( String type, String value ) throws Throwable
     {
@@ -159,6 +224,35 @@ public class BoltTypeSteps
         expectedJavaValue = mapOfObjects;
         expectedBoltValue = Values.value( expectedJavaValue );
         the_driver_asks_the_server_to_echo_this_value_back();
+    }
+
+    @When( "^the driver asks the server to echo this node back$" )
+    public void the_driver_asks_the_server_to_echo_this_node_back() throws Throwable
+    {
+        expectedJavaValue = null;
+        mappedParametersRunner = new MappedParametersRunner( "RETURN {input}", "input", expectedBoltValue );
+        statementRunner = new StatementRunner(
+                new Statement( "RETURN {input}", singletonMap( "input", expectedBoltValue ) ) );
+
+        runners.add( mappedParametersRunner );
+        runners.add( statementRunner );
+
+        for ( CypherStatementRunner runner : runners)
+        {
+            runner.runCypherStatement();
+        }
+    }
+
+    @When( "^the driver asks the server to echo this relationship R back$" )
+    public void the_driver_asks_the_server_to_echo_this_relationship_R_back() throws Throwable
+    {
+        the_driver_asks_the_server_to_echo_this_node_back();
+    }
+
+    @When( "^the driver asks the server to echo this path back$" )
+    public void the_driver_asks_the_server_to_echo_this_path_back() throws Throwable
+    {
+        the_driver_asks_the_server_to_echo_this_node_back();
     }
 
     @Then( "^the result returned from the server should be a single record with a single value$" )
@@ -265,5 +359,61 @@ public class BoltTypeSteps
     {
         assertNotNull( listOfObjects );
         assertThat( listOfObjects.size(), equalTo( 0 ) );
+    }
+
+    @And( "^the node value given in the result should be the same as what was sent$" )
+    public void the_node_value_given_in_the_result_should_be_the_same_as_what_was_sent() throws Throwable
+    {
+        for ( CypherStatementRunner runner : runners )
+        {
+            assertTrue( runner.result().single() );
+            Value receivedValue = runner.result().record().value( 0 );
+            Node node = receivedValue.asNode();
+            Node expectedNode = expectedBoltValue.asNode();
+
+            assertThat( node.identity(), equalTo( expectedNode.identity() ) );
+            assertThat( node.labels(), equalTo( expectedNode.labels() ) );
+            assertThat( node.properties(), equalTo( expectedNode.properties() ) );
+            assertThat( receivedValue, equalTo( expectedBoltValue ) );
+        }
+    }
+
+
+    @And( "^the relationship value given in the result should be the same as what was sent$" )
+    public void the_relationship_value_given_in_the_result_should_be_the_same_as_what_was_sent() throws Throwable
+    {
+        for ( CypherStatementRunner runner : runners )
+        {
+            assertTrue( runner.result().single() );
+            Value receivedValue = runner.result().record().value( 0 );
+            Relationship relationship = receivedValue.asRelationship();
+            Relationship expectedRelationship = expectedBoltValue.asRelationship();
+
+            assertThat( relationship.identity(), equalTo( expectedRelationship.identity() ) );
+            assertThat( relationship.start(), equalTo( expectedRelationship.start() ) );
+            assertThat( relationship.properties(), equalTo( expectedRelationship.properties() ) );
+            assertThat( relationship.end(), equalTo( expectedRelationship.end() ) );
+            assertThat( relationship.properties(), equalTo( expectedRelationship.properties() ) );
+            assertThat( receivedValue, equalTo( expectedBoltValue ) );
+        }
+    }
+
+
+    @And( "^the path value given in the result should be the same as what was sent$" )
+    public void the_path_value_given_in_the_result_should_be_the_same_as_what_was_sent() throws Throwable
+    {
+        for ( CypherStatementRunner runner : runners )
+        {
+            assertTrue( runner.result().single() );
+            Value receivedValue = runner.result().record().value( 0 );
+            Path path = receivedValue.asPath();
+            Path expectedPath = expectedBoltValue.asPath();
+
+            assertThat( path.start(), equalTo( expectedPath.start() ) );
+            assertThat( path.end(), equalTo( expectedPath.end() ) );
+            assertThat( path.nodes(), equalTo( expectedPath.nodes() ) );
+            assertThat( path.relationships(), equalTo( expectedPath.relationships() ) );
+            assertThat( receivedValue, equalTo( expectedBoltValue ) );
+        }
     }
 }
