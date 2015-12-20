@@ -22,22 +22,35 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.util.List;
 
+import org.neo4j.driver.internal.spi.Logger;
+import org.neo4j.driver.internal.spi.Logging;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
+import org.neo4j.driver.v1.Notification;
+import org.neo4j.driver.v1.Pair;
+import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.ResultCursor;
+import org.neo4j.driver.v1.ResultSummary;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.util.StdIOCapture;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.driver.v1.Config.TlsAuthenticationConfig.usingKnownCerts;
 import static org.neo4j.driver.v1.Config.TlsAuthenticationConfig.usingTrustedCert;
+
+// NOTE: Be careful about auto-formatting here. The below segment should contain GraphDatabase, Driver and Session imports
+// tag::include-driver[]
+// end::include-driver[]
 
 /**
  * The tests below are examples that get pulled into the Driver Manual using the tags inside the tests.
@@ -75,6 +88,31 @@ public class ExamplesIT
 
         // Then
         assertThat( stdIO.stdout(), equalTo( asList("Neo is 23 years old.") ) );
+    }
+
+    @Test
+    public void constructDriver() throws Throwable
+    {
+        // tag::construct-driver[]
+        Driver driver = GraphDatabase.driver( "bolt://localhost" );
+        // end::construct-driver[]
+
+        // Then
+        assertNotNull( driver );
+    }
+
+    @Test
+    public void configuration() throws Throwable
+    {
+        // tag::configuration[]
+        Driver driver = GraphDatabase.driver( "bolt://localhost",
+                Config.build()
+                        .withLogging( new MyLogging() )
+                        .toConfig());
+        // end::configuration[]
+
+        // Then
+        assertNotNull( driver );
     }
 
     @Test
@@ -116,6 +154,99 @@ public class ExamplesIT
         // Then
         assertThat( stdIO.stdout(), equalTo( asList("There were 1 the ones created.") ) );
     }
+
+    @Test
+    public void resultCursor() throws Throwable
+    {
+        StdIOCapture stdIO = new StdIOCapture();
+        try( AutoCloseable captured = stdIO.capture();
+             Driver driver = GraphDatabase.driver( "bolt://localhost" );
+             Session session = driver.session() )
+        {
+            session.run( "MATCH (n) DETACH DELETE n" );
+            session.run( "CREATE (p:Person { name: 'The One', age:23 })" );
+
+            // tag::result-cursor[]
+            ResultCursor result = session.run( "MATCH (p:Person { name: {name} }) RETURN p.age",
+                    Values.parameters( "name", "The One" ) );
+
+            while( result.next() )
+            {
+                System.out.println("Record: " + result.position() );
+                for ( Pair<String,Value> fieldInRecord : result.fields() )
+                {
+                    System.out.println( "  " + fieldInRecord.key() + " = " + fieldInRecord.value() );
+                }
+            }
+            // end::result-cursor[]
+        }
+
+        // Then
+        assertThat( stdIO.stdout(), equalTo( asList("Record: 0","  p.age = 23 :: INTEGER") ) );
+    }
+
+    @Test
+    public void retainResultsForLaterProcessing() throws Throwable
+    {
+        StdIOCapture stdIO = new StdIOCapture();
+        try( AutoCloseable captured = stdIO.capture();
+             Driver driver = GraphDatabase.driver( "bolt://localhost" );
+             Session session = driver.session() )
+        {
+            session.run( "MATCH (n) DETACH DELETE n" );
+            session.run( "CREATE (p:Person { name: 'The One', age:23 })" );
+
+            // tag::retain-result-query[]
+            ResultCursor result = session.run( "MATCH (p:Person { name: {name} }) RETURN id(p)",
+                    Values.parameters( "name", "The One" ) );
+
+            for ( Record record : result.list() )
+            {
+                session.run( "MATCH (p) WHERE id(p) = {id} " +
+                             "CREATE (p)-[:HAS_TRAIT]->(:Trait {type:'Immortal'})",
+                        Values.parameters( "id", record.value( "id(p)" ) ) );
+            }
+            // end::retain-result-query[]
+        }
+    }
+
+    @Test
+    public void retainResultsForNestedQuerying() throws Throwable
+    {
+        StdIOCapture stdIO = new StdIOCapture();
+        try( AutoCloseable captured = stdIO.capture();
+             Driver driver = GraphDatabase.driver( "bolt://localhost" ); )
+        {
+            try( Session setup = driver.session() )
+            {
+                setup.run( "MATCH (n) DETACH DELETE n" );
+                setup.run( "CREATE (p:Person { name: 'The One', age:23 })" );
+            }
+
+            // tag::retain-result-process[]
+            Session session = driver.session();
+
+            ResultCursor result = session.run( "MATCH (p:Person { name: {name} }) RETURN p.age",
+                    Values.parameters( "name", "The One" ) );
+
+            List<Record> records = result.list();
+
+            session.close();
+
+            for ( Record record : records )
+            {
+                for ( Pair<String,Value> fieldInRecord : record.fields() )
+                {
+                    System.out.println( fieldInRecord.key() + " = " + fieldInRecord.value() );
+                }
+            }
+            // end::retain-result-process[]
+        }
+
+        // Then
+        assertThat( stdIO.stdout(), equalTo( asList("p.age = 23 :: INTEGER") ) );
+    }
+
 
     @Test
     public void transactionCommit() throws Throwable
@@ -160,6 +291,45 @@ public class ExamplesIT
     }
 
     @Test
+    public void resultSummary() throws Throwable
+    {
+        StdIOCapture stdIO = new StdIOCapture();
+        try( AutoCloseable captured = stdIO.capture();
+             Driver driver = GraphDatabase.driver( "bolt://localhost" );
+             Session session = driver.session() )
+        {
+            // tag::result-summary-query-profile[]
+            ResultCursor result = session.run( "PROFILE MATCH (p:Person { name: {name} }) RETURN id(p)",
+                    Values.parameters( "name", "The One" ) );
+
+            ResultSummary summary = result.summarize();
+
+            System.out.println( summary.statementType() );
+            System.out.println( summary.profile() );
+            // end::result-summary-query-profile[]
+        }
+    }
+
+    @Test
+    public void notifications() throws Throwable
+    {
+        StdIOCapture stdIO = new StdIOCapture();
+        try( AutoCloseable captured = stdIO.capture();
+             Driver driver = GraphDatabase.driver( "bolt://localhost" );
+             Session session = driver.session() )
+        {
+            // tag::result-summary-notifications[]
+            ResultSummary summary = session.run( "EXPLAIN MATCH (a), (b) RETURN a,b" ).summarize();
+
+            for ( Notification notification : summary.notifications() )
+            {
+                System.out.println(notification);
+            }
+            // end::result-summary-notifications[]
+        }
+    }
+
+    @Test
     public void requireEncryption() throws Throwable
     {
         // tag::tls-require-encryption[]
@@ -192,5 +362,14 @@ public class ExamplesIT
                 .toConfig() );
         // end::tls-signed[]
         driver.close();
+    }
+
+    private class MyLogging implements Logging
+    {
+        @Override
+        public Logger getLog( String name )
+        {
+            return null;
+        }
     }
 }
