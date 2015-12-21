@@ -45,7 +45,7 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static java.lang.String.format;
 import static org.junit.Assert.assertNotNull;
-import static org.neo4j.driver.v1.tck.BoltTypeSystemTestIT.session;
+import static org.neo4j.driver.v1.tck.DriverComplianceIT.session;
 
 public class TCKTestUtil
 {

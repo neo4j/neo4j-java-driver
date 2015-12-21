@@ -49,8 +49,6 @@ import org.neo4j.driver.v1.Values;
 import static java.lang.String.valueOf;
 import static java.util.Collections.singletonMap;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.driver.v1.Values.value;
@@ -71,7 +69,7 @@ import static org.neo4j.driver.v1.tck.TCKTestUtil.getPathOfEmptyNodesWithSize;
 import static org.neo4j.driver.v1.tck.TCKTestUtil.getRandomString;
 
 
-public class BoltTypeSteps
+public class DriverComplianceSteps
 {
     private MappedParametersRunner mappedParametersRunner;
     private StatementRunner statementRunner;
@@ -101,10 +99,6 @@ public class BoltTypeSteps
         if ( sc.isFailed() )
         {
             System.out.println( "Failed: " + sc.getName() );
-        }
-        else
-        {
-            System.out.println( "Success: " + sc.getName() );
         }
     }
 
@@ -376,15 +370,13 @@ public class BoltTypeSteps
     @And( "^an empty map M$" )
     public void a_map_of_objects() throws Throwable
     {
-        assertNotNull( mapOfObjects );
-        assertEquals( mapOfObjects.size(), 0 );
+        mapOfObjects = new HashMap<>();
     }
 
     @And( "^an empty list L$" )
     public void a_list_of_objects() throws Throwable
     {
-        assertNotNull( listOfObjects );
-        assertThat( listOfObjects.size(), equalTo( 0 ) );
+        listOfObjects = new ArrayList<>();
     }
 
     @And( "^the node value given in the result should be the same as what was sent$" )

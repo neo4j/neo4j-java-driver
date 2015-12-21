@@ -32,12 +32,12 @@ import org.neo4j.driver.v1.util.TestNeo4jSession;
  */
 @RunWith( DriverCucumberAdapter.class )
 @CucumberOptions( features = {"target/resources/features/BoltTypeSystem.feature", "target/resources/features/BoltChunkingAndDechunking.feature"} )
-public class BoltTypeSystemTestIT
+public class DriverComplianceIT
 {
     @ClassRule
     public static TestNeo4jSession session = new TestNeo4jSession();
 
-    public BoltTypeSystemTestIT() throws IOException
+    public DriverComplianceIT() throws IOException
     {
     }
 
