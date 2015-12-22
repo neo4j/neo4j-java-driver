@@ -222,6 +222,11 @@ public class SocketResponseHandler implements MessageHandler
         collectors.put( correlationId, collector );
     }
 
+    public boolean protocolViolationErrorOccurred()
+    {
+        return error != null && error.neo4jErrorCode().startsWith( "Neo.ClientError.Request" );
+    }
+
     public boolean serverFailureOccurred()
     {
         return error != null;

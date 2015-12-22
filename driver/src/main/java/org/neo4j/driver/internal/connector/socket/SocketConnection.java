@@ -154,6 +154,12 @@ public class SocketConnection implements Connection
         socket.stop();
     }
 
+    @Override
+    public boolean isOpen()
+    {
+        return socket.isOpen();
+    }
+
     private int nextRequestId()
     {
         return (requestCounter++);

@@ -18,10 +18,10 @@
  */
 package org.neo4j.driver.internal.pool;
 
-import java.io.IOException;
-
 import org.junit.Test;
 import org.mockito.Mockito;
+
+import java.io.IOException;
 
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.v1.exceptions.ClientException;
@@ -66,6 +66,13 @@ public class ConnectionInvalidationTest
     {
         assertRecoverable( new ClientException( "Neo.ClientError.General.ReadOnly", "Hello, world!" ) );
         assertRecoverable( new TransientException( "Neo.TransientError.General.ReadOnly", "Hello, world!" ) );
+    }
+
+    @Test
+    public void shouldInvalidateOnProtocolViolationExceptions() throws Throwable
+    {
+        assertUnrecoverable( new ClientException( "Neo.ClientError.Request.InvalidFormat", "Hello, world!" ) );
+        assertUnrecoverable( new ClientException( "Neo.ClientError.Request.Invalid", "Hello, world!" ) );
     }
 
     private void assertUnrecoverable( Neo4jException exception )
