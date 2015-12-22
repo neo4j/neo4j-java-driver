@@ -318,7 +318,9 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                     for ( Path.Segment seg : path )
                     {
                         Relationship rel = seg.relationship();
-                        packer.pack( rel.end().equals( seg.end() ) ? relIdx.get( rel ) : -relIdx.get( rel ) );
+                        Identity relEndId = rel.end();
+                        Identity segEndId = seg.end().identity();
+                        packer.pack( relEndId.equals( segEndId ) ? relIdx.get( rel ) : -relIdx.get( rel ) );
                         packer.pack( nodeIdx.get( seg.end() ) );
                     }
                     break;

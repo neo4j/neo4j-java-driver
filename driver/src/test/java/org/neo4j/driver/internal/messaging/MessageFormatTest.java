@@ -18,6 +18,10 @@
  */
 package org.neo4j.driver.internal.messaging;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -26,10 +30,6 @@ import java.nio.channels.WritableByteChannel;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import org.neo4j.driver.internal.InternalNode;
 import org.neo4j.driver.internal.InternalPath;
@@ -41,11 +41,9 @@ import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.util.DumpMessage;
 
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.startsWith;
-
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.Values.value;
 
@@ -91,12 +89,12 @@ public class MessageFormatTest
         assertSerializesValue( value(
                 new InternalPath(
                         new InternalNode( 1 ),
-                        new InternalRelationship( 1, 1, 1,
+                        new InternalRelationship( 2, 1, 3,
                                 "KNOWS", parameters() ),
-                        new InternalNode( 1 ),
-                        new InternalRelationship( 2, 1, 1,
+                        new InternalNode( 3 ),
+                        new InternalRelationship( 4, 3, 5,
                                 "LIKES", parameters() ),
-                        new InternalNode( 1 )
+                        new InternalNode( 5 )
                 ) ) );
         assertSerializesValue( value( new InternalPath( new InternalNode( 1 ) ) ) );
     }
@@ -141,7 +139,8 @@ public class MessageFormatTest
         writer.flush();
 
         // Unpack
-        assertThat( unpack( format, out.toByteArray() ), equalTo( asList( messages ) ) );
+        ArrayList<Message> unpackedMessages = unpack( format, out.toByteArray() );
+        assertThat( unpackedMessages.toString(), equalTo( asList( messages ).toString() ) );
     }
 
     private ArrayList<Message> unpack( MessageFormat format, byte[] bytes ) throws IOException
