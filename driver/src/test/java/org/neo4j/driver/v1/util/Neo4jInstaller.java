@@ -101,7 +101,8 @@ public abstract class Neo4jInstaller
                 // Neo4j, however, works with a specific version of Java. This allows
                 // specifying which Java version to use for Neo4j separately from which
                 // version to use for the driver tests.
-                env.containsKey( "NEO4J_JAVA" ) ? env.get( "NEO4J_JAVA" ) : env.get( "JAVA_HOME" ) );
+                env.containsKey( "NEO4J_JAVA" ) ? env.get( "NEO4J_JAVA" ) :
+                System.getProperties().getProperty( "java.home" ) );
         Process process = pb.command( cmd ).start();
         while (true)
         {

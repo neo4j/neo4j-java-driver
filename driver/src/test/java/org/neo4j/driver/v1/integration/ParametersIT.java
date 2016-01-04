@@ -22,7 +22,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import org.neo4j.driver.v1.Node;
+import org.neo4j.driver.v1.Path;
 import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.Relationship;
 import org.neo4j.driver.v1.ResultCursor;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
@@ -30,7 +33,6 @@ import org.neo4j.driver.v1.util.TestNeo4jSession;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-
 import static org.neo4j.driver.v1.Values.parameters;
 
 public class ParametersIT
@@ -386,5 +388,53 @@ public class ParametersIT
 
         // When
         session.run( "anything", parameters( "k", new Object() ) );
+    }
+
+    @Test
+    public void shouldNotBePossibleToUseNodeAsParameter()
+    {
+        // GIVEN
+        ResultCursor cursor = session.run( "CREATE (a:Node) RETURN a" );
+        cursor.first();
+        Node node = cursor.value( 0 ).asNode();
+
+        //Expect
+        exception.expect( ClientException.class );
+        exception.expectMessage( "Nodes can't be used as parameters" );
+
+        // WHEN
+        session.run( "RETURN {a}", parameters( "a", node ) );
+    }
+
+    @Test
+    public void shouldNotBePossibleToUseRelationshipAsParameter()
+    {
+        // GIVEN
+        ResultCursor cursor = session.run( "CREATE (a:Node), (b:Node), (a)-[r:R]->(b) RETURN r" );
+        cursor.first();
+        Relationship relationship = cursor.value( 0 ).asRelationship();
+
+        //Expect
+        exception.expect( ClientException.class );
+        exception.expectMessage( "Relationships can't be used as parameters" );
+
+        // WHEN
+        session.run( "RETURN {a}", parameters( "a", relationship ) );
+    }
+
+    @Test
+    public void shouldNotBePossibleToUsePathAsParameter()
+    {
+        // GIVEN
+        ResultCursor cursor = session.run( "CREATE (a:Node), (b:Node), p=(a)-[r:R]->(b) RETURN p" );
+        cursor.first();
+        Path path = cursor.value( 0 ).asPath();
+
+        //Expect
+        exception.expect( ClientException.class );
+        exception.expectMessage( "Paths can't be used as parameters" );
+
+        // WHEN
+        session.run( "RETURN {a}", parameters( "a", path ) );
     }
 }
