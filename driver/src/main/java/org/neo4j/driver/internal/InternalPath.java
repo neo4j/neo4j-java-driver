@@ -283,7 +283,7 @@ public class InternalPath implements Path, AsValue
     public String toString()
     {
 
-        return "path[" + segments + ']';
+        return "path" + segments;
     }
 
     private void buildSegments()

@@ -155,7 +155,7 @@ public class InternalResultCursorTest
         result.limit( 10 );
 
         // THEN
-        assertThat( result.retain().size(), equalTo( 10 ) );
+        assertThat( result.list().size(), equalTo( 10 ) );
     }
 
     @Test
@@ -166,7 +166,7 @@ public class InternalResultCursorTest
         result.limit( 0 );
 
         // THEN
-        assertThat( result.retain().size(), equalTo( 0 ) );
+        assertThat( result.list().size(), equalTo( 0 ) );
     }
 
     @Test
@@ -190,7 +190,7 @@ public class InternalResultCursorTest
         result.limit( 10 );
 
         // THEN
-        assertThat( result.retain().size(), equalTo( 0 ) );
+        assertThat( result.list().size(), equalTo( 0 ) );
     }
 
     @Test
@@ -202,7 +202,7 @@ public class InternalResultCursorTest
         result.limit( 60 );
 
         // THEN
-        assertThat( result.retain().size(), equalTo( 6 ) );
+        assertThat( result.list().size(), equalTo( 6 ) );
     }
 
     @Test
@@ -212,7 +212,7 @@ public class InternalResultCursorTest
         ResultCursor result = createResult( 3 );
 
         // WHEN
-        List<Record> records = result.retain();
+        List<Record> records = result.list();
 
         // THEN
         assertTrue(result.atEnd());
@@ -226,7 +226,7 @@ public class InternalResultCursorTest
         ResultCursor result = createResult( 3 );
 
         // WHEN
-        List<Value> records = result.retain( Records.columnAsIs( "k1" ) );
+        List<Value> records = result.list( Records.columnAsIs( "k1" ) );
 
         // THEN
         assertTrue(result.atEnd());
@@ -240,7 +240,7 @@ public class InternalResultCursorTest
         ResultCursor result = createResult( 3 );
 
         // WHEN
-        List<Value> records = result.retain( Records.columnAsIs( 0 ) );
+        List<Value> records = result.list( Records.columnAsIs( 0 ) );
 
         // THEN
         assertTrue(result.atEnd());
@@ -254,7 +254,7 @@ public class InternalResultCursorTest
         result.skip( 5 );
 
         expectedException.expect( ClientException.class );
-        result.retain();
+        result.list();
     }
 
     @Test

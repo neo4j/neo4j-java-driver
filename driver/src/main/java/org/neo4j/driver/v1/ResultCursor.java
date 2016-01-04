@@ -35,7 +35,7 @@ import org.neo4j.driver.v1.exceptions.ClientException;
  * Initially, before {@link #next()} has been called at least once, all field values are null.
  *
  * To keep a result around while further statements are run, or to use a result outside the scope
- * of the current transaction, see {@link #retain()}.
+ * of the current transaction, see {@link #list()}.
  */
 public interface ResultCursor extends RecordAccessor, Resource
 {
@@ -122,7 +122,7 @@ public interface ResultCursor extends RecordAccessor, Resource
      * @throws ClientException if the cursor can't be positioned at the first record
      * @return list of all immutable records
      */
-    List<Record> retain();
+    List<Record> list();
 
     /**
      * Retrieve and store a projection of the entire result stream.
@@ -136,7 +136,7 @@ public interface ResultCursor extends RecordAccessor, Resource
      * @param <T> the type of result list elements
      * @return list of all mapped immutable records
      */
-    <T> List<T> retain( Function<RecordAccessor, T> mapFunction );
+    <T> List<T> list( Function<RecordAccessor, T> mapFunction );
 
     /**
      * Summarize the result.

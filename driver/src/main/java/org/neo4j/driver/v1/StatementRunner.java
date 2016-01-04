@@ -76,5 +76,6 @@ public interface StatementRunner
     /**
      * @return type system used by this statement runner for classifying values
      */
+    @Experimental
     TypeSystem typeSystem();
 }

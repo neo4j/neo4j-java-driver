@@ -21,7 +21,7 @@ package org.neo4j.driver.v1;
 /**
  * Static utility methods for retaining records
  *
- * @see ResultCursor#retain()
+ * @see ResultCursor#list()
  */
 public abstract class Records
 {

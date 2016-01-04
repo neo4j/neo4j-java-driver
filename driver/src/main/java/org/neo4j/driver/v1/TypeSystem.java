@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.v1;
 
-@Immutable
+@Immutable @Experimental
 public interface TypeSystem
 {
     Type ANY();

@@ -110,6 +110,7 @@ public interface Value extends MapAccessor, ListAccessor
     Iterable<String> keys();
 
     /** @return The type of this value as defined in the Neo4j type system */
+    @Experimental
     Type type();
 
     /**
@@ -118,6 +119,7 @@ public interface Value extends MapAccessor, ListAccessor
      * @param type the given type
      * @return type.isTypeOf( this )
      */
+    @Experimental
     boolean hasType( Type type );
 
     /**
