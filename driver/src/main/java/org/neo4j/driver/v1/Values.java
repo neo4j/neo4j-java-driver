@@ -43,8 +43,7 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 public abstract class Values
 {
     public static final Value EmptyMap = value( Collections.emptyMap() );
-
-    public static Value NULL = NullValue.NULL;
+    public static final Value NULL = NullValue.NULL;
 
     private Values()
     {
@@ -271,7 +270,9 @@ public abstract class Values
         HashMap<String,Value> map = new HashMap<>( keysAndValues.length / 2 );
         for ( int i = 0; i < keysAndValues.length; i += 2 )
         {
-            map.put( keysAndValues[i].toString(), value( keysAndValues[i + 1] ) );
+            Object value = keysAndValues[i + 1];
+            assertParameter( value );
+            map.put( keysAndValues[i].toString(), value( value ) );
         }
         return map;
     }
@@ -491,4 +492,21 @@ public abstract class Values
             return val.asPath();
         }
     };
+
+    private static void assertParameter( Object value )
+    {
+        if ( value instanceof Node )
+        {
+            throw new ClientException( "Nodes can't be used as parameters." );
+        }
+        if ( value instanceof Relationship )
+        {
+            throw new ClientException( "Relationships can't be used as parameters." );
+        }
+        if ( value instanceof Path )
+        {
+            throw new ClientException( "Paths can't be used as parameters." );
+        }
+
+    }
 }
