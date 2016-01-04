@@ -29,16 +29,10 @@ import cucumber.api.java.en.When;
 import cucumber.runtime.CucumberException;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.driver.internal.InternalNode;
-import org.neo4j.driver.internal.InternalPath;
-import org.neo4j.driver.internal.InternalRelationship;
-import org.neo4j.driver.internal.value.NodeValue;
-import org.neo4j.driver.v1.Node;
 import org.neo4j.driver.v1.Path;
 import org.neo4j.driver.v1.Relationship;
 import org.neo4j.driver.v1.ResultCursor;
@@ -51,7 +45,6 @@ import static java.util.Collections.singletonMap;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.driver.v1.Values.value;
 import static org.neo4j.driver.v1.tck.TCKTestUtil.CypherStatementRunner;
 import static org.neo4j.driver.v1.tck.TCKTestUtil.MappedParametersRunner;
 import static org.neo4j.driver.v1.tck.TCKTestUtil.StatementRunner;
@@ -65,7 +58,6 @@ import static org.neo4j.driver.v1.tck.TCKTestUtil.getBoltValue;
 import static org.neo4j.driver.v1.tck.TCKTestUtil.getListFromString;
 import static org.neo4j.driver.v1.tck.TCKTestUtil.getListOfTypes;
 import static org.neo4j.driver.v1.tck.TCKTestUtil.getMapOfTypes;
-import static org.neo4j.driver.v1.tck.TCKTestUtil.getPathOfEmptyNodesWithSize;
 import static org.neo4j.driver.v1.tck.TCKTestUtil.getRandomString;
 
 
@@ -148,63 +140,6 @@ public class DriverComplianceSteps
         expectedBoltValue = Values.value( expectedJavaValue );
     }
 
-    @Given( "^a relationship R$" )
-    public void a_relationship_R() throws Throwable
-    {
-        long start = 1;
-        long end = 2;
-        long id = 3;
-        String type = "type";
-        Map<String,Value> props = new HashMap<>();
-        props.put( "k1", value( 1 ) );
-        props.put( "k2", value( 2 ) );
-        expectedBoltValue = new InternalRelationship( id, start, end, type, props ).asValue();
-    }
-
-    @Given( "^a node N with properties and labels$" )
-    public void a_node_N_with_properties_and_labels() throws Throwable
-    {
-        long id = 42L;
-        Map<String,Value> props = new HashMap<>();
-        props.put( "k1", value( 1 ) );
-        props.put( "k2", value( 2 ) );
-        expectedBoltValue = new NodeValue( new InternalNode( id, Collections.singletonList( "L" ), props ) );
-    }
-
-    @Given( "^an empty node N$" )
-    public void an_empty_node_N() throws Throwable
-    {
-        long id = 1;
-        expectedBoltValue = new NodeValue(new InternalNode( id ));
-    }
-
-    @Given( "^a Node with great amount of properties and labels$" )
-    public void a_Node_with_great_amount_of_properties() throws Throwable
-    {
-        long id = 42L;
-        Map<String,Value> props = Values.value( getMapOfTypes( "String", 1000 ) ).asMap();
-        List<String> labels = (List<String>)(List<?>)getListOfTypes( "String", 1000 );
-        expectedBoltValue = new NodeValue( new InternalNode( id, labels , props ) );
-    }
-
-
-    @Given( "^a zero length path P$" )
-    public void an_empty_path_P() throws Throwable
-    {
-        long nodeId = 33L;
-        expectedBoltValue = new InternalPath( new InternalNode( nodeId ) ).asValue();
-    }
-    @Given( "^a arbitrary long path P$" )
-    public void a_arbitrary_long_path_P() throws Throwable
-    {
-        expectedBoltValue = getPathOfEmptyNodesWithSize(7).asValue();
-    }
-    @Given( "^a path P of size (\\d+)$" )
-    public void a_path_P_of_size( long size ) throws Throwable
-    {
-        expectedBoltValue = getPathOfEmptyNodesWithSize( size ).asValue();
-    }
-
     @And( "^the expected result is a bolt \"([^\"]*)\" of \"([^\"]*)\"$" )
     public void the_expected_result_is_a_of( String type, String value ) throws Throwable
     {
@@ -246,53 +181,13 @@ public class DriverComplianceSteps
         the_driver_asks_the_server_to_echo_this_value_back();
     }
 
-    @When( "^the driver asks the server to echo this node back$" )
-    public void the_driver_asks_the_server_to_echo_this_node_back() throws Throwable
-    {
-        expectedJavaValue = null;
-        mappedParametersRunner = new MappedParametersRunner( "RETURN {input}", "input", expectedBoltValue );
-        statementRunner = new StatementRunner(
-                new Statement( "RETURN {input}", singletonMap( "input", expectedBoltValue ) ) );
-
-        runners.add( mappedParametersRunner );
-        runners.add( statementRunner );
-
-        for ( CypherStatementRunner runner : runners)
-        {
-            runner.runCypherStatement();
-        }
-    }
-
-    @When( "^the driver asks the server to echo this relationship R back$" )
-    public void the_driver_asks_the_server_to_echo_this_relationship_R_back() throws Throwable
-    {
-        the_driver_asks_the_server_to_echo_this_node_back();
-    }
-
-    @When( "^the driver asks the server to echo this path back$" )
-    public void the_driver_asks_the_server_to_echo_this_path_back() throws Throwable
-    {
-        the_driver_asks_the_server_to_echo_this_node_back();
-    }
-
     @Then( "^the result returned from the server should be a single record with a single value$" )
     public void result_should_be_of_single_record_with_a_single_value() throws Throwable
     {
         for( CypherStatementRunner runner : runners)
         {
             ResultCursor result = runner.result();
-            int size = 0;
-            while ( result.next() )
-            {
-                if ( size++ > 1 )
-                {
-                    throw new IllegalArgumentException( "Single result expected" );
-                }
-                if ( result.retain().size() > 1 )
-                {
-                    throw new IllegalArgumentException( "Single value expected" );
-                }
-            }
+            assertTrue( result.single() );
         }
     }
 
@@ -310,8 +205,6 @@ public class DriverComplianceSteps
             assertThat( resultJavaValue, equalTo( expectedJavaValue ) );
         }
     }
-
-
 
     @When( "^adding a table of lists to the list L$" )
     public void adding_a_table_of_lists_to_the_list_of_objects( DataTable table ) throws Throwable
@@ -377,23 +270,6 @@ public class DriverComplianceSteps
     public void a_list_of_objects() throws Throwable
     {
         listOfObjects = new ArrayList<>();
-    }
-
-    @And( "^the node value given in the result should be the same as what was sent$" )
-    public void the_node_value_given_in_the_result_should_be_the_same_as_what_was_sent() throws Throwable
-    {
-        for ( CypherStatementRunner runner : runners )
-        {
-            assertTrue( runner.result().single() );
-            Value receivedValue = runner.result().record().value( 0 );
-            Node node = receivedValue.asNode();
-            Node expectedNode = expectedBoltValue.asNode();
-
-            assertThat( node.identity(), equalTo( expectedNode.identity() ) );
-            assertThat( node.labels(), equalTo( expectedNode.labels() ) );
-            assertThat( node.properties(), equalTo( expectedNode.properties() ) );
-            assertThat( receivedValue, equalTo( expectedBoltValue ) );
-        }
     }
 
 
