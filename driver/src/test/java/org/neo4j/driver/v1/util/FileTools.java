@@ -20,6 +20,7 @@ package org.neo4j.driver.v1.util;
 
 import org.rauschig.jarchivelib.ArchiveStream;
 import org.rauschig.jarchivelib.Archiver;
+import org.rauschig.jarchivelib.ArchiverFactory;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -281,6 +282,10 @@ public class FileTools
     /** To allow retrieving a runnable neo4j jar from the international webbernets, we have this */
     public static void streamFileTo( String url, File target ) throws IOException
     {
+        if( target.getParentFile()!= null && !target.getParentFile().exists() )
+        {
+            target.getParentFile().mkdirs();
+        }
         try ( FileOutputStream out = new FileOutputStream( target );
               InputStream in = new URL( url ).openStream() )
         {
@@ -296,6 +301,12 @@ public class FileTools
                 read = in.read( buffer );
             }
         }
+    }
+
+    public static void extractTarball( File tarball, File untarToDir ) throws IOException
+    {
+        Archiver archiver = ArchiverFactory.createArchiver( "tar", "gz" );
+        archiver.extract( tarball, untarToDir );
     }
 
     public static void extractTarball( File tarball, File outputDir, File outputName, Archiver archiver )
