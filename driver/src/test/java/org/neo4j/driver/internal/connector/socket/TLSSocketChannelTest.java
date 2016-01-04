@@ -48,7 +48,7 @@ import static org.mockito.Mockito.when;
 /**
  * Tests related to the buffer uses in SSLSocketChannel
  */
-public class SSLSocketChannelTest
+public class TLSSocketChannelTest
 {
     private ByteBuffer plainIn;
     private ByteBuffer cipherIn;
@@ -109,8 +109,8 @@ public class SSLSocketChannelTest
         Logger logger = mock( Logger.class );
 
 
-        SSLSocketChannel sslChannel =
-                new SSLSocketChannel( channel, logger, sslEngine, plainIn, cipherIn, plainOut, cipherOut );
+        TLSSocketChannel sslChannel =
+                new TLSSocketChannel( channel, logger, sslEngine, plainIn, cipherIn, plainOut, cipherOut );
 
         // Write 00 01 02 03 04 05 06 into plainIn, simulating deciphering some bytes
         doAnswer( new Answer<SSLEngineResult>()
@@ -169,8 +169,8 @@ public class SSLSocketChannelTest
         SocketChannel channel = mock( SocketChannel.class );
         Logger logger = mock( Logger.class );
 
-        SSLSocketChannel sslChannel =
-                new SSLSocketChannel( channel, logger, sslEngine, plainIn, cipherIn, plainOut, cipherOut );
+        TLSSocketChannel sslChannel =
+                new TLSSocketChannel( channel, logger, sslEngine, plainIn, cipherIn, plainOut, cipherOut );
 
         final ByteBuffer bytesFromChannel = createBufferWithContent( 6, 0, 6 );
 
@@ -182,7 +182,7 @@ public class SSLSocketChannelTest
             {
                 Object[] args = invocation.getArguments();
                 cipherIn = (ByteBuffer) args[0];
-                return SSLSocketChannel.bufferCopy( bytesFromChannel, cipherIn );
+                return TLSSocketChannel.bufferCopy( bytesFromChannel, cipherIn );
             }
         } ).when( channel ).read( any( ByteBuffer.class ) );
 
@@ -233,8 +233,8 @@ public class SSLSocketChannelTest
         SocketChannel channel = mock( SocketChannel.class );
         Logger logger = mock( Logger.class );
 
-        SSLSocketChannel sslChannel =
-                new SSLSocketChannel( channel, logger, sslEngine, plainIn, cipherIn, plainOut, cipherOut );
+        TLSSocketChannel sslChannel =
+                new TLSSocketChannel( channel, logger, sslEngine, plainIn, cipherIn, plainOut, cipherOut );
 
 
         // Simulate reading from channel and write into cipherIn
@@ -246,7 +246,7 @@ public class SSLSocketChannelTest
                 Object[] args = invocation.getArguments();
                 cipherIn = (ByteBuffer) args[0];
                 ByteBuffer bytesFromChannel = createBufferWithContent( 4, 0, 4 );   // write 00 01 02 03 into cipherIn
-                SSLSocketChannel.bufferCopy( bytesFromChannel, cipherIn );
+                TLSSocketChannel.bufferCopy( bytesFromChannel, cipherIn );
                 return cipherIn.position();
             }
         } ).when( channel ).read( any( ByteBuffer.class ) );
@@ -313,8 +313,8 @@ public class SSLSocketChannelTest
         SocketChannel channel = mock( SocketChannel.class );
         Logger logger = mock( Logger.class );
 
-        SSLSocketChannel sslChannel =
-                new SSLSocketChannel( channel, logger, sslEngine, plainIn, cipherIn, plainOut, cipherOut );
+        TLSSocketChannel sslChannel =
+                new TLSSocketChannel( channel, logger, sslEngine, plainIn, cipherIn, plainOut, cipherOut );
 
 
         // Simulating encrypting some bytes

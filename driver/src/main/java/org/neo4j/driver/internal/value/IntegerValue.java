@@ -60,25 +60,6 @@ public class IntegerValue extends NumberValueAdapter<Long>
     }
 
     @Override
-    public short asShort()
-    {
-        if (val > Short.MAX_VALUE || val < Short.MIN_VALUE)
-        {
-            throw new LossyCoercion( type().name(), "Java short" );
-        }
-        return (short) val;
-    }
-
-    public byte asByte()
-    {
-        if (val > Byte.MAX_VALUE || val < Byte.MIN_VALUE)
-        {
-            throw new LossyCoercion( type().name(), "Java byte" );
-        }
-        return (byte) val;
-    }
-
-    @Override
     public double asDouble()
     {
         double doubleVal = (double) val;

@@ -177,7 +177,7 @@ public class SocketResponseHandler implements MessageHandler
 
     private int statsValue( Value stats, String name )
     {
-        Value value = stats.value( name );
+        Value value = stats.get( name );
         return value.isNull() ? 0 : value.asInt();
     }
 

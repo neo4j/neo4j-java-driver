@@ -28,6 +28,7 @@ import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import javax.xml.bind.DatatypeConverter;
 
@@ -119,9 +120,22 @@ public class CertificateTool
         int certCount = 0; // The file might contain multiple certs
         while ( inputStream.available() > 0 )
         {
-            Certificate cert = certFactory.generateCertificate( inputStream );
-            certCount++;
-            loadX509Cert( cert, "neo4j.javadriver.trustedcert." + certCount, keyStore );
+            try
+            {
+                Certificate cert = certFactory.generateCertificate( inputStream );
+                certCount++;
+                loadX509Cert( cert, "neo4j.javadriver.trustedcert." + certCount, keyStore );
+            }
+            catch( CertificateException e )
+            {
+                if( e.getCause() != null && e.getCause().getMessage().equals( "Empty input" ) )
+                {
+                    // This happens if there is whitespace at the end of the certificate - we load one cert, and then try and load a
+                    // second cert, at which point we fail
+                    return;
+                }
+                throw new IOException( "Failed to load certificate from `" + certFile.getAbsolutePath() + "`: " + certCount + " : " + e.getMessage(), e );
+            }
         }
     }
 

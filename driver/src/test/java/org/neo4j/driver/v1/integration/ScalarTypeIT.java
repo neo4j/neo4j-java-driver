@@ -75,6 +75,6 @@ public class ScalarTypeIT
 
         // Then
         assertTrue( cursor.next() );
-        assertThat( cursor.value( "v" ), equalTo( expectedValue ) );
+        assertThat( cursor.get( "v" ), equalTo( expectedValue ) );
     }
 }

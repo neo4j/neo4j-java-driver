@@ -93,12 +93,6 @@ public abstract class ValueAdapter implements InternalValue
     }
 
     @Override
-    public char asChar()
-    {
-        throw new Uncoercible( type().name(), "Java char" );
-    }
-
-    @Override
     public long asLong()
     {
         throw new Uncoercible( type().name(), "Java long" );
@@ -108,18 +102,6 @@ public abstract class ValueAdapter implements InternalValue
     public int asInt()
     {
         throw new Uncoercible( type().name(), "Java int" );
-    }
-
-    @Override
-    public short asShort()
-    {
-        throw new Uncoercible( type().name(), "Java short" );
-    }
-
-    @Override
-    public byte asByte()
-    {
-        throw new Uncoercible( type().name(), "Java byte" );
     }
 
     @Override
@@ -183,12 +165,6 @@ public abstract class ValueAdapter implements InternalValue
     }
 
     @Override
-    public char[] asCharArray()
-    {
-        throw new Uncoercible( type().name(), "Java char[]" );
-    }
-
-    @Override
     public long[] asLongArray()
     {
         throw new Uncoercible( type().name(), "Java long[]" );
@@ -198,18 +174,6 @@ public abstract class ValueAdapter implements InternalValue
     public int[] asIntArray()
     {
         throw new Uncoercible( type().name(), "Java int[]" );
-    }
-
-    @Override
-    public short[] asShortArray()
-    {
-        throw new Uncoercible( type().name(), "Java short[]" );
-    }
-
-    @Override
-    public byte[] asByteArray()
-    {
-        throw new Uncoercible( type().name(), "Java byte[]" );
     }
 
     @Override
@@ -261,13 +225,13 @@ public abstract class ValueAdapter implements InternalValue
     }
 
     @Override
-    public Value value( int index )
+    public Value get( int index )
     {
         throw new NotMultiValued( type().name() + " is not an indexed collection" );
     }
 
     @Override
-    public Value value( String key )
+    public Value get( String key )
     {
         throw new NotMultiValued( type().name() + " is not a keyed collection" );
     }

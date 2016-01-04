@@ -121,14 +121,14 @@ public final class Extract
                 return emptyMap();
 
             case 1:
-                return singletonMap( record.keys().get( 0 ), mapFunction.apply( record.value( 0 ) ) );
+                return singletonMap( record.keys().get( 0 ), mapFunction.apply( record.get( 0 ) ) );
 
             default:
                 Map<String, T> map = new HashMap<>( size );
                 List<String> keys = record.keys();
                 for ( int i = 0; i < size; i++ )
                 {
-                    map.put( keys.get( i ), mapFunction.apply( record.value( i ) ) );
+                    map.put( keys.get( i ), mapFunction.apply( record.get( i ) ) );
                 }
                 return unmodifiableMap( map );
         }
@@ -145,7 +145,7 @@ public final class Extract
             case 1:
             {
                 String key = map.keys().iterator().next();
-                Value value = map.value( key );
+                Value value = map.get( key );
                 return singletonList( InternalPair.of( key, mapFunction.apply( value ) ) );
             }
 
@@ -154,7 +154,7 @@ public final class Extract
                 List<Pair<String, V>> list = new ArrayList<>( size );
                 for ( String key : map.keys() )
                 {
-                    Value value = map.value( key );
+                    Value value = map.get( key );
                     list.add( InternalPair.of( key, mapFunction.apply( value ) ) );
                 }
                 return unmodifiableList( list );
@@ -173,7 +173,7 @@ public final class Extract
             case 1:
             {
                 String key = map.keys().iterator().next();
-                Value value = map.value( key );
+                Value value = map.get( key );
                 return singletonList( InternalPair.of( key, mapFunction.apply( value ) ) );
             }
 
@@ -184,7 +184,7 @@ public final class Extract
                 for ( int i = 0; i < size; i++ )
                 {
                     String key = keys.get( i );
-                    Value value = map.value( i );
+                    Value value = map.get( i );
                     list.add( InternalPair.of( key, mapFunction.apply( value ) ) );
                 }
                 return unmodifiableList( list );

@@ -267,10 +267,10 @@ public class InternalResultCursorTest
         result.first();
 
         // THEN
-        assertThat( result.value( 0 ), equalTo( value( "v1-1" ) ) );
-        assertThat( result.value( 1 ), equalTo( value( "v2-1" ) ) );
-        assertThat( result.value( 2 ), equalTo( NullValue.NULL ) );
-        assertThat( result.value( -37 ), equalTo( NullValue.NULL ) );
+        assertThat( result.get( 0 ), equalTo( value( "v1-1" ) ) );
+        assertThat( result.get( 1 ), equalTo( value( "v2-1" ) ) );
+        assertThat( result.get( 2 ), equalTo( NullValue.NULL ) );
+        assertThat( result.get( -37 ), equalTo( NullValue.NULL ) );
     }
 
     @Test
@@ -298,7 +298,7 @@ public class InternalResultCursorTest
 
         // THEN
         expectedException.expect( ClientException.class );
-        result.value( 1 );
+        result.get( 1 );
     }
 
     @Test
@@ -345,27 +345,27 @@ public class InternalResultCursorTest
 
         // THEN
         assertTrue( future.hasRecord() );
-        assertThat( future.value( "k1" ), equalTo( value( "v1-1" ) ) );
+        assertThat( future.get( "k1" ), equalTo( value( "v1-1" ) ) );
 
         // WHEN
         result.next();
 
         // THEN
         assertTrue( future.hasRecord() );
-        assertThat( result.value( "k1" ), equalTo( value( "v1-1" ) ) );
-        assertThat( future.value( "k1" ), equalTo( value( "v1-2" ) ) );
+        assertThat( result.get( "k1" ), equalTo( value( "v1-1" ) ) );
+        assertThat( future.get( "k1" ), equalTo( value( "v1-2" ) ) );
 
         // WHEN
         result.next();
 
         // THEN
         assertFalse( future.hasRecord() );
-        assertThat( result.value( "k1" ), equalTo( value( "v1-2" ) ) );
+        assertThat( result.get( "k1" ), equalTo( value( "v1-2" ) ) );
 
         // AND THEN
         try
         {
-            future.value( "k1" );
+            future.get( "k1" );
             fail( "Expected NoRecordException" );
         }
         catch ( NoRecordException e )

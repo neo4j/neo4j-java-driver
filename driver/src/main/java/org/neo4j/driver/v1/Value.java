@@ -57,7 +57,7 @@ import org.neo4j.driver.v1.exceptions.value.Uncoercible;
  *
  * <pre class="docTest:ValueDocIT#classDocTreeExample">
  * {@code
- * String username = value.value("users").value(1).value("name").asString();
+ * String username = value.get("users").get(1).get("name").asString();
  * }
  * </pre>
  *
@@ -66,9 +66,9 @@ import org.neo4j.driver.v1.exceptions.value.Uncoercible;
  * <pre class="docTest:ValueDocIT#classDocIterationExample">
  * {@code
  * List<String> names = new LinkedList<>();
- * for(Value user : value.value("users").values() )
+ * for(Value user : value.get("users").values() )
  * {
- *     names.add(user.value("name").asString());
+ *     names.add(user.get("name").asString());
  * }
  * }
  * </pre>
@@ -100,7 +100,7 @@ public interface Value extends MapAccessor, ListAccessor
     boolean isEmpty();
 
     /**
-     * If the underlying value supports {@link #value(String) key-based indexing}, return an iterable of the keys in the
+     * If the underlying value supports {@link #get(String) key-based indexing}, return an iterable of the keys in the
      * map, this applies to {@link TypeSystem#MAP() map}, {@link #asNode() node} and {@link
      * TypeSystem#RELATIONSHIP()}  relationship} values.
      *
@@ -159,12 +159,6 @@ public interface Value extends MapAccessor, ListAccessor
     String asLiteralString();
 
     /**
-     * @return the value as a Java char, if possible.
-     * @throws Uncoercible if value types are incompatible.
-     */
-    char asChar();
-
-    /**
      * @return the value as a Java Number, if possible.
      * @throws Uncoercible if value types are incompatible.
      */
@@ -187,24 +181,6 @@ public interface Value extends MapAccessor, ListAccessor
      * @throws Uncoercible if value types are incompatible.
      */
     int asInt();
-
-    /**
-     * Returns a Java short if no precision is lost in the conversion.
-     *
-     * @return the value as a Java short.
-     * @throws LossyCoercion if it is not possible to convert the value without loosing precision.
-     * @throws Uncoercible if value types are incompatible.
-     */
-    short asShort();
-
-    /**
-     * Returns a Java byte if no precision is lost in the conversion.
-     *
-     * @return the value as a Java byte.
-     * @throws LossyCoercion if it is not possible to convert the value without loosing precision.
-     * @throws Uncoercible if value types are incompatible.
-     */
-    byte asByte();
 
     /**
      * Returns a Java double if no precision is lost in the conversion.
@@ -250,7 +226,6 @@ public interface Value extends MapAccessor, ListAccessor
      */
     Value[] asArray();
 
-
     /**
      * Map the value with provided function. See {@link Values} for some predefined functions, such
      * as {@link Values#valueAsBoolean()}, {@link Values#valueAsList(Function)}.
@@ -264,12 +239,6 @@ public interface Value extends MapAccessor, ListAccessor
     <T> T[] asArray( Class<T> clazz, Function<Value, T> mapFunction );
 
     /**
-     * @return the value as an array of chars.
-     * @throws Uncoercible if the value cannot be coerced to a char array.
-     */
-    char[] asCharArray();
-
-    /**
      * @return the value as an array of longs.
      * @throws Uncoercible if the value cannot be coerced to a long array.
      */
@@ -280,18 +249,6 @@ public interface Value extends MapAccessor, ListAccessor
      * @throws Uncoercible if the value cannot be coerced to a int array.
      */
     int[] asIntArray();
-
-    /**
-     * @return the value as an array of shorts.
-     * @throws Uncoercible if the value cannot be coerced to a short array.
-     */
-    short[] asShortArray();
-
-    /**
-     * @return the value as an array of bytes.
-     * @throws Uncoercible if the value cannot be coerced to a byte array.
-     */
-    byte[] asByteArray();
 
     /**
      * @return the value as an array of doubles.

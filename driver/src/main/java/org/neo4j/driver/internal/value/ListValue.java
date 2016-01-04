@@ -116,28 +116,6 @@ public class ListValue extends ValueAdapter
     }
 
     @Override
-    public short[] asShortArray()
-    {
-        short[] result = new short[ size() ];
-        for ( int i = 0; i < values.length; i++ )
-        {
-            result[i] = values[i].asShort();
-        }
-        return result;
-    }
-
-    @Override
-    public byte[] asByteArray()
-    {
-        byte[] result = new byte[ size() ];
-        for ( int i = 0; i < values.length; i++ )
-        {
-            result[i] = values[i].asByte();
-        }
-        return result;
-    }
-
-    @Override
     public double[] asDoubleArray()
     {
         double[] result = new double[ size() ];
@@ -166,7 +144,7 @@ public class ListValue extends ValueAdapter
     }
 
     @Override
-    public Value value( int index )
+    public Value get( int index )
     {
         return index >= 0 && index < values.length ? values[index] : Values.NULL;
     }

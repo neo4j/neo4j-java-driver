@@ -47,52 +47,6 @@ public class StringValueTest
     }
 
     @Test
-    public void testCharValue() throws Exception
-    {
-        // Given
-        StringValue value = new StringValue( "S" );
-
-        // Then
-        assertThat( value.asChar(), equalTo( 'S' ) );
-    }
-
-    @Test
-    public void testLargeNonCharValue() throws Exception
-    {
-        // Given
-        StringValue value = new StringValue( "NOT A CHAR" );
-
-        // Then
-        try
-        {
-            value.asChar();
-        }
-        catch ( Unrepresentable e )
-        {
-            return;
-        }
-        fail( "Expected Unrepresentable to be thrown");
-    }
-
-    @Test
-    public void testEmptyNonCharValue() throws Exception
-    {
-        // Given
-        StringValue value = new StringValue( "" );
-
-        // Then
-        try
-        {
-            value.asChar();
-        }
-        catch ( Unrepresentable e )
-        {
-            return;
-        }
-        fail( "Expected Unrepresentable to be thrown" );
-    }
-
-    @Test
     public void testIsString() throws Exception
     {
         // Given
@@ -142,12 +96,5 @@ public class StringValueTest
     {
         InternalValue value = new StringValue( "Spongebob" );
         assertThat( value.type(), equalTo( InternalTypeSystem.TYPE_SYSTEM.STRING() ) );
-    }
-
-    @Test
-    public void testAsCharArray()
-    {
-        InternalValue value = new StringValue( "Spongebob" );
-        assertThat( value.asCharArray(), equalTo( new char[]{'S', 'p', 'o', 'n', 'g', 'e', 'b', 'o', 'b'} ) );
     }
 }

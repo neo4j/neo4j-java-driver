@@ -49,6 +49,12 @@ public class JULogger implements Logger
     }
 
     @Override
+    public void warn( String format, Object... params )
+    {
+        delegate.log( Level.WARNING, String.format( format, params ) );
+    }
+
+    @Override
     public void debug( String format, Object... params )
     {
         if( debugEnabled )

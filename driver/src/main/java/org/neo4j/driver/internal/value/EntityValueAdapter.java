@@ -46,8 +46,8 @@ public abstract class EntityValueAdapter<V extends Entity> extends GraphValueAda
     }
 
     @Override
-    public Value value( String key )
+    public Value get( String key )
     {
-        return asEntity().value( key );
+        return asEntity().get( key );
     }
 }

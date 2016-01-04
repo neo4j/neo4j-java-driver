@@ -43,12 +43,6 @@ public final class NullValue extends ScalarValueAdapter
     }
 
     @Override
-    public String asString()
-    {
-        return "null";
-    }
-
-    @Override
     public Type type()
     {
         return InternalTypeSystem.TYPE_SYSTEM.NULL();

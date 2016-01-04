@@ -53,7 +53,7 @@ public class ParametersIT
         // Then
         for ( Record record : result.list() )
         {
-            Value value = record.value( "a.value" );
+            Value value = record.get( "a.value" );
             assertThat( value.hasType( session.typeSystem().BOOLEAN() ), equalTo( true ) );
             assertThat( value.asBoolean(), equalTo( true ) );
         }
@@ -69,7 +69,7 @@ public class ParametersIT
         // Then
         for ( Record record : result.list() )
         {
-            Value value = record.value( "a.value" );
+            Value value = record.get( "a.value" );
             assertThat( value.hasType( session.typeSystem().INTEGER() ), equalTo( true ) );
             assertThat( value.asLong(), equalTo( 1L ) );
         }
@@ -85,7 +85,7 @@ public class ParametersIT
         // Then
         for ( Record record : result.list() )
         {
-            Value value = record.value( "a.value" );
+            Value value = record.get( "a.value" );
             assertThat( value.hasType( session.typeSystem().INTEGER() ), equalTo( true ) );
             assertThat( value.asLong(), equalTo( 1L ) );
         }
@@ -101,7 +101,7 @@ public class ParametersIT
         // Then
         for ( Record record : result.list() )
         {
-            Value value = record.value( "a.value" );
+            Value value = record.get( "a.value" );
             assertThat( value.hasType( session.typeSystem().INTEGER() ), equalTo( true ) );
             assertThat( value.asLong(), equalTo( 1L ) );
         }
@@ -118,7 +118,7 @@ public class ParametersIT
         // Then
         for ( Record record : result.list() )
         {
-            Value value = record.value( "a.value" );
+            Value value = record.get( "a.value" );
             assertThat( value.hasType( session.typeSystem().INTEGER() ), equalTo( true ) );
             assertThat( value.asLong(), equalTo( 1L ) );
         }
@@ -135,7 +135,7 @@ public class ParametersIT
         // Then
         for ( Record record : result.list() )
         {
-            Value value = record.value( "a.value" );
+            Value value = record.get( "a.value" );
             assertThat( value.hasType( session.typeSystem().FLOAT() ), equalTo( true ) );
             assertThat( value.asDouble(), equalTo( 6.28 ) );
         }
@@ -152,7 +152,7 @@ public class ParametersIT
         // Then
         for ( Record record : result.list() )
         {
-            Value value = record.value( "a.value" );
+            Value value = record.get( "a.value" );
             assertThat( value.hasType( session.typeSystem().STRING() ), equalTo( true ) );
             assertThat( value.asString(), equalTo( "ö" ) );
         }
@@ -170,7 +170,7 @@ public class ParametersIT
         // Then
         for ( Record record : result.list() )
         {
-            Value value = record.value( "a.value" );
+            Value value = record.get( "a.value" );
             assertThat( value.hasType( session.typeSystem().STRING() ), equalTo( true ) );
             assertThat( value.asString(), equalTo( "Mjölnir" ) );
         }
@@ -187,7 +187,7 @@ public class ParametersIT
         // Then
         for ( Record record : result.list() )
         {
-            Value value = record.value( "a.value" );
+            Value value = record.get( "a.value" );
             assertThat( value.hasType( session.typeSystem().STRING() ), equalTo( true ) );
             assertThat( value.asString(), equalTo( "Mjölnir" ) );
         }
@@ -205,7 +205,7 @@ public class ParametersIT
         // Then
         for ( Record record : result.list() )
         {
-            Value value = record.value( "a.value" );
+            Value value = record.get( "a.value" );
             assertThat( value.hasType( session.typeSystem().LIST() ), equalTo( true ) );
             assertThat( value.size(), equalTo( 3 ) );
             for ( Value item : value.asList() )
@@ -228,7 +228,7 @@ public class ParametersIT
         // Then
         for ( Record record : result.list() )
         {
-            Value value = record.value( "a.value" );
+            Value value = record.get( "a.value" );
             assertThat( value.hasType( session.typeSystem().LIST() ), equalTo( true ) );
             assertThat( value.size(), equalTo( 3 ) );
             for ( Value item : value.asList() )
@@ -251,7 +251,7 @@ public class ParametersIT
         // Then
         for ( Record record : result.list() )
         {
-            Value value = record.value( "a.value" );
+            Value value = record.get( "a.value" );
             assertThat( value.hasType( session.typeSystem().LIST() ), equalTo( true ) );
             assertThat( value.size(), equalTo( 3 ) );
             for ( Value item : value.asList() )
@@ -274,7 +274,7 @@ public class ParametersIT
         // Then
         for ( Record record : result.list() )
         {
-            Value value = record.value( "a.value" );
+            Value value = record.get( "a.value" );
             assertThat( value.hasType( session.typeSystem().LIST() ), equalTo( true ) );
             assertThat( value.size(), equalTo( 3 ) );
             for ( Value item : value.asList() )
@@ -296,7 +296,7 @@ public class ParametersIT
         // Then
         for ( Record record : result.list() )
         {
-            Value value = record.value( "a.value" );
+            Value value = record.get( "a.value" );
             assertThat( value.hasType( session.typeSystem().LIST() ), equalTo( true ) );
             assertThat( value.size(), equalTo( 3 ) );
             for ( Value item : value.asList() )
@@ -319,7 +319,7 @@ public class ParametersIT
         // Then
         for ( Record record : result.list() )
         {
-            Value value = record.value( "a.value" );
+            Value value = record.get( "a.value" );
             assertThat( value.hasType( session.typeSystem().BOOLEAN() ), equalTo( true ) );
             assertThat( value.asBoolean(), equalTo( true ) );
         }
@@ -337,7 +337,7 @@ public class ParametersIT
         // Then
         for ( Record record : result.list() )
         {
-            Value value = record.value( "a.value" );
+            Value value = record.get( "a.value" );
             assertThat( value.hasType( session.typeSystem().INTEGER() ), equalTo( true ) );
             assertThat( value.asLong(), equalTo( 42L ) );
         }
@@ -355,7 +355,7 @@ public class ParametersIT
         // Then
         for ( Record record : result.list() )
         {
-            Value value = record.value( "a.value" );
+            Value value = record.get( "a.value" );
             assertThat( value.hasType( session.typeSystem().FLOAT() ), equalTo( true ) );
             assertThat( value.asDouble(), equalTo( 6.28 ) );
         }
@@ -373,7 +373,7 @@ public class ParametersIT
         // Then
         for ( Record record : result.list() )
         {
-            Value value = record.value( "a.value" );
+            Value value = record.get( "a.value" );
             assertThat( value.hasType( session.typeSystem().STRING() ), equalTo( true ) );
             assertThat( value.asString(), equalTo( "Mjölnir" ) );
         }

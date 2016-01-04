@@ -67,30 +67,6 @@ public class FloatValue extends NumberValueAdapter<Double>
         return intVal;
     }
 
-    @Override
-    public short asShort()
-    {
-        short shortVal = (short) val;
-        if ((double) shortVal != val)
-        {
-            throw new LossyCoercion( type().name(), "Java short" );
-        }
-
-        return shortVal;
-    }
-
-    @Override
-    public byte asByte()
-    {
-        byte byteVal = (byte) val;
-        if ((double) byteVal != val)
-        {
-            throw new LossyCoercion( type().name(), "Java byte" );
-        }
-
-        return byteVal;
-    }
-
     public double asDouble()
     {
         return val;

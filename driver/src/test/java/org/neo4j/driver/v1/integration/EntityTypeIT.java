@@ -40,7 +40,7 @@ public class EntityTypeIT
         // When
         ResultCursor cursor = session.run( "CREATE (n) RETURN n" );
         assertTrue( cursor.single() );
-        Node node = cursor.value( "n" ).asNode();
+        Node node = cursor.get( "n" ).asNode();
 
         // Then
         assertTrue( node.identity().toString(), node.identity().toString().matches( "#\\d+" ) );
@@ -52,7 +52,7 @@ public class EntityTypeIT
         // When
         ResultCursor cursor = session.run( "CREATE ()-[r:T]->() RETURN r" );
         assertTrue( cursor.single() );
-        Relationship rel = cursor.value( "r" ).asRelationship();
+        Relationship rel = cursor.get( "r" ).asRelationship();
 
         // Then
         assertTrue( rel.start().toString(), rel.start().toString().matches( "#\\d+" ) );
@@ -66,7 +66,7 @@ public class EntityTypeIT
         // When
         ResultCursor cursor = session.run( "CREATE p=()-[r:T]->() RETURN p" );
         assertTrue( cursor.single() );
-        Path path = cursor.value( "p" ).asPath();
+        Path path = cursor.get( "p" ).asPath();
 
         // Then
         assertTrue( path.start().identity().toString(), path.start().identity().toString().matches( "#\\d+" ) );

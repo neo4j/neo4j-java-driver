@@ -66,9 +66,9 @@ public class InternalNodeTest
     {
         InternalNode node = createNode();
 
-        assertThat( node.value( "k1" ), equalTo( value( 1 ) ) );
-        assertThat( node.value( "k2" ), equalTo( value( 2 ) ) );
-        assertThat( node.value( "k3" ), equalTo( NULL ) );
+        assertThat( node.get( "k1" ), equalTo( value( 1 ) ) );
+        assertThat( node.get( "k2" ), equalTo( value( 2 ) ) );
+        assertThat( node.get( "k3" ), equalTo( NULL ) );
     }
 
     private InternalNode createNode()

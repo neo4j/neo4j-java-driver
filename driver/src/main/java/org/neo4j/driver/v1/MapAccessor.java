@@ -51,7 +51,7 @@ public interface MapAccessor
      * @return the property's value or a {@link NullValue} if no such key exists
      * @throws ClientException if record has not been initialized
      */
-    Value value( String key );
+    Value get( String key );
 
     /**
      * Retrieve the number of entries in this map

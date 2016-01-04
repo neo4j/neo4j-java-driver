@@ -60,14 +60,14 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
         return open;
     }
 
-    public Value value( int index )
+    public Value get( int index )
     {
-        return record().value( index );
+        return record().get( index );
     }
 
-    public Value value( String key )
+    public Value get( String key )
     {
-        return record().value( key );
+        return record().get( key );
     }
 
     @Override
@@ -298,9 +298,9 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
         }
 
         @Override
-        public Value value( String key )
+        public Value get( String key )
         {
-            return record().value( key );
+            return record().get( key );
         }
 
         @Override
@@ -336,9 +336,9 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
         }
 
         @Override
-        public Value value( int index )
+        public Value get( int index )
         {
-            return record().value( index );
+            return record().get( index );
         }
     }
 }
