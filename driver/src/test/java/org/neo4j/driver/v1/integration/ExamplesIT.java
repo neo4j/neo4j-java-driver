@@ -48,10 +48,6 @@ import static org.junit.Assert.assertThat;
 import static org.neo4j.driver.v1.Config.TlsAuthenticationConfig.usingKnownCerts;
 import static org.neo4j.driver.v1.Config.TlsAuthenticationConfig.usingTrustedCert;
 
-// NOTE: Be careful about auto-formatting here. The below segment should contain GraphDatabase, Driver and Session imports
-// tag::include-driver[]
-// end::include-driver[]
-
 /**
  * The tests below are examples that get pulled into the Driver Manual using the tags inside the tests.
  *
@@ -69,21 +65,7 @@ public class ExamplesIT
         StdIOCapture stdIO = new StdIOCapture();
         try( AutoCloseable captured = stdIO.capture() )
         {
-            // tag::minimum-snippet[]
-            Driver driver = GraphDatabase.driver( "bolt://localhost" );
-            Session session = driver.session();
-
-            session.run( "CREATE (neo:Person {name:'Neo', age:23})" );
-
-            ResultCursor result = session.run( "MATCH (p:Person) WHERE p.name = 'Neo' RETURN p.age" );
-            while ( result.next() )
-            {
-                System.out.println( "Neo is " + result.value( "p.age" ).asInt() + " years old." );
-            }
-
-            session.close();
-            driver.close();
-            // end::minimum-snippet[]
+            ImportExample.main();
         }
 
         // Then
@@ -186,7 +168,7 @@ public class ExamplesIT
     }
 
     @Test
-    public void retainResultsForLaterProcessing() throws Throwable
+    public void retainResultsForNestedQuerying() throws Throwable
     {
         StdIOCapture stdIO = new StdIOCapture();
         try( AutoCloseable captured = stdIO.capture();
@@ -211,7 +193,7 @@ public class ExamplesIT
     }
 
     @Test
-    public void retainResultsForNestedQuerying() throws Throwable
+    public void retainResultsForLaterProcessing() throws Throwable
     {
         StdIOCapture stdIO = new StdIOCapture();
         try( AutoCloseable captured = stdIO.capture();
