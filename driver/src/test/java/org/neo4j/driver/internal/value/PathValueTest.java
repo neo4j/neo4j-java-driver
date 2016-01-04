@@ -36,7 +36,7 @@ public class PathValueTest
     @Test
     public void shouldHaveSensibleToString() throws Throwable
     {
-        assertEquals("path[(#42)-[#43:T]->(#44)] :: PATH", pathValue().toString());
+        assertEquals("path[(#42)-[#43:T]->(#44)]", pathValue().toString());
     }
 
     @Test
