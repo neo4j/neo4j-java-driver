@@ -22,7 +22,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import org.neo4j.driver.v1.Node;
+import org.neo4j.driver.v1.Path;
 import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.Relationship;
 import org.neo4j.driver.v1.ResultCursor;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
@@ -30,7 +33,6 @@ import org.neo4j.driver.v1.util.TestNeo4jSession;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-
 import static org.neo4j.driver.v1.Values.parameters;
 
 public class ParametersIT
@@ -261,10 +263,15 @@ public class ParametersIT
     }
 
     @Test
-    public void shouldBeAbleToSetAndReturnSpecialStringArrayProperty()
+    public void shouldBeAbleToSetAndReturnStringArrayProperty()
     {
-        // When
-        String[] arrayValue = new String[]{"Mjölnir", "Mjölnir", "Mjölnir"};
+        testStringArrayContaining( "cat" );
+        testStringArrayContaining( "Mjölnir" );
+    }
+
+    private void testStringArrayContaining( String str )
+    {
+        String[] arrayValue = new String[]{str, str, str};
 
         ResultCursor result = session.run(
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", arrayValue ) );
@@ -278,32 +285,31 @@ public class ParametersIT
             for ( Value item : value.asList() )
             {
                 assertThat( item.hasType( session.typeSystem().STRING() ), equalTo( true ) );
-                assertThat( item.asString(), equalTo( "Mjölnir" ) );
+                assertThat( item.asString(), equalTo( str ) );
             }
         }
     }
 
     @Test
-    public void shouldBeAbleToSetAndReturnStringArrayProperty()
+    public void shouldHandleLargeString() throws Throwable
     {
-        // When
-        String[] arrayValue = new String[]{"cat", "cat", "cat"};
-        ResultCursor result = session.run(
-                "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", arrayValue ) );
-
-        // Then
-        for ( Record record : result.list() )
+        // Given
+        char[] bigStr = new char[1024 * 10];
+        for ( int i = 0; i < bigStr.length; i+=4 )
         {
-            Value value = record.value( "a.value" );
-            assertThat( value.hasType( session.typeSystem().LIST() ), equalTo( true ) );
-            assertThat( value.size(), equalTo( 3 ) );
-            for ( Value item : value.asList() )
-            {
-                assertThat( item.hasType( session.typeSystem().STRING() ), equalTo( true ) );
-                assertThat( item.asString(), equalTo( "cat" ) );
-            }
+            bigStr[i] = 'a';
+            bigStr[i+1] = 'b';
+            bigStr[i+2] = 'c';
+            bigStr[i+3] = 'd';
         }
 
+        String bigString = new String( bigStr );
+
+        // When
+        Value val = session.run( "RETURN {p} AS p", parameters( "p", bigString ) ).peek().value( "p" );
+
+        // Then
+        assertThat( val.asString(), equalTo( bigString ) );
     }
 
     @Test
@@ -386,5 +392,53 @@ public class ParametersIT
 
         // When
         session.run( "anything", parameters( "k", new Object() ) );
+    }
+
+    @Test
+    public void shouldNotBePossibleToUseNodeAsParameter()
+    {
+        // GIVEN
+        ResultCursor cursor = session.run( "CREATE (a:Node) RETURN a" );
+        cursor.first();
+        Node node = cursor.value( 0 ).asNode();
+
+        //Expect
+        exception.expect( ClientException.class );
+        exception.expectMessage( "Nodes can't be used as parameters" );
+
+        // WHEN
+        session.run( "RETURN {a}", parameters( "a", node ) );
+    }
+
+    @Test
+    public void shouldNotBePossibleToUseRelationshipAsParameter()
+    {
+        // GIVEN
+        ResultCursor cursor = session.run( "CREATE (a:Node), (b:Node), (a)-[r:R]->(b) RETURN r" );
+        cursor.first();
+        Relationship relationship = cursor.value( 0 ).asRelationship();
+
+        //Expect
+        exception.expect( ClientException.class );
+        exception.expectMessage( "Relationships can't be used as parameters" );
+
+        // WHEN
+        session.run( "RETURN {a}", parameters( "a", relationship ) );
+    }
+
+    @Test
+    public void shouldNotBePossibleToUsePathAsParameter()
+    {
+        // GIVEN
+        ResultCursor cursor = session.run( "CREATE (a:Node), (b:Node), p=(a)-[r:R]->(b) RETURN p" );
+        cursor.first();
+        Path path = cursor.value( 0 ).asPath();
+
+        //Expect
+        exception.expect( ClientException.class );
+        exception.expectMessage( "Paths can't be used as parameters" );
+
+        // WHEN
+        session.run( "RETURN {a}", parameters( "a", path ) );
     }
 }

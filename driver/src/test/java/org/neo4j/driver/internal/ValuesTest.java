@@ -157,7 +157,7 @@ public class ValuesTest
 
         // Then
         assertThat( result.size(), equalTo( 2 ) );
-        assertThat( result.get( "Dog" ), equalTo( "2 :: INTEGER" ) );
-        assertThat( result.get( "Cat" ), equalTo( "1 :: INTEGER" ) );
+        assertThat( result.get( "Dog" ), equalTo( "2" ) );
+        assertThat( result.get( "Cat" ), equalTo( "1" ) );
     }
 }

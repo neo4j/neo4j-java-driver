@@ -182,7 +182,7 @@ public class ExamplesIT
         }
 
         // Then
-        assertThat( stdIO.stdout(), equalTo( asList("Record: 0","  p.age = 23 :: INTEGER") ) );
+        assertThat( stdIO.stdout(), equalTo( asList("Record: 0","  p.age = 23") ) );
     }
 
     @Test
@@ -244,7 +244,7 @@ public class ExamplesIT
         }
 
         // Then
-        assertThat( stdIO.stdout(), equalTo( asList("p.age = 23 :: INTEGER") ) );
+        assertThat( stdIO.stdout(), equalTo( asList("p.age = 23") ) );
     }
 
 

@@ -73,34 +73,4 @@ public class InternalNode extends InternalEntity implements Node
     {
         return String.format( "node<%s>", identity()  );
     }
-
-    @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() )
-        {
-            return false;
-        }
-        if ( !super.equals( o ) )
-        {
-            return false;
-        }
-
-        InternalNode that = (InternalNode) o;
-
-        return !(labels != null ? !labels.equals( that.labels ) : that.labels != null);
-
-    }
-
-    @Override
-    public int hashCode()
-    {
-        int result = super.hashCode();
-        result = 31 * result + (labels != null ? labels.hashCode() : 0);
-        return result;
-    }
 }

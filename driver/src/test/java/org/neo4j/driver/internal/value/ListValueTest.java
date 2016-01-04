@@ -34,7 +34,7 @@ public class ListValueTest
     public void shouldHaveSensibleToString() throws Throwable
     {
         ListValue listValue = listValue( value( 1 ), value( 2 ), value( 3 ) );
-        assertThat( listValue.toString(), equalTo( "[1, 2, 3] :: LIST OF ANY?" ) );
+        assertThat( listValue.toString(), equalTo( "[1, 2, 3]" ) );
     }
 
     @Test

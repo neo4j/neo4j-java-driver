@@ -40,6 +40,7 @@ import org.neo4j.driver.v1.exceptions.value.Unsizable;
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
 
+import static org.neo4j.driver.internal.value.InternalValue.Format.VALUE_ONLY;
 import static org.neo4j.driver.internal.value.InternalValue.Format.VALUE_WITH_TYPE;
 import static org.neo4j.driver.v1.Values.valueAsIs;
 
@@ -315,7 +316,7 @@ public abstract class ValueAdapter implements InternalValue
 
     public String toString()
     {
-        return toString( VALUE_WITH_TYPE );
+        return toString( VALUE_ONLY );
     }
 
     protected String maybeWithType( boolean includeType, String text )
