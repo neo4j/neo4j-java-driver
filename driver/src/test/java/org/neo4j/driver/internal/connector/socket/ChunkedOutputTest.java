@@ -79,11 +79,20 @@ public class ChunkedOutputTest
     @Test
     public void shouldSendOutDataWhoseSizeIsGreaterThanOutputBufferCapacity() throws Throwable
     {
-        out.writeBytes( new byte[16], 0, 16 );  // 2 + 16 is greater than the default max size 16
+        // Given
+        byte[] data = new byte[32];
+        for ( int i = 0; i < data.length; i++ )
+        {
+            data[i] = (byte) (i % 128);
+        }
+
+        // When
+        out.writeBytes( data, 4, 16 );
         out.messageBoundaryHook().run();
         out.flush();
 
+        // Then
         assertThat( BytePrinter.hex( channel.getBytes() ),
-                equalTo( "00 0e 00 00 00 00 00 00    00 00 00 00 00 00 00 00    00 02 00 00 00 00 " ) );
+                equalTo( "00 0c 04 05 06 07 08 09    0a 0b 0c 0d 0e 0f 00 00    " ) );
     }
 }

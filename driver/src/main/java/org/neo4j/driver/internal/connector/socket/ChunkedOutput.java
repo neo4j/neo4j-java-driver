@@ -33,13 +33,12 @@ public class ChunkedOutput implements PackOutput
     public static final int CHUNK_HEADER_SIZE = 2;
 
     private final ByteBuffer buffer;
+    private final WritableByteChannel channel;
 
     /** The chunk header */
     private int currentChunkHeaderOffset;
     /** Are currently in the middle of writing a chunk? */
     private boolean chunkOpen = false;
-
-    private final WritableByteChannel channel;
 
 
     public ChunkedOutput( WritableByteChannel ch )
@@ -109,17 +108,16 @@ public class ChunkedOutput implements PackOutput
     @Override
     public PackOutput writeBytes( byte[] data, int offset, int length ) throws IOException
     {
-        int index = 0;
-        while ( index < length )
+        while ( offset < length )
         {
             // Ensure there is an open chunk, and that it has at least one byte of space left
             ensure(1);
 
             // Write as much as we can into the current chunk
-            int amountToWrite = Math.min( buffer.remaining(), length - index );
+            int amountToWrite = Math.min( buffer.remaining(), length - offset );
 
             buffer.put( data, offset, amountToWrite );
-            index += amountToWrite;
+            offset += amountToWrite;
         }
         return this;
     }

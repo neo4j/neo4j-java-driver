@@ -261,10 +261,15 @@ public class ParametersIT
     }
 
     @Test
-    public void shouldBeAbleToSetAndReturnSpecialStringArrayProperty()
+    public void shouldBeAbleToSetAndReturnStringArrayProperty()
     {
-        // When
-        String[] arrayValue = new String[]{"Mjölnir", "Mjölnir", "Mjölnir"};
+        testStringArrayContaining( "cat" );
+        testStringArrayContaining( "Mjölnir" );
+    }
+
+    private void testStringArrayContaining( String str )
+    {
+        String[] arrayValue = new String[]{str, str, str};
 
         ResultCursor result = session.run(
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", arrayValue ) );
@@ -278,32 +283,31 @@ public class ParametersIT
             for ( Value item : value.asList() )
             {
                 assertThat( item.hasType( session.typeSystem().STRING() ), equalTo( true ) );
-                assertThat( item.asString(), equalTo( "Mjölnir" ) );
+                assertThat( item.asString(), equalTo( str ) );
             }
         }
     }
 
     @Test
-    public void shouldBeAbleToSetAndReturnStringArrayProperty()
+    public void shouldHandleLargeString() throws Throwable
     {
-        // When
-        String[] arrayValue = new String[]{"cat", "cat", "cat"};
-        ResultCursor result = session.run(
-                "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", arrayValue ) );
-
-        // Then
-        for ( Record record : result.list() )
+        // Given
+        char[] bigStr = new char[1024 * 10];
+        for ( int i = 0; i < bigStr.length; i+=4 )
         {
-            Value value = record.value( "a.value" );
-            assertThat( value.hasType( session.typeSystem().LIST() ), equalTo( true ) );
-            assertThat( value.size(), equalTo( 3 ) );
-            for ( Value item : value.asList() )
-            {
-                assertThat( item.hasType( session.typeSystem().STRING() ), equalTo( true ) );
-                assertThat( item.asString(), equalTo( "cat" ) );
-            }
+            bigStr[i] = 'a';
+            bigStr[i+1] = 'b';
+            bigStr[i+2] = 'c';
+            bigStr[i+3] = 'd';
         }
 
+        String bigString = new String( bigStr );
+
+        // When
+        Value val = session.run( "RETURN {p} AS p", parameters( "p", bigString ) ).peek().value( "p" );
+
+        // Then
+        assertThat( val.asString(), equalTo( bigString ) );
     }
 
     @Test
