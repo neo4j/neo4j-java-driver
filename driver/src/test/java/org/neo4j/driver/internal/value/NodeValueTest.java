@@ -42,8 +42,8 @@ public class NodeValueTest
     @Test
     public void shouldHaveSensibleToString() throws Throwable
     {
-        assertEquals( "node<#1234> :: NODE", emptyNodeValue().toString() );
-        assertEquals( "node<#1234> :: NODE", filledNodeValue().toString() );
+        assertEquals( "node<#1234>", emptyNodeValue().toString() );
+        assertEquals( "node<#1234>", filledNodeValue().toString() );
     }
 
     @Test
