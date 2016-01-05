@@ -23,7 +23,7 @@ import java.util.HashMap;
 import org.junit.Test;
 
 import org.neo4j.driver.internal.logging.DevNullLogger;
-import org.neo4j.driver.internal.messaging.AckFailureMessage;
+import org.neo4j.driver.internal.messaging.ResetMessage;
 import org.neo4j.driver.internal.messaging.DiscardAllMessage;
 import org.neo4j.driver.internal.messaging.FailureMessage;
 import org.neo4j.driver.internal.messaging.IgnoredMessage;
@@ -103,11 +103,11 @@ public class LoggingResponseHandlerTest
     public void shouldLogAckFailureMessage() throws Throwable
     {
         // When
-        handler.handleAckFailureMessage();
+        handler.handleResetMessage();
 
         // Then
-        assertEquals( "S: [ACK_FAILURE]", log );
-        assertEquals( format( new AckFailureMessage() ), log );
+        assertEquals( "S: [RESET]", log );
+        assertEquals( format( new ResetMessage() ), log );
     }
 
     @Test

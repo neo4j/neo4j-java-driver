@@ -92,7 +92,7 @@ public class InternalConnectionPool implements ConnectionPool
     {
         try
         {
-            PooledConnection conn = pool( sessionURI ).acquire( 30, TimeUnit.SECONDS );
+            Connection conn = pool( sessionURI ).acquire( 30, TimeUnit.SECONDS );
             if( conn == null )
             {
                 throw new ClientException(

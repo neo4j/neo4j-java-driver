@@ -21,9 +21,10 @@ package org.neo4j.driver.internal.messaging;
 import java.io.IOException;
 
 /**
- * ACK_FAILURE request message
+ * RESET request message
  * <p>
- * Sent by clients to acknowledge receipt of failures sent by the server. This is required to
+ * Sent by clients to reset a session to a clean state - closing any open transaction or result streams.
+ * This also acknowledges receipt of failures sent by the server. This is required to
  * allow optimistic sending of multiple messages before responses have been received - pipelining.
  * <p>
  * When something goes wrong, we want the server to stop processing our already sent messages,
@@ -33,20 +34,20 @@ import java.io.IOException;
  * This message acts as a barrier after an error, informing the server that we've seen the error
  * message, and that messages that follow this one are safe to execute.
  */
-public class AckFailureMessage implements Message
+public class ResetMessage implements Message
 {
-    public static final AckFailureMessage ACK_FAILURE = new AckFailureMessage();
+    public static final ResetMessage RESET = new ResetMessage();
 
     @Override
     public void dispatch( MessageHandler handler ) throws IOException
     {
-        handler.handleAckFailureMessage();
+        handler.handleResetMessage();
     }
 
     @Override
     public String toString()
     {
-        return "[ACK_FAILURE]";
+        return "[RESET]";
     }
 
     @Override

@@ -74,11 +74,13 @@ public class Driver implements AutoCloseable
 {
     private final ConnectionPool connections;
     private final URI url;
+    private final Config config;
 
     public Driver( URI url, Config config )
     {
         this.url = url;
         this.connections = new InternalConnectionPool( config );
+        this.config = config;
     }
 
     /**
@@ -88,11 +90,7 @@ public class Driver implements AutoCloseable
      */
     public Session session()
     {
-        return new InternalSession( connections.acquire( url ) );
-        // TODO a ConnectionPool per URL
-        // ConnectionPool connections = new InternalConnectionPool( logging, url );
-        // And to value a connection from the pool could be
-        // connections.acquire();
+        return new InternalSession( connections.acquire( url ), config.logging().getLog( "session" ) );
     }
 
     /**
