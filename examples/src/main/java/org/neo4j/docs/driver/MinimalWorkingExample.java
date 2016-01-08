@@ -16,21 +16,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1.integration;
+package org.neo4j.docs.driver;
 
-// NOTE: Be careful about auto-formatting here. The below segment should contain GraphDatabase, Driver and Session imports
-// tag::include-driver[]
+// NOTE: Be careful about auto-formatting here: All imports should be between the tags below.
+// tag::minimal-example-import[]
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.ResultCursor;
 import org.neo4j.driver.v1.Session;
-// end::include-driver[]
+// end::minimal-example-import[]
 
-public class ImportExample
+public class MinimalWorkingExample
 {
-    public static void main(String ... args) throws Exception
+    public static void minimalWorkingExample() throws Exception
     {
-        // tag::minimum-snippet[]
+        // tag::minimal-example[]
         Driver driver = GraphDatabase.driver( "bolt://localhost" );
         Session session = driver.session();
 
@@ -44,6 +44,6 @@ public class ImportExample
 
         session.close();
         driver.close();
-        // end::minimum-snippet[]
+        // end::minimal-example[]
     }
 }
