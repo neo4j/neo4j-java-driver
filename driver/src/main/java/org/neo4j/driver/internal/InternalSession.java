@@ -56,7 +56,7 @@ public class InternalSession implements Session
     @Override
     public ResultCursor run( String statementText, Map<String,Value> statementParameters )
     {
-        ensureNoOpenTransaction();
+        ensureConnectionIsValid();
         ResultBuilder resultBuilder = new ResultBuilder( statementText, statementParameters );
         connection.run( statementText, statementParameters, resultBuilder );
 
@@ -111,7 +111,7 @@ public class InternalSession implements Session
     @Override
     public Transaction beginTransaction()
     {
-        ensureNoOpenTransaction();
+        ensureConnectionIsValid();
         return currentTransaction = new InternalTransaction( connection, txCleanup );
     }
 
@@ -121,12 +121,28 @@ public class InternalSession implements Session
         return InternalTypeSystem.TYPE_SYSTEM;
     }
 
+    private void ensureConnectionIsValid()
+    {
+        ensureNoOpenTransaction();
+        ensureConnectionIsOpen();
+    }
+
     private void ensureNoOpenTransaction()
     {
         if ( currentTransaction != null )
         {
             throw new ClientException( "Please close the currently open transaction object before running " +
                                        "more statements/transactions in the current session." );
+        }
+    }
+
+    private void ensureConnectionIsOpen()
+    {
+        if ( !connection.isOpen() )
+        {
+            throw new ClientException( "The current session cannot be reused as the underlying connection with the " +
+                                       "server has been closed due to unrecoverable errors. " +
+                                       "Please close this session and retry your statement in another new session." );
         }
     }
 }

@@ -48,7 +48,3 @@ Java 8, because Neo4j-the-database needs it to run.
 
 If you are building on windows, you need to run install as admin so that Neo4j-the-database could be registered as a
 windows service and then be started and stopped correctly using its powershell scripts for windows.
-To be able to run powershell script on windows, you might need to enable running scripts on the system.
-This can for example be achieved by executing the following from an elevated PowerShell prompt:
-
-    Set-ExecutionPolicy -ExecutionPolicy RemoteSigned

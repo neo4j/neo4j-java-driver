@@ -29,6 +29,7 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 import static junit.framework.TestCase.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class InternalSessionTest
 {
@@ -40,6 +41,7 @@ public class InternalSessionTest
     {
         // Given
         Connection mock = mock( Connection.class );
+        when( mock.isOpen() ).thenReturn( true );
         InternalSession sess = new InternalSession( mock );
 
         // When
@@ -54,6 +56,7 @@ public class InternalSessionTest
     {
         // Given
         Connection mock = mock( Connection.class );
+        when( mock.isOpen() ).thenReturn( true );
         InternalSession sess = new InternalSession( mock );
         sess.beginTransaction();
 
@@ -69,6 +72,7 @@ public class InternalSessionTest
     {
         // Given
         Connection mock = mock( Connection.class );
+        when( mock.isOpen() ).thenReturn( true );
         InternalSession sess = new InternalSession( mock );
         sess.beginTransaction().close();
 
@@ -84,6 +88,7 @@ public class InternalSessionTest
     {
         // Given
         Connection mock = mock( Connection.class );
+        when( mock.isOpen() ).thenReturn( true );
         InternalSession sess = new InternalSession( mock );
         sess.beginTransaction();
 
@@ -99,6 +104,7 @@ public class InternalSessionTest
     {
         // Given
         Connection mock = mock( Connection.class );
+        when( mock.isOpen() ).thenReturn( true );
         InternalSession sess = new InternalSession( mock );
         sess.beginTransaction().close();
 
@@ -107,5 +113,35 @@ public class InternalSessionTest
 
         // Then
         verify( mock ).sync();
+    }
+
+    @Test
+    public void shouldNotAllowMoreStatementsInSessionWhileConnectionClosed() throws Throwable
+    {
+        // Given
+        Connection mock = mock( Connection.class );
+        when( mock.isOpen() ).thenReturn( false );
+        InternalSession sess = new InternalSession( mock );
+
+        // Expect
+        exception.expect( ClientException.class );
+
+        // When
+        sess.run( "whatever" );
+    }
+
+    @Test
+    public void shouldNotAllowMoreTransactionsInSessionWhileConnectionClosed() throws Throwable
+    {
+        // Given
+        Connection mock = mock( Connection.class );
+        when( mock.isOpen() ).thenReturn( false );
+        InternalSession sess = new InternalSession( mock );
+
+        // Expect
+        exception.expect( ClientException.class );
+
+        // When
+        sess.beginTransaction();
     }
 }

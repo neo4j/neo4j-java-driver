@@ -52,7 +52,7 @@ public class DumpMessage
         if ( args.length < 1 )
         {
             System.out.println( "Please specify PackStreamV1 messages " +
-                                "(or PackStreamV1 messages with chunk size and 00 00 ending) " +
+                                "(or PackStreamV1 messages in chunks) " +
                                 "that you want to unpack in hex strings. " );
             return;
         }

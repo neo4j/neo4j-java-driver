@@ -59,4 +59,14 @@ public interface Connection extends AutoCloseable
 
     @Override
     void close();
+
+    /**
+     * Test if the underlying socket connection with the server is still open.
+     * When the socket connection with the server is closed,
+     * the connection cannot take on any task, but be {@link #close() closed} to release resources it occupies.
+     * Note: Invocation of {@link #close()} method would make this method to return false,
+     * however this method cannot indicate whether {@link #close()} is already be called or not.
+     * @return true if the socket connection with the server is open, otherwise false.
+     */
+    boolean isOpen();
 }

@@ -86,6 +86,7 @@ public class Neo4jWindowsInstaller extends Neo4jInstaller
     {
         return runCommand(
                 "powershell.exe",
+                "-ExecutionPolicy", "RemoteSigned",
                 format( "Import-Module %s", new File( neo4jHomeDir, "bin/Neo4j-Management/Neo4j-Management.psm1" ).getAbsolutePath() ),
                 format( "; %s", cmd ) );
     }

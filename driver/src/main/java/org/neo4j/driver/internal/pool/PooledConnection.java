@@ -100,7 +100,7 @@ public class PooledConnection implements Connection
         {
             delegate.sync();
         }
-        catch(RuntimeException e)
+        catch ( RuntimeException e )
         {
             onDelegateException( e );
         }
@@ -110,6 +110,12 @@ public class PooledConnection implements Connection
     public void close()
     {
         release.accept( this );
+    }
+
+    @Override
+    public boolean isOpen()
+    {
+        return delegate.isOpen();
     }
 
     public boolean hasUnrecoverableErrors()
@@ -130,11 +136,17 @@ public class PooledConnection implements Connection
      */
     private void onDelegateException( RuntimeException e )
     {
-        if ( !isClientOrTransientError( e ) )
+        if ( !isClientOrTransientError( e ) || isProtocolViolationError( e ) )
         {
             unrecoverableErrorsOccurred = true;
         }
         throw e;
+    }
+
+    private boolean isProtocolViolationError(RuntimeException e )
+    {
+        return e instanceof Neo4jException
+               && ((Neo4jException) e).neo4jErrorCode().startsWith( "Neo.ClientError.Request" );
     }
 
     private boolean isClientOrTransientError( RuntimeException e )

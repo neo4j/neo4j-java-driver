@@ -102,6 +102,14 @@ public class SocketClient
         while ( handler.receivedResponses() < pendingMessages.size() )
         {
             reader.read( handler );
+
+            // TODO: all the errors come from the following trace should result in the termination of this channel
+            // https://github.com/neo4j/neo4j/blob/3.0/community/bolt/src/main/java/org/neo4j/bolt/v1/transport/BoltProtocolV1.java#L86
+            if ( handler.protocolViolationErrorOccurred() )
+            {
+                stop();
+                throw handler.serverFailure();
+            }
         }
     }
 
@@ -109,9 +117,12 @@ public class SocketClient
     {
         try
         {
-            channel.close();
-            channel = null;
-            logger.debug( "~~ [CLOSE]" );
+            if( channel != null )
+            {
+                logger.debug( "~~ [CLOSE]" );
+                channel.close();
+                channel = null;
+            }
         }
         catch ( IOException e )
         {
@@ -126,11 +137,16 @@ public class SocketClient
         }
     }
 
+    public boolean isOpen()
+    {
+        return channel != null && channel.isOpen();
+    }
+
     private SocketProtocol negotiateProtocol() throws IOException
     {
         logger.debug( "~~ [HANDSHAKE] [0x6060B017, 1, 0, 0, 0]." );
         //Propose protocol versions
-        ByteBuffer buf = ByteBuffer.allocate( 5 * 4 ).order( BIG_ENDIAN);
+        ByteBuffer buf = ByteBuffer.allocate( 5 * 4 ).order( BIG_ENDIAN );
         buf.putInt( MAGIC_PREAMBLE );
         for ( int version : SUPPORTED_VERSIONS )
         {
