@@ -31,7 +31,7 @@ import org.neo4j.driver.v1.util.TestNeo4jSession;
  * The base class to run all cucumber tests
  */
 @RunWith( DriverCucumberAdapter.class )
-@CucumberOptions( features = {"target/resources/features/BoltTypeSystem.feature", "target/resources/features/BoltChunkingAndDechunking.feature"} )
+@CucumberOptions( features = {"src/test/resources"}, tags={"~@in_dev"}, format = {"pretty"})
 public class DriverComplianceIT
 {
     @ClassRule
