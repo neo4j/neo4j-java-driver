@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -46,7 +46,7 @@ public abstract class Neo4jInstaller
 
     static final String version = System.getProperty( "version", "3.0.0-NIGHTLY" );
 
-    private static final File neo4jDir = new File( "./target/neo4j" );
+    private static final File neo4jDir = new File( "../target/neo4j" );
 
     public static final File neo4jHomeDir = new File( neo4jDir, version );
     public static final File dbDir = new File( neo4jHomeDir, "data/graph.db" );
