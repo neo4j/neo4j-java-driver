@@ -18,9 +18,6 @@
  */
 package org.neo4j.driver.v1.integration;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -34,6 +31,9 @@ import java.security.cert.X509Certificate;
 import java.util.Scanner;
 import javax.net.ssl.SSLHandshakeException;
 import javax.xml.bind.DatatypeConverter;
+
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.driver.internal.ConfigTest;
 import org.neo4j.driver.internal.connector.socket.TLSSocketChannel;
