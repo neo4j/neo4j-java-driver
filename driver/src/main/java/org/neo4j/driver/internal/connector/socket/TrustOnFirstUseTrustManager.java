@@ -98,7 +98,7 @@ class TrustOnFirstUseTrustManager implements X509TrustManager
     /**
      * Save a new (server_ip, cert) pair into knownCerts file
      *
-     * @param fingerprint
+     * @param fingerprint the SHA-512 fingerprint of the host certificate
      */
     private void saveTrustedHost( String fingerprint ) throws IOException
     {
@@ -164,20 +164,20 @@ class TrustOnFirstUseTrustManager implements X509TrustManager
     }
 
     /**
-     * Calculate the certificate fingerprint - simply the SHA-1 hash of the DER-encoded certificate.
+     * Calculate the certificate fingerprint - simply the SHA-512 hash of the DER-encoded certificate.
      */
     public static String fingerprint( X509Certificate cert ) throws CertificateException
     {
         try
         {
-            MessageDigest md = MessageDigest.getInstance( "SHA-1" );
+            MessageDigest md = MessageDigest.getInstance( "SHA-512" );
             md.update( cert.getEncoded() );
             return BytePrinter.compactHex( md.digest() );
         }
         catch( NoSuchAlgorithmException e )
         {
             // SHA-1 not available
-            throw new CertificateException( "Cannot use TLS on this platform, because SHA-1 message digest algorithm is not available: " + e.getMessage(), e );
+            throw new CertificateException( "Cannot use TLS on this platform, because SHA-512 message digest algorithm is not available: " + e.getMessage(), e );
         }
     }
 
