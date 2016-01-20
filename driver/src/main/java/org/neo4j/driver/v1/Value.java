@@ -57,7 +57,7 @@ import org.neo4j.driver.v1.exceptions.value.Uncoercible;
  *
  * <pre class="docTest:ValueDocIT#classDocTreeExample">
  * {@code
- * String username = value.value("users").value(1).value("name").asString();
+ * String username = value.get("users").get(1).get("name").asString();
  * }
  * </pre>
  *
@@ -66,9 +66,9 @@ import org.neo4j.driver.v1.exceptions.value.Uncoercible;
  * <pre class="docTest:ValueDocIT#classDocIterationExample">
  * {@code
  * List<String> names = new LinkedList<>();
- * for(Value user : value.value("users").values() )
+ * for(Value user : value.get("users").values() )
  * {
- *     names.add(user.value("name").asString());
+ *     names.add(user.get("name").asString());
  * }
  * }
  * </pre>
@@ -93,14 +93,14 @@ public interface Value extends MapAccessor, ListAccessor
     int size();
 
     /**
-     * Test if the underlying collection is empty
+     * If this value represents a list or map, test if the collection is empty.
      *
      * @return <tt>true</tt> if size() is 0, otherwise <tt>false</tt>
      */
     boolean isEmpty();
 
     /**
-     * If the underlying value supports {@link #value(String) key-based indexing}, return an iterable of the keys in the
+     * If the underlying value supports {@link #get(String) key-based indexing}, return an iterable of the keys in the
      * map, this applies to {@link TypeSystem#MAP() map}, {@link #asNode() node} and {@link
      * TypeSystem#RELATIONSHIP()}  relationship} values.
      *
@@ -137,7 +137,13 @@ public interface Value extends MapAccessor, ListAccessor
      */
     boolean isNull();
 
-    /** @return the value as a Java Object */
+    /**
+     * This returns a java standard library representation of the underlying value,
+     * using a java type that is "sensible" given the underlying type. For instance,
+     * a Neo4j List will return a Java {@code List<Object>} here.
+     *
+     * @return the value as a Java Object
+     */
     Object asObject();
 
     /**
@@ -151,18 +157,6 @@ public interface Value extends MapAccessor, ListAccessor
      *  @throws Uncoercible if value types are incompatible.
      */
     String asString();
-
-    /**
-     *  @return the value as a Cypher literal, if possible
-     *  @throws Uncoercible if value types are incompatible.
-     */
-    String asLiteralString();
-
-    /**
-     * @return the value as a Java char, if possible.
-     * @throws Uncoercible if value types are incompatible.
-     */
-    char asChar();
 
     /**
      * @return the value as a Java Number, if possible.
@@ -187,24 +181,6 @@ public interface Value extends MapAccessor, ListAccessor
      * @throws Uncoercible if value types are incompatible.
      */
     int asInt();
-
-    /**
-     * Returns a Java short if no precision is lost in the conversion.
-     *
-     * @return the value as a Java short.
-     * @throws LossyCoercion if it is not possible to convert the value without loosing precision.
-     * @throws Uncoercible if value types are incompatible.
-     */
-    short asShort();
-
-    /**
-     * Returns a Java byte if no precision is lost in the conversion.
-     *
-     * @return the value as a Java byte.
-     * @throws LossyCoercion if it is not possible to convert the value without loosing precision.
-     * @throws Uncoercible if value types are incompatible.
-     */
-    byte asByte();
 
     /**
      * Returns a Java double if no precision is lost in the conversion.
@@ -242,68 +218,6 @@ public interface Value extends MapAccessor, ListAccessor
      * @return the value as a list of T obtained by mapping from the list elements, if possible
      */
     <T> List<T> asList( Function<Value, T> mapFunction );
-
-    /**
-     * If the Value is for example a List, returns the value as an array of values instead.
-     * @return an array of Values.
-     * @throws Uncoercible if the Value cannot be turned into an array.
-     */
-    Value[] asArray();
-
-
-    /**
-     * Map the value with provided function. See {@link Values} for some predefined functions, such
-     * as {@link Values#valueAsBoolean()}, {@link Values#valueAsList(Function)}.
-     *
-     * @param clazz the class of T
-     * @param mapFunction a function mapping Values into T
-     * @param <T> The type of the array
-     * @return an array of T
-     * @throws Uncoercible if the Value cannot be turned into an array.
-     */
-    <T> T[] asArray( Class<T> clazz, Function<Value, T> mapFunction );
-
-    /**
-     * @return the value as an array of chars.
-     * @throws Uncoercible if the value cannot be coerced to a char array.
-     */
-    char[] asCharArray();
-
-    /**
-     * @return the value as an array of longs.
-     * @throws Uncoercible if the value cannot be coerced to a long array.
-     */
-    long[] asLongArray();
-
-    /**
-     * @return the value as an array of ints.
-     * @throws Uncoercible if the value cannot be coerced to a int array.
-     */
-    int[] asIntArray();
-
-    /**
-     * @return the value as an array of shorts.
-     * @throws Uncoercible if the value cannot be coerced to a short array.
-     */
-    short[] asShortArray();
-
-    /**
-     * @return the value as an array of bytes.
-     * @throws Uncoercible if the value cannot be coerced to a byte array.
-     */
-    byte[] asByteArray();
-
-    /**
-     * @return the value as an array of doubles.
-     * @throws Uncoercible if the value cannot be coerced to a double array.
-     */
-    double[] asDoubleArray();
-
-    /**
-     * @return the value as an array of floats.
-     * @throws Uncoercible if the value cannot be coerced to a float array.
-     */
-    float[] asFloatArray();
 
     /**
      * @return the value as a Java value map, if possible

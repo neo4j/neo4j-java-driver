@@ -106,7 +106,7 @@ public abstract class InternalEntity implements Entity, AsValue
     }
 
     @Override
-    public Value value( String key )
+    public Value get( String key )
     {
         Value value = properties.get( key );
         return value == null ? Values.NULL : value;

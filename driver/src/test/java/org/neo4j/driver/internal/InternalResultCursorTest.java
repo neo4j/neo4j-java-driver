@@ -19,13 +19,13 @@
 package org.neo4j.driver.internal;
 
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import org.neo4j.driver.internal.summary.ResultBuilder;
 import org.neo4j.driver.internal.value.NullValue;
@@ -36,15 +36,13 @@ import org.neo4j.driver.v1.Records;
 import org.neo4j.driver.v1.ResultCursor;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.exceptions.NoRecordException;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import static org.neo4j.driver.v1.Values.value;
 
 public class InternalResultCursorTest
@@ -267,10 +265,10 @@ public class InternalResultCursorTest
         result.first();
 
         // THEN
-        assertThat( result.value( 0 ), equalTo( value( "v1-1" ) ) );
-        assertThat( result.value( 1 ), equalTo( value( "v2-1" ) ) );
-        assertThat( result.value( 2 ), equalTo( NullValue.NULL ) );
-        assertThat( result.value( -37 ), equalTo( NullValue.NULL ) );
+        assertThat( result.get( 0 ), equalTo( value( "v1-1" ) ) );
+        assertThat( result.get( 1 ), equalTo( value( "v2-1" ) ) );
+        assertThat( result.get( 2 ), equalTo( NullValue.NULL ) );
+        assertThat( result.get( -37 ), equalTo( NullValue.NULL ) );
     }
 
     @Test
@@ -298,7 +296,7 @@ public class InternalResultCursorTest
 
         // THEN
         expectedException.expect( ClientException.class );
-        result.value( 1 );
+        result.get( 1 );
     }
 
     @Test
@@ -337,42 +335,27 @@ public class InternalResultCursorTest
     @Test
     public void shouldPeekIntoTheFuture()
     {
-        // GIVEN
+        // WHEN
         ResultCursor result = createResult( 2 );
 
-        // WHEN
-        RecordAccessor future = result.peek();
-
         // THEN
-        assertTrue( future.hasRecord() );
-        assertThat( future.value( "k1" ), equalTo( value( "v1-1" ) ) );
+        assertThat( result.peek().get( "k1" ), equalTo( value( "v1-1" ) ) );
 
         // WHEN
         result.next();
 
         // THEN
-        assertTrue( future.hasRecord() );
-        assertThat( result.value( "k1" ), equalTo( value( "v1-1" ) ) );
-        assertThat( future.value( "k1" ), equalTo( value( "v1-2" ) ) );
+        assertThat( result.get( "k1" ), equalTo( value( "v1-1" ) ) );
+        assertThat( result.peek().get( "k1" ), equalTo( value( "v1-2" ) ) );
 
         // WHEN
         result.next();
 
         // THEN
-        assertFalse( future.hasRecord() );
-        assertThat( result.value( "k1" ), equalTo( value( "v1-2" ) ) );
+        assertThat( result.get( "k1" ), equalTo( value( "v1-2" ) ) );
 
         // AND THEN
-        try
-        {
-            future.value( "k1" );
-            fail( "Expected NoRecordException" );
-        }
-        catch ( NoRecordException e )
-        {
-            // yay
-        }
-
+        assertNull( result.peek() );
     }
 
     @Test
@@ -383,8 +366,7 @@ public class InternalResultCursorTest
         RecordAccessor future = result.peek();
 
         // WHEN
-        assertFalse( result.hasRecord() );
-        assertFalse( future.hasRecord() );
+        assertNull( future );
     }
 
     private ResultCursor createResult( int numberOfRecords )

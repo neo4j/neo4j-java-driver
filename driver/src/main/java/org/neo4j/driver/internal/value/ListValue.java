@@ -18,7 +18,6 @@
  */
 package org.neo4j.driver.internal.value;
 
-import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -72,101 +71,13 @@ public class ListValue extends ValueAdapter
     }
 
     @Override
-    public Value[] asArray()
-    {
-        int size = size();
-        Value[] result = new Value[size];
-        System.arraycopy( values, 0, result, 0, size );
-        return result;
-    }
-
-    @SuppressWarnings("unchecked")
-    @Override
-    public <T> T[] asArray( Class<T> clazz, Function<Value, T> mapFunction )
-    {
-        int size = size();
-        T[] result = (T[]) Array.newInstance( clazz, size );
-        for ( int i = 0; i < size; i++ )
-        {
-            result[i] = mapFunction.apply( values[i] );
-        }
-        return result;
-    }
-
-    @Override
-    public long[] asLongArray()
-    {
-        long[] result = new long[ size() ];
-        for ( int i = 0; i < values.length; i++ )
-        {
-            result[i] = values[i].asLong();
-        }
-        return result;
-    }
-
-    @Override
-    public int[] asIntArray()
-    {
-        int[] result = new int[ size() ];
-        for ( int i = 0; i < values.length; i++ )
-        {
-            result[i] = values[i].asInt();
-        }
-        return result;
-    }
-
-    @Override
-    public short[] asShortArray()
-    {
-        short[] result = new short[ size() ];
-        for ( int i = 0; i < values.length; i++ )
-        {
-            result[i] = values[i].asShort();
-        }
-        return result;
-    }
-
-    @Override
-    public byte[] asByteArray()
-    {
-        byte[] result = new byte[ size() ];
-        for ( int i = 0; i < values.length; i++ )
-        {
-            result[i] = values[i].asByte();
-        }
-        return result;
-    }
-
-    @Override
-    public double[] asDoubleArray()
-    {
-        double[] result = new double[ size() ];
-        for ( int i = 0; i < values.length; i++ )
-        {
-            result[i] = values[i].asDouble();
-        }
-        return result;
-    }
-
-    @Override
-    public float[] asFloatArray()
-    {
-        float[] result = new float[ size() ];
-        for ( int i = 0; i < values.length; i++ )
-        {
-            result[i] = values[i].asFloat();
-        }
-        return result;
-    }
-
-    @Override
     public int size()
     {
         return values.length;
     }
 
     @Override
-    public Value value( int index )
+    public Value get( int index )
     {
         return index >= 0 && index < values.length ? values[index] : Values.NULL;
     }

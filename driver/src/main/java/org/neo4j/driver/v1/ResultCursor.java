@@ -109,9 +109,9 @@ public interface ResultCursor extends RecordAccessor, Resource
      * The returned {@link RecordAccessor} is updated consistently whenever this associated cursor
      * is moved.
      *
-     * @return a view on the next record
+     * @return a view on the next record, or null if there is no next record
      */
-    RecordAccessor peek();
+    Record peek();
 
     /**
      * Retrieve and store the entire result stream.

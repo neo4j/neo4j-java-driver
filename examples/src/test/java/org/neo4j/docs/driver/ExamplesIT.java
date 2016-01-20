@@ -140,7 +140,7 @@ public class ExamplesIT
             Examples.retainResultsForNestedQuerying( session );
 
             // Then
-            int theOnes = session.run( "MATCH (:Person)-[:HAS_TRAIT]->() RETURN count(*)" ).peek().value( 0 ).asInt();
+            int theOnes = session.run( "MATCH (:Person)-[:HAS_TRAIT]->() RETURN count(*)" ).peek().get( 0 ).asInt();
             assertEquals( 1, theOnes );
         }
     }
@@ -176,7 +176,7 @@ public class ExamplesIT
             Examples.transactionCommit( session );
 
             // Then
-            assertThat( session.run( "MATCH (p:Person) RETURN count(p)" ).peek().value( 0 ).asInt(), equalTo( 1 ) );
+            assertThat( session.run( "MATCH (p:Person) RETURN count(p)" ).peek().get( 0 ).asInt(), equalTo( 1 ) );
         }
     }
 
@@ -191,7 +191,7 @@ public class ExamplesIT
             Examples.transactionRollback( session );
 
             // Then
-            assertThat( session.run( "MATCH (p:Person) RETURN count(p)" ).peek().value( 0 ).asInt(), equalTo( 0 ) );
+            assertThat( session.run( "MATCH (p:Person) RETURN count(p)" ).peek().get( 0 ).asInt(), equalTo( 0 ) );
         }
     }
 

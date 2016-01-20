@@ -30,17 +30,17 @@ public class InternalNotification implements Notification
         @Override
         public Notification apply( Value value )
         {
-            String code = value.value( "code" ).asString();
-            String title = value.value( "title" ).asString();
-            String description = value.value( "description" ).asString();
+            String code = value.get( "code" ).asString();
+            String title = value.get( "title" ).asString();
+            String description = value.get( "description" ).asString();
 
-            Value posValue = value.value( "position" );
+            Value posValue = value.get( "position" );
             InputPosition position = null;
             if( posValue != null )
             {
-                position = new InternalInputPosition( posValue.value( "offset" ).asInt(),
-                                                    posValue.value( "line" ).asInt(),
-                                                    posValue.value( "column" ).asInt() );
+                position = new InternalInputPosition( posValue.get( "offset" ).asInt(),
+                                                    posValue.get( "line" ).asInt(),
+                                                    posValue.get( "column" ).asInt() );
             }
 
             return new InternalNotification( code, title, description, position );

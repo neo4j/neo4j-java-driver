@@ -83,6 +83,6 @@ public class SelfContainedNodeTest
         Node node = adamTheNode();
 
         // Then
-        assertThat( node.value( "name" ).asString(), equalTo( "Adam" ) );
+        assertThat( node.get( "name" ).asString(), equalTo( "Adam" ) );
     }
 }

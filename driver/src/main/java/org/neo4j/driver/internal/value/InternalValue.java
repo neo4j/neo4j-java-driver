@@ -26,6 +26,7 @@ import org.neo4j.driver.v1.Value;
 public interface InternalValue extends Value, AsValue
 {
     TypeConstructor typeConstructor();
+
     String toString( Format valueFormat );
 
     enum Format implements Function<Value, String>

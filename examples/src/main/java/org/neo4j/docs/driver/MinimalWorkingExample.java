@@ -39,7 +39,7 @@ public class MinimalWorkingExample
         ResultCursor result = session.run( "MATCH (p:Person) WHERE p.name = 'Neo' RETURN p.age" );
         while ( result.next() )
         {
-            System.out.println( "Neo is " + result.value( "p.age" ).asInt() + " years old." );
+            System.out.println( "Neo is " + result.get( "p.age" ).asInt() + " years old." );
         }
 
         session.close();
