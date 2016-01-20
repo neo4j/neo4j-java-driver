@@ -36,6 +36,7 @@ import org.neo4j.driver.internal.value.ListValue;
 import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.internal.value.StringValue;
+import org.neo4j.driver.internal.value.ValueAdapter;
 import org.neo4j.driver.v1.Entity;
 import org.neo4j.driver.v1.ResultCursor;
 import org.neo4j.driver.v1.Statement;
@@ -258,7 +259,7 @@ public class TCKTestUtil
 
     public static String boltValueAsCypherString( Value value )
     {
-        return value.asLiteralString();
+        return ((ValueAdapter)value).asLiteralString();
     }
 
     public static String[] getListFromString( String str )

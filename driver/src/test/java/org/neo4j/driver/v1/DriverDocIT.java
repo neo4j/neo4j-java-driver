@@ -18,20 +18,18 @@
  */
 package org.neo4j.driver.v1;
 
-import java.util.LinkedList;
-import java.util.List;
-
 import javadoctest.DocSnippet;
 import javadoctest.DocTestRunner;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
 
+import java.util.LinkedList;
+import java.util.List;
+
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
-import static java.util.Arrays.asList;
-
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -48,6 +46,7 @@ public class DriverDocIT
         // given
         snippet.addImport( List.class );
         snippet.addImport( LinkedList.class );
+        session.run( "MATCH (n) DETACH DELETE (n)" );
 
         // when
         snippet.run();
@@ -55,7 +54,7 @@ public class DriverDocIT
         // then it should've created a bunch of data
         ResultCursor result = session.run( "MATCH (n) RETURN count(n)" );
         assertTrue( result.single() );
-        assertEquals( 3, result.value( 0 ).asInt() );
-        assertThat( (List<String>)snippet.get( "names" ), equalTo( asList("Bob", "Alice", "Tina")) );
+        assertEquals( 3, result.get( 0 ).asInt() );
+        assertThat( (List<String>)snippet.get( "names" ), containsInAnyOrder( "Bob", "Alice", "Tina" ) );
     }
 }

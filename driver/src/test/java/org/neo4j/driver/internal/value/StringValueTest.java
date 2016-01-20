@@ -24,13 +24,11 @@ import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.internal.types.TypeConstructor;
 import org.neo4j.driver.v1.TypeSystem;
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.exceptions.value.Unrepresentable;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
 
 public class StringValueTest
 {
@@ -44,52 +42,6 @@ public class StringValueTest
 
         // Then
         assertThat( value.asString(), equalTo( "Spongebob" ) );
-    }
-
-    @Test
-    public void testCharValue() throws Exception
-    {
-        // Given
-        StringValue value = new StringValue( "S" );
-
-        // Then
-        assertThat( value.asChar(), equalTo( 'S' ) );
-    }
-
-    @Test
-    public void testLargeNonCharValue() throws Exception
-    {
-        // Given
-        StringValue value = new StringValue( "NOT A CHAR" );
-
-        // Then
-        try
-        {
-            value.asChar();
-        }
-        catch ( Unrepresentable e )
-        {
-            return;
-        }
-        fail( "Expected Unrepresentable to be thrown");
-    }
-
-    @Test
-    public void testEmptyNonCharValue() throws Exception
-    {
-        // Given
-        StringValue value = new StringValue( "" );
-
-        // Then
-        try
-        {
-            value.asChar();
-        }
-        catch ( Unrepresentable e )
-        {
-            return;
-        }
-        fail( "Expected Unrepresentable to be thrown" );
     }
 
     @Test
@@ -142,12 +94,5 @@ public class StringValueTest
     {
         InternalValue value = new StringValue( "Spongebob" );
         assertThat( value.type(), equalTo( InternalTypeSystem.TYPE_SYSTEM.STRING() ) );
-    }
-
-    @Test
-    public void testAsCharArray()
-    {
-        InternalValue value = new StringValue( "Spongebob" );
-        assertThat( value.asCharArray(), equalTo( new char[]{'S', 'p', 'o', 'n', 'g', 'e', 'b', 'o', 'b'} ) );
     }
 }

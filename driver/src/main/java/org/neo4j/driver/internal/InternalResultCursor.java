@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.driver.v1.Function;
-import org.neo4j.driver.v1.Pair;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.RecordAccessor;
 import org.neo4j.driver.v1.ResultCursor;
@@ -33,7 +32,6 @@ import org.neo4j.driver.v1.exceptions.NoRecordException;
 
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
-
 import static org.neo4j.driver.v1.Records.recordAsIs;
 
 public class InternalResultCursor extends InternalRecordAccessor implements ResultCursor
@@ -60,14 +58,14 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
         return open;
     }
 
-    public Value value( int index )
+    public Value get( int index )
     {
-        return record().value( index );
+        return record().get( index );
     }
 
-    public Value value( String key )
+    public Value get( String key )
     {
-        return record().value( key );
+        return record().get( key );
     }
 
     @Override
@@ -94,16 +92,9 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
     }
 
     @Override
-    public boolean hasRecord()
-    {
-        assertOpen();
-        return current != null && current.hasRecord();
-    }
-
-    @Override
     public Record record()
     {
-        if ( hasRecord() )
+        if ( current != null )
         {
             return current;
         }
@@ -198,9 +189,9 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
     }
 
     @Override
-    public RecordAccessor peek()
+    public Record peek()
     {
-        return new PeekingRecordAccessor();
+        return iter.peek();
     }
 
     @Override
@@ -275,70 +266,5 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
     private void discard()
     {
         iter.discard();
-    }
-
-    private class PeekingRecordAccessor implements RecordAccessor
-    {
-        @Override
-        public List<String> keys()
-        {
-            return InternalResultCursor.this.keys();
-        }
-
-        @Override
-        public boolean containsKey( String key )
-        {
-            return InternalResultCursor.this.containsKey( key );
-        }
-
-        @Override
-        public int index( String key )
-        {
-            return InternalResultCursor.this.index( key );
-        }
-
-        @Override
-        public Value value( String key )
-        {
-            return record().value( key );
-        }
-
-        @Override
-        public int size()
-        {
-            return InternalResultCursor.this.size();
-        }
-
-        @Override
-        public List<Pair<String, Value>> fields()
-        {
-            return record().fields();
-        }
-
-        @Override
-        public boolean hasRecord()
-        {
-            return iter.hasNext();
-        }
-
-        @Override
-        public Record record()
-        {
-            Record record = iter.peek();
-            if ( record == null )
-            {
-                throw new NoRecordException( "Cannot peek past last record" );
-            }
-            else
-            {
-                return record;
-            }
-        }
-
-        @Override
-        public Value value( int index )
-        {
-            return record().value( index );
-        }
     }
 }

@@ -105,7 +105,7 @@ public class Examples
         for ( Record record : result.list() )
         {
             session.run( "MATCH (p) WHERE id(p) = {id} " + "CREATE (p)-[:HAS_TRAIT]->(:Trait {type:'Immortal'})",
-                    Values.parameters( "id", record.value( "id(p)" ) ) );
+                    Values.parameters( "id", record.get( "id(p)" ) ) );
         }
         // end::retain-result-query[]
     }

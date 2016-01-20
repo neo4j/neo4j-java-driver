@@ -51,16 +51,16 @@ public class StatementIT
         assertThat( result.size(), equalTo( 3 ) );
 
         // And it should allow random access
-        assertThat( result.get( 0 ).value( "k" ).asLong(), equalTo( 1l ) );
-        assertThat( result.get( 1 ).value( "k" ).asLong(), equalTo( 2l ) );
-        assertThat( result.get( 2 ).value( "k" ).asLong(), equalTo( 3l ) );
+        assertThat( result.get( 0 ).get( "k" ).asLong(), equalTo( 1l ) );
+        assertThat( result.get( 1 ).get( "k" ).asLong(), equalTo( 2l ) );
+        assertThat( result.get( 2 ).get( "k" ).asLong(), equalTo( 3l ) );
 
         // And it should allow iteration
         long expected = 0;
         for ( Record value : result )
         {
             expected += 1;
-            assertThat( value.value( "k" ), equalTo( Values.value( expected ) ) );
+            assertThat( value.get( "k" ), equalTo( Values.value( expected ) ) );
         }
         assertThat( expected, equalTo( 3l ) );
     }
@@ -112,7 +112,7 @@ public class StatementIT
         Value name = null;
         while ( result2.next() )
         {
-            name = result2.value( "a.name" );
+            name = result2.get( "a.name" );
         }
 
         assertThat( name.asString(), equalTo( "Adam" ) );
