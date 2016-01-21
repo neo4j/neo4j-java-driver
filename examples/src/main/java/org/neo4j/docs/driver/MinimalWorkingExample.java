@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -16,21 +16,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1.integration;
+package org.neo4j.docs.driver;
 
-// NOTE: Be careful about auto-formatting here. The below segment should contain GraphDatabase, Driver and Session imports
-// tag::include-driver[]
+// NOTE: Be careful about auto-formatting here: All imports should be between the tags below.
+// tag::minimal-example-import[]
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.ResultCursor;
 import org.neo4j.driver.v1.Session;
-// end::include-driver[]
+// end::minimal-example-import[]
 
-public class ImportExample
+public class MinimalWorkingExample
 {
-    public static void main(String ... args) throws Exception
+    public static void minimalWorkingExample() throws Exception
     {
-        // tag::minimum-snippet[]
+        // tag::minimal-example[]
         Driver driver = GraphDatabase.driver( "bolt://localhost" );
         Session session = driver.session();
 
@@ -39,11 +39,11 @@ public class ImportExample
         ResultCursor result = session.run( "MATCH (p:Person) WHERE p.name = 'Neo' RETURN p.age" );
         while ( result.next() )
         {
-            System.out.println( "Neo is " + result.value( "p.age" ).asInt() + " years old." );
+            System.out.println( "Neo is " + result.get( "p.age" ).asInt() + " years old." );
         }
 
         session.close();
         driver.close();
-        // end::minimum-snippet[]
+        // end::minimal-example[]
     }
 }

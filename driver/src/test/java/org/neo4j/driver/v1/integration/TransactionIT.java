@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -53,7 +53,7 @@ public class TransactionIT
         // Then the outcome of both statements should be visible
         ResultCursor result = session.run( "MATCH (n) RETURN count(n)" );
         assertTrue( result.single() );
-        long nodes = result.value( "count(n)" ).asLong();
+        long nodes = result.get( "count(n)" ).asLong();
         assertThat( nodes, equalTo( 2l ) );
     }
 
@@ -70,7 +70,7 @@ public class TransactionIT
         // Then there should be no visible effect of the transaction
         ResultCursor cursor = session.run( "MATCH (n) RETURN count(n)" );
         assertTrue( cursor.single() );
-        long nodes = cursor.value( "count(n)" ).asLong();
+        long nodes = cursor.get( "count(n)" ).asLong();
         assertThat( nodes, equalTo( 0l ) );
     }
 
@@ -87,7 +87,7 @@ public class TransactionIT
 
             // Then
             assertTrue( res.single() );
-            assertThat( res.value( "n.name" ).asString(), equalTo( "Steve Brook" ) );
+            assertThat( res.get( "n.name" ).asString(), equalTo( "Steve Brook" ) );
         }
     }
 

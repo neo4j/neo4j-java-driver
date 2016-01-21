@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -65,9 +65,9 @@ public class InternalRelationshipTest
     {
         InternalRelationship relationship = createRelationship();
 
-        assertThat( relationship.value( "k1" ), equalTo( value( 1 ) ) );
-        assertThat( relationship.value( "k2" ), equalTo( value( 2 ) ) );
-        assertThat( relationship.value( "k3" ), equalTo( NULL ) );
+        assertThat( relationship.get( "k1" ), equalTo( value( 1 ) ) );
+        assertThat( relationship.get( "k2" ), equalTo( value( 2 ) ) );
+        assertThat( relationship.get( "k3" ), equalTo( NULL ) );
     }
 
     private InternalRelationship createRelationship()

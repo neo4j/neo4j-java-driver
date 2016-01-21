@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -53,7 +53,7 @@ public class ParametersIT
         // Then
         for ( Record record : result.list() )
         {
-            Value value = record.value( "a.value" );
+            Value value = record.get( "a.value" );
             assertThat( value.hasType( session.typeSystem().BOOLEAN() ), equalTo( true ) );
             assertThat( value.asBoolean(), equalTo( true ) );
         }
@@ -69,7 +69,7 @@ public class ParametersIT
         // Then
         for ( Record record : result.list() )
         {
-            Value value = record.value( "a.value" );
+            Value value = record.get( "a.value" );
             assertThat( value.hasType( session.typeSystem().INTEGER() ), equalTo( true ) );
             assertThat( value.asLong(), equalTo( 1L ) );
         }
@@ -85,7 +85,7 @@ public class ParametersIT
         // Then
         for ( Record record : result.list() )
         {
-            Value value = record.value( "a.value" );
+            Value value = record.get( "a.value" );
             assertThat( value.hasType( session.typeSystem().INTEGER() ), equalTo( true ) );
             assertThat( value.asLong(), equalTo( 1L ) );
         }
@@ -101,7 +101,7 @@ public class ParametersIT
         // Then
         for ( Record record : result.list() )
         {
-            Value value = record.value( "a.value" );
+            Value value = record.get( "a.value" );
             assertThat( value.hasType( session.typeSystem().INTEGER() ), equalTo( true ) );
             assertThat( value.asLong(), equalTo( 1L ) );
         }
@@ -118,7 +118,7 @@ public class ParametersIT
         // Then
         for ( Record record : result.list() )
         {
-            Value value = record.value( "a.value" );
+            Value value = record.get( "a.value" );
             assertThat( value.hasType( session.typeSystem().INTEGER() ), equalTo( true ) );
             assertThat( value.asLong(), equalTo( 1L ) );
         }
@@ -135,7 +135,7 @@ public class ParametersIT
         // Then
         for ( Record record : result.list() )
         {
-            Value value = record.value( "a.value" );
+            Value value = record.get( "a.value" );
             assertThat( value.hasType( session.typeSystem().FLOAT() ), equalTo( true ) );
             assertThat( value.asDouble(), equalTo( 6.28 ) );
         }
@@ -152,7 +152,7 @@ public class ParametersIT
         // Then
         for ( Record record : result.list() )
         {
-            Value value = record.value( "a.value" );
+            Value value = record.get( "a.value" );
             assertThat( value.hasType( session.typeSystem().STRING() ), equalTo( true ) );
             assertThat( value.asString(), equalTo( "ö" ) );
         }
@@ -170,7 +170,7 @@ public class ParametersIT
         // Then
         for ( Record record : result.list() )
         {
-            Value value = record.value( "a.value" );
+            Value value = record.get( "a.value" );
             assertThat( value.hasType( session.typeSystem().STRING() ), equalTo( true ) );
             assertThat( value.asString(), equalTo( "Mjölnir" ) );
         }
@@ -187,7 +187,7 @@ public class ParametersIT
         // Then
         for ( Record record : result.list() )
         {
-            Value value = record.value( "a.value" );
+            Value value = record.get( "a.value" );
             assertThat( value.hasType( session.typeSystem().STRING() ), equalTo( true ) );
             assertThat( value.asString(), equalTo( "Mjölnir" ) );
         }
@@ -205,7 +205,7 @@ public class ParametersIT
         // Then
         for ( Record record : result.list() )
         {
-            Value value = record.value( "a.value" );
+            Value value = record.get( "a.value" );
             assertThat( value.hasType( session.typeSystem().LIST() ), equalTo( true ) );
             assertThat( value.size(), equalTo( 3 ) );
             for ( Value item : value.asList() )
@@ -228,7 +228,7 @@ public class ParametersIT
         // Then
         for ( Record record : result.list() )
         {
-            Value value = record.value( "a.value" );
+            Value value = record.get( "a.value" );
             assertThat( value.hasType( session.typeSystem().LIST() ), equalTo( true ) );
             assertThat( value.size(), equalTo( 3 ) );
             for ( Value item : value.asList() )
@@ -251,7 +251,7 @@ public class ParametersIT
         // Then
         for ( Record record : result.list() )
         {
-            Value value = record.value( "a.value" );
+            Value value = record.get( "a.value" );
             assertThat( value.hasType( session.typeSystem().LIST() ), equalTo( true ) );
             assertThat( value.size(), equalTo( 3 ) );
             for ( Value item : value.asList() )
@@ -279,7 +279,7 @@ public class ParametersIT
         // Then
         for ( Record record : result.list() )
         {
-            Value value = record.value( "a.value" );
+            Value value = record.get( "a.value" );
             assertThat( value.hasType( session.typeSystem().LIST() ), equalTo( true ) );
             assertThat( value.size(), equalTo( 3 ) );
             for ( Value item : value.asList() )
@@ -306,7 +306,7 @@ public class ParametersIT
         String bigString = new String( bigStr );
 
         // When
-        Value val = session.run( "RETURN {p} AS p", parameters( "p", bigString ) ).peek().value( "p" );
+        Value val = session.run( "RETURN {p} AS p", parameters( "p", bigString ) ).peek().get( "p" );
 
         // Then
         assertThat( val.asString(), equalTo( bigString ) );
@@ -323,7 +323,7 @@ public class ParametersIT
         // Then
         for ( Record record : result.list() )
         {
-            Value value = record.value( "a.value" );
+            Value value = record.get( "a.value" );
             assertThat( value.hasType( session.typeSystem().BOOLEAN() ), equalTo( true ) );
             assertThat( value.asBoolean(), equalTo( true ) );
         }
@@ -341,7 +341,7 @@ public class ParametersIT
         // Then
         for ( Record record : result.list() )
         {
-            Value value = record.value( "a.value" );
+            Value value = record.get( "a.value" );
             assertThat( value.hasType( session.typeSystem().INTEGER() ), equalTo( true ) );
             assertThat( value.asLong(), equalTo( 42L ) );
         }
@@ -359,7 +359,7 @@ public class ParametersIT
         // Then
         for ( Record record : result.list() )
         {
-            Value value = record.value( "a.value" );
+            Value value = record.get( "a.value" );
             assertThat( value.hasType( session.typeSystem().FLOAT() ), equalTo( true ) );
             assertThat( value.asDouble(), equalTo( 6.28 ) );
         }
@@ -377,7 +377,7 @@ public class ParametersIT
         // Then
         for ( Record record : result.list() )
         {
-            Value value = record.value( "a.value" );
+            Value value = record.get( "a.value" );
             assertThat( value.hasType( session.typeSystem().STRING() ), equalTo( true ) );
             assertThat( value.asString(), equalTo( "Mjölnir" ) );
         }
@@ -400,7 +400,7 @@ public class ParametersIT
         // GIVEN
         ResultCursor cursor = session.run( "CREATE (a:Node) RETURN a" );
         cursor.first();
-        Node node = cursor.value( 0 ).asNode();
+        Node node = cursor.get( 0 ).asNode();
 
         //Expect
         exception.expect( ClientException.class );
@@ -416,7 +416,7 @@ public class ParametersIT
         // GIVEN
         ResultCursor cursor = session.run( "CREATE (a:Node), (b:Node), (a)-[r:R]->(b) RETURN r" );
         cursor.first();
-        Relationship relationship = cursor.value( 0 ).asRelationship();
+        Relationship relationship = cursor.get( 0 ).asRelationship();
 
         //Expect
         exception.expect( ClientException.class );
@@ -432,7 +432,7 @@ public class ParametersIT
         // GIVEN
         ResultCursor cursor = session.run( "CREATE (a:Node), (b:Node), p=(a)-[r:R]->(b) RETURN p" );
         cursor.first();
-        Path path = cursor.value( 0 ).asPath();
+        Path path = cursor.get( 0 ).asPath();
 
         //Expect
         exception.expect( ClientException.class );

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -230,7 +230,7 @@ public class SSLSocketChannelIT
 
         ResultCursor result = driver.session().run( "RETURN 1" );
         assertTrue( result.next() );
-        assertEquals( 1, result.value( 0 ).asInt() );
+        assertEquals( 1, result.get( 0 ).asInt() );
         assertFalse( result.next() );
 
         driver.close();

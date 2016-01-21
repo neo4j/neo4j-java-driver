@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -297,11 +297,6 @@ public abstract class Values
         return STRING;
     }
 
-    public static Function<Value,String> valueAsLiteral()
-    {
-        return LITERAL_STRING;
-    }
-
     public static Function<Value,String> valueToString()
     {
         return TO_STRING;
@@ -401,13 +396,7 @@ public abstract class Values
             return val.asString();
         }
     };
-    private static final Function<Value,String> LITERAL_STRING = new Function<Value,String>()
-    {
-        public String apply( Value val )
-        {
-            return val.asLiteralString();
-        }
-    };
+
     private static final Function<Value,String> TO_STRING = new Function<Value,String>()
     {
         public String apply( Value val )

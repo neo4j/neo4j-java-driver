@@ -161,7 +161,7 @@ public class DriverComplianceSteps
         for ( CypherStatementRunner runner : runners )
         {
             assertTrue( runner.result().single() );
-            Value resultBoltValue = runner.result().record().value( 0 );
+            Value resultBoltValue = runner.result().record().get( 0 );
             Object resultJavaValue = boltValuetoJavaObject( expectedBoltValue );
 
             assertThat( resultBoltValue, equalTo( expectedBoltValue ) );
@@ -243,7 +243,7 @@ public class DriverComplianceSteps
         for ( CypherStatementRunner runner : runners )
         {
             assertTrue( runner.result().single() );
-            Value receivedValue = runner.result().record().value( 0 );
+            Value receivedValue = runner.result().record().get( 0 );
             Relationship relationship = receivedValue.asRelationship();
             Relationship expectedRelationship = expectedBoltValue.asRelationship();
 
@@ -263,7 +263,7 @@ public class DriverComplianceSteps
         for ( CypherStatementRunner runner : runners )
         {
             assertTrue( runner.result().single() );
-            Value receivedValue = runner.result().record().value( 0 );
+            Value receivedValue = runner.result().record().get( 0 );
             Path path = receivedValue.asPath();
             Path expectedPath = expectedBoltValue.asPath();
 

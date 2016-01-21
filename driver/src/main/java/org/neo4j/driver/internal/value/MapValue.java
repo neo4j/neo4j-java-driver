@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -99,7 +99,7 @@ public class MapValue extends ValueAdapter
     }
 
     @Override
-    public Value value( String key )
+    public Value get( String key )
     {
         Value value = val.get( key );
         return value == null ? Values.NULL: value;

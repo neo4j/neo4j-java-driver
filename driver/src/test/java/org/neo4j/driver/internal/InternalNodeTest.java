@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -66,9 +66,9 @@ public class InternalNodeTest
     {
         InternalNode node = createNode();
 
-        assertThat( node.value( "k1" ), equalTo( value( 1 ) ) );
-        assertThat( node.value( "k2" ), equalTo( value( 2 ) ) );
-        assertThat( node.value( "k3" ), equalTo( NULL ) );
+        assertThat( node.get( "k1" ), equalTo( value( 1 ) ) );
+        assertThat( node.get( "k2" ), equalTo( value( 2 ) ) );
+        assertThat( node.get( "k3" ), equalTo( NULL ) );
     }
 
     private InternalNode createNode()

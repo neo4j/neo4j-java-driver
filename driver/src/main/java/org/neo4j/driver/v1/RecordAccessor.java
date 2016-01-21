@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -53,7 +53,7 @@ public interface RecordAccessor extends ListAccessor
      *
      * @throws java.util.NoSuchElementException if the given key is not from {@link #keys()}
      * @param key the give key
-     * @return the index of the field as used by {@link #value(int)}
+     * @return the index of the field as used by {@link #get(int)}
      */
     int index( String key );
 
@@ -64,7 +64,7 @@ public interface RecordAccessor extends ListAccessor
      * @return the property's value or a {@link NullValue} if no such key exists
      * @throws NoRecordException if the associated underlying record is not available
      */
-    Value value( String key );
+    Value get( String key );
 
     /**
      * Retrieve the number of fields in this record
@@ -81,11 +81,6 @@ public interface RecordAccessor extends ListAccessor
      * @throws NoRecordException if the associated underlying record is not available
      */
     List<Pair<String, Value>> fields();
-
-    /**
-     * @return if this record accessor is currently associated with an underlying record
-     */
-    boolean hasRecord();
 
     /**
      * @throws NoRecordException if the associated underlying record is not available

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -26,6 +26,7 @@ import org.neo4j.driver.v1.Value;
 public interface InternalValue extends Value, AsValue
 {
     TypeConstructor typeConstructor();
+
     String toString( Format valueFormat );
 
     enum Format implements Function<Value, String>

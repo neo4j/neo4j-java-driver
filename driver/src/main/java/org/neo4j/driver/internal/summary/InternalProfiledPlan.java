@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -56,8 +56,8 @@ public class InternalProfiledPlan extends InternalPlan<ProfiledPlan> implements 
         public ProfiledPlan create( String operatorType, Map<String,Value> arguments, List<String> identifiers, List<ProfiledPlan> children, Value originalPlanValue )
         {
             return new InternalProfiledPlan( operatorType, arguments, identifiers, children,
-                    originalPlanValue.value( "dbHits" ).asLong(),
-                    originalPlanValue.value( "rows" ).asLong() );
+                    originalPlanValue.get( "dbHits" ).asLong(),
+                    originalPlanValue.get( "rows" ).asLong() );
         }
     };
 

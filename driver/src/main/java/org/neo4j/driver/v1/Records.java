@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -52,7 +52,7 @@ public abstract class Records
             @Override
             public T apply( RecordAccessor recordAccessor )
             {
-                return mapFunction.apply( recordAccessor.value( index ) );
+                return mapFunction.apply( recordAccessor.get( index ) );
             }
         };
     }
@@ -63,7 +63,7 @@ public abstract class Records
             @Override
             public T apply( RecordAccessor recordAccessor )
             {
-                return mapFunction.apply( recordAccessor.value( key ) );
+                return mapFunction.apply( recordAccessor.get( key ) );
             }
         };
     }

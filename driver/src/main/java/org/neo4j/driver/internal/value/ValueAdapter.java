@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -39,9 +39,7 @@ import org.neo4j.driver.v1.exceptions.value.Unsizable;
 
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
-
 import static org.neo4j.driver.internal.value.InternalValue.Format.VALUE_ONLY;
-import static org.neo4j.driver.internal.value.InternalValue.Format.VALUE_WITH_TYPE;
 import static org.neo4j.driver.v1.Values.valueAsIs;
 
 public abstract class ValueAdapter implements InternalValue
@@ -93,12 +91,6 @@ public abstract class ValueAdapter implements InternalValue
     }
 
     @Override
-    public char asChar()
-    {
-        throw new Uncoercible( type().name(), "Java char" );
-    }
-
-    @Override
     public long asLong()
     {
         throw new Uncoercible( type().name(), "Java long" );
@@ -110,13 +102,11 @@ public abstract class ValueAdapter implements InternalValue
         throw new Uncoercible( type().name(), "Java int" );
     }
 
-    @Override
     public short asShort()
     {
         throw new Uncoercible( type().name(), "Java short" );
     }
 
-    @Override
     public byte asByte()
     {
         throw new Uncoercible( type().name(), "Java byte" );
@@ -171,60 +161,6 @@ public abstract class ValueAdapter implements InternalValue
     }
 
     @Override
-    public Value[] asArray()
-    {
-        return asArray( Value.class, valueAsIs() );
-    }
-
-    @Override
-    public <T> T[] asArray( Class<T> clazz, Function<Value, T> mapFunction )
-    {
-        throw new Uncoercible( type().name(), "Java T[]" );
-    }
-
-    @Override
-    public char[] asCharArray()
-    {
-        throw new Uncoercible( type().name(), "Java char[]" );
-    }
-
-    @Override
-    public long[] asLongArray()
-    {
-        throw new Uncoercible( type().name(), "Java long[]" );
-    }
-
-    @Override
-    public int[] asIntArray()
-    {
-        throw new Uncoercible( type().name(), "Java int[]" );
-    }
-
-    @Override
-    public short[] asShortArray()
-    {
-        throw new Uncoercible( type().name(), "Java short[]" );
-    }
-
-    @Override
-    public byte[] asByteArray()
-    {
-        throw new Uncoercible( type().name(), "Java byte[]" );
-    }
-
-    @Override
-    public double[] asDoubleArray()
-    {
-        return new double[0];
-    }
-
-    @Override
-    public float[] asFloatArray()
-    {
-        return new float[0];
-    }
-
-    @Override
     public Number asNumber()
     {
         throw new Uncoercible( type().name(), "Java Number" );
@@ -261,13 +197,13 @@ public abstract class ValueAdapter implements InternalValue
     }
 
     @Override
-    public Value value( int index )
+    public Value get( int index )
     {
         throw new NotMultiValued( type().name() + " is not an indexed collection" );
     }
 
     @Override
-    public Value value( String key )
+    public Value get( String key )
     {
         throw new NotMultiValued( type().name() + " is not a keyed collection" );
     }

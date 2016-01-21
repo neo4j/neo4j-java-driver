@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -51,7 +51,7 @@ public interface MapAccessor
      * @return the property's value or a {@link NullValue} if no such key exists
      * @throws ClientException if record has not been initialized
      */
-    Value value( String key );
+    Value get( String key );
 
     /**
      * Retrieve the number of entries in this map

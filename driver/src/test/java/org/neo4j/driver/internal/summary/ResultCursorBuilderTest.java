@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -53,7 +53,7 @@ public class ResultCursorBuilderTest
         assertThat( result.size(), equalTo( 1 ) );
 
         Record record = result.get( 0 );
-        assertThat( record.value( 0 ).asString(), equalTo( "Admin" ) );
+        assertThat( record.get( 0 ).asString(), equalTo( "Admin" ) );
     }
 
     @Test

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -46,7 +46,7 @@ public class ResultStreamIT
         int idx = 1;
         while ( res.next() )
         {
-            assertEquals( idx++, res.value( "a" ).asLong() );
+            assertEquals( idx++, res.get( "a" ).asLong() );
         }
     }
 
@@ -71,7 +71,7 @@ public class ResultStreamIT
         // When & Then
         try
         {
-            rs.value( "n" );
+            rs.get( "n" );
             fail( "The test should fail with a proper message to indicate `next` method should be called first" );
         }
         catch( ClientException e )
@@ -94,7 +94,7 @@ public class ResultStreamIT
         assertTrue( rs.single() );
 
         // Then
-        assertTrue( rs.value( "m" ).isNull() );
+        assertTrue( rs.get( "m" ).isNull() );
     }
 
     @Test
@@ -107,7 +107,7 @@ public class ResultStreamIT
         assertTrue( rs.single() );
 
         // Then
-        assertTrue( rs.value( "n" ).value( "age" ).isNull() );
+        assertTrue( rs.get( "n" ).get( "age" ).isNull() );
     }
 
     @Test

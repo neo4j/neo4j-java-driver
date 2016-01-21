@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -20,7 +20,6 @@ package org.neo4j.driver.internal.value;
 
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.v1.Type;
-import org.neo4j.driver.v1.exceptions.value.Unrepresentable;
 
 public class StringValue extends ScalarValueAdapter
 {
@@ -63,25 +62,6 @@ public class StringValue extends ScalarValueAdapter
     public String asLiteralString()
     {
         return String.format( "\"%s\"", val.replace( "\"", "\\\"" ) );
-    }
-
-    @Override
-    public char[] asCharArray()
-    {
-        return val.toCharArray();
-    }
-
-    @Override
-    public char asChar()
-    {
-        if ( val.length() == 1 )
-        {
-            return val.charAt( 0 );
-        }
-        else
-        {
-            throw new Unrepresentable( "Only a STRING of exactly one character can be represented as a Java char" );
-        }
     }
 
     @Override

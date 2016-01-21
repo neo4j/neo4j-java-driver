@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -46,8 +46,8 @@ public abstract class EntityValueAdapter<V extends Entity> extends GraphValueAda
     }
 
     @Override
-    public Value value( String key )
+    public Value get( String key )
     {
-        return asEntity().value( key );
+        return asEntity().get( key );
     }
 }

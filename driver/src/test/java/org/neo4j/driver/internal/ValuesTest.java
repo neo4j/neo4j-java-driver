@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -135,7 +135,7 @@ public class ValuesTest
         Set<String> setB = new HashSet<>( 3 );
         for ( Value value : mapValue.values() )
         {
-            String a = value.value( 0 ).toString();
+            String a = value.get( 0 ).toString();
             String b = listIterator.next().get( 0 );
             setA.add( a );
             setB.add( b );

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -71,7 +71,7 @@ public class ErrorIT
         // When
         ResultCursor cursor = tx.run( "RETURN 1" );
         assertTrue( cursor.single() );
-        cursor.value( "1" ).asInt();
+        cursor.get( "1" ).asInt();
     }
 
     @Test
@@ -83,7 +83,7 @@ public class ErrorIT
         // When
         ResultCursor cursor = session.run( "RETURN 1" );
         assertTrue( cursor.single() );
-        int val = cursor.value( "1" ).asInt();
+        int val = cursor.get( "1" ).asInt();
 
         // Then
         assertThat( val, equalTo( 1 ) );
@@ -104,7 +104,7 @@ public class ErrorIT
         {
             ResultCursor cursor = tx.run( "RETURN 1" );
             assertTrue( cursor.single() );
-            int val = cursor.value( "1" ).asInt();
+            int val = cursor.get( "1" ).asInt();
 
             // Then
             assertThat( val, equalTo( 1 ) );

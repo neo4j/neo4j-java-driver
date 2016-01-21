@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -75,7 +75,7 @@ public class InternalRecord extends InternalRecordAccessor implements Record
     }
 
     @Override
-    public Value value( String key )
+    public Value get( String key )
     {
         Integer fieldIndex = keyIndexLookup.get( key );
 
@@ -90,7 +90,7 @@ public class InternalRecord extends InternalRecordAccessor implements Record
     }
 
     @Override
-    public Value value( int index )
+    public Value get( int index )
     {
         return index >= 0 && index < values.length ? values[index] : Values.NULL;
     }
@@ -99,12 +99,6 @@ public class InternalRecord extends InternalRecordAccessor implements Record
     public int size()
     {
         return values.length;
-    }
-
-    @Override
-    public boolean hasRecord()
-    {
-        return true;
     }
 
     @Override
@@ -145,8 +139,8 @@ public class InternalRecord extends InternalRecordAccessor implements Record
             }
             for ( int i = 0; i < size; i++ )
             {
-                Value value = value( i );
-                Value otherValue = otherRecord.value( i );
+                Value value = get( i );
+                Value otherValue = otherRecord.get( i );
                 if ( ! value.equals( otherValue ) )
                 {
                     return false;

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -37,7 +37,7 @@ public interface ListAccessor
      * @return the value or a {@link org.neo4j.driver.internal.value.NullValue} if the index is out of bounds
      * @throws ClientException if record has not been initialized
      */
-    Value value( int index );
+    Value get( int index );
 
     /**
      * Retrieve the number of elements in this list

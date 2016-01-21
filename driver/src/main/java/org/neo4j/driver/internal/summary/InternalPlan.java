@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -161,19 +161,19 @@ public class InternalPlan<T extends Plan> implements Plan
         @Override
         public T apply( Value plan )
         {
-            final String operatorType = plan.value( "operatorType" ).asString();
+            final String operatorType = plan.get( "operatorType" ).asString();
 
-            final Value argumentsValue = plan.value( "args" );
+            final Value argumentsValue = plan.get( "args" );
             final Map<String, Value> arguments = argumentsValue.isNull()
                     ? Collections.<String, Value>emptyMap()
                     : argumentsValue.asMap( valueAsIs() );
 
-            final Value identifiersValue = plan.value( "identifiers" );
+            final Value identifiersValue = plan.get( "identifiers" );
             final List<String> identifiers = identifiersValue.isNull()
                     ? Collections.<String>emptyList()
                     : identifiersValue.asList( valueAsString() );
 
-            final Value childrenValue = plan.value( "children" );
+            final Value childrenValue = plan.get( "children" );
             final List<T> children = childrenValue.isNull()
                     ? Collections.<T>emptyList()
                     : childrenValue.asList( this );

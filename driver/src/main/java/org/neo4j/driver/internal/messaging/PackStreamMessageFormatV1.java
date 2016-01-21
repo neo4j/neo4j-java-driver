@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -243,7 +243,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                     for ( String s : value.keys() )
                     {
                         packer.pack( s );
-                        packValue( value.value( s ) );
+                        packValue( value.get( s ) );
                     }
                     break;
 
@@ -373,7 +373,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             for ( String propKey : keys )
             {
                 packer.pack( propKey );
-                packValue( entity.value( propKey ) );
+                packValue( entity.get( propKey ) );
             }
         }
     }

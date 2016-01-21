@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -47,9 +47,9 @@ public class InternalRecordTest
     {
         InternalRecord record = createRecord();
 
-        assertThat( record.value( "k1" ), equalTo( value( 0 ) ) );
-        assertThat( record.value( "k2" ), equalTo( value( 1 ) ) );
-        assertThat( record.value( "k3" ), equalTo( NullValue.NULL ) );
+        assertThat( record.get( "k1" ), equalTo( value( 0 ) ) );
+        assertThat( record.get( "k2" ), equalTo( value( 1 ) ) );
+        assertThat( record.get( "k3" ), equalTo( NullValue.NULL ) );
     }
 
     @Test
@@ -87,10 +87,10 @@ public class InternalRecordTest
     {
         InternalRecord record = createRecord();
 
-        assertThat( record.value( 0 ), equalTo( value( 0 ) ) );
-        assertThat( record.value( 1 ), equalTo( value( 1 ) ) );
-        assertThat( record.value( 2 ), equalTo( NullValue.NULL ) );
-        assertThat( record.value( -37 ), equalTo( NullValue.NULL ) );
+        assertThat( record.get( 0 ), equalTo( value( 0 ) ) );
+        assertThat( record.get( 1 ), equalTo( value( 1 ) ) );
+        assertThat( record.get( 2 ), equalTo( NullValue.NULL ) );
+        assertThat( record.get( -37 ), equalTo( NullValue.NULL ) );
     }
 
     @Test
