@@ -201,7 +201,7 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
     public Record single()
     {
         Record first = first();
-        if( !iter.hasNext() )
+        if( iter.hasNext() )
         {
             throw new NoSuchRecordException( "Expected a result with a single record, but this result contains at least one more. " +
                                              "Ensure your query returns only one record, or use `first` instead of `single` if " +
