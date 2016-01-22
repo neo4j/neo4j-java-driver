@@ -52,8 +52,7 @@ public class TransactionIT
 
         // Then the outcome of both statements should be visible
         ResultCursor result = session.run( "MATCH (n) RETURN count(n)" );
-        assertTrue( result.single() );
-        long nodes = result.get( "count(n)" ).asLong();
+        long nodes = result.single().get( "count(n)" ).asLong();
         assertThat( nodes, equalTo( 2l ) );
     }
 
@@ -69,8 +68,7 @@ public class TransactionIT
 
         // Then there should be no visible effect of the transaction
         ResultCursor cursor = session.run( "MATCH (n) RETURN count(n)" );
-        assertTrue( cursor.single() );
-        long nodes = cursor.get( "count(n)" ).asLong();
+        long nodes = cursor.single().get( "count(n)" ).asLong();
         assertThat( nodes, equalTo( 0l ) );
     }
 
@@ -86,8 +84,7 @@ public class TransactionIT
             ResultCursor res = tx.run( "MATCH (n) RETURN n.name" );
 
             // Then
-            assertTrue( res.single() );
-            assertThat( res.get( "n.name" ).asString(), equalTo( "Steve Brook" ) );
+            assertThat( res.single().get( "n.name" ).asString(), equalTo( "Steve Brook" ) );
         }
     }
 
