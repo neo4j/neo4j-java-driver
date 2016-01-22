@@ -21,6 +21,7 @@ package org.neo4j.driver.internal;
 import java.util.Map;
 
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.Logger;
 import org.neo4j.driver.internal.summary.ResultBuilder;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.v1.ResultCursor;
@@ -35,6 +36,8 @@ public class InternalSession implements Session
 {
     private final Connection connection;
 
+    private final Logger logger;
+
     /** Called when a transaction object is closed */
     private final Runnable txCleanup = new Runnable()
     {
@@ -48,9 +51,10 @@ public class InternalSession implements Session
     private Transaction currentTransaction;
     private boolean isOpen = true;
 
-    public InternalSession( Connection connection )
+    public InternalSession( Connection connection, Logger logger )
     {
         this.connection = connection;
+        this.logger = logger;
     }
 
     @Override
@@ -59,7 +63,6 @@ public class InternalSession implements Session
         ensureConnectionIsValid();
         ResultBuilder resultBuilder = new ResultBuilder( statementText, statementParameters );
         connection.run( statementText, statementParameters, resultBuilder );
-
         connection.pullAll( resultBuilder );
         connection.sync();
         return resultBuilder.build();
@@ -125,6 +128,17 @@ public class InternalSession implements Session
     {
         ensureNoOpenTransaction();
         ensureConnectionIsOpen();
+    }
+
+    @Override
+    protected void finalize() throws Throwable
+    {
+        if( isOpen )
+        {
+            logger.error( "Neo4j Session object leaked, please ensure that your application calls the `close` " +
+                          "method on Sessions before disposing of the objects.", null );
+            connection.close();
+        }
     }
 
     private void ensureNoOpenTransaction()

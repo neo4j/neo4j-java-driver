@@ -24,7 +24,7 @@ import java.util.Map;
 import org.neo4j.driver.internal.spi.Logger;
 import org.neo4j.driver.v1.Value;
 
-import static org.neo4j.driver.internal.messaging.AckFailureMessage.ACK_FAILURE;
+import static org.neo4j.driver.internal.messaging.ResetMessage.RESET;
 import static org.neo4j.driver.internal.messaging.DiscardAllMessage.DISCARD_ALL;
 import static org.neo4j.driver.internal.messaging.IgnoredMessage.IGNORED;
 import static org.neo4j.driver.internal.messaging.PullAllMessage.PULL_ALL;
@@ -68,10 +68,10 @@ public class LoggingResponseHandler extends SocketResponseHandler
     }
 
     @Override
-    public void handleAckFailureMessage()
+    public void handleResetMessage()
     {
-        super.handleAckFailureMessage();
-        logger.debug( DEFAULT_DEBUG_LOGGING_FORMAT, ACK_FAILURE );
+        super.handleResetMessage();
+        logger.debug( DEFAULT_DEBUG_LOGGING_FORMAT, RESET );
     }
 
     @Override

@@ -34,7 +34,7 @@ public interface MessageHandler
 
     void handleDiscardAllMessage() throws IOException;
 
-    void handleAckFailureMessage() throws IOException;
+    void handleResetMessage() throws IOException;
 
     // Responses
     void handleSuccessMessage( Map<String,Value> meta ) throws IOException;

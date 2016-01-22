@@ -94,6 +94,19 @@ public class PooledConnection implements Connection
     }
 
     @Override
+    public void reset( StreamCollector collector )
+    {
+        try
+        {
+            delegate.reset( collector );
+        }
+        catch ( RuntimeException e )
+        {
+            onDelegateException( e );
+        }
+    }
+
+    @Override
     public void sync()
     {
         try
@@ -109,6 +122,9 @@ public class PooledConnection implements Connection
     @Override
     public void close()
     {
+        // In case this session has an open result or transaction or something,
+        // make sure it's reset to a nice state before we reuse it.
+        reset( StreamCollector.NO_OP );
         release.accept( this );
     }
 
