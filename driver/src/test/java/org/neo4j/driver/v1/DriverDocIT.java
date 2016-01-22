@@ -31,7 +31,6 @@ import org.neo4j.driver.v1.util.TestNeo4jSession;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 @RunWith( DocTestRunner.class )
 public class DriverDocIT
@@ -53,8 +52,7 @@ public class DriverDocIT
 
         // then it should've created a bunch of data
         ResultCursor result = session.run( "MATCH (n) RETURN count(n)" );
-        assertTrue( result.single() );
-        assertEquals( 3, result.get( 0 ).asInt() );
+        assertEquals( 3, result.single().get( 0 ).asInt() );
         assertThat( (List<String>)snippet.get( "names" ), containsInAnyOrder( "Bob", "Alice", "Tina" ) );
     }
 }

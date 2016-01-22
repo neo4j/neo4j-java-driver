@@ -43,8 +43,8 @@ import org.neo4j.driver.v1.Values;
 import static java.lang.String.valueOf;
 import static java.util.Collections.singletonMap;
 import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.neo4j.driver.v1.tck.TCKTestUtil.CypherStatementRunner;
 import static org.neo4j.driver.v1.tck.TCKTestUtil.MappedParametersRunner;
 import static org.neo4j.driver.v1.tck.TCKTestUtil.StatementRunner;
@@ -187,7 +187,7 @@ public class DriverComplianceSteps
         for( CypherStatementRunner runner : runners)
         {
             ResultCursor result = runner.result();
-            assertTrue( result.single() );
+            assertNotNull( result.single() );
         }
     }
 
@@ -196,7 +196,7 @@ public class DriverComplianceSteps
     {
         for ( CypherStatementRunner runner : runners)
         {
-            assertTrue( runner.result().single() );
+            assertNotNull( runner.result().single() );
             Value resultBoltValue = runner.result().record().get( 0 );
             Object resultJavaValue = boltValuetoJavaObject( expectedBoltValue );
 
@@ -278,7 +278,7 @@ public class DriverComplianceSteps
     {
         for ( CypherStatementRunner runner : runners )
         {
-            assertTrue( runner.result().single() );
+            assertNotNull( runner.result().single() );
             Value receivedValue = runner.result().record().get( 0 );
             Relationship relationship = receivedValue.asRelationship();
             Relationship expectedRelationship = expectedBoltValue.asRelationship();
@@ -298,7 +298,7 @@ public class DriverComplianceSteps
     {
         for ( CypherStatementRunner runner : runners )
         {
-            assertTrue( runner.result().single() );
+            assertNotNull( runner.result().single() );
             Value receivedValue = runner.result().record().get( 0 );
             Path path = receivedValue.asPath();
             Path expectedPath = expectedBoltValue.asPath();

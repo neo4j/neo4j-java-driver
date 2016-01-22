@@ -21,6 +21,7 @@ package org.neo4j.driver.v1.integration;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.ResultCursor;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
@@ -58,7 +59,7 @@ public class ResultStreamIT
 
         // Then
         assertEquals( "[n]", res.keys().toString() );
-        assertTrue( res.single() );
+        assertNotNull( res.single() );
         assertEquals( "[n]", res.keys().toString() );
     }
 
@@ -91,10 +92,10 @@ public class ResultStreamIT
         ResultCursor rs = session.run( "CREATE (n:Person {name:{name}}) RETURN n", parameters( "name", "Tom Hanks" ) );
 
         // When
-        assertTrue( rs.single() );
+        Record single = rs.single();
 
         // Then
-        assertTrue( rs.get( "m" ).isNull() );
+        assertTrue( single.get( "m" ).isNull() );
     }
 
     @Test
@@ -104,10 +105,10 @@ public class ResultStreamIT
         ResultCursor rs = session.run( "CREATE (n:Person {name:{name}}) RETURN n", parameters( "name", "Tom Hanks" ) );
 
         // When
-        assertTrue( rs.single() );
+        Record record = rs.single();
 
         // Then
-        assertTrue( rs.get( "n" ).get( "age" ).isNull() );
+        assertTrue( record.get( "n" ).get( "age" ).isNull() );
     }
 
     @Test

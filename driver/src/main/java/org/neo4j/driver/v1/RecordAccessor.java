@@ -21,7 +21,7 @@ package org.neo4j.driver.v1;
 import java.util.List;
 
 import org.neo4j.driver.internal.value.NullValue;
-import org.neo4j.driver.v1.exceptions.NoRecordException;
+import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
 
 /**
  * Access an underlying record (which is an ordered map of fields)
@@ -62,7 +62,7 @@ public interface RecordAccessor extends ListAccessor
      *
      * @param key the key of the property
      * @return the property's value or a {@link NullValue} if no such key exists
-     * @throws NoRecordException if the associated underlying record is not available
+     * @throws NoSuchRecordException if the associated underlying record is not available
      */
     Value get( String key );
 
@@ -78,12 +78,12 @@ public interface RecordAccessor extends ListAccessor
      * Retrieve all record fields
      *
      * @return all fields in key order
-     * @throws NoRecordException if the associated underlying record is not available
+     * @throws NoSuchRecordException if the associated underlying record is not available
      */
     List<Pair<String, Value>> fields();
 
     /**
-     * @throws NoRecordException if the associated underlying record is not available
+     * @throws NoSuchRecordException if the associated underlying record is not available
      * @return an immutable copy of the currently associated underlying record
      */
     Record record();
