@@ -31,6 +31,7 @@ import java.util.Map;
 
 import org.neo4j.driver.v1.ResultCursor;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.tck.tck.util.Types;
 import org.neo4j.driver.v1.tck.tck.util.runners.CypherStatementRunner;
 import org.neo4j.driver.v1.tck.tck.util.runners.MappedParametersRunner;
 import org.neo4j.driver.v1.tck.tck.util.runners.StringRunner;
@@ -39,10 +40,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.driver.v1.tck.DriverComplianceIT.session;
 import static org.neo4j.driver.v1.tck.Environment.runners;
-import static org.neo4j.driver.v1.tck.tck.util.ResultParser.getMapFromString;
 import static org.neo4j.driver.v1.tck.tck.util.ResultParser.getParametersFromListOfKeysAndValues;
+import static org.neo4j.driver.v1.tck.tck.util.ResultParser.getTypeMapFromString;
 import static org.neo4j.driver.v1.tck.tck.util.ResultParser.parseExpected;
 import static org.neo4j.driver.v1.tck.tck.util.ResultParser.parseGiven;
+import static org.neo4j.driver.v1.tck.tck.util.Types.getType;
 
 
 public class CypherComplianceSteps
@@ -84,10 +86,12 @@ public class CypherComplianceSteps
             {
                 assertTrue( keys.size() == rc.record().keys().size() );
                 assertTrue( keys.containsAll( rc.record().keys() ) );
-                given.add( parseGiven( rc.record().asMap(), type ) );
-                expected.add( parseExpected( table.diffableRows().get( i + 1 ).convertedRow, keys, type ) );
+                given.add( parseGiven( rc.record().asMap() ) );
+                expected.add( parseExpected( table.diffableRows().get( i + 1 ).convertedRow, keys, getType( type ) ) );
                 i++;
             }
+            assertTrue( expected.size() > 0 );
+            assertTrue( expected.iterator().next().size() > 0 );
             assertTrue( equalRecords( expected, given) );
         }
     }
@@ -97,7 +101,7 @@ public class CypherComplianceSteps
     {
         for( CypherStatementRunner runner : runners)
         {
-            Map<String, String> types = getMapFromString( stringTypes );
+            Map<String,Types.Type> types = getTypeMapFromString( stringTypes );
             ResultCursor rc = runner.result();
             List<String> keys = table.topCells();
             Collection<Map> given = new ArrayList<>(  );
@@ -110,12 +114,14 @@ public class CypherComplianceSteps
                 Map<String,Value> tmpGiven = new HashMap<>(  );
                 for ( String key : keys )
                 {
-                    tmpGiven.put( key, parseGiven( rc.record().asMap().get( key ), types.get( key ) ) );
+                    tmpGiven.put( key, parseGiven( rc.record().asMap().get( key ) ) );
                 }
                 given.add( tmpGiven );
                 expected.add( parseExpected( table.diffableRows().get( i + 1 ).convertedRow, keys, types ) );
                 i++;
             }
+            assertTrue( expected.size() > 0 );
+            assertTrue( expected.iterator().next().size() > 0 );
             assertTrue( equalRecords( expected, given ) );
         }
     }
@@ -133,10 +139,6 @@ public class CypherComplianceSteps
     private boolean equalRecords( Collection<Map> one, Collection<Map> other )
     {
         if (one.size() != other.size() )
-        {
-            return false;
-        }
-        if (one.size() == 0)
         {
             return false;
         }

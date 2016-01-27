@@ -29,7 +29,6 @@ import org.neo4j.driver.internal.InternalPath;
 import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.internal.value.ListValue;
 import org.neo4j.driver.internal.value.NodeValue;
-import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.internal.value.PathValue;
 import org.neo4j.driver.internal.value.RelationshipValue;
 import org.neo4j.driver.internal.value.StringValue;
@@ -37,11 +36,12 @@ import org.neo4j.driver.v1.Entity;
 import org.neo4j.driver.v1.Function;
 import org.neo4j.driver.v1.Path;
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.Values;
-import org.neo4j.driver.v1.exceptions.value.Uncoercible;
 
 import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.driver.internal.types.InternalTypeSystem.TYPE_SYSTEM;
+import static org.neo4j.driver.v1.tck.tck.util.Types.Type;
+import static org.neo4j.driver.v1.tck.tck.util.Types.getType;
 
 public class ResultParser
 {
@@ -337,13 +337,13 @@ public class ResultParser
         return properties;
     }
 
-    public static Map<String,String> getMapFromString( String input )
+    public static Map<String,Type> getTypeMapFromString( String input )
     {
         Map<String,Value> tmpMap = getProperties( input );
-        Map<String,String> converted = new HashMap<>();
+        Map<String,Type> converted = new HashMap<>();
         for ( String key : tmpMap.keySet() )
         {
-            converted.put( key, tmpMap.get( key ).asString() );
+            converted.put( key, getType( tmpMap.get( key ).asString() ) );
         }
         return converted;
     }
@@ -365,24 +365,6 @@ public class ResultParser
             }
         }
         return params;
-    }
-
-    public static Value parseGivenPath( Value input )
-    {
-        if ( input instanceof ListValue )
-        {
-            List<Path> values = input.asList( Values.valueAsPath() );
-            PathValue[] pathValues = new PathValue[values.size()];
-            for ( int i = 0; i < values.size(); i++ )
-            {
-                pathValues[i] = pathToTestPath( values.get( i ) );
-            }
-            return new ListValue( pathValues );
-        }
-        else
-        {
-            return pathToTestPath( input.asPath() );
-        }
     }
 
     private static PathValue pathToTestPath( Path p )
@@ -421,38 +403,6 @@ public class ResultParser
         return new PathValue( new InternalPath( nodesAndRels ) );
     }
 
-    public static Value parseGivenRelationship( Value input )
-    {
-        if ( input instanceof ListValue )
-        {
-            List<TestRelationshipValue> values = input.asList( relationshipToTest );
-            return new ListValue( values.toArray( new TestRelationshipValue[values.size()] ) );
-        }
-        else
-        {
-            return new TestRelationshipValue( input.asRelationship() );
-        }
-    }
-
-    public static Value parseGivenNode( Value input )
-    {
-        try
-        {
-            return new TestNodeValue( input.asNode() );
-        }
-        catch ( Uncoercible e )
-        {
-            if ( input instanceof NullValue )
-            {
-                return null;
-            }
-            else
-            {
-                throw e;
-            }
-        }
-    }
-
     private static final Function<Value,TestRelationshipValue> relationshipToTest =
             new Function<Value,TestRelationshipValue>()
             {
@@ -462,73 +412,97 @@ public class ResultParser
                 }
             };
 
-    public static Map<String,Value> parseGiven( Map<String,Value> input, String type )
+    public static Map<String,Value> parseGiven( Map<String,Value> input )
     {
         Map<String,Value> converted = new HashMap<>();
         for ( String key : input.keySet() )
         {
-            converted.put( key, parseGiven( input.get( key ), type ) );
+            converted.put( key, parseGiven( input.get( key ) ) );
         }
         return converted;
     }
 
-    public static Value parseGiven( Value input, String type )
+    public static Value parseGiven( Value input )
     {
-        switch ( type )
+        if ( TYPE_SYSTEM.LIST().isTypeOf( input ) )
         {
-        case "integer":
+            List<Value> vals = new ArrayList<>();
+            List<Value> givenVals = input.asList();
+            for ( Value givenValue : givenVals )
+            {
+                vals.add( parseGiven( givenValue ) );
+            }
+            return new ListValue( vals.toArray( new Value[vals.size()] ) );
+        }
+
+        if ( TYPE_SYSTEM.INTEGER().isTypeOf( input ) ||
+             TYPE_SYSTEM.FLOAT().isTypeOf( input ) ||
+             TYPE_SYSTEM.BOOLEAN().isTypeOf( input ) ||
+             TYPE_SYSTEM.STRING().isTypeOf( input ) )
+        {
             return input;
-        case "string":
-            return input;
-        case "node":
-            return parseGivenNode( input );
-        case "relationship":
-            return parseGivenRelationship( input );
-        case "path":
-            return parseGivenPath( input );
-        default:
-            throw new IllegalArgumentException( format( "Type not recognized: %s", type ) );
+        }
+        else if (TYPE_SYSTEM.NULL().isTypeOf( input ) )
+        {
+            return null;
+        }
+        else if ( TYPE_SYSTEM.NODE().isTypeOf( input ) )
+        {
+            return new TestNodeValue( input.asNode() );
+        }
+        else if ( TYPE_SYSTEM.RELATIONSHIP().isTypeOf( input ) )
+        {
+            return new TestRelationshipValue( input.asRelationship() );
+        }
+        else if ( TYPE_SYSTEM.PATH().isTypeOf( input ) )
+        {
+            return pathToTestPath( input.asPath() );
+        }
+        else
+        {
+            throw new IllegalArgumentException( format( "Type not handled for: %s", input ) );
         }
     }
 
     public static Map<String,Value> parseExpected( Collection<String> input, List<String> keys,
-            Map<String,String> types )
+            Map<String,Type> types )
     {
         assertEquals( keys.size(), input.size() );
         assertEquals( keys.size(), types.size() );
         Map<String,Value> converted = new HashMap<>();
         int i = 0;
-        for ( String o : input )
+        for ( String resultValue : input )
         {
             Value[] values;
             Value value;
             String key = keys.get( i );
-            String type = types.get( key );
+            Type type = types.get( key );
+
             switch ( type )
             {
-            case "integer":
-                o = o.replaceAll( "\\s+", "" );
-                values = parseInt( makeList( o ) );
-                value = convertArrayToValue( values, multipleValues( o ) );
+            case Integer:
+                resultValue = resultValue.replaceAll( "\\s+", "" );
+                values = parseInt( makeList( resultValue ) );
+                value = convertArrayToValue( values, multipleValues( resultValue ) );
                 break;
-            case "string":
-                values = parseString( makeList( o ) );
-                value = convertArrayToValue( values, multipleValues( o ) );
+            case String:
+                values = parseString( makeList( resultValue ) );
+                value = convertArrayToValue( values, multipleValues( resultValue ) );
                 break;
-            case "node":
-                o = o.replaceAll( "\\s+", "" );
-                values = parseNode( makeList( o ) );
-                value = convertArrayToValue( values, multipleValues( o ) );
+            case Node:
+                resultValue = resultValue.replaceAll( "\\s+", "" );
+                values = parseNode( makeList( resultValue ) );
+                value = convertArrayToValue( values, multipleValues( resultValue ) );
                 break;
-            case "relationship":
-                o = o.replaceAll( "\\s+", "" );
-                values = parseRelationship( makeListRelationship( o ) );
-                value = convertArrayToValue( values, multipleValuesRelationship( o ) );
+            case Relationship:
+                resultValue = resultValue.replaceAll( "\\s+", "" );
+                values = parseRelationship( makeListRelationship( resultValue ) );
+                value = convertArrayToValue( values, multipleValuesRelationship( resultValue ) );
                 break;
-            case "path":
-                o = o.replaceAll( "\\s+", "" );
-                values = parsePath( makeList( o ) );
-                value = convertArrayToValue( values, multipleValues( o ) );
+            case Path:
+                resultValue = resultValue.replaceAll( "\\s+", "" );
+                values = parsePath( makeList( resultValue ) );
+                value = convertArrayToValue( values, multipleValues( resultValue ) );
                 break;
             default:
                 throw new IllegalArgumentException( format( "Type not recognized: %s", type ) );
@@ -539,9 +513,9 @@ public class ResultParser
         return converted;
     }
 
-    public static Map<String,Value> parseExpected( Collection<String> input, List<String> keys, String type )
+    public static Map<String,Value> parseExpected( Collection<String> input, List<String> keys, Type type )
     {
-        Map<String,String> mappedTypes = new HashMap<>();
+        Map<String,Type> mappedTypes = new HashMap<>();
         for ( String key : keys )
         {
             mappedTypes.put( key, type );
