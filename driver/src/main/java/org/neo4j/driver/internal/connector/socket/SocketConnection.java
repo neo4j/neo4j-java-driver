@@ -23,7 +23,7 @@ import java.net.SocketTimeoutException;
 import java.util.LinkedList;
 import java.util.Map;
 
-import org.neo4j.driver.internal.messaging.AckFailureMessage;
+import org.neo4j.driver.internal.messaging.ResetMessage;
 import org.neo4j.driver.internal.messaging.InitMessage;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.PullAllMessage;
@@ -95,6 +95,13 @@ public class SocketConnection implements Connection
     }
 
     @Override
+    public void reset( StreamCollector collector )
+    {
+        int messageId = queueMessage( ResetMessage.RESET );
+        responseHandler.registerResultCollector( messageId, collector );
+    }
+
+    @Override
     public void sync()
     {
         if ( pendingMessages.size() == 0 )
@@ -111,7 +118,7 @@ public class SocketConnection implements Connection
             {
                 // Its enough to simply add the ack message to the outbound queue, it'll value sent
                 // off as the first message the next time we need to sync with the database.
-                queueMessage( new AckFailureMessage() );
+                reset( StreamCollector.NO_OP );
                 throw responseHandler.serverFailure();
             }
         }

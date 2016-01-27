@@ -21,6 +21,7 @@ package org.neo4j.driver.v1;
 import java.util.List;
 
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
 
 
 /**
@@ -41,10 +42,10 @@ public interface ResultCursor extends RecordAccessor, Resource
 {
     /**
      * @return an immutable copy of the currently viewed record
-     * @throws ClientException if no calls has been made to {@link #next()}, {@link #first()}, nor {@link #skip(long)}
+     * @throws NoSuchRecordException if no calls has been made to {@link #next()}, {@link #first()}, nor {@link #skip(long)}
      */
     @Override
-    Record record();
+    Record record() throws NoSuchRecordException;
 
     /**
      * Retrieve the zero based position of the cursor in the stream of records.
@@ -90,26 +91,28 @@ public interface ResultCursor extends RecordAccessor, Resource
     long limit( long records );
 
     /**
-     * Move to the first record if possible, otherwise do nothing.
+     * Return the first record in the stream. Fail with an exception if the stream is empty
+     * or if this cursor has already been used to move "into" the stream.
      *
-     * @return <tt>true</tt> if the cursor is placed on the first record
+     * @return the first record in the stream
+     * @throws NoSuchRecordException if there is no first record or the cursor has been used already
+     *
      */
-    boolean first();
+    Record first() throws NoSuchRecordException;
 
     /**
-     * Move to the first record if possible and verify that it is the only record.
+     * Move to the first record and return an immutable copy of it, failing if there is not exactly
+     * one record in the stream, or if this cursor has already been used to move "into" the stream.
      *
-     * @return <tt>true</tt> if the cursor was successfully placed at the single first and only record
+     * @return the first and only record in the stream
+     * @throws NoSuchRecordException if there is not exactly one record in the stream, or if the cursor has been used already
      */
-    boolean single();
+    Record single() throws NoSuchRecordException;
 
     /**
-     * Investigate the next upcoming record.
+     * Investigate the next upcoming record without changing the position of this cursor.
      *
-     * The returned {@link RecordAccessor} is updated consistently whenever this associated cursor
-     * is moved.
-     *
-     * @return a view on the next record, or null if there is no next record
+     * @return an immutable copy of the next record, or null if there is no next record
      */
     Record peek();
 
@@ -118,7 +121,8 @@ public interface ResultCursor extends RecordAccessor, Resource
      * This can be used if you want to iterate over the stream multiple times or to store the
      * whole result for later use.
      *
-     * Calling this method exhausts the result cursor and moves it to the last record
+     * Calling this method exhausts the result cursor and moves it to the last record.
+     *
      * @throws ClientException if the cursor can't be positioned at the first record
      * @return list of all immutable records
      */
@@ -129,7 +133,8 @@ public interface ResultCursor extends RecordAccessor, Resource
      * This can be used if you want to iterate over the stream multiple times or to store the
      * whole result for later use.
      *
-     * Calling this method exhausts the result cursor and moves it to the last record
+     * Calling this method exhausts the result cursor and moves it to the last record.
+     *
      * @throws ClientException if the cursor can't be positioned at the first record
      * @param mapFunction a function to map from Value to T. See {@link Values} for some predefined functions, such
      * as {@link Values#valueAsBoolean()}, {@link Values#valueAsList(Function)}.

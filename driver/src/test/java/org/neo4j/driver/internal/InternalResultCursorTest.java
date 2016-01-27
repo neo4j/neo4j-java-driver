@@ -36,10 +36,12 @@ import org.neo4j.driver.v1.Records;
 import org.neo4j.driver.v1.ResultCursor;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -59,13 +61,12 @@ public class InternalResultCursorTest
         // WHEN
         assertThat( result.position(), equalTo( -1L ) );
         assertTrue( result.next() ); //-1 -> 0
-        assertTrue( result.first() );
+        assertNotNull( result.first() );
         assertFalse( result.atEnd() );
         assertThat( values( result.record() ), equalTo(Arrays.asList(value("v1-1"), value( "v2-1" ))));
 
         assertThat( result.position(), equalTo( 0L ) );
         assertTrue( result.next() ); //0 -> 1
-        assertFalse( result.first() );
         assertFalse( result.atEnd() );
         assertThat( values( result.record() ), equalTo(Arrays.asList(value("v1-2"), value( "v2-2" ))));
 
@@ -75,15 +76,18 @@ public class InternalResultCursorTest
         // THEN
         assertThat( result.position(), equalTo( 2L ) );
         assertTrue( result.atEnd() );
-        assertFalse( result.first() );
         assertThat( values( result.record() ), equalTo(Arrays.asList(value("v1-3"), value( "v2-3" ))));
         assertFalse( result.next() );
     }
 
     @Test
-    public void firstFalseOnEmptyStream()
+    public void firstThrowsOnEmptyStream()
     {
-        assertFalse( createResult( 0 ).first() );
+        // Expect
+        expectedException.expect( NoSuchRecordException.class );
+
+        // When
+        createResult( 0 ).first();
     }
 
     @Test
@@ -94,18 +98,36 @@ public class InternalResultCursorTest
 
         // WHEN
         assertThat( result.position(), equalTo( -1L ) );
-        assertTrue( result.first() );
+        assertNotNull( result.first() );
         assertThat( result.position(), equalTo( 0L ) );
-        assertTrue( result.first() );
+        assertNotNull( result.first() );
         assertThat( result.position(), equalTo( 0L ) );
     }
 
     @Test
     public void singleShouldWorkAsExpected()
     {
-        assertFalse( createResult( 42 ).single() );
-        assertFalse( createResult( 0 ).single() );
-        assertTrue( createResult( 1 ).single() );
+        assertNotNull( createResult( 1 ).single() );
+    }
+
+    @Test
+    public void singleShouldThrowOnBigResult()
+    {
+        // Expect
+        expectedException.expect( NoSuchRecordException.class );
+
+        // When
+        createResult( 42 ).single();
+    }
+
+    @Test
+    public void singleShouldThrowOnEmptyResult()
+    {
+        // Expect
+        expectedException.expect( NoSuchRecordException.class );
+
+        // When
+        createResult( 0 ).single();
     }
 
     @Test

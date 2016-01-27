@@ -28,7 +28,7 @@ import org.neo4j.driver.v1.ResultCursor;
 import org.neo4j.driver.v1.ResultSummary;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.exceptions.NoRecordException;
+import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
 
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
@@ -100,7 +100,7 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
         }
         else
         {
-            throw new NoRecordException(
+            throw new NoSuchRecordException(
                 "In order to access the fields of a record in a result, " +
                 "you must first call next() to point the result to the next record in the result stream."
             );
@@ -176,16 +176,38 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
     }
 
     @Override
-    public boolean first()
+    public Record first()
     {
-        long pos = position();
-        return pos < 0 ? next() : pos == 0;
+        if( position() > 0 )
+        {
+            throw new NoSuchRecordException( "Cannot retrieve the first record, because this result cursor has been moved already. " +
+                                             "Please ensure you are not calling `first` multiple times, or are mixing it with calls " +
+                                             "to `next`, `single`, `list` or any other method that changes the position of the cursor." );
+        }
+
+        if( position == 0 )
+        {
+            return record();
+        }
+
+        if( !next() )
+        {
+            throw new NoSuchRecordException( "Cannot retrieve the first record, because this result is empty." );
+        }
+        return record();
     }
 
     @Override
-    public boolean single()
+    public Record single()
     {
-        return first() && atEnd();
+        Record first = first();
+        if( iter.hasNext() )
+        {
+            throw new NoSuchRecordException( "Expected a result with a single record, but this result contains at least one more. " +
+                                             "Ensure your query returns only one record, or use `first` instead of `single` if " +
+                                             "you do not care about the number of records in the result." );
+        }
+        return first;
     }
 
     @Override
@@ -208,7 +230,7 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
             assertOpen();
             return emptyList();
         }
-        else if ( first() )
+        else if ( position == 0 || ( position == -1 && next() ) )
         {
             List<T> result = new ArrayList<>();
             do

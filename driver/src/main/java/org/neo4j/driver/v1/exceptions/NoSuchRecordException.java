@@ -18,17 +18,12 @@
  */
 package org.neo4j.driver.v1.exceptions;
 
-public class NoRecordException extends ClientException
+public class NoSuchRecordException extends ClientException
 {
     private static final long serialVersionUID = 9091962868264042491L;
 
-    public NoRecordException( String message )
+    public NoSuchRecordException( String message )
     {
         super( message );
-    }
-
-    public NoRecordException( String message, Throwable cause )
-    {
-        super( message, cause );
     }
 }

@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
@@ -43,7 +44,6 @@ import static java.lang.String.valueOf;
 import static java.util.Collections.singletonMap;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.neo4j.driver.v1.tck.DriverComplianceIT.session;
 import static org.neo4j.driver.v1.tck.Environment.expectedBoltValue;
 import static org.neo4j.driver.v1.tck.Environment.expectedJavaValue;
@@ -215,8 +215,8 @@ public class DriverComplianceSteps
     {
         for ( CypherStatementRunner runner : runners )
         {
-            assertTrue( runner.result().single() );
-            Value resultBoltValue = runner.result().record().get( 0 );
+            Record record = runner.result().single();
+            Value resultBoltValue = record.get( 0 );
             Object resultJavaValue = expectedBoltValue.asObject();
 
             assertThat( resultBoltValue, equalTo( expectedBoltValue ) );
