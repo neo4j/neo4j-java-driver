@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.tck.tck.util.Types;
 import org.neo4j.driver.v1.tck.tck.util.runners.CypherStatementRunner;
 import org.neo4j.driver.v1.tck.tck.util.runners.MappedParametersRunner;
 import org.neo4j.driver.v1.tck.tck.util.runners.StatementRunner;
@@ -43,6 +44,7 @@ public class Environment
     public static Value expectedBoltValue;
     public static List<Object> listOfObjects;
     public static Map<String,Object> mapOfObjects;
+    public static Map<String,Types.Type> mappedTypes;
 
 
     @Before
@@ -56,6 +58,7 @@ public class Environment
         statementRunner = null;
         stringRunner = null;
         runners = new ArrayList<>();
+        mappedTypes = new HashMap<>(  );
     }
 
     @Before("@reset_database")

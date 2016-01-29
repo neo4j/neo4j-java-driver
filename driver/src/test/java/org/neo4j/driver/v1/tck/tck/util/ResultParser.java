@@ -41,7 +41,6 @@ import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.driver.internal.types.InternalTypeSystem.TYPE_SYSTEM;
 import static org.neo4j.driver.v1.tck.tck.util.Types.Type;
-import static org.neo4j.driver.v1.tck.tck.util.Types.getType;
 
 public class ResultParser
 {
@@ -335,17 +334,6 @@ public class ResultParser
             }
         }
         return properties;
-    }
-
-    public static Map<String,Type> getTypeMapFromString( String input )
-    {
-        Map<String,Value> tmpMap = getProperties( input );
-        Map<String,Type> converted = new HashMap<>();
-        for ( String key : tmpMap.keySet() )
-        {
-            converted.put( key, getType( tmpMap.get( key ).asString() ) );
-        }
-        return converted;
     }
 
     public static Map<String,Value> getParametersFromListOfKeysAndValues( List<String> keys, List<String> values )

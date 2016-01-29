@@ -31,7 +31,6 @@ import java.util.Map;
 
 import org.neo4j.driver.v1.ResultCursor;
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.tck.tck.util.Types;
 import org.neo4j.driver.v1.tck.tck.util.runners.CypherStatementRunner;
 import org.neo4j.driver.v1.tck.tck.util.runners.MappedParametersRunner;
 import org.neo4j.driver.v1.tck.tck.util.runners.StringRunner;
@@ -39,9 +38,9 @@ import org.neo4j.driver.v1.tck.tck.util.runners.StringRunner;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.driver.v1.tck.DriverComplianceIT.session;
+import static org.neo4j.driver.v1.tck.Environment.mappedTypes;
 import static org.neo4j.driver.v1.tck.Environment.runners;
 import static org.neo4j.driver.v1.tck.tck.util.ResultParser.getParametersFromListOfKeysAndValues;
-import static org.neo4j.driver.v1.tck.tck.util.ResultParser.getTypeMapFromString;
 import static org.neo4j.driver.v1.tck.tck.util.ResultParser.parseExpected;
 import static org.neo4j.driver.v1.tck.tck.util.ResultParser.parseGiven;
 import static org.neo4j.driver.v1.tck.tck.util.Types.getType;
@@ -96,12 +95,11 @@ public class CypherComplianceSteps
         }
     }
 
-    @Then( "^result should be mixed: \"(.*)\"$" )
-    public void result_should_be_mixed_a_node_b_node_l_integer( String stringTypes, DataTable table ) throws Throwable
+    @Then( "^result should be mixed:" )
+    public void result_should_be_mixed( DataTable table ) throws Throwable
     {
         for( CypherStatementRunner runner : runners)
         {
-            Map<String,Types.Type> types = getTypeMapFromString( stringTypes );
             ResultCursor rc = runner.result();
             List<String> keys = table.topCells();
             Collection<Map> given = new ArrayList<>(  );
@@ -117,7 +115,7 @@ public class CypherComplianceSteps
                     tmpGiven.put( key, parseGiven( rc.record().asMap().get( key ) ) );
                 }
                 given.add( tmpGiven );
-                expected.add( parseExpected( table.diffableRows().get( i + 1 ).convertedRow, keys, types ) );
+                expected.add( parseExpected( table.diffableRows().get( i + 1 ).convertedRow, keys, mappedTypes ) );
                 i++;
             }
             assertTrue( expected.size() > 0 );
@@ -160,5 +158,17 @@ public class CypherComplianceSteps
         }
         return other.size() == 0;
 
+    }
+
+    @Then( "^result should map to types:$" )
+    public void result_should_map_to_types(DataTable table) throws Throwable
+    {
+        List<String> keys = table.topCells();
+        List<String> values = table.diffableRows().get( 1 ).convertedRow;
+        mappedTypes = new HashMap<>(  );
+        for (int i = 0; i < keys.size(); i++)
+        {
+            mappedTypes.put( keys.get( i ), getType( values.get( i ) ) );
+        }
     }
 }
