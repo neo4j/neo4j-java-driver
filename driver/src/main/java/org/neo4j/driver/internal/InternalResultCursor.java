@@ -18,17 +18,12 @@
  */
 package org.neo4j.driver.internal;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.neo4j.driver.v1.Function;
-import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.RecordAccessor;
-import org.neo4j.driver.v1.ResultCursor;
-import org.neo4j.driver.v1.ResultSummary;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.*;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
@@ -197,6 +192,19 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
         return record();
     }
 
+
+    @Override
+    public Value first(String fieldName) throws NoSuchRecordException
+    {
+        return first().get( fieldName );
+    }
+
+    @Override
+    public Value first(int index) throws NoSuchRecordException
+    {
+        return first().get( index );
+    }
+
     @Override
     public Record single()
     {
@@ -208,6 +216,18 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
                                              "you do not care about the number of records in the result." );
         }
         return first;
+    }
+
+    @Override
+    public Value single( String fieldName ) throws NoSuchRecordException
+    {
+        return single().get( fieldName );
+    }
+
+    @Override
+    public Value single( int index ) throws NoSuchRecordException
+    {
+        return single().get( index );
     }
 
     @Override
