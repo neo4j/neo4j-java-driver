@@ -37,6 +37,7 @@ public class TransactionDocIT
     public void classDoc( DocSnippet snippet )
     {
         // Given
+        session.run( "MATCH (n) DETACH DELETE n" );
         snippet.set( "session", session );
 
         // When I run the snippet
