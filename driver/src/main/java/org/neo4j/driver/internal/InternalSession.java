@@ -139,6 +139,7 @@ public class InternalSession implements Session
                           "method on Sessions before disposing of the objects.", null );
             connection.close();
         }
+        super.finalize();
     }
 
     private void ensureNoOpenTransaction()
