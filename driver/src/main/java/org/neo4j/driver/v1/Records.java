@@ -25,11 +25,6 @@ package org.neo4j.driver.v1;
  */
 public abstract class Records
 {
-    private Records()
-    {
-        throw new UnsupportedOperationException();
-    }
-
     public static Function<RecordAccessor, Record> recordAsIs()
     {
         return RECORD;

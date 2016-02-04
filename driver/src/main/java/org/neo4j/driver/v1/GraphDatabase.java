@@ -34,7 +34,7 @@ public class GraphDatabase
      */
     public static Driver driver( String url )
     {
-        return driver( URI.create( url ) );
+        return driver( url, Config.defaultConfig() );
     }
 
     /**

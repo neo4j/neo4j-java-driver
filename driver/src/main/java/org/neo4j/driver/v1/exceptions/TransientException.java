@@ -24,11 +24,6 @@ package org.neo4j.driver.v1.exceptions;
  */
 public class TransientException extends Neo4jException
 {
-    public TransientException( String message )
-    {
-        super( message );
-    }
-
     public TransientException( String code, String message )
     {
         super( code, message );

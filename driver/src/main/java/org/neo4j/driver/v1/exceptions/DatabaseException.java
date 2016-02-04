@@ -24,11 +24,6 @@ package org.neo4j.driver.v1.exceptions;
  */
 public class DatabaseException extends Neo4jException
 {
-    public DatabaseException( String message )
-    {
-        super( message );
-    }
-
     public DatabaseException( String code, String message )
     {
         super( code, message );

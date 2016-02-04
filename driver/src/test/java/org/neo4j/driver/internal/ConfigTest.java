@@ -18,14 +18,16 @@
  */
 package org.neo4j.driver.internal;
 
-import java.io.File;
-
 import org.junit.Test;
+
+import java.io.File;
 
 import org.neo4j.driver.v1.Config;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class ConfigTest
@@ -74,6 +76,16 @@ public class ConfigTest
         // Then
         assertTrue( authConfig.isFullAuthEnabled() );
         assertEquals( trustedCert.getAbsolutePath(), authConfig.certFile().getAbsolutePath() );
+    }
+
+    @Test
+    public void shouldConfigureMinIdleTime() throws Throwable
+    {
+        // when
+        Config config = Config.build().withMinIdleTimeBeforeConnectionTest( 1337 ).toConfig();
+
+        // then
+        assertThat( config.idleTimeBeforeConnectionTest(), equalTo( 1337l ));
     }
 
     public static void deleteDefaultKnownCertFileIfExists()
