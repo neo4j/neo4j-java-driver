@@ -71,6 +71,22 @@ public class InternalResultCursorTest
     }
 
     @Test
+    public void firstPastFirstShouldFail()
+    {
+        // GIVEN
+        ResultCursor result = createResult( 3 );
+        result.next();
+        result.next();
+
+
+        // THEN
+        expectedException.expect( NoSuchRecordException.class );
+
+        // THEN
+        result.first();
+    }
+
+    @Test
     public void firstOfFieldNameShouldWorkAsExpected()
     {
         // GIVEN
@@ -90,6 +106,50 @@ public class InternalResultCursorTest
         // THEN
         assertThat( result.first( 0 ), equalTo( value("v1-1") ) );
         assertFalse( result.atEnd() );
+    }
+
+    @Test
+    public void singlePastFirstShouldFail()
+    {
+        // GIVEN
+        ResultCursor result = createResult( 2 );
+        result.next();
+        result.next();
+
+
+        // THEN
+        expectedException.expect( NoSuchRecordException.class );
+
+        // THEN
+        result.single();
+    }
+
+    @Test
+    public void singleNoneShouldFail()
+    {
+        // GIVEN
+        ResultCursor result = createResult( 0 );
+
+
+        // THEN
+        expectedException.expect( NoSuchRecordException.class );
+
+        // THEN
+        result.single();
+    }
+
+    @Test
+    public void singleWhenMoreThanOneShouldFail()
+    {
+        // GIVEN
+        ResultCursor result = createResult( 2 );
+
+
+        // THEN
+        expectedException.expect( NoSuchRecordException.class );
+
+        // THEN
+        result.single();
     }
 
     @Test
