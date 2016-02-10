@@ -18,23 +18,26 @@
  */
 package org.neo4j.driver.internal.packstream;
 
+import org.hamcrest.MatcherAssert;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
-import org.hamcrest.MatcherAssert;
-import org.junit.Test;
 
 import org.neo4j.driver.internal.util.BytePrinter;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
-
 import static junit.framework.TestCase.assertFalse;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -46,6 +49,9 @@ import static org.junit.Assert.assertTrue;
 
 public class PackStreamTest
 {
+
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
 
     public static Map<String, Object> asMap( Object... keysAndValues )
     {
@@ -497,10 +503,10 @@ public class PackStreamTest
         PackType packType = unpacker.peekNextType();
 
         assertThat( packType, equalTo( PackType.LIST ) );
-        assertThat( unpacker.unpackListHeader(), equalTo( 3l ) );
-        assertThat( unpacker.unpackLong(), equalTo( 12l ) );
-        assertThat( unpacker.unpackLong(), equalTo( 13l ) );
-        assertThat( unpacker.unpackLong(), equalTo( 14l ) );
+        assertThat( unpacker.unpackListHeader(), equalTo( 3L ) );
+        assertThat( unpacker.unpackLong(), equalTo( 12L ) );
+        assertThat( unpacker.unpackLong(), equalTo( 13L ) );
+        assertThat( unpacker.unpackLong(), equalTo( 14L ) );
 
     }
 
@@ -520,7 +526,7 @@ public class PackStreamTest
         PackType packType = unpacker.peekNextType();
 
         assertThat( packType, equalTo( PackType.LIST ) );
-        assertThat( unpacker.unpackListHeader(), equalTo( 3l ) );
+        assertThat( unpacker.unpackListHeader(), equalTo( 3L ) );
         assertThat( unpacker.unpackString(), equalTo( "eins" ) );
         assertThat( unpacker.unpackString(), equalTo( "zwei" ) );
         assertThat( unpacker.unpackString(), equalTo( "drei" ) );
@@ -530,23 +536,10 @@ public class PackStreamTest
     @Test
     public void testCanPackAndUnpackListOfSpecialStrings() throws Throwable
     {
-        // Given
-        Machine machine = new Machine();
-
-        // When
-        PackStream.Packer packer = machine.packer();
-        packer.pack( asList( "Mjölnir", "Mjölnir", "Mjölnir" ) );
-        packer.flush();
-
-        // Then
-        PackStream.Unpacker unpacker = newUnpacker( machine.output() );
-        PackType packType = unpacker.peekNextType();
-
-        assertThat( packType, equalTo( PackType.LIST ) );
-        assertThat( unpacker.unpackListHeader(), equalTo( 3l ) );
-        assertThat( unpacker.unpackString(), equalTo( "Mjölnir" ) );
-        assertThat( unpacker.unpackString(), equalTo( "Mjölnir" ) );
-        assertThat( unpacker.unpackString(), equalTo( "Mjölnir" ) );
+        assertPackStringLists( 3, "Mjölnir" );
+        assertPackStringLists( 126, "Mjölnir" );
+        assertPackStringLists( 3000, "Mjölnir" );
+        assertPackStringLists( 32768, "Mjölnir" );
     }
 
     @Test
@@ -571,7 +564,7 @@ public class PackStreamTest
         PackType packType = unpacker.peekNextType();
 
         assertThat( packType, equalTo( PackType.LIST ) );
-        assertThat( unpacker.unpackListHeader(), equalTo( 3l ) );
+        assertThat( unpacker.unpackListHeader(), equalTo( 3L ) );
         assertThat( unpacker.unpackString(), equalTo( "eins" ) );
         assertThat( unpacker.unpackString(), equalTo( "zwei" ) );
         assertThat( unpacker.unpackString(), equalTo( "drei" ) );
@@ -600,7 +593,7 @@ public class PackStreamTest
         PackType packType = unpacker.peekNextType();
 
         assertThat( packType, equalTo( PackType.LIST ) );
-        assertThat( unpacker.unpackListHeader(), equalTo( 3l ) );
+        assertThat( unpacker.unpackListHeader(), equalTo( 3L ) );
         assertThat( unpacker.unpackString(), equalTo( "Mjölnir" ) );
         assertThat( unpacker.unpackString(), equalTo( "Mjölnir" ) );
         assertThat( unpacker.unpackString(), equalTo( "Mjölnir" ) );
@@ -610,26 +603,10 @@ public class PackStreamTest
     @Test
     public void testCanPackAndUnpackMap() throws Throwable
     {
-        // Given
-        Machine machine = new Machine();
-
-        // When
-        PackStream.Packer packer = machine.packer();
-        packer.pack( asMap( "one", 1, "two", 2 ) );
-        packer.flush();
-
-        // Then
-        PackStream.Unpacker unpacker = newUnpacker( machine.output() );
-        PackType packType = unpacker.peekNextType();
-
-        assertThat( packType, equalTo( PackType.MAP ) );
-        assertThat( unpacker.unpackMapHeader(), equalTo( 2l ) );
-
-        assertThat( unpacker.unpackString(), equalTo( "one") );
-        assertThat( unpacker.unpackLong(), equalTo( 1l) );
-
-        assertThat( unpacker.unpackString(), equalTo( "two") );
-        assertThat( unpacker.unpackLong(), equalTo( 2l) );
+        assertMap( 2 );
+        assertMap( 126 );
+        assertMap( 2439 );
+        assertMap( 32768 );
     }
 
     @Test
@@ -651,20 +628,32 @@ public class PackStreamTest
         PackType packType = unpacker.peekNextType();
 
         assertThat( packType, equalTo( PackType.STRUCT ) );
-        assertThat( unpacker.unpackStructHeader(), equalTo( 3l ) );
+        assertThat( unpacker.unpackStructHeader(), equalTo( 3L ) );
         assertThat( unpacker.unpackStructSignature(), equalTo( (byte)'N' ) );
 
-        assertThat( unpacker.unpackLong(), equalTo( 12l ));
+        assertThat( unpacker.unpackLong(), equalTo( 12L ) );
 
-        assertThat( unpacker.unpackListHeader(), equalTo( 2l ));
+        assertThat( unpacker.unpackListHeader(), equalTo( 2L ) );
         assertThat( unpacker.unpackString(), equalTo( "Person" ));
         assertThat( unpacker.unpackString(), equalTo( "Employee" ));
 
-        assertThat( unpacker.unpackMapHeader(), equalTo( 2l ));
+        assertThat( unpacker.unpackMapHeader(), equalTo( 2L ) );
         assertThat( unpacker.unpackString(), equalTo( "name" ));
         assertThat( unpacker.unpackString(), equalTo( "Alice" ));
         assertThat( unpacker.unpackString(), equalTo( "age" ));
-        assertThat( unpacker.unpackLong(), equalTo( 33l ));
+        assertThat( unpacker.unpackLong(), equalTo( 33L ) );
+    }
+
+    @Test
+    public void testCanPackAndUnpackStructsOfDifferentSizes() throws Throwable
+    {
+        assertStruct( 2 );
+        assertStruct( 126 );
+        assertStruct( 2439 );
+
+        //we cannot have 'too many' fields
+        exception.expect( PackStream.Overflow.class );
+        assertStruct( 32768 );
     }
 
     @Test
@@ -843,6 +832,22 @@ public class PackStreamTest
         assertPeekType( PackType.MAP, asMap( "l",3 ) );
     }
 
+    @Test
+    public void shouldFailForUnknownValue() throws IOException
+    {
+        // Given
+        Machine machine = new Machine();
+        PackStream.Packer packer = machine.packer();
+
+        // Expect
+        exception.expect( PackStream.UnPackable.class );
+
+        // When
+        packer.pack( new MyRandomClass() );
+    }
+
+    private static class MyRandomClass{}
+
     void assertPeekType( PackType type, Object value ) throws IOException
     {
         // Given
@@ -855,5 +860,91 @@ public class PackStreamTest
 
         // When & Then
         assertEquals( type, unpacker.peekNextType() );
+    }
+
+    private void assertPackStringLists( int size, String value ) throws Throwable
+    {
+        // Given
+        Machine machine = new Machine();
+
+        // When
+        PackStream.Packer packer = machine.packer();
+        ArrayList<String> strings = new ArrayList<>( size );
+        for ( int i = 0; i < size; i++ )
+        {
+            strings.add( i, value );
+        }
+        packer.pack( strings );
+        packer.flush();
+
+        // Then
+        PackStream.Unpacker unpacker = newUnpacker( machine.output() );
+        PackType packType = unpacker.peekNextType();
+        assertThat( packType, equalTo( PackType.LIST ) );
+
+        assertThat( unpacker.unpackListHeader(), equalTo( (long) size ) );
+        for ( int i = 0; i < size; i++ )
+        {
+            assertThat( unpacker.unpackString(), equalTo( "Mjölnir" ) );
+        }
+    }
+
+    private void assertMap( int size ) throws Throwable
+    {
+        // Given
+        Machine machine = new Machine();
+
+        // When
+        PackStream.Packer packer = machine.packer();
+        HashMap<String,Integer> map = new HashMap<>();
+        for ( int i = 0; i < size; i++ )
+        {
+            map.put( Integer.toString( i ), i );
+        }
+        packer.pack( map );
+        packer.flush();
+
+        // Then
+        PackStream.Unpacker unpacker = newUnpacker( machine.output() );
+        PackType packType = unpacker.peekNextType();
+
+        assertThat( packType, equalTo( PackType.MAP ) );
+
+
+        assertThat( unpacker.unpackMapHeader(), equalTo( (long) size ) );
+
+        for ( int i = 0; i < size; i++ )
+        {
+            assertThat( unpacker.unpackString(), equalTo( Long.toString( unpacker.unpackLong() ) ) );
+        }
+    }
+
+    private void assertStruct( int size ) throws Throwable
+    {
+        // Given
+        Machine machine = new Machine();
+
+        // When
+        PackStream.Packer packer = machine.packer();
+        packer.packStructHeader( size, (byte) 'N' );
+        for ( int i = 0; i < size; i++ )
+        {
+            packer.pack( i );
+        }
+
+        packer.flush();
+
+        // Then
+        PackStream.Unpacker unpacker = newUnpacker( machine.output() );
+        PackType packType = unpacker.peekNextType();
+
+        assertThat( packType, equalTo( PackType.STRUCT ) );
+        assertThat( unpacker.unpackStructHeader(), equalTo( (long) size ) );
+        assertThat( unpacker.unpackStructSignature(), equalTo( (byte) 'N' ) );
+
+        for ( int i = 0; i < size; i++ )
+        {
+            assertThat( unpacker.unpackLong(), equalTo( (long) i ) );
+        }
     }
 }

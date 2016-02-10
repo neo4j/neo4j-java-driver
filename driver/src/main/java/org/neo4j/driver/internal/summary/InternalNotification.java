@@ -23,6 +23,8 @@ import org.neo4j.driver.v1.InputPosition;
 import org.neo4j.driver.v1.Notification;
 import org.neo4j.driver.v1.Value;
 
+import static org.neo4j.driver.internal.value.NullValue.NULL;
+
 public class InternalNotification implements Notification
 {
     public static final Function<Value, Notification> VALUE_TO_NOTIFICATION = new Function<Value,Notification>()
@@ -36,7 +38,7 @@ public class InternalNotification implements Notification
 
             Value posValue = value.get( "position" );
             InputPosition position = null;
-            if( posValue != null )
+            if( posValue != NULL )
             {
                 position = new InternalInputPosition( posValue.get( "offset" ).asInt(),
                                                     posValue.get( "line" ).asInt(),
