@@ -232,7 +232,7 @@ public class Neo4jRunner
             return;
         }
 
-        File oldFile = new File( Neo4jInstaller.neo4jHomeDir, "conf/neo4j-server.properties" );
+        File oldFile = new File( Neo4jInstaller.neo4jHomeDir, "conf/neo4j.conf" );
         try
         {
             debug( "Changing server properties file (for next start): " + oldFile.getCanonicalPath() );
