@@ -82,7 +82,7 @@ public class ConfigTest
     public void shouldConfigureMinIdleTime() throws Throwable
     {
         // when
-        Config config = Config.build().withMinIdleTimeBeforeConnectionTest( 1337 ).toConfig();
+        Config config = Config.build().withSessionLivenessCheckTimeout( 1337 ).toConfig();
 
         // then
         assertThat( config.idleTimeBeforeConnectionTest(), equalTo( 1337l ));
