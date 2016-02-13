@@ -26,7 +26,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.SocketChannel;
 import java.security.GeneralSecurityException;
-import java.util.List;
+import java.util.Queue;
 
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
@@ -34,7 +34,7 @@ import org.neo4j.driver.internal.spi.Logger;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
-import static java.nio.ByteOrder.*;
+import static java.nio.ByteOrder.BIG_ENDIAN;
 
 public class SocketClient
 {
@@ -90,16 +90,21 @@ public class SocketClient
         }
     }
 
-    public void send( List<Message> pendingMessages, SocketResponseHandler handler ) throws IOException
+    public void sendAll( Queue<Message> messages ) throws IOException
     {
-        for ( Message message : pendingMessages )
+        while ( true )
         {
-            writer.write( message );
+            Message message = messages.poll();
+            if ( message == null ) { break; }
+            else { writer.write( message ); }
         }
         writer.flush();
+    }
 
+    public void receiveAll( SocketResponseHandler handler ) throws IOException
+    {
         // Wait until all pending requests have been replied to
-        while ( handler.receivedResponses() < pendingMessages.size() )
+        while ( handler.collectorsWaiting() > 0 )
         {
             reader.read( handler );
 

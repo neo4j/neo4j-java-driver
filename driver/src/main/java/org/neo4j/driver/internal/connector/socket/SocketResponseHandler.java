@@ -18,8 +18,9 @@
  */
 package org.neo4j.driver.internal.connector.socket;
 
-import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Map;
+import java.util.Queue;
 
 import org.neo4j.driver.internal.messaging.MessageHandler;
 import org.neo4j.driver.internal.spi.StreamCollector;
@@ -36,62 +37,47 @@ import org.neo4j.driver.v1.exceptions.TransientException;
 
 public class SocketResponseHandler implements MessageHandler
 {
-    private final Map<Integer,StreamCollector> collectors = new HashMap<>();
+    private final Queue<StreamCollector> collectors = new LinkedList<>();
 
     /** If a failure occurs, the error gets stored here */
     private Neo4jException error;
 
-    /** Counts number of responses, used to correlate response data with stream collectors */
-    private int responseId = 0;
-
-    public int receivedResponses()
+    public int collectorsWaiting()
     {
-        return responseId;
+        return collectors.size();
     }
 
     @Override
     public void handleRecordMessage( Value[] fields )
     {
-        // This is not very efficient, using something like a singly-linked queue with a current collector as head
-        // would take advantage of the ordered nature of exchanges and avoid all these objects allocated from boxing
-        // below.
-        StreamCollector collector = collectors.get( responseId );
-        if ( collector != null )
-        {
-            collector.record( fields );
-        }
+        StreamCollector collector = collectors.element();
+        collector.record( fields );
     }
 
     @Override
     public void handleFailureMessage( String code, String message )
     {
-        try
+        collectors.remove();
+        String[] parts = code.split( "\\." );
+        String classification = parts[1];
+        switch ( classification )
         {
-            String[] parts = code.split( "\\." );
-            String classification = parts[1];
-            switch ( classification )
-            {
-                case "ClientError":
-                    error = new ClientException( code, message );
-                    break;
-                case "TransientError":
-                    error = new TransientException( code, message );
-                    break;
-                default:
-                    error = new DatabaseException( code, message );
-                    break;
-            }
-        }
-        finally
-        {
-            responseId++;
+            case "ClientError":
+                error = new ClientException( code, message );
+                break;
+            case "TransientError":
+                error = new TransientException( code, message );
+                break;
+            default:
+                error = new DatabaseException( code, message );
+                break;
         }
     }
 
     @Override
     public void handleSuccessMessage( Map<String,Value> meta )
     {
-        StreamCollector collector = collectors.get( responseId );
+        StreamCollector collector = collectors.remove();
         if ( collector != null )
         {
             collectFields( collector, meta.get( "fields" ) );
@@ -101,14 +87,14 @@ public class SocketResponseHandler implements MessageHandler
             collectProfile( collector, meta.get( "profile" ) );
             collectNotifications( collector, meta.get( "notifications" ) );
         }
-        responseId++;
     }
 
     private void collectNotifications( StreamCollector collector, Value notifications )
     {
         if ( notifications != null )
         {
-            collector.notifications( notifications.asList( InternalNotification.VALUE_TO_NOTIFICATION ) );
+            collector.notifications( notifications.asList( InternalNotification
+                    .VALUE_TO_NOTIFICATION ) );
         }
     }
 
@@ -158,19 +144,19 @@ public class SocketResponseHandler implements MessageHandler
         if ( stats != null )
         {
             collector.statementStatistics(
-                new InternalUpdateStatistics(
-                    statsValue( stats, "nodes-created" ),
-                    statsValue( stats, "nodes-deleted" ),
-                    statsValue( stats, "relationships-created" ),
-                    statsValue( stats, "relationships-deleted" ),
-                    statsValue( stats, "properties-set" ),
-                    statsValue( stats, "labels-added" ),
-                    statsValue( stats, "labels-removed" ),
-                    statsValue( stats, "indexes-added" ),
-                    statsValue( stats, "indexes-removed" ),
-                    statsValue( stats, "constraints-added" ),
-                    statsValue( stats, "constraints-removed" )
-                )
+                    new InternalUpdateStatistics(
+                            statsValue( stats, "nodes-created" ),
+                            statsValue( stats, "nodes-deleted" ),
+                            statsValue( stats, "relationships-created" ),
+                            statsValue( stats, "relationships-deleted" ),
+                            statsValue( stats, "properties-set" ),
+                            statsValue( stats, "labels-added" ),
+                            statsValue( stats, "labels-removed" ),
+                            statsValue( stats, "indexes-added" ),
+                            statsValue( stats, "indexes-removed" ),
+                            statsValue( stats, "constraints-added" ),
+                            statsValue( stats, "constraints-removed" )
+                    )
             );
         }
     }
@@ -184,7 +170,7 @@ public class SocketResponseHandler implements MessageHandler
     @Override
     public void handleIgnoredMessage()
     {
-        responseId++;
+        collectors.remove();
     }
 
     @Override
@@ -217,9 +203,9 @@ public class SocketResponseHandler implements MessageHandler
 
     }
 
-    public void registerResultCollector( int correlationId, StreamCollector collector )
+    public void appendResultCollector( StreamCollector collector )
     {
-        collectors.put( correlationId, collector );
+        collectors.add( collector );
     }
 
     public boolean protocolViolationErrorOccurred()
@@ -237,10 +223,9 @@ public class SocketResponseHandler implements MessageHandler
         return error;
     }
 
-    public void clear()
+    public void reset()
     {
-        responseId = 0;
         error = null;
-        collectors.clear();
     }
+
 }

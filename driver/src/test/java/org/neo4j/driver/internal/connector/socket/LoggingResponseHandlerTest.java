@@ -34,6 +34,7 @@ import org.neo4j.driver.internal.messaging.PullAllMessage;
 import org.neo4j.driver.internal.messaging.RecordMessage;
 import org.neo4j.driver.internal.messaging.RunMessage;
 import org.neo4j.driver.internal.messaging.SuccessMessage;
+import org.neo4j.driver.internal.spi.StreamCollector;
 import org.neo4j.driver.v1.Value;
 
 import static org.junit.Assert.assertEquals;
@@ -45,7 +46,7 @@ public class LoggingResponseHandlerTest
 
     private String log;
 
-    private MessageHandler handler = new LoggingResponseHandler( new DevNullLogger()
+    private LoggingResponseHandler handler = new LoggingResponseHandler( new DevNullLogger()
     {
         @Override
         public void debug( String message, Object... params )
@@ -114,6 +115,7 @@ public class LoggingResponseHandlerTest
     public void shouldLogSuccessMessage() throws Throwable
     {
         // When
+        handler.appendResultCollector( StreamCollector.NO_OP );
         handler.handleSuccessMessage( new HashMap<String,Value>() );
 
         // Then
@@ -125,6 +127,7 @@ public class LoggingResponseHandlerTest
     public void shouldLogRecordMessage() throws Throwable
     {
         // When
+        handler.appendResultCollector( StreamCollector.NO_OP );
         handler.handleRecordMessage( new Value[]{} );
 
         // Then
@@ -136,6 +139,7 @@ public class LoggingResponseHandlerTest
     public void shouldLogFailureMessage() throws Throwable
     {
         // When
+        handler.appendResultCollector( StreamCollector.NO_OP );
         handler.handleFailureMessage( "code.error", "message" );
 
         // Then
@@ -147,6 +151,7 @@ public class LoggingResponseHandlerTest
     public void shouldLogIgnoredMessage() throws Throwable
     {
         // When
+        handler.appendResultCollector( StreamCollector.NO_OP );
         handler.handleIgnoredMessage();
 
         // Then

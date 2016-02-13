@@ -18,10 +18,15 @@
  */
 package org.neo4j.driver.v1.integration;
 
+import java.net.URI;
+import java.util.LinkedList;
+import java.util.Queue;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.driver.internal.connector.socket.SocketClient;
 import org.neo4j.driver.internal.connector.socket.SocketResponseHandler;
 import org.neo4j.driver.internal.logging.DevNullLogger;
@@ -31,15 +36,14 @@ import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
-
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class SocketClientIT
 {
@@ -69,13 +73,13 @@ public class SocketClientIT
     public void shouldCloseConnectionWhenReceivingProtocolViolationError() throws Exception
     {
         // Given
-        List<Message> messages = new ArrayList<>( 2 );
+        Queue<Message> messages = new LinkedList<>();
         messages.add( new InitMessage( "EvilClientV1_Hello" ) );
         messages.add( new InitMessage( "EvilClientV1_World" ) );
 
         SocketResponseHandler handler = mock( SocketResponseHandler.class );
         when( handler.protocolViolationErrorOccurred() ).thenReturn( true );
-        when( handler.receivedResponses() ).thenReturn( 0, 1, 2 );
+        when( handler.collectorsWaiting() ).thenReturn( 2, 1, 0 );
         when( handler.serverFailure() ).thenReturn(
                 new ClientException( "Neo.ClientError.Request.InvalidFormat", "Hello, world!" ) );
 
@@ -83,7 +87,8 @@ public class SocketClientIT
         client.start();
         try
         {
-            client.send( messages, handler );
+            client.sendAll( messages );
+            client.receiveAll( handler );
             fail( "The client should receive a protocol violation error" );
         }
         catch ( Exception e )
@@ -94,6 +99,6 @@ public class SocketClientIT
 
         assertThat( client.isOpen(), equalTo( false ) );
         verify( handler, times(1) ).protocolViolationErrorOccurred();
-        verify( handler, times(1) ).receivedResponses();
+        verify( handler, times(1) ).collectorsWaiting();
     }
 }

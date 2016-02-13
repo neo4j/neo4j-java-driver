@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Queue;
 
 import org.neo4j.driver.internal.messaging.ResetMessage;
 import org.neo4j.driver.internal.messaging.InitMessage;
@@ -34,6 +35,7 @@ import org.neo4j.driver.internal.spi.StreamCollector;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.Neo4jException;
 
 import static org.neo4j.driver.internal.messaging.DiscardAllMessage.DISCARD_ALL;
 
@@ -42,7 +44,7 @@ public class SocketConnection implements Connection
     private final Logger logger;
 
     private int requestCounter = 0;
-    private final LinkedList<Message> pendingMessages = new LinkedList<>();
+    private final Queue<Message> pendingMessages = new LinkedList<>();
     private final SocketResponseHandler responseHandler;
 
     private final SocketClient socket;
@@ -67,38 +69,31 @@ public class SocketConnection implements Connection
     @Override
     public void init( String clientName )
     {
-        // No need to sync, this'll value sent once regular communication starts
-        queueMessage( new InitMessage( clientName ) );
+        queueMessage( new InitMessage( clientName ), StreamCollector.NO_OP );
     }
 
     @Override
     public void run( String statement, Map<String,Value> parameters, StreamCollector collector )
     {
-        int messageId = queueMessage( new RunMessage( statement, parameters ) );
-        if ( collector != null )
-        {
-            responseHandler.registerResultCollector( messageId, collector );
-        }
+        queueMessage( new RunMessage( statement, parameters ), collector );
     }
 
     @Override
     public void discardAll()
     {
-        queueMessage( DISCARD_ALL );
+        queueMessage( DISCARD_ALL, StreamCollector.NO_OP );
     }
 
     @Override
     public void pullAll( StreamCollector collector )
     {
-        int messageId = queueMessage( PullAllMessage.PULL_ALL );
-        responseHandler.registerResultCollector( messageId, collector );
+        queueMessage( PullAllMessage.PULL_ALL, collector );
     }
 
     @Override
     public void reset( StreamCollector collector )
     {
-        int messageId = queueMessage( ResetMessage.RESET );
-        responseHandler.registerResultCollector( messageId, collector );
+        queueMessage( ResetMessage.RESET, collector );
     }
 
     @Override
@@ -111,21 +106,18 @@ public class SocketConnection implements Connection
 
         try
         {
-            socket.send( pendingMessages, responseHandler );
-            requestCounter = 0; // Reset once we've sent all pending request to avoid wrap-around handling
-            pendingMessages.clear();
+            socket.sendAll( pendingMessages );
+            socket.receiveAll( responseHandler );
             if ( responseHandler.serverFailureOccurred() )
             {
-                // Its enough to simply add the ack message to the outbound queue, it'll value sent
-                // off as the first message the next time we need to sync with the database.
                 reset( StreamCollector.NO_OP );
-                throw responseHandler.serverFailure();
+                Neo4jException exception = responseHandler.serverFailure();
+                responseHandler.reset();
+                throw exception;
             }
         }
         catch ( IOException e )
         {
-            requestCounter = 0; // Reset once we've sent all pending request to avoid wrap-around handling
-            pendingMessages.clear();
             String message = e.getMessage();
             if ( message == null )
             {
@@ -140,19 +132,13 @@ public class SocketConnection implements Connection
                 throw new ClientException( "Unable to read response from server: " + message, e );
             }
         }
-        finally
-        {
-            responseHandler.clear();
-        }
-
     }
 
-    private int queueMessage( Message msg )
+    private void queueMessage( Message msg, StreamCollector collector )
     {
-        int messageId = nextRequestId();
         pendingMessages.add( msg );
         logger.debug( "C: %s", msg );
-        return messageId;
+        responseHandler.appendResultCollector( collector );
     }
 
     @Override

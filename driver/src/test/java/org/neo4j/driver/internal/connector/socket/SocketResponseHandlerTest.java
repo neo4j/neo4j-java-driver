@@ -53,8 +53,8 @@ public class SocketResponseHandlerTest
     @Before
     public void setup()
     {
-        handler.registerResultCollector( 0, collector );
-        handler.registerResultCollector( 1, otherCollector );
+        handler.appendResultCollector( collector );
+        handler.appendResultCollector( otherCollector );
     }
 
     @Test
