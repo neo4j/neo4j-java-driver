@@ -63,6 +63,16 @@ public interface Connection extends AutoCloseable
      */
     void sync();
 
+    /**
+     * Send all pending messages to the server and return the number of messages sent.
+     */
+    int sendAll();
+
+    /**
+     * Receive all expected responses for any previous messages sent and return the number received.
+     */
+    int receiveAll();
+
     @Override
     void close();
 

@@ -90,31 +90,50 @@ public class SocketClient
         }
     }
 
-    public void sendAll( Queue<Message> messages ) throws IOException
+    public int sendAll( Queue<Message> messages ) throws IOException
     {
+        int messageCount = 0;
         while ( true )
         {
             Message message = messages.poll();
-            if ( message == null ) { break; }
-            else { writer.write( message ); }
+            if ( message == null )
+            {
+                break;
+            }
+            else
+            {
+                writer.write( message );
+                messageCount += 1;
+            }
         }
-        writer.flush();
+        if ( messageCount > 0 )
+        {
+            writer.flush();
+        }
+        return messageCount;
     }
 
-    public void receiveAll( SocketResponseHandler handler ) throws IOException
+    public int receiveAll( SocketResponseHandler handler ) throws IOException
     {
+        int messageCount = handler.collectorsWaiting();
         // Wait until all pending requests have been replied to
         while ( handler.collectorsWaiting() > 0 )
         {
-            reader.read( handler );
+            receiveOne( handler );
+        }
+        return messageCount;
+    }
 
-            // TODO: all the errors come from the following trace should result in the termination of this channel
-            // https://github.com/neo4j/neo4j/blob/3.0/community/bolt/src/main/java/org/neo4j/bolt/v1/transport/BoltProtocolV1.java#L86
-            if ( handler.protocolViolationErrorOccurred() )
-            {
-                stop();
-                throw handler.serverFailure();
-            }
+    public void receiveOne( SocketResponseHandler handler ) throws IOException
+    {
+        reader.read( handler );
+
+        // TODO: all the errors come from the following trace should result in the termination of this channel
+        // https://github.com/neo4j/neo4j/blob/3.0/community/bolt/src/main/java/org/neo4j/bolt/v1/transport/BoltProtocolV1.java#L86
+        if ( handler.protocolViolationErrorOccurred() )
+        {
+            stop();
+            throw handler.serverFailure();
         }
     }
 

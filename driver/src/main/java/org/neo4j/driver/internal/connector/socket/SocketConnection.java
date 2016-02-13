@@ -24,10 +24,10 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
 
-import org.neo4j.driver.internal.messaging.ResetMessage;
 import org.neo4j.driver.internal.messaging.InitMessage;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.PullAllMessage;
+import org.neo4j.driver.internal.messaging.ResetMessage;
 import org.neo4j.driver.internal.messaging.RunMessage;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.Logger;
@@ -99,15 +99,32 @@ public class SocketConnection implements Connection
     @Override
     public void sync()
     {
-        if ( pendingMessages.size() == 0 )
+        if ( sendAll() > 0 )
         {
-            return;
+            receiveAll();
         }
+    }
 
+    @Override
+    public int sendAll()
+    {
         try
         {
-            socket.sendAll( pendingMessages );
-            socket.receiveAll( responseHandler );
+            return socket.sendAll( pendingMessages );
+        }
+        catch ( IOException e )
+        {
+            String message = e.getMessage();
+            throw new ClientException( "Unable to send messages to server: " + message, e );
+        }
+    }
+
+    @Override
+    public int receiveAll()
+    {
+        try
+        {
+            int messageCount = socket.receiveAll( responseHandler );
             if ( responseHandler.serverFailureOccurred() )
             {
                 reset( StreamCollector.NO_OP );
@@ -115,6 +132,7 @@ public class SocketConnection implements Connection
                 responseHandler.reset();
                 throw exception;
             }
+            return messageCount;
         }
         catch ( IOException e )
         {
