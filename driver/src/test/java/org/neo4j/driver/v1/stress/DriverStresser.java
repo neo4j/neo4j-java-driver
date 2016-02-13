@@ -33,6 +33,7 @@ import org.neo4j.driver.v1.ResultCursor;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.util.Neo4jRunner;
+import org.neo4j.driver.v1.util.Neo4jSettings;
 
 import static org.neo4j.driver.v1.Values.parameters;
 
@@ -57,7 +58,7 @@ public class DriverStresser
     public static void setup() throws Exception
     {
         server = Neo4jRunner.getOrCreateGlobalRunner();
-        server.startServerOnEmptyDatabase();
+        server.ensureRunning( Neo4jSettings.DEFAULT );
         driver = GraphDatabase.driver( "bolt://localhost" );
     }
 
@@ -88,7 +89,7 @@ public class DriverStresser
     public static void tearDown() throws Exception
     {
         driver.close();
-        server.stopServerIfRunning();
+        server.stop();
     }
 
 

@@ -21,15 +21,14 @@ package org.neo4j.driver.v1.integration;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.util.Neo4jRunner;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeTrue;
 
 /**
  * Mainly concerned about the connection pool - we want to make sure that bad connections are evacuated from the
@@ -44,9 +43,6 @@ public class ServerKilledIT
     public void shouldRecoverFromServerRestart() throws Throwable
     {
         // Given
-        assumeTrue( neo4j.canControlServer() );
-
-        // And given we've spun up a few running sessions
         try ( Driver driver = GraphDatabase.driver( Neo4jRunner.DEFAULT_URL ) )
         {
             Session s1 = driver.session();
@@ -61,7 +57,7 @@ public class ServerKilledIT
             s4.close();
 
             // When
-            neo4j.restartServerOnEmptyDatabase();
+            neo4j.restart();
 
             // Then we should be able to start using sessions again, at most O(numSessions) session calls later
             // TODO: These should value evicted immediately, not show up as application-loggingLevel errors first
