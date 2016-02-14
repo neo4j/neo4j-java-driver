@@ -19,22 +19,34 @@
 package org.neo4j.driver.internal;
 
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.neo4j.driver.internal.summary.ResultBuilder;
-import org.neo4j.driver.internal.value.NullValue;
-import org.neo4j.driver.v1.*;
-import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+
+import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.value.NullValue;
+import org.neo4j.driver.v1.Pair;
+import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.RecordAccessor;
+import org.neo4j.driver.v1.Records;
+import org.neo4j.driver.v1.ResultCursor;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
+
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+
 import static org.neo4j.driver.v1.Values.value;
 
 public class InternalResultCursorTest
@@ -231,11 +243,12 @@ public class InternalResultCursorTest
         ResultCursor result = createResult( 42 );
 
         // WHEN
-        assertThat(result.skip( 22 ), equalTo(22L));
+        assertThat( result.skip( 22 ), equalTo( 22L ) );
 
         // THEN
         assertThat( result.position(), equalTo( 21L ) );
-        assertThat( values( result.record() ), equalTo( Arrays.asList( value( "v1-22" ), value( "v2-22" ) ) ));
+        assertThat( values( result.record() ), equalTo( Arrays.asList( value( "v1-22" ), value(
+                "v2-22" ) ) ) );
     }
 
     @Test
@@ -426,7 +439,7 @@ public class InternalResultCursorTest
 
         // THEN
         expectedException.expect( ClientException.class );
-        result.fields( );
+        result.fields();
     }
 
     @Test
@@ -439,7 +452,7 @@ public class InternalResultCursorTest
         // not calling next, first, nor skip
 
         // THEN
-        assertThat( result.keys( ), equalTo( Arrays.asList( "k1", "k2" ) ) );
+        assertThat( result.keys(), equalTo( Arrays.asList( "k1", "k2" ) ) );
     }
 
     @Test
@@ -487,13 +500,22 @@ public class InternalResultCursorTest
 
     private ResultCursor createResult( int numberOfRecords )
     {
-        ResultBuilder builder = new ResultBuilder( "<unknown>", ParameterSupport.NO_PARAMETERS );
-        builder.keys( new String[]{"k1", "k2"} );
+        Connection connection = mock( Connection.class );
+        String statement = "<unknown>";
+
+        InternalResultCursor cursor = new InternalResultCursor( connection, statement, ParameterSupport.NO_PARAMETERS );
+        cursor.runResponseCollector().keys( new String[]{"k1", "k2"} );
+        cursor.runResponseCollector().done();
         for ( int i = 1; i <= numberOfRecords; i++ )
         {
-            builder.record( new Value[]{value( "v1-" + i ), value( "v2-" + i )} );
+            cursor.pullAllResponseCollector().record( new Value[]{value( "v1-" + i ), value( "v2-" + i )} );
         }
-        return builder.build();
+        cursor.pullAllResponseCollector().done();
+
+        connection.run( statement, ParameterSupport.NO_PARAMETERS, cursor.runResponseCollector() );
+        connection.pullAll( cursor.pullAllResponseCollector() );
+        connection.sendAll();
+        return cursor;
     }
 
     private List<Value> values( Record record )

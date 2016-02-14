@@ -18,33 +18,153 @@
  */
 package org.neo4j.driver.internal;
 
-import org.neo4j.driver.v1.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+
+import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.StreamCollector;
+import org.neo4j.driver.internal.summary.SummaryBuilder;
+import org.neo4j.driver.v1.Function;
+import org.neo4j.driver.v1.Notification;
+import org.neo4j.driver.v1.Plan;
+import org.neo4j.driver.v1.ProfiledPlan;
+import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.RecordAccessor;
+import org.neo4j.driver.v1.ResultCursor;
+import org.neo4j.driver.v1.ResultSummary;
+import org.neo4j.driver.v1.Statement;
+import org.neo4j.driver.v1.StatementType;
+import org.neo4j.driver.v1.UpdateStatistics;
+import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
+import static java.util.Collections.unmodifiableMap;
+import static org.neo4j.driver.internal.ParameterSupport.NO_PARAMETERS;
 import static org.neo4j.driver.v1.Records.recordAsIs;
 
 public class InternalResultCursor extends InternalRecordAccessor implements ResultCursor
 {
-    private final List<String> keys;
-    private final PeekingIterator<Record> iter;
-    private final ResultSummary summary;
+    private final Connection connection;
+    private final StreamCollector runResponseCollector;
+    private final StreamCollector pullAllResponseCollector;
+    private final Queue<Record> recordBuffer = new LinkedList<>();
+
+    private List<String> keys = null;
+    private ResultSummary summary = null;
 
     private boolean open = true;
     private Record current = null;
     private long position = -1;
     private long limit = -1;
+    private boolean done = false;
 
-    public InternalResultCursor( List<String> keys, List<Record> body, ResultSummary summary )
+    public InternalResultCursor( Connection connection, String statement, Map<String, Value> parameters )
     {
-        this.keys = keys;
-        this.iter = new PeekingIterator<>( body.iterator() );
-        this.summary = summary;
+        this.connection = connection;
+
+        Map<String, Value> unmodifiableParameters =
+                (parameters == null) || (parameters.isEmpty()) ? NO_PARAMETERS : unmodifiableMap( parameters );
+        final SummaryBuilder summaryBuilder = new SummaryBuilder( new Statement( statement, unmodifiableParameters ) );
+
+        this.runResponseCollector = new StreamCollector()
+        {
+            @Override
+            public void keys( String[] names )
+            {
+                keys = new ArrayList<>( Arrays.asList( names ) );
+            }
+
+            @Override
+            public void record( Value[] fields ) {}
+
+            @Override
+            public void statementType( StatementType type ) {}
+
+            @Override
+            public void statementStatistics( UpdateStatistics statistics ) {}
+
+            @Override
+            public void plan( Plan plan ) {}
+
+            @Override
+            public void profile( ProfiledPlan plan ) {}
+
+            @Override
+            public void notifications( List<Notification> notifications ) {}
+
+            @Override
+            public void done()
+            {
+                if ( keys == null )
+                {
+                    keys = new ArrayList<>();
+                }
+            }
+        };
+        this.pullAllResponseCollector = new StreamCollector()
+        {
+            @Override
+            public void keys( String[] names ) {}
+
+            @Override
+            public void record( Value[] fields )
+            {
+                recordBuffer.add( new InternalRecord( keys, fields ) );
+            }
+
+            @Override
+            public void statementType( StatementType type )
+            {
+                summaryBuilder.statementType( type );
+            }
+
+            @Override
+            public void statementStatistics( UpdateStatistics statistics )
+            {
+                summaryBuilder.statementStatistics( statistics );
+            }
+
+            @Override
+            public void plan( Plan plan )
+            {
+                summaryBuilder.plan( plan );
+            }
+
+            @Override
+            public void profile( ProfiledPlan plan )
+            {
+                summaryBuilder.profile( plan );
+            }
+
+            @Override
+            public void notifications( List<Notification> notifications )
+            {
+                summaryBuilder.notifications( notifications );
+            }
+
+            @Override
+            public void done() {
+                summary = summaryBuilder.build();
+                done = true;
+            }
+        };
+    }
+
+    StreamCollector runResponseCollector()
+    {
+        return runResponseCollector;
+    }
+
+    StreamCollector pullAllResponseCollector()
+    {
+        return pullAllResponseCollector;
     }
 
     @Override
@@ -77,6 +197,9 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
 
     public List<String> keys()
     {
+        while (keys == null && !done) {
+            connection.receiveOne();
+        }
         return keys;
     }
 
@@ -96,8 +219,8 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
         else
         {
             throw new NoSuchRecordException(
-                "In order to access the fields of a record in a result, " +
-                "you must first call next() to point the result to the next record in the result stream."
+                    "In order to access the fields of a record in a result, " +
+                            "you must first call next() to point the result to the next record in the result stream."
             );
         }
     }
@@ -113,16 +236,32 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
     public boolean atEnd()
     {
         assertOpen();
-        return !iter.hasNext();
+        if (!recordBuffer.isEmpty())
+        {
+            return false;
+        }
+        else if (done)
+        {
+            return true;
+        }
+        else
+        {
+            while ( recordBuffer.isEmpty() && !done )
+            {
+                connection.receiveOne();
+            }
+            return recordBuffer.isEmpty() && done;
+        }
     }
 
     @Override
     public boolean next()
     {
         assertOpen();
-        if ( iter.hasNext() )
+        Record nextRecord = recordBuffer.poll();
+        if ( nextRecord != null )
         {
-            current = iter.next();
+            current = nextRecord;
             position += 1;
             if ( position == limit )
             {
@@ -130,9 +269,17 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
             }
             return true;
         }
-        else
+        else if ( done )
         {
             return false;
+        }
+        else
+        {
+            while ( recordBuffer.isEmpty() && !done )
+            {
+                connection.receiveOne();
+            }
+            return next();
         }
     }
 
@@ -176,8 +323,8 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
         if( position() >= 1 )
         {
             throw new NoSuchRecordException( "Cannot retrieve the first record, because this result cursor has been moved already. " +
-                                             "Please ensure you are not calling `first` multiple times, or are mixing it with calls " +
-                                             "to `next`, `single`, `list` or any other method that changes the position of the cursor." );
+                    "Please ensure you are not calling `first` multiple times, or are mixing it with calls " +
+                    "to `next`, `single`, `list` or any other method that changes the position of the cursor." );
         }
 
         if( position == 0 )
@@ -209,11 +356,11 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
     public Record single()
     {
         Record first = first();
-        if( iter.hasNext() )
+        if( !atEnd() )
         {
             throw new NoSuchRecordException( "Expected a result with a single record, but this result contains at least one more. " +
-                                             "Ensure your query returns only one record, or use `first` instead of `single` if " +
-                                             "you do not care about the number of records in the result." );
+                    "Ensure your query returns only one record, or use `first` instead of `single` if " +
+                    "you do not care about the number of records in the result." );
         }
         return first;
     }
@@ -233,7 +380,24 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
     @Override
     public Record peek()
     {
-        return iter.peek();
+        assertOpen();
+        Record nextRecord = recordBuffer.peek();
+        if ( nextRecord != null )
+        {
+            return nextRecord;
+        }
+        else if ( done )
+        {
+            return null;
+        }
+        else
+        {
+            while ( recordBuffer.isEmpty() && !done )
+            {
+                connection.receiveOne();
+            }
+            return peek();
+        }
     }
 
     @Override
@@ -264,7 +428,7 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
         else
         {
             throw new ClientException(
-                format( "Can't retain records when cursor is not pointing at the first record (currently at position %d)", position )
+                    format( "Can't retain records when cursor is not pointing at the first record (currently at position %d)", position )
             );
         }
     }
@@ -302,11 +466,18 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
 
     private boolean isEmpty()
     {
-        return position == -1 && !iter.hasNext();
+        return position == -1 && recordBuffer.isEmpty() && done;
     }
 
     private void discard()
     {
-        iter.discard();
+        assertOpen();
+        recordBuffer.clear();
+        while ( !done )
+        {
+            connection.receiveOne();
+            recordBuffer.clear();
+        }
     }
+
 }

@@ -57,7 +57,7 @@ public class SocketResponseHandler implements MessageHandler
     @Override
     public void handleFailureMessage( String code, String message )
     {
-        collectors.remove();
+        StreamCollector collector = collectors.remove();
         String[] parts = code.split( "\\." );
         String classification = parts[1];
         switch ( classification )
@@ -72,6 +72,7 @@ public class SocketResponseHandler implements MessageHandler
                 error = new DatabaseException( code, message );
                 break;
         }
+        collector.done();
     }
 
     @Override
@@ -86,6 +87,7 @@ public class SocketResponseHandler implements MessageHandler
             collectPlan( collector, meta.get( "plan" ) );
             collectProfile( collector, meta.get( "profile" ) );
             collectNotifications( collector, meta.get( "notifications" ) );
+            collector.done();
         }
     }
 
@@ -170,7 +172,8 @@ public class SocketResponseHandler implements MessageHandler
     @Override
     public void handleIgnoredMessage()
     {
-        collectors.remove();
+        StreamCollector collector = collectors.remove();
+        collector.done();
     }
 
     @Override

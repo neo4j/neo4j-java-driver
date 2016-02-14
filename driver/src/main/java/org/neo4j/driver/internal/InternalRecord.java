@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -41,11 +42,19 @@ public class InternalRecord extends InternalRecordAccessor implements Record
     private final Value[] values;
     private int hashcode = 0;
 
-    public InternalRecord( List<String> keys, Map<String, Integer> keyIndexLookup, Value[] values )
+    public InternalRecord( List<String> keys, Value[] values )
     {
         this.keys = keys;
-        this.keyIndexLookup = keyIndexLookup;
         this.values = values;
+
+        int numFields = keys.size();
+        Map<String, Integer> fieldLookup = new HashMap<>( numFields );
+        for ( int i = 0; i < numFields; i++ )
+        {
+            String name = keys.get(i);
+            fieldLookup.put( name, i );
+        }
+        this.keyIndexLookup = fieldLookup;
     }
 
     @Override

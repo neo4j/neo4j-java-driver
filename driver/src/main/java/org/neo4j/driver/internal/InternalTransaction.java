@@ -22,7 +22,6 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.summary.ResultBuilder;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.v1.ResultCursor;
 import org.neo4j.driver.v1.Statement;
@@ -126,11 +125,11 @@ public class InternalTransaction implements Transaction
 
         try
         {
-            ResultBuilder resultBuilder = new ResultBuilder( statementText, statementParameters );
-            conn.run( statementText, statementParameters, resultBuilder );
-            conn.pullAll( resultBuilder );
-            conn.sync();
-            return resultBuilder.build();
+            InternalResultCursor cursor = new InternalResultCursor( conn, statementText, statementParameters );
+            conn.run( statementText, statementParameters, cursor.runResponseCollector() );
+            conn.pullAll( cursor.pullAllResponseCollector() );
+            conn.sendAll();
+            return cursor;
         }
         catch ( Neo4jException e )
         {

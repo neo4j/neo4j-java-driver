@@ -73,6 +73,11 @@ public interface Connection extends AutoCloseable
      */
     int receiveAll();
 
+    /**
+     * Receive the next message available.
+     */
+    void receiveOne();
+
     @Override
     void close();
 
@@ -85,4 +90,5 @@ public interface Connection extends AutoCloseable
      * @return true if the socket connection with the server is open, otherwise false.
      */
     boolean isOpen();
+
 }

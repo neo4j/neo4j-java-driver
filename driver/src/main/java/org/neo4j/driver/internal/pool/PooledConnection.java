@@ -148,6 +148,19 @@ public class PooledConnection implements Connection
     }
 
     @Override
+    public void receiveOne()
+    {
+        try
+        {
+            delegate.receiveOne();
+        }
+        catch ( RuntimeException e )
+        {
+            onDelegateException( e );
+        }
+    }
+
+    @Override
     public void close()
     {
         // In case this session has an open result or transaction or something,

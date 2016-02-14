@@ -83,7 +83,6 @@ public class TestNeo4j implements TestRule
         return Neo4jRunner.DEFAULT_URL;
     }
 
-    @SuppressWarnings("StatementWithEmptyBody")
     static void clearDatabaseContents( Session session, String reason )
     {
         Neo4jRunner.debug( "Clearing database contents for: %s", reason );
@@ -91,10 +90,6 @@ public class TestNeo4j implements TestRule
         // Note - this hangs for extended periods some times, because there are tests that leave sessions running.
         // Thus, we need to wait for open sessions and transactions to time out before this will go through.
         // This could be helped by an extension in the future.
-        ResultCursor result = session.run( "MATCH (n) DETACH DELETE n RETURN count(*)" );
-        while ( result.next() )
-        {
-            // consume
-        }
+        session.run( "MATCH (n) DETACH DELETE n" ).close();
     }
 }

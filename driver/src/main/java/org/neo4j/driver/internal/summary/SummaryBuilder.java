@@ -123,6 +123,11 @@ public class SummaryBuilder implements StreamCollector
         }
     }
 
+    @Override
+    public void done()
+    {
+    }
+
     public ResultSummary build()
     {
         return new ResultSummary()

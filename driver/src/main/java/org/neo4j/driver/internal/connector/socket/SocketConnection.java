@@ -152,6 +152,38 @@ public class SocketConnection implements Connection
         }
     }
 
+    @Override
+    public void receiveOne()
+    {
+        try
+        {
+            socket.receiveOne( responseHandler );
+            if ( responseHandler.serverFailureOccurred() )
+            {
+                reset( StreamCollector.NO_OP );
+                Neo4jException exception = responseHandler.serverFailure();
+                responseHandler.reset();
+                throw exception;
+            }
+        }
+        catch ( IOException e )
+        {
+            String message = e.getMessage();
+            if ( message == null )
+            {
+                throw new ClientException( "Unable to read response from server: " + e.getClass().getSimpleName(), e );
+            }
+            else if ( e instanceof SocketTimeoutException )
+            {
+                throw new ClientException( "Server did not reply within the network timeout limit.", e );
+            }
+            else
+            {
+                throw new ClientException( "Unable to read response from server: " + message, e );
+            }
+        }
+    }
+
     private void queueMessage( Message msg, StreamCollector collector )
     {
         pendingMessages.add( msg );
