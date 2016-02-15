@@ -33,8 +33,8 @@ import org.neo4j.driver.v1.exceptions.Neo4jException;
 
 public class InternalTransaction implements Transaction
 {
-    private final Connection conn;
     private final Runnable cleanup;
+    private Connection conn;
 
     private enum State
     {
@@ -91,24 +91,35 @@ public class InternalTransaction implements Transaction
     }
 
     @Override
+    public void defunct()
+    {
+        state = State.ROLLED_BACK;
+        conn = null;
+    }
+
+    @Override
     public void close()
     {
         try
         {
-            if ( state == State.MARKED_SUCCESS )
+            if ( conn != null && conn.isOpen() )
             {
-                conn.run( "COMMIT", Collections.<String, Value>emptyMap(), null );
-                conn.discardAll();
-                conn.sync();
-                state = State.SUCCEEDED;
-            }
-            else if ( state == State.MARKED_FAILED || state == State.ACTIVE )
-            {
-                // If alwaysValid of the things we've put in the queue have been sent off, there is no need to
-                // do this, we could just clear the queue. Future optimization.
-                conn.run( "ROLLBACK", Collections.<String, Value>emptyMap(), null );
-                conn.discardAll();
-                state = State.ROLLED_BACK;
+                if ( state == State.MARKED_SUCCESS )
+                {
+                    conn.run( "COMMIT", Collections.<String, Value>emptyMap(), null );
+                    conn.discardAll();
+                    conn.sync();
+                    state = State.SUCCEEDED;
+                }
+                else if ( state == State.MARKED_FAILED || state == State.ACTIVE )
+                {
+                    // If alwaysValid of the things we've put in the queue have been sent off, there is no need to
+                    // do this, we could just clear the queue. Future optimization.
+                    conn.run( "ROLLBACK", Collections.<String, Value>emptyMap(), null );
+                    conn.discardAll();
+                    conn.sync();
+                    state = State.ROLLED_BACK;
+                }
             }
         }
         finally
@@ -125,7 +136,7 @@ public class InternalTransaction implements Transaction
 
         try
         {
-            InternalResultCursor cursor = new InternalResultCursor( conn, statementText, statementParameters );
+            InternalResultCursor cursor = new InternalResultCursor( conn, this, statementText, statementParameters );
             conn.run( statementText, statementParameters, cursor.runResponseCollector() );
             conn.pullAll( cursor.pullAllResponseCollector() );
             conn.sendAll();
@@ -158,7 +169,7 @@ public class InternalTransaction implements Transaction
 
     private void ensureNotFailed()
     {
-        if ( state == State.FAILED )
+        if ( state == State.FAILED || state == State.MARKED_FAILED || state == State.ROLLED_BACK )
         {
             throw new ClientException(
                 "Cannot run more statements in this transaction, because previous statements in the " +

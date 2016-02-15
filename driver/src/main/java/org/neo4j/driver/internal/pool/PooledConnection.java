@@ -165,8 +165,16 @@ public class PooledConnection implements Connection
     {
         // In case this session has an open result or transaction or something,
         // make sure it's reset to a nice state before we reuse it.
-        reset( StreamCollector.NO_OP );
-        release.accept( this );
+        try
+        {
+            reset( StreamCollector.NO_OP );
+            sync();
+            release.accept( this );
+        }
+        catch (Exception ex)
+        {
+            dispose();
+        }
     }
 
     @Override

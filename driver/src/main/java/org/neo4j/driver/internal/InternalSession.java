@@ -60,7 +60,7 @@ public class InternalSession implements Session
     public ResultCursor run( String statementText, Map<String,Value> statementParameters )
     {
         ensureConnectionIsValid();
-        InternalResultCursor cursor = new InternalResultCursor( connection, statementText, statementParameters );
+        InternalResultCursor cursor = new InternalResultCursor( connection, null, statementText, statementParameters );
         connection.run( statementText, statementParameters, cursor.runResponseCollector() );
         connection.pullAll( cursor.pullAllResponseCollector() );
         connection.sendAll();

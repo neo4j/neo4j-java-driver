@@ -99,6 +99,5 @@ public class SocketClientIT
 
         assertThat( client.isOpen(), equalTo( false ) );
         verify( handler, times(1) ).protocolViolationErrorOccurred();
-        verify( handler, times(1) ).collectorsWaiting();
     }
 }

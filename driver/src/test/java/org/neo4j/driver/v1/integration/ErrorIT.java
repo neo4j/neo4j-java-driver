@@ -50,7 +50,8 @@ public class ErrorIT
                                  " ^" );
 
         // When
-        session.run( "invalid statement" ).close();
+        ResultCursor result = session.run( "invalid statement" );
+        result.close();
     }
 
     @Test

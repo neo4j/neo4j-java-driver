@@ -102,6 +102,7 @@ public class SocketClient
             }
             else
             {
+                logger.debug( "C: %s", message );
                 writer.write( message );
                 messageCount += 1;
             }

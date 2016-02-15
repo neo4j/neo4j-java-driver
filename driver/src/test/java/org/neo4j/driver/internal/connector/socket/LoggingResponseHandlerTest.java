@@ -131,7 +131,7 @@ public class LoggingResponseHandlerTest
         handler.handleRecordMessage( new Value[]{} );
 
         // Then
-        assertEquals( "S: RecordMessage{[]}", log );
+        assertEquals( "S: [RECORD []]", log );
         assertEquals( format( new RecordMessage( new Value[]{} ) ), log );
     }
 

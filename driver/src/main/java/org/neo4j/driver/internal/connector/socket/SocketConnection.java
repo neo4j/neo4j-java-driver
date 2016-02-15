@@ -43,7 +43,6 @@ public class SocketConnection implements Connection
 {
     private final Logger logger;
 
-    private int requestCounter = 0;
     private final Queue<Message> pendingMessages = new LinkedList<>();
     private final SocketResponseHandler responseHandler;
 
@@ -129,7 +128,7 @@ public class SocketConnection implements Connection
             {
                 reset( StreamCollector.NO_OP );
                 Neo4jException exception = responseHandler.serverFailure();
-                responseHandler.reset();
+                responseHandler.clearError();
                 throw exception;
             }
             return messageCount;
@@ -162,7 +161,7 @@ public class SocketConnection implements Connection
             {
                 reset( StreamCollector.NO_OP );
                 Neo4jException exception = responseHandler.serverFailure();
-                responseHandler.reset();
+                responseHandler.clearError();
                 throw exception;
             }
         }
@@ -187,7 +186,6 @@ public class SocketConnection implements Connection
     private void queueMessage( Message msg, StreamCollector collector )
     {
         pendingMessages.add( msg );
-        logger.debug( "C: %s", msg );
         responseHandler.appendResultCollector( collector );
     }
 
@@ -201,10 +199,5 @@ public class SocketConnection implements Connection
     public boolean isOpen()
     {
         return socket.isOpen();
-    }
-
-    private int nextRequestId()
-    {
-        return (requestCounter++);
     }
 }

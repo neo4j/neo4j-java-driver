@@ -72,7 +72,10 @@ public class SocketResponseHandler implements MessageHandler
                 error = new DatabaseException( code, message );
                 break;
         }
-        collector.done();
+        if ( collector != null )
+        {
+            collector.done();
+        }
     }
 
     @Override
@@ -226,7 +229,7 @@ public class SocketResponseHandler implements MessageHandler
         return error;
     }
 
-    public void reset()
+    public void clearError()
     {
         error = null;
     }
