@@ -161,25 +161,45 @@ public class Config
         }
 
         /**
-         * The max number of connections to open at any given time per Neo4j instance.
-         * @param size the size of the connection pool
+         * The max number of sessions to keep open at once. Configure this
+         * higher if you want more concurrent sessions, or lower if you want
+         * to lower the pressure on the database instance.
+         *
+         * If the driver is asked to provide more sessions than this, it will
+         * block waiting for another session to be closed, with a timeout.
+         *
+         * @param size the max number of sessions to keep open
          * @return this builder
          */
-        public ConfigBuilder withConnectionPoolSize( int size )
+        public ConfigBuilder withMaxSessions( int size )
         {
             this.connectionPoolSize = size;
             return this;
         }
 
         /**
-         * Pooled connections that have been unused for longer than this timeout will be tested before they are
-         * used again, to ensure they are still live.
-         * @param milliSecond minimum idle time in milliseconds
+         * Pooled sessions that have been unused for longer than this timeout
+         * will be tested before they are used again, to ensure they are still live.
+         *
+         * If this option is set too low, an additional network call will be
+         * incurred when acquiring a session, which causes a performance hit.
+         *
+         * If this is set high, you may receive sessions that are no longer live,
+         * which will lead to exceptions in your application. Assuming the
+         * database is running, these exceptions will go away if you retry acquiring
+         * sessions.
+         *
+         * Hence, this parameter tunes a balance between the likelihood of your
+         * application seeing connection problems, and performance.
+         *
+         * You normally should not need to tune this parameter.
+         *
+         * @param timeout minimum idle time in milliseconds
          * @return this builder
          */
-        public ConfigBuilder withMinIdleTimeBeforeConnectionTest( long milliSecond )
+        public ConfigBuilder withSessionLivenessCheckTimeout( long timeout )
         {
-            this.idleTimeBeforeConnectionTest = milliSecond;
+            this.idleTimeBeforeConnectionTest = timeout;
             return this;
         }
 

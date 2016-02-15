@@ -52,7 +52,7 @@ public class Examples
     {
         // tag::configuration[]
         Driver driver =
-                GraphDatabase.driver( "bolt://localhost", Config.build().withConnectionPoolSize( 10 ).toConfig() );
+                GraphDatabase.driver( "bolt://localhost", Config.build().withMaxSessions( 10 ).toConfig() );
         // end::configuration[]
 
         return driver;

@@ -51,7 +51,7 @@ public class InternalConnectionPoolTest
         // Given
         URI uri = URI.create( "bolt://asd" );
         Connector connector = connector( "bolt" );
-        Config config = Config.build().withConnectionPoolSize( 1 ).toConfig();
+        Config config = Config.build().withMaxSessions( 1 ).toConfig();
         InternalConnectionPool pool = new InternalConnectionPool( singletonList( connector ),
                 Clock.SYSTEM, config, 100 );
 
