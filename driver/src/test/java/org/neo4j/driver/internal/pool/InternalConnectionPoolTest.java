@@ -53,7 +53,7 @@ public class InternalConnectionPoolTest
         Connector connector = connector( "bolt" );
         Config config = Config.build().withConnectionPoolSize( 1 ).toConfig();
         InternalConnectionPool pool = new InternalConnectionPool( singletonList( connector ),
-                Clock.SYSTEM, config );
+                Clock.SYSTEM, config, 100 );
 
         // When & Then
         pool.acquire( uri );
@@ -74,7 +74,7 @@ public class InternalConnectionPoolTest
         Connector connector = connector( "bolt" );
         Config config = Config.defaultConfig();
         InternalConnectionPool pool = new InternalConnectionPool( singletonList( connector ),
-                Clock.SYSTEM, config );
+                Clock.SYSTEM, config, 100 );
 
         Connection conn = pool.acquire( uri );
         conn.close();

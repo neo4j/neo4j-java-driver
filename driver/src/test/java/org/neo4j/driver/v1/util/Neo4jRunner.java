@@ -30,9 +30,6 @@ import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static java.lang.String.format;
-
-import static junit.framework.TestCase.assertFalse;
-
 import static org.neo4j.driver.internal.ConfigTest.deleteDefaultKnownCertFileIfExists;
 import static org.neo4j.driver.v1.util.FileTools.deleteRecursively;
 import static org.neo4j.driver.v1.util.FileTools.updateProperties;
@@ -43,24 +40,21 @@ import static org.neo4j.driver.v1.util.FileTools.updateProperties;
  */
 public class Neo4jRunner
 {
+    private enum ServerStatus
+    {
+        ONLINE, OFFLINE
+    }
+
     public static final String DEFAULT_URL = "bolt://localhost:7687";
+    private static final boolean debug = Boolean.getBoolean( "neo4j.runner.debug" );
 
     private static Neo4jRunner globalInstance;
 
-    private static final boolean externalServer = false; //Boolean.getBoolean( "neo4j.useExternalServer" );
-
-    private Neo4jSettings cachedSettings = Neo4jSettings.DEFAULT;
+    private Neo4jSettings currentSettings = Neo4jSettings.DEFAULT;
     private Driver currentDriver;
     private boolean staleDriver;
 
     private Neo4jInstaller installer = Neo4jInstaller.Neo4jInstallerFactory.create();
-
-    public static void main( String... args ) throws Exception
-    {
-        Neo4jRunner neo4jRunner = new Neo4jRunner();
-        neo4jRunner.startServerOnEmptyDatabase();
-        neo4jRunner.stopServerIfRunning();
-    }
 
     /** Global runner controlling a single server, used to avoid having to restart the server between tests */
     public static synchronized Neo4jRunner getOrCreateGlobalRunner() throws Exception
@@ -74,79 +68,80 @@ public class Neo4jRunner
 
     private Neo4jRunner() throws Exception
     {
-        if ( canControlServer() )
+        if( serverStatus() == ServerStatus.ONLINE )
         {
-            installer.installNeo4j();
-            // Install default settings
-            updateServerSettingsFile();
-
-            // Reset driver to match default settings
-            resetDriver();
-
-            // Make sure we stop on JVM exit
-            installShutdownHook();
+            // TODO: We should just pick a free port instead
+            throw new IllegalStateException( "Cannot run tests, because a Neo4j Database is already running on this " +
+                                             "system." );
         }
+        installer.installNeo4j();
+        // Install default settings
+        updateServerSettingsFile();
+
+        // Reset driver to match default settings
+        resetDriver();
+
+        // Make sure we stop on JVM exit
+        installShutdownHook();
     }
 
-    public synchronized void restartServerOnEmptyDatabase() throws Exception
+    public synchronized void restart() throws Exception
     {
-        restartServerOnEmptyDatabase( cachedSettings );
+        stop();
+        ensureRunning( Neo4jSettings.DEFAULT );
     }
 
-    public synchronized void restartServerOnEmptyDatabase( Neo4jSettings settingsUpdate ) throws Exception
+    public synchronized boolean ensureRunning( Neo4jSettings withSettings ) throws Exception
     {
-        if ( canControlServer() )
+        ServerStatus status = serverStatus();
+        switch ( status )
         {
-            stopServerIfRunning();
-            startServerOnEmptyDatabase( settingsUpdate );
-        }
-    }
+            case OFFLINE:
+                clear( withSettings );
+                return true;
 
-    public synchronized void startServerOnEmptyDatabase() throws Exception
-    {
-        startServerOnEmptyDatabase( cachedSettings );
-    }
-
-    public synchronized void startServerOnEmptyDatabase( Neo4jSettings settingsUpdate ) throws Exception
-    {
-        if ( canControlServer() )
-        {
-            assertFalse( "A server instance is already running", serverStatus() == ServerStatus.ONLINE );
-            updateServerSettings( settingsUpdate );
-            doStartServerOnEmptyDatabase();
-        }
-    }
-
-    public synchronized boolean startServerOnEmptyDatabaseUnlessRunning( Neo4jSettings settingsUpdate ) throws Exception
-    {
-        if ( canControlServer() )
-        {
-            ServerStatus status = serverStatus();
-            switch ( status )
-            {
-                case OFFLINE:
-                    updateServerSettings( settingsUpdate );
-                    doStartServerOnEmptyDatabase();
+            case ONLINE:
+                if ( updateServerSettings( withSettings ) )
+                {
+                    clear( currentSettings );
                     return true;
-
-                case ONLINE:
-                    if ( updateServerSettings( settingsUpdate ) )
-                    {
-                        doStopServer();
-                        doStartServerOnEmptyDatabase();
-                        return true;
-                    }
-                    else
-                    {
-                        return false;
-                    }
-            }
+                }
+                else
+                {
+                    return false;
+                }
         }
         return true;
     }
 
-    private void doStartServerOnEmptyDatabase() throws Exception
+    public synchronized void stop() throws IOException, InterruptedException
     {
+        if ( serverStatus() == ServerStatus.ONLINE )
+        {
+            debug( "Trying to stop server at %s", Neo4jInstaller.neo4jHomeDir.getCanonicalPath() );
+
+            if ( installer.stopNeo4j() == 0 )
+            {
+                awaitServerStatusOrFail( ServerStatus.OFFLINE );
+            }
+            else
+            {
+                throw new IllegalStateException( "Failed to stop server" );
+            }
+        }
+    }
+
+    public Driver driver()
+    {
+        return currentDriver;
+    }
+
+    /** Delete all database files, apply the specified configuration and restart */
+    private void clear( Neo4jSettings config ) throws Exception
+    {
+        stop();
+        updateServerSettings( config );
+
         debug( "Deleting database at: %s", Neo4jInstaller.dbDir.getCanonicalPath() );
 
         deleteRecursively( Neo4jInstaller.dbDir );
@@ -166,55 +161,16 @@ public class Neo4jRunner
         }
     }
 
-    public synchronized void stopServerIfRunning() throws IOException, InterruptedException
-    {
-        if ( serverStatus() == ServerStatus.ONLINE )
-        {
-            doStopServer();
-        }
-    }
-
-    private void doStopServer() throws IOException, InterruptedException
-    {
-        if ( !tryStopServer() )
-        {
-            throw new IllegalStateException( "Failed to stop server" );
-        }
-    }
-
-    private synchronized boolean tryStopServer() throws IOException, InterruptedException
-    {
-        debug( "Trying to stop server at %s", Neo4jInstaller.neo4jHomeDir.getCanonicalPath() );
-
-        if ( canControlServer() )
-        {
-            int exitCode = installer.stopNeo4j();
-            if ( exitCode == 0 )
-            {
-                awaitServerStatusOrFail( ServerStatus.OFFLINE );
-                return true;
-            }
-        }
-        return false;
-    }
-
     private boolean updateServerSettings( Neo4jSettings settingsUpdate )
     {
-        if ( cachedSettings == null )
+        Neo4jSettings updatedSettings = currentSettings.updateWith( settingsUpdate );
+        if ( currentSettings.equals( updatedSettings ) )
         {
-            cachedSettings = settingsUpdate;
+            return false;
         }
         else
         {
-            Neo4jSettings updatedSettings = cachedSettings.updateWith( settingsUpdate );
-            if ( cachedSettings.equals( updatedSettings ) )
-            {
-                return false;
-            }
-            else
-            {
-                cachedSettings = updatedSettings;
-            }
+            currentSettings = updatedSettings;
         }
         updateServerSettingsFile();
         staleDriver = true;
@@ -226,7 +182,7 @@ public class Neo4jRunner
      */
     private void updateServerSettingsFile()
     {
-        Map<String, Object> propertiesMap = cachedSettings.propertiesMap();
+        Map<String, Object> propertiesMap = currentSettings.propertiesMap();
         if ( propertiesMap.isEmpty() )
         {
             return;
@@ -247,14 +203,8 @@ public class Neo4jRunner
         }
         catch ( Exception e )
         {
-            System.out.println( "Failed to update properties" );
             throw new RuntimeException( e );
         }
-    }
-
-    public boolean canControlServer()
-    {
-        return !externalServer;
     }
 
     private void awaitServerStatusOrFail( ServerStatus goalStatus ) throws IOException, InterruptedException
@@ -299,26 +249,18 @@ public class Neo4jRunner
 
     private void resetDriver() throws Exception
     {
-        Driver oldDriver = currentDriver;
-        try
+        if( currentDriver != null )
         {
-            debug( "Resetting driver" );
-            currentDriver = new Driver( serverURI(), serverConfig() );
-            staleDriver = false;
+            currentDriver.close();
         }
-        finally
-        {
-            if ( oldDriver != null )
-            {
-                oldDriver.close();
-            }
-        }
+        currentDriver = new Driver( serverURI(), serverConfig() );
+        staleDriver = false;
     }
 
     private Config serverConfig()
     {
         Config config = Config.defaultConfig();
-        if( cachedSettings.isUsingTLS() )
+        if( currentSettings.isUsingTLS() )
         {
             config = Config.build().withTlsEnabled( true ).toConfig();
         }
@@ -340,52 +282,25 @@ public class Neo4jRunner
             try
             {
                 debug("Starting shutdown hook");
-                stopServerIfRunning();
-                cachedSettings = Neo4jSettings.DEFAULT;
+                stop();
+                currentSettings = Neo4jSettings.DEFAULT;
                 updateServerSettingsFile();
                 installer.uninstallNeo4j();
                 debug("Finished shutdown hook");
             }
             catch ( Exception e )
             {
-                // cannot help you anything sorry
-                System.out.println("Failed to shutdown neo4j server");
                 e.printStackTrace();
             }
             }
         } ) );
     }
 
-    public Driver driver()
-    {
-        return currentDriver;
-    }
-
-    private enum ServerStatus {
-        ONLINE, OFFLINE
-    }
-
-    private static boolean DEBUG = isEnabled( "DEBUG_NEO4J_RUNNER" );
-
     static void debug( String text, Object... args )
     {
-        if ( DEBUG )
+        if ( debug )
         {
             System.err.println( "Neo4jRunner: " + String.format( text, args ) );
-        }
-    }
-
-    private static boolean isEnabled( String envVarName )
-    {
-        String value = System.getenv( envVarName );
-        if ( value != null )
-        {
-            value = value.trim();
-            return value.equals( "1" ) || value.equalsIgnoreCase( "true" );
-        }
-        else
-        {
-            return false;
         }
     }
 }

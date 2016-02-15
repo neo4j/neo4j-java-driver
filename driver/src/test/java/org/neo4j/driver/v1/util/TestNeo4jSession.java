@@ -44,17 +44,17 @@ public class TestNeo4jSession extends TestNeo4j implements Session
 
     public TestNeo4jSession( Neo4jResetMode resetMode )
     {
-        super( resetMode );
+        super();
     }
 
     public TestNeo4jSession( Neo4jSettings initialSettings )
     {
-        super( initialSettings );
+        super();
     }
 
     public TestNeo4jSession( Neo4jSettings initialSettings, Neo4jResetMode resetMode )
     {
-        super( initialSettings, resetMode );
+        super();
     }
 
     @Override

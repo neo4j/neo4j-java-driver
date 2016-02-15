@@ -65,16 +65,22 @@ public class InternalConnectionPool implements ConnectionPool
      */
     private final ValidationStrategy<PooledConnection> connectionValidation;
 
+    /**
+     * Timeout in milliseconds if there are no available sessions.
+     */
+    private final long acquireSessionTimeout;
+
     private final Clock clock;
     private final Config config;
 
     public InternalConnectionPool( Config config )
     {
-        this( loadConnectors(), Clock.SYSTEM, config );
+        this( loadConnectors(), Clock.SYSTEM, config, Long.getLong( "neo4j.driver.acquireSessionTimeout", 30_000 ) );
     }
 
-    public InternalConnectionPool( Collection<Connector> conns, Clock clock, Config config )
+    public InternalConnectionPool( Collection<Connector> conns, Clock clock, Config config, long acquireTimeout )
     {
+        this.acquireSessionTimeout = acquireTimeout;
         this.config = config;
         this.clock = clock;
         this.connectionValidation = new PooledConnectionValidator( config.idleTimeBeforeConnectionTest() );
@@ -92,7 +98,7 @@ public class InternalConnectionPool implements ConnectionPool
     {
         try
         {
-            Connection conn = pool( sessionURI ).acquire( 30, TimeUnit.SECONDS );
+            Connection conn = pool( sessionURI ).acquire( acquireSessionTimeout, TimeUnit.MILLISECONDS );
             if( conn == null )
             {
                 throw new ClientException(
