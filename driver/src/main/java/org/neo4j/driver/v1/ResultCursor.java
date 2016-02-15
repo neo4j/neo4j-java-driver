@@ -92,7 +92,7 @@ public interface ResultCursor extends RecordAccessor, Resource
 
     /**
      * Return the first record in the stream. Fail with an exception if the stream is empty
-     * or if this cursor has already been used to move "into" the stream.
+     * or if this cursor has already been used to move past the first record.
      *
      * @return the first record in the stream
      * @throws NoSuchRecordException if there is no first record or the cursor has been used already
@@ -102,7 +102,7 @@ public interface ResultCursor extends RecordAccessor, Resource
 
     /**
      * Return a field value from the first record in the stream. Fail with an exception if the stream is empty
-     * or if this cursor has already been used to move "into" the stream.
+     * or if this cursor has already been used to move past the first record.
      *
      * @param fieldName the name of the field to return from the first record in the stream
      * @return the specified field from the first record in the stream
@@ -113,7 +113,7 @@ public interface ResultCursor extends RecordAccessor, Resource
 
     /**
      * Return a field value from the first record in the stream. Fail with an exception if the stream is empty
-     * or if this cursor has already been used to move "into" the stream.
+     * or if this cursor has already been used to move past the first record.
      *
      * @param index the index of the field to return from the first record in the stream
      * @return the specified field from the first record in the stream
@@ -124,7 +124,7 @@ public interface ResultCursor extends RecordAccessor, Resource
 
     /**
      * Move to the first record and return an immutable copy of it, failing if there is not exactly
-     * one record in the stream, or if this cursor has already been used to move "into" the stream.
+     * one record in the stream, or if this cursor has already been used to move past the first record.
      *
      * @return the first and only record in the stream
      * @throws NoSuchRecordException if there is not exactly one record in the stream, or if the cursor has been used already
@@ -133,7 +133,7 @@ public interface ResultCursor extends RecordAccessor, Resource
 
     /**
      * Move to the first record and return a field value from it, failing if there is not exactly
-     * one record in the stream, or if this cursor has already been used to move "into" the stream.
+     * one record in the stream, or if this cursor has already been used to move past the first record.
      *
      * @param fieldName the name of the field to return from the first and only record in the stream
      * @return the value of the specified field of the first and only record in the stream
@@ -143,7 +143,7 @@ public interface ResultCursor extends RecordAccessor, Resource
 
     /**
      * Move to the first record and return a field value from it, failing if there is not exactly
-     * one record in the stream, or if this cursor has already been used to move "into" the stream.
+     * one record in the stream, or if this cursor has already been used to move past the first record.
      *
      * @param index the index of the field to return from the first and only record in the stream
      * @return the value of the specified field of the first and only record in the stream

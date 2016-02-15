@@ -173,7 +173,7 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
     @Override
     public Record first()
     {
-        if( position() > 0 )
+        if( position() >= 1 )
         {
             throw new NoSuchRecordException( "Cannot retrieve the first record, because this result cursor has been moved already. " +
                                              "Please ensure you are not calling `first` multiple times, or are mixing it with calls " +
