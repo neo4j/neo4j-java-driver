@@ -18,7 +18,6 @@
  */
 package org.neo4j.driver.v1.util;
 
-import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,35 +25,17 @@ import static org.neo4j.driver.internal.util.Iterables.map;
 
 public class Neo4jSettings
 {
-    private static final String TLS_ENABLED_KEY = "dbms.bolt.tls.enabled";
     private static final String TLS_CERT_KEY = "dbms.security.tls_certificate_file";
     private static final String TLS_KEY_KEY = "dbms.security.tls_key_file";
 
+
     private final Map<String, String> settings;
 
-    public static Neo4jSettings DEFAULT = new Neo4jSettings(new HashMap<String, String>()).usingTLS( false );
+    public static Neo4jSettings DEFAULT = new Neo4jSettings(new HashMap<String, String>());
 
     private Neo4jSettings( Map<String, String> settings )
     {
         this.settings = settings;
-    }
-
-    public Neo4jSettings usingTLS( boolean usingTLS )
-    {
-        return updateWith( map( TLS_ENABLED_KEY, Boolean.toString( usingTLS ) ) );
-    }
-
-    public boolean isUsingTLS()
-    {
-        return "true".equals( settings.get( TLS_ENABLED_KEY ) );
-    }
-
-    public Neo4jSettings usingEncryptionKeyAndCert( File key, File cert )
-    {
-        return updateWith( map(
-                TLS_CERT_KEY, cert.getAbsolutePath(),
-                TLS_KEY_KEY, key.getAbsolutePath()
-        ));
     }
 
     public Map<String, String> propertiesMap()

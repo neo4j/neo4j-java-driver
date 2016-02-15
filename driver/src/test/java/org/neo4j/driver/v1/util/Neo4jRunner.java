@@ -52,7 +52,7 @@ public class Neo4jRunner
 
     private Neo4jSettings currentSettings = Neo4jSettings.DEFAULT;
     private Driver currentDriver;
-    private boolean staleDriver;
+    private Config testConfig = Config.build().withEncryptionLevel( Config.EncryptionLevel.NONE ).toConfig();
 
     private Neo4jInstaller installer = Neo4jInstaller.Neo4jInstallerFactory.create();
 
@@ -77,9 +77,6 @@ public class Neo4jRunner
         installer.installNeo4j();
         // Install default settings
         updateServerSettingsFile();
-
-        // Reset driver to match default settings
-        resetDriver();
 
         // Make sure we stop on JVM exit
         installShutdownHook();
@@ -154,11 +151,7 @@ public class Neo4jRunner
             throw new IllegalStateException( "Failed to start server" );
         }
         awaitServerStatusOrFail( ServerStatus.ONLINE );
-
-        if ( staleDriver )
-        {
-            resetDriver();
-        }
+        currentDriver = new Driver( serverURI(), testConfig );
     }
 
     private boolean updateServerSettings( Neo4jSettings settingsUpdate )
@@ -173,7 +166,6 @@ public class Neo4jRunner
             currentSettings = updatedSettings;
         }
         updateServerSettingsFile();
-        staleDriver = true;
         return true;
     }
 
@@ -236,8 +228,7 @@ public class Neo4jRunner
         try
         {
             URI uri = serverURI();
-            Config config = serverConfig();
-            SocketClient client = new SocketClient( uri.getHost(), uri.getPort(), config, new DevNullLogger() );
+            SocketClient client = new SocketClient( uri.getHost(), uri.getPort(), testConfig, new DevNullLogger() );
             client.start();
             client.stop();
             return ServerStatus.ONLINE;
@@ -246,26 +237,6 @@ public class Neo4jRunner
         {
             return ServerStatus.OFFLINE;
         }
-    }
-
-    private void resetDriver() throws Exception
-    {
-        if( currentDriver != null )
-        {
-            currentDriver.close();
-        }
-        currentDriver = new Driver( serverURI(), serverConfig() );
-        staleDriver = false;
-    }
-
-    private Config serverConfig()
-    {
-        Config config = Config.defaultConfig();
-        if( currentSettings.isUsingTLS() )
-        {
-            config = Config.build().withEncryptionLevel( Config.EncryptionLevel.REQUIRED ).toConfig();
-        }
-        return config;
     }
 
     private URI serverURI()

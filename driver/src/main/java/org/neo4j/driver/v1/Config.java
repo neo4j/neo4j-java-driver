@@ -24,6 +24,7 @@ import java.util.logging.Level;
 import org.neo4j.driver.internal.logging.JULogging;
 import org.neo4j.driver.internal.spi.Logging;
 
+import static java.lang.System.getProperty;
 import static org.neo4j.driver.v1.Config.TrustStrategy.*;
 
 /**
@@ -138,7 +139,8 @@ public class Config
         private int connectionPoolSize = 50;
         private long idleTimeBeforeConnectionTest = 200;
         private EncryptionLevel encruptionLevel = EncryptionLevel.REQUIRED;
-        private TrustStrategy trustStrategy = trustOnFirstUse( new File( System.getProperty( "user.home" ), ".neo4j/neo4j_known_certs" ) );
+        private TrustStrategy trustStrategy = trustOnFirstUse(
+                new File( getProperty( "user.home" ), ".neo4j/neo4j_known_hosts" ) );
 
         private ConfigBuilder() {}
 
@@ -246,7 +248,7 @@ public class Config
     public enum EncryptionLevel
     {
         /** With this level, the driver will only connect to the server if it can do it without encryption. */
-        REJECTED,
+        NONE,
 
         /** With this level, the driver will only connect to the server it if can do it with encryption. */
         REQUIRED

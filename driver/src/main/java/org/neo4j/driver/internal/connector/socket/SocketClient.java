@@ -204,7 +204,7 @@ public class SocketClient
                 channel = new TLSSocketChannel( host, port, soChannel, logger, config.trustStrategy() );
                 break;
             }
-            case REJECTED:
+            case NONE:
             {
                 channel = new AllOrNothingChannel( soChannel );
                 break;
