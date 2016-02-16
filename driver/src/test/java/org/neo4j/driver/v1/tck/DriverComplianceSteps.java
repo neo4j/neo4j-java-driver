@@ -35,12 +35,12 @@ import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
+import org.neo4j.driver.v1.tck.tck.util.Types;
 import org.neo4j.driver.v1.tck.tck.util.runners.CypherStatementRunner;
 import org.neo4j.driver.v1.tck.tck.util.runners.MappedParametersRunner;
 import org.neo4j.driver.v1.tck.tck.util.runners.StatementRunner;
 import org.neo4j.driver.v1.tck.tck.util.runners.StringRunner;
 
-import static java.lang.String.valueOf;
 import static java.util.Collections.singletonMap;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
@@ -53,6 +53,10 @@ import static org.neo4j.driver.v1.tck.Environment.mappedParametersRunner;
 import static org.neo4j.driver.v1.tck.Environment.runners;
 import static org.neo4j.driver.v1.tck.Environment.statementRunner;
 import static org.neo4j.driver.v1.tck.Environment.stringRunner;
+import static org.neo4j.driver.v1.tck.tck.util.ResultParser.getList;
+import static org.neo4j.driver.v1.tck.tck.util.ResultParser.getMapOfObjects;
+import static org.neo4j.driver.v1.tck.tck.util.ResultParser.isList;
+import static org.neo4j.driver.v1.tck.tck.util.ResultParser.isMap;
 import static org.neo4j.driver.v1.tck.tck.util.Types.Type;
 import static org.neo4j.driver.v1.tck.tck.util.Types.getType;
 
@@ -68,11 +72,11 @@ public class DriverComplianceSteps
         }
     }
 
-    @Given( "^a value ([^\"]*) of type ([^\"]*)$" )
-    public void a_value_of_Type( String value, String type )
+    @Given( "^a value (.*)$" )
+    public void a_value( String value )
             throws Throwable
     {
-        expectedJavaValue = getType( type ).getJavaValue( value );
+        expectedJavaValue = getJavaValue( value );
         expectedBoltValue = Values.value( expectedJavaValue );
     }
 
@@ -97,13 +101,6 @@ public class DriverComplianceSteps
         expectedBoltValue = Values.value( expectedJavaValue );
     }
 
-    @Given( "^a list value ([^\"]*) of type ([^\"]*)$" )
-    public void a_list_value_of_Type( String value, String type ) throws Throwable
-    {
-        expectedJavaValue = getType( type ).getJavaArrayList( getListFromString( value ) );
-        expectedBoltValue = Values.value( expectedJavaValue );
-    }
-
     @And( "^the expected result is a bolt \"([^\"]*)\" of \"([^\"]*)\"$" )
     public void the_expected_result_is_a_of( String type, String value ) throws Throwable
     {
@@ -114,7 +111,7 @@ public class DriverComplianceSteps
     @When( "^the driver asks the server to echo this value back$" )
     public void the_driver_asks_the_server_to_echo_this_value_back() throws Throwable
     {
-        stringRunner = new StringRunner( "RETURN " + boltValueAsCypherString( expectedBoltValue ) );
+        stringRunner = new StringRunner( "RETURN " + expectedBoltValue.toString() );
         mappedParametersRunner = new MappedParametersRunner( "RETURN {input}", "input", expectedBoltValue );
         statementRunner = new StatementRunner(
                 new Statement( "RETURN {input}", singletonMap( "input", expectedBoltValue ) ) );
@@ -145,69 +142,40 @@ public class DriverComplianceSteps
         the_driver_asks_the_server_to_echo_this_value_back();
     }
 
-    @When( "^adding a table of lists to the list L$" )
-    public void adding_a_table_of_lists_to_the_list_of_objects( DataTable table ) throws Throwable
+    @Given( "^a list containing$" )
+    public void a_list_containing( List<String> table ) throws Throwable
     {
-        Map<String,String> map = table.asMap( String.class, String.class );
-        for ( String type : map.keySet() )
+        List<String> content = table.subList( 1, table.size() - 1 );
+        for ( String value : content )
         {
-            listOfObjects.add( getType( type ).getJavaArrayList( getListFromString( map.get( type ) ) ) );
+            listOfObjects.add( getJavaValue( value ) );
         }
     }
 
-    @When( "^adding a table of values to the list L$" )
-    public void adding_a_table_of_values_to_the_list_of_objects( DataTable table ) throws Throwable
+    @And( "^adding this list to itself$" )
+    public void adding_this_list_to_itself() throws Throwable
+    {
+        listOfObjects.add( new ArrayList<>( listOfObjects ) );
+    }
+
+    @Given( "^a map containing$" )
+    public void a_map_containing( DataTable table ) throws Throwable
     {
         Map<String,String> map = table.asMap( String.class, String.class );
-        for ( String type : map.keySet() )
+        for ( String key : map.keySet() )
         {
-            listOfObjects.add( getType( type ).getJavaValue( map.get( type ) ) );
+            if ( !key.equals( "key" ) )
+            {
+                mapOfObjects.put( (String) Type.String.getJavaValue( key ), getJavaValue( map.get( key ) ) );
+            }
         }
     }
 
-    @When( "^adding a table of lists to the map M$" )
-    public void adding_a_table_of_lists_to_the_map_of_objects( DataTable table ) throws Throwable
+    @And( "^adding this map to itself with key \"([^\"]*)\"$" )
+    public void adding_this_map_to_itself_with_key( String key ) throws Throwable
     {
-        Map<String,String> map = table.asMap( String.class, String.class );
-        for ( String type : map.keySet() )
-        {
-            mapOfObjects.put( "a" + valueOf( mapOfObjects.size() ), getType( type ).getJavaArrayList(
-                    getListFromString( map.get( type ) ) ) );
-        }
-    }
-
-    @When( "^adding a table of values to the map M$" )
-    public void adding_a_table_of_values_to_the_map_of_objects( DataTable table ) throws Throwable
-    {
-        Map<String,String> map = table.asMap( String.class, String.class );
-        for ( String type : map.keySet() )
-        {
-            mapOfObjects.put( "a" + valueOf( mapOfObjects.size() ), getType( type ).getJavaValue( map.get( type ) ) );
-        }
-    }
-
-    @When( "^adding a copy of map M to map M$" )
-    public void adding_map_of_objects_to_map_of_objects() throws Throwable
-    {
-        mapOfObjects.put( "a" + valueOf( mapOfObjects.size() ), new HashMap<>( mapOfObjects ) );
-    }
-
-    @When( "^adding map M to list L$" )
-    public void adding_map_of_objects_to_list_of_objects() throws Throwable
-    {
-        listOfObjects.add( mapOfObjects );
-    }
-
-    @And( "^an empty map M$" )
-    public void a_map_of_objects() throws Throwable
-    {
-        mapOfObjects = new HashMap<>();
-    }
-
-    @And( "^an empty list L$" )
-    public void a_list_of_objects() throws Throwable
-    {
-        listOfObjects = new ArrayList<>();
+        mapOfObjects.put( key, new HashMap<>( mapOfObjects ) );
+        expectedJavaValue = mapOfObjects;
     }
 
     @Then( "^the value given in the result should be the same as what was sent" )
@@ -222,6 +190,27 @@ public class DriverComplianceSteps
             assertThat( resultBoltValue, equalTo( expectedBoltValue ) );
 
             assertThat( resultJavaValue, equalTo( expectedJavaValue ) );
+        }
+    }
+
+    public Object getJavaValue( String value )
+    {
+        if ( isList( value ) )
+        {
+            ArrayList<Object> values = new ArrayList<>();
+            for ( String val : getList( value ) )
+            {
+                values.add( Types.asObject( val ) );
+            }
+            return values;
+        }
+        else if ( isMap( value ) )
+        {
+            return getMapOfObjects( value );
+        }
+        else
+        {
+            return Types.asObject( value );
         }
     }
 
@@ -242,7 +231,7 @@ public class DriverComplianceSteps
         List<Object> list = new ArrayList<>();
         while ( size-- > 0 )
         {
-            list.add( type.getRandomValue(  ) );
+            list.add( type.getRandomValue() );
         }
         return list;
     }
@@ -257,20 +246,10 @@ public class DriverComplianceSteps
         return map;
     }
 
-    public String boltValueAsCypherString( Value value )
-    {
-        return value.toString();
-    }
-
-    public String[] getListFromString( String str )
-    {
-        return str.replaceAll( "\\[", "" )
-                .replaceAll( "\\]", "" )
-                .split( "," );
-    }
 
     public boolean databaseRunning()
     {
         return session() != null;
     }
+
 }

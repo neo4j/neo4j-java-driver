@@ -18,6 +18,10 @@
  */
 package org.neo4j.driver.v1.tck.tck.util;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -29,6 +33,7 @@ import org.neo4j.driver.internal.InternalPath;
 import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.internal.value.ListValue;
 import org.neo4j.driver.internal.value.NodeValue;
+import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.internal.value.PathValue;
 import org.neo4j.driver.internal.value.RelationshipValue;
 import org.neo4j.driver.internal.value.StringValue;
@@ -36,253 +41,137 @@ import org.neo4j.driver.v1.Entity;
 import org.neo4j.driver.v1.Function;
 import org.neo4j.driver.v1.Path;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.Values;
 
 import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.driver.internal.types.InternalTypeSystem.TYPE_SYSTEM;
 import static org.neo4j.driver.v1.tck.tck.util.Types.Type;
+import static org.neo4j.driver.v1.tck.tck.util.Types.getTypeFromStringConstellation;
 
 public class ResultParser
 {
-
-    private static boolean multipleValuesRelationship( String input )
+    private static Value parseString( String resultValue )
     {
-        if ( multipleValues( input ) )
-        {
-            input = input.substring( 1, input.length() - 1 );
-            return multipleValues( input );
-        }
-        else
-        {
-            return false;
-        }
+        return new StringValue( (String) Type.String.getJavaValue( resultValue ) );
     }
 
-    private static boolean multipleValues( String input )
+    private static NodeValue parseNode( String input )
     {
-        if ( input.charAt( 0 ) == '[' )
+
+        if ( input.charAt( 0 ) != '(' && input.charAt( input.length() - 1 ) != ')' )
         {
-            if ( input.charAt( input.length() - 1 ) != ']' )
+            throw new IllegalArgumentException(
+                    format( "Node representation should start with ( and end with " + "). Got: {%s}",
+                            input ) );
+        }
+        Map<String,Value> properties = getProperties( input );
+        Collection<String> labels = getLabels( input );
+        return new TestNodeValue( 0, labels, properties );
+    }
+
+    private static RelationshipValue parseRelationship( String input )
+    {
+        if ( input.charAt( 0 ) != '[' && input.charAt( input.length() - 1 ) != ']' )
+        {
+            throw new IllegalArgumentException(
+                    format( "Relationship representation should start with [ and end with ]. Got: {%s}",
+                            input ) );
+        }
+        Map<String,Value> properties = getProperties( input );
+        Collection<String> type = getLabels( input );
+        if ( type.size() > 1 )
+        {
+            throw new IllegalArgumentException( "Labels should only have single type. Found: " + type );
+        }
+        return new TestRelationshipValue( 0, type.iterator().next(), properties );
+    }
+
+    private static PathValue parsePath( String input )
+    {
+        input = input.substring( 1, input.length() - 1 );
+        ArrayList<Entity> nodesAndRels = new ArrayList<>();
+        int id = 0;
+
+        if ( input.charAt( 0 ) != '(' )
+        {
+            throw new IllegalArgumentException(
+                    format( "Path should start with node (. Got: [%s]", input ) );
+        }
+        String nstart = input.substring( 0, input.indexOf( ')' ) + 1 );
+        input = input.substring( input.indexOf( ')' ) + 1 );
+        TestNodeValue startNode = (TestNodeValue) parseNode( nstart );
+
+        nodesAndRels.add( startNode );
+        startNode.setId( id++ );
+        TestNodeValue prev_n = startNode;
+        while ( input.length() > 0 )
+        {
+            String n, rel;
+
+            int split_at;
+            boolean posDirection;
+
+            if ( input.startsWith( "<-" ) )
             {
-                throw new IllegalArgumentException(
-                        format( "Can't parse: %s. Excpecting a list of ints but did not" +
-                                "find closing ']'", input ) );
+                input = input.substring( 2 );
+                if ( !input.contains( "]-" ) )
+                {
+                    throw new IllegalArgumentException(
+                            format( "Relationship in path representation should end with -]. Got: {%s}", input
+                            ) );
+                }
+                split_at = input.indexOf( "]-" );
+                rel = input.substring( 0, split_at + 1 );
+                input = input.substring( split_at + 2 );
+                posDirection = false;
+            }
+            else if ( input.startsWith( "-[" ) )
+            {
+                input = input.substring( 1 );
+                if ( !input.contains( "]->" ) )
+                {
+                    throw new IllegalArgumentException(
+                            format( "Relationship in path representation should end with ]->. Got: {%s}", input
+                            ) );
+                }
+                split_at = input.indexOf( "->" );
+                rel = input.substring( 0, split_at );
+                input = input.substring( split_at + 2 );
+                posDirection = true;
             }
             else
             {
-                return true;
+                throw new IllegalArgumentException(
+                        format( "Relationship in path should start with -[ or <-[. Got: %s", input ) );
             }
-        }
-        else
-        {
-            return false;
-        }
-    }
-
-    private static String[] makeList( String input )
-    {
-        if ( multipleValues( input ) )
-        {
-            return input.substring( 1, input.length() - 1 ).split( "," );
-        }
-        else
-        {
-            return new String[]{input};
-        }
-    }
-
-    private static String[] makeListRelationship( String input )
-    {
-        if ( multipleValuesRelationship( input ) )
-        {
-            return input.substring( 1, input.length() - 1 ).split( "," );
-        }
-        else
-        {
-            return new String[]{input};
-        }
-    }
-
-    private static IntegerValue[] parseInt( String[] input )
-    {
-        if ( input.length == 0 )
-        {
-            return null;
-        }
-        IntegerValue[] intArray = new IntegerValue[input.length];
-        for ( int i = 0; i < input.length; i++ )
-        {
-            intArray[i] = new IntegerValue( Long.valueOf( input[i] ) );
-        }
-        return intArray;
-    }
-
-    private static StringValue[] parseString( String[] input )
-    {
-        if ( input.length == 0 )
-        {
-            return null;
-        }
-        StringValue[] stringArray = new StringValue[input.length];
-        for ( int i = 0; i < input.length; i++ )
-        {
-            stringArray[i] = new StringValue( input[i] );
-        }
-        return stringArray;
-    }
-
-    private static NodeValue[] parseNode( String[] input )
-    {
-        if ( input.length == 0 )
-        {
-            return null;
-        }
-        TestNodeValue[] nodeArray = new TestNodeValue[input.length];
-        for ( int i = 0; i < input.length; i++ )
-        {
-            String stringNode = input[i];
-            if ( stringNode.compareToIgnoreCase( "null" ) == 0 )
+            if ( input.charAt( 0 ) != '(' )
             {
-                nodeArray[i] = null;
+                throw new IllegalArgumentException(
+                        format( "Path should contain node after relationship (. Got: %s", input ) );
+            }
+            split_at = input.indexOf( ')' );
+            n = input.substring( 0, split_at + 1 );
+            input = input.substring( split_at + 1 );
+
+            TestNodeValue nValue = (TestNodeValue) parseNode( n );
+            nValue.setId( id++ );
+            if ( posDirection )
+            {
+                TestRelationship relValue = new TestRelationship( (TestRelationshipValue) parseRelationship( rel ),
+                        prev_n, nValue );
+                nodesAndRels.add( relValue );
             }
             else
             {
-                if ( stringNode.charAt( 0 ) != '(' && stringNode.charAt( stringNode.length() - 1 ) != ')' )
-                {
-                    throw new IllegalArgumentException(
-                            format( "Node representation should start with ( and end with " + "). Got: {%s}",
-                                    stringNode ) );
-                }
-                Map<String,Value> properties = getProperties( stringNode );
-                Collection<String> labels = getLabels( stringNode );
-                nodeArray[i] = new TestNodeValue( i, labels, properties );
+                TestRelationship relValue = new TestRelationship( (TestRelationshipValue) parseRelationship( rel ),
+                        nValue, prev_n );
+                nodesAndRels.add( relValue );
             }
+            prev_n = nValue;
+            nodesAndRels.add( nValue );
         }
-        return nodeArray;
-    }
-
-    private static RelationshipValue[] parseRelationship( String[] input )
-    {
-        if ( input.length == 0 )
-        {
-            return null;
-        }
-        TestRelationshipValue[] relArray = new TestRelationshipValue[input.length];
-        for ( int i = 0; i < input.length; i++ )
-        {
-            String stringNode = input[i];
-            if ( stringNode.charAt( 0 ) != '[' && stringNode.charAt( stringNode.length() - 1 ) != ']' )
-            {
-                throw new IllegalArgumentException(
-                        format( "Relationship representation should start with [ and end with ]. Got: {%s}",
-                                stringNode ) );
-            }
-            Map<String,Value> properties = getProperties( stringNode );
-            Collection<String> type = getLabels( stringNode );
-            if ( type.size() > 1 )
-            {
-                throw new IllegalArgumentException( "Labels should only have single type. Found: " + type );
-            }
-            relArray[i] = new TestRelationshipValue( i, type.iterator().next(), properties );
-        }
-        TestRelationshipValue relValue = relArray[0];
-        return relArray;
-    }
-
-    private static PathValue[] parsePath( String[] input )
-    {
-        if ( input.length == 0 )
-        {
-            return null;
-        }
-        PathValue[] pathArray = new PathValue[input.length];
-        for ( int i = 0; i < input.length; i++ )
-        {
-            String path = input[i];
-            ArrayList<Entity> nodesAndRels = new ArrayList<>();
-            int id = 0;
-
-            if ( path.charAt( 0 ) != '(' )
-            {
-                throw new IllegalArgumentException(
-                        format( "Path should start with node (. Got: [%s]", path ) );
-            }
-            String nstart = path.substring( 0, path.indexOf( ')' ) + 1 );
-            path = path.substring( path.indexOf( ')' ) + 1 );
-            TestNodeValue startNode = (TestNodeValue) parseNode( new String[]{nstart} )[0];
-
-            nodesAndRels.add( startNode );
-            startNode.setId( id++ );
-            TestNodeValue prev_n = startNode;
-            while ( path.length() > 0 )
-            {
-                String n, rel;
-
-                int split_at;
-                boolean posDirection;
-
-                if ( path.startsWith( "<-" ) )
-                {
-                    path = path.substring( 2 );
-                    if ( !path.contains( "]-" ) )
-                    {
-                        throw new IllegalArgumentException(
-                                format( "Relationship in path representation should end with -]. Got: {%s}", path
-                                ) );
-                    }
-                    split_at = path.indexOf( "]-" );
-                    rel = path.substring( 0, split_at + 1 );
-                    path = path.substring( split_at + 2 );
-                    posDirection = false;
-                }
-                else if ( path.startsWith( "-[" ) )
-                {
-                    path = path.substring( 1 );
-                    if ( !path.contains( "]->" ) )
-                    {
-                        throw new IllegalArgumentException(
-                                format( "Relationship in path representation should end with ]->. Got: {%s}", path
-                                ) );
-                    }
-                    split_at = path.indexOf( "->" );
-                    rel = path.substring( 0, split_at );
-                    path = path.substring( split_at + 2 );
-                    posDirection = true;
-                }
-                else
-                {
-                    throw new IllegalArgumentException(
-                            format( "Relationship in path should start with -[ or <-[. Got: %s", path ) );
-                }
-                if ( path.charAt( 0 ) != '(' )
-                {
-                    throw new IllegalArgumentException(
-                            format( "Path should contain node after relationship (. Got: %s", path ) );
-                }
-                split_at = path.indexOf( ')' );
-                n = path.substring( 0, split_at + 1 );
-                path = path.substring( split_at + 1 );
-
-                TestNodeValue nValue = (TestNodeValue) parseNode( new String[]{n} )[0];
-                nValue.setId( id++ );
-                if ( posDirection )
-                {
-                    TestRelationship relValue = new TestRelationship( (TestRelationshipValue) parseRelationship( new
-                            String[]{rel} )[0], prev_n, nValue );
-                    nodesAndRels.add( relValue );
-                }
-                else
-                {
-                    TestRelationship relValue = new TestRelationship( (TestRelationshipValue) parseRelationship( new
-                            String[]{rel} )[0], nValue, prev_n );
-                    nodesAndRels.add( relValue );
-                }
-                prev_n = nValue;
-                nodesAndRels.add( nValue );
-            }
-            pathArray[i] = new PathValue( new InternalPath( nodesAndRels ) );
-        }
-        return pathArray;
+        return new PathValue( new InternalPath( nodesAndRels ) );
     }
 
     private static Collection<String> getLabels( String input )
@@ -306,53 +195,13 @@ public class ResultParser
 
     private static Map<String,Value> getProperties( String input )
     {
-        Map<String,Value> properties = new HashMap<>();
-        int i1 = input.indexOf( "{" );
-        if ( i1 == -1 )
+        Map<String,Object> result = getMapOfObjects( input );
+        HashMap<String,Value> properties = new HashMap<>();
+        for ( String key : result.keySet() )
         {
-            return properties;
-        }
-        int i2 = input.lastIndexOf( "}" );
-        input = input.substring( i1 + 1, i2 );
-        String[] keyValues = input.split( "," );
-        for ( String kv : keyValues )
-        {
-            String[] keyValue = kv.split( ":" );
-            String key = keyValue[0];
-            if ( key.charAt( 0 ) == '"' )
-            {
-                key = key.substring( 1, key.length() - 1 );
-            }
-            String value = keyValue[1];
-            if ( value.charAt( 0 ) != '"' )
-            {
-                properties.put( key, new IntegerValue( Long.valueOf( value ) ) );
-            }
-            else
-            {
-                properties.put( key, new StringValue( value.substring( 1, value.length() - 1 ) ) );
-            }
+            properties.put( key, Values.value( result.get( key ) ) );
         }
         return properties;
-    }
-
-    public static Map<String,Value> getParametersFromListOfKeysAndValues( List<String> keys, List<String> values )
-    {
-        assertEquals( keys.size(), values.size() );
-        Map<String,Value> params = new HashMap<>();
-        for ( int i = 0; i < keys.size(); i++ )
-        {
-            String value = values.get( i );
-            if ( value.charAt( 0 ) != '"' )
-            {
-                params.put( keys.get( i ), new IntegerValue( Long.valueOf( value ) ) );
-            }
-            else
-            {
-                params.put( keys.get( i ), new StringValue( value.substring( 1, value.length() - 1 ) ) );
-            }
-        }
-        return params;
     }
 
     private static PathValue pathToTestPath( Path p )
@@ -426,13 +275,10 @@ public class ResultParser
         if ( TYPE_SYSTEM.INTEGER().isTypeOf( input ) ||
              TYPE_SYSTEM.FLOAT().isTypeOf( input ) ||
              TYPE_SYSTEM.BOOLEAN().isTypeOf( input ) ||
-             TYPE_SYSTEM.STRING().isTypeOf( input ) )
+             TYPE_SYSTEM.STRING().isTypeOf( input ) ||
+             TYPE_SYSTEM.NULL().isTypeOf( input ) )
         {
             return input;
-        }
-        else if (TYPE_SYSTEM.NULL().isTypeOf( input ) )
-        {
-            return null;
         }
         else if ( TYPE_SYSTEM.NODE().isTypeOf( input ) )
         {
@@ -452,74 +298,92 @@ public class ResultParser
         }
     }
 
-    public static Map<String,Value> parseExpected( Collection<String> input, List<String> keys,
-            Map<String,Type> types )
+    public static Map<String,Value> parseExpected( Collection<String> input, List<String> keys )
     {
         assertEquals( keys.size(), input.size() );
-        assertEquals( keys.size(), types.size() );
         Map<String,Value> converted = new HashMap<>();
         int i = 0;
         for ( String resultValue : input )
         {
-            Value[] values;
-            Value value;
             String key = keys.get( i );
-            Type type = types.get( key );
-
-            switch ( type )
+            if ( isList( resultValue ) )
             {
-            case Integer:
-                resultValue = resultValue.replaceAll( "\\s+", "" );
-                values = parseInt( makeList( resultValue ) );
-                value = convertArrayToValue( values, multipleValues( resultValue ) );
-                break;
-            case String:
-                values = parseString( makeList( resultValue ) );
-                value = convertArrayToValue( values, multipleValues( resultValue ) );
-                break;
-            case Node:
-                resultValue = resultValue.replaceAll( "\\s+", "" );
-                values = parseNode( makeList( resultValue ) );
-                value = convertArrayToValue( values, multipleValues( resultValue ) );
-                break;
-            case Relationship:
-                resultValue = resultValue.replaceAll( "\\s+", "" );
-                values = parseRelationship( makeListRelationship( resultValue ) );
-                value = convertArrayToValue( values, multipleValuesRelationship( resultValue ) );
-                break;
-            case Path:
-                resultValue = resultValue.replaceAll( "\\s+", "" );
-                values = parsePath( makeList( resultValue ) );
-                value = convertArrayToValue( values, multipleValues( resultValue ) );
-                break;
-            default:
-                throw new IllegalArgumentException( format( "Type not recognized: %s", type ) );
+                String[] resultValues = getList( resultValue );
+                Value[] valueArray = new Value[resultValues.length];
+                for ( int j = 0; j < resultValues.length; j++ )
+                {
+                    Type type = getTypeFromStringConstellation( resultValues[j] );
+                    valueArray[j] = createValue( resultValues[j], type );
+                }
+                converted.put( key, new ListValue( valueArray ) );
             }
-            converted.put( key, value );
+            else
+            {
+                converted.put( key, createValue( resultValue, getTypeFromStringConstellation(
+                        resultValue ) ) );
+            }
             i++;
         }
         return converted;
     }
 
-    public static Map<String,Value> parseExpected( Collection<String> input, List<String> keys, Type type )
+    public static String[] getList( String resultValue )
     {
-        Map<String,Type> mappedTypes = new HashMap<>();
-        for ( String key : keys )
-        {
-            mappedTypes.put( key, type );
-        }
-        return parseExpected( input, keys, mappedTypes );
+        return resultValue.substring( 1, resultValue.length() - 1 ).split( ", " );
     }
 
-    private static Value convertArrayToValue( Value[] values, boolean list )
+    public static Map<String,Object> getMapOfObjects( String input )
     {
-        if ( list )
+        Map<String,Object> properties = new HashMap<>();
+        int i1 = input.indexOf( "{" );
+        if ( i1 == -1 )
         {
-            return new ListValue( values );
+            return properties;
         }
-        else
+        int i2 = input.lastIndexOf( "}" );
+        input = input.substring( i1, i2 + 1 );
+        try
         {
-            return values[0];
+            ObjectMapper mapper = new ObjectMapper(  );
+            mapper.configure( DeserializationFeature.USE_LONG_FOR_INTS, true );
+            properties = mapper.readValue( input, HashMap.class );
+        }
+        catch ( IOException e )
+        {
+            throw new IllegalArgumentException( "Not able to parse Node: " + input, e );
+        }
+        return properties;
+    }
+
+    public static boolean isList( String resultValue )
+    {
+        return resultValue.startsWith( "[" ) && resultValue.endsWith( "]" ) && resultValue.charAt( 1 ) != ':';
+    }
+
+    public static boolean isMap( String resultValue )
+    {
+        return resultValue.startsWith( "{" ) && resultValue.endsWith( "}" );
+    }
+
+    private static Value createValue( String resultValue, Type type )
+    {
+        switch ( type )
+        {
+        case Null:
+            return NullValue.NULL;
+        case Integer:
+            return new IntegerValue( Long.valueOf( resultValue ) );
+        case String:
+            return parseString( resultValue );
+        case Node:
+            return parseNode( resultValue );
+        case Relationship:
+            return parseRelationship( resultValue );
+        case Path:
+            return parsePath( resultValue );
+        default:
+            throw new IllegalArgumentException( format( "Type not recognized: %s", type ) );
         }
     }
+
 }
