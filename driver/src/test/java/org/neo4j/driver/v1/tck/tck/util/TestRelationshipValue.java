@@ -59,7 +59,7 @@ public class TestRelationshipValue extends RelationshipValue implements Entity
     @Override
     public String toString()
     {
-        return this.asNode().labels() + this.asNode().properties().toString();
+        return this.asRelationship().type() + this.asRelationship().properties().toString();
     }
 
     @Override

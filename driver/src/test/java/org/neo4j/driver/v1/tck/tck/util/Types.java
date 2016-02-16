@@ -38,6 +38,51 @@ public class Types
         throw new IllegalArgumentException( format( "There is no type: %s", stringType ) );
     }
 
+    public static Object asObject(String object)
+    {
+        return getTypeFromStringConstellation( object ).getJavaValue( object );
+    }
+
+    public static Type getTypeFromStringConstellation( String object )
+    {
+        if ( object.startsWith( "[:" ) && object.endsWith( "]" ) )
+        {
+            return Type.Relationship;
+        }
+        if ( object.startsWith( "(" ) && object.endsWith( ")" ) )
+        {
+            return Type.Node;
+        }
+        if ( object.startsWith( "<(" ) && object.endsWith( ")>" ) )
+        {
+            return Type.Path;
+        }
+        if ( object.trim().equals( "null" ) )
+        {
+            return Type.Null;
+        }
+        if ( object.trim().equals( "true" ) || object.trim().equals( "false" ) )
+        {
+            return Type.Boolean;
+        }
+        if ( object.charAt( 0 ) == '"' && object.charAt( object.length() - 1 ) == '"' )
+        {
+            return Type.String;
+        }
+        if ( object.matches( "-?[0-9]+" ) )
+        {
+            return Type.Integer;
+        }
+        try
+        {
+            Double.parseDouble( object );
+            return Type.Float;
+        }
+        catch ( Exception ignore ) {}
+
+        throw new IllegalArgumentException( "Cannot find matching type for expression: " + object );
+    }
+
     public enum Type implements TypeLayout
     {
         Integer
@@ -123,7 +168,7 @@ public class Types
                     @Override
                     public Object getJavaValue( String val )
                     {
-                        return val;
+                        return val.substring( 1, val.length() - 1 );
                     }
 
                     @Override
@@ -181,19 +226,19 @@ public class Types
                     @Override
                     public Object getJavaValue( String val )
                     {
-                        throw new IllegalArgumentException("There is no native java representation of Node");
+                        throw new IllegalArgumentException( "There is no native java representation of Node" );
                     }
 
                     @Override
                     public ArrayList<Object> getJavaArrayList( String[] array )
                     {
-                        throw new IllegalArgumentException("There is no native java representation of Node");
+                        throw new IllegalArgumentException( "There is no native java representation of Node" );
                     }
 
                     @Override
                     public Object getRandomValue()
                     {
-                        throw new IllegalArgumentException("Not implemented");
+                        throw new IllegalArgumentException( "Not implemented" );
                     }
                 },
         Relationship
@@ -201,19 +246,19 @@ public class Types
                     @Override
                     public Object getJavaValue( String val )
                     {
-                        throw new IllegalArgumentException("There is no native java representation of Relationship");
+                        throw new IllegalArgumentException( "There is no native java representation of Relationship" );
                     }
 
                     @Override
                     public ArrayList<Object> getJavaArrayList( String[] array )
                     {
-                        throw new IllegalArgumentException("There is no native java representation of Relationship");
+                        throw new IllegalArgumentException( "There is no native java representation of Relationship" );
                     }
 
                     @Override
                     public Object getRandomValue()
                     {
-                        throw new IllegalArgumentException("Not implemented");
+                        throw new IllegalArgumentException( "Not implemented" );
                     }
                 },
         Path
@@ -221,19 +266,19 @@ public class Types
                     @Override
                     public Object getJavaValue( String val )
                     {
-                        throw new IllegalArgumentException("There is no native java representation of Path");
+                        throw new IllegalArgumentException( "There is no native java representation of Path" );
                     }
 
                     @Override
                     public ArrayList<Object> getJavaArrayList( String[] array )
                     {
-                        throw new IllegalArgumentException("There is no native java representation of Path");
+                        throw new IllegalArgumentException( "There is no native java representation of Path" );
                     }
 
                     @Override
                     public Object getRandomValue()
                     {
-                        throw new IllegalArgumentException("Not implemented");
+                        throw new IllegalArgumentException( "Not implemented" );
                     }
                 }
     }
