@@ -18,14 +18,14 @@
  */
 package org.neo4j.driver.v1.util;
 
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URL;
-
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
 
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.ResultCursor;
@@ -33,31 +33,8 @@ import org.neo4j.driver.v1.Session;
 
 public class TestNeo4j implements TestRule
 {
-    private final Neo4jResetMode resetMode;
-    private final Neo4jSettings initialSettings;
-
+    private final Neo4jSettings initialSettings = Neo4jSettings.DEFAULT;
     private Neo4jRunner runner;
-
-    public TestNeo4j()
-    {
-        this( Neo4jSettings.DEFAULT, Neo4jResetMode.CLEAR_DATABASE_CONTENTS );
-    }
-
-    public TestNeo4j( Neo4jResetMode resetMode )
-    {
-        this( Neo4jSettings.DEFAULT, resetMode );
-    }
-
-    public TestNeo4j( Neo4jSettings initialSettings )
-    {
-        this( initialSettings, Neo4jResetMode.CLEAR_DATABASE_CONTENTS );
-    }
-
-    public TestNeo4j( Neo4jSettings initialSettings, Neo4jResetMode resetMode )
-    {
-        this.initialSettings = initialSettings;
-        this.resetMode = resetMode;
-    }
 
     @Override
     public Statement apply( final Statement base, final Description description )
@@ -67,25 +44,15 @@ public class TestNeo4j implements TestRule
             @Override
             public void evaluate() throws Throwable
             {
-            runner = Neo4jRunner.getOrCreateGlobalRunner();
-            switch ( resetMode )
-            {
-                case CLEAR_DATABASE_CONTENTS:
-                    if ( !runner.startServerOnEmptyDatabaseUnlessRunning( initialSettings ) )
+                runner = Neo4jRunner.getOrCreateGlobalRunner();
+                if ( !runner.ensureRunning( initialSettings ) )
+                {
+                    try ( Session session = driver().session() )
                     {
-                        try ( Session session = driver().session() )
-                        {
-                            clearDatabaseContents( session, description.toString() );
-                        }
+                        clearDatabaseContents( session, description.toString() );
                     }
-                    break;
-
-                case CLEAR_DATABASE_FILES:
-                    restartServerOnEmptyDatabase( initialSettings );
-                    break;
-            }
-
-            base.evaluate();
+                }
+                base.evaluate();
             }
         };
     }
@@ -95,14 +62,9 @@ public class TestNeo4j implements TestRule
         return runner.driver();
     }
 
-    public void restartServerOnEmptyDatabase() throws Exception
+    public void restart() throws Exception
     {
-        runner.restartServerOnEmptyDatabase();
-    }
-
-    public void restartServerOnEmptyDatabase( Neo4jSettings settingsUpdate ) throws Exception
-    {
-        runner.restartServerOnEmptyDatabase( settingsUpdate );
+        runner.restart();
     }
 
     public URL putTmpFile( String prefix, String suffix, String contents ) throws IOException
@@ -119,11 +81,6 @@ public class TestNeo4j implements TestRule
     public String address()
     {
         return Neo4jRunner.DEFAULT_URL;
-    }
-
-    public boolean canControlServer()
-    {
-        return runner.canControlServer();
     }
 
     @SuppressWarnings("StatementWithEmptyBody")

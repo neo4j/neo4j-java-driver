@@ -16,16 +16,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1.exceptions;
+package org.neo4j.driver.internal.summary;
 
-/**
- * A <em>DatabaseException</em> indicates that there is a problem within the underlying database.
- * The error code provided can be used to determine further detail for the problem.
- */
-public class DatabaseException extends Neo4jException
+import org.junit.Test;
+
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
+
+public class InternalInputPositionTest
 {
-    public DatabaseException( String code, String message )
+    @Test
+    public void shouldBehaveAsExpected()
     {
-        super( code, message );
+        // GIVEN, WHEN
+        InternalInputPosition position = new InternalInputPosition( 0, 2, 1 );
+
+        // THEN
+        assertThat( position.offset(), equalTo( 0 ) );
+        assertThat( position.column(), equalTo( 1 ) );
+        assertThat( position.line(), equalTo( 2 ) );
+        assertThat( position.toString(), equalTo( "offset=0, line=2, column=1" ) );
     }
+
 }

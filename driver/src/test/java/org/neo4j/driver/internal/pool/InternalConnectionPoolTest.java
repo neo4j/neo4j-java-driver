@@ -18,12 +18,12 @@
  */
 package org.neo4j.driver.internal.pool;
 
-import java.net.URI;
-import java.util.Collections;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
+import java.net.URI;
+import java.util.Collections;
 
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.Connector;
@@ -32,7 +32,6 @@ import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static java.util.Collections.singletonList;
-
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -47,15 +46,14 @@ public class InternalConnectionPoolTest
     public ExpectedException exception = ExpectedException.none();
 
     @Test
-    public void shouldThrowExceptionWhenConnectionPoolIsFullWhatever() throws Throwable
+    public void shouldThrowExceptionWhenConnectionPoolIsFull() throws Throwable
     {
         // Given
-
         URI uri = URI.create( "bolt://asd" );
         Connector connector = connector( "bolt" );
-        Config config = Config.build().withConnectionPoolSize( 1 ).toConfig();
+        Config config = Config.build().withMaxSessions( 1 ).toConfig();
         InternalConnectionPool pool = new InternalConnectionPool( singletonList( connector ),
-                Clock.SYSTEM, config );
+                Clock.SYSTEM, config, 100 );
 
         // When & Then
         pool.acquire( uri );
@@ -76,7 +74,7 @@ public class InternalConnectionPoolTest
         Connector connector = connector( "bolt" );
         Config config = Config.defaultConfig();
         InternalConnectionPool pool = new InternalConnectionPool( singletonList( connector ),
-                Clock.SYSTEM, config );
+                Clock.SYSTEM, config, 100 );
 
         Connection conn = pool.acquire( uri );
         conn.close();

@@ -44,7 +44,6 @@ import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.ResultCursor;
 import org.neo4j.driver.v1.util.CertificateToolTest;
 import org.neo4j.driver.v1.util.Neo4jRunner;
-import org.neo4j.driver.v1.util.Neo4jSettings;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static org.junit.Assert.assertEquals;
@@ -59,7 +58,7 @@ import static org.mockito.Mockito.verify;
 public class SSLSocketChannelIT
 {
     @Rule
-    public TestNeo4j neo4j = new TestNeo4j( Neo4jSettings.DEFAULT.usingTLS( true ) );
+    public TestNeo4j neo4j = new TestNeo4j();
 
     @Test
     public void shouldPerformTLSHandshakeWithEmptyKnownCertsFile() throws Throwable

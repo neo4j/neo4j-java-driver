@@ -18,16 +18,16 @@
  */
 package org.neo4j.driver.internal;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import org.neo4j.driver.internal.value.ListValue;
 import org.neo4j.driver.internal.value.MapValue;
@@ -40,7 +40,6 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
-
 import static org.neo4j.driver.v1.Values.value;
 import static org.neo4j.driver.v1.Values.valueAsList;
 import static org.neo4j.driver.v1.Values.valueToString;
@@ -159,5 +158,35 @@ public class ValuesTest
         assertThat( result.size(), equalTo( 2 ) );
         assertThat( result.get( "Dog" ), equalTo( "2" ) );
         assertThat( result.get( "Cat" ), equalTo( "1" ) );
+    }
+
+    @Test
+    public void shouldNotBeAbleToGetKeysFromNonKeyedValue() throws Throwable
+    {
+        // expect
+        exception.expect( ClientException.class );
+
+        // when
+        value( "asd" ).get(1);
+    }
+
+    @Test
+    public void shouldNotBeAbleToDoCrazyCoercions() throws Throwable
+    {
+        // expect
+        exception.expect( ClientException.class );
+
+        // when
+        value(1).asPath();
+    }
+
+    @Test
+    public void shouldNotBeAbleToGetSizeOnNonSizedValues() throws Throwable
+    {
+        // expect
+        exception.expect( ClientException.class );
+
+        // when
+        value(1).size();
     }
 }

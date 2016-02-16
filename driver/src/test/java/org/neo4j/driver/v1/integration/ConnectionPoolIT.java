@@ -18,13 +18,13 @@
  */
 package org.neo4j.driver.v1.integration;
 
-import java.util.LinkedList;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.LinkedList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
@@ -53,7 +53,7 @@ public class ConnectionPoolIT
         sessionGrabber.start();
 
         // When
-        neo4j.restartServerOnEmptyDatabase();
+        neo4j.restart();
 
         // Then we accept a hump with failing sessions, but demand that failures stop as soon as the server is back up.
         sessionGrabber.assertSessionsAvailableWithin( 60 );

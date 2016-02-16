@@ -22,29 +22,19 @@ package org.neo4j.driver.internal;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.neo4j.driver.internal.summary.ResultBuilder;
+import org.neo4j.driver.internal.value.NullValue;
+import org.neo4j.driver.v1.*;
+import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.neo4j.driver.internal.summary.ResultBuilder;
-import org.neo4j.driver.internal.value.NullValue;
-import org.neo4j.driver.v1.Pair;
-import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.RecordAccessor;
-import org.neo4j.driver.v1.Records;
-import org.neo4j.driver.v1.ResultCursor;
-import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.neo4j.driver.v1.Values.value;
 
 public class InternalResultCursorTest
@@ -78,6 +68,110 @@ public class InternalResultCursorTest
         assertTrue( result.atEnd() );
         assertThat( values( result.record() ), equalTo(Arrays.asList(value("v1-3"), value( "v2-3" ))));
         assertFalse( result.next() );
+    }
+
+    @Test
+    public void firstPastFirstShouldFail()
+    {
+        // GIVEN
+        ResultCursor result = createResult( 3 );
+        result.next();
+        result.next();
+
+
+        // THEN
+        expectedException.expect( NoSuchRecordException.class );
+
+        // THEN
+        result.first();
+    }
+
+    @Test
+    public void firstOfFieldNameShouldWorkAsExpected()
+    {
+        // GIVEN
+        ResultCursor result = createResult( 3 );
+
+        // THEN
+        assertThat( result.first( "k1" ), equalTo( value("v1-1") ) );
+        assertFalse( result.atEnd() );
+    }
+
+    @Test
+    public void firstOfFieldIndexShouldWorkAsExpected()
+    {
+        // GIVEN
+        ResultCursor result = createResult( 3 );
+
+        // THEN
+        assertThat( result.first( 0 ), equalTo( value("v1-1") ) );
+        assertFalse( result.atEnd() );
+    }
+
+    @Test
+    public void singlePastFirstShouldFail()
+    {
+        // GIVEN
+        ResultCursor result = createResult( 2 );
+        result.next();
+        result.next();
+
+
+        // THEN
+        expectedException.expect( NoSuchRecordException.class );
+
+        // THEN
+        result.single();
+    }
+
+    @Test
+    public void singleNoneShouldFail()
+    {
+        // GIVEN
+        ResultCursor result = createResult( 0 );
+
+
+        // THEN
+        expectedException.expect( NoSuchRecordException.class );
+
+        // THEN
+        result.single();
+    }
+
+    @Test
+    public void singleWhenMoreThanOneShouldFail()
+    {
+        // GIVEN
+        ResultCursor result = createResult( 2 );
+
+
+        // THEN
+        expectedException.expect( NoSuchRecordException.class );
+
+        // THEN
+        result.single();
+    }
+
+    @Test
+    public void singleOfFieldNameShouldWorkAsExpected()
+    {
+        // GIVEN
+        ResultCursor result = createResult( 1 );
+
+        // THEN
+        assertThat( result.single( "k1" ), equalTo( value("v1-1") ) );
+        assertTrue( result.atEnd() );
+    }
+
+    @Test
+    public void singleOfFieldIndexShouldWorkAsExpected()
+    {
+        // GIVEN
+        ResultCursor result = createResult( 1 );
+
+        // THEN
+        assertThat( result.single( 0 ), equalTo( value("v1-1") ) );
+        assertTrue( result.atEnd() );
     }
 
     @Test
