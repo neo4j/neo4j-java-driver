@@ -82,7 +82,7 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
             @Override
             public void keys( String[] names )
             {
-                keys = new ArrayList<>( Arrays.asList( names ) );
+                keys = Arrays.asList( names );
             }
 
             @Override

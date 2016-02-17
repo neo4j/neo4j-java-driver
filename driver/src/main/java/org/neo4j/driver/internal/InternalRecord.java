@@ -38,7 +38,6 @@ import static org.neo4j.driver.v1.Values.valueAsIs;
 public class InternalRecord extends InternalRecordAccessor implements Record
 {
     private final List<String> keys;
-    private final Map<String, Integer> keyIndexLookup;
     private final Value[] values;
     private int hashcode = 0;
 
@@ -46,15 +45,6 @@ public class InternalRecord extends InternalRecordAccessor implements Record
     {
         this.keys = keys;
         this.values = values;
-
-        int numFields = keys.size();
-        Map<String, Integer> fieldLookup = new HashMap<>( numFields );
-        for ( int i = 0; i < numFields; i++ )
-        {
-            String name = keys.get(i);
-            fieldLookup.put( name, i );
-        }
-        this.keyIndexLookup = fieldLookup;
     }
 
     @Override
@@ -66,8 +56,8 @@ public class InternalRecord extends InternalRecordAccessor implements Record
     @Override
     public int index( String key )
     {
-        Integer result = keyIndexLookup.get( key );
-        if ( result == null )
+        int result = keys.indexOf( key );
+        if ( result == -1 )
         {
             throw new NoSuchElementException( "Unknown key: " + key );
         }
@@ -80,15 +70,15 @@ public class InternalRecord extends InternalRecordAccessor implements Record
     @Override
     public boolean containsKey( String key )
     {
-        return keyIndexLookup.containsKey( key );
+        return keys.contains( key );
     }
 
     @Override
     public Value get( String key )
     {
-        Integer fieldIndex = keyIndexLookup.get( key );
+        int fieldIndex = keys.indexOf( key );
 
-        if ( fieldIndex == null )
+        if ( fieldIndex == -1 )
         {
             return Values.NULL;
         }
