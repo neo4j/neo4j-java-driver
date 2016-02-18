@@ -24,10 +24,10 @@ import java.util.Map;
 import org.neo4j.driver.internal.spi.Logger;
 import org.neo4j.driver.v1.Value;
 
-import static org.neo4j.driver.internal.messaging.ResetMessage.RESET;
 import static org.neo4j.driver.internal.messaging.DiscardAllMessage.DISCARD_ALL;
 import static org.neo4j.driver.internal.messaging.IgnoredMessage.IGNORED;
 import static org.neo4j.driver.internal.messaging.PullAllMessage.PULL_ALL;
+import static org.neo4j.driver.internal.messaging.ResetMessage.RESET;
 
 public class LoggingResponseHandler extends SocketResponseHandler
 {
@@ -85,7 +85,7 @@ public class LoggingResponseHandler extends SocketResponseHandler
     public void handleRecordMessage( Value[] fields )
     {
         super.handleRecordMessage( fields );
-        logger.debug( "S: RecordMessage{%s}", Arrays.asList( fields ) );
+        logger.debug( "S: [RECORD %s]", Arrays.asList( fields ) );
     }
 
     @Override

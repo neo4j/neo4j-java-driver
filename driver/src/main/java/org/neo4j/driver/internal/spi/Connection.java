@@ -63,6 +63,21 @@ public interface Connection extends AutoCloseable
      */
     void sync();
 
+    /**
+     * Send all pending messages to the server and return the number of messages sent.
+     */
+    int sendAll();
+
+    /**
+     * Receive all expected responses for any previous messages sent and return the number received.
+     */
+    int receiveAll();
+
+    /**
+     * Receive the next message available.
+     */
+    void receiveOne();
+
     @Override
     void close();
 
@@ -75,4 +90,5 @@ public interface Connection extends AutoCloseable
      * @return true if the socket connection with the server is open, otherwise false.
      */
     boolean isOpen();
+
 }

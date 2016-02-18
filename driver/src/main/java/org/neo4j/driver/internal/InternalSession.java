@@ -22,7 +22,6 @@ import java.util.Map;
 
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.Logger;
-import org.neo4j.driver.internal.summary.ResultBuilder;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.v1.ResultCursor;
 import org.neo4j.driver.v1.Session;
@@ -61,11 +60,11 @@ public class InternalSession implements Session
     public ResultCursor run( String statementText, Map<String,Value> statementParameters )
     {
         ensureConnectionIsValid();
-        ResultBuilder resultBuilder = new ResultBuilder( statementText, statementParameters );
-        connection.run( statementText, statementParameters, resultBuilder );
-        connection.pullAll( resultBuilder );
-        connection.sync();
-        return resultBuilder.build();
+        InternalResultCursor cursor = new InternalResultCursor( connection, null, statementText, statementParameters );
+        connection.run( statementText, statementParameters, cursor.runResponseCollector() );
+        connection.pullAll( cursor.pullAllResponseCollector() );
+        connection.sendAll();
+        return cursor;
     }
 
     @Override

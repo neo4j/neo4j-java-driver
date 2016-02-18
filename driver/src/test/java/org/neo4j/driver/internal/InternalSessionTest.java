@@ -41,7 +41,7 @@ public class InternalSessionTest
     private InternalSession sess = new InternalSession( mock, new DevNullLogger() );
 
     @Test
-    public void shouldSyncOnRun() throws Throwable
+    public void shouldSendAllOnRun() throws Throwable
     {
         // Given
         when( mock.isOpen() ).thenReturn( true );
@@ -51,7 +51,7 @@ public class InternalSessionTest
         sess.run( "whatever" );
 
         // Then
-        verify( mock ).sync();
+        verify( mock ).sendAll();
     }
 
     @Test
@@ -107,7 +107,7 @@ public class InternalSessionTest
         sess.run( "whatever" );
 
         // Then
-        verify( mock ).sync();
+        verify( mock ).sendAll();
     }
 
     @Test

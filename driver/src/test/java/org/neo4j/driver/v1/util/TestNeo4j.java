@@ -18,17 +18,16 @@
  */
 package org.neo4j.driver.v1.util;
 
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URL;
 
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
+
 import org.neo4j.driver.v1.Driver;
-import org.neo4j.driver.v1.ResultCursor;
 import org.neo4j.driver.v1.Session;
 
 public class TestNeo4j implements TestRule
@@ -83,7 +82,6 @@ public class TestNeo4j implements TestRule
         return Neo4jRunner.DEFAULT_URL;
     }
 
-    @SuppressWarnings("StatementWithEmptyBody")
     static void clearDatabaseContents( Session session, String reason )
     {
         Neo4jRunner.debug( "Clearing database contents for: %s", reason );
@@ -91,10 +89,6 @@ public class TestNeo4j implements TestRule
         // Note - this hangs for extended periods some times, because there are tests that leave sessions running.
         // Thus, we need to wait for open sessions and transactions to time out before this will go through.
         // This could be helped by an extension in the future.
-        ResultCursor result = session.run( "MATCH (n) DETACH DELETE n RETURN count(*)" );
-        while ( result.next() )
-        {
-            // consume
-        }
+        session.run( "MATCH (n) DETACH DELETE n" ).close();
     }
 }

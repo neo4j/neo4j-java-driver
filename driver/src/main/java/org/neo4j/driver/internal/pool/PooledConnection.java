@@ -120,12 +120,61 @@ public class PooledConnection implements Connection
     }
 
     @Override
+    public int sendAll()
+    {
+        try
+        {
+            return delegate.sendAll();
+        }
+        catch ( RuntimeException e )
+        {
+            onDelegateException( e );
+            return -1;
+        }
+    }
+
+    @Override
+    public int receiveAll()
+    {
+        try
+        {
+            return delegate.receiveAll();
+        }
+        catch ( RuntimeException e )
+        {
+            onDelegateException( e );
+            return -1;
+        }
+    }
+
+    @Override
+    public void receiveOne()
+    {
+        try
+        {
+            delegate.receiveOne();
+        }
+        catch ( RuntimeException e )
+        {
+            onDelegateException( e );
+        }
+    }
+
+    @Override
     public void close()
     {
         // In case this session has an open result or transaction or something,
         // make sure it's reset to a nice state before we reuse it.
-        reset( StreamCollector.NO_OP );
-        release.accept( this );
+        try
+        {
+            reset( StreamCollector.NO_OP );
+            sync();
+            release.accept( this );
+        }
+        catch (Exception ex)
+        {
+            dispose();
+        }
     }
 
     @Override

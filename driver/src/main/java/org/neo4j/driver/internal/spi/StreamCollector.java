@@ -32,41 +32,28 @@ public interface StreamCollector
     StreamCollector NO_OP = new StreamCollector()
     {
         @Override
-        public void keys( String[] names )
-        {
-        }
+        public void keys( String[] names ) {}
 
         @Override
-        public void record( Value[] fields )
-        {
-        }
+        public void record( Value[] fields ) {}
 
         @Override
-        public void statementType( StatementType type )
-        {
-        }
+        public void statementType( StatementType type ) {}
 
         @Override
-        public void statementStatistics( UpdateStatistics statistics )
-        {
-        }
+        public void statementStatistics( UpdateStatistics statistics ) {}
 
         @Override
-        public void plan( Plan plan )
-        {
-        }
+        public void plan( Plan plan ) {}
 
         @Override
-        public void profile( ProfiledPlan plan )
-        {
-
-        }
+        public void profile( ProfiledPlan plan ) {}
 
         @Override
-        public void notifications( List<Notification> notifications )
-        {
+        public void notifications( List<Notification> notifications ) {}
 
-        }
+        @Override
+        public void done() {}
     };
 
     // TODO: This should be modified to simply have head/record/tail methods
@@ -84,5 +71,7 @@ public interface StreamCollector
     void profile( ProfiledPlan plan );
 
     void notifications( List<Notification> notifications );
+
+    void done();
 }
 

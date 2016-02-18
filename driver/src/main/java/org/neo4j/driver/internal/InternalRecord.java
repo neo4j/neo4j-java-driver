@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -37,14 +38,12 @@ import static org.neo4j.driver.v1.Values.valueAsIs;
 public class InternalRecord extends InternalRecordAccessor implements Record
 {
     private final List<String> keys;
-    private final Map<String, Integer> keyIndexLookup;
     private final Value[] values;
     private int hashcode = 0;
 
-    public InternalRecord( List<String> keys, Map<String, Integer> keyIndexLookup, Value[] values )
+    public InternalRecord( List<String> keys, Value[] values )
     {
         this.keys = keys;
-        this.keyIndexLookup = keyIndexLookup;
         this.values = values;
     }
 
@@ -57,8 +56,8 @@ public class InternalRecord extends InternalRecordAccessor implements Record
     @Override
     public int index( String key )
     {
-        Integer result = keyIndexLookup.get( key );
-        if ( result == null )
+        int result = keys.indexOf( key );
+        if ( result == -1 )
         {
             throw new NoSuchElementException( "Unknown key: " + key );
         }
@@ -71,15 +70,15 @@ public class InternalRecord extends InternalRecordAccessor implements Record
     @Override
     public boolean containsKey( String key )
     {
-        return keyIndexLookup.containsKey( key );
+        return keys.contains( key );
     }
 
     @Override
     public Value get( String key )
     {
-        Integer fieldIndex = keyIndexLookup.get( key );
+        int fieldIndex = keys.indexOf( key );
 
-        if ( fieldIndex == null )
+        if ( fieldIndex == -1 )
         {
             return Values.NULL;
         }

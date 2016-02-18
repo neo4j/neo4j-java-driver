@@ -65,4 +65,6 @@ public interface Transaction extends Resource, StatementRunner
      * </pre>
      */
     void failure();
+
+    void defunct();
 }

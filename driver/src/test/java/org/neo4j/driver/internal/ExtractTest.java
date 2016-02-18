@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.util;
+package org.neo4j.driver.internal;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -30,13 +30,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import org.neo4j.driver.internal.InternalNode;
-import org.neo4j.driver.internal.InternalPair;
-import org.neo4j.driver.internal.ParameterSupport;
-import org.neo4j.driver.internal.summary.ResultBuilder;
+import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.util.Extract;
 import org.neo4j.driver.v1.Function;
 import org.neo4j.driver.v1.Pair;
-import org.neo4j.driver.v1.ResultCursor;
 import org.neo4j.driver.v1.Value;
 
 import static java.util.Arrays.asList;
@@ -47,6 +44,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
 
 import static org.neo4j.driver.v1.Values.value;
 
@@ -149,14 +147,22 @@ public class ExtractTest
     public void testFields() throws Exception
     {
         // GIVEN
-        ResultBuilder builder = new ResultBuilder( "<unknown>", ParameterSupport.NO_PARAMETERS );
-        builder.keys( new String[]{"k1"} );
-        builder.record( new Value[]{value(42)} );
-        ResultCursor result = builder.build();
-        result.first();
+        Connection connection = mock( Connection.class );
+        String statement = "<unknown>";
+
+        InternalResultCursor cursor = new InternalResultCursor( connection, null, statement, ParameterSupport.NO_PARAMETERS );
+        cursor.runResponseCollector().keys( new String[]{"k1"} );
+        cursor.runResponseCollector().done();
+        cursor.pullAllResponseCollector().record( new Value[]{value( 42 )} );
+        cursor.pullAllResponseCollector().done();
+
+        connection.run( statement, ParameterSupport.NO_PARAMETERS, cursor.runResponseCollector() );
+        connection.pullAll( cursor.pullAllResponseCollector() );
+        connection.sendAll();
+        cursor.first();
 
         // WHEN
-        List<Pair<String, Integer>> fields = Extract.fields( result, integerExtractor() );
+        List<Pair<String, Integer>> fields = Extract.fields( cursor, integerExtractor() );
 
 
         // THEN

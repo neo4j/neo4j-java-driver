@@ -41,7 +41,7 @@ public class RecordMessage implements Message
     @Override
     public String toString()
     {
-        return "RecordMessage{" + Arrays.toString( fields ) + '}';
+        return "[RECORD " + Arrays.toString( fields ) + ']';
     }
 
     @Override

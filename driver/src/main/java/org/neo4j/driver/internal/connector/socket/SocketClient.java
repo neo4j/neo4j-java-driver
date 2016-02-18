@@ -26,7 +26,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.SocketChannel;
 import java.security.GeneralSecurityException;
-import java.util.List;
+import java.util.Queue;
 
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
@@ -34,7 +34,7 @@ import org.neo4j.driver.internal.spi.Logger;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
-import static java.nio.ByteOrder.*;
+import static java.nio.ByteOrder.BIG_ENDIAN;
 
 public class SocketClient
 {
@@ -90,26 +90,51 @@ public class SocketClient
         }
     }
 
-    public void send( List<Message> pendingMessages, SocketResponseHandler handler ) throws IOException
+    public int sendAll( Queue<Message> messages ) throws IOException
     {
-        for ( Message message : pendingMessages )
+        int messageCount = 0;
+        while ( true )
         {
-            writer.write( message );
-        }
-        writer.flush();
-
-        // Wait until all pending requests have been replied to
-        while ( handler.receivedResponses() < pendingMessages.size() )
-        {
-            reader.read( handler );
-
-            // TODO: all the errors come from the following trace should result in the termination of this channel
-            // https://github.com/neo4j/neo4j/blob/3.0/community/bolt/src/main/java/org/neo4j/bolt/v1/transport/BoltProtocolV1.java#L86
-            if ( handler.protocolViolationErrorOccurred() )
+            Message message = messages.poll();
+            if ( message == null )
             {
-                stop();
-                throw handler.serverFailure();
+                break;
             }
+            else
+            {
+                logger.debug( "C: %s", message );
+                writer.write( message );
+                messageCount += 1;
+            }
+        }
+        if ( messageCount > 0 )
+        {
+            writer.flush();
+        }
+        return messageCount;
+    }
+
+    public int receiveAll( SocketResponseHandler handler ) throws IOException
+    {
+        int messageCount = handler.collectorsWaiting();
+        // Wait until all pending requests have been replied to
+        while ( handler.collectorsWaiting() > 0 )
+        {
+            receiveOne( handler );
+        }
+        return messageCount;
+    }
+
+    public void receiveOne( SocketResponseHandler handler ) throws IOException
+    {
+        reader.read( handler );
+
+        // TODO: all the errors come from the following trace should result in the termination of this channel
+        // https://github.com/neo4j/neo4j/blob/3.0/community/bolt/src/main/java/org/neo4j/bolt/v1/transport/BoltProtocolV1.java#L86
+        if ( handler.protocolViolationErrorOccurred() )
+        {
+            stop();
+            throw handler.serverFailure();
         }
     }
 
