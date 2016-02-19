@@ -97,4 +97,9 @@ public class TestNeo4j implements TestRule
             // consume
         }
     }
+
+    public void restartServerOnEmptyDatabase( Neo4jSettings neo4jSettings ) throws Exception
+    {
+        runner.restart( neo4jSettings );
+    }
 }

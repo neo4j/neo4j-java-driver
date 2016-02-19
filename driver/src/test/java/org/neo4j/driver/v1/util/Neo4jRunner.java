@@ -84,8 +84,13 @@ public class Neo4jRunner
 
     public synchronized void restart() throws Exception
     {
+        restart( Neo4jSettings.DEFAULT );
+    }
+
+    public void restart( Neo4jSettings neo4jSettings ) throws Exception
+    {
         stop();
-        ensureRunning( Neo4jSettings.DEFAULT );
+        ensureRunning( neo4jSettings );
     }
 
     public synchronized boolean ensureRunning( Neo4jSettings withSettings ) throws Exception

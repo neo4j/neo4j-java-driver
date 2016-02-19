@@ -43,8 +43,10 @@ import org.neo4j.driver.v1.ResultCursor;
 import org.neo4j.driver.v1.util.CertificateToolTest;
 import org.neo4j.driver.v1.util.Neo4jInstaller;
 import org.neo4j.driver.v1.util.Neo4jRunner;
+import org.neo4j.driver.v1.util.Neo4jSettings;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
+import static java.io.File.createTempFile;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -90,6 +92,65 @@ public class TLSSocketChannelIT
         verify( logger, atLeastOnce() ).debug( "TLS connection enabled" );
         verify( logger, atLeastOnce() ).debug( "TLS connection established" );
         verify( logger, atLeastOnce() ).debug( "TLS connection closed" );
+    }
+
+    private File tempFile(String prefix, String suffix) throws Throwable
+    {
+        File file = createTempFile( prefix, suffix );
+        file.deleteOnExit();
+        return file;
+    }
+
+    @Test
+    public void shouldPerformTLSHandshakeWithTrustedCert() throws Throwable
+    {
+        try
+        {
+            // Given
+            // Create root certificate
+            File rootCert = tempFile( "temp_root_cert", ".cert" );
+            File rootKey = tempFile( "temp_root_key", ".key" );
+
+            CertificateToolTest.SelfSignedCertificateGenerator
+                    certGenerator = new CertificateToolTest.SelfSignedCertificateGenerator();
+            certGenerator.saveSelfSignedCertificate( rootCert );
+            certGenerator.savePrivateKey( rootKey );
+
+            // Generate certificate signing request and get a certificate signed by the root private key
+            File cert = tempFile( "temp_cert", ".cert" );
+            File key = tempFile( "temp_key", ".key" );
+            CertificateToolTest.CertificateSigningRequestGenerator
+                    csrGenerator = new CertificateToolTest.CertificateSigningRequestGenerator();
+            X509Certificate signedCert = certGenerator.sign(
+                    csrGenerator.certificateSigningRequest(), csrGenerator.publicKey() );
+            csrGenerator.savePrivateKey( key );
+            CertificateTool.saveX509Cert( signedCert, cert );
+
+            // Give the server certs to database
+            neo4j.restartServerOnEmptyDatabase(
+                    Neo4jSettings.DEFAULT
+                            .usingEncryptionKeyAndCert( key, cert ) );
+
+            Logger logger = mock( Logger.class );
+            SocketChannel channel = SocketChannel.open();
+            channel.connect( new InetSocketAddress( "localhost", 7687 ) );
+
+            // When
+            TLSSocketChannel sslChannel =
+                    new TLSSocketChannel( "localhost", 7687, channel, logger,
+                            Config.TrustStrategy.trustSignedBy( rootCert ) );
+            sslChannel.close();
+
+            // Then
+            verify( logger, atLeastOnce() ).debug( "TLS connection enabled" );
+            verify( logger, atLeastOnce() ).debug( "TLS connection established" );
+            verify( logger, atLeastOnce() ).debug( "TLS connection closed" );
+        }
+        finally
+        {
+            // always restore the db default settings
+            neo4j.restartServerOnEmptyDatabase( Neo4jSettings.DEFAULT );
+        }
     }
 
     @Test
@@ -178,7 +239,7 @@ public class TLSSocketChannelIT
     }
 
     @Test
-    public void shouldPerformTLSHandshakeWithTrustedServerCert() throws Throwable
+    public void shouldPerformTLSHandshakeWithTheSameTrustedServerCert() throws Throwable
     {
 
         Logger logger = mock( Logger.class );

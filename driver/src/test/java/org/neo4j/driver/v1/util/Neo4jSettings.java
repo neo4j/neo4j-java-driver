@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.v1.util;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -28,10 +29,17 @@ public class Neo4jSettings
     private static final String TLS_CERT_KEY = "dbms.security.tls_certificate_file";
     private static final String TLS_KEY_KEY = "dbms.security.tls_key_file";
 
+    private static final String DEFAULT_TLS_CERT_PATH = "conf/ssl/snakeoil.cert";
+    private static final String DEFAULT_TLS_KEY_PATH = "conf/ssl/snakeoil.key";
+
+    public static final File DEFAULT_TLS_CERT_FILE = new File( Neo4jInstaller.neo4jHomeDir, DEFAULT_TLS_CERT_PATH );
+
 
     private final Map<String, String> settings;
 
-    public static Neo4jSettings DEFAULT = new Neo4jSettings(new HashMap<String, String>());
+    public static Neo4jSettings DEFAULT = new Neo4jSettings( map(
+            TLS_CERT_KEY, DEFAULT_TLS_CERT_PATH,
+            TLS_KEY_KEY, DEFAULT_TLS_KEY_PATH) );
 
     private Neo4jSettings( Map<String, String> settings )
     {
@@ -68,6 +76,14 @@ public class Neo4jSettings
 
         return settings.equals( that.settings );
 
+    }
+
+    public Neo4jSettings usingEncryptionKeyAndCert( File key, File cert )
+    {
+        return updateWith( map(
+                TLS_CERT_KEY, cert.getAbsolutePath(),
+                TLS_KEY_KEY, key.getAbsolutePath()
+        ));
     }
 
     @Override
