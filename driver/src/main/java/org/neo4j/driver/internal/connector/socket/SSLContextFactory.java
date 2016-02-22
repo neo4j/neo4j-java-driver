@@ -27,35 +27,34 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 
 import org.neo4j.driver.v1.Config;
+import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.internal.spi.Logger;
 
 import static org.neo4j.driver.internal.util.CertificateTool.loadX509Cert;
 
 class SSLContextFactory
 {
-
     private final String host;
     private final int port;
-    private final Config.TlsAuthenticationConfig authConfig;
+    private final Config.TrustStrategy authConfig;
+    private final Logger logger;
 
-    SSLContextFactory( String host, int port, Config.TlsAuthenticationConfig authConfig )
+    SSLContextFactory( String host, int port, Config.TrustStrategy authConfig, Logger logger )
     {
         this.host = host;
         this.port = port;
         this.authConfig = authConfig;
+        this.logger = logger;
     }
 
     public SSLContext create()
             throws GeneralSecurityException, IOException
     {
         SSLContext sslContext = SSLContext.getInstance( "TLS" );
+        TrustManager[] trustManagers;
 
-        // TODO Do we also want the server to verify the client's cert, a.k.a mutual authentication?
-        // Ref: http://logicoy.com/blogs/ssl-keystore-truststore-and-mutual-authentication/
-        KeyManager[] keyManagers = new KeyManager[0];
-        TrustManager[] trustManagers = null;
-
-        if ( authConfig.isFullAuthEnabled() )
-        {
+        switch ( authConfig.strategy() ) {
+        case TRUST_SIGNED_CERTIFICATES:
             // A certificate file is specified so we will load the certificates in the file
             // Init a in memory TrustedKeyStore
             KeyStore trustedKeyStore = KeyStore.getInstance( "JKS" );
@@ -68,13 +67,15 @@ class SSLContextFactory
             TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance( "SunX509" );
             trustManagerFactory.init( trustedKeyStore );
             trustManagers = trustManagerFactory.getTrustManagers();
-        }
-        else
-        {
-            trustManagers = new TrustManager[]{new TrustOnFirstUseTrustManager( host, port, authConfig.certFile() )};
+            break;
+        case TRUST_ON_FIRST_USE:
+            trustManagers = new TrustManager[]{new TrustOnFirstUseTrustManager( host, port, authConfig.certFile(), logger )};
+            break;
+        default:
+            throw new ClientException( "Unknown TLS authentication strategy: " + authConfig.strategy().name() );
         }
 
-        sslContext.init( keyManagers, trustManagers, null );
+        sslContext.init( new KeyManager[0], trustManagers, null );
         return sslContext;
     }
 }

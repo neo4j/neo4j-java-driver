@@ -220,15 +220,22 @@ public class SocketClient
             soChannel.setOption( StandardSocketOptions.SO_KEEPALIVE, true );
             soChannel.connect( new InetSocketAddress( host, port ) );
 
-            ByteChannel channel = null;
+            ByteChannel channel;
 
-            if( config.isTlsEnabled() )
+            switch ( config.encryptionLevel() )
             {
-                channel = new SSLSocketChannel( host, port, soChannel, logger, config.tlsAuthConfig() );
+            case REQUIRED:
+            {
+                channel = new TLSSocketChannel( host, port, soChannel, logger, config.trustStrategy() );
+                break;
             }
-            else
+            case NONE:
             {
                 channel = new AllOrNothingChannel( soChannel );
+                break;
+            }
+            default:
+                throw new ClientException( "Unknown TLS Level: " + config.encryptionLevel() );
             }
 
             if( logger.isTraceEnabled() )

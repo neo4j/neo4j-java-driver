@@ -53,7 +53,7 @@ public class Neo4jRunner
 
     private Neo4jSettings currentSettings = Neo4jSettings.DEFAULT;
     private Driver currentDriver;
-    private boolean staleDriver;
+    private Config testConfig = Config.build().withEncryptionLevel( Config.EncryptionLevel.NONE ).toConfig();
 
     private Neo4jInstaller installer = Neo4jInstaller.Neo4jInstallerFactory.create();
 
@@ -79,17 +79,19 @@ public class Neo4jRunner
         // Install default settings
         updateServerSettingsFile();
 
-        // Reset driver to match default settings
-        resetDriver();
-
         // Make sure we stop on JVM exit
         installShutdownHook();
     }
 
     public synchronized void restart() throws Exception
     {
+        restart( Neo4jSettings.DEFAULT );
+    }
+
+    public void restart( Neo4jSettings neo4jSettings ) throws Exception
+    {
         stop();
-        ensureRunning( Neo4jSettings.DEFAULT );
+        ensureRunning( neo4jSettings );
     }
 
     public synchronized boolean ensureRunning( Neo4jSettings withSettings ) throws Exception
@@ -155,11 +157,7 @@ public class Neo4jRunner
             throw new IllegalStateException( "Failed to start server" );
         }
         awaitServerStatusOrFail( ServerStatus.ONLINE );
-
-        if ( staleDriver )
-        {
-            resetDriver();
-        }
+        currentDriver = new Driver( serverURI(), testConfig );
     }
 
     private boolean updateServerSettings( Neo4jSettings settingsUpdate )
@@ -174,7 +172,6 @@ public class Neo4jRunner
             currentSettings = updatedSettings;
         }
         updateServerSettingsFile();
-        staleDriver = true;
         return true;
     }
 
@@ -183,7 +180,8 @@ public class Neo4jRunner
      */
     private void updateServerSettingsFile()
     {
-        Map<String, Object> propertiesMap = currentSettings.propertiesMap();
+        Map<String, String> propertiesMap = currentSettings.propertiesMap();
+
         if ( propertiesMap.isEmpty() )
         {
             return;
@@ -193,7 +191,7 @@ public class Neo4jRunner
         try
         {
             debug( "Changing server properties file (for next start): " + oldFile.getCanonicalPath() );
-            for ( Map.Entry<String, Object> property : propertiesMap.entrySet() )
+            for ( Map.Entry<String, String> property : propertiesMap.entrySet() )
             {
                 String name = property.getKey();
                 Object value = property.getValue();
@@ -236,8 +234,7 @@ public class Neo4jRunner
         try
         {
             URI uri = serverURI();
-            Config config = serverConfig();
-            SocketClient client = new SocketClient( uri.getHost(), uri.getPort(), config, new DevNullLogger() );
+            SocketClient client = new SocketClient( uri.getHost(), uri.getPort(), testConfig, new DevNullLogger() );
             client.start();
             client.stop();
             return ServerStatus.ONLINE;
@@ -246,26 +243,6 @@ public class Neo4jRunner
         {
             return ServerStatus.OFFLINE;
         }
-    }
-
-    private void resetDriver() throws Exception
-    {
-        if( currentDriver != null )
-        {
-            currentDriver.close();
-        }
-        currentDriver = new Driver( serverURI(), serverConfig() );
-        staleDriver = false;
-    }
-
-    private Config serverConfig()
-    {
-        Config config = Config.defaultConfig();
-        if( currentSettings.isUsingTLS() )
-        {
-            config = Config.build().withTlsEnabled( true ).toConfig();
-        }
-        return config;
     }
 
     private URI serverURI()

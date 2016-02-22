@@ -91,4 +91,9 @@ public class TestNeo4j implements TestRule
         // This could be helped by an extension in the future.
         session.run( "MATCH (n) DETACH DELETE n" ).close();
     }
+
+    public void restartServerOnEmptyDatabase( Neo4jSettings neo4jSettings ) throws Exception
+    {
+        runner.restart( neo4jSettings );
+    }
 }
