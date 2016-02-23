@@ -41,11 +41,11 @@ public class PooledConnection implements Connection
     }
 
     @Override
-    public void init( String clientName )
+    public void init( String clientName, Map<String,Value> authToken )
     {
         try
         {
-            delegate.init( clientName );
+            delegate.init( clientName, authToken );
         }
         catch( RuntimeException e )
         {

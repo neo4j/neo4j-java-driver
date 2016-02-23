@@ -198,7 +198,7 @@ public class SocketResponseHandler implements MessageHandler
     }
 
     @Override
-    public void handleInitMessage( String clientNameAndVersion )
+    public void handleInitMessage( String clientNameAndVersion, Map<String,Value> authToken )
     {
 
     }

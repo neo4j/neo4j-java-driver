@@ -19,6 +19,9 @@
 package org.neo4j.driver.internal.messaging;
 
 import java.io.IOException;
+import java.util.Map;
+
+import org.neo4j.driver.v1.Value;
 
 import static java.lang.String.format;
 
@@ -30,16 +33,18 @@ import static java.lang.String.format;
 public class InitMessage implements Message
 {
     private final String clientNameAndVersion;
+    private Map<String,Value> authToken;
 
-    public InitMessage( String clientNameAndVersion )
+    public InitMessage( String clientNameAndVersion, Map<String,Value> authToken )
     {
         this.clientNameAndVersion = clientNameAndVersion;
+        this.authToken = authToken;
     }
 
     @Override
     public void dispatch( MessageHandler handler ) throws IOException
     {
-        handler.handleInitMessage( clientNameAndVersion );
+        handler.handleInitMessage( clientNameAndVersion, authToken );
     }
 
     @Override

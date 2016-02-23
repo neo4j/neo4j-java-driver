@@ -20,11 +20,6 @@ package org.neo4j.driver.v1;
 
 import java.net.URI;
 
-import org.neo4j.driver.internal.InternalSession;
-import org.neo4j.driver.internal.pool.InternalConnectionPool;
-import org.neo4j.driver.internal.spi.ConnectionPool;
-import org.neo4j.driver.v1.auth.AuthenticationScheme;
-
 /**
  * A Neo4j database driver, through which you can create {@link Session sessions} to run statements against the database.
  * <p>
@@ -71,61 +66,18 @@ import org.neo4j.driver.v1.auth.AuthenticationScheme;
  * to use the same driver instance across your application. You can control the connection pooling behavior when you
  * create the driver using the {@link Config} you pass into {@link GraphDatabase#driver(URI, Config)}.
  */
-public class Driver implements AutoCloseable
+public interface Driver extends AutoCloseable
 {
-    private final ConnectionPool connections;
-    private final URI url;
-    private final Config config;
-
-    public Driver( URI url, Config config )
-    {
-        this.url = url;
-        this.connections = new InternalConnectionPool( config );
-        this.config = config;
-    }
-
-    /**
-     * Create a new driver instance
-     *
-     * @param url of the remote database to connect to
-     * @param token to be used for authentication
-     * @param config settings of the driver
-     */
-    public Driver( URI url, AuthenticationScheme.Token token, Config config  )
-    {
-        throw new UnsupportedOperationException();
-    }
-
     /**
      * Establish a session
      * @return a session that could be used to run {@link Session#run(String) a statement} or
      * {@link Session#beginTransaction() a transaction }.
      */
-    public Session session()
-    {
-        return new InternalSession( connections.acquire( url ), config.logging().getLog( "session" ) );
-    }
-
-    /**
-     * Change the password of the authenticated user on the database server.
-     *
-     * More precisely, change the credentials of the currently authenticated principal (the user) of this driver
-     * <b>on the database server</b>. If this is successful, use the provided new credentials for authentication
-     * of any sessions that may have to be created by the underlying session pool in the future.
-     *
-     * @param newCredential the new credentials of the authenticated user
-     */
-    public void updateCredentials( AuthenticationScheme.Credential newCredential )
-    {
-        throw new UnsupportedOperationException();
-    }
+    Session session();
 
     /**
      * Close all the resources assigned to this driver
      * @throws Exception any error that might happen when releasing all resources
      */
-    public void close() throws Exception
-    {
-        connections.close();
-    }
+    void close() throws Exception;
 }

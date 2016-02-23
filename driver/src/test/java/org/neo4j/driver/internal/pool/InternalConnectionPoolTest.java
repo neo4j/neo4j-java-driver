@@ -28,6 +28,8 @@ import java.util.Collections;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.Connector;
 import org.neo4j.driver.internal.util.Clock;
+import org.neo4j.driver.v1.AuthToken;
+import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
@@ -53,7 +55,7 @@ public class InternalConnectionPoolTest
         Connector connector = connector( "bolt" );
         Config config = Config.build().withMaxSessions( 1 ).toConfig();
         InternalConnectionPool pool = new InternalConnectionPool( singletonList( connector ),
-                Clock.SYSTEM, config, 100 );
+                Clock.SYSTEM, config, AuthTokens.none(), 100 );
 
         // When & Then
         pool.acquire( uri );
@@ -74,7 +76,7 @@ public class InternalConnectionPoolTest
         Connector connector = connector( "bolt" );
         Config config = Config.defaultConfig();
         InternalConnectionPool pool = new InternalConnectionPool( singletonList( connector ),
-                Clock.SYSTEM, config, 100 );
+                Clock.SYSTEM, config, AuthTokens.none(), 100 );
 
         Connection conn = pool.acquire( uri );
         conn.close();
@@ -83,14 +85,16 @@ public class InternalConnectionPoolTest
         pool.acquire( uri );
 
         // Then
-        verify( connector, times( 1 ) ).connect( uri, config );
+        verify( connector, times( 1 ) ).connect( uri, config, AuthTokens.none() );
     }
 
     private Connector connector( String scheme )
     {
         Connector mock = mock( Connector.class );
         when( mock.supportedSchemes() ).thenReturn( Collections.singletonList( scheme ) );
-        when( mock.connect( any( URI.class ), any( Config.class ) ) ).thenReturn( mock( Connection.class ) );
+        when( mock.connect( any( URI.class ), any( Config.class ), any( AuthToken.class ) ) ).thenReturn( mock(
+                Connection.class
+        ) );
         return mock;
     }
 }

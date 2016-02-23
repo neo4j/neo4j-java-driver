@@ -18,14 +18,14 @@
  */
 package org.neo4j.driver.v1.integration;
 
-import java.net.URI;
-import java.util.LinkedList;
-import java.util.Queue;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.net.URI;
+import java.util.LinkedList;
+import java.util.Queue;
 
 import org.neo4j.driver.internal.connector.socket.SocketClient;
 import org.neo4j.driver.internal.connector.socket.SocketResponseHandler;
@@ -44,6 +44,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.driver.v1.Values.parameters;
 
 public class SocketClientIT
 {
@@ -74,8 +75,8 @@ public class SocketClientIT
     {
         // Given
         Queue<Message> messages = new LinkedList<>();
-        messages.add( new InitMessage( "EvilClientV1_Hello" ) );
-        messages.add( new InitMessage( "EvilClientV1_World" ) );
+        messages.add( new InitMessage( "EvilClientV1_Hello", parameters() ) );
+        messages.add( new InitMessage( "EvilClientV1_World", parameters() ) );
 
         SocketResponseHandler handler = mock( SocketResponseHandler.class );
         when( handler.protocolViolationErrorOccurred() ).thenReturn( true );

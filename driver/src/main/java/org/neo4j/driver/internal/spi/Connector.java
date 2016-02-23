@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.spi;
 import java.net.URI;
 import java.util.Collection;
 
+import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
@@ -43,9 +44,10 @@ public interface Connector
      *
      * @param sessionURL a URL identifying a remote session
      * @param config a configuration for this connection
+     * @param authToken
      * @return a Connection object
      */
-    Connection connect( URI sessionURL, Config config ) throws ClientException;
+    Connection connect( URI sessionURL, Config config, AuthToken authToken ) throws ClientException;
 
     /** List names of supported schemes, used for error messages and similar signaling to end users. */
     Collection<String> supportedSchemes();
