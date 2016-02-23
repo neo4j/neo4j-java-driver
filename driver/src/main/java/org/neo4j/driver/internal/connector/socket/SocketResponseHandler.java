@@ -176,7 +176,10 @@ public class SocketResponseHandler implements MessageHandler
     public void handleIgnoredMessage()
     {
         StreamCollector collector = collectors.remove();
-        collector.done();
+        if (collector != null)
+        {
+            collector.done();
+        }
     }
 
     @Override
