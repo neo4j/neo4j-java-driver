@@ -314,9 +314,9 @@ public class DumpMessage
         }
 
         @Override
-        public void handleInitMessage( String clientNameAndVersion ) throws IOException
+        public void handleInitMessage( String clientNameAndVersion, Map<String,Value> authToken ) throws IOException
         {
-            outcome.add( new InitMessage( clientNameAndVersion ) );
+            outcome.add( new InitMessage( clientNameAndVersion, authToken ) );
         }
 
         @Override

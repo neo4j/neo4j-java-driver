@@ -34,7 +34,6 @@ import org.neo4j.driver.internal.InternalPath;
 import org.neo4j.driver.internal.InternalRelationship;
 import org.neo4j.driver.internal.connector.socket.ChunkedInput;
 import org.neo4j.driver.internal.connector.socket.ChunkedOutput;
-import org.neo4j.driver.internal.packstream.BufferedChannelOutput;
 import org.neo4j.driver.internal.packstream.PackInput;
 import org.neo4j.driver.internal.packstream.PackOutput;
 import org.neo4j.driver.internal.packstream.PackStream;
@@ -105,11 +104,6 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         private final PackStream.Packer packer;
         private final Runnable onMessageComplete;
 
-        public Writer()
-        {
-            this( new BufferedChannelOutput( 8192 ), new NoOpRunnable() );
-        }
-
         /**
          * @param output interface to write messages to
          * @param onMessageComplete invoked for each message, after it's done writing to the output
@@ -121,10 +115,11 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         }
 
         @Override
-        public void handleInitMessage( String clientNameAndVersion ) throws IOException
+        public void handleInitMessage( String clientNameAndVersion, Map<String,Value> authToken ) throws IOException
         {
             packer.packStructHeader( 1, MSG_INIT );
             packer.pack( clientNameAndVersion );
+            packRawMap( authToken );
             onMessageComplete.run();
         }
 
@@ -445,7 +440,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
 
         private void unpackInitMessage( MessageHandler handler ) throws IOException
         {
-            handler.handleInitMessage( unpacker.unpackString() );
+            handler.handleInitMessage( unpacker.unpackString(), unpackMap() );
             onMessageComplete.run();
         }
 

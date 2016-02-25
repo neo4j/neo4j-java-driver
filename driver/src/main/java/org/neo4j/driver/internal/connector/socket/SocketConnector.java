@@ -21,11 +21,16 @@ package org.neo4j.driver.internal.connector.socket;
 import java.net.URI;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 
 import org.neo4j.driver.internal.Version;
+import org.neo4j.driver.internal.auth.InternalAuthToken;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.Connector;
 import org.neo4j.driver.v1.Config;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.AuthToken;
+import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
 public class SocketConnector implements Connector
@@ -40,11 +45,11 @@ public class SocketConnector implements Connector
     }
 
     @Override
-    public Connection connect( URI sessionURI, Config config ) throws ClientException
+    public Connection connect( URI sessionURI, Config config, AuthToken authToken ) throws ClientException
     {
         int port = sessionURI.getPort() == -1 ? DEFAULT_PORT : sessionURI.getPort();
         SocketConnection conn = new SocketConnection( sessionURI.getHost(), port, config );
-        conn.init( "bolt-java-driver/" + Version.driverVersion() );
+        conn.init( "bolt-java-driver/" + Version.driverVersion(), tokenAsMap( authToken ) );
         return conn;
     }
 
@@ -52,5 +57,18 @@ public class SocketConnector implements Connector
     public Collection<String> supportedSchemes()
     {
         return Collections.singletonList( SCHEME );
+    }
+
+    private Map<String,Value> tokenAsMap( AuthToken token )
+    {
+        if( token instanceof InternalAuthToken )
+        {
+            return ((InternalAuthToken) token).toMap();
+        }
+        else
+        {
+            throw new ClientException( "Unknown authentication token, `" + token + "`. Please use one of the supported " +
+                                       "tokens from `" + AuthTokens.class.getSimpleName() + "`." );
+        }
     }
 }

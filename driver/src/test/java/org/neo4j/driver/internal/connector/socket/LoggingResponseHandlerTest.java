@@ -18,27 +18,25 @@
  */
 package org.neo4j.driver.internal.connector.socket;
 
-import java.util.HashMap;
-
 import org.junit.Test;
 
+import java.util.HashMap;
+
 import org.neo4j.driver.internal.logging.DevNullLogger;
-import org.neo4j.driver.internal.messaging.ResetMessage;
 import org.neo4j.driver.internal.messaging.DiscardAllMessage;
 import org.neo4j.driver.internal.messaging.FailureMessage;
 import org.neo4j.driver.internal.messaging.IgnoredMessage;
 import org.neo4j.driver.internal.messaging.InitMessage;
 import org.neo4j.driver.internal.messaging.Message;
-import org.neo4j.driver.internal.messaging.MessageHandler;
 import org.neo4j.driver.internal.messaging.PullAllMessage;
 import org.neo4j.driver.internal.messaging.RecordMessage;
+import org.neo4j.driver.internal.messaging.ResetMessage;
 import org.neo4j.driver.internal.messaging.RunMessage;
 import org.neo4j.driver.internal.messaging.SuccessMessage;
 import org.neo4j.driver.internal.spi.StreamCollector;
 import org.neo4j.driver.v1.Value;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.driver.v1.Values.parameters;
 
 public class LoggingResponseHandlerTest
@@ -59,11 +57,11 @@ public class LoggingResponseHandlerTest
     public void shouldLogInitMessage() throws Throwable
     {
         // When
-        handler.handleInitMessage( "client" );
+        handler.handleInitMessage( "client", parameters());
 
         // Then
         assertEquals( "S: [INIT \"client\"]", log );
-        assertEquals( format( new InitMessage( "client" ) ), log );
+        assertEquals( format( new InitMessage( "client", parameters() ) ), log );
     }
 
     @Test

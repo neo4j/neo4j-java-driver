@@ -40,9 +40,9 @@ public class LoggingResponseHandler extends SocketResponseHandler
     }
 
     @Override
-    public void handleInitMessage( String clientNameAndVersion )
+    public void handleInitMessage( String clientNameAndVersion, Map<String,Value> authToken )
     {
-        super.handleInitMessage( clientNameAndVersion );
+        super.handleInitMessage( clientNameAndVersion, authToken );
         logger.debug( "S: [INIT \"%s\"]", clientNameAndVersion );
     }
 

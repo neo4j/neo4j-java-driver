@@ -18,21 +18,21 @@
  */
 package org.neo4j.driver.v1.util;
 
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URL;
-
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
 
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Session;
 
 public class TestNeo4j implements TestRule
 {
-    private final Neo4jSettings initialSettings = Neo4jSettings.DEFAULT;
+    private Neo4jSettings settings = Neo4jSettings.DEFAULT;
     private Neo4jRunner runner;
 
     @Override
@@ -44,7 +44,7 @@ public class TestNeo4j implements TestRule
             public void evaluate() throws Throwable
             {
                 runner = Neo4jRunner.getOrCreateGlobalRunner();
-                if ( !runner.ensureRunning( initialSettings ) )
+                if ( !runner.ensureRunning( settings ) )
                 {
                     try ( Session session = driver().session() )
                     {
@@ -95,5 +95,11 @@ public class TestNeo4j implements TestRule
     public void restartServerOnEmptyDatabase( Neo4jSettings neo4jSettings ) throws Exception
     {
         runner.restart( neo4jSettings );
+    }
+
+    public TestNeo4j withSettings( Neo4jSettings settings )
+    {
+        this.settings = settings;
+        return this;
     }
 }

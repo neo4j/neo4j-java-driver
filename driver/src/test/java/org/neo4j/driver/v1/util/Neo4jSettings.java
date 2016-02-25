@@ -26,6 +26,9 @@ import static org.neo4j.driver.internal.util.Iterables.map;
 
 public class Neo4jSettings
 {
+    public static final String AUTH_ENABLED = "dbms.security.auth_enabled";
+    public static final String AUTH_FILE = "dbms.security.auth_store.location";
+
     private static final String TLS_CERT_KEY = "dbms.security.tls_certificate_file";
     private static final String TLS_KEY_KEY = "dbms.security.tls_key_file";
 
@@ -39,7 +42,8 @@ public class Neo4jSettings
 
     public static Neo4jSettings DEFAULT = new Neo4jSettings( map(
             TLS_CERT_KEY, DEFAULT_TLS_CERT_PATH,
-            TLS_KEY_KEY, DEFAULT_TLS_KEY_PATH) );
+            TLS_KEY_KEY, DEFAULT_TLS_KEY_PATH,
+            AUTH_ENABLED, "false" ) );
 
     private Neo4jSettings( Map<String, String> settings )
     {
@@ -54,6 +58,11 @@ public class Neo4jSettings
     public Neo4jSettings updateWith( Neo4jSettings other )
     {
         return updateWith( other.settings );
+    }
+
+    public Neo4jSettings updateWith( String key, String value )
+    {
+        return updateWith( map(key, value) );
     }
 
     private Neo4jSettings updateWith( Map<String,String> updates )
@@ -75,7 +84,6 @@ public class Neo4jSettings
         Neo4jSettings that = (Neo4jSettings) o;
 
         return settings.equals( that.settings );
-
     }
 
     public Neo4jSettings usingEncryptionKeyAndCert( File key, File cert )

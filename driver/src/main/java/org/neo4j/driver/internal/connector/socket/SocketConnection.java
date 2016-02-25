@@ -66,9 +66,9 @@ public class SocketConnection implements Connection
     }
 
     @Override
-    public void init( String clientName )
+    public void init( String clientName, Map<String,Value> authToken )
     {
-        queueMessage( new InitMessage( clientName ), StreamCollector.NO_OP );
+        queueMessage( new InitMessage( clientName, authToken ), StreamCollector.NO_OP );
     }
 
     @Override

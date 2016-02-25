@@ -27,10 +27,10 @@ import org.neo4j.driver.internal.connector.socket.SocketClient;
 import org.neo4j.driver.internal.logging.DevNullLogger;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static java.lang.String.format;
-
 import static org.neo4j.driver.internal.ConfigTest.deleteDefaultKnownCertFileIfExists;
 import static org.neo4j.driver.v1.util.FileTools.deleteRecursively;
 import static org.neo4j.driver.v1.util.FileTools.updateProperties;
@@ -157,7 +157,7 @@ public class Neo4jRunner
             throw new IllegalStateException( "Failed to start server" );
         }
         awaitServerStatusOrFail( ServerStatus.ONLINE );
-        currentDriver = new Driver( serverURI(), testConfig );
+        currentDriver = GraphDatabase.driver( serverURI(), testConfig );
     }
 
     private boolean updateServerSettings( Neo4jSettings settingsUpdate )

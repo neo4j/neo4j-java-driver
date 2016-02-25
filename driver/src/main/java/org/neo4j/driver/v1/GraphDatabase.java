@@ -20,6 +20,8 @@ package org.neo4j.driver.v1;
 
 import java.net.URI;
 
+import org.neo4j.driver.internal.InternalDriver;
+
 /**
  * Creates {@link Driver drivers}, optionally letting you {@link #driver(URI, Config)} to configure them.
  * @see Driver
@@ -57,7 +59,7 @@ public class GraphDatabase
      */
     public static Driver driver( URI url, Config config )
     {
-        return new Driver( url, config );
+        return driver( url, AuthTokens.none(), config );
     }
 
     /**
@@ -70,5 +72,55 @@ public class GraphDatabase
     public static Driver driver( String url, Config config )
     {
         return driver( URI.create( url ), config );
+    }
+
+    /**
+     * Return a driver for a Neo4j instance with the default configuration settings
+     *
+     * @param url the URL to a Neo4j instance
+     * @param authToken authentication to use, see {@link AuthTokens}
+     * @return a new driver to the database instance specified by the URL
+     */
+    public static Driver driver( String url, AuthToken authToken )
+    {
+        return driver( url, authToken, Config.defaultConfig() );
+    }
+
+    /**
+     * Return a driver for a Neo4j instance with the default configuration settings
+     *
+     * @param url the URL to a Neo4j instance
+     * @param authToken authentication to use, see {@link AuthTokens}
+     * @return a new driver to the database instance specified by the URL
+     */
+    public static Driver driver( URI url, AuthToken authToken )
+    {
+        return driver( url, authToken, Config.defaultConfig() );
+    }
+
+    /**
+     * Return a driver for a Neo4j instance with custom configuration.
+     *
+     * @param url the URL to a Neo4j instance
+     * @param authToken authentication to use, see {@link AuthTokens}
+     * @param config user defined configuration
+     * @return a new driver to the database instance specified by the URL
+     */
+    public static Driver driver( String url, AuthToken authToken, Config config )
+    {
+        return driver( URI.create( url ), authToken, config );
+    }
+
+    /**
+     * Return a driver for a Neo4j instance with custom configuration.
+     *
+     * @param url the URL to a Neo4j instance
+     * @param authToken authentication to use, see {@link AuthTokens}
+     * @param config user defined configuration
+     * @return a new driver to the database instance specified by the URL
+     */
+    public static Driver driver( URI url, AuthToken authToken, Config config )
+    {
+        return new InternalDriver( url, authToken, config );
     }
 }
