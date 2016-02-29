@@ -82,16 +82,13 @@ public class SocketResponseHandler implements MessageHandler
     public void handleSuccessMessage( Map<String,Value> meta )
     {
         StreamCollector collector = collectors.remove();
-        if ( collector != null )
-        {
-            collectFields( collector, meta.get( "fields" ) );
-            collectType( collector, meta.get( "type" ) );
-            collectStatistics( collector, meta.get( "stats" ) );
-            collectPlan( collector, meta.get( "plan" ) );
-            collectProfile( collector, meta.get( "profile" ) );
-            collectNotifications( collector, meta.get( "notifications" ) );
-            collector.done();
-        }
+        collectFields( collector, meta.get( "fields" ) );
+        collectType( collector, meta.get( "type" ) );
+        collectStatistics( collector, meta.get( "stats" ) );
+        collectPlan( collector, meta.get( "plan" ) );
+        collectProfile( collector, meta.get( "profile" ) );
+        collectNotifications( collector, meta.get( "notifications" ) );
+        collector.done();
     }
 
     private void collectNotifications( StreamCollector collector, Value notifications )
@@ -121,7 +118,7 @@ public class SocketResponseHandler implements MessageHandler
 
     private void collectFields( StreamCollector collector, Value fieldValue )
     {
-        if (fieldValue != null)
+        if ( fieldValue != null )
         {
             if ( !fieldValue.isEmpty() )
             {
@@ -211,6 +208,8 @@ public class SocketResponseHandler implements MessageHandler
 
     public void appendResultCollector( StreamCollector collector )
     {
+        assert collector != null;
+
         collectors.add( collector );
     }
 

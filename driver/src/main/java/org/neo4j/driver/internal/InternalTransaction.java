@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.StreamCollector;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.v1.ResultCursor;
 import org.neo4j.driver.v1.Statement;
@@ -68,7 +69,7 @@ public class InternalTransaction implements Transaction
         this.cleanup = cleanup;
 
         // Note there is no sync here, so this will just value queued locally
-        conn.run( "BEGIN", Collections.<String, Value>emptyMap(), null );
+        conn.run( "BEGIN", Collections.<String, Value>emptyMap(), StreamCollector.NO_OP );
         conn.discardAll();
     }
 
@@ -106,7 +107,7 @@ public class InternalTransaction implements Transaction
             {
                 if ( state == State.MARKED_SUCCESS )
                 {
-                    conn.run( "COMMIT", Collections.<String, Value>emptyMap(), null );
+                    conn.run( "COMMIT", Collections.<String, Value>emptyMap(), StreamCollector.NO_OP );
                     conn.discardAll();
                     conn.sync();
                     state = State.SUCCEEDED;
@@ -115,7 +116,7 @@ public class InternalTransaction implements Transaction
                 {
                     // If alwaysValid of the things we've put in the queue have been sent off, there is no need to
                     // do this, we could just clear the queue. Future optimization.
-                    conn.run( "ROLLBACK", Collections.<String, Value>emptyMap(), null );
+                    conn.run( "ROLLBACK", Collections.<String, Value>emptyMap(), StreamCollector.NO_OP );
                     conn.discardAll();
                     conn.sync();
                     state = State.ROLLED_BACK;
