@@ -95,7 +95,7 @@ public class CredentialsIT
                         "scheme", "basic",
                         "principal", "neo4j",
                         "credentials", "neo4j",
-                        "new-credentials", password ) ) );
+                        "new_credentials", password ) ) );
         Session sess = setPassword.session();
         sess.run( "RETURN 1" ).close();
         sess.close();
