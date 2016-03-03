@@ -38,22 +38,18 @@ import org.neo4j.driver.v1.ResultCursor;
 import org.neo4j.driver.v1.ResultSummary;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementType;
-import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.UpdateStatistics;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
 
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
-
 import static org.neo4j.driver.v1.Records.recordAsIs;
 
 public class InternalResultCursor extends InternalRecordAccessor implements ResultCursor
 {
     private final Connection connection;
-    private final Transaction transaction;
     private final StreamCollector runResponseCollector;
     private final StreamCollector pullAllResponseCollector;
     private final Queue<Record> recordBuffer = new LinkedList<>();
@@ -67,10 +63,9 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
     private long limit = -1;
     private boolean done = false;
 
-    public InternalResultCursor( Connection connection, Transaction tx, String statement, Map<String, Value> parameters )
+    public InternalResultCursor( Connection connection, String statement, Map<String,Value> parameters )
     {
         this.connection = connection;
-        this.transaction = tx;
         this.runResponseCollector = newRunResponseCollector();
         this.pullAllResponseCollector = newPullAllResponseCollector( new Statement( statement, parameters ) );
     }
@@ -176,22 +171,6 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
         return pullAllResponseCollector;
     }
 
-    private void receiveOne()
-    {
-        try
-        {
-            connection.receiveOne();
-        }
-        catch ( Neo4jException ex )
-        {
-            if (transaction != null)
-            {
-                transaction.defunct();
-            }
-            throw ex;
-        }
-    }
-
     @Override
     public boolean isOpen()
     {
@@ -222,8 +201,9 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
 
     public List<String> keys()
     {
-        while (keys == null && !done) {
-            receiveOne();
+        while (keys == null && !done)
+        {
+            connection.receiveOne();
         }
         return keys;
     }
@@ -273,7 +253,7 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
         {
             while ( recordBuffer.isEmpty() && !done )
             {
-                receiveOne();
+                connection.receiveOne();
             }
             return recordBuffer.isEmpty() && done;
         }
@@ -302,7 +282,7 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
         {
             while ( recordBuffer.isEmpty() && !done )
             {
-                receiveOne();
+                connection.receiveOne();
             }
             return next();
         }
@@ -419,7 +399,7 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
         {
             while ( recordBuffer.isEmpty() && !done )
             {
-                receiveOne();
+                connection.receiveOne();
             }
             return peek();
         }
@@ -499,7 +479,7 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
         recordBuffer.clear();
         while ( !done )
         {
-            receiveOne();
+            connection.receiveOne();
         }
     }
 

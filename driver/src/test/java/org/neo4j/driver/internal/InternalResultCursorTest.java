@@ -503,7 +503,7 @@ public class InternalResultCursorTest
         Connection connection = mock( Connection.class );
         String statement = "<unknown>";
 
-        InternalResultCursor cursor = new InternalResultCursor( connection, null, statement, ParameterSupport.NO_PARAMETERS );
+        InternalResultCursor cursor = new InternalResultCursor( connection, statement, ParameterSupport.NO_PARAMETERS );
         cursor.runResponseCollector().keys( new String[]{"k1", "k2"} );
         cursor.runResponseCollector().done();
         for ( int i = 1; i <= numberOfRecords; i++ )
@@ -514,7 +514,7 @@ public class InternalResultCursorTest
 
         connection.run( statement, ParameterSupport.NO_PARAMETERS, cursor.runResponseCollector() );
         connection.pullAll( cursor.pullAllResponseCollector() );
-        connection.sendAll();
+        connection.flush();
         return cursor;
     }
 

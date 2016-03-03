@@ -47,7 +47,7 @@ public class InternalSession implements Session
         }
     };
 
-    private Transaction currentTransaction;
+    private InternalTransaction currentTransaction;
     private boolean isOpen = true;
 
     public InternalSession( Connection connection, Logger logger )
@@ -60,10 +60,10 @@ public class InternalSession implements Session
     public ResultCursor run( String statementText, Map<String,Value> statementParameters )
     {
         ensureConnectionIsValid();
-        InternalResultCursor cursor = new InternalResultCursor( connection, null, statementText, statementParameters );
+        InternalResultCursor cursor = new InternalResultCursor( connection, statementText, statementParameters );
         connection.run( statementText, statementParameters, cursor.runResponseCollector() );
         connection.pullAll( cursor.pullAllResponseCollector() );
-        connection.sendAll();
+        connection.flush();
         return cursor;
     }
 
@@ -114,7 +114,17 @@ public class InternalSession implements Session
     public Transaction beginTransaction()
     {
         ensureConnectionIsValid();
-        return currentTransaction = new InternalTransaction( connection, txCleanup );
+        currentTransaction = new InternalTransaction( connection, txCleanup );
+        connection.onError( new Runnable() {
+            @Override
+            public void run()
+            {
+                currentTransaction.markAsRolledBack();
+                currentTransaction = null;
+                connection.onError( null );
+            }
+        });
+        return currentTransaction;
     }
 
     @Override

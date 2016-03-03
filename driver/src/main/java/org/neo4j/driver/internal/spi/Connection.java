@@ -67,12 +67,7 @@ public interface Connection extends AutoCloseable
     /**
      * Send all pending messages to the server and return the number of messages sent.
      */
-    int sendAll();
-
-    /**
-     * Receive all expected responses for any previous messages sent and return the number received.
-     */
-    int receiveAll();
+    void flush();
 
     /**
      * Receive the next message available.
@@ -92,4 +87,12 @@ public interface Connection extends AutoCloseable
      */
     boolean isOpen();
 
+    /**
+     * If there are any errors that occur on this connection, invoke the given
+     * runnable. This is used in the driver to clean up resources associated with
+     * the connection, like an open transaction.
+     *
+     * @param runnable
+     */
+    void onError( Runnable runnable );
 }

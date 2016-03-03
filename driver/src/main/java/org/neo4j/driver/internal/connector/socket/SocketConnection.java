@@ -41,7 +41,6 @@ import static org.neo4j.driver.internal.messaging.DiscardAllMessage.DISCARD_ALL;
 
 public class SocketConnection implements Connection
 {
-    private final Logger logger;
 
     private final Queue<Message> pendingMessages = new LinkedList<>();
     private final SocketResponseHandler responseHandler;
@@ -50,7 +49,7 @@ public class SocketConnection implements Connection
 
     public SocketConnection( String host, int port, Config config )
     {
-        this.logger = config.logging().getLog( getClass().getName() );
+        Logger logger = config.logging().getLog( getClass().getName() );
 
         if( logger.isDebugEnabled() )
         {
@@ -98,18 +97,16 @@ public class SocketConnection implements Connection
     @Override
     public void sync()
     {
-        if ( sendAll() > 0 )
-        {
-            receiveAll();
-        }
+        flush();
+        receiveAll();
     }
 
     @Override
-    public int sendAll()
+    public void flush()
     {
         try
         {
-            return socket.sendAll( pendingMessages );
+            socket.send( pendingMessages );
         }
         catch ( IOException e )
         {
@@ -118,36 +115,16 @@ public class SocketConnection implements Connection
         }
     }
 
-    @Override
-    public int receiveAll()
+    private void receiveAll()
     {
         try
         {
-            int messageCount = socket.receiveAll( responseHandler );
-            if ( responseHandler.serverFailureOccurred() )
-            {
-                reset( StreamCollector.NO_OP );
-                Neo4jException exception = responseHandler.serverFailure();
-                responseHandler.clearError();
-                throw exception;
-            }
-            return messageCount;
+            socket.receiveAll( responseHandler );
+            assertNoServerFailure();
         }
         catch ( IOException e )
         {
-            String message = e.getMessage();
-            if ( message == null )
-            {
-                throw new ClientException( "Unable to read response from server: " + e.getClass().getSimpleName(), e );
-            }
-            else if ( e instanceof SocketTimeoutException )
-            {
-                throw new ClientException( "Server did not reply within the network timeout limit.", e );
-            }
-            else
-            {
-                throw new ClientException( "Unable to read response from server: " + message, e );
-            }
+            throw mapRecieveError( e );
         }
     }
 
@@ -157,29 +134,39 @@ public class SocketConnection implements Connection
         try
         {
             socket.receiveOne( responseHandler );
-            if ( responseHandler.serverFailureOccurred() )
-            {
-                reset( StreamCollector.NO_OP );
-                Neo4jException exception = responseHandler.serverFailure();
-                responseHandler.clearError();
-                throw exception;
-            }
+            assertNoServerFailure();
         }
         catch ( IOException e )
         {
-            String message = e.getMessage();
-            if ( message == null )
-            {
-                throw new ClientException( "Unable to read response from server: " + e.getClass().getSimpleName(), e );
-            }
-            else if ( e instanceof SocketTimeoutException )
-            {
-                throw new ClientException( "Server did not reply within the network timeout limit.", e );
-            }
-            else
-            {
-                throw new ClientException( "Unable to read response from server: " + message, e );
-            }
+            throw mapRecieveError( e );
+        }
+    }
+
+    private void assertNoServerFailure()
+    {
+        if ( responseHandler.serverFailureOccurred() )
+        {
+            reset( StreamCollector.NO_OP );
+            Neo4jException exception = responseHandler.serverFailure();
+            responseHandler.clearError();
+            throw exception;
+        }
+    }
+
+    private ClientException mapRecieveError( IOException e )
+    {
+        String message = e.getMessage();
+        if ( message == null )
+        {
+            return new ClientException( "Unable to read response from server: " + e.getClass().getSimpleName(), e );
+        }
+        else if ( e instanceof SocketTimeoutException )
+        {
+            return new ClientException( "Server did not reply within the network timeout limit.", e );
+        }
+        else
+        {
+            return new ClientException( "Unable to read response from server: " + message, e );
         }
     }
 
@@ -199,5 +186,11 @@ public class SocketConnection implements Connection
     public boolean isOpen()
     {
         return socket.isOpen();
+    }
+
+    @Override
+    public void onError( Runnable runnable )
+    {
+        throw new UnsupportedOperationException( "Error subscribers are not supported on SocketConnection." );
     }
 }
