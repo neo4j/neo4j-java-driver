@@ -41,7 +41,6 @@ import static org.neo4j.driver.internal.messaging.DiscardAllMessage.DISCARD_ALL;
 
 public class SocketConnection implements Connection
 {
-
     private final Queue<Message> pendingMessages = new LinkedList<>();
     private final SocketResponseHandler responseHandler;
 
