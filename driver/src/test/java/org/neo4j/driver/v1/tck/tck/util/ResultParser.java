@@ -1,15 +1,15 @@
 /**
  * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
- *
+ * <p>
  * This file is part of Neo4j.
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -195,7 +195,7 @@ public class ResultParser
 
     private static Map<String,Value> getProperties( String input )
     {
-        Map<String,Object> result = getMapOfObjects( input );
+        Map<String,Object> result = getMapOfObjects( input, false );
         HashMap<String,Value> properties = new HashMap<>();
         for ( String key : result.keySet() )
         {
@@ -298,6 +298,38 @@ public class ResultParser
         }
     }
 
+    public static Object getJavaValueIntAsLong( String value )
+    {
+        return getJavaValue( value, false );
+    }
+
+    public static Object getJavaValueNormalInts( String value )
+    {
+        return getJavaValue( value, true );
+
+    }
+
+    private static Object getJavaValue( String value, boolean normalInts )
+    {
+        if ( isList( value ) )
+        {
+            ArrayList<Object> values = new ArrayList<>();
+            for ( String val : getList( value ) )
+            {
+                values.add( Types.asObject( val ) );
+            }
+            return values;
+        }
+        else if ( isMap( value ) )
+        {
+            return getMapOfObjects( value, normalInts );
+        }
+        else
+        {
+            return Types.asObject( value );
+        }
+    }
+
     public static Map<String,Value> parseExpected( Collection<String> input, List<String> keys )
     {
         assertEquals( keys.size(), input.size() );
@@ -332,7 +364,7 @@ public class ResultParser
         return resultValue.substring( 1, resultValue.length() - 1 ).split( ", " );
     }
 
-    public static Map<String,Object> getMapOfObjects( String input )
+    public static Map<String,Object> getMapOfObjects( String input, boolean normalInts )
     {
         Map<String,Object> properties = new HashMap<>();
         int i1 = input.indexOf( "{" );
@@ -344,8 +376,8 @@ public class ResultParser
         input = input.substring( i1, i2 + 1 );
         try
         {
-            ObjectMapper mapper = new ObjectMapper(  );
-            mapper.configure( DeserializationFeature.USE_LONG_FOR_INTS, true );
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.configure( DeserializationFeature.USE_LONG_FOR_INTS, !normalInts );
             properties = mapper.readValue( input, HashMap.class );
         }
         catch ( IOException e )

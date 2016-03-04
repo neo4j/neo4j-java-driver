@@ -38,13 +38,17 @@ public class Types
         throw new IllegalArgumentException( format( "There is no type: %s", stringType ) );
     }
 
-    public static Object asObject(String object)
+    public static Object asObject( String object )
     {
         return getTypeFromStringConstellation( object ).getJavaValue( object );
     }
 
     public static Type getTypeFromStringConstellation( String object )
     {
+        if ( object.length() == 0 )
+        {
+            throw new IllegalArgumentException( "Cannot find matching type for expression: " + object );
+        }
         if ( object.startsWith( "[:" ) && object.endsWith( "]" ) )
         {
             return Type.Relationship;
