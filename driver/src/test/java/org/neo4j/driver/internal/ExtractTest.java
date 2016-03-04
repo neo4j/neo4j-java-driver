@@ -150,7 +150,7 @@ public class ExtractTest
         Connection connection = mock( Connection.class );
         String statement = "<unknown>";
 
-        InternalResultCursor cursor = new InternalResultCursor( connection, null, statement, ParameterSupport.NO_PARAMETERS );
+        InternalResultCursor cursor = new InternalResultCursor( connection, statement, ParameterSupport.NO_PARAMETERS );
         cursor.runResponseCollector().keys( new String[]{"k1"} );
         cursor.runResponseCollector().done();
         cursor.pullAllResponseCollector().record( new Value[]{value( 42 )} );
@@ -158,7 +158,7 @@ public class ExtractTest
 
         connection.run( statement, ParameterSupport.NO_PARAMETERS, cursor.runResponseCollector() );
         connection.pullAll( cursor.pullAllResponseCollector() );
-        connection.sendAll();
+        connection.flush();
         cursor.first();
 
         // WHEN

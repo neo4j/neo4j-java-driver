@@ -29,10 +29,12 @@ import org.neo4j.driver.v1.exceptions.Neo4jException;
 public class PooledConnection implements Connection
 {
     /** The real connection who will do all the real jobs */
-    private Connection delegate;
+    private final Connection delegate;
     /** A reference to the {@link ThreadCachingPool pool} so that we could return this resource back */
-    private Consumer<PooledConnection> release;
+    private final Consumer<PooledConnection> release;
+
     private boolean unrecoverableErrorsOccurred = false;
+    private Runnable onError = null;
 
     public PooledConnection( Connection delegate, Consumer<PooledConnection> release )
     {
@@ -120,30 +122,15 @@ public class PooledConnection implements Connection
     }
 
     @Override
-    public int sendAll()
+    public void flush()
     {
         try
         {
-            return delegate.sendAll();
+            delegate.flush();
         }
         catch ( RuntimeException e )
         {
             onDelegateException( e );
-            return -1;
-        }
-    }
-
-    @Override
-    public int receiveAll()
-    {
-        try
-        {
-            return delegate.receiveAll();
-        }
-        catch ( RuntimeException e )
-        {
-            onDelegateException( e );
-            return -1;
         }
     }
 
@@ -205,7 +192,17 @@ public class PooledConnection implements Connection
         {
             unrecoverableErrorsOccurred = true;
         }
+        if( onError != null )
+        {
+            onError.run();
+        }
         throw e;
+    }
+
+    @Override
+    public void onError( Runnable runnable )
+    {
+        this.onError = runnable;
     }
 
     private boolean isProtocolViolationError(RuntimeException e )

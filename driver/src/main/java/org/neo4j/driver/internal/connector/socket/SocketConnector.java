@@ -25,6 +25,7 @@ import java.util.Map;
 
 import org.neo4j.driver.internal.Version;
 import org.neo4j.driver.internal.auth.InternalAuthToken;
+import org.neo4j.driver.internal.connector.ConcurrencyGuardingConnection;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.Connector;
 import org.neo4j.driver.v1.Config;
@@ -48,7 +49,11 @@ public class SocketConnector implements Connector
     public Connection connect( URI sessionURI, Config config, AuthToken authToken ) throws ClientException
     {
         int port = sessionURI.getPort() == -1 ? DEFAULT_PORT : sessionURI.getPort();
-        SocketConnection conn = new SocketConnection( sessionURI.getHost(), port, config );
+        Connection conn = new SocketConnection( sessionURI.getHost(), port, config );
+
+        // Because SocketConnection is not thread safe, wrap it in this guard
+        // to ensure concurrent access leads causes application errors
+        conn = new ConcurrencyGuardingConnection( conn );
         conn.init( "bolt-java-driver/" + Version.driverVersion(), tokenAsMap( authToken ) );
         return conn;
     }

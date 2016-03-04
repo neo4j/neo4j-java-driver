@@ -90,7 +90,7 @@ public class SocketClient
         }
     }
 
-    public int sendAll( Queue<Message> messages ) throws IOException
+    public void send( Queue<Message> messages ) throws IOException
     {
         int messageCount = 0;
         while ( true )
@@ -111,18 +111,15 @@ public class SocketClient
         {
             writer.flush();
         }
-        return messageCount;
     }
 
-    public int receiveAll( SocketResponseHandler handler ) throws IOException
+    public void receiveAll( SocketResponseHandler handler ) throws IOException
     {
-        int messageCount = handler.collectorsWaiting();
         // Wait until all pending requests have been replied to
         while ( handler.collectorsWaiting() > 0 )
         {
             receiveOne( handler );
         }
-        return messageCount;
     }
 
     public void receiveOne( SocketResponseHandler handler ) throws IOException

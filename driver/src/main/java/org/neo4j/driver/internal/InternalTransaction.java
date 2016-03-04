@@ -34,9 +34,6 @@ import org.neo4j.driver.v1.exceptions.Neo4jException;
 
 public class InternalTransaction implements Transaction
 {
-    private final Runnable cleanup;
-    private Connection conn;
-
     private enum State
     {
         /** The transaction is running with no explicit success or failure marked */
@@ -60,6 +57,9 @@ public class InternalTransaction implements Transaction
         /** This transaction has been rolled back */
         ROLLED_BACK
     }
+
+    private final Runnable cleanup;
+    private final Connection conn;
 
     private State state = State.ACTIVE;
 
@@ -89,13 +89,6 @@ public class InternalTransaction implements Transaction
         {
             state = State.MARKED_FAILED;
         }
-    }
-
-    @Override
-    public void defunct()
-    {
-        state = State.ROLLED_BACK;
-        conn = null;
     }
 
     @Override
@@ -137,10 +130,10 @@ public class InternalTransaction implements Transaction
 
         try
         {
-            InternalResultCursor cursor = new InternalResultCursor( conn, this, statementText, statementParameters );
+            InternalResultCursor cursor = new InternalResultCursor( conn, statementText, statementParameters );
             conn.run( statementText, statementParameters, cursor.runResponseCollector() );
             conn.pullAll( cursor.pullAllResponseCollector() );
-            conn.sendAll();
+            conn.flush();
             return cursor;
         }
         catch ( Neo4jException e )
@@ -184,5 +177,14 @@ public class InternalTransaction implements Transaction
     public TypeSystem typeSystem()
     {
         return InternalTypeSystem.TYPE_SYSTEM;
+    }
+
+    // TODO: This is wrong. This is only needed because we changed the SSM
+    // to move to IDLE on any exception (so the normal `ROLLBACK` statement won't work).
+    // We should change the SSM to move to some special ROLLBACK_ONLY state instead and
+    // remove this code path
+    public void markAsRolledBack()
+    {
+        state = State.ROLLED_BACK;
     }
 }

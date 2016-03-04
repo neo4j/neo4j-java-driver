@@ -88,7 +88,7 @@ public class SocketClientIT
         client.start();
         try
         {
-            client.sendAll( messages );
+            client.send( messages );
             client.receiveAll( handler );
             fail( "The client should receive a protocol violation error" );
         }
