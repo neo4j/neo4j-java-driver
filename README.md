@@ -27,6 +27,8 @@ Connect to a Neo4j 3.0.0+ database
     
     session.close();
     
+    driver.close();
+
 # Building
 
 ## Java version
