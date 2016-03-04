@@ -35,7 +35,6 @@ import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
-import org.neo4j.driver.v1.tck.tck.util.Types;
 import org.neo4j.driver.v1.tck.tck.util.runners.CypherStatementRunner;
 import org.neo4j.driver.v1.tck.tck.util.runners.MappedParametersRunner;
 import org.neo4j.driver.v1.tck.tck.util.runners.StatementRunner;
@@ -53,10 +52,7 @@ import static org.neo4j.driver.v1.tck.Environment.mappedParametersRunner;
 import static org.neo4j.driver.v1.tck.Environment.runners;
 import static org.neo4j.driver.v1.tck.Environment.statementRunner;
 import static org.neo4j.driver.v1.tck.Environment.stringRunner;
-import static org.neo4j.driver.v1.tck.tck.util.ResultParser.getList;
-import static org.neo4j.driver.v1.tck.tck.util.ResultParser.getMapOfObjects;
-import static org.neo4j.driver.v1.tck.tck.util.ResultParser.isList;
-import static org.neo4j.driver.v1.tck.tck.util.ResultParser.isMap;
+import static org.neo4j.driver.v1.tck.tck.util.ResultParser.getJavaValueIntAsLong;
 import static org.neo4j.driver.v1.tck.tck.util.Types.Type;
 import static org.neo4j.driver.v1.tck.tck.util.Types.getType;
 
@@ -73,10 +69,9 @@ public class DriverComplianceSteps
     }
 
     @Given( "^a value (.*)$" )
-    public void a_value( String value )
-            throws Throwable
+    public void a_value( String value ) throws Throwable
     {
-        expectedJavaValue = getJavaValue( value );
+        expectedJavaValue = getJavaValueIntAsLong( value );
         expectedBoltValue = Values.value( expectedJavaValue );
     }
 
@@ -143,12 +138,12 @@ public class DriverComplianceSteps
     }
 
     @Given( "^a list containing$" )
-    public void a_list_containing( List<String> table ) throws Throwable
+    public static void a_list_containing( List<String> table ) throws Throwable
     {
         List<String> content = table.subList( 1, table.size() - 1 );
         for ( String value : content )
         {
-            listOfObjects.add( getJavaValue( value ) );
+            listOfObjects.add( getJavaValueIntAsLong( value ) );
         }
     }
 
@@ -159,14 +154,14 @@ public class DriverComplianceSteps
     }
 
     @Given( "^a map containing$" )
-    public void a_map_containing( DataTable table ) throws Throwable
+    public static void a_map_containing( DataTable table ) throws Throwable
     {
         Map<String,String> map = table.asMap( String.class, String.class );
         for ( String key : map.keySet() )
         {
             if ( !key.equals( "key" ) )
             {
-                mapOfObjects.put( (String) Type.String.getJavaValue( key ), getJavaValue( map.get( key ) ) );
+                mapOfObjects.put( (String) Type.String.getJavaValue( key ), getJavaValueIntAsLong( map.get( key ) ) );
             }
         }
     }
@@ -190,27 +185,6 @@ public class DriverComplianceSteps
             assertThat( resultBoltValue, equalTo( expectedBoltValue ) );
 
             assertThat( resultJavaValue, equalTo( expectedJavaValue ) );
-        }
-    }
-
-    public Object getJavaValue( String value )
-    {
-        if ( isList( value ) )
-        {
-            ArrayList<Object> values = new ArrayList<>();
-            for ( String val : getList( value ) )
-            {
-                values.add( Types.asObject( val ) );
-            }
-            return values;
-        }
-        else if ( isMap( value ) )
-        {
-            return getMapOfObjects( value );
-        }
-        else
-        {
-            return Types.asObject( value );
         }
     }
 
@@ -251,5 +225,4 @@ public class DriverComplianceSteps
     {
         return session() != null;
     }
-
 }
