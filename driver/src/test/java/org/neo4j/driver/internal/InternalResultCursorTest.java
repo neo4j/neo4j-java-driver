@@ -19,13 +19,16 @@
 package org.neo4j.driver.internal;
 
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
 
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.value.NullValue;
@@ -45,8 +48,8 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-
 import static org.neo4j.driver.v1.Values.value;
 
 public class InternalResultCursorTest
@@ -503,19 +506,68 @@ public class InternalResultCursorTest
         Connection connection = mock( Connection.class );
         String statement = "<unknown>";
 
-        InternalResultCursor cursor = new InternalResultCursor( connection, statement, ParameterSupport.NO_PARAMETERS );
-        cursor.runResponseCollector().keys( new String[]{"k1", "k2"} );
-        cursor.runResponseCollector().done();
+        final InternalResultCursor cursor = new InternalResultCursor( connection, statement, ParameterSupport
+                .NO_PARAMETERS );
+
+        // Each time the cursor calls `recieveOne`, we'll run one of these,
+        // to emulate how messages are handed over to the cursor
+        final LinkedList<Runnable> inboundMessages = new LinkedList<>();
+
+        inboundMessages.add( streamHeadMessage( cursor ) );
         for ( int i = 1; i <= numberOfRecords; i++ )
         {
-            cursor.pullAllResponseCollector().record( new Value[]{value( "v1-" + i ), value( "v2-" + i )} );
+            inboundMessages.add( recordMessage( cursor, i ) );
         }
-        cursor.pullAllResponseCollector().done();
+        inboundMessages.add( streamTailMessage( cursor ) );
 
-        connection.run( statement, ParameterSupport.NO_PARAMETERS, cursor.runResponseCollector() );
-        connection.pullAll( cursor.pullAllResponseCollector() );
-        connection.flush();
+        doAnswer( new Answer()
+        {
+            @Override
+            public Object answer( InvocationOnMock invocationOnMock ) throws Throwable
+            {
+                inboundMessages.poll().run();
+                return null;
+            }
+        }).when( connection ).receiveOne();
+
         return cursor;
+    }
+
+    private Runnable streamTailMessage( final InternalResultCursor cursor )
+    {
+        return new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                cursor.pullAllResponseCollector().done();
+            }
+        };
+    }
+
+    private Runnable recordMessage( final InternalResultCursor cursor, final int val )
+    {
+        return new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                cursor.pullAllResponseCollector().record( new Value[]{value( "v1-" + val ), value( "v2-" + val )} );
+            }
+        };
+    }
+
+    private Runnable streamHeadMessage( final InternalResultCursor cursor )
+    {
+        return new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                cursor.runResponseCollector().keys( new String[]{"k1", "k2"} );
+                cursor.runResponseCollector().done();
+            }
+        };
     }
 
     private List<Value> values( Record record )

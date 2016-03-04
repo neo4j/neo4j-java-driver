@@ -201,17 +201,14 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
 
     public List<String> keys()
     {
-        while (keys == null && !done)
-        {
-            connection.receiveOne();
-        }
+        tryFetching();
         return keys;
     }
 
     @Override
     public int size()
     {
-        return keys.size();
+        return keys().size();
     }
 
     @Override
@@ -251,10 +248,7 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
         }
         else
         {
-            while ( recordBuffer.isEmpty() && !done )
-            {
-                connection.receiveOne();
-            }
+            tryFetching();
             return recordBuffer.isEmpty() && done;
         }
     }
@@ -280,10 +274,7 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
         }
         else
         {
-            while ( recordBuffer.isEmpty() && !done )
-            {
-                connection.receiveOne();
-            }
+            tryFetching();
             return next();
         }
     }
@@ -313,10 +304,12 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
         {
             throw new ClientException( "Cannot limit negative number of elements" );
         }
-        else if ( records == 0) {
+        else if ( records == 0)
+        {
             this.limit = position;
             discard();
-        } else {
+        } else
+        {
             this.limit = records + position;
         }
         return this.limit;
@@ -397,10 +390,7 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
         }
         else
         {
-            while ( recordBuffer.isEmpty() && !done )
-            {
-                connection.receiveOne();
-            }
+            tryFetching();
             return peek();
         }
     }
@@ -470,14 +460,23 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
 
     private boolean isEmpty()
     {
+        tryFetching();
         return position == -1 && recordBuffer.isEmpty() && done;
     }
 
     private void discard()
     {
         assertOpen();
-        recordBuffer.clear();
         while ( !done )
+        {
+            connection.receiveOne();
+        }
+        recordBuffer.clear();
+    }
+
+    private void tryFetching()
+    {
+        while ( recordBuffer.isEmpty() && !done )
         {
             connection.receiveOne();
         }
