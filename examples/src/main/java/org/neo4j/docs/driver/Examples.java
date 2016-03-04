@@ -34,8 +34,6 @@ import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 
-import org.neo4j.driver.v1.Config.TlsAuthenticationConfig;
-
 public class Examples
 {
 
@@ -182,7 +180,8 @@ public class Examples
     public static Driver requireEncryption() throws Exception
     {
         // tag::tls-require-encryption[]
-        Driver driver = GraphDatabase.driver( "bolt://localhost", Config.build().withTlsEnabled( true ).toConfig() );
+        Driver driver = GraphDatabase.driver( "bolt://localhost",
+                Config.build().withEncryptionLevel( Config.EncryptionLevel.REQUIRED ).toConfig() );
         // end::tls-require-encryption[]
 
         return driver;
@@ -191,9 +190,10 @@ public class Examples
     public static Driver trustOnFirstUse() throws Exception
     {
         // tag::tls-trust-on-first-use[]
-        Driver driver = GraphDatabase.driver( "bolt://localhost", Config.build().withTlsEnabled( true )
-                .withTlsAuthConfig( TlsAuthenticationConfig.usingKnownCerts( new File( "/path/to/neo4j_known_hosts" )
-                ) ).toConfig() );
+        Driver driver = GraphDatabase.driver( "bolt://localhost", Config.build()
+                .withEncryptionLevel( Config.EncryptionLevel.NONE )
+                .withTrustStrategy( Config.TrustStrategy.trustOnFirstUse( new File( "/path/to/neo4j_known_hosts" ) ) )
+                .toConfig() );
         // end::tls-trust-on-first-use[]
 
         return driver;
@@ -202,9 +202,10 @@ public class Examples
     public static Driver trustSignedCertificates() throws Exception
     {
         // tag::tls-signed[]
-        Driver driver = GraphDatabase.driver( "bolt://localhost", Config.build().withTlsEnabled( true )
-                .withTlsAuthConfig( TlsAuthenticationConfig.usingTrustedCert( new File( "/path/to/ca-certificate.pem"
-                ) ) ).toConfig() );
+        Driver driver = GraphDatabase.driver( "bolt://localhost", Config.build()
+                .withEncryptionLevel( Config.EncryptionLevel.NONE )
+                .withTrustStrategy( Config.TrustStrategy.trustSignedBy( new File( "/path/to/ca-certificate.pem") ) )
+                .toConfig() );
         // end::tls-signed[]
 
         return driver;

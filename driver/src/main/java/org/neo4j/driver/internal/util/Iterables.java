@@ -52,6 +52,16 @@ public class Iterables
         return list;
     }
 
+    public static Map<String, String> map( String ... alternatingKeyValue )
+    {
+        Map<String, String> out = new HashMap<>();
+        for ( int i = 0; i < alternatingKeyValue.length; i+=2 )
+        {
+            out.put( alternatingKeyValue[i], alternatingKeyValue[i+1] );
+        }
+        return out;
+    }
+
     public static <A,B> Iterable<B> map(final Iterable<A> it, final Function<A,B> f)
     {
         return new Iterable<B>()

@@ -16,54 +16,48 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.messaging;
+package org.neo4j.driver.internal.auth;
 
-import java.io.IOException;
-import java.util.Arrays;
+import java.util.Map;
 
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.AuthToken;
 
-public class RecordMessage implements Message
+/**
+ * A simple common token for authentication schemes that easily convert to
+ * an auth token map
+ */
+public class InternalAuthToken implements AuthToken
 {
-    private final Value[] fields;
+    private final Map<String,Value> content;
 
-    public RecordMessage( Value[] fields )
+    public InternalAuthToken( Map<String,Value> content )
     {
-        this.fields = fields;
+        this.content = content;
     }
 
-    @Override
-    public void dispatch( MessageHandler handler ) throws IOException
+    public Map<String, Value> toMap()
     {
-        handler.handleRecordMessage( fields );
-    }
-
-    @Override
-    public String toString()
-    {
-        return "[RECORD " + Arrays.toString( fields ) + ']';
+        return content;
     }
 
     @Override
     public boolean equals( Object o )
     {
         if ( this == o )
-        {
-            return true;
-        }
+        { return true; }
         if ( o == null || getClass() != o.getClass() )
-        {
-            return false;
-        }
+        { return false; }
 
-        RecordMessage that = (RecordMessage) o;
+        InternalAuthToken that = (InternalAuthToken) o;
 
-        return Arrays.equals( fields, that.fields );
+        return content != null ? content.equals( that.content ) : that.content == null;
+
     }
 
     @Override
     public int hashCode()
     {
-        return Arrays.hashCode( fields );
+        return content != null ? content.hashCode() : 0;
     }
 }

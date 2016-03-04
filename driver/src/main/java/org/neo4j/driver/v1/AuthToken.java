@@ -16,21 +16,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.spi;
+package org.neo4j.driver.v1;
 
-public interface Logger
+/**
+ * This is a combination of a <b>Principal</b>, for instance a username,
+ * and one or more <b>Credentials</b>, for instance a password. It is used
+ * to authenticate with a Neo4j instance. See {@link AuthTokens}
+ * for available types of {@link AuthToken}.
+ *
+ * @see AuthTokens
+ * @see GraphDatabase#driver(String, AuthToken)
+ */
+public interface AuthToken
 {
-    void error( String message, Throwable cause );
 
-    void info( String message, Object... params );
-
-    void warn( String message, Object... params );
-
-    void debug( String message, Object... params );
-
-    void trace( String message, Object... params );
-
-    boolean isTraceEnabled();
-
-    boolean isDebugEnabled();
 }

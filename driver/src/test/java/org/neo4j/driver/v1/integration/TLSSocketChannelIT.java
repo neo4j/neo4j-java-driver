@@ -18,24 +18,22 @@
  */
 package org.neo4j.driver.v1.integration;
 
-import java.io.BufferedReader;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileReader;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.channels.SocketChannel;
 import java.security.cert.X509Certificate;
 import javax.net.ssl.SSLHandshakeException;
-import javax.xml.bind.DatatypeConverter;
 
-import org.junit.Rule;
-import org.junit.Test;
-
-import org.neo4j.driver.internal.ConfigTest;
-import org.neo4j.driver.internal.connector.socket.SSLSocketChannel;
+import org.neo4j.driver.internal.connector.socket.TLSSocketChannel;
 import org.neo4j.driver.internal.spi.Logger;
 import org.neo4j.driver.internal.util.CertificateTool;
 import org.neo4j.driver.v1.Config;
@@ -43,27 +41,36 @@ import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.ResultCursor;
 import org.neo4j.driver.v1.util.CertificateToolTest;
+import org.neo4j.driver.v1.util.Neo4jInstaller;
 import org.neo4j.driver.v1.util.Neo4jRunner;
+import org.neo4j.driver.v1.util.Neo4jSettings;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
+import static java.io.File.createTempFile;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.driver.internal.connector.socket.TrustOnFirstUseTrustManager.fingerprint;
 
-public class SSLSocketChannelIT
+public class TLSSocketChannelIT
 {
     @Rule
     public TestNeo4j neo4j = new TestNeo4j();
 
+    @BeforeClass
+    public static void setup() throws IOException, InterruptedException
+    {
+        /* uncomment for JSSE debugging info */
+//         System.setProperty( "javax.net.debug", "all" );
+    }
+
     @Test
     public void shouldPerformTLSHandshakeWithEmptyKnownCertsFile() throws Throwable
     {
-        File knownCerts = File.createTempFile( "neo4j_known_certs", ".tmp" );
+        File knownCerts = File.createTempFile( "neo4j_known_hosts", ".tmp" );
         knownCerts.deleteOnExit();
 
         performTLSHandshakeUsingKnownCerts( knownCerts );
@@ -77,8 +84,8 @@ public class SSLSocketChannelIT
         channel.connect( new InetSocketAddress( "localhost", 7687 ) );
 
         // When
-        SSLSocketChannel sslChannel =
-                new SSLSocketChannel( "localhost", 7687, channel, logger, Config.TlsAuthenticationConfig.usingKnownCerts( knownCerts ) );
+        TLSSocketChannel sslChannel =
+                new TLSSocketChannel( "localhost", 7687, channel, logger, Config.TrustStrategy.trustOnFirstUse( knownCerts ) );
         sslChannel.close();
 
         // Then
@@ -87,24 +94,83 @@ public class SSLSocketChannelIT
         verify( logger, atLeastOnce() ).debug( "TLS connection closed" );
     }
 
+    private File tempFile(String prefix, String suffix) throws Throwable
+    {
+        File file = createTempFile( prefix, suffix );
+        file.deleteOnExit();
+        return file;
+    }
+
+    @Test
+    public void shouldPerformTLSHandshakeWithTrustedCert() throws Throwable
+    {
+        try
+        {
+            // Given
+            // Create root certificate
+            File rootCert = tempFile( "temp_root_cert", ".cert" );
+            File rootKey = tempFile( "temp_root_key", ".key" );
+
+            CertificateToolTest.SelfSignedCertificateGenerator
+                    certGenerator = new CertificateToolTest.SelfSignedCertificateGenerator();
+            certGenerator.saveSelfSignedCertificate( rootCert );
+            certGenerator.savePrivateKey( rootKey );
+
+            // Generate certificate signing request and get a certificate signed by the root private key
+            File cert = tempFile( "temp_cert", ".cert" );
+            File key = tempFile( "temp_key", ".key" );
+            CertificateToolTest.CertificateSigningRequestGenerator
+                    csrGenerator = new CertificateToolTest.CertificateSigningRequestGenerator();
+            X509Certificate signedCert = certGenerator.sign(
+                    csrGenerator.certificateSigningRequest(), csrGenerator.publicKey() );
+            csrGenerator.savePrivateKey( key );
+            CertificateTool.saveX509Cert( signedCert, cert );
+
+            // Give the server certs to database
+            neo4j.restartServerOnEmptyDatabase(
+                    Neo4jSettings.DEFAULT
+                            .usingEncryptionKeyAndCert( key, cert ) );
+
+            Logger logger = mock( Logger.class );
+            SocketChannel channel = SocketChannel.open();
+            channel.connect( new InetSocketAddress( "localhost", 7687 ) );
+
+            // When
+            TLSSocketChannel sslChannel =
+                    new TLSSocketChannel( "localhost", 7687, channel, logger,
+                            Config.TrustStrategy.trustSignedBy( rootCert ) );
+            sslChannel.close();
+
+            // Then
+            verify( logger, atLeastOnce() ).debug( "TLS connection enabled" );
+            verify( logger, atLeastOnce() ).debug( "TLS connection established" );
+            verify( logger, atLeastOnce() ).debug( "TLS connection closed" );
+        }
+        finally
+        {
+            // always restore the db default settings
+            neo4j.restartServerOnEmptyDatabase( Neo4jSettings.DEFAULT );
+        }
+    }
+
     @Test
     public void shouldFailTLSHandshakeDueToWrongCertInKnownCertsFile() throws Throwable
     {
         // Given
         SocketChannel channel = SocketChannel.open();
         channel.connect( new InetSocketAddress( "localhost", 7687 ) );
-        File knownCerts = File.createTempFile( "neo4j_known_certs", ".tmp" );
+        File knownCerts = File.createTempFile( "neo4j_known_hosts", ".tmp" );
         knownCerts.deleteOnExit();
 
         //create a Fake Cert for the server in knownCert
         createFakeServerCertPairInKnownCerts( "localhost", 7687, knownCerts );
 
         // When & Then
-        SSLSocketChannel sslChannel = null;
+        TLSSocketChannel sslChannel = null;
         try
         {
-            sslChannel = new SSLSocketChannel( "localhost", 7687, channel, mock( Logger.class ),
-                    Config.TlsAuthenticationConfig.usingKnownCerts( knownCerts ) );
+            sslChannel = new TLSSocketChannel( "localhost", 7687, channel, mock( Logger.class ),
+                    Config.TrustStrategy.trustOnFirstUse( knownCerts ) );
             sslChannel.close();
         }
         catch ( SSLHandshakeException e )
@@ -130,7 +196,7 @@ public class SSLSocketChannelIT
         String serverId = ip + ":" + port;
 
         X509Certificate cert = CertificateToolTest.generateSelfSignedCertificate();
-        String certStr = DatatypeConverter.printBase64Binary( cert.getEncoded() );
+        String certStr = fingerprint(cert);
 
         BufferedWriter writer = new BufferedWriter( new FileWriter( knownCerts, true ) );
         writer.write( serverId + "," + certStr );
@@ -150,11 +216,11 @@ public class SSLSocketChannelIT
         CertificateTool.saveX509Cert( aRandomCert, trustedCertFile );
 
         // When & Then
-        SSLSocketChannel sslChannel = null;
+        TLSSocketChannel sslChannel = null;
         try
         {
-            sslChannel = new SSLSocketChannel( "localhost", 7687, channel, mock( Logger.class ),
-                    Config.TlsAuthenticationConfig.usingTrustedCert( trustedCertFile ) );
+            sslChannel = new TLSSocketChannel( "localhost", 7687, channel, mock( Logger.class ),
+                    Config.TrustStrategy.trustSignedBy( trustedCertFile ) );
             sslChannel.close();
         }
         catch ( SSLHandshakeException e )
@@ -173,26 +239,17 @@ public class SSLSocketChannelIT
     }
 
     @Test
-    public void shouldPerformTLSHandshakeWithTrustedServerCert() throws Throwable
+    public void shouldPerformTLSHandshakeWithTheSameTrustedServerCert() throws Throwable
     {
-        // Given
-        File knownCerts = File.createTempFile( "neo4j_known_certs", ".tmp" );
-        knownCerts.deleteOnExit();
-        performTLSHandshakeUsingKnownCerts( knownCerts );
-
-        String certStr = getServerCert( knownCerts );
-
-        File trustedCert = File.createTempFile( "neo4j_trusted_cert", ".tmp" );
-        trustedCert.deleteOnExit();
-        CertificateTool.saveX509Cert( certStr, trustedCert );
 
         Logger logger = mock( Logger.class );
         SocketChannel channel = SocketChannel.open();
         channel.connect( new InetSocketAddress( "localhost", 7687 ) );
 
         // When
-        SSLSocketChannel sslChannel = new SSLSocketChannel( "localhost", 7687, channel, logger,
-                Config.TlsAuthenticationConfig.usingTrustedCert( trustedCert ) );
+        TLSSocketChannel sslChannel = new TLSSocketChannel( "localhost", 7687, channel, logger,
+                Config.TrustStrategy.trustSignedBy(
+                        new File( Neo4jInstaller.neo4jHomeDir, "conf/ssl/snakeoil.cert") ) );
         sslChannel.close();
 
         // Then
@@ -201,27 +258,11 @@ public class SSLSocketChannelIT
         verify( logger, atLeastOnce() ).debug( "TLS connection closed" );
     }
 
-    private String getServerCert( File knownCerts ) throws Throwable
-    {
-        BufferedReader reader = new BufferedReader( new FileReader( knownCerts ) );
-
-        String line = reader.readLine();
-        assertNotNull( line );
-        String[] strings = line.split( "," );
-        assertEquals( 2, strings.length );
-        String certStr = strings[1].trim();
-
-        assertNull( reader.readLine() );
-        reader.close();
-
-        return certStr;
-    }
-
     @Test
     public void shouldEstablishTLSConnection() throws Throwable
     {
-        ConfigTest.deleteDefaultKnownCertFileIfExists();
-        Config config = Config.build().withTlsEnabled( true ).toConfig();
+
+        Config config = Config.build().withEncryptionLevel( Config.EncryptionLevel.REQUIRED ).toConfig();
 
         Driver driver = GraphDatabase.driver(
                 URI.create( Neo4jRunner.DEFAULT_URL ),

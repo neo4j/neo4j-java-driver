@@ -20,10 +20,6 @@ package org.neo4j.driver.v1;
 
 import java.net.URI;
 
-import org.neo4j.driver.internal.InternalSession;
-import org.neo4j.driver.internal.pool.InternalConnectionPool;
-import org.neo4j.driver.internal.spi.ConnectionPool;
-
 /**
  * A Neo4j database driver, through which you can create {@link Session sessions} to run statements against the database.
  * <p>
@@ -70,35 +66,18 @@ import org.neo4j.driver.internal.spi.ConnectionPool;
  * to use the same driver instance across your application. You can control the connection pooling behavior when you
  * create the driver using the {@link Config} you pass into {@link GraphDatabase#driver(URI, Config)}.
  */
-public class Driver implements AutoCloseable
+public interface Driver extends AutoCloseable
 {
-    private final ConnectionPool connections;
-    private final URI url;
-    private final Config config;
-
-    public Driver( URI url, Config config )
-    {
-        this.url = url;
-        this.connections = new InternalConnectionPool( config );
-        this.config = config;
-    }
-
     /**
      * Establish a session
      * @return a session that could be used to run {@link Session#run(String) a statement} or
      * {@link Session#beginTransaction() a transaction }.
      */
-    public Session session()
-    {
-        return new InternalSession( connections.acquire( url ), config.logging().getLog( "session" ) );
-    }
+    Session session();
 
     /**
      * Close all the resources assigned to this driver
      * @throws Exception any error that might happen when releasing all resources
      */
-    public void close() throws Exception
-    {
-        connections.close();
-    }
+    void close() throws Exception;
 }

@@ -18,76 +18,85 @@
  */
 package org.neo4j.driver.v1.util;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.neo4j.driver.internal.util.Iterables.map;
+
 public class Neo4jSettings
 {
-    private final Boolean usingTLS;
+    public static final String AUTH_ENABLED = "dbms.security.auth_enabled";
+    public static final String AUTH_FILE = "dbms.security.auth_store.location";
 
-    public static Neo4jSettings DEFAULT = new Neo4jSettings( false );
+    private static final String TLS_CERT_KEY = "dbms.security.tls_certificate_file";
+    private static final String TLS_KEY_KEY = "dbms.security.tls_key_file";
 
-    private Neo4jSettings( Boolean usingTLS )
+    private static final String DEFAULT_TLS_CERT_PATH = "conf/ssl/snakeoil.cert";
+    private static final String DEFAULT_TLS_KEY_PATH = "conf/ssl/snakeoil.key";
+
+    public static final File DEFAULT_TLS_CERT_FILE = new File( Neo4jInstaller.neo4jHomeDir, DEFAULT_TLS_CERT_PATH );
+
+
+    private final Map<String, String> settings;
+
+    public static Neo4jSettings DEFAULT = new Neo4jSettings( map(
+            TLS_CERT_KEY, DEFAULT_TLS_CERT_PATH,
+            TLS_KEY_KEY, DEFAULT_TLS_KEY_PATH,
+            AUTH_ENABLED, "false" ) );
+
+    private Neo4jSettings( Map<String, String> settings )
     {
-        this.usingTLS = usingTLS;
+        this.settings = settings;
     }
 
-    public Neo4jSettings usingTLS( Boolean usingTLS )
+    public Map<String, String> propertiesMap()
     {
-        return new Neo4jSettings( usingTLS );
+        return settings;
     }
 
-    public Boolean isUsingTLS()
+    public Neo4jSettings updateWith( Neo4jSettings other )
     {
-        return usingTLS;
+        return updateWith( other.settings );
+    }
+
+    public Neo4jSettings updateWith( String key, String value )
+    {
+        return updateWith( map(key, value) );
+    }
+
+    private Neo4jSettings updateWith( Map<String,String> updates )
+    {
+        HashMap<String,String> newSettings = new HashMap<>( settings );
+        for ( Map.Entry<String,String> entry : updates.entrySet() )
+        {
+            newSettings.put( entry.getKey(), entry.getValue() );
+        }
+        return new Neo4jSettings( newSettings );
     }
 
     @Override
     public boolean equals( Object o )
     {
-        if ( this == o )
-        {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() )
-        {
-            return false;
-        }
+        if ( this == o ) { return true; }
+        if ( o == null || getClass() != o.getClass() ) { return false; }
 
         Neo4jSettings that = (Neo4jSettings) o;
 
-        return !(usingTLS != null ? !usingTLS.equals( that.usingTLS ) : that.usingTLS != null);
+        return settings.equals( that.settings );
+    }
 
+    public Neo4jSettings usingEncryptionKeyAndCert( File key, File cert )
+    {
+        return updateWith( map(
+                TLS_CERT_KEY, cert.getAbsolutePath(),
+                TLS_KEY_KEY, key.getAbsolutePath()
+        ));
     }
 
     @Override
     public int hashCode()
     {
-        return usingTLS != null ? usingTLS.hashCode() : 0;
-    }
-
-    public Map<String, Object> propertiesMap()
-    {
-        Map<String, Object> props = new HashMap<>( 1 );
-        putProperty( props, "dbms.bolt.tls.enabled", usingTLS );
-        return props;
-    }
-
-    public Neo4jSettings updateWith( Neo4jSettings other )
-    {
-        return new Neo4jSettings( updateWith( usingTLS, other.isUsingTLS() ) );
-    }
-
-    private void putProperty( Map<String, Object> props, String key, Object value )
-    {
-        if ( value != null )
-        {
-            props.put( key, value );
-        }
-    }
-
-    private <T> T updateWith( T left, T right )
-    {
-        return right == null ? left : right;
+        return settings.hashCode();
     }
 }

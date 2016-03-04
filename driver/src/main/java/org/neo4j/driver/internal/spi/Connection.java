@@ -31,8 +31,9 @@ public interface Connection extends AutoCloseable
     /**
      * Initialize the connection. This must be done before any other action is allowed.
      * @param clientName should be the driver name and version: "java-driver/1.0.0"
+     * @param authToken
      */
-    void init( String clientName );
+    void init( String clientName, Map<String,Value> authToken );
 
     /**
      * Queue up a run action. The collector will value called with metadata about the stream that will become available
@@ -63,6 +64,21 @@ public interface Connection extends AutoCloseable
      */
     void sync();
 
+    /**
+     * Send all pending messages to the server and return the number of messages sent.
+     */
+    int sendAll();
+
+    /**
+     * Receive all expected responses for any previous messages sent and return the number received.
+     */
+    int receiveAll();
+
+    /**
+     * Receive the next message available.
+     */
+    void receiveOne();
+
     @Override
     void close();
 
@@ -75,4 +91,5 @@ public interface Connection extends AutoCloseable
      * @return true if the socket connection with the server is open, otherwise false.
      */
     boolean isOpen();
+
 }

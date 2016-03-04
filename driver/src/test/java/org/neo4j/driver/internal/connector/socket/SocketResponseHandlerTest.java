@@ -48,13 +48,11 @@ public class SocketResponseHandlerTest
 {
     private final SocketResponseHandler handler = new SocketResponseHandler();
     private final StreamCollector collector = mock( StreamCollector.class );
-    private final StreamCollector otherCollector = mock( StreamCollector.class );
 
     @Before
     public void setup()
     {
-        handler.registerResultCollector( 0, collector );
-        handler.registerResultCollector( 1, otherCollector );
+        handler.appendResultCollector( collector );
     }
 
     @Test
@@ -68,8 +66,6 @@ public class SocketResponseHandlerTest
 
         // Then
         verify( collector ).record( record );
-        verifyNoMoreInteractions( collector );
-        verifyZeroInteractions( otherCollector );
     }
 
     @Test
@@ -85,8 +81,6 @@ public class SocketResponseHandlerTest
 
         // Then
         verify( collector ).keys( fieldNames );
-        verifyNoMoreInteractions( collector );
-        verifyZeroInteractions( otherCollector );
     }
 
     @Test
@@ -108,8 +102,6 @@ public class SocketResponseHandlerTest
         // Then
         verify( collector ).statementType( StatementType.READ_WRITE );
         verify( collector ).statementStatistics( stats );
-        verifyNoMoreInteractions( collector );
-        verifyZeroInteractions( otherCollector );
     }
 
     @Test
@@ -153,7 +145,5 @@ public class SocketResponseHandlerTest
         verify( collector ).statementType( StatementType.READ_WRITE );
         verify( collector ).statementStatistics( stats );
         verify( collector ).plan( plan );
-        verifyNoMoreInteractions( collector );
-        verifyZeroInteractions( otherCollector );
     }
 }

@@ -30,4 +30,6 @@ public interface CypherStatementRunner
     ResultCursor result();
 
     Map<String,Value> parameters();
+
+    void close();
 }

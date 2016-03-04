@@ -18,26 +18,29 @@
  */
 package org.neo4j.driver.internal;
 
-import java.util.Collections;
-
 import org.junit.Test;
 import org.mockito.InOrder;
 
+import java.util.Collections;
+
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.StreamCollector;
 import org.neo4j.driver.v1.Value;
 
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 public class InternalTransactionTest
 {
     @Test
-    public void shouldRollbackOnNoExplicitSuccess() throws Throwable
+    public void shouldRollbackOnImplicitFailure() throws Throwable
     {
         // Given
         Connection conn = mock( Connection.class );
+        when( conn.isOpen() ).thenReturn( true );
         Runnable cleanup = mock( Runnable.class );
         InternalTransaction tx = new InternalTransaction( conn, cleanup );
 
@@ -46,10 +49,12 @@ public class InternalTransactionTest
 
         // Then
         InOrder order = inOrder( conn );
-        order.verify( conn ).run( "BEGIN", Collections.<String, Value>emptyMap(), null );
+        order.verify( conn ).run( "BEGIN", Collections.<String, Value>emptyMap(), StreamCollector.NO_OP );
         order.verify( conn ).discardAll();
-        order.verify( conn ).run( "ROLLBACK", Collections.<String, Value>emptyMap(), null );
+        order.verify( conn ).isOpen();
+        order.verify( conn ).run( "ROLLBACK", Collections.<String, Value>emptyMap(), StreamCollector.NO_OP );
         order.verify( conn ).discardAll();
+        order.verify( conn ).sync();
         verify( cleanup ).run();
         verifyNoMoreInteractions( conn, cleanup );
     }
@@ -59,21 +64,23 @@ public class InternalTransactionTest
     {
         // Given
         Connection conn = mock( Connection.class );
+        when( conn.isOpen() ).thenReturn( true );
         Runnable cleanup = mock( Runnable.class );
         InternalTransaction tx = new InternalTransaction( conn, cleanup );
 
+        // When
         tx.failure();
         tx.success(); // even if success is called after the failure call!
-
-        // When
         tx.close();
 
         // Then
         InOrder order = inOrder( conn );
-        order.verify( conn ).run( "BEGIN", Collections.<String, Value>emptyMap(), null );
+        order.verify( conn ).run( "BEGIN", Collections.<String, Value>emptyMap(), StreamCollector.NO_OP);
         order.verify( conn ).discardAll();
-        order.verify( conn ).run( "ROLLBACK", Collections.<String, Value>emptyMap(), null );
+        order.verify( conn ).isOpen();
+        order.verify( conn ).run( "ROLLBACK", Collections.<String, Value>emptyMap(), StreamCollector.NO_OP);
         order.verify( conn ).discardAll();
+        order.verify( conn ).sync();
         verify( cleanup ).run();
         verifyNoMoreInteractions( conn, cleanup );
     }
@@ -83,19 +90,21 @@ public class InternalTransactionTest
     {
         // Given
         Connection conn = mock( Connection.class );
+        when( conn.isOpen() ).thenReturn( true );
         Runnable cleanup = mock( Runnable.class );
         InternalTransaction tx = new InternalTransaction( conn, cleanup );
 
-        tx.success();
-
         // When
+        tx.success();
         tx.close();
 
         // Then
+
         InOrder order = inOrder( conn );
-        order.verify( conn ).run( "BEGIN", Collections.<String, Value>emptyMap(), null );
+        order.verify( conn ).run( "BEGIN", Collections.<String, Value>emptyMap(), StreamCollector.NO_OP);
         order.verify( conn ).discardAll();
-        order.verify( conn ).run( "COMMIT", Collections.<String, Value>emptyMap(), null );
+        order.verify( conn ).isOpen();
+        order.verify( conn ).run( "COMMIT", Collections.<String, Value>emptyMap(), StreamCollector.NO_OP);
         order.verify( conn ).discardAll();
         order.verify( conn ).sync();
         verify( cleanup ).run();

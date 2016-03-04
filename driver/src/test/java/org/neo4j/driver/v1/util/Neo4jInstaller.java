@@ -18,11 +18,11 @@
  */
 package org.neo4j.driver.v1.util;
 
-import org.rauschig.jarchivelib.Archiver;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
+
+import org.rauschig.jarchivelib.Archiver;
 
 import static org.neo4j.driver.v1.util.FileTools.extractTarball;
 import static org.neo4j.driver.v1.util.FileTools.streamFileTo;

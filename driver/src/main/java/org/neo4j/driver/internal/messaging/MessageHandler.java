@@ -26,7 +26,7 @@ import org.neo4j.driver.v1.Value;
 public interface MessageHandler
 {
     // Requests
-    void handleInitMessage( String clientNameAndVersion ) throws IOException;
+    void handleInitMessage( String clientNameAndVersion, Map<String,Value> authToken ) throws IOException;
 
     void handleRunMessage( String statement, Map<String,Value> parameters ) throws IOException;
 

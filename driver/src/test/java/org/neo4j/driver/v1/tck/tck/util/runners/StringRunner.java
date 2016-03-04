@@ -22,25 +22,26 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.driver.v1.ResultCursor;
+import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Value;
 
-import static org.junit.Assert.assertNotNull;
-import static org.neo4j.driver.v1.tck.DriverComplianceIT.session;
+import static org.neo4j.driver.v1.tck.Environment.driver;
 
 public class StringRunner implements CypherStatementRunner
 {
     private String statement;
     private ResultCursor result;
+    private Session session;
 
     public StringRunner( String st )
     {
+        session = driver.session();
         statement = st;
     }
 
     @Override
     public CypherStatementRunner runCypherStatement()
     {
-        assertNotNull( session() );
         result = session.run( statement );
         return this;
     }
@@ -55,5 +56,11 @@ public class StringRunner implements CypherStatementRunner
     public Map<String,Value> parameters()
     {
         return new HashMap<>(  );
+    }
+
+    @Override
+    public void close()
+    {
+        session.close();
     }
 }

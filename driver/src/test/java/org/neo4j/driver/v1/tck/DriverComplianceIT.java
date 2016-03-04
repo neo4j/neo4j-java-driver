@@ -22,9 +22,11 @@ import cucumber.api.CucumberOptions;
 import org.junit.ClassRule;
 import org.junit.runner.RunWith;
 
+import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.driver.v1.util.TestNeo4jSession;
+import org.neo4j.driver.v1.util.Neo4jSettings;
+import org.neo4j.driver.v1.util.TestNeo4j;
 
 /**
  * The base class to run all cucumber tests
@@ -34,14 +36,20 @@ import org.neo4j.driver.v1.util.TestNeo4jSession;
 public class DriverComplianceIT
 {
     @ClassRule
-    public static TestNeo4jSession session = new TestNeo4jSession();
+    public static TestNeo4j neo4j = new TestNeo4j();
 
     public DriverComplianceIT() throws IOException
     {
     }
 
-    public static TestNeo4jSession session()
+    public static void updateEncryptionKeyAndCert( File key, File cert ) throws Exception
     {
-        return session;
+        neo4j.restartServerOnEmptyDatabase(
+                Neo4jSettings.DEFAULT.usingEncryptionKeyAndCert( key, cert ) );
+    }
+
+    public static void useDefaultEncryptionKeyAndCert() throws Exception
+    {
+        neo4j.restartServerOnEmptyDatabase( Neo4jSettings.DEFAULT );
     }
 }

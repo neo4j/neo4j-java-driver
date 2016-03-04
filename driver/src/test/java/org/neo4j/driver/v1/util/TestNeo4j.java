@@ -28,12 +28,11 @@ import java.io.PrintWriter;
 import java.net.URL;
 
 import org.neo4j.driver.v1.Driver;
-import org.neo4j.driver.v1.ResultCursor;
 import org.neo4j.driver.v1.Session;
 
 public class TestNeo4j implements TestRule
 {
-    private final Neo4jSettings initialSettings = Neo4jSettings.DEFAULT;
+    private Neo4jSettings settings = Neo4jSettings.DEFAULT;
     private Neo4jRunner runner;
 
     @Override
@@ -45,7 +44,7 @@ public class TestNeo4j implements TestRule
             public void evaluate() throws Throwable
             {
                 runner = Neo4jRunner.getOrCreateGlobalRunner();
-                if ( !runner.ensureRunning( initialSettings ) )
+                if ( !runner.ensureRunning( settings ) )
                 {
                     try ( Session session = driver().session() )
                     {
@@ -83,7 +82,6 @@ public class TestNeo4j implements TestRule
         return Neo4jRunner.DEFAULT_URL;
     }
 
-    @SuppressWarnings("StatementWithEmptyBody")
     static void clearDatabaseContents( Session session, String reason )
     {
         Neo4jRunner.debug( "Clearing database contents for: %s", reason );
@@ -91,10 +89,17 @@ public class TestNeo4j implements TestRule
         // Note - this hangs for extended periods some times, because there are tests that leave sessions running.
         // Thus, we need to wait for open sessions and transactions to time out before this will go through.
         // This could be helped by an extension in the future.
-        ResultCursor result = session.run( "MATCH (n) DETACH DELETE n RETURN count(*)" );
-        while ( result.next() )
-        {
-            // consume
-        }
+        session.run( "MATCH (n) DETACH DELETE n" ).close();
+    }
+
+    public void restartServerOnEmptyDatabase( Neo4jSettings neo4jSettings ) throws Exception
+    {
+        runner.restart( neo4jSettings );
+    }
+
+    public TestNeo4j withSettings( Neo4jSettings settings )
+    {
+        this.settings = settings;
+        return this;
     }
 }

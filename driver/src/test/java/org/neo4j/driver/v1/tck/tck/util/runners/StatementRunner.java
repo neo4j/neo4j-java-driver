@@ -21,26 +21,27 @@ package org.neo4j.driver.v1.tck.tck.util.runners;
 import java.util.Map;
 
 import org.neo4j.driver.v1.ResultCursor;
+import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Value;
 
-import static org.junit.Assert.assertNotNull;
-import static org.neo4j.driver.v1.tck.DriverComplianceIT.session;
+import static org.neo4j.driver.v1.tck.Environment.driver;
 
 public class StatementRunner implements CypherStatementRunner
 {
     private Statement statement;
     private ResultCursor result;
+    private Session session;
 
     public StatementRunner( Statement st )
     {
+        session = driver.session();
         statement = st;
     }
 
     @Override
     public CypherStatementRunner runCypherStatement()
     {
-        assertNotNull( session() );
         result = session.run( statement );
         return this;
     }
@@ -55,5 +56,11 @@ public class StatementRunner implements CypherStatementRunner
     public Map<String,Value> parameters()
     {
         return statement.parameters();
+    }
+
+    @Override
+    public void close()
+    {
+        session.close();
     }
 }

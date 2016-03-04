@@ -162,10 +162,6 @@ public class InternalRecordTest
     private InternalRecord createRecord()
     {
         List<String> keys = Arrays.asList( "k1", "k2" );
-        HashMap<String,Integer> lookup = new HashMap<>();
-        lookup.put( "k1", 0 );
-        lookup.put( "k2", 1 );
-
-        return new InternalRecord( keys, lookup, new Value[]{value( 0 ), value( 1 )} );
+        return new InternalRecord( keys, new Value[]{value( 0 ), value( 1 )} );
     }
 }

@@ -22,34 +22,36 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.neo4j.driver.v1.ResultCursor;
+import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Value;
 
-import static org.junit.Assert.assertNotNull;
-import static org.neo4j.driver.v1.tck.DriverComplianceIT.session;
+import static org.neo4j.driver.v1.tck.Environment.driver;
 
 public class MappedParametersRunner implements CypherStatementRunner
 {
-    private String statement;
+    private String query;
     private Map<String,Value> parameters;
     private ResultCursor result;
+    private Session session;
 
-    public MappedParametersRunner( String st, String key, Value value )
+    public static MappedParametersRunner createParameterRunner( String st, String key, Value value )
     {
-        statement = st;
-        parameters = Collections.singletonMap( key, value );
+        return new MappedParametersRunner(st, Collections.singletonMap( key, value ));
     }
 
     public MappedParametersRunner( String st, Map<String,Value> params )
     {
-        statement = st;
+        session = driver.session();
+        query = st;
         parameters = params;
     }
 
     @Override
     public CypherStatementRunner runCypherStatement()
     {
-        assertNotNull( session() );
-        result = session.run( statement, parameters );
+
+        result = session.run( new Statement( query, parameters ) );
         return this;
     }
 
@@ -63,5 +65,11 @@ public class MappedParametersRunner implements CypherStatementRunner
     public Map<String,Value> parameters()
     {
         return parameters;
+    }
+
+    @Override
+    public void close()
+    {
+        session.close();
     }
 }

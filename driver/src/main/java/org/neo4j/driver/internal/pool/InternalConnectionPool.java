@@ -33,6 +33,7 @@ import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.Connector;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Consumer;
+import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
@@ -65,6 +66,7 @@ public class InternalConnectionPool implements ConnectionPool
      */
     private final ValidationStrategy<PooledConnection> connectionValidation;
 
+    private final AuthToken authToken;
     /**
      * Timeout in milliseconds if there are no available sessions.
      */
@@ -73,13 +75,16 @@ public class InternalConnectionPool implements ConnectionPool
     private final Clock clock;
     private final Config config;
 
-    public InternalConnectionPool( Config config )
+    public InternalConnectionPool( Config config, AuthToken authToken )
     {
-        this( loadConnectors(), Clock.SYSTEM, config, Long.getLong( "neo4j.driver.acquireSessionTimeout", 30_000 ) );
+        this( loadConnectors(), Clock.SYSTEM, config, authToken,
+                Long.getLong( "neo4j.driver.acquireSessionTimeout", 30_000 ) );
     }
 
-    public InternalConnectionPool( Collection<Connector> conns, Clock clock, Config config, long acquireTimeout )
+    public InternalConnectionPool( Collection<Connector> conns, Clock clock, Config config,
+            AuthToken authToken, long acquireTimeout )
     {
+        this.authToken = authToken;
         this.acquireSessionTimeout = acquireTimeout;
         this.config = config;
         this.clock = clock;
@@ -180,7 +185,7 @@ public class InternalConnectionPool implements ConnectionPool
                             "'" + uri.getScheme() + "' is not a supported transport (in '" +
                             uri + "', available transports are: " + connectorSchemes() + "." );
                 }
-                Connection conn = connector.connect( uri, config );
+                Connection conn = connector.connect( uri, config, authToken );
                 return new PooledConnection( conn, release );
             }
 

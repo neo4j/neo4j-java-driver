@@ -24,7 +24,8 @@ import java.util.logging.Level;
 import org.neo4j.driver.internal.logging.JULogging;
 import org.neo4j.driver.internal.spi.Logging;
 
-import static org.neo4j.driver.v1.Config.TlsAuthenticationConfig.usingKnownCerts;
+import static java.lang.System.getProperty;
+import static org.neo4j.driver.v1.Config.TrustStrategy.*;
 
 /**
  * A configuration class to config driver properties.
@@ -42,9 +43,6 @@ import static org.neo4j.driver.v1.Config.TlsAuthenticationConfig.usingKnownCerts
 @Immutable
 public class Config
 {
-    public static final String SCHEME = "bolt";
-    public static final int DEFAULT_PORT = 7687;
-
     /** User defined logging */
     private final Logging logging;
 
@@ -54,11 +52,11 @@ public class Config
     /** Connections that have been idle longer than this threshold will have a ping test performed on them. */
     private final long idleTimeBeforeConnectionTest;
 
-    /* Whether TLS is enabled on all connections */
-    private final boolean isTlsEnabled;
+    /** Level of encryption we need to adhere to */
+    private final EncryptionLevel encryptionLevel;
 
-    /* Defines how to authenticate a server in TLS connections */
-    private TlsAuthenticationConfig tlsAuthConfig;
+    /** Strategy for how to trust encryption certificate */
+    private final TrustStrategy trustStrategy;
 
     private Config( ConfigBuilder builder )
     {
@@ -67,8 +65,8 @@ public class Config
         this.connectionPoolSize = builder.connectionPoolSize;
         this.idleTimeBeforeConnectionTest = builder.idleTimeBeforeConnectionTest;
 
-        this.isTlsEnabled = builder.isTlsEnabled;
-        this.tlsAuthConfig = builder.tlsAuthConfig;
+        this.encryptionLevel = builder.encruptionLevel;
+        this.trustStrategy = builder.trustStrategy;
     }
 
     /**
@@ -100,21 +98,19 @@ public class Config
     }
 
     /**
-     * If TLS is enabled in all socket connections
-     * @return if TLS is enabled
+     * @return the level of encryption required for all connections.
      */
-    public boolean isTlsEnabled()
+    public EncryptionLevel encryptionLevel()
     {
-        return isTlsEnabled;
+        return encryptionLevel;
     }
 
     /**
-     * Specify an approach to authenticate the server when establishing TLS connections with the server
-     * @return a TLS configuration
+     * @return the strategy to use to determine the authenticity of an encryption certificate provided by the Neo4j instance we are connecting to.
      */
-    public TlsAuthenticationConfig tlsAuthConfig()
+    public TrustStrategy trustStrategy()
     {
-        return tlsAuthConfig;
+        return trustStrategy;
     }
 
     /**
@@ -140,11 +136,11 @@ public class Config
     public static class ConfigBuilder
     {
         private Logging logging = new JULogging( Level.INFO );
-        private int connectionPoolSize = 10;
+        private int connectionPoolSize = 50;
         private long idleTimeBeforeConnectionTest = 200;
-        private boolean isTlsEnabled = false;
-        private TlsAuthenticationConfig tlsAuthConfig =
-                usingKnownCerts( new File( System.getProperty( "user.home" ), "neo4j/neo4j_known_certs" ) );
+        private EncryptionLevel encruptionLevel = EncryptionLevel.REQUIRED;
+        private TrustStrategy trustStrategy = trustOnFirstUse(
+                new File( getProperty( "user.home" ), ".neo4j/neo4j_known_hosts" ) );
 
         private ConfigBuilder() {}
 
@@ -204,29 +200,35 @@ public class Config
         }
 
         /**
-         * Enable TLS in all connections with the server.
-         * When TLS is enabled, if a trusted certificate is provided by invoking {@code withTrustedCert}, then only the
-         * connections with certificates signed by the trusted certificate will be accepted;
-         * If no certificate is provided, then we will trust the first certificate received from the server.
-         * See {@code withKnownCerts} for more info about what will happen when no trusted certificate is
-         * provided.
-         * @param value true to enable tls and flase to disable tls
+         * Configure the {@link EncryptionLevel} to use, use this to control wether the driver uses TLS encryption or not.
+         * @param level the TLS level to use
          * @return this builder
+         * @see #withTrustStrategy(TrustStrategy)
          */
-        public ConfigBuilder withTlsEnabled( boolean value )
+        public ConfigBuilder withEncryptionLevel( EncryptionLevel level )
         {
-            this.isTlsEnabled = value;
+            this.encruptionLevel = level;
             return this;
         }
 
         /**
-         * Defines how to authenticate a server in TLS connections.
-         * @param tlsAuthConfig TLS authentication config
+         * Specify how to determine the authenticity of an encryption certificate provided by the Neo4j instance we are connecting to.
+         * This defaults to {@link TrustStrategy#trustOnFirstUse(File)}.
+         * See {@link TrustStrategy#trustSignedBy(File)} for using certificate signatures instead to verify
+         * trust.
+         * <p>
+         * This is an important setting to understand, because unless we know that the remote server we have an encrypted connection to
+         * is really Neo4j, there is no point to encrypt at all, since anyone could pretend to be the remote Neo4j instance.
+         * <p>
+         * For this reason, there is no option to disable trust verification, if you find this cumbersome you should disable encryption using
+         * {@link #withEncryptionLevel(EncryptionLevel)}. The safety is equivalent and disabling encryption improves latency.
+         *
+         * @param trustStrategy TLS authentication strategy
          * @return this builder
          */
-        public ConfigBuilder withTlsAuthConfig( TlsAuthenticationConfig tlsAuthConfig )
+        public ConfigBuilder withTrustStrategy( TrustStrategy trustStrategy )
         {
-            this.tlsAuthConfig = tlsAuthConfig;
+            this.trustStrategy = trustStrategy;
             return this;
         }
 
@@ -241,32 +243,44 @@ public class Config
     }
 
     /**
-     * A configuration to configure TLS authentication
+     * Control the level of encryption to require
      */
-    public static class TlsAuthenticationConfig
+    public enum EncryptionLevel
     {
-        private enum Mode
+        /** With this level, the driver will only connect to the server if it can do it without encryption. */
+        NONE,
+
+        /** With this level, the driver will only connect to the server it if can do it with encryption. */
+        REQUIRED
+    }
+
+    /**
+     * Control how the driver determines if it can trust the encryption certificates provided by the Neo4j instance it is connected to.
+     */
+    public static class TrustStrategy
+    {
+        public enum Strategy
         {
-            KNOWN_CERTS,
-            TRUSTED_CERT
+            TRUST_ON_FIRST_USE,
+            TRUST_SIGNED_CERTIFICATES
         }
-        private final Mode mode;
+
+        private final Strategy strategy;
         private final File certFile;
 
-        private TlsAuthenticationConfig( Mode mode, File certFile )
+        private TrustStrategy( Strategy strategy, File certFile )
         {
-            this.mode = mode;
+            this.strategy = strategy;
             this.certFile = certFile;
         }
 
         /**
-         * Return true if full authentication is enabled, which suggests a trusted certificate is provided with
-         * {@link #usingTrustedCert(File)}. Otherwise, return false.
-         * @return true if full authentication is enabled.
+         * Return the strategy type desired.
+         * @return the strategy we should use
          */
-        public boolean isFullAuthEnabled()
+        public Strategy strategy()
         {
-            return mode == Mode.TRUSTED_CERT;
+            return strategy;
         }
 
         public File certFile()
@@ -275,39 +289,37 @@ public class Config
         }
 
         /**
-         * Using full authentication: only TLS connections with certificates signed by a given trusted CA will be
-         * accepted.
-         * The trusted CA is given in the trusted certificate file. The file could contain multiple certificates of
-         * multiple CAs.
-         * The certificates in the file should be encoded using Base64 encoding,
-         * and each of the certificate is bounded at the beginning by -----BEGIN CERTIFICATE-----,
-         * and bounded at the end by -----END CERTIFICATE-----.
+         * Only encrypted connections to Neo4j instances with certificates signed by a trusted certificate will be accepted.
+         * The file specified should contain one or more trusted X.509 certificates.
+         * <p>
+         * The certificate(s) in the file must be encoded using PEM encoding, meaning the certificates in the file should be encoded using Base64,
+         * and each certificate is bounded at the beginning by "-----BEGIN CERTIFICATE-----", and bounded at the end by "-----END CERTIFICATE-----".
+         *
          * @param certFile the trusted certificate file
          * @return an authentication config
          */
-        public static TlsAuthenticationConfig usingTrustedCert( File certFile )
+        public static TrustStrategy trustSignedBy( File certFile )
         {
-            return new TlsAuthenticationConfig( Mode.TRUSTED_CERT, certFile );
+            return new TrustStrategy( Strategy.TRUST_SIGNED_CERTIFICATES, certFile );
         }
 
         /**
-         * Using trust-on-first-use authentication.
-         * Use this method to change the default file where known certificates are stored.
-         * It is not recommend to change the default position, however if we have a problem that we cannot create the
-         * file at the default position, then this method enables us to specify a new position for the file.
+         * Automatically trust a Neo4j instance the first time we see it - but fail to connect if its encryption certificate ever changes.
+         * This is similar to the mechanism used in SSH, and protects against man-in-the-middle attacks that occur after the initial setup of your application.
          * <p>
-         * The known certificate file stores a list of {@code (neo4j_server, cert)} pairs, where each pair stores
-         * a neo4j server and the first certificate received from the server.
-         * When we establish a TLS connection with a server, we record the server and the first certificate we
-         * received from it. Then when we establish more connections with the same server, only the connections with
-         * the same certificate recorded in this file will be accepted.
+         * Known Neo4j hosts are recorded in a file, {@code certFile}.
+         * Each time we reconnect to a known host, we verify that its certificate remains the same, guarding against attackers intercepting our communication.
+         * <p>
+         * Note that this approach is vulnerable to man-in-the-middle attacks the very first time you connect to a new Neo4j instance.
+         * If you do not trust the network you are connecting over, consider using {@link #trustSignedBy(File) signed certificates} instead, or manually adding the
+         * trusted host line into the specified file.
          *
-         * @param certFile the new file where known certificates are stored.
+         * @param knownHostsFile a file where known certificates are stored.
          * @return an authentication config
          */
-        public static TlsAuthenticationConfig usingKnownCerts( File certFile )
+        public static TrustStrategy trustOnFirstUse( File knownHostsFile )
         {
-            return new TlsAuthenticationConfig( Mode.KNOWN_CERTS, certFile );
+            return new TrustStrategy( Strategy.TRUST_ON_FIRST_USE, knownHostsFile );
         }
     }
 }

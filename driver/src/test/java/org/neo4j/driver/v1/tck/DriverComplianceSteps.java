@@ -32,18 +32,18 @@ import java.util.Map;
 import java.util.Random;
 
 import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.tck.tck.util.runners.CypherStatementRunner;
-import org.neo4j.driver.v1.tck.tck.util.runners.MappedParametersRunner;
 import org.neo4j.driver.v1.tck.tck.util.runners.StatementRunner;
 import org.neo4j.driver.v1.tck.tck.util.runners.StringRunner;
 
 import static java.util.Collections.singletonMap;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.driver.v1.tck.DriverComplianceIT.session;
+import static org.neo4j.driver.v1.tck.Environment.driver;
 import static org.neo4j.driver.v1.tck.Environment.expectedBoltValue;
 import static org.neo4j.driver.v1.tck.Environment.expectedJavaValue;
 import static org.neo4j.driver.v1.tck.Environment.listOfObjects;
@@ -55,6 +55,7 @@ import static org.neo4j.driver.v1.tck.Environment.stringRunner;
 import static org.neo4j.driver.v1.tck.tck.util.ResultParser.getJavaValueIntAsLong;
 import static org.neo4j.driver.v1.tck.tck.util.Types.Type;
 import static org.neo4j.driver.v1.tck.tck.util.Types.getType;
+import static org.neo4j.driver.v1.tck.tck.util.runners.MappedParametersRunner.createParameterRunner;
 
 
 public class DriverComplianceSteps
@@ -107,7 +108,7 @@ public class DriverComplianceSteps
     public void the_driver_asks_the_server_to_echo_this_value_back() throws Throwable
     {
         stringRunner = new StringRunner( "RETURN " + expectedBoltValue.toString() );
-        mappedParametersRunner = new MappedParametersRunner( "RETURN {input}", "input", expectedBoltValue );
+        mappedParametersRunner = createParameterRunner( "RETURN {input}", "input", expectedBoltValue );
         statementRunner = new StatementRunner(
                 new Statement( "RETURN {input}", singletonMap( "input", expectedBoltValue ) ) );
 
@@ -223,6 +224,10 @@ public class DriverComplianceSteps
 
     public boolean databaseRunning()
     {
-        return session() != null;
+
+        try ( Session session = driver.session())
+        {
+            return session.run( "RETURN 1" ).single().get( 0 ).asInt() == 1;
+        }
     }
 }
