@@ -58,4 +58,10 @@ public class MappedParametersRunner implements CypherStatementRunner
     {
         return result;
     }
+
+    @Override
+    public Map<String,Value> parameters()
+    {
+        return parameters;
+    }
 }

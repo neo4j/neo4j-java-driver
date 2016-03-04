@@ -18,8 +18,11 @@
  */
 package org.neo4j.driver.v1.tck.tck.util.runners;
 
+import java.util.Map;
+
 import org.neo4j.driver.v1.ResultCursor;
 import org.neo4j.driver.v1.Statement;
+import org.neo4j.driver.v1.Value;
 
 import static org.junit.Assert.assertNotNull;
 import static org.neo4j.driver.v1.tck.DriverComplianceIT.session;
@@ -46,5 +49,11 @@ public class StatementRunner implements CypherStatementRunner
     public ResultCursor result()
     {
         return result;
+    }
+
+    @Override
+    public Map<String,Value> parameters()
+    {
+        return statement.parameters();
     }
 }

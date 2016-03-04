@@ -18,7 +18,11 @@
  */
 package org.neo4j.driver.v1.tck.tck.util.runners;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.neo4j.driver.v1.ResultCursor;
+import org.neo4j.driver.v1.Value;
 
 import static org.junit.Assert.assertNotNull;
 import static org.neo4j.driver.v1.tck.DriverComplianceIT.session;
@@ -45,5 +49,11 @@ public class StringRunner implements CypherStatementRunner
     public ResultCursor result()
     {
         return result;
+    }
+
+    @Override
+    public Map<String,Value> parameters()
+    {
+        return new HashMap<>(  );
     }
 }

@@ -18,11 +18,16 @@
  */
 package org.neo4j.driver.v1.tck.tck.util.runners;
 
+import java.util.Map;
+
 import org.neo4j.driver.v1.ResultCursor;
+import org.neo4j.driver.v1.Value;
 
 public interface CypherStatementRunner
 {
     CypherStatementRunner runCypherStatement();
 
     ResultCursor result();
+
+    Map<String,Value> parameters();
 }
