@@ -55,4 +55,11 @@ public interface Notification
      * notification.
      */
     InputPosition position();
+
+    /**
+     * The severity level of the notification.
+     *
+     * @return the severity level of the notification
+     */
+    String severity();
 }
