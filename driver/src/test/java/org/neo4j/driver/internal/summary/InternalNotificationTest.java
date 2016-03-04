@@ -18,9 +18,7 @@
  */
 package org.neo4j.driver.internal.summary;
 
-import org.hamcrest.Matchers;
 import org.junit.Test;
-import org.mockito.internal.matchers.Null;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -46,6 +44,7 @@ public class InternalNotificationTest
         map.put( "description", new StringValue( "A description" ) );
         map.put( "code", new StringValue( "Neo.DummyNotification" ) );
         map.put( "title", new StringValue( "A title" ) );
+        map.put( "severity", new StringValue( "WARNING" ) );
         Map<String,Value> position = new HashMap<>();
         position.put( "offset", new IntegerValue( 0 ) );
         position.put( "column", new IntegerValue( 1 ) );
@@ -60,6 +59,7 @@ public class InternalNotificationTest
         assertThat( notification.description(), equalTo( "A description" ) );
         assertThat( notification.code(), equalTo( "Neo.DummyNotification" ) );
         assertThat( notification.title(), equalTo( "A title" ) );
+        assertThat( notification.severity(), equalTo( "WARNING" ) );
         InputPosition pos = notification.position();
         assertThat( pos.offset(), equalTo( 0 ) );
         assertThat( pos.column(), equalTo( 1 ) );
