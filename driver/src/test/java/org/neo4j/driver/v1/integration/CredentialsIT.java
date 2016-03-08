@@ -34,6 +34,7 @@ import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+
 import static org.neo4j.driver.v1.AuthTokens.basic;
 import static org.neo4j.driver.v1.Values.parameters;
 
@@ -63,7 +64,7 @@ public class CredentialsIT
         Value single = session.run( "RETURN 1" ).single( 0 );
 
         // Then
-        assertThat( single.asLong(), equalTo(1l));
+        assertThat( single.asLong(), equalTo( 1L ) );
     }
 
     @Test
@@ -78,7 +79,7 @@ public class CredentialsIT
 
         // Expect
         exception.expect( ClientException.class );
-        exception.expectMessage( "The client provided an incorrect username and/or password." );
+        exception.expectMessage( "The client is unauthorized due to authentication failure." );
 
         // When
         session.run( "RETURN 1" ).single( 0 );
