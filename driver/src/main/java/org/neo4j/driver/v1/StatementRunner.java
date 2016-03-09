@@ -39,7 +39,7 @@ public interface StatementRunner
      * <h2>Example</h2>
      * <pre class="doctest:StatementRunnerDocIT#parameterTest">
      * {@code
-     * ResultCursor cursor = session.run( "MATCH (n) WHERE n.name = {myNameParam} RETURN (n)",
+     * ResultStream cursor = session.run( "MATCH (n) WHERE n.name = {myNameParam} RETURN (n)",
      *                                    Values.parameters( "myNameParam", "Bob" ) );
      * }
      * </pre>
@@ -48,7 +48,7 @@ public interface StatementRunner
      * @param statementParameters input data for the statement, see {@link Values#parameters(Object...)}
      * @return a stream of result values and associated metadata
      */
-    ResultCursor run( String statementTemplate, Map<String, Value> statementParameters );
+    ResultStream run( String statementTemplate, Map<String, Value> statementParameters );
 
     /**
      * Run a statement and return a result stream.
@@ -56,7 +56,7 @@ public interface StatementRunner
      * @param statementTemplate template of a Neo4j statement
      * @return a stream of result values and associated metadata
      */
-    ResultCursor run( String statementTemplate );
+    ResultStream run( String statementTemplate );
 
     /**
      * Run a statement and return a result stream.
@@ -64,14 +64,14 @@ public interface StatementRunner
      * <pre class="doctest:StatementRunnerDocIT#statementObjectTest">
      * {@code
      * Statement statement = new Statement( "MATCH (n) WHERE n.name={myNameParam} RETURN n.age" );
-     * ResultCursor cursor = session.run( statement.withParameters( Values.parameters( "myNameParam", "Bob" )  ) );
+     * ResultStream cursor = session.run( statement.withParameters( Values.parameters( "myNameParam", "Bob" )  ) );
      * }
      * </pre>
      *
      * @param statement a Neo4j statement
      * @return a stream of result values and associated metadata
      */
-    ResultCursor run( Statement statement );
+    ResultStream run( Statement statement );
 
     /**
      * @return type system used by this statement runner for classifying values

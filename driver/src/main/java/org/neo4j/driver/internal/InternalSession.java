@@ -23,7 +23,7 @@ import java.util.Map;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.Logger;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
-import org.neo4j.driver.v1.ResultCursor;
+import org.neo4j.driver.v1.ResultStream;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Transaction;
@@ -57,10 +57,10 @@ public class InternalSession implements Session
     }
 
     @Override
-    public ResultCursor run( String statementText, Map<String,Value> statementParameters )
+    public ResultStream run( String statementText, Map<String,Value> statementParameters )
     {
         ensureConnectionIsValid();
-        InternalResultCursor cursor = new InternalResultCursor( connection, statementText, statementParameters );
+        InternalResultStream cursor = new InternalResultStream( connection, statementText, statementParameters );
         connection.run( statementText, statementParameters, cursor.runResponseCollector() );
         connection.pullAll( cursor.pullAllResponseCollector() );
         connection.flush();
@@ -68,13 +68,13 @@ public class InternalSession implements Session
     }
 
     @Override
-    public ResultCursor run( String statementTemplate )
+    public ResultStream run( String statementTemplate )
     {
         return run( statementTemplate, ParameterSupport.NO_PARAMETERS );
     }
 
     @Override
-    public ResultCursor run( Statement statement )
+    public ResultStream run( Statement statement )
     {
         return run( statement.template(), statement.parameters() );
     }

@@ -18,22 +18,82 @@
  */
 package org.neo4j.driver.v1;
 
+import java.util.List;
 import java.util.Map;
 
+import org.neo4j.driver.internal.value.NullValue;
+import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
+
 /**
- * A record is an immutable copy of an ordered map
- *
- * @see ResultCursor#record()
- * @see ResultCursor#list()
+ * A record is the object you work with when reading {@link ResultStream} - results
+ * are streams of records, where records carry the values your statement returned.
  */
 @Immutable
-public interface Record extends RecordAccessor
+public interface Record
 {
+    /**
+     * Retrieve the keys of the underlying map
+     *
+     * @return all map keys in unspecified order
+     */
+    List<String> keys();
+
+    /**
+     * Check if the list of keys contains the given key
+     *
+     * @param key the key
+     * @return <tt>true</tt> if this map keys contains the given key otherwise <tt>false</tt>
+     */
+    boolean containsKey( String key );
+
+    /**
+     * Retrieve the index of the field with the given key
+     *
+     * @throws java.util.NoSuchElementException if the given key is not from {@link #keys()}
+     * @param key the give key
+     * @return the index of the field as used by {@link #get(int)}
+     */
+    int index( String key );
+
+    /**
+     * Retrieve the value of the property with the given key
+     *
+     * @param key the key of the property
+     * @return the property's value or a {@link NullValue} if no such key exists
+     * @throws NoSuchRecordException if the associated underlying record is not available
+     */
+    Value get( String key );
+
+    /**
+     * Retrieve the value at the given field index
+     *
+     * @param index the index of the value
+     * @return the value or a {@link org.neo4j.driver.internal.value.NullValue} if the index is out of bounds
+     * @throws ClientException if record has not been initialized
+     */
+    Value get( int index );
+
+    /**
+     * Retrieve the number of fields in this record
+     *
+     * @return the number of fields in this record
+     */
+    int size();
+
     /**
      * Return this record as a value map, e.g. for use as parameters for executing a follow-up statement
      * @return this record as a value map
      */
     Map<String, Value> asMap();
+
+    /**
+     * Retrieve all record fields
+     *
+     * @return all fields in key order
+     * @throws NoSuchRecordException if the associated underlying record is not available
+     */
+    List<Pair<String, Value>> fields();
 
     // Force implementation
     @Override

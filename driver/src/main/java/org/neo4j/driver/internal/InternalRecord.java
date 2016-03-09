@@ -19,23 +19,22 @@
 package org.neo4j.driver.internal;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
 import org.neo4j.driver.internal.util.Extract;
 import org.neo4j.driver.internal.value.InternalValue;
+import org.neo4j.driver.v1.Pair;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 
 import static java.lang.String.format;
-
 import static org.neo4j.driver.internal.util.Format.formatPairs;
 import static org.neo4j.driver.v1.Values.valueAsIs;
 
-public class InternalRecord extends InternalRecordAccessor implements Record
+public class InternalRecord implements Record
 {
     private final List<String> keys;
     private final Value[] values;
@@ -51,6 +50,12 @@ public class InternalRecord extends InternalRecordAccessor implements Record
     public List<String> keys()
     {
         return keys;
+    }
+
+    @Override
+    public List<Pair<String, Value>> fields()
+    {
+        return Extract.fields( this, valueAsIs() );
     }
 
     @Override

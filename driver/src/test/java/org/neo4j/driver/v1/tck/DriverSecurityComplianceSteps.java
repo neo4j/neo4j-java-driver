@@ -31,7 +31,7 @@ import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Config.EncryptionLevel;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
-import org.neo4j.driver.v1.ResultCursor;
+import org.neo4j.driver.v1.ResultStream;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.util.CertificateToolTest.CertificateSigningRequestGenerator;
@@ -81,8 +81,8 @@ public class DriverSecurityComplianceSteps
     {
         try ( Session session = driver.session() )
         {
-            ResultCursor resultCursor = session.run( "RETURN 1" );
-            assertEquals( resultCursor.single().get( 0 ).asInt(), 1 );
+            ResultStream resultStream = session.run( "RETURN 1" );
+            assertEquals( resultStream.single().get( 0 ).asInt(), 1 );
         }
     }
 
@@ -176,8 +176,8 @@ public class DriverSecurityComplianceSteps
         // However as driverKitten has not connected to the server, so driverKitten should just simply connect!
         try ( Session session = driverKitten.session() )
         {
-            ResultCursor resultCursor = session.run( "RETURN 1" );
-            assertEquals( resultCursor.single().get( 0 ).asInt(), 1 );
+            ResultStream resultStream = session.run( "RETURN 1" );
+            assertEquals( resultStream.single().get( 0 ).asInt(), 1 );
         }
     }
 

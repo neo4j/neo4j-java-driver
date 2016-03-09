@@ -18,22 +18,20 @@
  */
 package org.neo4j.driver.v1.integration;
 
-import java.io.IOException;
-
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.IOException;
+
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
-import org.neo4j.driver.v1.ResultCursor;
+import org.neo4j.driver.v1.ResultStream;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.driver.v1.Values.parameters;
 
 public class LoadCSVIT
@@ -50,7 +48,7 @@ public class LoadCSVIT
         String csvFileUrl = createLocalIrisData( session );
 
         // When
-        ResultCursor result = session.run(
+        ResultStream result = session.run(
             "USING PERIODIC COMMIT 40\n" +
             "LOAD CSV WITH HEADERS FROM {csvFileUrl} AS l\n" +
             "MATCH (c:Class {name: l.class_name})\n" +
@@ -61,27 +59,25 @@ public class LoadCSVIT
 
 
         // Then
-        assertTrue( result.next() );
-        assertThat( result.get( "c" ).asInt(), equalTo( 150 ) );
-        assertFalse( result.next() );
+        assertThat( result.next().get( "c" ).asInt(), equalTo( 150 ) );
+        assertFalse( result.hasNext() );
     }
 
     private String createLocalIrisData( Session session ) throws IOException
     {
         for ( String className : IRIS_CLASS_NAMES )
         {
-            consume(
-                session.run( "CREATE (c:Class {name: {className}}) RETURN c", parameters( "className", className ) )
-            );
+            session.run( "CREATE (c:Class {name: {className}}) RETURN c", parameters( "className", className ) )
+                   .skip( Long.MAX_VALUE );
         }
 
         return neo4j.putTmpFile( "iris", ".csv", IRIS_DATA ).toExternalForm();
     }
 
     @SuppressWarnings("StatementWithEmptyBody")
-    private static void consume( ResultCursor result )
+    private static void consume( ResultStream result )
     {
-        while ( result.next() )
+        while ( result.hasNext() )
         {
             // be happy
         }

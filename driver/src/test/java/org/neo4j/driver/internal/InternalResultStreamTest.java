@@ -34,9 +34,8 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.v1.Pair;
 import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.RecordAccessor;
 import org.neo4j.driver.v1.Records;
-import org.neo4j.driver.v1.ResultCursor;
+import org.neo4j.driver.v1.ResultStream;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
@@ -52,7 +51,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.v1.Values.value;
 
-public class InternalResultCursorTest
+public class InternalResultStreamTest
 {
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
@@ -61,35 +60,28 @@ public class InternalResultCursorTest
     public void iterationShouldWorksAsExpected()
     {
         // GIVEN
-        ResultCursor result = createResult( 3 );
+        ResultStream result = createResult( 3 );
 
         // WHEN
-        assertThat( result.position(), equalTo( -1L ) );
-        assertTrue( result.next() ); //-1 -> 0
-        assertNotNull( result.first() );
-        assertFalse( result.atEnd() );
-        assertThat( values( result.record() ), equalTo(Arrays.asList(value("v1-1"), value( "v2-1" ))));
+        assertTrue( result.hasNext() );
+        assertThat( values( result.first() ), equalTo(Arrays.asList(value("v1-1"), value( "v2-1" ))));
 
-        assertThat( result.position(), equalTo( 0L ) );
-        assertTrue( result.next() ); //0 -> 1
-        assertFalse( result.atEnd() );
-        assertThat( values( result.record() ), equalTo(Arrays.asList(value("v1-2"), value( "v2-2" ))));
+        assertTrue( result.hasNext() );
+        assertThat( values( result.next() ), equalTo(Arrays.asList(value("v1-2"), value( "v2-2" ))));
 
-        assertThat( result.position(), equalTo( 1L ) );
-        assertTrue( result.next() ); //1 -> 2
+        assertTrue( result.hasNext() ); //1 -> 2
 
         // THEN
-        assertThat( result.position(), equalTo( 2L ) );
-        assertTrue( result.atEnd() );
-        assertThat( values( result.record() ), equalTo(Arrays.asList(value("v1-3"), value( "v2-3" ))));
-        assertFalse( result.next() );
+        assertThat( values( result.next() ), equalTo(Arrays.asList(value("v1-3"), value( "v2-3" ))));
+        assertFalse( result.hasNext() );
+        assertNull( result.next() );
     }
 
     @Test
     public void firstPastFirstShouldFail()
     {
         // GIVEN
-        ResultCursor result = createResult( 3 );
+        ResultStream result = createResult( 3 );
         result.next();
         result.next();
 
@@ -105,29 +97,29 @@ public class InternalResultCursorTest
     public void firstOfFieldNameShouldWorkAsExpected()
     {
         // GIVEN
-        ResultCursor result = createResult( 3 );
+        ResultStream result = createResult( 3 );
 
         // THEN
-        assertThat( result.first( "k1" ), equalTo( value("v1-1") ) );
-        assertFalse( result.atEnd() );
+        assertThat( result.first().get("k1"), equalTo( value("v1-1") ) );
+        assertTrue( result.hasNext() );
     }
 
     @Test
     public void firstOfFieldIndexShouldWorkAsExpected()
     {
         // GIVEN
-        ResultCursor result = createResult( 3 );
+        ResultStream result = createResult( 3 );
 
         // THEN
-        assertThat( result.first( 0 ), equalTo( value("v1-1") ) );
-        assertFalse( result.atEnd() );
+        assertThat( result.first().get(0), equalTo( value("v1-1") ) );
+        assertTrue( result.hasNext() );
     }
 
     @Test
     public void singlePastFirstShouldFail()
     {
         // GIVEN
-        ResultCursor result = createResult( 2 );
+        ResultStream result = createResult( 2 );
         result.next();
         result.next();
 
@@ -143,7 +135,7 @@ public class InternalResultCursorTest
     public void singleNoneShouldFail()
     {
         // GIVEN
-        ResultCursor result = createResult( 0 );
+        ResultStream result = createResult( 0 );
 
 
         // THEN
@@ -157,7 +149,7 @@ public class InternalResultCursorTest
     public void singleWhenMoreThanOneShouldFail()
     {
         // GIVEN
-        ResultCursor result = createResult( 2 );
+        ResultStream result = createResult( 2 );
 
 
         // THEN
@@ -171,22 +163,22 @@ public class InternalResultCursorTest
     public void singleOfFieldNameShouldWorkAsExpected()
     {
         // GIVEN
-        ResultCursor result = createResult( 1 );
+        ResultStream result = createResult( 1 );
 
         // THEN
-        assertThat( result.single( "k1" ), equalTo( value("v1-1") ) );
-        assertTrue( result.atEnd() );
+        assertThat( result.single().get("k1"), equalTo( value("v1-1") ) );
+        assertFalse( result.hasNext() );
     }
 
     @Test
     public void singleOfFieldIndexShouldWorkAsExpected()
     {
         // GIVEN
-        ResultCursor result = createResult( 1 );
+        ResultStream result = createResult( 1 );
 
         // THEN
-        assertThat( result.single( 0 ), equalTo( value("v1-1") ) );
-        assertTrue( result.atEnd() );
+        assertThat( result.single().get(0), equalTo( value("v1-1") ) );
+        assertFalse( result.hasNext() );
     }
 
     @Test
@@ -197,20 +189,6 @@ public class InternalResultCursorTest
 
         // When
         createResult( 0 ).first();
-    }
-
-    @Test
-    public void firstMovesCursorOnce()
-    {
-        // GIVEN
-        ResultCursor result = createResult( 3 );
-
-        // WHEN
-        assertThat( result.position(), equalTo( -1L ) );
-        assertNotNull( result.first() );
-        assertThat( result.position(), equalTo( 0L ) );
-        assertNotNull( result.first() );
-        assertThat( result.position(), equalTo( 0L ) );
     }
 
     @Test
@@ -243,14 +221,13 @@ public class InternalResultCursorTest
     public void skipShouldWorkAsExpected()
     {
         // GIVEN
-        ResultCursor result = createResult( 42 );
+        ResultStream result = createResult( 42 );
 
         // WHEN
-        assertThat( result.skip( 22 ), equalTo( 22L ) );
+        assertThat( result.skip( 21 ), equalTo( 21L ) );
 
         // THEN
-        assertThat( result.position(), equalTo( 21L ) );
-        assertThat( values( result.record() ), equalTo( Arrays.asList( value( "v1-22" ), value(
+        assertThat( values( result.next() ), equalTo( Arrays.asList( value( "v1-22" ), value(
                 "v2-22" ) ) ) );
     }
 
@@ -258,19 +235,19 @@ public class InternalResultCursorTest
     public void skipBeyondNumberOfRecords()
     {
         // GIVEN
-        ResultCursor result = createResult( 10 );
+        ResultStream result = createResult( 10 );
 
         // WHEN
         assertThat(result.skip( 20 ), equalTo(10L));
 
         // THEN
-        assertThat( result.position(), equalTo( 9L ) );
+        assertFalse( result.hasNext() );
     }
 
     @Test
     public void skipThrowsIfNegativeNumber()
     {
-        ResultCursor result = createResult( 10 );
+        ResultStream result = createResult( 10 );
         result.skip( 5 );
 
         expectedException.expect( ClientException.class );
@@ -281,7 +258,7 @@ public class InternalResultCursorTest
     public void limitShouldWorkAsExpected()
     {
         // GIVEN
-        ResultCursor result = createResult( 42 );
+        ResultStream result = createResult( 42 );
         result.limit( 10 );
 
         // THEN
@@ -292,7 +269,7 @@ public class InternalResultCursorTest
     public void limitZeroShouldWorkAsExpected1()
     {
         // GIVEN
-        ResultCursor result = createResult( 42 );
+        ResultStream result = createResult( 42 );
         result.limit( 0 );
 
         // THEN
@@ -303,20 +280,20 @@ public class InternalResultCursorTest
     public void limitZeroShouldWorkAsExpected2()
     {
         // GIVEN
-        ResultCursor result = createResult( 10 );
+        ResultStream result = createResult( 10 );
         result.skip( 4 );
         result.limit( 0 );
 
         // THEN
-        assertTrue( result.atEnd() );
-        assertFalse( result.next() );
+        assertFalse( result.hasNext() );
+        assertNull( result.next() );
     }
 
     @Test
     public void limitOnEmptyResultShouldWorkAsExpected()
     {
         // GIVEN
-        ResultCursor result = createResult( 0 );
+        ResultStream result = createResult( 0 );
         result.limit( 10 );
 
         // THEN
@@ -327,7 +304,7 @@ public class InternalResultCursorTest
     public void changingLimitShouldWorkAsExpected()
     {
         // GIVEN
-        ResultCursor result = createResult( 6 );
+        ResultStream result = createResult( 6 );
         result.limit( 1 );
         result.limit( 60 );
 
@@ -339,13 +316,13 @@ public class InternalResultCursorTest
     public void retainShouldWorkAsExpected()
     {
         // GIVEN
-        ResultCursor result = createResult( 3 );
+        ResultStream result = createResult( 3 );
 
         // WHEN
         List<Record> records = result.list();
 
         // THEN
-        assertTrue(result.atEnd());
+        assertFalse(result.hasNext());
         assertThat(records, hasSize( 3 ) );
     }
 
@@ -353,13 +330,13 @@ public class InternalResultCursorTest
     public void retainAndMapByKeyShouldWorkAsExpected()
     {
         // GIVEN
-        ResultCursor result = createResult( 3 );
+        ResultStream result = createResult( 3 );
 
         // WHEN
         List<Value> records = result.list( Records.columnAsIs( "k1" ) );
 
         // THEN
-        assertTrue(result.atEnd());
+        assertFalse(result.hasNext());
         assertThat(records, hasSize( 3 ) );
     }
 
@@ -367,20 +344,20 @@ public class InternalResultCursorTest
     public void retainAndMapByIndexShouldWorkAsExpected()
     {
         // GIVEN
-        ResultCursor result = createResult( 3 );
+        ResultStream result = createResult( 3 );
 
         // WHEN
         List<Value> records = result.list( Records.columnAsIs( 0 ) );
 
         // THEN
-        assertTrue(result.atEnd());
+        assertFalse(result.hasNext());
         assertThat(records, hasSize( 3 ) );
     }
 
     @Test
     public void retainFailsIfItCannotRetainEntireResult()
     {
-        ResultCursor result = createResult( 17 );
+        ResultStream result = createResult( 17 );
         result.skip( 5 );
 
         expectedException.expect( ClientException.class );
@@ -391,84 +368,36 @@ public class InternalResultCursorTest
     public void accessingOutOfBoundsShouldBeNull()
     {
         // GIVEN
-        ResultCursor result = createResult( 1 );
+        ResultStream result = createResult( 1 );
 
         // WHEN
-        result.first();
+        Record record = result.first();
 
         // THEN
-        assertThat( result.get( 0 ), equalTo( value( "v1-1" ) ) );
-        assertThat( result.get( 1 ), equalTo( value( "v2-1" ) ) );
-        assertThat( result.get( 2 ), equalTo( NullValue.NULL ) );
-        assertThat( result.get( -37 ), equalTo( NullValue.NULL ) );
-    }
-
-    @Test
-    public void accessingRecordsWithoutCallingNextShouldFail()
-    {
-        // GIVEN
-        ResultCursor result = createResult( 11 );
-
-        // WHEN
-        // not calling next, first, nor skip
-
-        // THEN
-        expectedException.expect( ClientException.class );
-        result.record();
-    }
-
-    @Test
-    public void accessingValueWithoutCallingNextShouldFail()
-    {
-        // GIVEN
-        ResultCursor result = createResult( 11 );
-
-        // WHEN
-        // not calling next, first, nor skip
-
-        // THEN
-        expectedException.expect( ClientException.class );
-        result.get( 1 );
-    }
-
-    @Test
-    public void accessingFieldsWithoutCallingNextShouldFail()
-    {
-        // GIVEN
-        ResultCursor result = createResult( 11 );
-
-        // WHEN
-        // not calling next, first, nor skip
-
-        // THEN
-        expectedException.expect( ClientException.class );
-        result.fields();
+        assertThat( record.get( 0 ), equalTo( value( "v1-1" ) ) );
+        assertThat( record.get( 1 ), equalTo( value( "v2-1" ) ) );
+        assertThat( record.get( 2 ), equalTo( NullValue.NULL ) );
+        assertThat( record.get( -37 ), equalTo( NullValue.NULL ) );
     }
 
     @Test
     public void accessingKeysWithoutCallingNextShouldNotFail()
     {
         // GIVEN
-        ResultCursor result = createResult( 11 );
+        ResultStream result = createResult( 11 );
 
         // WHEN
-        // not calling next, first, nor skip
+        // not calling next, first, single, nor skip
 
         // THEN
         assertThat( result.keys(), equalTo( Arrays.asList( "k1", "k2" ) ) );
     }
 
     @Test
-    public void shouldHaveCorrectSize()
-    {
-        assertThat( createResult( 4 ).size(), equalTo( 2 ) );
-    }
-
-    @Test
     public void shouldPeekIntoTheFuture()
     {
         // WHEN
-        ResultCursor result = createResult( 2 );
+        ResultStream result = createResult( 2 );
 
         // THEN
         assertThat( result.peek().get( "k1" ), equalTo( value( "v1-1" ) ) );
@@ -477,16 +406,12 @@ public class InternalResultCursorTest
         result.next();
 
         // THEN
-        assertThat( result.get( "k1" ), equalTo( value( "v1-1" ) ) );
         assertThat( result.peek().get( "k1" ), equalTo( value( "v1-2" ) ) );
 
         // WHEN
         result.next();
 
         // THEN
-        assertThat( result.get( "k1" ), equalTo( value( "v1-2" ) ) );
-
-        // AND THEN
         assertNull( result.peek() );
     }
 
@@ -494,19 +419,19 @@ public class InternalResultCursorTest
     public void shouldNotPeekIntoTheFutureWhenResultIsEmpty()
     {
         // GIVEN
-        ResultCursor result = createResult( 0 );
-        RecordAccessor future = result.peek();
+        ResultStream result = createResult( 0 );
+        Record future = result.peek();
 
         // WHEN
         assertNull( future );
     }
 
-    private ResultCursor createResult( int numberOfRecords )
+    private ResultStream createResult( int numberOfRecords )
     {
         Connection connection = mock( Connection.class );
         String statement = "<unknown>";
 
-        final InternalResultCursor cursor = new InternalResultCursor( connection, statement, ParameterSupport
+        final InternalResultStream cursor = new InternalResultStream( connection, statement, ParameterSupport
                 .NO_PARAMETERS );
 
         // Each time the cursor calls `recieveOne`, we'll run one of these,
@@ -533,7 +458,7 @@ public class InternalResultCursorTest
         return cursor;
     }
 
-    private Runnable streamTailMessage( final InternalResultCursor cursor )
+    private Runnable streamTailMessage( final InternalResultStream cursor )
     {
         return new Runnable()
         {
@@ -545,7 +470,7 @@ public class InternalResultCursorTest
         };
     }
 
-    private Runnable recordMessage( final InternalResultCursor cursor, final int val )
+    private Runnable recordMessage( final InternalResultStream cursor, final int val )
     {
         return new Runnable()
         {
@@ -557,7 +482,7 @@ public class InternalResultCursorTest
         };
     }
 
-    private Runnable streamHeadMessage( final InternalResultCursor cursor )
+    private Runnable streamHeadMessage( final InternalResultStream cursor )
     {
         return new Runnable()
         {

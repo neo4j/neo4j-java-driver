@@ -22,7 +22,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import org.neo4j.driver.v1.ResultCursor;
+import org.neo4j.driver.v1.ResultStream;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
@@ -51,7 +51,7 @@ public class TransactionIT
         }
 
         // Then the outcome of both statements should be visible
-        ResultCursor result = session.run( "MATCH (n) RETURN count(n)" );
+        ResultStream result = session.run( "MATCH (n) RETURN count(n)" );
         long nodes = result.single().get( "count(n)" ).asLong();
         assertThat( nodes, equalTo( 2l ) );
     }
@@ -67,7 +67,7 @@ public class TransactionIT
         }
 
         // Then there should be no visible effect of the transaction
-        ResultCursor cursor = session.run( "MATCH (n) RETURN count(n)" );
+        ResultStream cursor = session.run( "MATCH (n) RETURN count(n)" );
         long nodes = cursor.single().get( "count(n)" ).asLong();
         assertThat( nodes, equalTo( 0l ) );
     }
@@ -81,7 +81,7 @@ public class TransactionIT
         // When
         try ( Transaction tx = session.beginTransaction() )
         {
-            ResultCursor res = tx.run( "MATCH (n) RETURN n.name" );
+            ResultStream res = tx.run( "MATCH (n) RETURN n.name" );
 
             // Then
             assertThat( res.single().get( "n.name" ).asString(), equalTo( "Steve Brook" ) );

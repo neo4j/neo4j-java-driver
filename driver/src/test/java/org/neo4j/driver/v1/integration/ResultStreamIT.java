@@ -22,14 +22,12 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.ResultCursor;
-import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.ResultStream;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.neo4j.driver.v1.Values.parameters;
 
 public class ResultStreamIT
@@ -41,13 +39,13 @@ public class ResultStreamIT
     public void shouldAllowIteratingOverResultStream() throws Throwable
     {
         // When
-        ResultCursor res = session.run( "UNWIND [1,2,3,4] AS a RETURN a" );
+        ResultStream res = session.run( "UNWIND [1,2,3,4] AS a RETURN a" );
 
         // Then I should be able to iterate over the result
         int idx = 1;
-        while ( res.next() )
+        while ( res.hasNext() )
         {
-            assertEquals( idx++, res.get( "a" ).asLong() );
+            assertEquals( idx++, res.next().get( "a" ).asLong() );
         }
     }
 
@@ -55,7 +53,7 @@ public class ResultStreamIT
     public void shouldHaveFieldNamesInResult()
     {
         // When
-        ResultCursor res = session.run( "CREATE (n:TestNode {name:'test'}) RETURN n" );
+        ResultStream res = session.run( "CREATE (n:TestNode {name:'test'}) RETURN n" );
 
         // Then
         assertEquals( "[n]", res.keys().toString() );
@@ -64,32 +62,10 @@ public class ResultStreamIT
     }
 
     @Test
-    public void shouldGiveHelpfulFailureMessageWhenCurrentRecordHasNotBeenSet() throws Throwable
-    {
-        // Given
-        ResultCursor rs = session.run( "CREATE (n:Person {name:{name}}) RETURN n", parameters( "name", "Tom Hanks" ) );
-
-        // When & Then
-        try
-        {
-            rs.get( "n" );
-            fail( "The test should fail with a proper message to indicate `next` method should be called first" );
-        }
-        catch( ClientException e )
-        {
-            assertEquals(
-                    "In order to access the fields of a record in a result, " +
-                    "you must first call next() to point the result to the next record in the result stream.",
-                    e.getMessage() );
-
-        }
-    }
-
-    @Test
     public void shouldGiveHelpfulFailureMessageWhenAccessNonExistingField() throws Throwable
     {
         // Given
-        ResultCursor rs = session.run( "CREATE (n:Person {name:{name}}) RETURN n", parameters( "name", "Tom Hanks" ) );
+        ResultStream rs = session.run( "CREATE (n:Person {name:{name}}) RETURN n", parameters( "name", "Tom Hanks" ) );
 
         // When
         Record single = rs.single();
@@ -102,7 +78,7 @@ public class ResultStreamIT
     public void shouldGiveHelpfulFailureMessageWhenAccessNonExistingPropertyOnNode() throws Throwable
     {
         // Given
-        ResultCursor rs = session.run( "CREATE (n:Person {name:{name}}) RETURN n", parameters( "name", "Tom Hanks" ) );
+        ResultStream rs = session.run( "CREATE (n:Person {name:{name}}) RETURN n", parameters( "name", "Tom Hanks" ) );
 
         // When
         Record record = rs.single();
@@ -115,7 +91,7 @@ public class ResultStreamIT
     public void shouldNotReturnNullKeysOnEmptyResult()
     {
         // Given
-        ResultCursor rs = session.run( "CREATE (n:Person {name:{name}})", parameters( "name", "Tom Hanks" ) );
+        ResultStream rs = session.run( "CREATE (n:Person {name:{name}})", parameters( "name", "Tom Hanks" ) );
 
         // THEN
         assertNotNull( rs.keys() );

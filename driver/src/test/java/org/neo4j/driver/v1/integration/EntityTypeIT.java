@@ -24,7 +24,7 @@ import org.junit.Test;
 import org.neo4j.driver.v1.Node;
 import org.neo4j.driver.v1.Path;
 import org.neo4j.driver.v1.Relationship;
-import org.neo4j.driver.v1.ResultCursor;
+import org.neo4j.driver.v1.ResultStream;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
 import static org.junit.Assert.assertTrue;
@@ -38,7 +38,7 @@ public class EntityTypeIT
     public void shouldReturnIdentitiesOfNodes() throws Throwable
     {
         // When
-        ResultCursor cursor = session.run( "CREATE (n) RETURN n" );
+        ResultStream cursor = session.run( "CREATE (n) RETURN n" );
         Node node = cursor.single().get( "n" ).asNode();
 
         // Then
@@ -49,7 +49,7 @@ public class EntityTypeIT
     public void shouldReturnIdentitiesOfRelationships() throws Throwable
     {
         // When
-        ResultCursor cursor = session.run( "CREATE ()-[r:T]->() RETURN r" );
+        ResultStream cursor = session.run( "CREATE ()-[r:T]->() RETURN r" );
         Relationship rel = cursor.single().get( "r" ).asRelationship();
 
         // Then
@@ -62,7 +62,7 @@ public class EntityTypeIT
     public void shouldReturnIdentitiesOfPaths() throws Throwable
     {
         // When
-        ResultCursor cursor = session.run( "CREATE p=()-[r:T]->() RETURN p" );
+        ResultStream cursor = session.run( "CREATE p=()-[r:T]->() RETURN p" );
         Path path = cursor.single().get( "p" ).asPath();
 
         // Then

@@ -24,7 +24,7 @@ import java.util.Map;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.StreamCollector;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
-import org.neo4j.driver.v1.ResultCursor;
+import org.neo4j.driver.v1.ResultStream;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.TypeSystem;
@@ -124,13 +124,13 @@ public class InternalTransaction implements Transaction
 
     @Override
     @SuppressWarnings( "unchecked" )
-    public ResultCursor run( String statementText, Map<String,Value> statementParameters )
+    public ResultStream run( String statementText, Map<String,Value> statementParameters )
     {
         ensureNotFailed();
 
         try
         {
-            InternalResultCursor cursor = new InternalResultCursor( conn, statementText, statementParameters );
+            InternalResultStream cursor = new InternalResultStream( conn, statementText, statementParameters );
             conn.run( statementText, statementParameters, cursor.runResponseCollector() );
             conn.pullAll( cursor.pullAllResponseCollector() );
             conn.flush();
@@ -144,13 +144,13 @@ public class InternalTransaction implements Transaction
     }
 
     @Override
-    public ResultCursor run( String statementTemplate )
+    public ResultStream run( String statementTemplate )
     {
         return run( statementTemplate, ParameterSupport.NO_PARAMETERS );
     }
 
     @Override
-    public ResultCursor run( Statement statement )
+    public ResultStream run( Statement statement )
     {
         return run( statement.template(), statement.parameters() );
     }

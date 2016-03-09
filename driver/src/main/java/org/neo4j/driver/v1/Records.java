@@ -21,54 +21,54 @@ package org.neo4j.driver.v1;
 /**
  * Static utility methods for retaining records
  *
- * @see ResultCursor#list()
+ * @see ResultStream#list()
  */
 public abstract class Records
 {
-    public static Function<RecordAccessor, Record> recordAsIs()
+    public static Function<Record, Record> recordAsIs()
     {
         return RECORD;
     }
 
-    public static Function<RecordAccessor, Value> columnAsIs( int index )
+    public static Function<Record, Value> columnAsIs( int index )
     {
         return column( index, Values.valueAsIs() );
     }
 
-    public static Function<RecordAccessor, Value> columnAsIs( String key )
+    public static Function<Record, Value> columnAsIs( String key )
     {
         return column( key, Values.valueAsIs() );
     }
 
-    public static <T> Function<RecordAccessor, T> column( final int index, final Function<Value, T> mapFunction )
+    public static <T> Function<Record, T> column( final int index, final Function<Value, T> mapFunction )
     {
-        return new Function<RecordAccessor, T>()
+        return new Function<Record, T>()
         {
             @Override
-            public T apply( RecordAccessor recordAccessor )
+            public T apply( Record record )
             {
-                return mapFunction.apply( recordAccessor.get( index ) );
+                return mapFunction.apply( record.get( index ) );
             }
         };
     }
-    public static <T> Function<RecordAccessor, T> column( final String key, final Function<Value, T> mapFunction )
+    public static <T> Function<Record, T> column( final String key, final Function<Value, T> mapFunction )
     {
-        return new Function<RecordAccessor, T>()
+        return new Function<Record, T>()
         {
             @Override
-            public T apply( RecordAccessor recordAccessor )
+            public T apply( Record recordAccessor )
             {
                 return mapFunction.apply( recordAccessor.get( key ) );
             }
         };
     }
 
-    private static final Function<RecordAccessor, Record> RECORD = new Function<RecordAccessor, Record>()
+    private static final Function<Record, Record> RECORD = new Function<Record, Record>()
     {
         @Override
-        public Record apply( RecordAccessor recordAccessor )
+        public Record apply( Record record )
         {
-            return recordAccessor.record();
+            return record;
         }
     };
 }

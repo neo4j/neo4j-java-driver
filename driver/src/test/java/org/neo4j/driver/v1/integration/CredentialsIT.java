@@ -61,7 +61,7 @@ public class CredentialsIT
 
         // When
         Session session = driver.session();
-        Value single = session.run( "RETURN 1" ).single( 0 );
+        Value single = session.run( "RETURN 1" ).single().get(0);
 
         // Then
         assertThat( single.asLong(), equalTo( 1L ) );
@@ -82,7 +82,7 @@ public class CredentialsIT
         exception.expectMessage( "The client is unauthorized due to authentication failure." );
 
         // When
-        session.run( "RETURN 1" ).single( 0 );
+        session.run( "RETURN 1" ).single().get(0);
     }
 
     private void enableAuth( String password ) throws Exception

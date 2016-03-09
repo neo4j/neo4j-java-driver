@@ -18,22 +18,20 @@
  */
 package org.neo4j.driver.v1.integration;
 
-import java.util.List;
-
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.List;
+
 import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.ResultCursor;
+import org.neo4j.driver.v1.ResultStream;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-
 import static org.neo4j.driver.v1.Values.parameters;
 
 public class StatementIT
@@ -99,20 +97,16 @@ public class StatementIT
     public void shouldRunSimpleStatement() throws Throwable
     {
         // When I run a simple write statement
-        ResultCursor result1 = session.run( "CREATE (a {name:'Adam'})" );
-        while ( result1.next() )
-        {
-            // ignored
-        }
+        session.run( "CREATE (a {name:'Adam'})" );
 
         // And I run a read statement
-        ResultCursor result2 = session.run( "MATCH (a) RETURN a.name" );
+        ResultStream result2 = session.run( "MATCH (a) RETURN a.name" );
 
-        // Then I expect to value the name back
+        // Then I expect to get the name back
         Value name = null;
-        while ( result2.next() )
+        while ( result2.hasNext() )
         {
-            name = result2.get( "a.name" );
+            name = result2.next().get( "a.name" );
         }
 
         assertThat( name.asString(), equalTo( "Adam" ) );

@@ -21,7 +21,7 @@ package org.neo4j.driver.v1.tck.tck.util.runners;
 import java.util.Collections;
 import java.util.Map;
 
-import org.neo4j.driver.v1.ResultCursor;
+import org.neo4j.driver.v1.ResultStream;
 import org.neo4j.driver.v1.Value;
 
 import static org.junit.Assert.assertNotNull;
@@ -31,7 +31,7 @@ public class MappedParametersRunner implements CypherStatementRunner
 {
     private String statement;
     private Map<String,Value> parameters;
-    private ResultCursor result;
+    private ResultStream result;
 
     public MappedParametersRunner( String st, String key, Value value )
     {
@@ -54,7 +54,7 @@ public class MappedParametersRunner implements CypherStatementRunner
     }
 
     @Override
-    public ResultCursor result()
+    public ResultStream result()
     {
         return result;
     }

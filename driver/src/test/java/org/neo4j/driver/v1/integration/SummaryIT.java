@@ -18,16 +18,16 @@
  */
 package org.neo4j.driver.v1.integration;
 
-import java.util.List;
-import java.util.Map;
-
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.List;
+import java.util.Map;
 
 import org.neo4j.driver.v1.Notification;
 import org.neo4j.driver.v1.Plan;
 import org.neo4j.driver.v1.ProfiledPlan;
-import org.neo4j.driver.v1.ResultCursor;
+import org.neo4j.driver.v1.ResultStream;
 import org.neo4j.driver.v1.ResultSummary;
 import org.neo4j.driver.v1.StatementType;
 import org.neo4j.driver.v1.Value;
@@ -56,16 +56,16 @@ public class SummaryIT
         String statementText = "UNWIND [1, 2, 3, 4] AS n RETURN n AS number LIMIT {limit}";
 
         // When
-        ResultCursor result = session.run( statementText, statementParameters );
+        ResultStream result = session.run( statementText, statementParameters );
 
         // Then
-        assertTrue( result.next() );
+        assertTrue( result.hasNext() );
 
         // When
         ResultSummary summary = result.summarize();
 
         // Then
-        assertFalse( result.next() );
+        assertFalse( result.hasNext() );
         assertThat( summary.statementType(), equalTo( StatementType.READ_ONLY ) );
         assertThat( summary.statement().template(), equalTo( statementText ) );
         assertThat( summary.statement().parameters(), equalTo( statementParameters ) );

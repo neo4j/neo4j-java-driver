@@ -39,7 +39,7 @@ import org.neo4j.driver.internal.util.CertificateTool;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
-import org.neo4j.driver.v1.ResultCursor;
+import org.neo4j.driver.v1.ResultStream;
 import org.neo4j.driver.v1.util.CertificateToolTest;
 import org.neo4j.driver.v1.util.Neo4jInstaller;
 import org.neo4j.driver.v1.util.Neo4jRunner;
@@ -268,10 +268,9 @@ public class TLSSocketChannelIT
                 URI.create( Neo4jRunner.DEFAULT_URL ),
                 config );
 
-        ResultCursor result = driver.session().run( "RETURN 1" );
-        assertTrue( result.next() );
-        assertEquals( 1, result.get( 0 ).asInt() );
-        assertFalse( result.next() );
+        ResultStream result = driver.session().run( "RETURN 1" );
+        assertEquals( 1, result.next().get( 0 ).asInt() );
+        assertFalse( result.hasNext() );
 
         driver.close();
     }

@@ -31,8 +31,8 @@ import static java.lang.String.format;
  *
  * @see Session
  * @see Transaction
- * @see ResultCursor
- * @see ResultCursor#summarize()
+ * @see ResultStream
+ * @see ResultStream#summarize()
  * @see ResultSummary
  */
 @Immutable

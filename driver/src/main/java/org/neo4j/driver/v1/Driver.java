@@ -44,11 +44,11 @@ import java.net.URI;
  * }
  *
  * // Retrieve results
- * ResultCursor cursor = session.run( "MATCH (n) RETURN n.name" );
+ * ResultStream result = session.run( "MATCH (n) RETURN n.name" );
  * List<String> names = new LinkedList<>();
- * while( cursor.next() )
+ * while( result.hasNext() )
  * {
- *     names.add( cursor.get("n.name").asString() );
+ *     names.add( result.next().get("n.name").asString() );
  * }
  *
  * // Sessions are pooled, to avoid the overhead of creating new connections - this means
