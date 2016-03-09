@@ -26,9 +26,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import org.neo4j.driver.v1.Node;
-import org.neo4j.driver.v1.Path;
-import org.neo4j.driver.v1.Relationship;
+import org.neo4j.driver.v1.value.Node;
+import org.neo4j.driver.v1.value.Path;
+import org.neo4j.driver.v1.value.Relationship;
 import org.neo4j.driver.v1.util.Lists;
 
 import static org.hamcrest.CoreMatchers.equalTo;

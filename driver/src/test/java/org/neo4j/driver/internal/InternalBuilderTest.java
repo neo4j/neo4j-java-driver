@@ -22,9 +22,9 @@ import org.junit.Test;
 
 import org.neo4j.driver.internal.summary.InternalUpdateStatistics;
 import org.neo4j.driver.internal.summary.SummaryBuilder;
-import org.neo4j.driver.v1.ResultSummary;
+import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.Statement;
-import org.neo4j.driver.v1.UpdateStatistics;
+import org.neo4j.driver.v1.summary.UpdateStatistics;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;

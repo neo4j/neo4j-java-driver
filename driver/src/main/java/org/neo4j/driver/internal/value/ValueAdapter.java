@@ -24,15 +24,14 @@ import java.util.Map;
 import org.neo4j.driver.internal.types.TypeConstructor;
 import org.neo4j.driver.internal.types.TypeRepresentation;
 import org.neo4j.driver.internal.util.Extract;
-import org.neo4j.driver.v1.Entity;
-import org.neo4j.driver.v1.Function;
-import org.neo4j.driver.v1.Identity;
-import org.neo4j.driver.v1.Node;
-import org.neo4j.driver.v1.Pair;
-import org.neo4j.driver.v1.Path;
-import org.neo4j.driver.v1.Relationship;
-import org.neo4j.driver.v1.Type;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.value.Entity;
+import org.neo4j.driver.v1.util.Function;
+import org.neo4j.driver.v1.value.Node;
+import org.neo4j.driver.v1.util.Pair;
+import org.neo4j.driver.v1.value.Path;
+import org.neo4j.driver.v1.value.Relationship;
+import org.neo4j.driver.v1.value.Type;
+import org.neo4j.driver.v1.value.Value;
 import org.neo4j.driver.v1.exceptions.value.NotMultiValued;
 import org.neo4j.driver.v1.exceptions.value.Uncoercible;
 import org.neo4j.driver.v1.exceptions.value.Unsizable;
@@ -40,7 +39,7 @@ import org.neo4j.driver.v1.exceptions.value.Unsizable;
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
 import static org.neo4j.driver.internal.value.InternalValue.Format.VALUE_ONLY;
-import static org.neo4j.driver.v1.Values.valueAsIs;
+import static org.neo4j.driver.v1.value.Values.valueAsIs;
 
 public abstract class ValueAdapter implements InternalValue
 {
@@ -164,12 +163,6 @@ public abstract class ValueAdapter implements InternalValue
     public Number asNumber()
     {
         throw new Uncoercible( type().name(), "Java Number" );
-    }
-
-    @Override
-    public Identity asIdentity()
-    {
-        throw new Uncoercible( type().name(), "Identity" );
     }
 
     @Override

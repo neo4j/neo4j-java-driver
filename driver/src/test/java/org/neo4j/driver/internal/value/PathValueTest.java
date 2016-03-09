@@ -24,7 +24,7 @@ import org.neo4j.driver.internal.InternalNode;
 import org.neo4j.driver.internal.InternalPath;
 import org.neo4j.driver.internal.InternalRelationship;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.value.Value;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
@@ -36,7 +36,7 @@ public class PathValueTest
     @Test
     public void shouldHaveSensibleToString() throws Throwable
     {
-        assertEquals("path[(#42)-[#43:T]->(#44)]", pathValue().toString());
+        assertEquals("path[(42)-[43:T]->(44)]", pathValue().toString());
     }
 
     @Test

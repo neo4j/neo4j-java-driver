@@ -28,7 +28,7 @@ import org.neo4j.driver.v1.util.TestNeo4jSession;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.driver.v1.Values.parameters;
+import static org.neo4j.driver.v1.value.Values.parameters;
 
 public class ResultStreamIT
 {

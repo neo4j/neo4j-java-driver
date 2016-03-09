@@ -44,7 +44,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.driver.v1.Values.parameters;
+import static org.neo4j.driver.v1.value.Values.parameters;
 
 public class SocketClientIT
 {

@@ -16,22 +16,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1;
+package org.neo4j.driver.v1.util;
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Inherited;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-
-/**
- * Annotated elements are experimental and may change without deprecation across driver releases
- */
-@Inherited
-@Retention(RetentionPolicy.RUNTIME)
-@Documented
-@Target( { ElementType.TYPE, ElementType.METHOD } )
-public @interface Experimental
+public class Functions
 {
+    public static <T> Function<T,T> identity()
+    {
+        return IDENTITY;
+    }
+
+    private static final Function IDENTITY = new Function()
+    {
+        @Override
+        public Object apply( Object o )
+        {
+            return o;
+        }
+    };
 }

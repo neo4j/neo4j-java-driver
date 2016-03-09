@@ -20,7 +20,7 @@ package org.neo4j.driver.v1;
 
 import org.neo4j.driver.internal.auth.InternalAuthToken;
 
-import static org.neo4j.driver.v1.Values.parameters;
+import static org.neo4j.driver.v1.value.Values.parameters;
 
 /**
  * This is a listing of the various methods of authentication supported by this

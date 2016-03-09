@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.driver.internal.spi.StreamCollector;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.value.Value;
 
 /**
  * Validates connections - determining if they are ok to keep in the pool, or if they should be disposed of.

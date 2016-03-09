@@ -29,7 +29,7 @@ import org.neo4j.driver.internal.connector.ConcurrencyGuardingConnection;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.Connector;
 import org.neo4j.driver.v1.Config;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.value.Value;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.exceptions.ClientException;

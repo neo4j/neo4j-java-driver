@@ -23,6 +23,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.driver.internal.ParameterSupport;
+import org.neo4j.driver.v1.summary.ResultSummary;
+import org.neo4j.driver.v1.util.Immutable;
+import org.neo4j.driver.v1.value.Value;
 
 import static java.lang.String.format;
 
@@ -39,7 +42,7 @@ import static java.lang.String.format;
 public class Statement
 {
     private final String template;
-    private final Map<String, Value> parameters;
+    private final Map<String,Value> parameters;
 
     public Statement( String template, Map<String, Value> parameters )
     {

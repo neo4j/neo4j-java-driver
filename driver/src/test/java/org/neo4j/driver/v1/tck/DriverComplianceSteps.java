@@ -33,8 +33,8 @@ import java.util.Random;
 
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
-import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.Values;
+import org.neo4j.driver.v1.value.Value;
+import org.neo4j.driver.v1.value.Values;
 import org.neo4j.driver.v1.tck.tck.util.Types;
 import org.neo4j.driver.v1.tck.tck.util.runners.CypherStatementRunner;
 import org.neo4j.driver.v1.tck.tck.util.runners.MappedParametersRunner;

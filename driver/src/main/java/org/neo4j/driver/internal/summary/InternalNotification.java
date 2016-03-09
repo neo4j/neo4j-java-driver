@@ -18,10 +18,10 @@
  */
 package org.neo4j.driver.internal.summary;
 
-import org.neo4j.driver.v1.Function;
-import org.neo4j.driver.v1.InputPosition;
-import org.neo4j.driver.v1.Notification;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.util.Function;
+import org.neo4j.driver.v1.summary.InputPosition;
+import org.neo4j.driver.v1.summary.Notification;
+import org.neo4j.driver.v1.value.Value;
 
 import static org.neo4j.driver.internal.value.NullValue.NULL;
 

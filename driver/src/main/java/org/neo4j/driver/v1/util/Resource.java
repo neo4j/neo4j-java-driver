@@ -16,21 +16,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1;
+package org.neo4j.driver.v1.util;
 
 /**
- * A uniquely identifiable property container that can form part of a Neo4j graph.
+ * A Resource is an {@link AutoCloseable} that allows introspecting if it
+ * already has been closed through its {@link #isOpen()} method.
+ *
+ * Additionally, calling {@link AutoCloseable#close()} twice is expected to fail
+ * (i.e. is not idempotent).
  */
-@Immutable
-public interface Entity extends MapAccessor
+public interface Resource extends AutoCloseable
 {
     /**
-     * A unique {@link Identity identity} for this Entity. Identities are guaranteed
-     * to remain stable for the duration of the session they were found in, but may be re-used for other
-     * entities after that. As such, if you want a public identity to use for your entities, attaching
-     * an explicit 'id' property or similar persistent and unique identifier is a better choice.
+     * Detect whether this resource is still open
      *
-     * @return an identity object
+     * @return true if the resource is open
      */
-    Identity identity();
+    boolean isOpen();
+
+    /**
+     * @throws IllegalStateException if already closed
+     */
+    @Override
+    void close();
 }

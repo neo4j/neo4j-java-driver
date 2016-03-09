@@ -16,32 +16,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1;
+package org.neo4j.driver.v1.value;
 
 /**
- * An input position refers to a specific character in a statement.
+ * The <strong>Relationship</strong> interface describes the characteristics of a relationship from a Neo4j graph.
  */
-@Immutable
-public interface InputPosition
+public interface Relationship extends Entity
 {
     /**
-     * The character offset referred to by this position; offset numbers start at 0.
-     *
-     * @return the offset of this position.
+     * Id of the node where this relationship starts.
+     * @return the node id
      */
-    int offset();
+    long startNodeId();
 
     /**
-     * The line number referred to by the position; line numbers start at 1.
-     *
-     * @return the line number of this position.
+     * Id of the node where this relationship ends.
+     * @return the node id
      */
-    int line();
+    long endNodeId();
 
     /**
-     * The column number referred to by the position; column numbers start at 1.
+     * Return the <em>type</em> of this relationship.
      *
-     * @return the column number of this position.
+     * @return the type name
      */
-    int column();
+    String type();
+
+    /**
+     * Test if this relationship has the given type
+     *
+     * @param relationshipType the give relationship type
+     * @return <tt>true</tt> if this relationship has the given relationship type otherwise <tt>false</tt>
+     */
+    boolean hasType( String relationshipType );
 }

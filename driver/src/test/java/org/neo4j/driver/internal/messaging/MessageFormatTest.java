@@ -37,15 +37,15 @@ import org.neo4j.driver.internal.InternalRelationship;
 import org.neo4j.driver.internal.connector.socket.ChunkedOutput;
 import org.neo4j.driver.internal.packstream.PackStream;
 import org.neo4j.driver.internal.util.BytePrinter;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.value.Value;
 import org.neo4j.driver.v1.util.DumpMessage;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.startsWith;
-import static org.neo4j.driver.v1.Values.parameters;
-import static org.neo4j.driver.v1.Values.value;
+import static org.neo4j.driver.v1.value.Values.parameters;
+import static org.neo4j.driver.v1.value.Values.value;
 
 public class MessageFormatTest
 {

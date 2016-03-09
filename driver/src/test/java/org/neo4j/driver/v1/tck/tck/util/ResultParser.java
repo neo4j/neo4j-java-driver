@@ -37,11 +37,10 @@ import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.internal.value.PathValue;
 import org.neo4j.driver.internal.value.RelationshipValue;
 import org.neo4j.driver.internal.value.StringValue;
-import org.neo4j.driver.v1.Entity;
-import org.neo4j.driver.v1.Function;
-import org.neo4j.driver.v1.Path;
-import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.Values;
+import org.neo4j.driver.v1.value.Entity;
+import org.neo4j.driver.v1.value.Path;
+import org.neo4j.driver.v1.value.Value;
+import org.neo4j.driver.v1.value.Values;
 
 import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
@@ -217,13 +216,13 @@ public class ResultParser
             TestRelationshipValue trv = new TestRelationshipValue( segment.relationship() );
 
 
-            if ( trv.asRelationship().start().equals( segment.start().identity() ) &&
-                 trv.asRelationship().end().equals( segment.end().identity() ) )
+            if ( trv.asRelationship().startNodeId() == segment.start().id() &&
+                 trv.asRelationship().endNodeId() == segment.end().id() )
             {
                 nodesAndRels.add( new TestRelationship( trv, prevNode, node ) );
             }
-            else if ( trv.asRelationship().start().equals( segment.end().identity() ) &&
-                      trv.asRelationship().end().equals( segment.start().identity() ) )
+            else if ( trv.asRelationship().startNodeId() == segment.end().id() &&
+                      trv.asRelationship().endNodeId() == segment.start().id() )
             {
                 nodesAndRels.add( new TestRelationship( trv, node, prevNode ) );
             }
@@ -239,15 +238,6 @@ public class ResultParser
         }
         return new PathValue( new InternalPath( nodesAndRels ) );
     }
-
-    private static final Function<Value,TestRelationshipValue> relationshipToTest =
-            new Function<Value,TestRelationshipValue>()
-            {
-                public TestRelationshipValue apply( Value val )
-                {
-                    return new TestRelationshipValue( val.asRelationship() );
-                }
-            };
 
     public static Map<String,Value> parseGiven( Map<String,Value> input )
     {

@@ -31,11 +31,11 @@ import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.ResultStream;
 import org.neo4j.driver.v1.Session;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.value.Value;
 import org.neo4j.driver.v1.util.Neo4jRunner;
 import org.neo4j.driver.v1.util.Neo4jSettings;
 
-import static org.neo4j.driver.v1.Values.parameters;
+import static org.neo4j.driver.v1.value.Values.parameters;
 
 public class DriverStresser
 {

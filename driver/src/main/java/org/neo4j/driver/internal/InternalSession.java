@@ -27,9 +27,10 @@ import org.neo4j.driver.v1.ResultStream;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Transaction;
-import org.neo4j.driver.v1.TypeSystem;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.value.TypeSystem;
+import org.neo4j.driver.v1.value.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.value.Values;
 
 public class InternalSession implements Session
 {
@@ -68,9 +69,15 @@ public class InternalSession implements Session
     }
 
     @Override
-    public ResultStream run( String statementTemplate )
+    public ResultStream run( String statementText )
     {
-        return run( statementTemplate, ParameterSupport.NO_PARAMETERS );
+        return run( statementText, ParameterSupport.NO_PARAMETERS );
+    }
+
+    @Override
+    public ResultStream run( String statementText, Object ... statementParameters )
+    {
+        return run( statementText, Values.parameters( statementParameters ) );
     }
 
     @Override

@@ -30,7 +30,7 @@ import java.util.Map;
 
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.ResultStream;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.value.Value;
 import org.neo4j.driver.v1.tck.tck.util.runners.CypherStatementRunner;
 import org.neo4j.driver.v1.tck.tck.util.runners.MappedParametersRunner;
 import org.neo4j.driver.v1.tck.tck.util.runners.StringRunner;

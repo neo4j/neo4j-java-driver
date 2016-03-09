@@ -23,15 +23,15 @@ import java.util.List;
 
 import org.junit.Test;
 
-import org.neo4j.driver.v1.Plan;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.summary.Plan;
+import org.neo4j.driver.v1.value.Value;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 
-import static org.neo4j.driver.v1.Values.parameters;
-import static org.neo4j.driver.v1.Values.value;
-import static org.neo4j.driver.v1.Values.values;
+import static org.neo4j.driver.v1.value.Values.parameters;
+import static org.neo4j.driver.v1.value.Values.value;
+import static org.neo4j.driver.v1.value.Values.values;
 
 @SuppressWarnings("unchecked")
 public class InternalPlanTest

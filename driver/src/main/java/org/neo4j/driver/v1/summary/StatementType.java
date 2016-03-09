@@ -16,25 +16,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1;
+package org.neo4j.driver.v1.summary;
 
-/**
- * The <strong>Node</strong> interface describes the characteristics of a node from a Neo4j graph.
- */
-public interface Node extends Entity
+import org.neo4j.driver.v1.exceptions.ClientException;
+
+public enum StatementType
 {
-    /**
-     * Return all labels.
-     *
-     * @return a label Collection
-     */
-    Iterable<String> labels();
+    READ_ONLY,
+    READ_WRITE,
+    WRITE_ONLY,
+    SCHEMA_WRITE;
 
-    /**
-     * Test if this node has a given label
-     *
-     * @param label the label
-     * @return <tt>true</tt> if this node has the label otherwise <tt>false</tt>
-     */
-    boolean hasLabel( String label );
+    public static StatementType fromCode( String type )
+    {
+        switch ( type )
+        {
+        case "r":
+            return StatementType.READ_ONLY;
+        case "rw":
+            return StatementType.READ_WRITE;
+        case "w":
+            return StatementType.WRITE_ONLY;
+        case "s":
+            return StatementType.SCHEMA_WRITE;
+        default:
+            throw new ClientException( "Unknown statement type: `" + type + "`." );
+        }
+    }
 }

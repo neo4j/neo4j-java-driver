@@ -19,7 +19,6 @@
 package org.neo4j.driver.internal;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -28,8 +27,8 @@ import org.junit.Test;
 
 import org.neo4j.driver.internal.util.Extract;
 import org.neo4j.driver.internal.value.NullValue;
-import org.neo4j.driver.v1.Function;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.util.Function;
+import org.neo4j.driver.v1.value.Value;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -38,7 +37,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import static org.neo4j.driver.v1.Values.value;
+import static org.neo4j.driver.v1.value.Values.value;
 
 public class InternalRecordTest
 {

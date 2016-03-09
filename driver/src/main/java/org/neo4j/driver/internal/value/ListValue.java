@@ -24,14 +24,14 @@ import java.util.List;
 
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.internal.util.Extract;
-import org.neo4j.driver.v1.Function;
-import org.neo4j.driver.v1.Type;
-import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.Values;
+import org.neo4j.driver.v1.util.Function;
+import org.neo4j.driver.v1.value.Type;
+import org.neo4j.driver.v1.value.Value;
+import org.neo4j.driver.v1.value.Values;
 
 import static org.neo4j.driver.internal.util.Format.formatElements;
 import static org.neo4j.driver.internal.value.InternalValue.Format.VALUE_ONLY;
-import static org.neo4j.driver.v1.Values.valueAsObject;
+import static org.neo4j.driver.v1.value.Values.valueAsObject;
 
 public class ListValue extends ValueAdapter
 {

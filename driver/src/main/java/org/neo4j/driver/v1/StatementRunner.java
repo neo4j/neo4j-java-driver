@@ -20,6 +20,11 @@ package org.neo4j.driver.v1;
 
 import java.util.Map;
 
+import org.neo4j.driver.v1.util.Experimental;
+import org.neo4j.driver.v1.value.TypeSystem;
+import org.neo4j.driver.v1.value.Value;
+import org.neo4j.driver.v1.value.Values;
+
 /**
  * Common interface for components that can execute Neo4j statements.
  *
@@ -40,6 +45,29 @@ public interface StatementRunner
      * <pre class="doctest:StatementRunnerDocIT#parameterTest">
      * {@code
      * ResultStream cursor = session.run( "MATCH (n) WHERE n.name = {myNameParam} RETURN (n)",
+     *                                    "myNameParam", "Bob" );
+     * }
+     * </pre>
+     *
+     * @param statementTemplate template of a Neo4j statement
+     * @param parameters input data for the statement as alternating key/value pairs,
+     *                   see {@link Values#parameters(Object...)}
+     * @return a stream of result values and associated metadata
+     */
+    ResultStream run( String statementTemplate, Object ... parameters );
+
+    /**
+     * Run a statement and return a result stream.
+     *
+     * This method takes a set of parameters that will be injected into the
+     * statement by Neo4j. Using parameters is highly encouraged, it helps avoid
+     * dangerous cypher injection attacks and improves database performance as
+     * Neo4j can re-use query plans more often.
+     *
+     * <h2>Example</h2>
+     * <pre class="doctest:StatementRunnerDocIT#parameterTest">
+     * {@code
+     * ResultStream cursor = session.run( "MATCH (n) WHERE n.name = {myNameParam} RETURN (n)",
      *                                    Values.parameters( "myNameParam", "Bob" ) );
      * }
      * </pre>
@@ -48,7 +76,7 @@ public interface StatementRunner
      * @param statementParameters input data for the statement, see {@link Values#parameters(Object...)}
      * @return a stream of result values and associated metadata
      */
-    ResultStream run( String statementTemplate, Map<String, Value> statementParameters );
+    ResultStream run( String statementTemplate, Map<String,Value> statementParameters );
 
     /**
      * Run a statement and return a result stream.

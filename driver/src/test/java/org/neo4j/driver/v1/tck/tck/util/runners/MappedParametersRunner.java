@@ -22,7 +22,7 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.neo4j.driver.v1.ResultStream;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.value.Value;
 
 import static org.junit.Assert.assertNotNull;
 import static org.neo4j.driver.v1.tck.DriverComplianceIT.session;

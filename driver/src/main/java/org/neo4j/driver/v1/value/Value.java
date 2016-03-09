@@ -16,13 +16,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1;
+package org.neo4j.driver.v1.value;
 
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.value.LossyCoercion;
 import org.neo4j.driver.v1.exceptions.value.Uncoercible;
+import org.neo4j.driver.v1.util.Experimental;
+import org.neo4j.driver.v1.util.Function;
+import org.neo4j.driver.v1.util.Immutable;
 
 /**
  * Represents a value from Neo4j.
@@ -74,7 +78,7 @@ import org.neo4j.driver.v1.exceptions.value.Uncoercible;
  * </pre>
  */
 @Immutable
-public interface Value extends MapAccessor, ListAccessor
+public interface Value extends MapAccessor
 {
     /**
      * If the underlying value is a collection type, return the number of values in the collection.
@@ -108,6 +112,15 @@ public interface Value extends MapAccessor, ListAccessor
      */
     @Override
     Iterable<String> keys();
+
+    /**
+     * Retrieve the value at the given index
+     *
+     * @param index the index of the value
+     * @return the value or a {@link org.neo4j.driver.internal.value.NullValue} if the index is out of bounds
+     * @throws ClientException if record has not been initialized
+     */
+    Value get( int index );
 
     /** @return The type of this value as defined in the Neo4j type system */
     @Experimental
@@ -199,12 +212,6 @@ public interface Value extends MapAccessor, ListAccessor
      * @throws Uncoercible if value types are incompatible.
      */
     float asFloat();
-
-    /**
-     * @return the value as an {@link Identity}, if possible.
-     * @throws Uncoercible if value types are incompatible.
-     */
-    Identity asIdentity();
 
     /**
      * @return the value as a Java list of values, if possible

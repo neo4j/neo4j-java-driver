@@ -22,14 +22,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.driver.v1.Function;
-import org.neo4j.driver.v1.Plan;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.util.Function;
+import org.neo4j.driver.v1.summary.Plan;
+import org.neo4j.driver.v1.value.Value;
 
 import static java.lang.String.format;
 
-import static org.neo4j.driver.v1.Values.valueAsIs;
-import static org.neo4j.driver.v1.Values.valueAsString;
+import static org.neo4j.driver.v1.value.Values.valueAsIs;
+import static org.neo4j.driver.v1.value.Values.valueAsString;
 
 public class InternalPlan<T extends Plan> implements Plan
 {

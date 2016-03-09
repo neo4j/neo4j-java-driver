@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.v1;
 
+import org.neo4j.driver.v1.util.Resource;
+
 /**
  * Represents a transaction in the Neo4j database.
  *

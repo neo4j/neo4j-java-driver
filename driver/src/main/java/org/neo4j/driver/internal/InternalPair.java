@@ -20,8 +20,8 @@ package org.neo4j.driver.internal;
 
 import java.util.Objects;
 
-import org.neo4j.driver.v1.Function;
-import org.neo4j.driver.v1.Pair;
+import org.neo4j.driver.v1.util.Function;
+import org.neo4j.driver.v1.util.Pair;
 
 public class InternalPair<K, V> implements Pair<K, V>
 {

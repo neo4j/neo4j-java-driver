@@ -16,12 +16,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1;
+package org.neo4j.driver.v1.value;
+
+import org.neo4j.driver.v1.util.Experimental;
+import org.neo4j.driver.v1.util.Immutable;
 
 /**
  * The type of a {@link Value} as defined by the Cypher language
  */
-@Immutable @Experimental
+@Immutable
+@Experimental
 public interface Type
 {
     /**

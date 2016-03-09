@@ -28,23 +28,23 @@ import java.util.Queue;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.StreamCollector;
 import org.neo4j.driver.internal.summary.SummaryBuilder;
-import org.neo4j.driver.v1.Function;
-import org.neo4j.driver.v1.Notification;
-import org.neo4j.driver.v1.Plan;
-import org.neo4j.driver.v1.ProfiledPlan;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.ResultStream;
-import org.neo4j.driver.v1.ResultSummary;
 import org.neo4j.driver.v1.Statement;
-import org.neo4j.driver.v1.StatementType;
-import org.neo4j.driver.v1.UpdateStatistics;
-import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
+import org.neo4j.driver.v1.summary.Notification;
+import org.neo4j.driver.v1.summary.Plan;
+import org.neo4j.driver.v1.summary.ProfiledPlan;
+import org.neo4j.driver.v1.summary.ResultSummary;
+import org.neo4j.driver.v1.summary.StatementType;
+import org.neo4j.driver.v1.summary.UpdateStatistics;
+import org.neo4j.driver.v1.util.Function;
+import org.neo4j.driver.v1.util.Functions;
+import org.neo4j.driver.v1.value.Value;
 
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
-import static org.neo4j.driver.v1.Records.recordAsIs;
 
 public class InternalResultStream implements ResultStream
 {
@@ -326,7 +326,7 @@ public class InternalResultStream implements ResultStream
     @Override
     public List<Record> list()
     {
-        return list( recordAsIs() );
+        return list( Functions.<Record>identity() );
     }
 
     @Override
@@ -376,6 +376,12 @@ public class InternalResultStream implements ResultStream
         {
             throw new ClientException( "Already closed" );
         }
+    }
+
+    @Override
+    public void remove()
+    {
+        throw new ClientException( "Removing records from a result is not supported." );
     }
 
     private void assertOpen()

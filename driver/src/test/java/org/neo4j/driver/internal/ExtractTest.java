@@ -32,9 +32,9 @@ import java.util.Map;
 
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Extract;
-import org.neo4j.driver.v1.Function;
-import org.neo4j.driver.v1.Pair;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.util.Function;
+import org.neo4j.driver.v1.util.Pair;
+import org.neo4j.driver.v1.value.Value;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
@@ -44,7 +44,7 @@ import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.driver.v1.Values.value;
+import static org.neo4j.driver.v1.value.Values.value;
 
 public class ExtractTest
 {

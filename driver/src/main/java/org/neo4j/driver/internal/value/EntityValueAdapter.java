@@ -18,8 +18,8 @@
  */
 package org.neo4j.driver.internal.value;
 
-import org.neo4j.driver.v1.Entity;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.value.Entity;
+import org.neo4j.driver.v1.value.Value;
 
 public abstract class EntityValueAdapter<V extends Entity> extends GraphValueAdapter<V>
 {

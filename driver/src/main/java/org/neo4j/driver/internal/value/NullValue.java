@@ -19,8 +19,8 @@
 package org.neo4j.driver.internal.value;
 
 import org.neo4j.driver.internal.types.InternalTypeSystem;
-import org.neo4j.driver.v1.Type;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.value.Type;
+import org.neo4j.driver.v1.value.Value;
 
 public final class NullValue extends ScalarValueAdapter
 {

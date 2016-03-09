@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1;
+package org.neo4j.driver.v1.value;
 
 import javadoctest.DocSnippet;
 import javadoctest.DocTestRunner;
@@ -25,10 +25,13 @@ import org.junit.runner.RunWith;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.neo4j.driver.v1.value.Value;
+import org.neo4j.driver.v1.value.Values;
+
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.driver.v1.Values.parameters;
+import static org.neo4j.driver.v1.value.Values.parameters;
 
 @RunWith( DocTestRunner.class )
 public class ValueDocIT

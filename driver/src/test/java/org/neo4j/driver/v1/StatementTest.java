@@ -22,11 +22,14 @@ import java.util.Map;
 
 import org.junit.Test;
 
+import org.neo4j.driver.v1.value.Value;
+import org.neo4j.driver.v1.value.Values;
+
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 
 import static org.neo4j.driver.internal.ParameterSupport.NO_PARAMETERS;
-import static org.neo4j.driver.v1.Values.parameters;
+import static org.neo4j.driver.v1.value.Values.parameters;
 
 public class StatementTest
 {
@@ -92,7 +95,7 @@ public class StatementTest
     {
         // when
         String text = "MATCH (n) RETURN n";
-        Map<String, Value> initialParameters = parameters( "a", 1, "b", 2 );
+        Map<String,Value> initialParameters = parameters( "a", 1, "b", 2 );
         Statement statement = new Statement( "MATCH (n) RETURN n" ).withParameters( initialParameters );
 
         // then

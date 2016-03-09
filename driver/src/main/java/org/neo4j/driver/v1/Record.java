@@ -24,10 +24,18 @@ import java.util.Map;
 import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
+import org.neo4j.driver.v1.util.Immutable;
+import org.neo4j.driver.v1.util.Pair;
+import org.neo4j.driver.v1.value.Value;
 
 /**
  * A record is the object you work with when reading {@link ResultStream} - results
  * are streams of records, where records carry the values your statement returned.
+ *
+ * Records are made up of named, ordered {@link #fields() fields}, each field has
+ * a key and a value, both are determined by the statement you've executed. To
+ * access the values in your result, you can either use the field key or the field
+ * index, meaning the position the field has in the record.
  */
 @Immutable
 public interface Record
@@ -35,7 +43,7 @@ public interface Record
     /**
      * Retrieve the keys of the underlying map
      *
-     * @return all map keys in unspecified order
+     * @return all field keys in order
      */
     List<String> keys();
 

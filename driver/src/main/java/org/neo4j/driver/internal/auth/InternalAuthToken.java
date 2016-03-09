@@ -20,7 +20,7 @@ package org.neo4j.driver.internal.auth;
 
 import java.util.Map;
 
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.value.Value;
 import org.neo4j.driver.v1.AuthToken;
 
 /**

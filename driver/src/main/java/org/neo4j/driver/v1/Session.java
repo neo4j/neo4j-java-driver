@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.v1;
 
+import org.neo4j.driver.v1.util.Resource;
+
 /**
  * A live session with a Neo4j instance.
  * <p>

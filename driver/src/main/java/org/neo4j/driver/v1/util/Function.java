@@ -16,14 +16,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal;
+package org.neo4j.driver.v1.util;
 
-import org.neo4j.driver.v1.Identity;
-
-public class Identities
+/**
+ * Same as {@link java.util.function.Function}, but defined here to work in versions older than java 8.
+ *
+ * @param <T> the input to the function
+ * @param <R> the output to the function
+ */
+public interface Function<T, R>
 {
-    public static Identity identity( long raw )
-    {
-        return new InternalIdentity( raw );
-    }
+    /**
+     * Applies this function to the given argument.
+     *
+     * @param t the function argument
+     * @return the function result
+     */
+    R apply(T t);
 }

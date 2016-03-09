@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1;
+package org.neo4j.driver.v1.value;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,7 +34,9 @@ import org.neo4j.driver.internal.value.ListValue;
 import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.internal.value.StringValue;
+import org.neo4j.driver.v1.StatementRunner;
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.util.Function;
 
 /**
  * Utility for wrapping regular Java types and exposing them as {@link Value}
@@ -332,27 +334,27 @@ public abstract class Values
         return MAP;
     }
 
-    public static Function<Value, Entity> valueAsEntity()
+    public static Function<Value,Entity> valueAsEntity()
     {
         return ENTITY;
     }
 
-    public static Function<Value, Identity> valueAsEntityIdentity()
+    public static Function<Value, Long> valueAsEntityId()
     {
-        return ENTITY_IDENTITY;
+        return ENTITY_ID;
     }
 
-    public static Function<Value, Node> valueAsNode()
+    public static Function<Value,Node> valueAsNode()
     {
         return NODE;
     }
 
-    public static Function<Value, Relationship> valueAsRelationship()
+    public static Function<Value,Relationship> valueAsRelationship()
     {
         return RELATIONSHIP;
     }
 
-    public static Function<Value, Path> valueAsPath()
+    public static Function<Value,Path> valueAsPath()
     {
         return PATH;
     }
@@ -446,11 +448,11 @@ public abstract class Values
             return val.asMap();
         }
     };
-    private static final Function<Value,Identity> ENTITY_IDENTITY = new Function<Value,Identity>()
+    private static final Function<Value,Long> ENTITY_ID = new Function<Value,Long>()
     {
-        public Identity apply( Value val )
+        public Long apply( Value val )
         {
-            return val.asEntity().identity();
+            return val.asEntity().id();
         }
     };
     private static final Function<Value,Entity> ENTITY = new Function<Value,Entity>()

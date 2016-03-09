@@ -28,7 +28,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.driver.internal.Identities;
 import org.neo4j.driver.internal.InternalNode;
 import org.neo4j.driver.internal.InternalPath;
 import org.neo4j.driver.internal.InternalRelationship;
@@ -45,15 +44,14 @@ import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.internal.value.NodeValue;
 import org.neo4j.driver.internal.value.PathValue;
 import org.neo4j.driver.internal.value.RelationshipValue;
-import org.neo4j.driver.v1.Entity;
-import org.neo4j.driver.v1.Identity;
-import org.neo4j.driver.v1.Node;
-import org.neo4j.driver.v1.Path;
-import org.neo4j.driver.v1.Relationship;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.value.Entity;
+import org.neo4j.driver.v1.value.Node;
+import org.neo4j.driver.v1.value.Path;
+import org.neo4j.driver.v1.value.Relationship;
+import org.neo4j.driver.v1.value.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
-import static org.neo4j.driver.v1.Values.value;
+import static org.neo4j.driver.v1.value.Values.value;
 
 public class PackStreamMessageFormatV1 implements MessageFormat
 {
@@ -261,9 +259,9 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                     {
                         Relationship rel = value.asRelationship();
                         packer.packStructHeader( 5, RELATIONSHIP );
-                        packer.pack( rel.identity().asLong() );
-                        packer.pack( rel.start().asLong() );
-                        packer.pack( rel.end().asLong() );
+                        packer.pack( rel.id() );
+                        packer.pack( rel.startNodeId() );
+                        packer.pack( rel.endNodeId() );
 
                         packer.pack( rel.type() );
 
@@ -303,7 +301,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                     for ( Relationship rel : relIdx.keySet() )
                     {
                         packer.packStructHeader( 3, UNBOUND_RELATIONSHIP );
-                        packer.pack( rel.identity().asLong() );
+                        packer.pack( rel.id() );
                         packer.pack( rel.type() );
                         packProperties( rel );
                     }
@@ -313,9 +311,9 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                     for ( Path.Segment seg : path )
                     {
                         Relationship rel = seg.relationship();
-                        Identity relEndId = rel.end();
-                        Identity segEndId = seg.end().identity();
-                        packer.pack( relEndId.equals( segEndId ) ? relIdx.get( rel ) : -relIdx.get( rel ) );
+                        long relEndId = rel.endNodeId();
+                        long segEndId = seg.end().id();
+                        packer.pack( relEndId == segEndId ? relIdx.get( rel ) : -relIdx.get( rel ) );
                         packer.pack( nodeIdx.get( seg.end() ) );
                     }
                     break;
@@ -349,7 +347,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         private void packNode( Node node ) throws IOException
         {
             packer.packStructHeader( NODE_FIELDS, NODE );
-            packer.pack( node.identity().asLong() );
+            packer.pack( node.id() );
 
             Iterable<String> labels = node.labels();
             packer.packListHeader( Iterables.count( labels ) );
@@ -598,10 +596,10 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             {
                 ensureCorrectStructSize( "RELATIONSHIP", 3, unpacker.unpackStructHeader() );
                 ensureCorrectStructSignature( "UNBOUND_RELATIONSHIP", UNBOUND_RELATIONSHIP, unpacker.unpackStructSignature() );
-                Identity urn = Identities.identity( unpacker.unpackLong() );
+                long id = unpacker.unpackLong();
                 String relType = unpacker.unpackString();
                 Map<String,Value> props = unpackMap();
-                uniqRels[i] = new InternalRelationship( urn, null, null, relType, props );
+                uniqRels[i] = new InternalRelationship( id, -1, -1, relType, props );
             }
 
             // Path sequence
@@ -623,12 +621,12 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                 if( relIdx < 0 )
                 {
                     rel = uniqRels[(-relIdx) - 1]; // -1 because rel idx are 1-indexed
-                    rel.setStartAndEnd( nextNode.identity(), prevNode.identity() );
+                    rel.setStartAndEnd( nextNode.id(), prevNode.id() );
                 }
                 else
                 {
                     rel = uniqRels[relIdx - 1];
-                    rel.setStartAndEnd( prevNode.identity(), nextNode.identity() );
+                    rel.setStartAndEnd( prevNode.id(), nextNode.id() );
                 }
 
                 nodes[i+1] = nextNode;

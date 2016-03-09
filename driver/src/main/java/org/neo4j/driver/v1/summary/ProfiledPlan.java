@@ -16,27 +16,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1;
+package org.neo4j.driver.v1.summary;
+
+import java.util.List;
 
 /**
- * A Resource is an {@link AutoCloseable} that allows introspecting if it
- * already has been closed through its {@link #isOpen()} method.
- *
- * Additionally, calling {@link AutoCloseable#close()} twice is expected to fail
- * (i.e. is not idempotent).
+ * This is the same as a regular {@link Plan} - except this plan has been executed, meaning it also contains detailed information about how much work each
+ * step of the plan incurred on the database.
  */
-public interface Resource extends AutoCloseable
+public interface ProfiledPlan extends Plan
 {
     /**
-     * Detect whether this resource is still open
-     *
-     * @return true if the resource is open
+     * @return the number of times this part of the plan touched the underlying data stores
      */
-    boolean isOpen();
+    long dbHits();
 
     /**
-     * @throws IllegalStateException if already closed
+     * @return the number of records this part of the plan produced
      */
+    long records();
+
     @Override
-    void close();
+    List<ProfiledPlan> children();
 }

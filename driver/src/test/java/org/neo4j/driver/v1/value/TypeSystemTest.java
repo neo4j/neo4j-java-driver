@@ -16,19 +16,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1;
-
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+package org.neo4j.driver.v1.value;
 
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.junit.Test;
 
-import org.neo4j.driver.internal.InternalIdentity;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
 import org.neo4j.driver.internal.InternalNode;
 import org.neo4j.driver.internal.InternalPath;
 import org.neo4j.driver.internal.InternalRelationship;
@@ -37,9 +36,8 @@ import org.neo4j.driver.internal.types.InternalTypeSystem;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.driver.internal.types.InternalTypeSystem.TYPE_SYSTEM;
-import static org.neo4j.driver.v1.Values.value;
+import static org.neo4j.driver.v1.value.Values.value;
 
 public class TypeSystemTest
 {
@@ -56,7 +54,6 @@ public class TypeSystemTest
     private Value booleanValue = value( true );
     private Value listValue = value( Arrays.asList( 1, 2, 3 ) );
     private Value nullValue = value( (Object) null );
-    private Value identityValue = value( new InternalIdentity( 42L ) );
 
     private InternalTypeSystem typeSystem = TYPE_SYSTEM;
 
@@ -73,7 +70,6 @@ public class TypeSystemTest
         allValues.add( booleanValue );
         allValues.add( nullValue );
         allValues.add( listValue );
-        allValues.add( identityValue );
         return new TypeVerifier( type, allValues );
     }
 
@@ -105,7 +101,6 @@ public class TypeSystemTest
             verifier.assertIncludes( floatValue );
             verifier.assertIncludes( listValue );
             verifier.assertIncludes( mapValue );
-            verifier.assertIncludes( identityValue );
             verifier.assertIncludes( nodeValue );
             verifier.assertIncludes( relationshipValue );
             verifier.assertIncludes( pathValue );
@@ -204,14 +199,6 @@ public class TypeSystemTest
     }
 
     @Test
-    public void shouldInferIdentityTypeCorrectly() {
-        try ( TypeVerifier verifier = newTypeVerifierFor( TYPE_SYSTEM.IDENTITY() ) )
-        {
-            verifier.assertIncludes( identityValue );
-        }
-    }
-
-    @Test
     public void shouldDetermineTypeCorrectly()
     {
         assertThat( integerValue, hasType( TYPE_SYSTEM.INTEGER() ) );
@@ -220,7 +207,6 @@ public class TypeSystemTest
         assertThat( booleanValue, hasType( TYPE_SYSTEM.BOOLEAN() ) );
         assertThat( listValue, hasType( TYPE_SYSTEM.LIST() ) );
         assertThat( mapValue, hasType( TYPE_SYSTEM.MAP() ) );
-        assertThat( identityValue, hasType( TYPE_SYSTEM.IDENTITY() ) );
         assertThat( nodeValue, hasType( TYPE_SYSTEM.NODE() ) );
         assertThat( relationshipValue, hasType( TYPE_SYSTEM.RELATIONSHIP() ) );
         assertThat( pathValue, hasType( TYPE_SYSTEM.PATH() ) );

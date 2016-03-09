@@ -16,31 +16,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1;
+package org.neo4j.driver.v1.summary;
 
-import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.util.Immutable;
 
-public enum StatementType
+/**
+ * An input position refers to a specific character in a statement.
+ */
+@Immutable
+public interface InputPosition
 {
-    READ_ONLY,
-    READ_WRITE,
-    WRITE_ONLY,
-    SCHEMA_WRITE;
+    /**
+     * The character offset referred to by this position; offset numbers start at 0.
+     *
+     * @return the offset of this position.
+     */
+    int offset();
 
-    public static StatementType fromCode( String type )
-    {
-        switch ( type )
-        {
-        case "r":
-            return StatementType.READ_ONLY;
-        case "rw":
-            return StatementType.READ_WRITE;
-        case "w":
-            return StatementType.WRITE_ONLY;
-        case "s":
-            return StatementType.SCHEMA_WRITE;
-        default:
-            throw new ClientException( "Unknown statement type: `" + type + "`." );
-        }
-    }
+    /**
+     * The line number referred to by the position; line numbers start at 1.
+     *
+     * @return the line number of this position.
+     */
+    int line();
+
+    /**
+     * The column number referred to by the position; column numbers start at 1.
+     *
+     * @return the column number of this position.
+     */
+    int column();
 }

@@ -22,10 +22,13 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.Map;
+
 import org.neo4j.driver.v1.ResultStream;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
+import org.neo4j.driver.v1.value.Value;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -138,7 +141,7 @@ public class TransactionIT
     public void shouldHandleNullParametersGracefully()
     {
         // When
-        session.run("match (n) return count(n)", null);
+        session.run("match (n) return count(n)", (Map<String,Value>)null);
 
         // Then
         // pass - no exception thrown

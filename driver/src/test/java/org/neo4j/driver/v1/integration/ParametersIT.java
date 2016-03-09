@@ -22,18 +22,18 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import org.neo4j.driver.v1.Node;
-import org.neo4j.driver.v1.Path;
+import org.neo4j.driver.v1.value.Node;
+import org.neo4j.driver.v1.value.Path;
 import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.Relationship;
+import org.neo4j.driver.v1.value.Relationship;
 import org.neo4j.driver.v1.ResultStream;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.value.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.driver.v1.Values.parameters;
+import static org.neo4j.driver.v1.value.Values.parameters;
 
 public class ParametersIT
 {

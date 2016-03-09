@@ -21,21 +21,19 @@ package org.neo4j.driver.v1.tck.tck.util;
 import java.util.Collection;
 import java.util.Map;
 
-import org.neo4j.driver.internal.InternalIdentity;
 import org.neo4j.driver.internal.InternalNode;
 import org.neo4j.driver.internal.value.NodeValue;
-import org.neo4j.driver.v1.Identity;
-import org.neo4j.driver.v1.Node;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.value.Node;
+import org.neo4j.driver.v1.value.Value;
 
 public class TestNodeValue extends NodeValue implements Node
 {
-    private Identity id;
+    private long id;
 
     public TestNodeValue( Node adapted )
     {
         super( adapted );
-        id = adapted.identity();
+        id = adapted.id();
     }
 
     public TestNodeValue( long id, Collection<String> labels, Map<String,Value> properties )
@@ -66,7 +64,7 @@ public class TestNodeValue extends NodeValue implements Node
     }
 
     @Override
-    public Identity identity()
+    public long id()
     {
         return this.id;
     }
@@ -85,6 +83,6 @@ public class TestNodeValue extends NodeValue implements Node
 
     public void setId( long id )
     {
-        this.id = new InternalIdentity( id );
+        this.id = id;
     }
 }

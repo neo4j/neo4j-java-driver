@@ -18,6 +18,10 @@
  */
 package org.neo4j.driver.v1;
 
+import org.neo4j.driver.v1.util.Function;
+import org.neo4j.driver.v1.value.Value;
+import org.neo4j.driver.v1.value.Values;
+
 /**
  * Static utility methods for retaining records
  *
@@ -25,17 +29,12 @@ package org.neo4j.driver.v1;
  */
 public abstract class Records
 {
-    public static Function<Record, Record> recordAsIs()
-    {
-        return RECORD;
-    }
-
-    public static Function<Record, Value> columnAsIs( int index )
+    public static Function<Record,Value> column( int index )
     {
         return column( index, Values.valueAsIs() );
     }
 
-    public static Function<Record, Value> columnAsIs( String key )
+    public static Function<Record, Value> column( String key )
     {
         return column( key, Values.valueAsIs() );
     }
@@ -62,13 +61,4 @@ public abstract class Records
             }
         };
     }
-
-    private static final Function<Record, Record> RECORD = new Function<Record, Record>()
-    {
-        @Override
-        public Record apply( Record record )
-        {
-            return record;
-        }
-    };
 }

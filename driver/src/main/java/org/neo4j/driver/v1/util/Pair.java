@@ -16,20 +16,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1;
+package org.neo4j.driver.v1.util;
 
 /**
- * An item that can be considered to have <em>direction</em>.
- * This is represented by the presence of <strong>start</strong> and <strong>end</strong> attributes.
+ * Immutable pair of a key and a value
  *
- * @param <T> the type of the objects at the start and end of this directed item
+ * @param <V> the Java type of the contained value
  */
 @Immutable
-public interface Directed<T>
+public interface Pair<K, V>
 {
-    /** @return the start item from this directed sequence */
-    T start();
+    /**
+     * @return the property key
+     */
+    K key();
 
-    /** @return the end item from this directed sequence */
-    T end();
+    /**
+     * @return the property value
+     */
+    V value();
 }

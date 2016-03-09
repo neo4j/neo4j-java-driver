@@ -25,14 +25,14 @@ import java.util.List;
 
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.ResultStream;
-import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.Values;
+import org.neo4j.driver.v1.value.Value;
+import org.neo4j.driver.v1.value.Values;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.driver.v1.Values.parameters;
+import static org.neo4j.driver.v1.value.Values.parameters;
 
 public class StatementIT
 {

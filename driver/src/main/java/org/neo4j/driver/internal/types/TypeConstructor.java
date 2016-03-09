@@ -19,7 +19,7 @@
 package org.neo4j.driver.internal.types;
 
 import org.neo4j.driver.internal.value.InternalValue;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.value.Value;
 
 public enum TypeConstructor
 {

@@ -32,11 +32,11 @@ import java.util.List;
 
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.value.NullValue;
-import org.neo4j.driver.v1.Pair;
+import org.neo4j.driver.v1.util.Pair;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Records;
 import org.neo4j.driver.v1.ResultStream;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.value.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
 
@@ -49,7 +49,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.driver.v1.Values.value;
+import static org.neo4j.driver.v1.value.Values.value;
 
 public class InternalResultStreamTest
 {
@@ -333,7 +333,7 @@ public class InternalResultStreamTest
         ResultStream result = createResult( 3 );
 
         // WHEN
-        List<Value> records = result.list( Records.columnAsIs( "k1" ) );
+        List<Value> records = result.list( Records.column( "k1" ) );
 
         // THEN
         assertFalse(result.hasNext());
@@ -347,7 +347,7 @@ public class InternalResultStreamTest
         ResultStream result = createResult( 3 );
 
         // WHEN
-        List<Value> records = result.list( Records.columnAsIs( 0 ) );
+        List<Value> records = result.list( Records.column( 0 ) );
 
         // THEN
         assertFalse(result.hasNext());

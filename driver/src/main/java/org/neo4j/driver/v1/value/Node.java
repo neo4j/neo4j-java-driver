@@ -16,23 +16,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1;
-
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Inherited;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+package org.neo4j.driver.v1.value;
 
 /**
- * Indicates that instances of the annotated class or of its subclasses are immutable, i.e.
- * do not provide any means of mutating their state
+ * The <strong>Node</strong> interface describes the characteristics of a node from a Neo4j graph.
  */
-@Inherited
-@Retention(RetentionPolicy.RUNTIME)
-@Documented
-@Target( { ElementType.TYPE } )
-public @interface Immutable
+public interface Node extends Entity
 {
+    /**
+     * Return all labels.
+     *
+     * @return a label Collection
+     */
+    Iterable<String> labels();
+
+    /**
+     * Test if this node has a given label
+     *
+     * @param label the label
+     * @return <tt>true</tt> if this node has the label otherwise <tt>false</tt>
+     */
+    boolean hasLabel( String label );
 }

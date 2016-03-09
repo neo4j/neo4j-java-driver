@@ -22,10 +22,9 @@ import java.util.Map;
 
 import org.neo4j.driver.internal.InternalRelationship;
 import org.neo4j.driver.internal.value.RelationshipValue;
-import org.neo4j.driver.v1.Entity;
-import org.neo4j.driver.v1.Identity;
-import org.neo4j.driver.v1.Relationship;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.value.Entity;
+import org.neo4j.driver.v1.value.Relationship;
+import org.neo4j.driver.v1.value.Value;
 
 public class TestRelationshipValue extends RelationshipValue implements Entity
 {
@@ -63,8 +62,8 @@ public class TestRelationshipValue extends RelationshipValue implements Entity
     }
 
     @Override
-    public Identity identity()
+    public long id()
     {
-        return this.asRelationship().identity();
+        return this.asRelationship().id();
     }
 }

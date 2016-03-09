@@ -24,15 +24,15 @@ import java.util.List;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
-import org.neo4j.driver.v1.Notification;
-import org.neo4j.driver.v1.Pair;
+import org.neo4j.driver.v1.summary.Notification;
+import org.neo4j.driver.v1.util.Pair;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.ResultStream;
-import org.neo4j.driver.v1.ResultSummary;
+import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Transaction;
-import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.Values;
+import org.neo4j.driver.v1.value.Value;
+import org.neo4j.driver.v1.value.Values;
 
 public class Examples
 {
@@ -83,12 +83,12 @@ public class Examples
         ResultStream result = session.run( "MATCH (p:Person { name: {name} }) RETURN p.age",
                 Values.parameters( "name", "The One" ) );
 
-        while ( result.next() )
+        while ( result.hasNext() )
         {
-            System.out.println( "Record: " + result.position() );
-            for ( Pair<String,Value> fieldInRecord : result.fields() )
+            Record record = result.next();
+            for ( Pair<String,Value> fieldInRecord : record.fields() )
             {
-                System.out.println( "  " + fieldInRecord.key() + " = " + fieldInRecord.value() );
+                System.out.println( fieldInRecord.key() + " = " + fieldInRecord.value() );
             }
         }
         // end::result-cursor[]

@@ -18,16 +18,16 @@
  */
 package org.neo4j.driver.v1.util;
 
-import java.util.Map;
-
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
+
+import java.util.Map;
 
 import org.neo4j.driver.v1.ResultStream;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Transaction;
-import org.neo4j.driver.v1.TypeSystem;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.value.TypeSystem;
+import org.neo4j.driver.v1.value.Value;
 
 /**
  * A little utility for integration testing, this provides tests with a session they can work with.
@@ -103,6 +103,12 @@ public class TestNeo4jSession extends TestNeo4j implements Session
     public ResultStream run( String statementText, Map<String,Value> statementParameters )
     {
         return realSession.run( statementText, statementParameters );
+    }
+
+    @Override
+    public ResultStream run( String statementText, Object ... parameters )
+    {
+        return realSession.run( statementText, parameters );
     }
 
     @Override

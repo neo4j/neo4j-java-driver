@@ -21,8 +21,8 @@ package org.neo4j.driver.internal.util;
 import java.util.Iterator;
 
 import org.neo4j.driver.internal.InternalPair;
-import org.neo4j.driver.v1.Function;
-import org.neo4j.driver.v1.Pair;
+import org.neo4j.driver.v1.util.Function;
+import org.neo4j.driver.v1.util.Pair;
 
 public abstract class Format
 {
