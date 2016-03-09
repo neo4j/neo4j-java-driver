@@ -18,11 +18,11 @@
  */
 package org.neo4j.driver.v1.integration;
 
-import java.util.List;
-import java.util.Map;
-
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.List;
+import java.util.Map;
 
 import org.neo4j.driver.v1.Notification;
 import org.neo4j.driver.v1.Plan;
@@ -147,8 +147,13 @@ public class SummaryIT
         List<Notification> notifications = summary.notifications();
         assertNotNull( notifications );
         assertThat( notifications.size(), equalTo( 1 ) );
-
-        assertThat( notifications.get( 0 ).toString(), equalTo("code=Neo.ClientNotification.Statement.CartesianProduct, title=This query builds a cartesian product between disconnected patterns., description=If a part of a query contains multiple disconnected patterns, this will build a cartesian product between all those parts. This may produce a large amount of data and slow down query processing. While occasionally intended, it may often be possible to reformulate the query that avoids the use of this cross product, perhaps by adding a relationship between the different parts or by using OPTIONAL MATCH (identifier is: (m)), position={offset=0, line=1, column=1}") );
+        assertThat( notifications.get( 0 ).toString(), equalTo("code=Neo.ClientNotification.Statement.CartesianProduct, " +
+                                                               "title=This query builds a cartesian product between disconnected patterns., " +
+                                                               "description=If a part of a query contains multiple disconnected patterns, this will " +
+                                                               "build a cartesian product between all those parts. This may produce a large amount of data and slow down query processing. " +
+                                                               "While occasionally intended, it may often be possible to reformulate the query that avoids the use of this cross product, " +
+                                                               "perhaps by adding a relationship between the different parts or by using OPTIONAL MATCH (identifier is: (m)), " +
+                                                               "severity=WARNING, position={offset=0, line=1, column=1}") );
 
     }
 }
