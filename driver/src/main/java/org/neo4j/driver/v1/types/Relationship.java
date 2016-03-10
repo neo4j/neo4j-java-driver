@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1.value;
+package org.neo4j.driver.v1.types;
 
 /**
  * The <strong>Relationship</strong> interface describes the characteristics of a relationship from a Neo4j graph.

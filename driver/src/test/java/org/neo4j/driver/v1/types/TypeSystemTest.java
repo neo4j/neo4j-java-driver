@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1.value;
+package org.neo4j.driver.v1.types;
 
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
@@ -32,12 +32,13 @@ import org.neo4j.driver.internal.InternalNode;
 import org.neo4j.driver.internal.InternalPath;
 import org.neo4j.driver.internal.InternalRelationship;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
+import org.neo4j.driver.v1.Value;
 
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.driver.internal.types.InternalTypeSystem.TYPE_SYSTEM;
-import static org.neo4j.driver.v1.value.Values.value;
+import static org.neo4j.driver.v1.Values.value;
 
 public class TypeSystemTest
 {

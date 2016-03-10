@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1.value;
+package org.neo4j.driver.v1;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,9 +34,12 @@ import org.neo4j.driver.internal.value.ListValue;
 import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.internal.value.StringValue;
-import org.neo4j.driver.v1.StatementRunner;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.util.Function;
+import org.neo4j.driver.v1.types.Entity;
+import org.neo4j.driver.v1.types.Node;
+import org.neo4j.driver.v1.types.Path;
+import org.neo4j.driver.v1.types.Relationship;
 
 /**
  * Utility for wrapping regular Java types and exposing them as {@link Value}
@@ -74,10 +77,8 @@ public abstract class Values
 
         if ( value instanceof boolean[] ) { return value( (boolean[]) value ); }
         if ( value instanceof String[] ) { return value( (String[]) value ); }
-        if ( value instanceof char[] ) { return value( (char[]) value ); }
         if ( value instanceof long[] ) { return value( (long[]) value ); }
         if ( value instanceof int[] ) { return value( (int[]) value ); }
-        if ( value instanceof short[] ) { return value( (short[]) value ); }
         if ( value instanceof double[] ) { return value( (double[]) value ); }
         if ( value instanceof float[] ) { return value( (float[]) value ); }
         if ( value instanceof Value[] ) { return value( (Value[]) value ); }
@@ -114,11 +115,6 @@ public abstract class Values
         return new ListValue( values );
     }
 
-    public static Value value( char... input )
-    {
-        return new StringValue( String.valueOf( input ) );
-    }
-
     public static Value value( boolean... input )
     {
         Value[] values = new Value[input.length];
@@ -139,16 +135,6 @@ public abstract class Values
     }
 
     public static Value value( int... input )
-    {
-        Value[] values = new Value[input.length];
-        for ( int i = 0; i < input.length; i++ )
-        {
-            values[i] = value( input[i] );
-        }
-        return new ListValue( values );
-    }
-
-    public static Value value( short... input )
     {
         Value[] values = new Value[input.length];
         for ( int i = 0; i < input.length; i++ )
@@ -203,27 +189,12 @@ public abstract class Values
         return new StringValue( val );
     }
 
-    public static Value value( final char val )
-    {
-        return new StringValue( Character.toString( val ) );
-    }
-
     public static Value value( final long val )
     {
         return new IntegerValue( val );
     }
 
     public static Value value( final int val )
-    {
-        return new IntegerValue( val );
-    }
-
-    public static Value value( final short val )
-    {
-        return new IntegerValue( val );
-    }
-
-    public static Value value( final byte val )
     {
         return new IntegerValue( val );
     }
@@ -250,17 +221,25 @@ public abstract class Values
 
     /**
      * Helper function for creating a map of parameters, this can be used when you {@link
-     * StatementRunner#run(String, Map) run} statements.
+     * StatementRunner#run(String, Value) run} statements.
      * <p>
-     * Allowed parameter types are java primitives and {@link String} as well as
-     * {@link Collection} and {@link Map} objects containing java
-     * primitives and {@link String} values.
+     * Allowed parameter types are:
+     * <ul>
+     *     <li>{@link Integer}</li>
+     *     <li>{@link Long}</li>
+     *     <li>{@link Boolean}</li>
+     *     <li>{@link Double}</li>
+     *     <li>{@link Float}</li>
+     *     <li>{@link String}</li>
+     *     <li>{@link Map} with String keys and values being any type in this list</li>
+     *     <li>{@link Collection} of any type in this list</li>
+     * </ul>
      *
      * @param keysAndValues alternating sequence of keys and values
      * @return Map containing all parameters specified
-     * @see StatementRunner#run(String, Map)
+     * @see StatementRunner#run(String, Value)
      */
-    public static Map<String,Value> parameters( Object... keysAndValues )
+    public static Value parameters( Object... keysAndValues )
     {
         if ( keysAndValues.length % 2 != 0 )
         {
@@ -276,7 +255,7 @@ public abstract class Values
             assertParameter( value );
             map.put( keysAndValues[i].toString(), value( value ) );
         }
-        return map;
+        return value(map);
     }
 
     public static Function<Value,Value> valueAsIs()

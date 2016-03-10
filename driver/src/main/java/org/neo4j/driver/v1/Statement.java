@@ -18,77 +18,74 @@
  */
 package org.neo4j.driver.v1;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.driver.internal.ParameterSupport;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.util.Immutable;
-import org.neo4j.driver.v1.value.Value;
+import org.neo4j.driver.v1.util.Pair;
 
 import static java.lang.String.format;
+import static org.neo4j.driver.v1.Values.value;
 
 /**
  * An executable statement, i.e. the statements' text and its parameters.
  *
  * @see Session
  * @see Transaction
- * @see ResultStream
- * @see ResultStream#summarize()
+ * @see StatementResult
+ * @see StatementResult#summarize()
  * @see ResultSummary
  */
 @Immutable
 public class Statement
 {
-    private final String template;
-    private final Map<String,Value> parameters;
+    private final String text;
+    private final Value parameters;
 
-    public Statement( String template, Map<String, Value> parameters )
+    public Statement( String text, Value parameters )
     {
-        this.template = template;
-        this.parameters = parameters == null || parameters.isEmpty()
-            ? ParameterSupport.NO_PARAMETERS
-            : Collections.unmodifiableMap( parameters );
+        this.text = text;
+        this.parameters = parameters == null ? Values.EmptyMap : parameters;
     }
 
-    public Statement( String template )
+    public Statement( String text )
     {
-        this( template, null );
+        this( text, null );
     }
 
     /**
-     * @return the statement's template
+     * @return the statement's text
      */
-    public String template()
+    public String text()
     {
-        return template;
+        return text;
     }
 
     /**
      * @return the statement's parameters
      */
-    public Map<String, Value> parameters()
+    public Value parameters()
     {
         return parameters;
     }
 
     /**
-     * @param newTemplate the new statement's template
-     * @return a new statement with updated template
+     * @param newText the new statement's text
+     * @return a new statement with updated text
      */
-    public Statement withTemplate( String newTemplate )
+    public Statement withText( String newText )
     {
-        return new Statement( newTemplate, parameters );
+        return new Statement( newText, parameters );
     }
 
     /**
      * @param newParameters the new statement's parameters
      * @return a new statement with updated parameters
      */
-    public Statement withParameters( Map<String, Value> newParameters )
+    public Statement withParameters( Value newParameters )
     {
-        return new Statement( template, newParameters );
+        return new Statement( text, newParameters );
     }
 
     /**
@@ -102,7 +99,7 @@ public class Statement
      * @param updates describing how to update the parameters
      * @return a new statement with updated parameters
      */
-    public Statement withUpdatedParameters( Map<String, Value> updates )
+    public Statement withUpdatedParameters( Value updates )
     {
         if ( updates == null || updates.isEmpty() )
         {
@@ -111,20 +108,20 @@ public class Statement
         else
         {
             Map<String, Value> newParameters = new HashMap<>( Math.max( parameters.size(), updates.size() ) );
-            newParameters.putAll( parameters );
-            for ( Map.Entry<String, Value> entry : updates.entrySet() )
+            newParameters.putAll( parameters.asMap() );
+            for ( Pair<String, Value> entry : updates.properties() )
             {
-                Value value = entry.getValue();
+                Value value = entry.value();
                 if ( value.isNull() )
                 {
-                    newParameters.remove( entry.getKey() );
+                    newParameters.remove( entry.key() );
                 }
                 else
                 {
-                    newParameters.put( entry.getKey(), value );
+                    newParameters.put( entry.key(), value );
                 }
             }
-            return withParameters( newParameters );
+            return withParameters( value(newParameters) );
         }
     }
 
@@ -141,14 +138,14 @@ public class Statement
         }
 
         Statement statement = (Statement) o;
-        return template.equals( statement.template ) && parameters.equals( statement.parameters );
+        return text.equals( statement.text ) && parameters.equals( statement.parameters );
 
     }
 
     @Override
     public int hashCode()
     {
-        int result = template.hashCode();
+        int result = text.hashCode();
         result = 31 * result + parameters.hashCode();
         return result;
     }
@@ -156,6 +153,6 @@ public class Statement
     @Override
     public String toString()
     {
-        return format( "Statement{template='%s', parameters=%s}", template, parameters );
+        return format( "Statement{text='%s', parameters=%s}", text, parameters );
     }
 }

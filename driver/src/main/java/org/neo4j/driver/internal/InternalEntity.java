@@ -23,13 +23,13 @@ import java.util.Map;
 import org.neo4j.driver.internal.util.Extract;
 import org.neo4j.driver.internal.util.Iterables;
 import org.neo4j.driver.internal.value.MapValue;
-import org.neo4j.driver.v1.value.Entity;
+import org.neo4j.driver.v1.types.Entity;
 import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.util.Pair;
-import org.neo4j.driver.v1.value.Value;
-import org.neo4j.driver.v1.value.Values;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.Values;
 
-import static org.neo4j.driver.v1.value.Values.valueAsIs;
+import static org.neo4j.driver.v1.Values.valueAsIs;
 
 public abstract class InternalEntity implements Entity, AsValue
 {

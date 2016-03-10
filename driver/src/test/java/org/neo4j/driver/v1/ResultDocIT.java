@@ -34,7 +34,7 @@ public class ResultDocIT
     @Rule
     public TestNeo4jSession session = new TestNeo4jSession();
 
-    /** @see ResultStream */
+    /** @see StatementResult */
     public void summarizeUsage( DocSnippet snippet )
     {
         // Given

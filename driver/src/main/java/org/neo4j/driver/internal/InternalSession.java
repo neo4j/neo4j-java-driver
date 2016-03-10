@@ -23,14 +23,16 @@ import java.util.Map;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.Logger;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
-import org.neo4j.driver.v1.ResultStream;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
+import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
-import org.neo4j.driver.v1.value.TypeSystem;
-import org.neo4j.driver.v1.value.Value;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.value.Values;
+import org.neo4j.driver.v1.types.TypeSystem;
+
+import static org.neo4j.driver.v1.Values.value;
 
 public class InternalSession implements Session
 {
@@ -58,32 +60,32 @@ public class InternalSession implements Session
     }
 
     @Override
-    public ResultStream run( String statementText, Map<String,Value> statementParameters )
+    public StatementResult run( String statementText )
+    {
+        return run( statementText, Values.EmptyMap );
+    }
+
+    @Override
+    public StatementResult run( String statementText, Map<String, Object> statementParameters )
+    {
+        return run( statementText, value( statementParameters ) );
+    }
+
+    @Override
+    public StatementResult run( String statementText, Value statementParameters )
+    {
+        return run( new Statement( statementText, statementParameters ) );
+    }
+
+    @Override
+    public StatementResult run( Statement statement )
     {
         ensureConnectionIsValid();
-        InternalResultStream cursor = new InternalResultStream( connection, statementText, statementParameters );
-        connection.run( statementText, statementParameters, cursor.runResponseCollector() );
+        InternalStatementResult cursor = new InternalStatementResult( connection, statement );
+        connection.run( statement.text(), statement.parameters().asMap(), cursor.runResponseCollector() );
         connection.pullAll( cursor.pullAllResponseCollector() );
         connection.flush();
         return cursor;
-    }
-
-    @Override
-    public ResultStream run( String statementText )
-    {
-        return run( statementText, ParameterSupport.NO_PARAMETERS );
-    }
-
-    @Override
-    public ResultStream run( String statementText, Object ... statementParameters )
-    {
-        return run( statementText, Values.parameters( statementParameters ) );
-    }
-
-    @Override
-    public ResultStream run( Statement statement )
-    {
-        return run( statement.template(), statement.parameters() );
     }
 
     @Override

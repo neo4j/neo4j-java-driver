@@ -20,7 +20,7 @@ package org.neo4j.driver.v1;
 
 import org.neo4j.driver.internal.auth.InternalAuthToken;
 
-import static org.neo4j.driver.v1.value.Values.parameters;
+import static org.neo4j.driver.v1.Values.parameters;
 
 /**
  * This is a listing of the various methods of authentication supported by this
@@ -42,7 +42,7 @@ public class AuthTokens
         return new InternalAuthToken( parameters(
                 "scheme", "basic",
                 "principal", username,
-                "credentials", password ) );
+                "credentials", password ).asMap() );
     }
 
     /**
@@ -53,6 +53,6 @@ public class AuthTokens
      */
     public static AuthToken none()
     {
-        return new InternalAuthToken( parameters("scheme", "none" ) );
+        return new InternalAuthToken( parameters("scheme", "none" ).asMap() );
     }
 }

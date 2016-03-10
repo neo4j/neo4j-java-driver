@@ -29,7 +29,7 @@ import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.summary.StatementType;
 import org.neo4j.driver.v1.summary.UpdateStatistics;
-import org.neo4j.driver.v1.value.Value;
+import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
 public class SummaryBuilder implements StreamCollector

@@ -24,7 +24,7 @@ import org.neo4j.driver.internal.InternalNode;
 import org.neo4j.driver.internal.InternalPath;
 import org.neo4j.driver.internal.InternalRelationship;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
-import org.neo4j.driver.v1.value.Value;
+import org.neo4j.driver.v1.Value;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;

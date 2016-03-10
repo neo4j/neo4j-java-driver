@@ -28,7 +28,7 @@ import org.neo4j.driver.internal.value.ListValue;
 import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.internal.value.StringValue;
 import org.neo4j.driver.v1.summary.ProfiledPlan;
-import org.neo4j.driver.v1.value.Value;
+import org.neo4j.driver.v1.Value;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;

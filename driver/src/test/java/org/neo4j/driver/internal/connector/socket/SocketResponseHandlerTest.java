@@ -18,29 +18,27 @@
  */
 package org.neo4j.driver.internal.connector.socket;
 
-import java.util.Collections;
-import java.util.Map;
-
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Collections;
+import java.util.Map;
+
 import org.neo4j.driver.internal.spi.StreamCollector;
 import org.neo4j.driver.internal.summary.InternalUpdateStatistics;
+import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.summary.Plan;
 import org.neo4j.driver.v1.summary.StatementType;
 import org.neo4j.driver.v1.summary.UpdateStatistics;
-import org.neo4j.driver.v1.value.Value;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
-
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-
 import static org.neo4j.driver.internal.summary.InternalPlan.plan;
-import static org.neo4j.driver.v1.value.Values.parameters;
-import static org.neo4j.driver.v1.value.Values.value;
-import static org.neo4j.driver.v1.value.Values.values;
+import static org.neo4j.driver.v1.Values.parameters;
+import static org.neo4j.driver.v1.Values.value;
+import static org.neo4j.driver.v1.Values.values;
 
 public class SocketResponseHandlerTest
 {
@@ -72,7 +70,7 @@ public class SocketResponseHandlerTest
         // Given
         String[] fieldNames = new String[] { "name", "age", "income" };
         Value fields = value( fieldNames );
-        Map<String, Value> data = parameters( "fields", fields );
+        Map<String, Value> data = parameters( "fields", fields ).asMap();
 
         // When
         handler.handleSuccessMessage( data );
@@ -91,7 +89,7 @@ public class SocketResponseHandlerTest
                         "nodes-created", 1,
                         "properties-set", 12
                 )
-        );
+        ).asMap();
         UpdateStatistics stats = new InternalUpdateStatistics( 1, 0, 0, 0, 12, 0, 0, 0, 0, 0, 0);
 
         // When
@@ -125,14 +123,15 @@ public class SocketResponseHandlerTest
                                 )
                         )
                 )
-        );
+        ).asMap();
 
         UpdateStatistics stats = new InternalUpdateStatistics( 1, 0, 0, 0, 12, 0, 0, 0, 0, 0, 0 );
         Plan plan = plan(
             "ProduceResults",
-                parameters( "KeyNames", "num", "EstimatedRows", 1.0 ), singletonList( "num" ),
+                parameters( "KeyNames", "num", "EstimatedRows", 1.0 ).asMap(), singletonList( "num" ),
                 singletonList(
-                plan( "Projection", parameters( "A", "x", "B", 2 ), singletonList( "num" ), Collections.<Plan>emptyList() )
+                plan( "Projection", parameters( "A", "x", "B", 2 ).asMap(), singletonList( "num" ), Collections
+                        .<Plan>emptyList() )
             )
         );
 

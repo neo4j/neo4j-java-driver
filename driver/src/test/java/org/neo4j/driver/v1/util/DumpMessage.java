@@ -43,7 +43,7 @@ import org.neo4j.driver.internal.messaging.RunMessage;
 import org.neo4j.driver.internal.messaging.SuccessMessage;
 import org.neo4j.driver.internal.packstream.PackInput;
 import org.neo4j.driver.internal.util.BytePrinter;
-import org.neo4j.driver.v1.value.Value;
+import org.neo4j.driver.v1.Value;
 
 public class DumpMessage
 {

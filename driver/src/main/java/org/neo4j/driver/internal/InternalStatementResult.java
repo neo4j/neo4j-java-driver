@@ -22,15 +22,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Queue;
 
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.StreamCollector;
 import org.neo4j.driver.internal.summary.SummaryBuilder;
 import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.ResultStream;
 import org.neo4j.driver.v1.Statement;
+import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
 import org.neo4j.driver.v1.summary.Notification;
@@ -41,12 +41,11 @@ import org.neo4j.driver.v1.summary.StatementType;
 import org.neo4j.driver.v1.summary.UpdateStatistics;
 import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.util.Functions;
-import org.neo4j.driver.v1.value.Value;
 
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
 
-public class InternalResultStream implements ResultStream
+public class InternalStatementResult implements StatementResult
 {
     private final Connection connection;
     private final StreamCollector runResponseCollector;
@@ -57,16 +56,14 @@ public class InternalResultStream implements ResultStream
     private ResultSummary summary = null;
 
     private boolean open = true;
-    private Record current = null;
     private long position = -1;
-    private long limit = -1;
     private boolean done = false;
 
-    public InternalResultStream( Connection connection, String statement, Map<String,Value> parameters )
+    public InternalStatementResult( Connection connection, Statement statement )
     {
         this.connection = connection;
         this.runResponseCollector = newRunResponseCollector();
-        this.pullAllResponseCollector = newPullAllResponseCollector( new Statement( statement, parameters ) );
+        this.pullAllResponseCollector = newPullAllResponseCollector( statement );
     }
 
     private StreamCollector newRunResponseCollector()
@@ -171,12 +168,6 @@ public class InternalResultStream implements ResultStream
     }
 
     @Override
-    public boolean isOpen()
-    {
-        return open;
-    }
-
-    @Override
     public List<String> keys()
     {
         tryFetching();
@@ -186,7 +177,6 @@ public class InternalResultStream implements ResultStream
     @Override
     public boolean hasNext()
     {
-        assertOpen();
         if (!recordBuffer.isEmpty())
         {
             return true;
@@ -215,12 +205,7 @@ public class InternalResultStream implements ResultStream
         Record nextRecord = recordBuffer.poll();
         if ( nextRecord != null )
         {
-            current = nextRecord;
             position += 1;
-            if ( position == limit )
-            {
-                discard();
-            }
             return nextRecord;
         }
         else if ( done )
@@ -235,44 +220,7 @@ public class InternalResultStream implements ResultStream
     }
 
     @Override
-    public long skip( long elements )
-    {
-        if ( elements < 0 )
-        {
-            throw new ClientException( "Cannot skip negative number of elements" );
-        }
-        else
-        {
-            int skipped = 0;
-            while ( skipped < elements && hasNext() )
-            {
-                next();
-                skipped += 1;
-            }
-            return skipped;
-        }
-    }
-
-    @Override
-    public long limit( long records )
-    {
-        if ( records < 0 )
-        {
-            throw new ClientException( "Cannot limit negative number of elements" );
-        }
-        else if ( records == 0)
-        {
-            this.limit = position;
-            discard();
-        } else
-        {
-            this.limit = records + position;
-        }
-        return this.limit;
-    }
-
-    @Override
-    public Record first()
+    public Record single()
     {
         if( position > 0 )
         {
@@ -287,13 +235,7 @@ public class InternalResultStream implements ResultStream
             throw new NoSuchRecordException( "Cannot retrieve the first record, because this result is empty." );
         }
 
-        return next();
-    }
-
-    @Override
-    public Record single()
-    {
-        Record first = first();
+        Record first = next();
         if( hasNext() )
         {
             throw new NoSuchRecordException( "Expected a result with a single record, but this result contains at least one more. " +
@@ -337,7 +279,7 @@ public class InternalResultStream implements ResultStream
             assertOpen();
             return emptyList();
         }
-        else if ( position == 0 || ( position == -1 && hasNext() ) )
+        else if ( position == -1 && hasNext() )
         {
             List<T> result = new ArrayList<>();
             do
@@ -345,6 +287,7 @@ public class InternalResultStream implements ResultStream
                 result.add( mapFunction.apply( next() ) );
             }
             while ( hasNext() );
+
             discard();
             return result;
         }
@@ -360,22 +303,8 @@ public class InternalResultStream implements ResultStream
     @Override
     public ResultSummary summarize()
     {
-        skip(Long.MAX_VALUE);
+        discard();
         return summary;
-    }
-
-    @Override
-    public void close()
-    {
-        if ( open )
-        {
-            discard();
-            open = false;
-        }
-        else
-        {
-            throw new ClientException( "Already closed" );
-        }
     }
 
     @Override
@@ -384,11 +313,27 @@ public class InternalResultStream implements ResultStream
         throw new ClientException( "Removing records from a result is not supported." );
     }
 
+    @Override
+    public void discard()
+    {
+        if(!open)
+        {
+            return;
+        }
+
+        while ( !done )
+        {
+            connection.receiveOne();
+        }
+        recordBuffer.clear();
+        open = false;
+    }
+
     private void assertOpen()
     {
         if ( !open )
         {
-            throw new ClientException( "Cursor already closed" );
+            throw new ClientException( "Result has been closed" );
         }
     }
 
@@ -396,16 +341,6 @@ public class InternalResultStream implements ResultStream
     {
         tryFetching();
         return position == -1 && recordBuffer.isEmpty() && done;
-    }
-
-    private void discard()
-    {
-        assertOpen();
-        while ( !done )
-        {
-            connection.receiveOne();
-        }
-        recordBuffer.clear();
     }
 
     private void tryFetching()

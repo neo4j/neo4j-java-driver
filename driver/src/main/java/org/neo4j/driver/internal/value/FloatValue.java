@@ -19,7 +19,7 @@
 package org.neo4j.driver.internal.value;
 
 import org.neo4j.driver.internal.types.InternalTypeSystem;
-import org.neo4j.driver.v1.value.Type;
+import org.neo4j.driver.v1.types.Type;
 import org.neo4j.driver.v1.exceptions.value.LossyCoercion;
 
 public class FloatValue extends NumberValueAdapter<Double>

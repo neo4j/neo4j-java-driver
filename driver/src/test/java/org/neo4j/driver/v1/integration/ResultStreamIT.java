@@ -22,13 +22,13 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.ResultStream;
+import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.driver.v1.value.Values.parameters;
+import static org.neo4j.driver.v1.Values.parameters;
 
 public class ResultStreamIT
 {
@@ -39,7 +39,7 @@ public class ResultStreamIT
     public void shouldAllowIteratingOverResultStream() throws Throwable
     {
         // When
-        ResultStream res = session.run( "UNWIND [1,2,3,4] AS a RETURN a" );
+        StatementResult res = session.run( "UNWIND [1,2,3,4] AS a RETURN a" );
 
         // Then I should be able to iterate over the result
         int idx = 1;
@@ -53,7 +53,7 @@ public class ResultStreamIT
     public void shouldHaveFieldNamesInResult()
     {
         // When
-        ResultStream res = session.run( "CREATE (n:TestNode {name:'test'}) RETURN n" );
+        StatementResult res = session.run( "CREATE (n:TestNode {name:'test'}) RETURN n" );
 
         // Then
         assertEquals( "[n]", res.keys().toString() );
@@ -65,7 +65,7 @@ public class ResultStreamIT
     public void shouldGiveHelpfulFailureMessageWhenAccessNonExistingField() throws Throwable
     {
         // Given
-        ResultStream rs = session.run( "CREATE (n:Person {name:{name}}) RETURN n", parameters( "name", "Tom Hanks" ) );
+        StatementResult rs = session.run( "CREATE (n:Person {name:{name}}) RETURN n", parameters( "name", "Tom Hanks" ) );
 
         // When
         Record single = rs.single();
@@ -78,7 +78,7 @@ public class ResultStreamIT
     public void shouldGiveHelpfulFailureMessageWhenAccessNonExistingPropertyOnNode() throws Throwable
     {
         // Given
-        ResultStream rs = session.run( "CREATE (n:Person {name:{name}}) RETURN n", parameters( "name", "Tom Hanks" ) );
+        StatementResult rs = session.run( "CREATE (n:Person {name:{name}}) RETURN n", parameters( "name", "Tom Hanks" ) );
 
         // When
         Record record = rs.single();
@@ -91,7 +91,7 @@ public class ResultStreamIT
     public void shouldNotReturnNullKeysOnEmptyResult()
     {
         // Given
-        ResultStream rs = session.run( "CREATE (n:Person {name:{name}})", parameters( "name", "Tom Hanks" ) );
+        StatementResult rs = session.run( "CREATE (n:Person {name:{name}})", parameters( "name", "Tom Hanks" ) );
 
         // THEN
         assertNotNull( rs.keys() );

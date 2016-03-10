@@ -34,10 +34,10 @@ import org.neo4j.driver.internal.messaging.ResetMessage;
 import org.neo4j.driver.internal.messaging.RunMessage;
 import org.neo4j.driver.internal.messaging.SuccessMessage;
 import org.neo4j.driver.internal.spi.StreamCollector;
-import org.neo4j.driver.v1.value.Value;
+import org.neo4j.driver.v1.Value;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.driver.v1.value.Values.parameters;
+import static org.neo4j.driver.v1.Values.parameters;
 
 public class LoggingResponseHandlerTest
 {
@@ -57,22 +57,22 @@ public class LoggingResponseHandlerTest
     public void shouldLogInitMessage() throws Throwable
     {
         // When
-        handler.handleInitMessage( "client", parameters());
+        handler.handleInitMessage( "client", parameters().asMap());
 
         // Then
         assertEquals( "S: [INIT \"client\"]", log );
-        assertEquals( format( new InitMessage( "client", parameters() ) ), log );
+        assertEquals( format( new InitMessage( "client", parameters().asMap() ) ), log );
     }
 
     @Test
     public void shouldLogRunMessage() throws Throwable
     {
         // When
-        handler.handleRunMessage( "stat", parameters( "value", new String[]{"cat", "cat", "cat"} ) );
+        handler.handleRunMessage( "stat", parameters( "value", new String[]{"cat", "cat", "cat"} ).asMap() );
 
         // Then
         assertEquals( "S: [RUN \"stat\" {value=[\"cat\", \"cat\", \"cat\"]}]", log );
-        assertEquals( format( new RunMessage( "stat", parameters( "value", new String[]{"cat", "cat", "cat"} ) ) ),
+        assertEquals( format( new RunMessage( "stat", parameters( "value", new String[]{"cat", "cat", "cat"} ).asMap() ) ),
                 log );
     }
 

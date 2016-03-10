@@ -44,7 +44,7 @@ import java.net.URI;
  * }
  *
  * // Retrieve results
- * ResultStream result = session.run( "MATCH (n) RETURN n.name" );
+ * StatementResult result = session.run( "MATCH (n) RETURN n.name" );
  * List<String> names = new LinkedList<>();
  * while( result.hasNext() )
  * {

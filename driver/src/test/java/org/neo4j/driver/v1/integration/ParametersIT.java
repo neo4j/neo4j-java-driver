@@ -22,18 +22,18 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import org.neo4j.driver.v1.value.Node;
-import org.neo4j.driver.v1.value.Path;
+import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.types.Node;
+import org.neo4j.driver.v1.types.Path;
 import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.value.Relationship;
-import org.neo4j.driver.v1.ResultStream;
-import org.neo4j.driver.v1.value.Value;
+import org.neo4j.driver.v1.types.Relationship;
+import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.driver.v1.value.Values.parameters;
+import static org.neo4j.driver.v1.Values.parameters;
 
 public class ParametersIT
 {
@@ -47,7 +47,7 @@ public class ParametersIT
     public void shouldBeAbleToSetAndReturnBooleanProperty()
     {
         // When
-        ResultStream result = session.run(
+        StatementResult result = session.run(
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", true ) );
 
         // Then
@@ -63,7 +63,7 @@ public class ParametersIT
     public void shouldBeAbleToSetAndReturnByteProperty()
     {
         // When
-        ResultStream result = session.run(
+        StatementResult result = session.run(
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", (byte) 1 ) );
 
         // Then
@@ -79,7 +79,7 @@ public class ParametersIT
     public void shouldBeAbleToSetAndReturnShortProperty()
     {
         // When
-        ResultStream result = session.run(
+        StatementResult result = session.run(
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", (short) 1 ) );
 
         // Then
@@ -95,7 +95,7 @@ public class ParametersIT
     public void shouldBeAbleToSetAndReturnIntegerProperty()
     {
         // When
-        ResultStream result = session.run(
+        StatementResult result = session.run(
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", 1 ) );
 
         // Then
@@ -112,7 +112,7 @@ public class ParametersIT
     public void shouldBeAbleToSetAndReturnLongProperty()
     {
         // When
-        ResultStream result = session.run(
+        StatementResult result = session.run(
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", 1L ) );
 
         // Then
@@ -129,7 +129,7 @@ public class ParametersIT
     public void shouldBeAbleToSetAndReturnDoubleProperty()
     {
         // When
-        ResultStream result = session.run(
+        StatementResult result = session.run(
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", 6.28 ) );
 
         // Then
@@ -139,49 +139,13 @@ public class ParametersIT
             assertThat( value.hasType( session.typeSystem().FLOAT() ), equalTo( true ) );
             assertThat( value.asDouble(), equalTo( 6.28 ) );
         }
-
-    }
-
-    @Test
-    public void shouldBeAbleToSetAndReturnCharacterProperty()
-    {
-        // When
-        ResultStream result = session.run(
-                "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", 'ö' ) );
-
-        // Then
-        for ( Record record : result.list() )
-        {
-            Value value = record.get( "a.value" );
-            assertThat( value.hasType( session.typeSystem().STRING() ), equalTo( true ) );
-            assertThat( value.asString(), equalTo( "ö" ) );
-        }
-
-    }
-
-    @Test
-    public void shouldBeAbleToSetAndReturnCharacterArrayProperty()
-    {
-        // When
-        char[] arrayValue = new char[]{'M', 'j', 'ö', 'l', 'n', 'i', 'r'};
-        ResultStream result = session.run(
-                "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", arrayValue ) );
-
-        // Then
-        for ( Record record : result.list() )
-        {
-            Value value = record.get( "a.value" );
-            assertThat( value.hasType( session.typeSystem().STRING() ), equalTo( true ) );
-            assertThat( value.asString(), equalTo( "Mjölnir" ) );
-        }
-
     }
 
     @Test
     public void shouldBeAbleToSetAndReturnStringProperty()
     {
         // When
-        ResultStream result = session.run(
+        StatementResult result = session.run(
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", "Mjölnir" ) );
 
         // Then
@@ -199,7 +163,7 @@ public class ParametersIT
     {
         // When
         boolean[] arrayValue = new boolean[]{true, true, true};
-        ResultStream result = session.run(
+        StatementResult result = session.run(
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", arrayValue ) );
 
         // Then
@@ -222,7 +186,7 @@ public class ParametersIT
     {
         // When
         int[] arrayValue = new int[]{42, 42, 42};
-        ResultStream result = session.run(
+        StatementResult result = session.run(
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", arrayValue ) );
 
         // Then
@@ -245,7 +209,7 @@ public class ParametersIT
     {
         // When
         double[] arrayValue = new double[]{6.28, 6.28, 6.28};
-        ResultStream result = session.run(
+        StatementResult result = session.run(
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", arrayValue ) );
 
         // Then
@@ -273,7 +237,7 @@ public class ParametersIT
     {
         String[] arrayValue = new String[]{str, str, str};
 
-        ResultStream result = session.run(
+        StatementResult result = session.run(
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", arrayValue ) );
 
         // Then
@@ -316,7 +280,7 @@ public class ParametersIT
     public void shouldBeAbleToSetAndReturnBooleanPropertyWithinMap()
     {
         // When
-        ResultStream result = session.run(
+        StatementResult result = session.run(
                 "CREATE (a {value:{value}.v}) RETURN a.value",
                 parameters( "value", parameters( "v", true ) ) );
 
@@ -334,7 +298,7 @@ public class ParametersIT
     public void shouldBeAbleToSetAndReturnIntegerPropertyWithinMap()
     {
         // When
-        ResultStream result = session.run(
+        StatementResult result = session.run(
                 "CREATE (a {value:{value}.v}) RETURN a.value",
                 parameters( "value", parameters( "v", 42 ) ) );
 
@@ -352,7 +316,7 @@ public class ParametersIT
     public void shouldBeAbleToSetAndReturnDoublePropertyWithinMap()
     {
         // When
-        ResultStream result = session.run(
+        StatementResult result = session.run(
                 "CREATE (a {value:{value}.v}) RETURN a.value",
                 parameters( "value", parameters( "v", 6.28 ) ) );
 
@@ -370,7 +334,7 @@ public class ParametersIT
     public void shouldBeAbleToSetAndReturnStringPropertyWithinMap()
     {
         // When
-        ResultStream result = session.run(
+        StatementResult result = session.run(
                 "CREATE (a {value:{value}.v}) RETURN a.value",
                 parameters( "value", parameters( "v", "Mjölnir" ) ) );
 
@@ -398,8 +362,8 @@ public class ParametersIT
     public void shouldNotBePossibleToUseNodeAsParameter()
     {
         // GIVEN
-        ResultStream cursor = session.run( "CREATE (a:Node) RETURN a" );
-        Node node = cursor.first().get( 0 ).asNode();
+        StatementResult cursor = session.run( "CREATE (a:Node) RETURN a" );
+        Node node = cursor.single().get( 0 ).asNode();
 
         //Expect
         exception.expect( ClientException.class );
@@ -413,8 +377,8 @@ public class ParametersIT
     public void shouldNotBePossibleToUseRelationshipAsParameter()
     {
         // GIVEN
-        ResultStream cursor = session.run( "CREATE (a:Node), (b:Node), (a)-[r:R]->(b) RETURN r" );
-        Relationship relationship = cursor.first().get( 0 ).asRelationship();
+        StatementResult cursor = session.run( "CREATE (a:Node), (b:Node), (a)-[r:R]->(b) RETURN r" );
+        Relationship relationship = cursor.single().get( 0 ).asRelationship();
 
         //Expect
         exception.expect( ClientException.class );
@@ -428,8 +392,8 @@ public class ParametersIT
     public void shouldNotBePossibleToUsePathAsParameter()
     {
         // GIVEN
-        ResultStream cursor = session.run( "CREATE (a:Node), (b:Node), p=(a)-[r:R]->(b) RETURN p" );
-        Path path = cursor.first().get( 0 ).asPath();
+        StatementResult cursor = session.run( "CREATE (a:Node), (b:Node), p=(a)-[r:R]->(b) RETURN p" );
+        Path path = cursor.single().get( 0 ).asPath();
 
         //Expect
         exception.expect( ClientException.class );

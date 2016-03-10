@@ -20,8 +20,8 @@ package org.neo4j.driver.v1.tck.tck.util;
 
 import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.util.Pair;
-import org.neo4j.driver.v1.value.Relationship;
-import org.neo4j.driver.v1.value.Value;
+import org.neo4j.driver.v1.types.Relationship;
+import org.neo4j.driver.v1.Value;
 
 public class TestRelationship implements Relationship
 {

@@ -18,11 +18,11 @@
  */
 package org.neo4j.driver.v1.tck.tck.util.runners;
 
-import org.neo4j.driver.v1.ResultStream;
+import org.neo4j.driver.v1.StatementResult;
 
 public interface CypherStatementRunner
 {
     CypherStatementRunner runCypherStatement();
 
-    ResultStream result();
+    StatementResult result();
 }

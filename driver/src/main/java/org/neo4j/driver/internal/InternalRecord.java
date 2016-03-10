@@ -27,12 +27,12 @@ import org.neo4j.driver.internal.util.Extract;
 import org.neo4j.driver.internal.value.InternalValue;
 import org.neo4j.driver.v1.util.Pair;
 import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.value.Value;
-import org.neo4j.driver.v1.value.Values;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.Values;
 
 import static java.lang.String.format;
 import static org.neo4j.driver.internal.util.Format.formatPairs;
-import static org.neo4j.driver.v1.value.Values.valueAsIs;
+import static org.neo4j.driver.v1.Values.valueAsIs;
 
 public class InternalRecord implements Record
 {

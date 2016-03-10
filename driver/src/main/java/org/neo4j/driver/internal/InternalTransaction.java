@@ -24,14 +24,14 @@ import java.util.Map;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.StreamCollector;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
-import org.neo4j.driver.v1.ResultStream;
 import org.neo4j.driver.v1.Statement;
+import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
-import org.neo4j.driver.v1.value.TypeSystem;
-import org.neo4j.driver.v1.value.Value;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
-import org.neo4j.driver.v1.value.Values;
+import org.neo4j.driver.v1.types.TypeSystem;
 
 public class InternalTransaction implements Transaction
 {
@@ -125,14 +125,32 @@ public class InternalTransaction implements Transaction
 
     @Override
     @SuppressWarnings( "unchecked" )
-    public ResultStream run( String statementText, Map<String,Value> statementParameters )
+    public StatementResult run( String statementText, Value statementParameters )
+    {
+        return run( new Statement( statementText, statementParameters ) );
+    }
+
+    @Override
+    public StatementResult run( String statementText )
+    {
+        return run( statementText, Values.EmptyMap );
+    }
+
+    @Override
+    public StatementResult run( String statementText, Map<String,Object> statementParameters )
+    {
+        return run( statementText, Values.value( statementParameters ) );
+    }
+
+    @Override
+    public StatementResult run( Statement statement )
     {
         ensureNotFailed();
 
         try
         {
-            InternalResultStream cursor = new InternalResultStream( conn, statementText, statementParameters );
-            conn.run( statementText, statementParameters, cursor.runResponseCollector() );
+            InternalStatementResult cursor = new InternalStatementResult( conn, statement );
+            conn.run( statement.text(), statement.parameters().asMap(), cursor.runResponseCollector() );
             conn.pullAll( cursor.pullAllResponseCollector() );
             conn.flush();
             return cursor;
@@ -142,24 +160,6 @@ public class InternalTransaction implements Transaction
             state = State.FAILED;
             throw e;
         }
-    }
-
-    @Override
-    public ResultStream run( String statementText )
-    {
-        return run( statementText, ParameterSupport.NO_PARAMETERS );
-    }
-
-    @Override
-    public ResultStream run( String statementText, Object ... statementParameters )
-    {
-        return run( statementText, Values.parameters( statementParameters ) );
-    }
-
-    @Override
-    public ResultStream run( Statement statement )
-    {
-        return run( statement.template(), statement.parameters() );
     }
 
     @Override

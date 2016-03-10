@@ -16,23 +16,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1.value;
-
-import org.neo4j.driver.v1.util.Immutable;
+package org.neo4j.driver.v1.types;
 
 /**
- * A uniquely identifiable property container that can form part of a Neo4j graph.
+ * The <strong>Node</strong> interface describes the characteristics of a node from a Neo4j graph.
  */
-@Immutable
-public interface Entity extends MapAccessor
+public interface Node extends Entity
 {
     /**
-     * A unique id for this Entity. Ids are guaranteed to remain stable for the duration of the session they
-     * were found in, but may be re-used for other entities after that. As such, if you want a public identity to use
-     * for your entities, attaching an explicit 'id' property or similar persistent and unique identifier is a better
-     * choice.
+     * Return all labels.
      *
-     * @return the id of this entity
+     * @return a label Collection
      */
-    long id();
+    Iterable<String> labels();
+
+    /**
+     * Test if this node has a given label
+     *
+     * @param label the label
+     * @return <tt>true</tt> if this node has the label otherwise <tt>false</tt>
+     */
+    boolean hasLabel( String label );
 }

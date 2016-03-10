@@ -24,8 +24,8 @@ import org.junit.rules.ExpectedException;
 
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.internal.types.TypeConstructor;
-import org.neo4j.driver.v1.value.TypeSystem;
-import org.neo4j.driver.v1.value.Value;
+import org.neo4j.driver.v1.types.TypeSystem;
+import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.value.LossyCoercion;
 
 import static org.hamcrest.CoreMatchers.equalTo;

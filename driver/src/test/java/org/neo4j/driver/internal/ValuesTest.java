@@ -31,19 +31,18 @@ import java.util.Set;
 
 import org.neo4j.driver.internal.value.ListValue;
 import org.neo4j.driver.internal.value.MapValue;
-import org.neo4j.driver.internal.value.StringValue;
-import org.neo4j.driver.v1.value.Value;
-import org.neo4j.driver.v1.value.Values;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
-import static org.neo4j.driver.v1.value.Values.value;
-import static org.neo4j.driver.v1.value.Values.valueAsList;
-import static org.neo4j.driver.v1.value.Values.valueToString;
-import static org.neo4j.driver.v1.value.Values.values;
+import static org.neo4j.driver.v1.Values.value;
+import static org.neo4j.driver.v1.Values.valueAsList;
+import static org.neo4j.driver.v1.Values.valueToString;
+import static org.neo4j.driver.v1.Values.values;
 
 public class ValuesTest
 {
@@ -55,12 +54,6 @@ public class ValuesTest
     {
         assertThat( value( new int[]{1, 2, 3} ),
                 equalTo( (Value) new ListValue( values( 1, 2, 3 ) ) ) );
-
-        assertThat( value( new short[]{1, 2, 3} ),
-                equalTo( (Value) new ListValue( values( 1, 2, 3 ) ) ) );
-
-        assertThat( value( new char[]{'a', 'b', 'c'} ),
-                equalTo( (Value) new StringValue( "abc" ) ) );
 
         assertThat( value( new long[]{1, 2, 3} ),
                 equalTo( (Value) new ListValue( values( 1, 2, 3 ) ) ) );

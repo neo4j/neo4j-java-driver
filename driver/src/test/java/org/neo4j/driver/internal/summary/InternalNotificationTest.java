@@ -28,7 +28,7 @@ import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.internal.value.StringValue;
 import org.neo4j.driver.v1.summary.InputPosition;
 import org.neo4j.driver.v1.summary.Notification;
-import org.neo4j.driver.v1.value.Value;
+import org.neo4j.driver.v1.Value;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;

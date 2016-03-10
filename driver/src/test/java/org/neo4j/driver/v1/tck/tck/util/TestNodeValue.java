@@ -23,8 +23,8 @@ import java.util.Map;
 
 import org.neo4j.driver.internal.InternalNode;
 import org.neo4j.driver.internal.value.NodeValue;
-import org.neo4j.driver.v1.value.Node;
-import org.neo4j.driver.v1.value.Value;
+import org.neo4j.driver.v1.types.Node;
+import org.neo4j.driver.v1.Value;
 
 public class TestNodeValue extends NodeValue implements Node
 {

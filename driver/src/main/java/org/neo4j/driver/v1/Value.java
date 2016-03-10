@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1.value;
+package org.neo4j.driver.v1;
 
 import java.util.List;
 import java.util.Map;
@@ -27,6 +27,13 @@ import org.neo4j.driver.v1.exceptions.value.Uncoercible;
 import org.neo4j.driver.v1.util.Experimental;
 import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.util.Immutable;
+import org.neo4j.driver.v1.types.Entity;
+import org.neo4j.driver.v1.types.MapAccessor;
+import org.neo4j.driver.v1.types.Node;
+import org.neo4j.driver.v1.types.Path;
+import org.neo4j.driver.v1.types.Relationship;
+import org.neo4j.driver.v1.types.Type;
+import org.neo4j.driver.v1.types.TypeSystem;
 
 /**
  * Represents a value from Neo4j.

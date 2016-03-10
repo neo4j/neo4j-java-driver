@@ -32,9 +32,11 @@ import java.util.Map;
 
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Extract;
+import org.neo4j.driver.v1.Statement;
+import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.util.Pair;
-import org.neo4j.driver.v1.value.Value;
+import org.neo4j.driver.v1.Value;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
@@ -44,7 +46,7 @@ import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.driver.v1.value.Values.value;
+import static org.neo4j.driver.v1.Values.value;
 
 public class ExtractTest
 {
@@ -148,18 +150,18 @@ public class ExtractTest
         Connection connection = mock( Connection.class );
         String statement = "<unknown>";
 
-        InternalResultStream cursor = new InternalResultStream( connection, statement, ParameterSupport.NO_PARAMETERS );
+        InternalStatementResult cursor = new InternalStatementResult( connection, new Statement( statement ) );
         cursor.runResponseCollector().keys( new String[]{"k1"} );
         cursor.runResponseCollector().done();
         cursor.pullAllResponseCollector().record( new Value[]{value( 42 )} );
         cursor.pullAllResponseCollector().done();
 
-        connection.run( statement, ParameterSupport.NO_PARAMETERS, cursor.runResponseCollector() );
+        connection.run( statement, Values.EmptyMap.asMap(), cursor.runResponseCollector() );
         connection.pullAll( cursor.pullAllResponseCollector() );
         connection.flush();
 
         // WHEN
-        List<Pair<String, Integer>> fields = Extract.fields( cursor.first(), integerExtractor() );
+        List<Pair<String, Integer>> fields = Extract.fields( cursor.single(), integerExtractor() );
 
 
         // THEN

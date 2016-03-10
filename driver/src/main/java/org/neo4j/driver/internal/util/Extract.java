@@ -26,10 +26,10 @@ import java.util.Map;
 
 import org.neo4j.driver.internal.InternalPair;
 import org.neo4j.driver.v1.util.Function;
-import org.neo4j.driver.v1.value.MapAccessor;
+import org.neo4j.driver.v1.types.MapAccessor;
 import org.neo4j.driver.v1.util.Pair;
 import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.value.Value;
+import org.neo4j.driver.v1.Value;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;

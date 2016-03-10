@@ -25,21 +25,19 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.util.Function;
-import org.neo4j.driver.v1.util.Resource;
-import org.neo4j.driver.v1.value.Values;
 
 
 /**
- * The result of running a statement, a stream of {@link Record records}.
+ * The result of running a statement, conceptually a stream of {@link Record records}.
  *
- * The result stream can be used to iterate over all the records in the stream and provide access
- * to their content.
+ * The standard way of navigating through the result returned by the database is to
+ * {@link #next() iterate} over it.
  *
  * Results are valid until the next statement is run or until the end of the current transaction,
  * whichever comes first. To keep a result around while further statements are run, or to use a result outside the scope
  * of the current transaction, see {@link #list()}.
  */
-public interface ResultStream extends Iterator<Record>, Resource
+public interface StatementResult extends Iterator<Record>
 {
     /**
      * Retrieve the keys of the records this result contains.
@@ -49,46 +47,16 @@ public interface ResultStream extends Iterator<Record>, Resource
     List<String> keys();
 
     /**
-     * Test if there is another record remaining in this result
+     * Test if there is another record we can navigate to in this result.
      * @return true if {@link #next()} will return another record
      */
     @Override boolean hasNext();
 
     /**
-     * Retrieve the next {@link Record} in this result.
+     * Navigate to and retrieve the next {@link Record} in this result.
      * @return the next record
      */
     @Override Record next();
-
-    /**
-     * Skip ahead, as if calling {@link #next()} multiple times.
-     *
-     * @throws ClientException if records is negative
-     * @param records amount of records to be skipped
-     * @return the actual number of records successfully skipped
-     */
-    long skip( long records );
-
-    /**
-     * Limit this result to return no more than the given number of records after the current record.
-     * As soon as the described amount of records have been returned, all further records are discarded.
-     * Calling limit again before the described amount of records have been returned, overwrites the previous limit.
-     *
-     * @throws ClientException if records is negative
-     * @param records the maximum number of records to return from future calls to {@link #next()}
-     * @return the actual position of the last record to be returned
-     */
-    long limit( long records );
-
-    /**
-     * Return the first record in the stream. Fail with an exception if the stream is empty
-     * or if this cursor has already been used to move past the first record.
-     *
-     * @return the first record in the stream
-     * @throws NoSuchRecordException if there is no first record or the cursor has been used already
-     *
-     */
-    Record first() throws NoSuchRecordException;
 
     /**
      * Return the first record in the result, failing if there is not exactly
@@ -111,6 +79,11 @@ public interface ResultStream extends Iterator<Record>, Resource
      * This can be used if you want to iterate over the stream multiple times or to store the
      * whole result for later use.
      *
+     * Note that this method can only be used if you know that the statement that
+     * yielded this result returns a finite stream. Some statements can yield
+     * infinite results, in which case calling this method will lead to running
+     * out of memory.
+     *
      * Calling this method exhausts the result.
      *
      * @throws ClientException if the result has already been used
@@ -122,6 +95,11 @@ public interface ResultStream extends Iterator<Record>, Resource
      * Retrieve and store a projection of the entire result.
      * This can be used if you want to iterate over the stream multiple times or to store the
      * whole result for later use.
+     *
+     * Note that this method can only be used if you know that the statement that
+     * yielded this result returns a finite stream. Some statements can yield
+     * infinite results, in which case calling this method will lead to running
+     * out of memory.
      *
      * Calling this method exhausts the result.
      *
@@ -147,4 +125,10 @@ public interface ResultStream extends Iterator<Record>, Resource
      * @return a summary for the whole query
      */
     ResultSummary summarize();
+
+    /**
+     * Discard this result, freeing up any associated resources.
+     * You should take care to call this if you are done using a result.
+     */
+    void discard();
 }

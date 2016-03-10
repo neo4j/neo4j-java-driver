@@ -24,7 +24,7 @@ import org.junit.rules.ExpectedException;
 
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
-import org.neo4j.driver.v1.ResultStream;
+import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
@@ -50,8 +50,8 @@ public class ErrorIT
                                  " ^" );
 
         // When
-        ResultStream result = session.run( "invalid statement" );
-        result.close();
+        StatementResult result = session.run( "invalid statement" );
+        result.discard();
     }
 
     @Test
@@ -61,7 +61,7 @@ public class ErrorIT
         Transaction tx = session.beginTransaction();
 
         // And Given an error has occurred
-        try { tx.run( "invalid" ).close(); } catch ( ClientException e ) {}
+        try { tx.run( "invalid" ).discard(); } catch ( ClientException e ) {}
 
         // Expect
         exception.expect( ClientException.class );
@@ -69,7 +69,7 @@ public class ErrorIT
                                  "because previous statements in the" );
 
         // When
-        ResultStream cursor = tx.run( "RETURN 1" );
+        StatementResult cursor = tx.run( "RETURN 1" );
         cursor.single().get( "1" ).asInt();
     }
 
@@ -77,10 +77,10 @@ public class ErrorIT
     public void shouldAllowNewStatementAfterRecoverableError() throws Throwable
     {
         // Given an error has occurred
-        try { session.run( "invalid" ).close(); } catch ( ClientException e ) {}
+        try { session.run( "invalid" ).discard(); } catch ( ClientException e ) {}
 
         // When
-        ResultStream cursor = session.run( "RETURN 1" );
+        StatementResult cursor = session.run( "RETURN 1" );
         int val = cursor.single().get( "1" ).asInt();
 
         // Then
@@ -93,14 +93,14 @@ public class ErrorIT
         // Given an error has occurred in a prior transaction
         try ( Transaction tx = session.beginTransaction() )
         {
-            tx.run( "invalid" ).close();
+            tx.run( "invalid" ).discard();
         }
         catch ( ClientException e ) {}
 
         // When
         try ( Transaction tx = session.beginTransaction() )
         {
-            ResultStream cursor = tx.run( "RETURN 1" );
+            StatementResult cursor = tx.run( "RETURN 1" );
             int val = cursor.single().get( "1" ).asInt();
 
             // Then

@@ -19,8 +19,8 @@
 package org.neo4j.driver.internal.value;
 
 import org.neo4j.driver.internal.types.InternalTypeSystem;
-import org.neo4j.driver.v1.value.Node;
-import org.neo4j.driver.v1.value.Type;
+import org.neo4j.driver.v1.types.Node;
+import org.neo4j.driver.v1.types.Type;
 
 public class NodeValue extends EntityValueAdapter<Node>
 {

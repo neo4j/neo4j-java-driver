@@ -21,12 +21,12 @@ package org.neo4j.driver.internal.value;
 import org.junit.Test;
 
 import org.neo4j.driver.internal.types.InternalTypeSystem;
-import org.neo4j.driver.v1.value.Value;
+import org.neo4j.driver.v1.Value;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 
-import static org.neo4j.driver.v1.value.Values.value;
+import static org.neo4j.driver.v1.Values.value;
 
 public class ListValueTest
 {

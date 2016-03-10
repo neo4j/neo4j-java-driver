@@ -16,9 +16,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1.value;
+package org.neo4j.driver.v1.types;
 
 import org.neo4j.driver.internal.value.NullValue;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.util.Pair;

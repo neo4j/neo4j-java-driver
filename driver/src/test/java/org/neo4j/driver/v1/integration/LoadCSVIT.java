@@ -25,14 +25,14 @@ import java.io.IOException;
 
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
-import org.neo4j.driver.v1.ResultStream;
+import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertFalse;
-import static org.neo4j.driver.v1.value.Values.parameters;
+import static org.neo4j.driver.v1.Values.parameters;
 
 public class LoadCSVIT
 {
@@ -48,7 +48,7 @@ public class LoadCSVIT
         String csvFileUrl = createLocalIrisData( session );
 
         // When
-        ResultStream result = session.run(
+        StatementResult result = session.run(
             "USING PERIODIC COMMIT 40\n" +
             "LOAD CSV WITH HEADERS FROM {csvFileUrl} AS l\n" +
             "MATCH (c:Class {name: l.class_name})\n" +
@@ -67,15 +67,14 @@ public class LoadCSVIT
     {
         for ( String className : IRIS_CLASS_NAMES )
         {
-            session.run( "CREATE (c:Class {name: {className}}) RETURN c", parameters( "className", className ) )
-                   .skip( Long.MAX_VALUE );
+            session.run( "CREATE (c:Class {name: {className}}) RETURN c", parameters( "className", className ) );
         }
 
         return neo4j.putTmpFile( "iris", ".csv", IRIS_DATA ).toExternalForm();
     }
 
     @SuppressWarnings("StatementWithEmptyBody")
-    private static void consume( ResultStream result )
+    private static void consume( StatementResult result )
     {
         while ( result.hasNext() )
         {

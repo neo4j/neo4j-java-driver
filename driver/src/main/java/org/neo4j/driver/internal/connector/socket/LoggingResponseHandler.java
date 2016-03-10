@@ -22,7 +22,7 @@ import java.util.Arrays;
 import java.util.Map;
 
 import org.neo4j.driver.internal.spi.Logger;
-import org.neo4j.driver.v1.value.Value;
+import org.neo4j.driver.v1.Value;
 
 import static org.neo4j.driver.internal.messaging.DiscardAllMessage.DISCARD_ALL;
 import static org.neo4j.driver.internal.messaging.IgnoredMessage.IGNORED;

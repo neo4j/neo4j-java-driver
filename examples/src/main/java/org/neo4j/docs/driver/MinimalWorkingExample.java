@@ -23,7 +23,7 @@ package org.neo4j.docs.driver;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.ResultStream;
+import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Session;
 // end::minimal-example-import[]
 
@@ -37,7 +37,7 @@ public class MinimalWorkingExample
 
         session.run( "CREATE (neo:Person {name:'Neo', age:23})" );
 
-        ResultStream result = session.run( "MATCH (p:Person) WHERE p.name = 'Neo' RETURN p.age" );
+        StatementResult result = session.run( "MATCH (p:Person) WHERE p.name = 'Neo' RETURN p.age" );
         while ( result.hasNext() )
         {
             Record record = result.next();

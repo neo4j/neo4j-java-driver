@@ -25,11 +25,11 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.driver.internal.value.PathValue;
-import org.neo4j.driver.v1.value.Entity;
-import org.neo4j.driver.v1.value.Node;
-import org.neo4j.driver.v1.value.Path;
-import org.neo4j.driver.v1.value.Relationship;
-import org.neo4j.driver.v1.value.Value;
+import org.neo4j.driver.v1.types.Entity;
+import org.neo4j.driver.v1.types.Node;
+import org.neo4j.driver.v1.types.Path;
+import org.neo4j.driver.v1.types.Relationship;
+import org.neo4j.driver.v1.Value;
 
 /**
  * {@link Path} implementation that directly contains all nodes and relationships.

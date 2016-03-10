@@ -21,11 +21,11 @@ package org.neo4j.driver.v1.integration;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.driver.v1.ResultStream;
+import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
-import org.neo4j.driver.v1.value.Node;
-import org.neo4j.driver.v1.value.Path;
-import org.neo4j.driver.v1.value.Relationship;
+import org.neo4j.driver.v1.types.Node;
+import org.neo4j.driver.v1.types.Path;
+import org.neo4j.driver.v1.types.Relationship;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
@@ -39,7 +39,7 @@ public class EntityTypeIT
     public void shouldReturnIdentitiesOfNodes() throws Throwable
     {
         // When
-        ResultStream cursor = session.run( "CREATE (n) RETURN n" );
+        StatementResult cursor = session.run( "CREATE (n) RETURN n" );
         Node node = cursor.single().get( "n" ).asNode();
 
         // Then
@@ -50,7 +50,7 @@ public class EntityTypeIT
     public void shouldReturnIdentitiesOfRelationships() throws Throwable
     {
         // When
-        ResultStream cursor = session.run( "CREATE ()-[r:T]->() RETURN r" );
+        StatementResult cursor = session.run( "CREATE ()-[r:T]->() RETURN r" );
         Relationship rel = cursor.single().get( "r" ).asRelationship();
 
         // Then
@@ -63,7 +63,7 @@ public class EntityTypeIT
     public void shouldReturnIdentitiesOfPaths() throws Throwable
     {
         // When
-        ResultStream cursor = session.run( "CREATE p=()-[r:T]->() RETURN p" );
+        StatementResult cursor = session.run( "CREATE p=()-[r:T]->() RETURN p" );
         Path path = cursor.single().get( "p" ).asPath();
 
         // Then

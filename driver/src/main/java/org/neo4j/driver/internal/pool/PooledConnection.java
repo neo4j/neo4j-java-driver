@@ -23,7 +23,7 @@ import java.util.Map;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.StreamCollector;
 import org.neo4j.driver.internal.util.Consumer;
-import org.neo4j.driver.v1.value.Value;
+import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 
 public class PooledConnection implements Connection

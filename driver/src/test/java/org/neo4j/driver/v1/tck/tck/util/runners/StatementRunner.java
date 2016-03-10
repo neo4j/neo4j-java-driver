@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.v1.tck.tck.util.runners;
 
-import org.neo4j.driver.v1.ResultStream;
+import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Statement;
 
 import static org.junit.Assert.assertNotNull;
@@ -27,7 +27,7 @@ import static org.neo4j.driver.v1.tck.DriverComplianceIT.session;
 public class StatementRunner implements CypherStatementRunner
 {
     private Statement statement;
-    private ResultStream result;
+    private StatementResult result;
 
     public StatementRunner( Statement st )
     {
@@ -43,7 +43,7 @@ public class StatementRunner implements CypherStatementRunner
     }
 
     @Override
-    public ResultStream result()
+    public StatementResult result()
     {
         return result;
     }

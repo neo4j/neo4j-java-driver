@@ -33,17 +33,17 @@ import java.util.Random;
 
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
-import org.neo4j.driver.v1.value.Value;
-import org.neo4j.driver.v1.value.Values;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.tck.tck.util.Types;
 import org.neo4j.driver.v1.tck.tck.util.runners.CypherStatementRunner;
 import org.neo4j.driver.v1.tck.tck.util.runners.MappedParametersRunner;
 import org.neo4j.driver.v1.tck.tck.util.runners.StatementRunner;
 import org.neo4j.driver.v1.tck.tck.util.runners.StringRunner;
 
-import static java.util.Collections.singletonMap;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.tck.DriverComplianceIT.session;
 import static org.neo4j.driver.v1.tck.Environment.expectedBoltValue;
 import static org.neo4j.driver.v1.tck.Environment.expectedJavaValue;
@@ -114,7 +114,7 @@ public class DriverComplianceSteps
         stringRunner = new StringRunner( "RETURN " + expectedBoltValue.toString() );
         mappedParametersRunner = new MappedParametersRunner( "RETURN {input}", "input", expectedBoltValue );
         statementRunner = new StatementRunner(
-                new Statement( "RETURN {input}", singletonMap( "input", expectedBoltValue ) ) );
+                new Statement( "RETURN {input}", parameters( "input", expectedBoltValue ) ) );
 
         runners.add( stringRunner );
         runners.add( mappedParametersRunner );

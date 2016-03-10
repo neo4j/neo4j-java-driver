@@ -51,7 +51,7 @@ public class DriverDocIT
         snippet.run();
 
         // then it should've created a bunch of data
-        ResultStream result = session.run( "MATCH (n) RETURN count(n)" );
+        StatementResult result = session.run( "MATCH (n) RETURN count(n)" );
         assertEquals( 3, result.single().get( 0 ).asInt() );
         assertThat( (List<String>)snippet.get( "names" ), containsInAnyOrder( "Bob", "Alice", "Tina" ) );
     }

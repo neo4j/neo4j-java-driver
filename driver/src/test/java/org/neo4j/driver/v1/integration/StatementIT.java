@@ -24,15 +24,15 @@ import org.junit.Test;
 import java.util.List;
 
 import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.ResultStream;
-import org.neo4j.driver.v1.value.Value;
-import org.neo4j.driver.v1.value.Values;
+import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.driver.v1.value.Values.parameters;
+import static org.neo4j.driver.v1.Values.parameters;
 
 public class StatementIT
 {
@@ -100,7 +100,7 @@ public class StatementIT
         session.run( "CREATE (a {name:'Adam'})" );
 
         // And I run a read statement
-        ResultStream result2 = session.run( "MATCH (a) RETURN a.name" );
+        StatementResult result2 = session.run( "MATCH (a) RETURN a.name" );
 
         // Then I expect to get the name back
         Value name = null;

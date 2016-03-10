@@ -24,15 +24,15 @@ import java.util.List;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
+import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.summary.Notification;
 import org.neo4j.driver.v1.util.Pair;
 import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.ResultStream;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Transaction;
-import org.neo4j.driver.v1.value.Value;
-import org.neo4j.driver.v1.value.Values;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.Values;
 
 public class Examples
 {
@@ -59,7 +59,7 @@ public class Examples
     public static void statement( Session session ) throws Exception
     {
         // tag::statement[]
-        ResultStream result =
+        StatementResult result =
                 session.run( "CREATE (p:Person { name: {name} })", Values.parameters( "name", "The One" ) );
 
         int theOnesCreated = result.summarize().updateStatistics().nodesCreated();
@@ -70,7 +70,7 @@ public class Examples
     public static void statementWithoutParameters( Session session ) throws Exception
     {
         // tag::statement-without-parameters[]
-        ResultStream result = session.run( "CREATE (p:Person { name: 'The One' })" );
+        StatementResult result = session.run( "CREATE (p:Person { name: 'The One' })" );
 
         int theOnesCreated = result.summarize().updateStatistics().nodesCreated();
         System.out.println( "There were " + theOnesCreated + " the ones created." );
@@ -80,7 +80,7 @@ public class Examples
     public static void resultCursor( Session session ) throws Exception
     {
         // tag::result-cursor[]
-        ResultStream result = session.run( "MATCH (p:Person { name: {name} }) RETURN p.age",
+        StatementResult result = session.run( "MATCH (p:Person { name: {name} }) RETURN p.age",
                 Values.parameters( "name", "The One" ) );
 
         while ( result.hasNext() )
@@ -97,7 +97,7 @@ public class Examples
     public static void retainResultsForNestedQuerying( Session session ) throws Exception
     {
         // tag::retain-result-query[]
-        ResultStream result = session.run( "MATCH (p:Person { name: {name} }) RETURN id(p)",
+        StatementResult result = session.run( "MATCH (p:Person { name: {name} }) RETURN id(p)",
                 Values.parameters( "name", "The One" ) );
 
         for ( Record record : result.list() )
@@ -113,7 +113,7 @@ public class Examples
         // tag::retain-result-process[]
         Session session = driver.session();
 
-        ResultStream result = session.run( "MATCH (p:Person { name: {name} }) RETURN p.age",
+        StatementResult result = session.run( "MATCH (p:Person { name: {name} }) RETURN p.age",
                 Values.parameters( "name", "The One" ) );
 
         List<Record> records = result.list();
@@ -155,7 +155,7 @@ public class Examples
     public static void resultSummary( Session session ) throws Exception
     {
         // tag::result-summary-query-profile[]
-        ResultStream result = session.run( "PROFILE MATCH (p:Person { name: {name} }) RETURN id(p)",
+        StatementResult result = session.run( "PROFILE MATCH (p:Person { name: {name} }) RETURN id(p)",
                 Values.parameters( "name", "The One" ) );
 
         ResultSummary summary = result.summarize();

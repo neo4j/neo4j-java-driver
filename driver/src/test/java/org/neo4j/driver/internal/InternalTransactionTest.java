@@ -25,7 +25,7 @@ import java.util.Collections;
 
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.StreamCollector;
-import org.neo4j.driver.v1.value.Value;
+import org.neo4j.driver.v1.Value;
 
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;

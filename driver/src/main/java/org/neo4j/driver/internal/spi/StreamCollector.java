@@ -25,7 +25,7 @@ import org.neo4j.driver.v1.summary.Plan;
 import org.neo4j.driver.v1.summary.ProfiledPlan;
 import org.neo4j.driver.v1.summary.StatementType;
 import org.neo4j.driver.v1.summary.UpdateStatistics;
-import org.neo4j.driver.v1.value.Value;
+import org.neo4j.driver.v1.Value;
 
 public interface StreamCollector
 {

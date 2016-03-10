@@ -32,11 +32,12 @@ import java.util.List;
 
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.value.NullValue;
+import org.neo4j.driver.v1.Statement;
+import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.util.Pair;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Records;
-import org.neo4j.driver.v1.ResultStream;
-import org.neo4j.driver.v1.value.Value;
+import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
 
@@ -49,9 +50,9 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.driver.v1.value.Values.value;
+import static org.neo4j.driver.v1.Values.value;
 
-public class InternalResultStreamTest
+public class InternalStatementResultTest
 {
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
@@ -60,11 +61,11 @@ public class InternalResultStreamTest
     public void iterationShouldWorksAsExpected()
     {
         // GIVEN
-        ResultStream result = createResult( 3 );
+        StatementResult result = createResult( 3 );
 
         // WHEN
         assertTrue( result.hasNext() );
-        assertThat( values( result.first() ), equalTo(Arrays.asList(value("v1-1"), value( "v2-1" ))));
+        assertThat( values( result.next() ), equalTo(Arrays.asList(value("v1-1"), value( "v2-1" ))));
 
         assertTrue( result.hasNext() );
         assertThat( values( result.next() ), equalTo(Arrays.asList(value("v1-2"), value( "v2-2" ))));
@@ -78,29 +79,13 @@ public class InternalResultStreamTest
     }
 
     @Test
-    public void firstPastFirstShouldFail()
-    {
-        // GIVEN
-        ResultStream result = createResult( 3 );
-        result.next();
-        result.next();
-
-
-        // THEN
-        expectedException.expect( NoSuchRecordException.class );
-
-        // THEN
-        result.first();
-    }
-
-    @Test
     public void firstOfFieldNameShouldWorkAsExpected()
     {
         // GIVEN
-        ResultStream result = createResult( 3 );
+        StatementResult result = createResult( 3 );
 
         // THEN
-        assertThat( result.first().get("k1"), equalTo( value("v1-1") ) );
+        assertThat( result.next().get("k1"), equalTo( value("v1-1") ) );
         assertTrue( result.hasNext() );
     }
 
@@ -108,10 +93,10 @@ public class InternalResultStreamTest
     public void firstOfFieldIndexShouldWorkAsExpected()
     {
         // GIVEN
-        ResultStream result = createResult( 3 );
+        StatementResult result = createResult( 3 );
 
         // THEN
-        assertThat( result.first().get(0), equalTo( value("v1-1") ) );
+        assertThat( result.next().get(0), equalTo( value("v1-1") ) );
         assertTrue( result.hasNext() );
     }
 
@@ -119,7 +104,7 @@ public class InternalResultStreamTest
     public void singlePastFirstShouldFail()
     {
         // GIVEN
-        ResultStream result = createResult( 2 );
+        StatementResult result = createResult( 2 );
         result.next();
         result.next();
 
@@ -135,7 +120,7 @@ public class InternalResultStreamTest
     public void singleNoneShouldFail()
     {
         // GIVEN
-        ResultStream result = createResult( 0 );
+        StatementResult result = createResult( 0 );
 
 
         // THEN
@@ -149,7 +134,7 @@ public class InternalResultStreamTest
     public void singleWhenMoreThanOneShouldFail()
     {
         // GIVEN
-        ResultStream result = createResult( 2 );
+        StatementResult result = createResult( 2 );
 
 
         // THEN
@@ -163,7 +148,7 @@ public class InternalResultStreamTest
     public void singleOfFieldNameShouldWorkAsExpected()
     {
         // GIVEN
-        ResultStream result = createResult( 1 );
+        StatementResult result = createResult( 1 );
 
         // THEN
         assertThat( result.single().get("k1"), equalTo( value("v1-1") ) );
@@ -174,21 +159,11 @@ public class InternalResultStreamTest
     public void singleOfFieldIndexShouldWorkAsExpected()
     {
         // GIVEN
-        ResultStream result = createResult( 1 );
+        StatementResult result = createResult( 1 );
 
         // THEN
         assertThat( result.single().get(0), equalTo( value("v1-1") ) );
         assertFalse( result.hasNext() );
-    }
-
-    @Test
-    public void firstThrowsOnEmptyStream()
-    {
-        // Expect
-        expectedException.expect( NoSuchRecordException.class );
-
-        // When
-        createResult( 0 ).first();
     }
 
     @Test
@@ -218,105 +193,10 @@ public class InternalResultStreamTest
     }
 
     @Test
-    public void skipShouldWorkAsExpected()
-    {
-        // GIVEN
-        ResultStream result = createResult( 42 );
-
-        // WHEN
-        assertThat( result.skip( 21 ), equalTo( 21L ) );
-
-        // THEN
-        assertThat( values( result.next() ), equalTo( Arrays.asList( value( "v1-22" ), value(
-                "v2-22" ) ) ) );
-    }
-
-    @Test
-    public void skipBeyondNumberOfRecords()
-    {
-        // GIVEN
-        ResultStream result = createResult( 10 );
-
-        // WHEN
-        assertThat(result.skip( 20 ), equalTo(10L));
-
-        // THEN
-        assertFalse( result.hasNext() );
-    }
-
-    @Test
-    public void skipThrowsIfNegativeNumber()
-    {
-        ResultStream result = createResult( 10 );
-        result.skip( 5 );
-
-        expectedException.expect( ClientException.class );
-        result.skip( -1 );
-    }
-
-    @Test
-    public void limitShouldWorkAsExpected()
-    {
-        // GIVEN
-        ResultStream result = createResult( 42 );
-        result.limit( 10 );
-
-        // THEN
-        assertThat( result.list().size(), equalTo( 10 ) );
-    }
-
-    @Test
-    public void limitZeroShouldWorkAsExpected1()
-    {
-        // GIVEN
-        ResultStream result = createResult( 42 );
-        result.limit( 0 );
-
-        // THEN
-        assertThat( result.list().size(), equalTo( 0 ) );
-    }
-
-    @Test
-    public void limitZeroShouldWorkAsExpected2()
-    {
-        // GIVEN
-        ResultStream result = createResult( 10 );
-        result.skip( 4 );
-        result.limit( 0 );
-
-        // THEN
-        assertFalse( result.hasNext() );
-        assertNull( result.next() );
-    }
-
-    @Test
-    public void limitOnEmptyResultShouldWorkAsExpected()
-    {
-        // GIVEN
-        ResultStream result = createResult( 0 );
-        result.limit( 10 );
-
-        // THEN
-        assertThat( result.list().size(), equalTo( 0 ) );
-    }
-
-    @Test
-    public void changingLimitShouldWorkAsExpected()
-    {
-        // GIVEN
-        ResultStream result = createResult( 6 );
-        result.limit( 1 );
-        result.limit( 60 );
-
-        // THEN
-        assertThat( result.list().size(), equalTo( 6 ) );
-    }
-
-    @Test
     public void retainShouldWorkAsExpected()
     {
         // GIVEN
-        ResultStream result = createResult( 3 );
+        StatementResult result = createResult( 3 );
 
         // WHEN
         List<Record> records = result.list();
@@ -330,7 +210,7 @@ public class InternalResultStreamTest
     public void retainAndMapByKeyShouldWorkAsExpected()
     {
         // GIVEN
-        ResultStream result = createResult( 3 );
+        StatementResult result = createResult( 3 );
 
         // WHEN
         List<Value> records = result.list( Records.column( "k1" ) );
@@ -344,7 +224,7 @@ public class InternalResultStreamTest
     public void retainAndMapByIndexShouldWorkAsExpected()
     {
         // GIVEN
-        ResultStream result = createResult( 3 );
+        StatementResult result = createResult( 3 );
 
         // WHEN
         List<Value> records = result.list( Records.column( 0 ) );
@@ -357,8 +237,8 @@ public class InternalResultStreamTest
     @Test
     public void retainFailsIfItCannotRetainEntireResult()
     {
-        ResultStream result = createResult( 17 );
-        result.skip( 5 );
+        StatementResult result = createResult( 17 );
+        result.next();
 
         expectedException.expect( ClientException.class );
         result.list();
@@ -368,10 +248,10 @@ public class InternalResultStreamTest
     public void accessingOutOfBoundsShouldBeNull()
     {
         // GIVEN
-        ResultStream result = createResult( 1 );
+        StatementResult result = createResult( 1 );
 
         // WHEN
-        Record record = result.first();
+        Record record = result.single();
 
         // THEN
         assertThat( record.get( 0 ), equalTo( value( "v1-1" ) ) );
@@ -384,10 +264,10 @@ public class InternalResultStreamTest
     public void accessingKeysWithoutCallingNextShouldNotFail()
     {
         // GIVEN
-        ResultStream result = createResult( 11 );
+        StatementResult result = createResult( 11 );
 
         // WHEN
-        // not calling next, first, single, nor skip
+        // not calling next or single
 
         // THEN
         assertThat( result.keys(), equalTo( Arrays.asList( "k1", "k2" ) ) );
@@ -397,7 +277,7 @@ public class InternalResultStreamTest
     public void shouldPeekIntoTheFuture()
     {
         // WHEN
-        ResultStream result = createResult( 2 );
+        StatementResult result = createResult( 2 );
 
         // THEN
         assertThat( result.peek().get( "k1" ), equalTo( value( "v1-1" ) ) );
@@ -419,20 +299,19 @@ public class InternalResultStreamTest
     public void shouldNotPeekIntoTheFutureWhenResultIsEmpty()
     {
         // GIVEN
-        ResultStream result = createResult( 0 );
+        StatementResult result = createResult( 0 );
         Record future = result.peek();
 
         // WHEN
         assertNull( future );
     }
 
-    private ResultStream createResult( int numberOfRecords )
+    private StatementResult createResult( int numberOfRecords )
     {
         Connection connection = mock( Connection.class );
         String statement = "<unknown>";
 
-        final InternalResultStream cursor = new InternalResultStream( connection, statement, ParameterSupport
-                .NO_PARAMETERS );
+        final InternalStatementResult cursor = new InternalStatementResult( connection, new Statement( statement ) );
 
         // Each time the cursor calls `recieveOne`, we'll run one of these,
         // to emulate how messages are handed over to the cursor
@@ -458,7 +337,7 @@ public class InternalResultStreamTest
         return cursor;
     }
 
-    private Runnable streamTailMessage( final InternalResultStream cursor )
+    private Runnable streamTailMessage( final InternalStatementResult cursor )
     {
         return new Runnable()
         {
@@ -470,7 +349,7 @@ public class InternalResultStreamTest
         };
     }
 
-    private Runnable recordMessage( final InternalResultStream cursor, final int val )
+    private Runnable recordMessage( final InternalStatementResult cursor, final int val )
     {
         return new Runnable()
         {
@@ -482,7 +361,7 @@ public class InternalResultStreamTest
         };
     }
 
-    private Runnable streamHeadMessage( final InternalResultStream cursor )
+    private Runnable streamHeadMessage( final InternalStatementResult cursor )
     {
         return new Runnable()
         {

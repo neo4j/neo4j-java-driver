@@ -37,10 +37,10 @@ import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.internal.value.PathValue;
 import org.neo4j.driver.internal.value.RelationshipValue;
 import org.neo4j.driver.internal.value.StringValue;
-import org.neo4j.driver.v1.value.Entity;
-import org.neo4j.driver.v1.value.Path;
-import org.neo4j.driver.v1.value.Value;
-import org.neo4j.driver.v1.value.Values;
+import org.neo4j.driver.v1.types.Entity;
+import org.neo4j.driver.v1.types.Path;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.Values;
 
 import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;

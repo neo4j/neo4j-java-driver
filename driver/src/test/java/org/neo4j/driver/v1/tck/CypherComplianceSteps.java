@@ -29,8 +29,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.ResultStream;
-import org.neo4j.driver.v1.value.Value;
+import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.tck.tck.util.runners.CypherStatementRunner;
 import org.neo4j.driver.v1.tck.tck.util.runners.MappedParametersRunner;
 import org.neo4j.driver.v1.tck.tck.util.runners.StringRunner;
@@ -72,7 +72,7 @@ public class CypherComplianceSteps
     {
         for( CypherStatementRunner runner : runners)
         {
-            ResultStream rc = runner.result();
+            StatementResult rc = runner.result();
             List<String> keys = table.topCells();
             Collection<Map> given = new ArrayList<>(  );
             Collection<Map> expected = new ArrayList<>(  );

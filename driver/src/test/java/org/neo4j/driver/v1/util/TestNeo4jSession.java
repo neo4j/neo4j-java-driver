@@ -23,11 +23,11 @@ import org.junit.runners.model.Statement;
 
 import java.util.Map;
 
-import org.neo4j.driver.v1.ResultStream;
+import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Transaction;
-import org.neo4j.driver.v1.value.TypeSystem;
-import org.neo4j.driver.v1.value.Value;
+import org.neo4j.driver.v1.types.TypeSystem;
+import org.neo4j.driver.v1.Value;
 
 /**
  * A little utility for integration testing, this provides tests with a session they can work with.
@@ -100,27 +100,27 @@ public class TestNeo4jSession extends TestNeo4j implements Session
     }
 
     @Override
-    public ResultStream run( String statementText, Map<String,Value> statementParameters )
+    public StatementResult run( String statementText, Map<String,Object> statementParameters )
     {
         return realSession.run( statementText, statementParameters );
     }
 
     @Override
-    public ResultStream run( String statementText, Object ... parameters )
+    public StatementResult run( String statementText, Value parameters )
     {
         return realSession.run( statementText, parameters );
     }
 
     @Override
-    public ResultStream run( String statementTemplate )
+    public StatementResult run( String statementTemplate )
     {
         return realSession.run( statementTemplate );
     }
 
     @Override
-    public ResultStream run( org.neo4j.driver.v1.Statement statement )
+    public StatementResult run( org.neo4j.driver.v1.Statement statement )
     {
-        return realSession.run( statement.template(), statement.parameters() );
+        return realSession.run( statement.text(), statement.parameters() );
     }
 
     @Override

@@ -23,13 +23,13 @@ import org.junit.Test;
 import java.util.List;
 
 import org.neo4j.driver.internal.util.Iterables;
-import org.neo4j.driver.v1.value.Node;
-import org.neo4j.driver.v1.value.Values;
+import org.neo4j.driver.v1.types.Node;
+import org.neo4j.driver.v1.Values;
 
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.neo4j.driver.v1.value.Values.parameters;
+import static org.neo4j.driver.v1.Values.parameters;
 
 public class SelfContainedNodeTest
 {
@@ -37,7 +37,7 @@ public class SelfContainedNodeTest
     private Node adamTheNode()
     {
         return new InternalNode( 1, singletonList( "Person" ),
-                parameters( "name", Values.value( "Adam" ) ) );
+                parameters( "name", Values.value( "Adam" ) ).asMap() );
     }
 
     @Test

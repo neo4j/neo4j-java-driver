@@ -18,18 +18,11 @@
  */
 package org.neo4j.driver.v1;
 
-import java.util.Map;
-
 import org.junit.Test;
-
-import org.neo4j.driver.v1.value.Value;
-import org.neo4j.driver.v1.value.Values;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
-
-import static org.neo4j.driver.internal.ParameterSupport.NO_PARAMETERS;
-import static org.neo4j.driver.v1.value.Values.parameters;
+import static org.neo4j.driver.v1.Values.parameters;
 
 public class StatementTest
 {
@@ -40,11 +33,11 @@ public class StatementTest
         String text = "MATCH (n) RETURN n";
 
         // when
-        Statement statement = new Statement( text, NO_PARAMETERS );
+        Statement statement = new Statement( text, Values.EmptyMap );
 
         // then
-        assertThat( statement.template(), equalTo( text ) );
-        assertThat( statement.parameters(), equalTo( NO_PARAMETERS ) );
+        assertThat( statement.text(), equalTo( text ) );
+        assertThat( statement.parameters(), equalTo( Values.EmptyMap ) );
     }
 
     @Test
@@ -57,8 +50,8 @@ public class StatementTest
         Statement statement = new Statement( text );
 
         // then
-        assertThat( statement.template(), equalTo( text ) );
-        assertThat( statement.parameters(), equalTo( NO_PARAMETERS ) );
+        assertThat( statement.text(), equalTo( text ) );
+        assertThat( statement.parameters(), equalTo( Values.EmptyMap ) );
     }
 
     @Test
@@ -71,8 +64,8 @@ public class StatementTest
         Statement statement = new Statement( text, null );
 
         // then
-        assertThat( statement.template(), equalTo( text ) );
-        assertThat( statement.parameters(), equalTo( NO_PARAMETERS ) );
+        assertThat( statement.text(), equalTo( text ) );
+        assertThat( statement.parameters(), equalTo( Values.EmptyMap ) );
     }
 
 
@@ -82,11 +75,11 @@ public class StatementTest
         // when
         Statement statement =
                 new Statement( "MATCH (n) RETURN n" )
-                .withTemplate( "BOO" );
+                .withText( "BOO" );
 
         // then
-        assertThat( statement.template(), equalTo( "BOO" ) );
-        assertThat( statement.parameters(), equalTo( NO_PARAMETERS ) );
+        assertThat( statement.text(), equalTo( "BOO" ) );
+        assertThat( statement.parameters(), equalTo( Values.EmptyMap ) );
     }
 
 
@@ -95,11 +88,11 @@ public class StatementTest
     {
         // when
         String text = "MATCH (n) RETURN n";
-        Map<String,Value> initialParameters = parameters( "a", 1, "b", 2 );
+        Value initialParameters = parameters( "a", 1, "b", 2 );
         Statement statement = new Statement( "MATCH (n) RETURN n" ).withParameters( initialParameters );
 
         // then
-        assertThat( statement.template(), equalTo( text ) );
+        assertThat( statement.text(), equalTo( text ) );
         assertThat( statement.parameters(), equalTo( initialParameters ) );
     }
 
@@ -109,13 +102,13 @@ public class StatementTest
     {
         // when
         String text = "MATCH (n) RETURN n";
-        Map<String, Value> initialParameters = parameters( "a", 1, "b", 2, "c", 3 );
+        Value initialParameters = parameters( "a", 1, "b", 2, "c", 3 );
         Statement statement =
                 new Statement( "MATCH (n) RETURN n", initialParameters )
                 .withUpdatedParameters( parameters( "a", 0, "b", Values.NULL ) );
 
         // then
-        assertThat( statement.template(), equalTo( text ) );
+        assertThat( statement.text(), equalTo( text ) );
         assertThat( statement.parameters(), equalTo( parameters( "a", 0, "c", 3 ) ) );
     }
 }

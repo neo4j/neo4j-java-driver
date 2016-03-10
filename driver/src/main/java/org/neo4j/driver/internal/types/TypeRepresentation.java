@@ -18,8 +18,8 @@
  */
 package org.neo4j.driver.internal.types;
 
-import org.neo4j.driver.v1.value.Type;
-import org.neo4j.driver.v1.value.Value;
+import org.neo4j.driver.v1.types.Type;
+import org.neo4j.driver.v1.Value;
 
 import static org.neo4j.driver.internal.types.TypeConstructor.LIST_TyCon;
 

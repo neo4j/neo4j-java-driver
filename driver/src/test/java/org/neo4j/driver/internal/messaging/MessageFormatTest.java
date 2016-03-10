@@ -37,15 +37,16 @@ import org.neo4j.driver.internal.InternalRelationship;
 import org.neo4j.driver.internal.connector.socket.ChunkedOutput;
 import org.neo4j.driver.internal.packstream.PackStream;
 import org.neo4j.driver.internal.util.BytePrinter;
-import org.neo4j.driver.v1.value.Value;
+import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.util.DumpMessage;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.startsWith;
-import static org.neo4j.driver.v1.value.Values.parameters;
-import static org.neo4j.driver.v1.value.Values.value;
+import static org.neo4j.driver.v1.Values.EmptyMap;
+import static org.neo4j.driver.v1.Values.parameters;
+import static org.neo4j.driver.v1.Values.value;
 
 public class MessageFormatTest
 {
@@ -57,14 +58,14 @@ public class MessageFormatTest
     @Test
     public void shouldPackAllRequests() throws Throwable
     {
-        assertSerializes( new RunMessage( "Hello", parameters() ) );
-        assertSerializes( new RunMessage( "Hello", parameters( "a", 12 ) ) );
+        assertSerializes( new RunMessage( "Hello", parameters().asMap()) );
+        assertSerializes( new RunMessage( "Hello", parameters( "a", 12 ).asMap() ) );
         assertSerializes( new PullAllMessage() );
         assertSerializes( new DiscardAllMessage() );
         assertSerializes( new IgnoredMessage() );
         assertSerializes( new FailureMessage( "Neo.Banana.Bork.Birk", "Hello, world!" ) );
         assertSerializes( new ResetMessage() );
-        assertSerializes( new InitMessage( "JavaDriver/1.0.0", parameters() ) );
+        assertSerializes( new InitMessage( "JavaDriver/1.0.0", parameters().asMap() ) );
     }
 
     @Test
@@ -81,20 +82,21 @@ public class MessageFormatTest
         assertSerializesValue( value( parameters( "k", 12, "a", "banana" ) ) );
         assertSerializesValue( value( asList( "k", 12, "a", "banana" ) ) );
         assertSerializesValue( value(
-                new InternalNode( 1, Collections.singletonList( "User" ), parameters( "name", "Bob", "age", 45 ) ) ) );
+                new InternalNode( 1, Collections.singletonList( "User" ), parameters( "name", "Bob", "age", 45 ).asMap() )
+        ) );
         assertSerializesValue( value( new InternalNode( 1 ) ) );
         assertSerializesValue( value(
                 new InternalRelationship( 1, 1, 1,
                         "KNOWS",
-                        parameters( "name", "Bob", "age", 45 ) ) ) );
+                        parameters( "name", "Bob", "age", 45 ).asMap() ) ) );
         assertSerializesValue( value(
                 new InternalPath(
                         new InternalNode( 1 ),
                         new InternalRelationship( 2, 1, 3,
-                                "KNOWS", parameters() ),
+                                "KNOWS", EmptyMap.asMap() ),
                         new InternalNode( 3 ),
                         new InternalRelationship( 4, 3, 5,
-                                "LIKES", parameters() ),
+                                "LIKES", EmptyMap.asMap() ),
                         new InternalNode( 5 )
                 ) ) );
         assertSerializesValue( value( new InternalPath( new InternalNode( 1 ) ) ) );
