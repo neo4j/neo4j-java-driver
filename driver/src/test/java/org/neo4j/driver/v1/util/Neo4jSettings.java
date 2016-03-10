@@ -89,8 +89,8 @@ public class Neo4jSettings
     public Neo4jSettings usingEncryptionKeyAndCert( File key, File cert )
     {
         return updateWith( map(
-                TLS_CERT_KEY, cert.getAbsolutePath(),
-                TLS_KEY_KEY, key.getAbsolutePath()
+                TLS_CERT_KEY, cert.getAbsolutePath().replaceAll("\\\\", "/"),
+                TLS_KEY_KEY, key.getAbsolutePath().replaceAll("\\\\", "/")
         ));
     }
 

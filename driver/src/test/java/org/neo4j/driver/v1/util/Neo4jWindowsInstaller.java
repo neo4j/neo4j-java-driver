@@ -35,32 +35,31 @@ public class Neo4jWindowsInstaller extends Neo4jInstaller
 {
     private static final String winPackageUrl =
             format( "http://alpha.neohq.net/dist/neo4j-enterprise-%s-windows.zip", version );
-    private static final String serviceName = "neo4j-driver-test-server";
 
     @Override
     public void installNeo4j() throws IOException
     {
         super.installNeo4j();
 
-        runPowershellScript( format( "Install-Neo4jServer -Neo4jServer %s -Name %s", neo4jHomeDir, serviceName ) );
+        runPowershellScript( "install-service" );
     }
 
     @Override
     public void uninstallNeo4j() throws IOException
     {
-        runPowershellScript( format( "Uninstall-Neo4jServer -Neo4jServer %s -ServiceName %s", neo4jHomeDir, serviceName ) );
+        runPowershellScript( "uninstall-service" );
     }
 
     @Override
     public int startNeo4j() throws IOException
     {
-        return runPowershellScript( format( "Start-Neo4jServer -Neo4jServer %s -ServiceName %s", neo4jHomeDir, serviceName ) );
+        return runPowershellScript( "start" );
     }
 
     @Override
     public int stopNeo4j() throws IOException
     {
-        return runPowershellScript( format( "Stop-Neo4jServer -Neo4jServer %s -ServiceName %s", neo4jHomeDir, serviceName) );
+        return runPowershellScript( "stop" );
     }
 
     @Override
@@ -73,7 +72,7 @@ public class Neo4jWindowsInstaller extends Neo4jInstaller
     @Override
     File neo4jTarball()
     {
-        return new File( "./target/" + version + ".zip" );
+        return new File( Neo4jInstaller.neo4jDir, version + ".zip" );
     }
 
     @Override
@@ -86,8 +85,6 @@ public class Neo4jWindowsInstaller extends Neo4jInstaller
     {
         return runCommand(
                 "powershell.exe",
-                "-ExecutionPolicy", "RemoteSigned",
-                format( "Import-Module %s", new File( neo4jHomeDir, "bin/Neo4j-Management/Neo4j-Management.psm1" ).getAbsolutePath() ),
-                format( "; %s", cmd ) );
+                format( "%s %s", new File(neo4jHomeDir, "bin/neo4j.bat").getAbsolutePath(), cmd ) );
     }
 }

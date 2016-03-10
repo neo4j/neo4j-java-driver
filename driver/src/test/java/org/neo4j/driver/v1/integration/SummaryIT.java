@@ -147,7 +147,6 @@ public class SummaryIT
         List<Notification> notifications = summary.notifications();
         assertNotNull( notifications );
         assertThat( notifications.size(), equalTo( 1 ) );
-
         assertThat( notifications.get( 0 ).toString(), containsString("CartesianProduct") );
 
     }
