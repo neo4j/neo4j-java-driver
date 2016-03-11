@@ -18,6 +18,10 @@
  */
 package org.neo4j.driver.v1.util;
 
+/**
+ * Generic function utilities.
+ * @since 1.0
+ */
 public class Functions
 {
     public static <T> Function<T,T> identity()

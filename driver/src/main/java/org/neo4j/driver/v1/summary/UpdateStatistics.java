@@ -22,6 +22,7 @@ import org.neo4j.driver.v1.util.Immutable;
 
 /**
  * Contains counters for the number of update operations performed by a statement.
+ * @since 1.0
  */
 @Immutable
 public interface UpdateStatistics

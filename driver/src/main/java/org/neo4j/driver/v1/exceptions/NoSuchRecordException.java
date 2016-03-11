@@ -18,6 +18,9 @@
  */
 package org.neo4j.driver.v1.exceptions;
 
+/**
+ * @since 1.0
+ */
 public class NoSuchRecordException extends ClientException
 {
     private static final long serialVersionUID = 9091962868264042491L;

@@ -18,18 +18,20 @@
  */
 package org.neo4j.driver.v1.types;
 
+import java.util.Map;
+
 import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.util.Function;
-import org.neo4j.driver.v1.util.Pair;
 
 /**
  * Access the keys, properties and values of an underlying unordered map by key
  *
  * This provides only read methods. Subclasses may chose to provide additional methods
  * for changing the underlying map.
+ * @since 1.0
  */
 public interface MapAccessor
 {
@@ -82,21 +84,20 @@ public interface MapAccessor
     <T> Iterable<T> values( Function<Value, T> mapFunction );
 
     /**
-     * Retrieve all properties of the underlying map
+     * Return the underlying map as a map of string keys and values converted using
+     * {@link Value#asObject()}.
      *
-     * @see Pair
-     * @return all properties in unspecified order
+     * This is equivalent to calling {@link #asMap(Function)} with {@link Values#valueAsObject()}.
+     *
+     * @return the value as a Java map
      */
-    Iterable<Pair<String, Value>> properties();
+    Map<String, Object> asMap();
 
     /**
-     * Retrieve all properties of the underlying map
-     *
-     * @see Pair
      * @param mapFunction a function to map from Value to T. See {@link Values} for some predefined functions, such
      * as {@link Values#valueAsBoolean()}, {@link Values#valueAsList(Function)}.
-     * @param <V> the target type of mapping
-     * @return all mapped properties in unspecified order
+     * @param <T> the type of map values
+     * @return the value as a map from string keys to values of type T obtained from mapping he original map values, if possible
      */
-    <V> Iterable<Pair<String, V>> properties( Function<Value, V> mapFunction );
+    <T> Map<String, T> asMap( Function<Value, T> mapFunction );
 }

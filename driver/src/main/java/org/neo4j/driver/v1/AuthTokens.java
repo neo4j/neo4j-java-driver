@@ -27,6 +27,7 @@ import static org.neo4j.driver.v1.Values.parameters;
  * driver. The scheme used must be supported by the Neo4j Instance you are connecting
  * to.
  * @see GraphDatabase#driver(String, AuthToken)
+ * @since 1.0
  */
 public class AuthTokens
 {
@@ -42,7 +43,7 @@ public class AuthTokens
         return new InternalAuthToken( parameters(
                 "scheme", "basic",
                 "principal", username,
-                "credentials", password ).asMap() );
+                "credentials", password ).asMap( Values.valueAsIs() ) );
     }
 
     /**
@@ -53,6 +54,6 @@ public class AuthTokens
      */
     public static AuthToken none()
     {
-        return new InternalAuthToken( parameters("scheme", "none" ).asMap() );
+        return new InternalAuthToken( parameters("scheme", "none" ).asMap( Values.valueAsIs() ) );
     }
 }

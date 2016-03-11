@@ -23,6 +23,7 @@ package org.neo4j.driver.v1.util;
  *
  * @param <T> the input to the function
  * @param <R> the output to the function
+ * @since 1.0
  */
 public interface Function<T, R>
 {

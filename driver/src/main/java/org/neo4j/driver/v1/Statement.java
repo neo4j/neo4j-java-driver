@@ -23,10 +23,10 @@ import java.util.Map;
 
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.util.Immutable;
-import org.neo4j.driver.v1.util.Pair;
 
 import static java.lang.String.format;
 import static org.neo4j.driver.v1.Values.value;
+import static org.neo4j.driver.v1.Values.valueAsIs;
 
 /**
  * An executable statement, i.e. the statements' text and its parameters.
@@ -36,6 +36,7 @@ import static org.neo4j.driver.v1.Values.value;
  * @see StatementResult
  * @see StatementResult#summarize()
  * @see ResultSummary
+ * @since 1.0
  */
 @Immutable
 public class Statement
@@ -108,17 +109,17 @@ public class Statement
         else
         {
             Map<String, Value> newParameters = new HashMap<>( Math.max( parameters.size(), updates.size() ) );
-            newParameters.putAll( parameters.asMap() );
-            for ( Pair<String, Value> entry : updates.properties() )
+            newParameters.putAll( parameters.asMap( valueAsIs() ) );
+            for ( Map.Entry<String, Value> entry : updates.asMap( valueAsIs() ).entrySet() )
             {
-                Value value = entry.value();
+                Value value = entry.getValue();
                 if ( value.isNull() )
                 {
-                    newParameters.remove( entry.key() );
+                    newParameters.remove( entry.getKey() );
                 }
                 else
                 {
-                    newParameters.put( entry.key(), value );
+                    newParameters.put( entry.getKey(), value );
                 }
             }
             return withParameters( value(newParameters) );

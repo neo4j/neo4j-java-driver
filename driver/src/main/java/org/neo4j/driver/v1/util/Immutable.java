@@ -28,6 +28,7 @@ import java.lang.annotation.Target;
 /**
  * Indicates that instances of the annotated class or of its subclasses are immutable, i.e.
  * do not provide any means of mutating their state
+ * @since 1.0
  */
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)

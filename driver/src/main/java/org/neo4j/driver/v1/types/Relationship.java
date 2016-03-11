@@ -20,6 +20,7 @@ package org.neo4j.driver.v1.types;
 
 /**
  * The <strong>Relationship</strong> interface describes the characteristics of a relationship from a Neo4j graph.
+ * @since 1.0
  */
 public interface Relationship extends Entity
 {

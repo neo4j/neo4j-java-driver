@@ -25,6 +25,7 @@ import java.util.NoSuchElementException;
 
 import org.neo4j.driver.internal.util.Extract;
 import org.neo4j.driver.internal.value.InternalValue;
+import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.util.Pair;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Value;
@@ -33,6 +34,7 @@ import org.neo4j.driver.v1.Values;
 import static java.lang.String.format;
 import static org.neo4j.driver.internal.util.Format.formatPairs;
 import static org.neo4j.driver.v1.Values.valueAsIs;
+import static org.neo4j.driver.v1.Values.valueAsObject;
 
 public class InternalRecord implements Record
 {
@@ -106,15 +108,21 @@ public class InternalRecord implements Record
     }
 
     @Override
-    public Map<String, Value> asMap()
+    public Map<String, Object> asMap()
     {
-        return Extract.map( this, valueAsIs() );
+        return Extract.map( this, valueAsObject() );
+    }
+
+    @Override
+    public <T> Map<String,T> asMap( Function<Value,T> mapper )
+    {
+        return Extract.map( this, mapper );
     }
 
     @Override
     public String toString()
     {
-        return format( "Record<%s>", formatPairs( InternalValue.Format.VALUE_WITH_TYPE, size(), fields() ) );
+        return format( "Record<%s>", formatPairs( InternalValue.Format.VALUE_ONLY, asMap( valueAsIs() ) ) );
     }
 
     public boolean equals( Object other )

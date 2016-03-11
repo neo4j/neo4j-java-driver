@@ -20,6 +20,7 @@ package org.neo4j.driver.v1.types;
 
 /**
  * The <strong>Node</strong> interface describes the characteristics of a node from a Neo4j graph.
+ * @since 1.0
  */
 public interface Node extends Entity
 {

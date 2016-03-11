@@ -31,6 +31,7 @@ import org.neo4j.driver.v1.Statement;
  * The result summary is only available after all result records have been consumed.
  *
  * Keeping the result summary around does not influence the lifecycle of any associated session and/or transaction.
+ * @since 1.0
  */
 @Immutable
 public interface ResultSummary

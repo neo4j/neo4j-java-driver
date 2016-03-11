@@ -22,18 +22,19 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import org.neo4j.driver.v1.StatementResult;
-import org.neo4j.driver.v1.types.Node;
-import org.neo4j.driver.v1.types.Path;
 import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.types.Relationship;
+import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.types.Node;
+import org.neo4j.driver.v1.types.Path;
+import org.neo4j.driver.v1.types.Relationship;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.driver.v1.Values.parameters;
+import static org.neo4j.driver.v1.Values.valueAsIs;
 
 public class ParametersIT
 {
@@ -172,7 +173,7 @@ public class ParametersIT
             Value value = record.get( "a.value" );
             assertThat( value.hasType( session.typeSystem().LIST() ), equalTo( true ) );
             assertThat( value.size(), equalTo( 3 ) );
-            for ( Value item : value.asList() )
+            for ( Value item : value.asList(valueAsIs()) )
             {
                 assertThat( item.hasType( session.typeSystem().BOOLEAN() ), equalTo( true ) );
                 assertThat( item.asBoolean(), equalTo( true ) );
@@ -195,7 +196,7 @@ public class ParametersIT
             Value value = record.get( "a.value" );
             assertThat( value.hasType( session.typeSystem().LIST() ), equalTo( true ) );
             assertThat( value.size(), equalTo( 3 ) );
-            for ( Value item : value.asList() )
+            for ( Value item : value.asList( valueAsIs() ) )
             {
                 assertThat( item.hasType( session.typeSystem().INTEGER() ), equalTo( true ) );
                 assertThat( item.asLong(), equalTo( 42L ) );
@@ -218,7 +219,7 @@ public class ParametersIT
             Value value = record.get( "a.value" );
             assertThat( value.hasType( session.typeSystem().LIST() ), equalTo( true ) );
             assertThat( value.size(), equalTo( 3 ) );
-            for ( Value item : value.asList() )
+            for ( Value item : value.asList(valueAsIs()) )
             {
                 assertThat( item.hasType( session.typeSystem().FLOAT() ), equalTo( true ) );
                 assertThat( item.asDouble(), equalTo( 6.28 ) );
@@ -246,7 +247,7 @@ public class ParametersIT
             Value value = record.get( "a.value" );
             assertThat( value.hasType( session.typeSystem().LIST() ), equalTo( true ) );
             assertThat( value.size(), equalTo( 3 ) );
-            for ( Value item : value.asList() )
+            for ( Value item : value.asList(valueAsIs()) )
             {
                 assertThat( item.hasType( session.typeSystem().STRING() ), equalTo( true ) );
                 assertThat( item.asString(), equalTo( str ) );

@@ -24,6 +24,7 @@ package org.neo4j.driver.v1.util;
  *
  * Additionally, calling {@link AutoCloseable#close()} twice is expected to fail
  * (i.e. is not idempotent).
+ * @since 1.0
  */
 public interface Resource extends AutoCloseable
 {

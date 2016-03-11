@@ -21,6 +21,7 @@ package org.neo4j.driver.v1.exceptions;
 /**
  * A <em>ClientException</em> indicates that the client has carried out an operation incorrectly.
  * The error code provided can be used to determine further detail for the problem.
+ * @since 1.0
  */
 public class ClientException extends Neo4jException
 {

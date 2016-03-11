@@ -40,6 +40,7 @@ import static org.neo4j.driver.v1.Config.TrustStrategy.*;
  *                  .toConfig();
  * }
  * </pre>
+ * @since 1.0
  */
 @Immutable
 public class Config

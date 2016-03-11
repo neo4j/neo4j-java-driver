@@ -18,10 +18,11 @@
  */
 package org.neo4j.driver.v1.tck.tck.util;
 
-import org.neo4j.driver.v1.util.Function;
-import org.neo4j.driver.v1.util.Pair;
-import org.neo4j.driver.v1.types.Relationship;
+import java.util.Map;
+
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.types.Relationship;
+import org.neo4j.driver.v1.util.Function;
 
 public class TestRelationship implements Relationship
 {
@@ -102,15 +103,15 @@ public class TestRelationship implements Relationship
     }
 
     @Override
-    public Iterable<Pair<String,Value>> properties()
+    public Map<String,Object> asMap()
     {
-        return trv.properties();
+        return trv.asMap();
     }
 
     @Override
-    public <V> Iterable<Pair<String,V>> properties( Function<Value,V> mapFunction )
+    public <T> Map<String,T> asMap( Function<Value,T> mapFunction )
     {
-        return trv.properties( mapFunction );
+        return trv.asMap( mapFunction );
     }
 
     public TestRelationshipValue getTestRelationshipValue()

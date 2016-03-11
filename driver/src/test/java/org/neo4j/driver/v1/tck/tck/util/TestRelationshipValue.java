@@ -51,14 +51,14 @@ public class TestRelationshipValue extends RelationshipValue implements Entity
         }
         RelationshipValue value = (RelationshipValue) o;
         return (value.asRelationship().type().equals( this.asRelationship().type() ) &&
-                value.asRelationship().properties()
-                        .equals( this.asRelationship().properties() ));
+                value.asMap().toString()
+                        .equals( this.asMap().toString() ));
     }
 
     @Override
     public String toString()
     {
-        return this.asRelationship().type() + this.asRelationship().properties().toString();
+        return this.asRelationship().type() + this.asMap().toString();
     }
 
     @Override

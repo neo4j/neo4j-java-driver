@@ -25,6 +25,7 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.util.Function;
+import org.neo4j.driver.v1.util.Resource;
 
 
 /**
@@ -36,6 +37,21 @@ import org.neo4j.driver.v1.util.Function;
  * Results are valid until the next statement is run or until the end of the current transaction,
  * whichever comes first. To keep a result around while further statements are run, or to use a result outside the scope
  * of the current transaction, see {@link #list()}.
+ *
+ * <h2>Important note on semantics</h2>
+ *
+ * In order to handle very large results, and to minimize memory overhead and maximize
+ * performance, results are retrieved lazily. Please see {@link StatementRunner} for
+ * important details on the effects of this.
+ *
+ * The short version is that, if you want a hard guarantee that the underlying statement
+ * has completed, you need to either call {@link Resource#close()} on the {@link Transaction}
+ * or {@link Session} that created this result, or you need to use the result.
+ *
+ * Calling any method on this interface will guarantee that any write operation has completed on
+ * the remote database.
+ *
+ * @since 1.0
  */
 public interface StatementResult extends Iterator<Record>
 {
@@ -128,7 +144,6 @@ public interface StatementResult extends Iterator<Record>
 
     /**
      * Discard this result, freeing up any associated resources.
-     * You should take care to call this if you are done using a result.
      */
     void discard();
 }

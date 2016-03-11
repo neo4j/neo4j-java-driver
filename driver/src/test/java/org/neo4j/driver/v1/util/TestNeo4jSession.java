@@ -23,6 +23,7 @@ import org.junit.runners.model.Statement;
 
 import java.util.Map;
 
+import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Transaction;
@@ -107,6 +108,12 @@ public class TestNeo4jSession extends TestNeo4j implements Session
 
     @Override
     public StatementResult run( String statementText, Value parameters )
+    {
+        return realSession.run( statementText, parameters );
+    }
+
+    @Override
+    public StatementResult run( String statementText, Record parameters )
     {
         return realSession.run( statementText, parameters );
     }

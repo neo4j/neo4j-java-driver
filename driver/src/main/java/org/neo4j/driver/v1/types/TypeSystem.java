@@ -21,6 +21,10 @@ package org.neo4j.driver.v1.types;
 import org.neo4j.driver.v1.util.Experimental;
 import org.neo4j.driver.v1.util.Immutable;
 
+/**
+ * A listing of all database types this driver can handle.
+ * @since 1.0
+ */
 @Immutable
 @Experimental
 public interface TypeSystem
@@ -40,8 +44,6 @@ public interface TypeSystem
     Type LIST();
 
     Type MAP();
-
-    Type IDENTITY();
 
     Type NODE();
 

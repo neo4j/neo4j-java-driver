@@ -30,6 +30,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.Values.value;
+import static org.neo4j.driver.v1.Values.valueAsIs;
 import static org.neo4j.driver.v1.Values.values;
 
 @SuppressWarnings("unchecked")
@@ -46,7 +47,7 @@ public class InternalPlanTest
 
         // Then
         assertThat( plan.operatorType(), equalTo( "X") );
-        assertThat( plan.arguments(), equalTo( parameters().asMap() ) );
+        assertThat( plan.arguments(), equalTo( parameters().asMap( valueAsIs()) ) );
         assertThat( plan.identifiers(), equalTo( Collections.<String>emptyList() ) );
         assertThat( (List<Plan>) plan.children(), equalTo( Collections.<Plan>emptyList() ) );
     }
@@ -67,7 +68,7 @@ public class InternalPlanTest
 
         // Then
         assertThat( plan.operatorType(), equalTo( "X") );
-        assertThat( plan.arguments(), equalTo( parameters( "a", 1 ).asMap() ) );
+        assertThat( plan.arguments(), equalTo( parameters( "a", 1 ).asMap( valueAsIs()) ) );
         assertThat( plan.identifiers(), equalTo( Collections.<String>emptyList() ) );
         assertThat( (List<Plan>) plan.children(), equalTo( Collections.<Plan>emptyList() ) );
     }
@@ -92,7 +93,7 @@ public class InternalPlanTest
 
         // Then
         assertThat( plan.operatorType(), equalTo( "X") );
-        assertThat( plan.arguments(), equalTo( parameters( "a", 1 ).asMap() ) );
+        assertThat( plan.arguments(), equalTo( parameters( "a", 1 ).asMap( valueAsIs() ) ) );
         assertThat( plan.identifiers(), equalTo( Collections.<String>emptyList() ) );
         List<? extends Plan> children = plan.children();
         assertThat( children.size(), equalTo( 1 ) );

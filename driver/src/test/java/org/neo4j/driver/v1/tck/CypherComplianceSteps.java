@@ -36,6 +36,7 @@ import org.neo4j.driver.v1.tck.tck.util.runners.MappedParametersRunner;
 import org.neo4j.driver.v1.tck.tck.util.runners.StringRunner;
 
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.driver.v1.Values.valueAsIs;
 import static org.neo4j.driver.v1.tck.DriverComplianceIT.session;
 import static org.neo4j.driver.v1.tck.Environment.runners;
 import static org.neo4j.driver.v1.tck.tck.util.ResultParser.parseExpected;
@@ -82,7 +83,7 @@ public class CypherComplianceSteps
                 Record record = rc.next();
                 assertTrue( keys.size() == record.keys().size() );
                 assertTrue( keys.containsAll( record.keys() ) );
-                given.add( parseGiven( record.asMap() ) );
+                given.add( parseGiven( record.asMap( valueAsIs() ) ) );
                 expected.add( parseExpected( table.diffableRows().get( i + 1 ).convertedRow, keys ) );
                 i++;
             }

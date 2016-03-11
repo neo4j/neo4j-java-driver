@@ -22,6 +22,7 @@ import org.neo4j.driver.v1.util.Immutable;
 
 /**
  * A uniquely identifiable property container that can form part of a Neo4j graph.
+ * @since 1.0
  */
 @Immutable
 public interface Entity extends MapAccessor

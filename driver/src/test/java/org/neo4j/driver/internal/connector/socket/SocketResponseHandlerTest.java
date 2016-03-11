@@ -38,6 +38,7 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.driver.internal.summary.InternalPlan.plan;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.Values.value;
+import static org.neo4j.driver.v1.Values.valueAsIs;
 import static org.neo4j.driver.v1.Values.values;
 
 public class SocketResponseHandlerTest
@@ -70,7 +71,7 @@ public class SocketResponseHandlerTest
         // Given
         String[] fieldNames = new String[] { "name", "age", "income" };
         Value fields = value( fieldNames );
-        Map<String, Value> data = parameters( "fields", fields ).asMap();
+        Map<String, Value> data = parameters( "fields", fields ).asMap(valueAsIs());
 
         // When
         handler.handleSuccessMessage( data );
@@ -89,7 +90,7 @@ public class SocketResponseHandlerTest
                         "nodes-created", 1,
                         "properties-set", 12
                 )
-        ).asMap();
+        ).asMap(valueAsIs());
         UpdateStatistics stats = new InternalUpdateStatistics( 1, 0, 0, 0, 12, 0, 0, 0, 0, 0, 0);
 
         // When
@@ -123,14 +124,14 @@ public class SocketResponseHandlerTest
                                 )
                         )
                 )
-        ).asMap();
+        ).asMap(valueAsIs());
 
         UpdateStatistics stats = new InternalUpdateStatistics( 1, 0, 0, 0, 12, 0, 0, 0, 0, 0, 0 );
         Plan plan = plan(
             "ProduceResults",
-                parameters( "KeyNames", "num", "EstimatedRows", 1.0 ).asMap(), singletonList( "num" ),
+                parameters( "KeyNames", "num", "EstimatedRows", 1.0 ).asMap(valueAsIs()), singletonList( "num" ),
                 singletonList(
-                plan( "Projection", parameters( "A", "x", "B", 2 ).asMap(), singletonList( "num" ), Collections
+                plan( "Projection", parameters( "A", "x", "B", 2 ).asMap(valueAsIs()), singletonList( "num" ), Collections
                         .<Plan>emptyList() )
             )
         );

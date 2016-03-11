@@ -20,6 +20,10 @@ package org.neo4j.driver.v1.summary;
 
 import org.neo4j.driver.v1.exceptions.ClientException;
 
+/**
+ * The type of statement executed.
+ * @since 1.0
+ */
 public enum StatementType
 {
     READ_ONLY,

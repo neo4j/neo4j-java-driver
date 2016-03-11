@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.summary.Plan;
 import org.neo4j.driver.v1.util.Function;
 
@@ -164,7 +165,7 @@ public class InternalPlan<T extends Plan> implements Plan
             final Value argumentsValue = plan.get( "args" );
             final Map<String, Value> arguments = argumentsValue.isNull()
                     ? Collections.<String, Value>emptyMap()
-                    : argumentsValue.asMap();
+                    : argumentsValue.asMap( Values.valueAsIs() );
 
             final Value identifiersValue = plan.get( "identifiers" );
             final List<String> identifiers = identifiersValue.isNull()

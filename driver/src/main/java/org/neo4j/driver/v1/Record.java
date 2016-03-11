@@ -24,6 +24,7 @@ import java.util.Map;
 import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
+import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.util.Immutable;
 import org.neo4j.driver.v1.util.Pair;
 
@@ -35,6 +36,7 @@ import org.neo4j.driver.v1.util.Pair;
  * a key and a value, both are determined by the statement you've executed. To
  * access the values in your result, you can either use the field key or the field
  * index, meaning the position the field has in the record.
+ * @since 1.0
  */
 @Immutable
 public interface Record
@@ -89,10 +91,22 @@ public interface Record
     int size();
 
     /**
-     * Return this record as a value map, e.g. for use as parameters for executing a follow-up statement
-     * @return this record as a value map
+     * Return this record as a map, where each value has been converted to a default
+     * java object using {@link Value#asObject()}.
+     *
+     * This is equivalent to calling {@link #asMap(Function)} with {@link Values#valueAsObject()}.
+     *
+     * @return this record as a map
      */
-    Map<String, Value> asMap();
+    Map<String, Object> asMap();
+
+    /**
+     * Return this record as a map, where each value has been converted using the provided
+     * mapping function. You can find a library of common mapping functions in {@link Values}.
+     *
+     * @return this record as a map
+     */
+    <T> Map<String, T> asMap( Function<Value, T> mapper );
 
     /**
      * Retrieve all record fields

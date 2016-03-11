@@ -38,6 +38,13 @@ import org.neo4j.driver.v1.util.Resource;
  * }
  * }
  * </pre>
+ *
+ * <h2>Important note on semantics</h2>
+ *
+ * Please see the section under {@link StatementRunner} for an important overview of the guarantees
+ * the transaction gives you around when statements are executed.
+ *
+ * @since 1.0
  */
 public interface Transaction extends Resource, StatementRunner
 {
@@ -67,4 +74,12 @@ public interface Transaction extends Resource, StatementRunner
      * </pre>
      */
     void failure();
+
+    /**
+     * Closing the transaction will complete it - it will commit if {@link #success()} has been called.
+     * When this method returns, all outstanding statements in the transaction are guaranteed to
+     * have completed, meaning any writes you performed are guaranteed to be durably stored.
+     */
+    @Override
+    void close();
 }

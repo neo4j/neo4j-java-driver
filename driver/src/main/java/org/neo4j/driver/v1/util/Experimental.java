@@ -26,7 +26,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Annotated elements are experimental and may change without deprecation across driver releases
+ * Annotated elements are experimental and may change without deprecation across driver releases.
+ * @since 1.0
  */
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)

@@ -85,7 +85,6 @@ public class TypeSystemTest
         assertThat( TYPE_SYSTEM.FLOAT().name(), is( "FLOAT" ) );
         assertThat( TYPE_SYSTEM.LIST().name(), is( "LIST OF ANY?" ) );
         assertThat( TYPE_SYSTEM.MAP().name(), is( "MAP" ) );
-        assertThat( TYPE_SYSTEM.IDENTITY().name(), is( "IDENTITY" ) );
         assertThat( TYPE_SYSTEM.NODE().name(), is( "NODE" ) );
         assertThat( TYPE_SYSTEM.RELATIONSHIP().name(), is( "RELATIONSHIP" ) );
         assertThat( TYPE_SYSTEM.PATH().name(), is( "PATH" ) );

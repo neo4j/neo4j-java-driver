@@ -24,6 +24,7 @@ import java.util.Map;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.StreamCollector;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
+import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
@@ -32,6 +33,8 @@ import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.types.TypeSystem;
+
+import static org.neo4j.driver.v1.Values.valueAsIs;
 
 public class InternalTransaction implements Transaction
 {
@@ -143,6 +146,13 @@ public class InternalTransaction implements Transaction
     }
 
     @Override
+    public StatementResult run( String statementTemplate, Record statementParameters )
+    {
+        // TODO: This conversion to map here is pointless, it gets converted right back
+        return run( statementTemplate, statementParameters.asMap() );
+    }
+
+    @Override
     public StatementResult run( Statement statement )
     {
         ensureNotFailed();
@@ -150,7 +160,9 @@ public class InternalTransaction implements Transaction
         try
         {
             InternalStatementResult cursor = new InternalStatementResult( conn, statement );
-            conn.run( statement.text(), statement.parameters().asMap(), cursor.runResponseCollector() );
+            conn.run( statement.text(),
+                    statement.parameters().asMap( valueAsIs() ),
+                    cursor.runResponseCollector() );
             conn.pullAll( cursor.pullAllResponseCollector() );
             conn.flush();
             return cursor;

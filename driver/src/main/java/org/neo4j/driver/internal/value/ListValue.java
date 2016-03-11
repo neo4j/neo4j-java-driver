@@ -59,9 +59,9 @@ public class ListValue extends ValueAdapter
     }
 
     @Override
-    public List<Value> asList()
+    public List<Object> asList()
     {
-        return Extract.list( values );
+        return Extract.list( values, valueAsObject() );
     }
 
     @Override

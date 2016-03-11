@@ -24,6 +24,7 @@ import org.neo4j.driver.v1.util.Function;
  * Static utility methods for retaining records
  *
  * @see StatementResult#list()
+ * @since 1.0
  */
 public abstract class Records
 {

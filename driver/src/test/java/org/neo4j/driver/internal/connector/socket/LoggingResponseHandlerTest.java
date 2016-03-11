@@ -38,6 +38,7 @@ import org.neo4j.driver.v1.Value;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.driver.v1.Values.parameters;
+import static org.neo4j.driver.v1.Values.valueAsIs;
 
 public class LoggingResponseHandlerTest
 {
@@ -57,22 +58,22 @@ public class LoggingResponseHandlerTest
     public void shouldLogInitMessage() throws Throwable
     {
         // When
-        handler.handleInitMessage( "client", parameters().asMap());
+        handler.handleInitMessage( "client", parameters().asMap(valueAsIs()));
 
         // Then
         assertEquals( "S: [INIT \"client\"]", log );
-        assertEquals( format( new InitMessage( "client", parameters().asMap() ) ), log );
+        assertEquals( format( new InitMessage( "client", parameters().asMap(valueAsIs()) ) ), log );
     }
 
     @Test
     public void shouldLogRunMessage() throws Throwable
     {
         // When
-        handler.handleRunMessage( "stat", parameters( "value", new String[]{"cat", "cat", "cat"} ).asMap() );
+        handler.handleRunMessage( "stat", parameters( "value", new String[]{"cat", "cat", "cat"} ).asMap(valueAsIs()) );
 
         // Then
         assertEquals( "S: [RUN \"stat\" {value=[\"cat\", \"cat\", \"cat\"]}]", log );
-        assertEquals( format( new RunMessage( "stat", parameters( "value", new String[]{"cat", "cat", "cat"} ).asMap() ) ),
+        assertEquals( format( new RunMessage( "stat", parameters( "value", new String[]{"cat", "cat", "cat"} ).asMap(valueAsIs()) ) ),
                 log );
     }
 

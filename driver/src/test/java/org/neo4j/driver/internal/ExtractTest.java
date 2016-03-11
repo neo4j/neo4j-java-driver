@@ -47,6 +47,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.v1.Values.value;
+import static org.neo4j.driver.v1.Values.valueAsIs;
 
 public class ExtractTest
 {
@@ -156,7 +157,7 @@ public class ExtractTest
         cursor.pullAllResponseCollector().record( new Value[]{value( 42 )} );
         cursor.pullAllResponseCollector().done();
 
-        connection.run( statement, Values.EmptyMap.asMap(), cursor.runResponseCollector() );
+        connection.run( statement, Values.EmptyMap.asMap( valueAsIs() ), cursor.runResponseCollector() );
         connection.pullAll( cursor.pullAllResponseCollector() );
         connection.flush();
 

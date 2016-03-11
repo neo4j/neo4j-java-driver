@@ -44,6 +44,7 @@ import org.neo4j.driver.v1.types.Relationship;
 /**
  * Utility for wrapping regular Java types and exposing them as {@link Value}
  * objects.
+ * @since 1.0
  */
 public abstract class Values
 {
@@ -308,7 +309,7 @@ public abstract class Values
         return BOOLEAN;
     }
 
-    public static Function<Value, Map<String, Value>> valueAsMap()
+    public static Function<Value, Map<String, Object>> valueAsMap()
     {
         return MAP;
     }
@@ -420,9 +421,9 @@ public abstract class Values
             return val.asBoolean();
         }
     };
-    private static final Function<Value,Map<String,Value>> MAP = new Function<Value,Map<String,Value>>()
+    private static final Function<Value,Map<String,Object>> MAP = new Function<Value,Map<String,Object>>()
     {
-        public Map<String,Value> apply( Value val )
+        public Map<String,Object> apply( Value val )
         {
             return val.asMap();
         }

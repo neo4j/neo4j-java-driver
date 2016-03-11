@@ -23,6 +23,7 @@ import java.util.Map;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.Logger;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
+import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementResult;
@@ -72,6 +73,13 @@ public class InternalSession implements Session
     }
 
     @Override
+    public StatementResult run( String statementTemplate, Record statementParameters )
+    {
+        // TODO: This conversion to map here is pointless, it gets converted right back
+        return run( statementTemplate, statementParameters.asMap() );
+    }
+
+    @Override
     public StatementResult run( String statementText, Value statementParameters )
     {
         return run( new Statement( statementText, statementParameters ) );
@@ -82,7 +90,7 @@ public class InternalSession implements Session
     {
         ensureConnectionIsValid();
         InternalStatementResult cursor = new InternalStatementResult( connection, statement );
-        connection.run( statement.text(), statement.parameters().asMap(), cursor.runResponseCollector() );
+        connection.run( statement.text(), statement.parameters().asMap( Values.valueAsIs() ), cursor.runResponseCollector() );
         connection.pullAll( cursor.pullAllResponseCollector() );
         connection.flush();
         return cursor;
@@ -115,6 +123,7 @@ public class InternalSession implements Session
                     // Best-effort
                 }
             }
+            connection.sync();
             connection.close();
         }
     }

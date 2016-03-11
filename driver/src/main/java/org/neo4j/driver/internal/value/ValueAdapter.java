@@ -23,23 +23,22 @@ import java.util.Map;
 
 import org.neo4j.driver.internal.types.TypeConstructor;
 import org.neo4j.driver.internal.types.TypeRepresentation;
-import org.neo4j.driver.internal.util.Extract;
-import org.neo4j.driver.v1.types.Entity;
-import org.neo4j.driver.v1.util.Function;
-import org.neo4j.driver.v1.types.Node;
-import org.neo4j.driver.v1.util.Pair;
-import org.neo4j.driver.v1.types.Path;
-import org.neo4j.driver.v1.types.Relationship;
-import org.neo4j.driver.v1.types.Type;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.value.NotMultiValued;
 import org.neo4j.driver.v1.exceptions.value.Uncoercible;
 import org.neo4j.driver.v1.exceptions.value.Unsizable;
+import org.neo4j.driver.v1.types.Entity;
+import org.neo4j.driver.v1.types.Node;
+import org.neo4j.driver.v1.types.Path;
+import org.neo4j.driver.v1.types.Relationship;
+import org.neo4j.driver.v1.types.Type;
+import org.neo4j.driver.v1.util.Function;
 
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
 import static org.neo4j.driver.internal.value.InternalValue.Format.VALUE_ONLY;
 import static org.neo4j.driver.v1.Values.valueAsIs;
+import static org.neo4j.driver.v1.Values.valueAsObject;
 
 public abstract class ValueAdapter implements InternalValue
 {
@@ -130,9 +129,9 @@ public abstract class ValueAdapter implements InternalValue
     }
 
     @Override
-    public List<Value> asList()
+    public List<Object> asList()
     {
-        return asList( valueAsIs() );
+        return asList( valueAsObject() );
     }
 
     @Override
@@ -142,9 +141,9 @@ public abstract class ValueAdapter implements InternalValue
     }
 
     @Override
-    public Map<String,Value> asMap()
+    public Map<String,Object> asMap()
     {
-        return asMap( valueAsIs() );
+        return asMap( valueAsObject() );
     }
 
     @Override
@@ -229,18 +228,6 @@ public abstract class ValueAdapter implements InternalValue
     public <T> Iterable<T> values( Function<Value,T> mapFunction )
     {
         throw new NotMultiValued( type().name() + " is not iterable" );
-    }
-
-    @Override
-    public Iterable<Pair<String, Value>> properties()
-    {
-        return properties( valueAsIs() );
-    }
-
-    @Override
-    public <V> Iterable<Pair<String, V>> properties( final Function<Value, V> mapFunction )
-    {
-        return Extract.properties( this, mapFunction );
     }
 
     public String toString()

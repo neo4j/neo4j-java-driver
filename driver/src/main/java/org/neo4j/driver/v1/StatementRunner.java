@@ -26,8 +26,41 @@ import org.neo4j.driver.v1.types.TypeSystem;
 /**
  * Common interface for components that can execute Neo4j statements.
  *
+ * <h2>Important notes on semantics</h2>
+ *
+ * Statements ran in the same {@link StatementRunner} are guaranteed
+ * to execute in order, meaning changes made by one statement will be seen
+ * by all subsequent statements in the same {@link StatementRunner}.
+ *
+ * However, to allow handling very large results, and to improve performance,
+ * result streams are retrieved lazily. This means that when any of the
+ * {@link #run(Statement)} methods return a result, the statement has only
+ * started executing - it may not have completed yet. Most of the
+ * time, you will not notice this, because the driver automatically
+ * waits for statements to complete at specific points to fulfill its contracts.
+ *
+ * Specifically, the driver will ensure all outstanding statements are completed
+ * whenever you:
+ *
+ * <ul>
+ *     <li>Read from or discard a result, for instance via {@link StatementResult#next()},
+ *     {@link StatementResult#summarize()}, {@link StatementResult#discard()}.</li>
+ *     <li>Explicitly commit a transaction using {@link Transaction#close()}</li>
+ *     <li>Return a session to the pool using {@link Session#close()}</li>
+ * </ul>
+ *
+ * As noted, most of the time, you will not need to consider this - your writes will
+ * always be durably stored as long as you either use the results, explicitly commit
+ * {@link Transaction transactions} or return the session you used to the pool using
+ * {@link Session#close()}.
+ *
+ * While these semantics introduce some complexity, it gives the driver the ability
+ * to handle infinite result streams (like subscribing to events), significantly lowers
+ * the memory overhead for your application and improves performance.
+ *
  * @see Session
  * @see Transaction
+ * @since 1.0
  */
 public interface StatementRunner
 {
@@ -88,6 +121,23 @@ public interface StatementRunner
      * @return a stream of result values and associated metadata
      */
     StatementResult run( String statementTemplate, Map<String,Object> statementParameters );
+
+    /**
+     * Run a statement and return a result stream.
+     *
+     * This method takes a set of parameters that will be injected into the
+     * statement by Neo4j. Using parameters is highly encouraged, it helps avoid
+     * dangerous cypher injection attacks and improves database performance as
+     * Neo4j can re-use query plans more often.
+     *
+     * This version of run takes a {@link Record} of parameters, which can be useful
+     * if you want to use the output of one statement as input for another.
+     *
+     * @param statementTemplate text of a Neo4j statement
+     * @param statementParameters input data for the statement
+     * @return a stream of result values and associated metadata
+     */
+    StatementResult run( String statementTemplate, Record statementParameters );
 
     /**
      * Run a statement and return a result stream.

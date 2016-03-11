@@ -18,6 +18,9 @@
  */
 package org.neo4j.driver.v1.exceptions.value;
 
+/**
+ * @since 1.0
+ */
 public class NotMultiValued extends ValueException
 {
     private static final long serialVersionUID = -7380569883011364090L;

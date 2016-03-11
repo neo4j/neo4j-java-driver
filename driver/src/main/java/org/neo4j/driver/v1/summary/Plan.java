@@ -35,6 +35,7 @@ import org.neo4j.driver.v1.util.Immutable;
  * a reference of the available operator types, and these may differ across Neo4j versions.
  *
  * For a simple view of a plan, the {@code toString} method will give a human-readable rendering of the tree.
+ * @since 1.0
  */
 @Immutable
 public interface Plan

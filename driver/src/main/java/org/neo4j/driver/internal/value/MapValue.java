@@ -22,13 +22,14 @@ import java.util.Map;
 
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.internal.util.Extract;
-import org.neo4j.driver.v1.util.Function;
-import org.neo4j.driver.v1.types.Type;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
+import org.neo4j.driver.v1.types.Type;
+import org.neo4j.driver.v1.util.Function;
 
 import static org.neo4j.driver.internal.util.Format.formatPairs;
 import static org.neo4j.driver.internal.value.InternalValue.Format.VALUE_ONLY;
+import static org.neo4j.driver.v1.Values.valueAsIs;
 import static org.neo4j.driver.v1.Values.valueAsObject;
 
 public class MapValue extends ValueAdapter
@@ -57,9 +58,9 @@ public class MapValue extends ValueAdapter
     }
 
     @Override
-    public Map<String,Value> asMap()
+    public Map<String,Object> asMap()
     {
-        return Extract.map( val );
+        return Extract.map( val, valueAsObject() );
     }
 
     @Override
@@ -116,7 +117,7 @@ public class MapValue extends ValueAdapter
     {
         return maybeWithType(
             valueFormat.includeType(),
-            formatPairs( valueFormat.inner(), size(), properties() )
+            formatPairs( valueFormat.inner(), asMap(valueAsIs()) )
         );
     }
 

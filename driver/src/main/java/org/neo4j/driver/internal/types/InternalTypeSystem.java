@@ -18,14 +18,13 @@
  */
 package org.neo4j.driver.internal.types;
 
+import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.types.Type;
 import org.neo4j.driver.v1.types.TypeSystem;
-import org.neo4j.driver.v1.Value;
 
 import static org.neo4j.driver.internal.types.TypeConstructor.ANY_TyCon;
 import static org.neo4j.driver.internal.types.TypeConstructor.BOOLEAN_TyCon;
 import static org.neo4j.driver.internal.types.TypeConstructor.FLOAT_TyCon;
-import static org.neo4j.driver.internal.types.TypeConstructor.IDENTITY_TyCon;
 import static org.neo4j.driver.internal.types.TypeConstructor.INTEGER_TyCon;
 import static org.neo4j.driver.internal.types.TypeConstructor.LIST_TyCon;
 import static org.neo4j.driver.internal.types.TypeConstructor.MAP_TyCon;
@@ -54,7 +53,6 @@ public class InternalTypeSystem implements TypeSystem
     private final TypeRepresentation floatType = constructType( FLOAT_TyCon );
     private final TypeRepresentation listType = constructType( LIST_TyCon );
     private final TypeRepresentation mapType = constructType( MAP_TyCon );
-    private final TypeRepresentation identityType = constructType( IDENTITY_TyCon );
     private final TypeRepresentation nodeType = constructType( NODE_TyCon );
     private final TypeRepresentation relationshipType = constructType( RELATIONSHIP_TyCon );
     private final TypeRepresentation pathType = constructType( PATH_TyCon );
@@ -118,13 +116,6 @@ public class InternalTypeSystem implements TypeSystem
     public Type MAP()
     {
         return mapType;
-    }
-
-    /** the Cypher type IDENTITY */
-    @Override
-    public Type IDENTITY()
-    {
-        return identityType;
     }
 
     /** the Cypher type NODE */

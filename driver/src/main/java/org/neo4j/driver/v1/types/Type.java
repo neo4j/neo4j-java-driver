@@ -24,6 +24,7 @@ import org.neo4j.driver.v1.util.Immutable;
 
 /**
  * The type of a {@link Value} as defined by the Cypher language
+ * @since 1.0
  */
 @Immutable
 @Experimental

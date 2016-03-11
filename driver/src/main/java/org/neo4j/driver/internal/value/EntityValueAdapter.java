@@ -18,8 +18,11 @@
  */
 package org.neo4j.driver.internal.value;
 
-import org.neo4j.driver.v1.types.Entity;
+import java.util.Map;
+
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.types.Entity;
+import org.neo4j.driver.v1.util.Function;
 
 public abstract class EntityValueAdapter<V extends Entity> extends GraphValueAdapter<V>
 {
@@ -28,9 +31,22 @@ public abstract class EntityValueAdapter<V extends Entity> extends GraphValueAda
         super( adapted );
     }
 
+    @Override
     public V asEntity()
     {
         return asObject();
+    }
+
+    @Override
+    public Map<String,Object> asMap()
+    {
+        return asEntity().asMap();
+    }
+
+    @Override
+    public <T> Map<String,T> asMap( Function<Value,T> mapFunction )
+    {
+        return asEntity().asMap( mapFunction );
     }
 
     @Override
