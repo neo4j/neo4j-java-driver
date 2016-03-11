@@ -48,7 +48,7 @@ public class SocketConnection implements Connection
 
     public SocketConnection( String host, int port, Config config )
     {
-        Logger logger = config.logging().getLog( getClass().getName() );
+        Logger logger = config.logging().getLog( String.valueOf( System.currentTimeMillis() ) );
 
         if( logger.isDebugEnabled() )
         {
