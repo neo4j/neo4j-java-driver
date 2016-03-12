@@ -22,7 +22,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.List;
-
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
@@ -147,7 +146,6 @@ public class SummaryIT
         List<Notification> notifications = summary.notifications();
         assertNotNull( notifications );
         assertThat( notifications.size(), equalTo( 1 ) );
-
         assertThat( notifications.get( 0 ).toString(), containsString("CartesianProduct") );
 
     }

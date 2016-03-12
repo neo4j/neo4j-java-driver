@@ -35,6 +35,9 @@ public class InternalNotification implements Notification
             String code = value.get( "code" ).asString();
             String title = value.get( "title" ).asString();
             String description = value.get( "description" ).asString();
+            String severity = value.containsKey( "severity" ) ?
+                              value.get( "severity" ).asString()
+                              : "N/A";
 
             Value posValue = value.get( "position" );
             InputPosition position = null;
@@ -45,20 +48,22 @@ public class InternalNotification implements Notification
                                                     posValue.get( "column" ).asInt() );
             }
 
-            return new InternalNotification( code, title, description, position );
+            return new InternalNotification( code, title, description, severity, position );
         }
     };
 
     private final String code;
     private final String title;
     private final String description;
+    private final String severity;
     private final InputPosition position;
 
-    public InternalNotification( String code, String title, String description, InputPosition position )
+    public InternalNotification( String code, String title, String description, String severity, InputPosition position )
     {
         this.code = code;
         this.title = title;
         this.description = description;
+        this.severity = severity;
         this.position = position;
     }
 
@@ -87,9 +92,15 @@ public class InternalNotification implements Notification
     }
 
     @Override
+    public String severity()
+    {
+        return severity;
+    }
+
+    @Override
     public String toString()
     {
-        String info = "code=" + code + ", title=" + title + ", description=" + description;
+        String info = "code=" + code + ", title=" + title + ", description=" + description + ", severity=" + severity;
         return position == null ? info : info + ", position={" + position + "}";
     }
 }
