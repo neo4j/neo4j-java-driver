@@ -25,10 +25,10 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.driver.internal.InternalPair;
-import org.neo4j.driver.v1.Function;
-import org.neo4j.driver.v1.MapAccessor;
-import org.neo4j.driver.v1.Pair;
-import org.neo4j.driver.v1.RecordAccessor;
+import org.neo4j.driver.v1.util.Function;
+import org.neo4j.driver.v1.types.MapAccessor;
+import org.neo4j.driver.v1.util.Pair;
+import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Value;
 
 import static java.util.Collections.emptyList;
@@ -112,7 +112,7 @@ public final class Extract
         }
     }
 
-    public static <T> Map<String, T> map( RecordAccessor record, Function<Value, T> mapFunction )
+    public static <T> Map<String, T> map( Record record, Function<Value, T> mapFunction )
     {
         int size = record.size();
         switch ( size )
@@ -162,7 +162,7 @@ public final class Extract
         }
     }
 
-    public static <V> List<Pair<String, V>> fields( final RecordAccessor map, final Function<Value, V> mapFunction )
+    public static <V> List<Pair<String, V>> fields( final Record map, final Function<Value, V> mapFunction )
     {
         int size = map.keys().size();
         switch ( size )

@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.v1;
 
+import org.neo4j.driver.v1.util.Resource;
+
 /**
  * A live session with a Neo4j instance.
  * <p>
@@ -29,6 +31,13 @@ package org.neo4j.driver.v1;
  * <p>
  * Session objects are not thread safe, if you want to run concurrent operations against the database,
  * simply create multiple sessions objects.
+ *
+ * <h2>Important note on semantics</h2>
+ *
+ * Please see the section under {@link StatementRunner} for an important overview of the guarantees
+ * the session gives you around when statements are executed.
+ *
+ * @since 1.0
  */
 public interface Session extends Resource, StatementRunner
 {
@@ -46,4 +55,15 @@ public interface Session extends Resource, StatementRunner
      * @return a new transaction
      */
     Transaction beginTransaction();
+
+
+    /**
+     * Signal that you are done using this session. In the default driver usage, closing
+     * and accessing sessions is very low cost, because sessions are pooled by {@link Driver}.
+     *
+     * When this method returns, all outstanding statements in the session are guaranteed to
+     * have completed, meaning any writes you performed are guaranteed to be durably stored.
+     */
+    @Override
+    void close();
 }

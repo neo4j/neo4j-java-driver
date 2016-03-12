@@ -21,21 +21,19 @@ package org.neo4j.driver.v1.tck.tck.util;
 import java.util.Collection;
 import java.util.Map;
 
-import org.neo4j.driver.internal.InternalIdentity;
 import org.neo4j.driver.internal.InternalNode;
 import org.neo4j.driver.internal.value.NodeValue;
-import org.neo4j.driver.v1.Identity;
-import org.neo4j.driver.v1.Node;
+import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.Value;
 
 public class TestNodeValue extends NodeValue implements Node
 {
-    private Identity id;
+    private long id;
 
     public TestNodeValue( Node adapted )
     {
         super( adapted );
-        id = adapted.identity();
+        id = adapted.id();
     }
 
     public TestNodeValue( long id, Collection<String> labels, Map<String,Value> properties )
@@ -55,18 +53,18 @@ public class TestNodeValue extends NodeValue implements Node
             return false;
         }
         NodeValue value = (NodeValue) o;
-        return (value.asNode().labels().equals( this.asNode().labels() ) && value.asNode().properties()
-                .equals( this.asNode().properties() ));
+        return (value.asNode().labels().equals( this.asNode().labels() ) && value.asMap().toString()
+                .equals( this.asMap().toString() ));
     }
 
     @Override
     public String toString()
     {
-        return this.asNode().labels() + this.asNode().properties().toString();
+        return this.asNode().labels() + this.asMap().toString();
     }
 
     @Override
-    public Identity identity()
+    public long id()
     {
         return this.id;
     }
@@ -85,6 +83,6 @@ public class TestNodeValue extends NodeValue implements Node
 
     public void setId( long id )
     {
-        this.id = new InternalIdentity( id );
+        this.id = id;
     }
 }

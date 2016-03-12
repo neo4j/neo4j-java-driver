@@ -16,25 +16,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1;
+package org.neo4j.driver.v1.types;
+
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.util.Experimental;
+import org.neo4j.driver.v1.util.Immutable;
 
 /**
- * The <strong>Node</strong> interface describes the characteristics of a node from a Neo4j graph.
+ * The type of a {@link Value} as defined by the Cypher language
+ * @since 1.0
  */
-public interface Node extends Entity
+@Immutable
+@Experimental
+public interface Type
 {
     /**
-     * Return all labels.
-     *
-     * @return a label Collection
+     * @return the name of the Cypher type (as defined by Cypher)
      */
-    Iterable<String> labels();
+    String name();
 
     /**
-     * Test if this node has a given label
+     * Test if the given value has this type
      *
-     * @param label the label
-     * @return <tt>true</tt> if this node has the label otherwise <tt>false</tt>
+     * @param value the value
+     * @return <tt>true</tt> if the value is a value of this type otherwise <tt>false</tt>
      */
-    boolean hasLabel( String label );
+    boolean isTypeOf( Value value );
 }

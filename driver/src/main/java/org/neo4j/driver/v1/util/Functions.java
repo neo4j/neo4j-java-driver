@@ -16,22 +16,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal;
+package org.neo4j.driver.v1.util;
 
-import java.util.List;
-
-import org.neo4j.driver.internal.util.Extract;
-import org.neo4j.driver.v1.Pair;
-import org.neo4j.driver.v1.RecordAccessor;
-import org.neo4j.driver.v1.Value;
-
-import static org.neo4j.driver.v1.Values.valueAsIs;
-
-public abstract class InternalRecordAccessor implements RecordAccessor
+/**
+ * Generic function utilities.
+ * @since 1.0
+ */
+public class Functions
 {
-    @Override
-    public List<Pair<String, Value>> fields()
+    public static <T> Function<T,T> identity()
     {
-        return Extract.fields( this, valueAsIs() );
+        return IDENTITY;
     }
+
+    private static final Function IDENTITY = new Function()
+    {
+        @Override
+        public Object apply( Object o )
+        {
+            return o;
+        }
+    };
 }

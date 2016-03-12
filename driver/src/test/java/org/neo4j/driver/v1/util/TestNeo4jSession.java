@@ -18,15 +18,16 @@
  */
 package org.neo4j.driver.v1.util;
 
-import java.util.Map;
-
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
-import org.neo4j.driver.v1.ResultCursor;
+import java.util.Map;
+
+import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Transaction;
-import org.neo4j.driver.v1.TypeSystem;
+import org.neo4j.driver.v1.types.TypeSystem;
 import org.neo4j.driver.v1.Value;
 
 /**
@@ -100,21 +101,33 @@ public class TestNeo4jSession extends TestNeo4j implements Session
     }
 
     @Override
-    public ResultCursor run( String statementText, Map<String,Value> statementParameters )
+    public StatementResult run( String statementText, Map<String,Object> statementParameters )
     {
         return realSession.run( statementText, statementParameters );
     }
 
     @Override
-    public ResultCursor run( String statementTemplate )
+    public StatementResult run( String statementText, Value parameters )
+    {
+        return realSession.run( statementText, parameters );
+    }
+
+    @Override
+    public StatementResult run( String statementText, Record parameters )
+    {
+        return realSession.run( statementText, parameters );
+    }
+
+    @Override
+    public StatementResult run( String statementTemplate )
     {
         return realSession.run( statementTemplate );
     }
 
     @Override
-    public ResultCursor run( org.neo4j.driver.v1.Statement statement )
+    public StatementResult run( org.neo4j.driver.v1.Statement statement )
     {
-        return realSession.run( statement.template(), statement.parameters() );
+        return realSession.run( statement.text(), statement.parameters() );
     }
 
     @Override

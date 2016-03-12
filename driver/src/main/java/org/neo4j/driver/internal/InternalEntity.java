@@ -23,28 +23,26 @@ import java.util.Map;
 import org.neo4j.driver.internal.util.Extract;
 import org.neo4j.driver.internal.util.Iterables;
 import org.neo4j.driver.internal.value.MapValue;
-import org.neo4j.driver.v1.Entity;
-import org.neo4j.driver.v1.Function;
-import org.neo4j.driver.v1.Identity;
-import org.neo4j.driver.v1.Pair;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
+import org.neo4j.driver.v1.types.Entity;
+import org.neo4j.driver.v1.util.Function;
 
-import static org.neo4j.driver.v1.Values.valueAsIs;
+import static org.neo4j.driver.v1.Values.ofObject;
 
 public abstract class InternalEntity implements Entity, AsValue
 {
-    private final Identity id;
+    private final long id;
     private final Map<String,Value> properties;
 
-    public InternalEntity( Identity id, Map<String, Value> properties )
+    public InternalEntity( long id, Map<String, Value> properties )
     {
         this.id = id;
         this.properties = properties;
     }
 
     @Override
-    public Identity identity()
+    public long id()
     {
         return id;
     }
@@ -55,6 +53,19 @@ public abstract class InternalEntity implements Entity, AsValue
         return properties.size();
     }
 
+    @Override
+    public Map<String,Object> asMap()
+    {
+        return asMap( ofObject() );
+    }
+
+    @Override
+    public <T> Map<String,T> asMap( Function<Value,T> mapFunction )
+    {
+        return Extract.map( properties, mapFunction );
+    }
+
+    @Override
     public Value asValue()
     {
         return new MapValue( properties );
@@ -74,14 +85,14 @@ public abstract class InternalEntity implements Entity, AsValue
 
         InternalEntity that = (InternalEntity) o;
 
-        return id.equals( that.id );
+        return id == that.id;
 
     }
 
     @Override
     public int hashCode()
     {
-        return id.hashCode();
+        return (int)(id ^ (id >>> 32));
     }
 
     @Override
@@ -122,17 +133,5 @@ public abstract class InternalEntity implements Entity, AsValue
     public <T> Iterable<T> values( Function<Value,T> mapFunction )
     {
         return Iterables.map( properties.values(), mapFunction );
-    }
-
-    @Override
-    public Iterable<Pair<String, Value>> properties()
-    {
-        return properties( valueAsIs() );
-    }
-
-    @Override
-    public <V> Iterable<Pair<String, V>> properties( final Function<Value, V> Function )
-    {
-        return Extract.properties( this, Function );
     }
 }

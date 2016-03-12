@@ -20,7 +20,7 @@ package org.neo4j.driver.internal;
 
 import org.junit.Test;
 
-import org.neo4j.driver.v1.Pair;
+import org.neo4j.driver.v1.util.Pair;
 import org.neo4j.driver.v1.Value;
 
 import static org.hamcrest.CoreMatchers.equalTo;

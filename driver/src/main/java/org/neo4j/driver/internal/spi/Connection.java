@@ -31,13 +31,14 @@ public interface Connection extends AutoCloseable
     /**
      * Initialize the connection. This must be done before any other action is allowed.
      * @param clientName should be the driver name and version: "java-driver/1.0.0"
-     * @param authToken
+     * @param authToken a map value
      */
     void init( String clientName, Map<String,Value> authToken );
 
     /**
      * Queue up a run action. The collector will value called with metadata about the stream that will become available
      * for retrieval.
+     * @param parameters a map value of parameters
      */
     void run( String statement, Map<String,Value> parameters, StreamCollector collector );
 

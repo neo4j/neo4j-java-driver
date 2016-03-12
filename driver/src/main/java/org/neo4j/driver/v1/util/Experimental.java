@@ -16,32 +16,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1;
+package org.neo4j.driver.v1.util;
+
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
- * An input position refers to a specific character in a statement.
+ * Annotated elements are experimental and may change without deprecation across driver releases.
+ * @since 1.0
  */
-@Immutable
-public interface InputPosition
+@Inherited
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+@Target( { ElementType.TYPE, ElementType.METHOD } )
+public @interface Experimental
 {
-    /**
-     * The character offset referred to by this position; offset numbers start at 0.
-     *
-     * @return the offset of this position.
-     */
-    int offset();
-
-    /**
-     * The line number referred to by the position; line numbers start at 1.
-     *
-     * @return the line number of this position.
-     */
-    int line();
-
-    /**
-     * The column number referred to by the position; column numbers start at 1.
-     *
-     * @return the column number of this position.
-     */
-    int column();
 }

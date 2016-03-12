@@ -28,13 +28,15 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.driver.v1.ResultCursor;
+import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.tck.tck.util.runners.CypherStatementRunner;
 import org.neo4j.driver.v1.tck.tck.util.runners.MappedParametersRunner;
 import org.neo4j.driver.v1.tck.tck.util.runners.StringRunner;
 
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.driver.v1.Values.ofValue;
 import static org.neo4j.driver.v1.tck.DriverComplianceIT.session;
 import static org.neo4j.driver.v1.tck.Environment.runners;
 import static org.neo4j.driver.v1.tck.tck.util.ResultParser.parseExpected;
@@ -71,16 +73,17 @@ public class CypherComplianceSteps
     {
         for( CypherStatementRunner runner : runners)
         {
-            ResultCursor rc = runner.result();
+            StatementResult rc = runner.result();
             List<String> keys = table.topCells();
             Collection<Map> given = new ArrayList<>(  );
             Collection<Map> expected = new ArrayList<>(  );
             int i = 0;
-            while ( rc.next() )
+            while ( rc.hasNext() )
             {
-                assertTrue( keys.size() == rc.record().keys().size() );
-                assertTrue( keys.containsAll( rc.record().keys() ) );
-                given.add( parseGiven( rc.record().asMap() ) );
+                Record record = rc.next();
+                assertTrue( keys.size() == record.keys().size() );
+                assertTrue( keys.containsAll( record.keys() ) );
+                given.add( parseGiven( record.asMap( ofValue() ) ) );
                 expected.add( parseExpected( table.diffableRows().get( i + 1 ).convertedRow, keys ) );
                 i++;
             }

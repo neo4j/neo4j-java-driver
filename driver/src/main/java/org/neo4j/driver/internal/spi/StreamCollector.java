@@ -20,11 +20,11 @@ package org.neo4j.driver.internal.spi;
 
 import java.util.List;
 
-import org.neo4j.driver.v1.Notification;
-import org.neo4j.driver.v1.Plan;
-import org.neo4j.driver.v1.ProfiledPlan;
-import org.neo4j.driver.v1.StatementType;
-import org.neo4j.driver.v1.UpdateStatistics;
+import org.neo4j.driver.v1.summary.Notification;
+import org.neo4j.driver.v1.summary.Plan;
+import org.neo4j.driver.v1.summary.ProfiledPlan;
+import org.neo4j.driver.v1.summary.StatementType;
+import org.neo4j.driver.v1.summary.UpdateStatistics;
 import org.neo4j.driver.v1.Value;
 
 public interface StreamCollector

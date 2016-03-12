@@ -18,11 +18,11 @@
  */
 package org.neo4j.driver.v1.tck.tck.util.runners;
 
-import java.util.Collections;
 import java.util.Map;
 
-import org.neo4j.driver.v1.ResultCursor;
+import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.Values;
 
 import static org.junit.Assert.assertNotNull;
 import static org.neo4j.driver.v1.tck.DriverComplianceIT.session;
@@ -30,19 +30,19 @@ import static org.neo4j.driver.v1.tck.DriverComplianceIT.session;
 public class MappedParametersRunner implements CypherStatementRunner
 {
     private String statement;
-    private Map<String,Value> parameters;
-    private ResultCursor result;
+    private Value parameters;
+    private StatementResult result;
 
     public MappedParametersRunner( String st, String key, Value value )
     {
         statement = st;
-        parameters = Collections.singletonMap( key, value );
+        parameters = Values.parameters( key, value );
     }
 
     public MappedParametersRunner( String st, Map<String,Value> params )
     {
         statement = st;
-        parameters = params;
+        parameters = Values.value(params);
     }
 
     @Override
@@ -54,7 +54,7 @@ public class MappedParametersRunner implements CypherStatementRunner
     }
 
     @Override
-    public ResultCursor result()
+    public StatementResult result()
     {
         return result;
     }

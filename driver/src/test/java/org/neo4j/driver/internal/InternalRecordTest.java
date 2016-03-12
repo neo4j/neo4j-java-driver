@@ -18,18 +18,17 @@
  */
 package org.neo4j.driver.internal;
 
+import org.junit.Test;
+
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
-import org.junit.Test;
-
 import org.neo4j.driver.internal.util.Extract;
 import org.neo4j.driver.internal.value.NullValue;
-import org.neo4j.driver.v1.Function;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.util.Function;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -37,7 +36,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.driver.v1.Values.value;
 
 public class InternalRecordTest
@@ -119,12 +117,12 @@ public class InternalRecordTest
         InternalRecord record = createRecord();
 
         // WHEN
-        Map<String,Value> map = record.asMap();
+        Map<String,Object> map = record.asMap();
 
         // THEN
         assertThat( map.keySet(), containsInAnyOrder( "k1", "k2" ) );
-        assertThat( map.get( "k1" ), equalTo( value( 0 ) ) );
-        assertThat( map.get( "k2" ), equalTo( value( 1 ) ) );
+        assertThat( map.get( "k1" ), equalTo( (Object)0L ) );
+        assertThat( map.get( "k2" ), equalTo( (Object)1L ) );
     }
 
     @Test
@@ -155,7 +153,7 @@ public class InternalRecordTest
     {
         InternalRecord record = createRecord();
 
-        assertThat( record.toString(), equalTo( "Record<{k1: 0 :: INTEGER, k2: 1 :: INTEGER}>" ) );
+        assertThat( record.toString(), equalTo( "Record<{k1: 0, k2: 1}>" ) );
     }
 
 

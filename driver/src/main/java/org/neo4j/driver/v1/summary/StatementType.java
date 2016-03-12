@@ -16,23 +16,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1;
+package org.neo4j.driver.v1.summary;
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Inherited;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import org.neo4j.driver.v1.exceptions.ClientException;
 
 /**
- * Indicates that instances of the annotated class or of its subclasses are immutable, i.e.
- * do not provide any means of mutating their state
+ * The type of statement executed.
+ * @since 1.0
  */
-@Inherited
-@Retention(RetentionPolicy.RUNTIME)
-@Documented
-@Target( { ElementType.TYPE } )
-public @interface Immutable
+public enum StatementType
 {
+    READ_ONLY,
+    READ_WRITE,
+    WRITE_ONLY,
+    SCHEMA_WRITE;
+
+    public static StatementType fromCode( String type )
+    {
+        switch ( type )
+        {
+        case "r":
+            return StatementType.READ_ONLY;
+        case "rw":
+            return StatementType.READ_WRITE;
+        case "w":
+            return StatementType.WRITE_ONLY;
+        case "s":
+            return StatementType.SCHEMA_WRITE;
+        default:
+            throw new ClientException( "Unknown statement type: `" + type + "`." );
+        }
+    }
 }

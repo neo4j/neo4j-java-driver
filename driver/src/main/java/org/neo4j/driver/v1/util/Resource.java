@@ -16,25 +16,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1;
+package org.neo4j.driver.v1.util;
 
 /**
- * Immutable pair of a key and a value
+ * A Resource is an {@link AutoCloseable} that allows introspecting if it
+ * already has been closed through its {@link #isOpen()} method.
  *
- * @see MapAccessor
- * @see RecordAccessor
- * @param <V> the Java type of the contained value
+ * Additionally, calling {@link AutoCloseable#close()} twice is expected to fail
+ * (i.e. is not idempotent).
+ * @since 1.0
  */
-@Immutable
-public interface Pair<K, V>
+public interface Resource extends AutoCloseable
 {
     /**
-     * @return the property key
+     * Detect whether this resource is still open
+     *
+     * @return true if the resource is open
      */
-    K key();
+    boolean isOpen();
 
     /**
-     * @return the property value
+     * @throws IllegalStateException if already closed
      */
-    V value();
+    @Override
+    void close();
 }

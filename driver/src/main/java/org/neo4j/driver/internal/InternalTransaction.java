@@ -24,13 +24,17 @@ import java.util.Map;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.StreamCollector;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
-import org.neo4j.driver.v1.ResultCursor;
+import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
+import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
-import org.neo4j.driver.v1.TypeSystem;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
+import org.neo4j.driver.v1.types.TypeSystem;
+
+import static org.neo4j.driver.v1.Values.ofValue;
 
 public class InternalTransaction implements Transaction
 {
@@ -124,14 +128,41 @@ public class InternalTransaction implements Transaction
 
     @Override
     @SuppressWarnings( "unchecked" )
-    public ResultCursor run( String statementText, Map<String,Value> statementParameters )
+    public StatementResult run( String statementText, Value statementParameters )
+    {
+        return run( new Statement( statementText, statementParameters ) );
+    }
+
+    @Override
+    public StatementResult run( String statementText )
+    {
+        return run( statementText, Values.EmptyMap );
+    }
+
+    @Override
+    public StatementResult run( String statementText, Map<String,Object> statementParameters )
+    {
+        return run( statementText, Values.value( statementParameters ) );
+    }
+
+    @Override
+    public StatementResult run( String statementTemplate, Record statementParameters )
+    {
+        // TODO: This conversion to map here is pointless, it gets converted right back
+        return run( statementTemplate, statementParameters.asMap() );
+    }
+
+    @Override
+    public StatementResult run( Statement statement )
     {
         ensureNotFailed();
 
         try
         {
-            InternalResultCursor cursor = new InternalResultCursor( conn, statementText, statementParameters );
-            conn.run( statementText, statementParameters, cursor.runResponseCollector() );
+            InternalStatementResult cursor = new InternalStatementResult( conn, statement );
+            conn.run( statement.text(),
+                    statement.parameters().asMap( ofValue() ),
+                    cursor.runResponseCollector() );
             conn.pullAll( cursor.pullAllResponseCollector() );
             conn.flush();
             return cursor;
@@ -141,18 +172,6 @@ public class InternalTransaction implements Transaction
             state = State.FAILED;
             throw e;
         }
-    }
-
-    @Override
-    public ResultCursor run( String statementTemplate )
-    {
-        return run( statementTemplate, ParameterSupport.NO_PARAMETERS );
-    }
-
-    @Override
-    public ResultCursor run( Statement statement )
-    {
-        return run( statement.template(), statement.parameters() );
     }
 
     @Override

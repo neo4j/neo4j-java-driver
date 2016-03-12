@@ -18,9 +18,7 @@
  */
 package org.neo4j.driver.internal.summary;
 
-import org.hamcrest.Matchers;
 import org.junit.Test;
-import org.mockito.internal.matchers.Null;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -28,8 +26,8 @@ import java.util.Map;
 import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.internal.value.StringValue;
-import org.neo4j.driver.v1.InputPosition;
-import org.neo4j.driver.v1.Notification;
+import org.neo4j.driver.v1.summary.InputPosition;
+import org.neo4j.driver.v1.summary.Notification;
 import org.neo4j.driver.v1.Value;
 
 import static org.hamcrest.CoreMatchers.equalTo;

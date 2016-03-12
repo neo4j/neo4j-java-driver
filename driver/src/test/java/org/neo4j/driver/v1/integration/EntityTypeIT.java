@@ -21,13 +21,14 @@ package org.neo4j.driver.v1.integration;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.driver.v1.Node;
-import org.neo4j.driver.v1.Path;
-import org.neo4j.driver.v1.Relationship;
-import org.neo4j.driver.v1.ResultCursor;
+import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
+import org.neo4j.driver.v1.types.Node;
+import org.neo4j.driver.v1.types.Path;
+import org.neo4j.driver.v1.types.Relationship;
 
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
 
 public class EntityTypeIT
 {
@@ -38,44 +39,42 @@ public class EntityTypeIT
     public void shouldReturnIdentitiesOfNodes() throws Throwable
     {
         // When
-        ResultCursor cursor = session.run( "CREATE (n) RETURN n" );
+        StatementResult cursor = session.run( "CREATE (n) RETURN n" );
         Node node = cursor.single().get( "n" ).asNode();
 
         // Then
-        assertTrue( node.identity().toString(), node.identity().toString().matches( "#\\d+" ) );
+        assertThat( node.id(), greaterThan(-1L));
     }
 
     @Test
     public void shouldReturnIdentitiesOfRelationships() throws Throwable
     {
         // When
-        ResultCursor cursor = session.run( "CREATE ()-[r:T]->() RETURN r" );
+        StatementResult cursor = session.run( "CREATE ()-[r:T]->() RETURN r" );
         Relationship rel = cursor.single().get( "r" ).asRelationship();
 
         // Then
-        assertTrue( rel.start().toString(), rel.start().toString().matches( "#\\d+" ) );
-        assertTrue( rel.end().toString(), rel.end().toString().matches( "#\\d+" ) );
-        assertTrue( rel.identity().toString(), rel.identity().toString().matches( "#\\d+" ) );
+        assertThat( rel.startNodeId(), greaterThan(-1L));
+        assertThat( rel.endNodeId(), greaterThan(-1L));
+        assertThat( rel.id(), greaterThan(-1L));
     }
 
     @Test
     public void shouldReturnIdentitiesOfPaths() throws Throwable
     {
         // When
-        ResultCursor cursor = session.run( "CREATE p=()-[r:T]->() RETURN p" );
+        StatementResult cursor = session.run( "CREATE p=()-[r:T]->() RETURN p" );
         Path path = cursor.single().get( "p" ).asPath();
 
         // Then
-        assertTrue( path.start().identity().toString(), path.start().identity().toString().matches( "#\\d+" ) );
-        assertTrue( path.end().identity().toString(), path.end().identity().toString().matches( "#\\d+" ) );
+        assertThat( path.start().id(), greaterThan( -1L ));
+        assertThat( path.end().id(), greaterThan( -1L ));
 
         Path.Segment segment = path.iterator().next();
 
-        assertTrue( segment.start().identity().toString(),
-                segment.start().identity().toString().matches( "#\\d+" ) );
-        assertTrue( segment.relationship().identity().toString(),
-                segment.relationship().identity().toString().matches( "#\\d+" ) );
-        assertTrue( segment.end().identity().toString(), segment.end().identity().toString().matches( "#\\d+" ) );
+        assertThat( segment.start().id(), greaterThan( -1L ));
+        assertThat( segment.relationship().id(), greaterThan( -1L ));
+        assertThat( segment.end().id(), greaterThan( -1L ));
     }
 
 }

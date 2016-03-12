@@ -16,21 +16,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1;
+package org.neo4j.driver.v1.summary;
+
+import org.neo4j.driver.v1.util.Immutable;
 
 /**
- * Same as {@link java.util.function.Function}, but defined here to work in versions older than java 8.
- *
- * @param <T> the input to the function
- * @param <R> the output to the function
+ * An input position refers to a specific character in a statement.
+ * @since 1.0
  */
-public interface Function<T, R>
+@Immutable
+public interface InputPosition
 {
     /**
-     * Applies this function to the given argument.
+     * The character offset referred to by this position; offset numbers start at 0.
      *
-     * @param t the function argument
-     * @return the function result
+     * @return the offset of this position.
      */
-    R apply(T t);
+    int offset();
+
+    /**
+     * The line number referred to by the position; line numbers start at 1.
+     *
+     * @return the line number of this position.
+     */
+    int line();
+
+    /**
+     * The column number referred to by the position; column numbers start at 1.
+     *
+     * @return the column number of this position.
+     */
+    int column();
 }

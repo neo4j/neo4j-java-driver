@@ -20,7 +20,6 @@ package org.neo4j.driver.v1.stress;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -29,8 +28,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
-import org.neo4j.driver.v1.ResultCursor;
 import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.util.Neo4jRunner;
 import org.neo4j.driver.v1.util.Neo4jSettings;
@@ -73,14 +72,14 @@ public class DriverStresser
 
         public int operation()
         {
-            String statement = "RETURN 1 AS n";                   // = "CREATE (a {name:{n}}) RETURN a.name";
-            Map<String,Value> parameters = parameters();          // = Values.parameters( "n", "Bob" );
+            String statement = "RETURN 1 AS n";       // = "CREATE (a {name:{n}}) RETURN a.name";
+            Value parameters = parameters();          // = Values.parameters( "n", "Bob" );
 
             int total = 0;
-            ResultCursor result = session.run( statement, parameters );
-            while ( result.next() )
+            StatementResult result = session.run( statement, parameters );
+            while ( result.hasNext() )
             {
-                total += result.get( "n" ).asInt();
+                total += result.next().get( "n" ).asInt();
             }
             return total;
         }

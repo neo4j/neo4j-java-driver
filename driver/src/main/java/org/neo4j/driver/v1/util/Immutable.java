@@ -16,34 +16,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1;
+package org.neo4j.driver.v1.util;
 
-@Immutable @Experimental
-public interface TypeSystem
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+/**
+ * Indicates that instances of the annotated class or of its subclasses are immutable, i.e.
+ * do not provide any means of mutating their state
+ * @since 1.0
+ */
+@Inherited
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+@Target( { ElementType.TYPE } )
+public @interface Immutable
 {
-    Type ANY();
-
-    Type BOOLEAN();
-
-    Type STRING();
-
-    Type NUMBER();
-
-    Type INTEGER();
-
-    Type FLOAT();
-
-    Type LIST();
-
-    Type MAP();
-
-    Type IDENTITY();
-
-    Type NODE();
-
-    Type RELATIONSHIP();
-
-    Type PATH();
-
-    Type NULL();
 }

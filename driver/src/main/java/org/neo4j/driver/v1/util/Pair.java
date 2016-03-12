@@ -16,26 +16,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1;
-
-import java.util.List;
+package org.neo4j.driver.v1.util;
 
 /**
- * This is the same as a regular {@link Plan} - except this plan has been executed, meaning it also contains detailed information about how much work each
- * step of the plan incurred on the database.
+ * Immutable pair of a key and a value
+ *
+ * @param <V> the Java type of the contained value
+ * @since 1.0
  */
-public interface ProfiledPlan extends Plan
+@Immutable
+public interface Pair<K, V>
 {
     /**
-     * @return the number of times this part of the plan touched the underlying data stores
+     * @return the property key
      */
-    long dbHits();
+    K key();
 
     /**
-     * @return the number of records this part of the plan produced
+     * @return the property value
      */
-    long records();
-
-    @Override
-    List<ProfiledPlan> children();
+    V value();
 }

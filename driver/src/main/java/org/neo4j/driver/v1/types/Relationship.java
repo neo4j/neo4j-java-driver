@@ -16,13 +16,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1;
+package org.neo4j.driver.v1.types;
 
 /**
  * The <strong>Relationship</strong> interface describes the characteristics of a relationship from a Neo4j graph.
+ * @since 1.0
  */
-public interface Relationship extends Directed<Identity>, Entity
+public interface Relationship extends Entity
 {
+    /**
+     * Id of the node where this relationship starts.
+     * @return the node id
+     */
+    long startNodeId();
+
+    /**
+     * Id of the node where this relationship ends.
+     * @return the node id
+     */
+    long endNodeId();
+
     /**
      * Return the <em>type</em> of this relationship.
      *

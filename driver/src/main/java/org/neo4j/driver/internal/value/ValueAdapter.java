@@ -23,24 +23,22 @@ import java.util.Map;
 
 import org.neo4j.driver.internal.types.TypeConstructor;
 import org.neo4j.driver.internal.types.TypeRepresentation;
-import org.neo4j.driver.internal.util.Extract;
-import org.neo4j.driver.v1.Entity;
-import org.neo4j.driver.v1.Function;
-import org.neo4j.driver.v1.Identity;
-import org.neo4j.driver.v1.Node;
-import org.neo4j.driver.v1.Pair;
-import org.neo4j.driver.v1.Path;
-import org.neo4j.driver.v1.Relationship;
-import org.neo4j.driver.v1.Type;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.value.NotMultiValued;
 import org.neo4j.driver.v1.exceptions.value.Uncoercible;
 import org.neo4j.driver.v1.exceptions.value.Unsizable;
+import org.neo4j.driver.v1.types.Entity;
+import org.neo4j.driver.v1.types.Node;
+import org.neo4j.driver.v1.types.Path;
+import org.neo4j.driver.v1.types.Relationship;
+import org.neo4j.driver.v1.types.Type;
+import org.neo4j.driver.v1.util.Function;
 
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
 import static org.neo4j.driver.internal.value.InternalValue.Format.VALUE_ONLY;
-import static org.neo4j.driver.v1.Values.valueAsIs;
+import static org.neo4j.driver.v1.Values.ofValue;
+import static org.neo4j.driver.v1.Values.ofObject;
 
 public abstract class ValueAdapter implements InternalValue
 {
@@ -74,6 +72,7 @@ public abstract class ValueAdapter implements InternalValue
         return false;
     }
 
+    @Override
     public boolean containsKey( String key )
     {
         throw new NotMultiValued( type().name() + " is not a keyed collection" );
@@ -102,16 +101,6 @@ public abstract class ValueAdapter implements InternalValue
         throw new Uncoercible( type().name(), "Java int" );
     }
 
-    public short asShort()
-    {
-        throw new Uncoercible( type().name(), "Java short" );
-    }
-
-    public byte asByte()
-    {
-        throw new Uncoercible( type().name(), "Java byte" );
-    }
-
     @Override
     public float asFloat()
     {
@@ -131,9 +120,9 @@ public abstract class ValueAdapter implements InternalValue
     }
 
     @Override
-    public List<Value> asList()
+    public List<Object> asList()
     {
-        return asList( valueAsIs() );
+        return asList( ofObject() );
     }
 
     @Override
@@ -143,9 +132,9 @@ public abstract class ValueAdapter implements InternalValue
     }
 
     @Override
-    public Map<String,Value> asMap()
+    public Map<String,Object> asMap()
     {
-        return asMap( valueAsIs() );
+        return asMap( ofObject() );
     }
 
     @Override
@@ -164,12 +153,6 @@ public abstract class ValueAdapter implements InternalValue
     public Number asNumber()
     {
         throw new Uncoercible( type().name(), "Java Number" );
-    }
-
-    @Override
-    public Identity asIdentity()
-    {
-        throw new Uncoercible( type().name(), "Identity" );
     }
 
     @Override
@@ -229,25 +212,13 @@ public abstract class ValueAdapter implements InternalValue
     @Override
     public Iterable<Value> values()
     {
-        return values( valueAsIs() );
+        return values( ofValue() );
     }
 
     @Override
     public <T> Iterable<T> values( Function<Value,T> mapFunction )
     {
         throw new NotMultiValued( type().name() + " is not iterable" );
-    }
-
-    @Override
-    public Iterable<Pair<String, Value>> properties()
-    {
-        return properties( valueAsIs() );
-    }
-
-    @Override
-    public <V> Iterable<Pair<String, V>> properties( final Function<Value, V> mapFunction )
-    {
-        return Extract.properties( this, mapFunction );
     }
 
     public String toString()

@@ -19,10 +19,10 @@
 package org.neo4j.driver.internal.util;
 
 import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
 
-import org.neo4j.driver.internal.InternalPair;
-import org.neo4j.driver.v1.Function;
-import org.neo4j.driver.v1.Pair;
+import org.neo4j.driver.v1.util.Function;
 
 public abstract class Format
 {
@@ -32,29 +32,28 @@ public abstract class Format
     }
 
     public static <V> String formatPairs( Function<V, String> printValue,
-                                          int propertyCount,
-                                          Iterable<Pair<String, V>> Entries )
+                                          Map<String, V> entries )
     {
-        switch ( propertyCount ) {
+        Iterator<Entry<String,V>> iterator = entries.entrySet().iterator();
+        switch ( entries.size() ) {
             case 0:
                 return "{}";
 
             case 1:
             {
-                return String.format( "{%s}", internalPair( Entries.iterator().next() ).toString( printValue ) );
+                return String.format( "{%s}", keyValueString( iterator.next(), printValue ) );
             }
 
             default:
             {
                 StringBuilder builder = new StringBuilder();
                 builder.append( "{" );
-                Iterator<Pair<String, V>> iterator = Entries.iterator();
-                builder.append( internalPair( iterator.next() ).toString( printValue ) );
+                builder.append( keyValueString( iterator.next(), printValue ) );
                 while ( iterator.hasNext() )
                 {
                     builder.append( ',' );
                     builder.append( ' ' );
-                    builder.append( internalPair( iterator.next() ).toString( printValue ) );
+                    builder.append( keyValueString( iterator.next(), printValue ) );
                 }
                 builder.append( "}" );
                 return builder.toString();
@@ -62,10 +61,9 @@ public abstract class Format
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private static <V> InternalPair<String, V> internalPair( Pair<String, V> property )
+    private static <V> String keyValueString( Entry<String, V> entry, Function<V, String> printValue )
     {
-        return (InternalPair<String, V>) property;
+        return String.format("%s: %s", entry.getKey(), printValue.apply( entry.getValue() ));
     }
 
     public static <V> String formatElements( Function<V, String> printValue, V[] elements )

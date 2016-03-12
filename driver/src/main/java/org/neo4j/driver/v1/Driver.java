@@ -44,11 +44,11 @@ import java.net.URI;
  * }
  *
  * // Retrieve results
- * ResultCursor cursor = session.run( "MATCH (n) RETURN n.name" );
+ * StatementResult result = session.run( "MATCH (n) RETURN n.name" );
  * List<String> names = new LinkedList<>();
- * while( cursor.next() )
+ * while( result.hasNext() )
  * {
- *     names.add( cursor.get("n.name").asString() );
+ *     names.add( result.next().get("n.name").asString() );
  * }
  *
  * // Sessions are pooled, to avoid the overhead of creating new connections - this means
@@ -65,6 +65,7 @@ import java.net.URI;
  * A driver maintains a connection pool for each Neo4j instance. For resource efficiency reasons you are encouraged
  * to use the same driver instance across your application. You can control the connection pooling behavior when you
  * create the driver using the {@link Config} you pass into {@link GraphDatabase#driver(URI, Config)}.
+ * @since 1.0
  */
 public interface Driver extends AutoCloseable
 {

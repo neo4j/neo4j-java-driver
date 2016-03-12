@@ -18,22 +18,22 @@
  */
 package org.neo4j.driver.v1.integration;
 
-import java.util.List;
-import java.util.Map;
-
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.driver.v1.Notification;
-import org.neo4j.driver.v1.Plan;
-import org.neo4j.driver.v1.ProfiledPlan;
-import org.neo4j.driver.v1.ResultCursor;
-import org.neo4j.driver.v1.ResultSummary;
-import org.neo4j.driver.v1.StatementType;
+import java.util.List;
+
+import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
+import org.neo4j.driver.v1.summary.Notification;
+import org.neo4j.driver.v1.summary.Plan;
+import org.neo4j.driver.v1.summary.ProfiledPlan;
+import org.neo4j.driver.v1.summary.ResultSummary;
+import org.neo4j.driver.v1.summary.StatementType;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.notNullValue;
@@ -52,22 +52,22 @@ public class SummaryIT
     public void shouldContainBasicMetadata() throws Throwable
     {
         // Given
-        Map<String, Value> statementParameters = Values.parameters( "limit", 10 );
+        Value statementParameters = Values.parameters( "limit", 10 );
         String statementText = "UNWIND [1, 2, 3, 4] AS n RETURN n AS number LIMIT {limit}";
 
         // When
-        ResultCursor result = session.run( statementText, statementParameters );
+        StatementResult result = session.run( statementText, statementParameters );
 
         // Then
-        assertTrue( result.next() );
+        assertTrue( result.hasNext() );
 
         // When
         ResultSummary summary = result.summarize();
 
         // Then
-        assertFalse( result.next() );
+        assertFalse( result.hasNext() );
         assertThat( summary.statementType(), equalTo( StatementType.READ_ONLY ) );
-        assertThat( summary.statement().template(), equalTo( statementText ) );
+        assertThat( summary.statement().text(), equalTo( statementText ) );
         assertThat( summary.statement().parameters(), equalTo( statementParameters ) );
         assertFalse( summary.hasPlan() );
         assertFalse( summary.hasProfile() );
@@ -148,7 +148,7 @@ public class SummaryIT
         assertNotNull( notifications );
         assertThat( notifications.size(), equalTo( 1 ) );
 
-        assertThat( notifications.get( 0 ).toString(), equalTo("code=Neo.ClientNotification.Statement.CartesianProduct, title=This query builds a cartesian product between disconnected patterns., description=If a part of a query contains multiple disconnected patterns, this will build a cartesian product between all those parts. This may produce a large amount of data and slow down query processing. While occasionally intended, it may often be possible to reformulate the query that avoids the use of this cross product, perhaps by adding a relationship between the different parts or by using OPTIONAL MATCH (identifier is: (m)), position={offset=0, line=1, column=1}") );
+        assertThat( notifications.get( 0 ).toString(), containsString("CartesianProduct") );
 
     }
 }

@@ -16,24 +16,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1;
+package org.neo4j.driver.v1.types;
+
+import org.neo4j.driver.v1.util.Experimental;
+import org.neo4j.driver.v1.util.Immutable;
 
 /**
- * The type of a {@link Value} as defined by the Cypher language
+ * A listing of all database types this driver can handle.
+ * @since 1.0
  */
-@Immutable @Experimental
-public interface Type
+@Immutable
+@Experimental
+public interface TypeSystem
 {
-    /**
-     * @return the name of the Cypher type (as defined by Cypher)
-     */
-    String name();
+    Type ANY();
 
-    /**
-     * Test if the given value has this type
-     *
-     * @param value the value
-     * @return <tt>true</tt> if the value is a value of this type otherwise <tt>false</tt>
-     */
-    boolean isTypeOf( Value value );
+    Type BOOLEAN();
+
+    Type STRING();
+
+    Type NUMBER();
+
+    Type INTEGER();
+
+    Type FLOAT();
+
+    Type LIST();
+
+    Type MAP();
+
+    Type NODE();
+
+    Type RELATIONSHIP();
+
+    Type PATH();
+
+    Type NULL();
 }

@@ -20,6 +20,9 @@ package org.neo4j.driver.v1.exceptions.value;
 
 import org.neo4j.driver.v1.exceptions.ClientException;
 
+/**
+ * @since 1.0
+ */
 public class ValueException extends ClientException
 {
     private static final long serialVersionUID = -1269336313727174998L;

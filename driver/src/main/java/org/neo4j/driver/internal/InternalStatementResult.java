@@ -22,32 +22,30 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Queue;
 
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.StreamCollector;
 import org.neo4j.driver.internal.summary.SummaryBuilder;
-import org.neo4j.driver.v1.Function;
-import org.neo4j.driver.v1.Notification;
-import org.neo4j.driver.v1.Plan;
-import org.neo4j.driver.v1.ProfiledPlan;
 import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.RecordAccessor;
-import org.neo4j.driver.v1.ResultCursor;
-import org.neo4j.driver.v1.ResultSummary;
 import org.neo4j.driver.v1.Statement;
-import org.neo4j.driver.v1.StatementType;
-import org.neo4j.driver.v1.UpdateStatistics;
+import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
+import org.neo4j.driver.v1.summary.Notification;
+import org.neo4j.driver.v1.summary.Plan;
+import org.neo4j.driver.v1.summary.ProfiledPlan;
+import org.neo4j.driver.v1.summary.ResultSummary;
+import org.neo4j.driver.v1.summary.StatementType;
+import org.neo4j.driver.v1.summary.UpdateStatistics;
+import org.neo4j.driver.v1.util.Function;
+import org.neo4j.driver.v1.util.Functions;
 
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
-import static org.neo4j.driver.v1.Records.recordAsIs;
 
-public class InternalResultCursor extends InternalRecordAccessor implements ResultCursor
+public class InternalStatementResult implements StatementResult
 {
     private final Connection connection;
     private final StreamCollector runResponseCollector;
@@ -58,16 +56,14 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
     private ResultSummary summary = null;
 
     private boolean open = true;
-    private Record current = null;
     private long position = -1;
-    private long limit = -1;
     private boolean done = false;
 
-    public InternalResultCursor( Connection connection, String statement, Map<String,Value> parameters )
+    public InternalStatementResult( Connection connection, Statement statement )
     {
         this.connection = connection;
         this.runResponseCollector = newRunResponseCollector();
-        this.pullAllResponseCollector = newPullAllResponseCollector( new Statement( statement, parameters ) );
+        this.pullAllResponseCollector = newPullAllResponseCollector( statement );
     }
 
     private StreamCollector newRunResponseCollector()
@@ -172,33 +168,6 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
     }
 
     @Override
-    public boolean isOpen()
-    {
-        return open;
-    }
-
-    public Value get( int index )
-    {
-        return record().get( index );
-    }
-
-    public Value get( String key )
-    {
-        return record().get( key );
-    }
-
-    @Override
-    public boolean containsKey( String key )
-    {
-        return keys.contains( key );
-    }
-
-    @Override
-    public int index( String key )
-    {
-        return record().index( key );
-    }
-
     public List<String> keys()
     {
         tryFetching();
@@ -206,71 +175,42 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
     }
 
     @Override
-    public int size()
+    public boolean hasNext()
     {
-        return keys().size();
-    }
-
-    @Override
-    public Record record()
-    {
-        if ( current != null )
-        {
-            return current;
-        }
-        else
-        {
-            throw new NoSuchRecordException(
-                    "In order to access the fields of a record in a result, " +
-                            "you must first call next() to point the result to the next record in the result stream."
-            );
-        }
-    }
-
-    @Override
-    public long position()
-    {
-        assertOpen();
-        return position;
-    }
-
-    @Override
-    public boolean atEnd()
-    {
-        assertOpen();
         if (!recordBuffer.isEmpty())
         {
-            return false;
+            return true;
         }
         else if (done)
         {
-            return true;
+            return false;
         }
         else
         {
             tryFetching();
-            return recordBuffer.isEmpty() && done;
+            return hasNext();
         }
     }
 
     @Override
-    public boolean next()
+    public Record next()
     {
+        // Implementation note:
+        // We've chosen to use Iterator<Record> over a cursor-based version,
+        // after tests show escape analysis will eliminate short-lived allocations
+        // in a way that makes the two equivalent in performance.
+        // To get the intended benefit, we need to allocate Record in this method,
+        // and have it copy out its fields from some lower level data structure.
         assertOpen();
         Record nextRecord = recordBuffer.poll();
         if ( nextRecord != null )
         {
-            current = nextRecord;
             position += 1;
-            if ( position == limit )
-            {
-                discard();
-            }
-            return true;
+            return nextRecord;
         }
         else if ( done )
         {
-            return false;
+            return null;
         }
         else
         {
@@ -280,99 +220,29 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
     }
 
     @Override
-    public long skip( long elements )
+    public Record single()
     {
-        if ( elements < 0 )
+        if( position > 0 )
         {
-            throw new ClientException( "Cannot skip negative number of elements" );
-        }
-        else
-        {
-            int skipped = 0;
-            while ( skipped < elements && next() )
-            {
-                skipped += 1;
-            }
-            return skipped;
-        }
-    }
-
-    @Override
-    public long limit( long records )
-    {
-        if ( records < 0 )
-        {
-            throw new ClientException( "Cannot limit negative number of elements" );
-        }
-        else if ( records == 0)
-        {
-            this.limit = position;
-            discard();
-        } else
-        {
-            this.limit = records + position;
-        }
-        return this.limit;
-    }
-
-    @Override
-    public Record first()
-    {
-        if( position() >= 1 )
-        {
-            throw new NoSuchRecordException( "Cannot retrieve the first record, because this result cursor has been moved already. " +
+            throw new NoSuchRecordException(
+                    "Cannot retrieve the first record, because other operations have already used the first record. " +
                     "Please ensure you are not calling `first` multiple times, or are mixing it with calls " +
                     "to `next`, `single`, `list` or any other method that changes the position of the cursor." );
         }
 
-        if( position == 0 )
-        {
-            return record();
-        }
-
-        if( !next() )
+        if( !hasNext() )
         {
             throw new NoSuchRecordException( "Cannot retrieve the first record, because this result is empty." );
         }
-        return record();
-    }
 
-
-    @Override
-    public Value first(String fieldName) throws NoSuchRecordException
-    {
-        return first().get( fieldName );
-    }
-
-    @Override
-    public Value first(int index) throws NoSuchRecordException
-    {
-        return first().get( index );
-    }
-
-    @Override
-    public Record single()
-    {
-        Record first = first();
-        if( !atEnd() )
+        Record first = next();
+        if( hasNext() )
         {
             throw new NoSuchRecordException( "Expected a result with a single record, but this result contains at least one more. " +
                     "Ensure your query returns only one record, or use `first` instead of `single` if " +
                     "you do not care about the number of records in the result." );
         }
         return first;
-    }
-
-    @Override
-    public Value single( String fieldName ) throws NoSuchRecordException
-    {
-        return single().get( fieldName );
-    }
-
-    @Override
-    public Value single( int index ) throws NoSuchRecordException
-    {
-        return single().get( index );
     }
 
     @Override
@@ -398,25 +268,26 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
     @Override
     public List<Record> list()
     {
-        return list( recordAsIs() );
+        return list( Functions.<Record>identity() );
     }
 
     @Override
-    public <T> List<T> list( Function<RecordAccessor, T> mapFunction )
+    public <T> List<T> list( Function<Record, T> mapFunction )
     {
         if ( isEmpty() )
         {
             assertOpen();
             return emptyList();
         }
-        else if ( position == 0 || ( position == -1 && next() ) )
+        else if ( position == -1 && hasNext() )
         {
             List<T> result = new ArrayList<>();
             do
             {
-                result.add( mapFunction.apply( this ) );
+                result.add( mapFunction.apply( next() ) );
             }
-            while ( next() );
+            while ( hasNext() );
+
             discard();
             return result;
         }
@@ -432,29 +303,37 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
     @Override
     public ResultSummary summarize()
     {
-        while ( next() ) ;
+        discard();
         return summary;
     }
 
     @Override
-    public void close()
+    public void remove()
     {
-        if ( open )
+        throw new ClientException( "Removing records from a result is not supported." );
+    }
+
+    @Override
+    public void discard()
+    {
+        if(!open)
         {
-            discard();
-            open = false;
+            return;
         }
-        else
+
+        while ( !done )
         {
-            throw new ClientException( "Already closed" );
+            connection.receiveOne();
         }
+        recordBuffer.clear();
+        open = false;
     }
 
     private void assertOpen()
     {
         if ( !open )
         {
-            throw new ClientException( "Cursor already closed" );
+            throw new ClientException( "Result has been closed" );
         }
     }
 
@@ -462,16 +341,6 @@ public class InternalResultCursor extends InternalRecordAccessor implements Resu
     {
         tryFetching();
         return position == -1 && recordBuffer.isEmpty() && done;
-    }
-
-    private void discard()
-    {
-        assertOpen();
-        while ( !done )
-        {
-            connection.receiveOne();
-        }
-        recordBuffer.clear();
     }
 
     private void tryFetching()

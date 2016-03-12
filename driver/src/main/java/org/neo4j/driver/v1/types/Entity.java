@@ -16,20 +16,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1;
+package org.neo4j.driver.v1.types;
+
+import org.neo4j.driver.v1.util.Immutable;
 
 /**
- * An item that can be considered to have <em>direction</em>.
- * This is represented by the presence of <strong>start</strong> and <strong>end</strong> attributes.
- *
- * @param <T> the type of the objects at the start and end of this directed item
+ * A uniquely identifiable property container that can form part of a Neo4j graph.
+ * @since 1.0
  */
 @Immutable
-public interface Directed<T>
+public interface Entity extends MapAccessor
 {
-    /** @return the start item from this directed sequence */
-    T start();
-
-    /** @return the end item from this directed sequence */
-    T end();
+    /**
+     * A unique id for this Entity. Ids are guaranteed to remain stable for the duration of the session they
+     * were found in, but may be re-used for other entities after that. As such, if you want a public identity to use
+     * for your entities, attaching an explicit 'id' property or similar persistent and unique identifier is a better
+     * choice.
+     *
+     * @return the id of this entity
+     */
+    long id();
 }

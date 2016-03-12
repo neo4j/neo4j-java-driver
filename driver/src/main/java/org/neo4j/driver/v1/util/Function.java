@@ -16,21 +16,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1;
+package org.neo4j.driver.v1.util;
 
 /**
- * A uniquely identifiable property container that can form part of a Neo4j graph.
+ * Same as {@link java.util.function.Function}, but defined here to work in versions older than java 8.
+ *
+ * @param <T> the input to the function
+ * @param <R> the output to the function
+ * @since 1.0
  */
-@Immutable
-public interface Entity extends MapAccessor
+public interface Function<T, R>
 {
     /**
-     * A unique {@link Identity identity} for this Entity. Identities are guaranteed
-     * to remain stable for the duration of the session they were found in, but may be re-used for other
-     * entities after that. As such, if you want a public identity to use for your entities, attaching
-     * an explicit 'id' property or similar persistent and unique identifier is a better choice.
+     * Applies this function to the given argument.
      *
-     * @return an identity object
+     * @param t the function argument
+     * @return the function result
      */
-    Identity identity();
+    R apply(T t);
 }

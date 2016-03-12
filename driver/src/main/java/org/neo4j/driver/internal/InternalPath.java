@@ -25,10 +25,10 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.driver.internal.value.PathValue;
-import org.neo4j.driver.v1.Entity;
-import org.neo4j.driver.v1.Node;
-import org.neo4j.driver.v1.Path;
-import org.neo4j.driver.v1.Relationship;
+import org.neo4j.driver.v1.types.Entity;
+import org.neo4j.driver.v1.types.Node;
+import org.neo4j.driver.v1.types.Path;
+import org.neo4j.driver.v1.types.Relationship;
 import org.neo4j.driver.v1.Value;
 
 /**
@@ -96,15 +96,15 @@ public class InternalPath implements Path, AsValue
         @Override
         public String toString()
         {
-            return String.format( relationship.start().equals( start.identity() ) ?
+            return String.format( relationship.startNodeId() == start.id() ?
                                   "(%s)-[%s:%s]->(%s)" : "(%s)<-[%s:%s]-(%s)",
-                    start.identity(), relationship.identity(), relationship.type(), end.identity() );
+                    start.id(), relationship.id(), relationship.type(), end.id() );
         }
     }
 
     private static boolean isEndpoint( Node node, Relationship relationship )
     {
-        return node.identity().equals( relationship.start() ) || node.identity().equals( relationship.end() );
+        return node.id() ==  relationship.startNodeId() || node.id() == relationship.endNodeId();
     }
 
     private final List<Node> nodes;

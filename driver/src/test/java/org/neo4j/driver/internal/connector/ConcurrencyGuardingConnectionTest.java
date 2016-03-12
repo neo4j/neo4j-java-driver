@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.v1.Function;
+import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static java.util.Arrays.asList;

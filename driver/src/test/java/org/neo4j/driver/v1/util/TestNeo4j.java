@@ -89,7 +89,7 @@ public class TestNeo4j implements TestRule
         // Note - this hangs for extended periods some times, because there are tests that leave sessions running.
         // Thus, we need to wait for open sessions and transactions to time out before this will go through.
         // This could be helped by an extension in the future.
-        session.run( "MATCH (n) DETACH DELETE n" ).close();
+        session.run( "MATCH (n) DETACH DELETE n" ).discard();
     }
 
     public void restartServerOnEmptyDatabase( Neo4jSettings neo4jSettings ) throws Exception

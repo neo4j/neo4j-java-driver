@@ -26,6 +26,7 @@ package org.neo4j.driver.v1;
  *
  * @see AuthTokens
  * @see GraphDatabase#driver(String, AuthToken)
+ * @since 1.0
  */
 public interface AuthToken
 {

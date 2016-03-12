@@ -23,6 +23,7 @@ import java.util.logging.Level;
 
 import org.neo4j.driver.internal.logging.JULogging;
 import org.neo4j.driver.internal.spi.Logging;
+import org.neo4j.driver.v1.util.Immutable;
 
 import static java.lang.System.getProperty;
 import static org.neo4j.driver.v1.Config.TrustStrategy.*;
@@ -39,6 +40,7 @@ import static org.neo4j.driver.v1.Config.TrustStrategy.*;
  *                  .toConfig();
  * }
  * </pre>
+ * @since 1.0
  */
 @Immutable
 public class Config

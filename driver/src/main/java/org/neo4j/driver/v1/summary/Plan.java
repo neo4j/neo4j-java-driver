@@ -16,10 +16,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1;
+package org.neo4j.driver.v1.summary;
 
 import java.util.List;
 import java.util.Map;
+
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.util.Immutable;
 
 /**
  * This describes the plan that the database planner produced and used (or will use) to execute your statement.
@@ -32,6 +35,7 @@ import java.util.Map;
  * a reference of the available operator types, and these may differ across Neo4j versions.
  *
  * For a simple view of a plan, the {@code toString} method will give a human-readable rendering of the tree.
+ * @since 1.0
  */
 @Immutable
 public interface Plan

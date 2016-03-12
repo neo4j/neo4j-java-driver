@@ -16,7 +16,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1;
+package org.neo4j.driver.v1.types;
+
+import org.neo4j.driver.v1.util.Immutable;
 
 /**
  * A <strong>Path</strong> is a directed sequence of relationships between two nodes. This generally
@@ -35,6 +37,7 @@ package org.neo4j.driver.v1;
  *
  *     }
  * </pre>
+ * @since 1.0
  */
 @Immutable
 public interface Path extends Iterable<Path.Segment>
@@ -49,10 +52,22 @@ public interface Path extends Iterable<Path.Segment>
      * Segment 2: (n2)<-[r2]-(n3)
      * }
      */
-    interface Segment extends Directed<Node>
+    interface Segment
     {
         /** @return the relationship underlying this path segment */
         Relationship relationship();
+
+        /**
+         * The node that this segment starts at.
+         * @return the start node
+         */
+        Node start();
+
+        /**
+         * The node that this segment ends at.
+         * @return the end node
+         */
+        Node end();
     }
 
     /** @return the start node of this path */

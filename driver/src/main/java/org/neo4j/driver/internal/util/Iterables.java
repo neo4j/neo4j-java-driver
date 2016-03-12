@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.neo4j.driver.v1.Function;
+import org.neo4j.driver.v1.util.Function;
 
 public class Iterables
 {

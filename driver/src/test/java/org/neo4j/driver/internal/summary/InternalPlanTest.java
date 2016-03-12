@@ -18,19 +18,19 @@
  */
 package org.neo4j.driver.internal.summary;
 
+import org.junit.Test;
+
 import java.util.Collections;
 import java.util.List;
 
-import org.junit.Test;
-
-import org.neo4j.driver.v1.Plan;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.summary.Plan;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.Values.value;
+import static org.neo4j.driver.v1.Values.ofValue;
 import static org.neo4j.driver.v1.Values.values;
 
 @SuppressWarnings("unchecked")
@@ -47,7 +47,7 @@ public class InternalPlanTest
 
         // Then
         assertThat( plan.operatorType(), equalTo( "X") );
-        assertThat( plan.arguments(), equalTo( parameters() ) );
+        assertThat( plan.arguments(), equalTo( parameters().asMap( ofValue()) ) );
         assertThat( plan.identifiers(), equalTo( Collections.<String>emptyList() ) );
         assertThat( (List<Plan>) plan.children(), equalTo( Collections.<Plan>emptyList() ) );
     }
@@ -68,7 +68,7 @@ public class InternalPlanTest
 
         // Then
         assertThat( plan.operatorType(), equalTo( "X") );
-        assertThat( plan.arguments(), equalTo( parameters( "a", 1 ) ) );
+        assertThat( plan.arguments(), equalTo( parameters( "a", 1 ).asMap( ofValue()) ) );
         assertThat( plan.identifiers(), equalTo( Collections.<String>emptyList() ) );
         assertThat( (List<Plan>) plan.children(), equalTo( Collections.<Plan>emptyList() ) );
     }
@@ -93,7 +93,7 @@ public class InternalPlanTest
 
         // Then
         assertThat( plan.operatorType(), equalTo( "X") );
-        assertThat( plan.arguments(), equalTo( parameters( "a", 1 ) ) );
+        assertThat( plan.arguments(), equalTo( parameters( "a", 1 ).asMap( ofValue() ) ) );
         assertThat( plan.identifiers(), equalTo( Collections.<String>emptyList() ) );
         List<? extends Plan> children = plan.children();
         assertThat( children.size(), equalTo( 1 ) );

@@ -20,6 +20,7 @@ package org.neo4j.driver.v1.exceptions;
 
 /**
  * This is the base class for all Neo4j exceptions.
+ * @since 1.0
  */
 public abstract class Neo4jException extends RuntimeException
 {

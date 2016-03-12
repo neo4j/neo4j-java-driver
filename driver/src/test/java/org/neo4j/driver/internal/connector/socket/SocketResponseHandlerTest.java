@@ -18,30 +18,27 @@
  */
 package org.neo4j.driver.internal.connector.socket;
 
-import java.util.Collections;
-import java.util.Map;
-
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Collections;
+import java.util.Map;
+
 import org.neo4j.driver.internal.spi.StreamCollector;
 import org.neo4j.driver.internal.summary.InternalUpdateStatistics;
-import org.neo4j.driver.v1.Plan;
-import org.neo4j.driver.v1.StatementType;
-import org.neo4j.driver.v1.UpdateStatistics;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.summary.Plan;
+import org.neo4j.driver.v1.summary.StatementType;
+import org.neo4j.driver.v1.summary.UpdateStatistics;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
-
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
-
 import static org.neo4j.driver.internal.summary.InternalPlan.plan;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.Values.value;
+import static org.neo4j.driver.v1.Values.ofValue;
 import static org.neo4j.driver.v1.Values.values;
 
 public class SocketResponseHandlerTest
@@ -74,7 +71,7 @@ public class SocketResponseHandlerTest
         // Given
         String[] fieldNames = new String[] { "name", "age", "income" };
         Value fields = value( fieldNames );
-        Map<String, Value> data = parameters( "fields", fields );
+        Map<String, Value> data = parameters( "fields", fields ).asMap( ofValue());
 
         // When
         handler.handleSuccessMessage( data );
@@ -93,7 +90,7 @@ public class SocketResponseHandlerTest
                         "nodes-created", 1,
                         "properties-set", 12
                 )
-        );
+        ).asMap( ofValue());
         UpdateStatistics stats = new InternalUpdateStatistics( 1, 0, 0, 0, 12, 0, 0, 0, 0, 0, 0);
 
         // When
@@ -127,14 +124,15 @@ public class SocketResponseHandlerTest
                                 )
                         )
                 )
-        );
+        ).asMap( ofValue());
 
         UpdateStatistics stats = new InternalUpdateStatistics( 1, 0, 0, 0, 12, 0, 0, 0, 0, 0, 0 );
         Plan plan = plan(
             "ProduceResults",
-                parameters( "KeyNames", "num", "EstimatedRows", 1.0 ), singletonList( "num" ),
+                parameters( "KeyNames", "num", "EstimatedRows", 1.0 ).asMap( ofValue()), singletonList( "num" ),
                 singletonList(
-                plan( "Projection", parameters( "A", "x", "B", 2 ), singletonList( "num" ), Collections.<Plan>emptyList() )
+                plan( "Projection", parameters( "A", "x", "B", 2 ).asMap( ofValue()), singletonList( "num" ), Collections
+                        .<Plan>emptyList() )
             )
         );
 

@@ -16,12 +16,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1;
+package org.neo4j.driver.v1.summary;
+
+import org.neo4j.driver.v1.util.Immutable;
 
 /**
  * Representation for notifications found when executing a statement.
  *
  * A notification can be visualized in a client pinpointing problems or other information about the statement.
+ * @since 1.0
  */
 @Immutable
 public interface Notification

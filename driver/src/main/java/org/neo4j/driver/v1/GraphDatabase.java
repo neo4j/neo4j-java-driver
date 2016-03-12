@@ -25,6 +25,7 @@ import org.neo4j.driver.internal.InternalDriver;
 /**
  * Creates {@link Driver drivers}, optionally letting you {@link #driver(URI, Config)} to configure them.
  * @see Driver
+ * @since 1.0
  */
 public class GraphDatabase
 {
