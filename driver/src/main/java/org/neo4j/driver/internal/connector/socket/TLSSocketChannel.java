@@ -446,6 +446,7 @@ public class TLSSocketChannel implements ByteChannel
             // Check res statuses
 
             // Send close message to peer
+            cipherOut.flip();
             while ( cipherOut.hasRemaining() )
             {
                 int num = channel.write( cipherOut );
@@ -455,6 +456,7 @@ public class TLSSocketChannel implements ByteChannel
                     break;
                 }
             }
+            cipherOut.clear();
         }
         // Close transport
         channel.close();

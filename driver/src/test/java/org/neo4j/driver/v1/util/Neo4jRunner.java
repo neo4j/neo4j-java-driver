@@ -53,7 +53,7 @@ public class Neo4jRunner
 
     private Neo4jSettings currentSettings = Neo4jSettings.DEFAULT;
     private Driver currentDriver;
-    private Config testConfig = Config.build().withEncryptionLevel( Config.EncryptionLevel.NONE ).toConfig();
+    public static final Config TEST_CONFIG = Config.build().withEncryptionLevel( Config.EncryptionLevel.NONE ).toConfig();
 
     private Neo4jInstaller installer = Neo4jInstaller.Neo4jInstallerFactory.create();
 
@@ -157,7 +157,7 @@ public class Neo4jRunner
             throw new IllegalStateException( "Failed to start server" );
         }
         awaitServerStatusOrFail( ServerStatus.ONLINE );
-        currentDriver = GraphDatabase.driver( serverURI(), testConfig );
+        currentDriver = GraphDatabase.driver( serverURI(), TEST_CONFIG);
     }
 
     private boolean updateServerSettings( Neo4jSettings settingsUpdate )
@@ -234,7 +234,7 @@ public class Neo4jRunner
         try
         {
             URI uri = serverURI();
-            SocketClient client = new SocketClient( uri.getHost(), uri.getPort(), testConfig, new DevNullLogger() );
+            SocketClient client = new SocketClient( uri.getHost(), uri.getPort(), TEST_CONFIG, new DevNullLogger() );
             client.start();
             client.stop();
             return ServerStatus.ONLINE;

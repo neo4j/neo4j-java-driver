@@ -46,17 +46,17 @@ import org.neo4j.driver.internal.spi.Logging;
  */
 public class ConsoleLogging implements Logging
 {
-    private final ConsoleLogger logger;
+    private final Level level;
 
     public ConsoleLogging( Level level )
     {
-        this.logger = new ConsoleLogger( this.getClass().getName(), level );
+        this.level = level;
     }
 
     @Override
     public Logger getLog( String name )
     {
-        return this.logger;
+        return new ConsoleLogger( name, level );
     }
 
     public static class ConsoleLogger extends JULogger
@@ -92,7 +92,8 @@ public class ConsoleLogging implements Logging
         public String format( LogRecord record )
         {
             StringBuilder builder = new StringBuilder( 1000 );
-            builder.append( dateFormat.format( new Date( record.getMillis() ) ) ).append( " - " );
+            builder.append( dateFormat.format( new Date( record.getMillis() ) ) );
+            builder.append( " [" ).append( record.getLoggerName() ).append( "]" ).append( " - " );
             // builder.append( "[" ).append( record.getSourceClassName() ).append( "." );
             // builder.append( record.getSourceMethodName() ).append( "] - " );
             // builder.append( "[" ).append( record.getLevel() ).append( "] - " );
