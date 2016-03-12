@@ -31,7 +31,7 @@ import org.neo4j.driver.v1.Values;
 
 import static org.neo4j.driver.internal.util.Format.formatElements;
 import static org.neo4j.driver.internal.value.InternalValue.Format.VALUE_ONLY;
-import static org.neo4j.driver.v1.Values.valueAsObject;
+import static org.neo4j.driver.v1.Values.ofObject;
 
 public class ListValue extends ValueAdapter
 {
@@ -55,13 +55,13 @@ public class ListValue extends ValueAdapter
     @Override
     public List<Object> asObject()
     {
-        return asList( valueAsObject() );
+        return asList( ofObject() );
     }
 
     @Override
     public List<Object> asList()
     {
-        return Extract.list( values, valueAsObject() );
+        return Extract.list( values, ofObject() );
     }
 
     @Override

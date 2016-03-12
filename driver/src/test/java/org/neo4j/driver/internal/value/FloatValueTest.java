@@ -118,50 +118,6 @@ public class FloatValueTest
     }
 
     @Test
-    public void shouldThrowIfLargerThanByteMax()
-    {
-        FloatValue value1 = new FloatValue( 127 );
-        FloatValue value2 = new FloatValue( 128 );
-
-        assertThat(value1.asByte(), equalTo((byte) 127));
-        exception.expect( LossyCoercion.class );
-        value2.asByte();
-    }
-
-    @Test
-    public void shouldThrowIfSmallerThanByteMin()
-    {
-        FloatValue value1 = new FloatValue( -128 );
-        FloatValue value2 = new FloatValue( -129 );
-
-        assertThat(value1.asByte(), equalTo((byte) -128));
-        exception.expect( LossyCoercion.class );
-        value2.asByte();
-    }
-
-    @Test
-    public void shouldThrowIfLargerThanShortMax()
-    {
-        FloatValue value1 = new FloatValue( Short.MAX_VALUE );
-        FloatValue value2 = new FloatValue( Short.MAX_VALUE + 1);
-
-        assertThat(value1.asShort(), equalTo(Short.MAX_VALUE));
-        exception.expect( LossyCoercion.class );
-        value2.asShort();
-    }
-
-    @Test
-    public void shouldThrowIfSmallerThanShortMin()
-    {
-        FloatValue value1 = new FloatValue( Short.MIN_VALUE );
-        FloatValue value2 = new FloatValue( Short.MIN_VALUE - 1 );
-
-        assertThat(value1.asShort(), equalTo(Short.MIN_VALUE));
-        exception.expect( LossyCoercion.class );
-        value2.asShort();
-    }
-
-    @Test
     public void shouldThrowIfLargerThanIntegerMax()
     {
         FloatValue value1 = new FloatValue( Integer.MAX_VALUE );

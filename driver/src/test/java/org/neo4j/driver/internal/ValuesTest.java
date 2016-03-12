@@ -35,13 +35,23 @@ import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
+import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.neo4j.driver.v1.Values.ofDouble;
+import static org.neo4j.driver.v1.Values.ofFloat;
+import static org.neo4j.driver.v1.Values.ofInteger;
+import static org.neo4j.driver.v1.Values.ofList;
+import static org.neo4j.driver.v1.Values.ofLong;
+import static org.neo4j.driver.v1.Values.ofMap;
+import static org.neo4j.driver.v1.Values.ofNumber;
+import static org.neo4j.driver.v1.Values.ofObject;
+import static org.neo4j.driver.v1.Values.ofString;
+import static org.neo4j.driver.v1.Values.ofToString;
 import static org.neo4j.driver.v1.Values.value;
-import static org.neo4j.driver.v1.Values.valueAsList;
-import static org.neo4j.driver.v1.Values.valueToString;
 import static org.neo4j.driver.v1.Values.values;
 
 public class ValuesTest
@@ -118,7 +128,7 @@ public class ValuesTest
         MapValue mapValue = new MapValue( map );
 
         // When
-        Iterable<List<String>> list = mapValue.values( valueAsList( valueToString() ) );
+        Iterable<List<String>> list = mapValue.values( ofList( ofToString() ) );
 
         // Then
         assertEquals( 3, mapValue.size() );
@@ -145,7 +155,7 @@ public class ValuesTest
         MapValue values = new MapValue( map );
 
         // When
-        Map<String, String> result = values.asMap( Values.valueToString() );
+        Map<String, String> result = values.asMap( Values.ofToString() );
 
         // Then
         assertThat( result.size(), equalTo( 2 ) );
@@ -181,5 +191,66 @@ public class ValuesTest
 
         // when
         value(1).size();
+    }
+
+    @Test
+    public void shouldMapInteger() throws Throwable
+    {
+        // Given
+        Value val = value( 1, 2, 3 );
+
+        // When/Then
+        assertThat( val.asList( ofInteger() ), contains(1,2,3) );
+        assertThat( val.asList( ofLong() ), contains(1L,2L,3L) );
+        assertThat( val.asList( ofNumber() ), contains((Number)1L,2L,3L) );
+        assertThat( val.asList( ofObject() ), contains((Object)1L,2L,3L) );
+    }
+
+    @Test
+    public void shouldMapFloat() throws Throwable
+    {
+        // Given
+        Value val = value( 1.0, 1.2, 3.2 );
+
+        // When/Then
+        assertThat( val.asList( ofDouble() ), contains(1.0, 1.2, 3.2) );
+        assertThat( val.asList( ofNumber() ), contains((Number)1.0, 1.2, 3.2) );
+        assertThat( val.asList( ofObject() ), contains((Object)1.0, 1.2, 3.2) );
+    }
+
+    @Test
+    public void shouldMapFloatToJavaFloat() throws Throwable
+    {
+        // Given all double -> float conversions other than integers
+        //       loose precision, as far as java is concerned, so we
+        //       can only convert integer numbers to float.
+        Value val = value( 1.0, 2.0, 3.0 );
+
+        // When/Then
+        assertThat( val.asList( ofFloat() ), contains(1.0F, 2.0F, 3.0F) );
+    }
+
+    @Test
+    public void shouldMapString() throws Throwable
+    {
+        // Given
+        Value val = value( "hello", "world" );
+
+        // When/Then
+        assertThat( val.asList( ofString() ), contains("hello", "world") );
+        assertThat( val.asList( ofObject() ), contains((Object)"hello", "world") );
+    }
+
+    @Test
+    public void shouldMapMapOfString() throws Throwable
+    {
+        // Given
+        Map<String, Object> map = new HashMap<>();
+        map.put( "hello", "world" );
+        Value val = value( asList(map, map) );
+
+        // When/Then
+        assertThat( val.asList( ofMap() ), contains(map, map) );
+        assertThat( val.asList( ofObject() ), contains((Object)map, map) );
     }
 }

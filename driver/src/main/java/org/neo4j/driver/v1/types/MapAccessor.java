@@ -77,7 +77,7 @@ public interface MapAccessor
      * Map and retrieve all values of the underlying collection
      *
      * @param mapFunction a function to map from Value to T. See {@link Values} for some predefined functions, such
-     * as {@link Values#valueAsBoolean()}, {@link Values#valueAsList(Function)}.
+     * as {@link Values#ofBoolean()}, {@link Values#ofList(Function)}.
      * @param <T> the target type of mapping
      * @return the result of mapping all values in unspecified order
      */
@@ -87,7 +87,7 @@ public interface MapAccessor
      * Return the underlying map as a map of string keys and values converted using
      * {@link Value#asObject()}.
      *
-     * This is equivalent to calling {@link #asMap(Function)} with {@link Values#valueAsObject()}.
+     * This is equivalent to calling {@link #asMap(Function)} with {@link Values#ofObject()}.
      *
      * @return the value as a Java map
      */
@@ -95,8 +95,9 @@ public interface MapAccessor
 
     /**
      * @param mapFunction a function to map from Value to T. See {@link Values} for some predefined functions, such
-     * as {@link Values#valueAsBoolean()}, {@link Values#valueAsList(Function)}.
+     * as {@link Values#ofBoolean()}, {@link Values#ofList(Function)}.
      * @param <T> the type of map values
+     * @see Values for a long list of built-in conversion functions
      * @return the value as a map from string keys to values of type T obtained from mapping he original map values, if possible
      */
     <T> Map<String, T> asMap( Function<Value, T> mapFunction );

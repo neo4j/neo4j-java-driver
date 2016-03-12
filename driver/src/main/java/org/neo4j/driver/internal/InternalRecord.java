@@ -33,8 +33,8 @@ import org.neo4j.driver.v1.Values;
 
 import static java.lang.String.format;
 import static org.neo4j.driver.internal.util.Format.formatPairs;
-import static org.neo4j.driver.v1.Values.valueAsIs;
-import static org.neo4j.driver.v1.Values.valueAsObject;
+import static org.neo4j.driver.v1.Values.ofValue;
+import static org.neo4j.driver.v1.Values.ofObject;
 
 public class InternalRecord implements Record
 {
@@ -57,7 +57,7 @@ public class InternalRecord implements Record
     @Override
     public List<Pair<String, Value>> fields()
     {
-        return Extract.fields( this, valueAsIs() );
+        return Extract.fields( this, ofValue() );
     }
 
     @Override
@@ -110,7 +110,7 @@ public class InternalRecord implements Record
     @Override
     public Map<String, Object> asMap()
     {
-        return Extract.map( this, valueAsObject() );
+        return Extract.map( this, ofObject() );
     }
 
     @Override
@@ -122,7 +122,7 @@ public class InternalRecord implements Record
     @Override
     public String toString()
     {
-        return format( "Record<%s>", formatPairs( InternalValue.Format.VALUE_ONLY, asMap( valueAsIs() ) ) );
+        return format( "Record<%s>", formatPairs( InternalValue.Format.VALUE_ONLY, asMap( ofValue() ) ) );
     }
 
     public boolean equals( Object other )

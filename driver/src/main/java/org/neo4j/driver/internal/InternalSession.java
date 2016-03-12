@@ -90,7 +90,7 @@ public class InternalSession implements Session
     {
         ensureConnectionIsValid();
         InternalStatementResult cursor = new InternalStatementResult( connection, statement );
-        connection.run( statement.text(), statement.parameters().asMap( Values.valueAsIs() ), cursor.runResponseCollector() );
+        connection.run( statement.text(), statement.parameters().asMap( Values.ofValue() ), cursor.runResponseCollector() );
         connection.pullAll( cursor.pullAllResponseCollector() );
         connection.flush();
         return cursor;

@@ -35,6 +35,7 @@ import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.internal.value.StringValue;
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.types.TypeSystem;
 import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.types.Entity;
 import org.neo4j.driver.v1.types.Node;
@@ -43,7 +44,12 @@ import org.neo4j.driver.v1.types.Relationship;
 
 /**
  * Utility for wrapping regular Java types and exposing them as {@link Value}
- * objects.
+ * objects, and vice versa.
+ *
+ * The long set of {@code ofXXX} methods in this class are meant to be used as
+ * arguments for methods like {@link Value#asList(Function)}, {@link Value#asMap(Function)},
+ * {@link Record#asMap(Function)} and so on.
+ *
  * @since 1.0
  */
 public abstract class Values
@@ -259,87 +265,205 @@ public abstract class Values
         return value(map);
     }
 
-    public static Function<Value,Value> valueAsIs()
+    /**
+     * The identity function for value conversion - returns the value untouched.
+     * @return a function that returns the value passed into it - the identity function
+     */
+    public static Function<Value,Value> ofValue()
     {
         return VALUE;
     }
 
-    public static Function<Value,Object> valueAsObject()
+    /**
+     * Converts values to objects using {@link Value#asObject()}.
+     * @return a function that returns {@link Value#asObject()} of a {@link Value}
+     */
+    public static Function<Value,Object> ofObject()
     {
         return OBJECT;
     }
 
-    public static Function<Value,Number> valueAsNumber()
+    /**
+     * Converts values to {@link Number}.
+     * @return a function that returns {@link Value#asNumber()} of a {@link Value}
+     */
+    public static Function<Value,Number> ofNumber()
     {
         return NUMBER;
     }
 
-    public static Function<Value,String> valueAsString()
+    /**
+     * Converts values to {@link String}.
+     *
+     * If you want to access a string you've retrieved from the database, this is
+     * the right choice. If you want to print any value for human consumption, for
+     * instance in a log, {@link #ofToString()} is the right choice.
+     *
+     * @return a function that returns {@link Value#asString()} of a {@link Value}
+     */
+    public static Function<Value,String> ofString()
     {
         return STRING;
     }
 
-    public static Function<Value,String> valueToString()
+    /**
+     * Converts values using {@link Value#toString()}, a human-readable string
+     * description of any value.
+     *
+     * This is different from {@link #ofString()}, which returns a java
+     * {@link String} value from a database {@link TypeSystem#STRING()}.
+     *
+     * If you are wanting to print any value for human consumption, this is the
+     * right choice. If you are wanting to access a string value stored in the
+     * database, you should use {@link #ofString()}.
+     *
+     * @return a function that returns {@link Value#toString()} of a {@link Value}
+     */
+    public static Function<Value,String> ofToString()
     {
         return TO_STRING;
     }
 
-    public static Function<Value,Integer> valueAsInteger()
+    /**
+     * Converts values to {@link Integer}.
+     * @return a function that returns {@link Value#asInt()} of a {@link Value}
+     */
+    public static Function<Value,Integer> ofInteger()
     {
         return INTEGER;
     }
 
-    public static Function<Value,Long> valueAsLong()
+    /**
+     * Converts values to {@link Long}.
+     * @return a function that returns {@link Value#asLong()} of a {@link Value}
+     */
+    public static Function<Value,Long> ofLong()
     {
         return LONG;
     }
 
-    public static Function<Value,Float> valueAsFloat()
+    /**
+     * Converts values to {@link Float}.
+     * @return a function that returns {@link Value#asFloat()} of a {@link Value}
+     */
+    public static Function<Value,Float> ofFloat()
     {
         return FLOAT;
     }
 
-    public static Function<Value,Double> valueAsDouble()
+    /**
+     * Converts values to {@link Double}.
+     * @return a function that returns {@link Value#asDouble()} of a {@link Value}
+     */
+    public static Function<Value,Double> ofDouble()
     {
         return DOUBLE;
     }
 
-    public static Function<Value,Boolean> valueAsBoolean()
+    /**
+     * Converts values to {@link Boolean}.
+     * @return a function that returns {@link Value#asBoolean()} of a {@link Value}
+     */
+    public static Function<Value,Boolean> ofBoolean()
     {
         return BOOLEAN;
     }
 
-    public static Function<Value, Map<String, Object>> valueAsMap()
+    /**
+     * Converts values to {@link Map}.
+     * @return a function that returns {@link Value#asMap()} of a {@link Value}
+     */
+    public static Function<Value, Map<String, Object>> ofMap()
     {
         return MAP;
     }
 
-    public static Function<Value,Entity> valueAsEntity()
+    /**
+     * Converts values to {@link Map}, with the map values further converted using
+     * the provided converter.
+     * @param valueConverter converter to use for the values of the map
+     * @param <T> the type of values in the returned map
+     * @return a function that returns {@link Value#asMap(Function)} of a {@link Value}
+     */
+    public static <T> Function<Value, Map<String, T>> ofMap( final Function<Value, T> valueConverter)
+    {
+        return new Function<Value,Map<String,T>>()
+        {
+            public Map<String,T> apply( Value val )
+            {
+                return val.asMap(valueConverter);
+            }
+        };
+    }
+
+    /**
+     * Converts values to {@link Entity}.
+     * @return a function that returns {@link Value#asEntity()} of a {@link Value}
+     */
+    public static Function<Value,Entity> ofEntity()
     {
         return ENTITY;
     }
 
-    public static Function<Value, Long> valueAsEntityId()
+    /**
+     * Converts values to {@link Long entity id}.
+     * @return a function that returns the id an entity {@link Value}
+     */
+    public static Function<Value, Long> ofEntityId()
     {
         return ENTITY_ID;
     }
 
-    public static Function<Value,Node> valueAsNode()
+    /**
+     * Converts values to {@link Node}.
+     * @return a function that returns {@link Value#asNode()} of a {@link Value}
+     */
+    public static Function<Value,Node> ofNode()
     {
         return NODE;
     }
 
-    public static Function<Value,Relationship> valueAsRelationship()
+    /**
+     * Converts values to {@link Relationship}.
+     * @return a function that returns {@link Value#asRelationship()} of a {@link Value}
+     */
+    public static Function<Value,Relationship> ofRelationship()
     {
         return RELATIONSHIP;
     }
 
-    public static Function<Value,Path> valueAsPath()
+    /**
+     * Converts values to {@link Path}.
+     * @return a function that returns {@link Value#asPath()} of a {@link Value}
+     */
+    public static Function<Value,Path> ofPath()
     {
         return PATH;
     }
 
-    public static <T> Function<Value,List<T>> valueAsList( final Function<Value, T> innerMap )
+    /**
+     * Converts values to {@link List<Object>}.
+     * @return a function that returns {@link Value#asList()} of a {@link Value}
+     */
+    public static Function<Value,List<Object>> ofList()
+    {
+        return new Function<Value,List<Object>>()
+        {
+            @Override
+            public List<Object> apply( Value value )
+            {
+                return value.asList();
+            }
+        };
+    }
+
+    /**
+     * Converts values to {@link List<T>}.
+     * @param innerMap converter for the values inside the list
+     * @param <T> the type of values inside the list
+     * @return a function that returns {@link Value#asList(Function)} of a {@link Value}
+     */
+    public static <T> Function<Value,List<T>> ofList( final Function<Value, T> innerMap )
     {
         return new Function<Value,List<T>>()
         {
@@ -350,6 +474,7 @@ public abstract class Values
             }
         };
     }
+
     private static final Function<Value,Object> OBJECT = new Function<Value,Object>()
     {
         public Object apply( Value val )

@@ -37,7 +37,7 @@ import static org.hamcrest.Matchers.equalTo;
 
 import static org.neo4j.driver.v1.AuthTokens.basic;
 import static org.neo4j.driver.v1.Values.parameters;
-import static org.neo4j.driver.v1.Values.valueAsIs;
+import static org.neo4j.driver.v1.Values.ofValue;
 
 public class CredentialsIT
 {
@@ -97,7 +97,7 @@ public class CredentialsIT
                         "scheme", "basic",
                         "principal", "neo4j",
                         "credentials", "neo4j",
-                        "new_credentials", password ).asMap(valueAsIs()) ) );
+                        "new_credentials", password ).asMap( ofValue()) ) );
         Session sess = setPassword.session();
         sess.run( "RETURN 1" ).discard();
         sess.close();

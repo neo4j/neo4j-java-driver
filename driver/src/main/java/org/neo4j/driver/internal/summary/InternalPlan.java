@@ -28,7 +28,7 @@ import org.neo4j.driver.v1.summary.Plan;
 import org.neo4j.driver.v1.util.Function;
 
 import static java.lang.String.format;
-import static org.neo4j.driver.v1.Values.valueAsString;
+import static org.neo4j.driver.v1.Values.ofString;
 
 public class InternalPlan<T extends Plan> implements Plan
 {
@@ -165,12 +165,12 @@ public class InternalPlan<T extends Plan> implements Plan
             final Value argumentsValue = plan.get( "args" );
             final Map<String, Value> arguments = argumentsValue.isNull()
                     ? Collections.<String, Value>emptyMap()
-                    : argumentsValue.asMap( Values.valueAsIs() );
+                    : argumentsValue.asMap( Values.ofValue() );
 
             final Value identifiersValue = plan.get( "identifiers" );
             final List<String> identifiers = identifiersValue.isNull()
                     ? Collections.<String>emptyList()
-                    : identifiersValue.asList( valueAsString() );
+                    : identifiersValue.asList( ofString() );
 
             final Value childrenValue = plan.get( "children" );
             final List<T> children = childrenValue.isNull()

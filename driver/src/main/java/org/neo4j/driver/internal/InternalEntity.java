@@ -28,7 +28,7 @@ import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.types.Entity;
 import org.neo4j.driver.v1.util.Function;
 
-import static org.neo4j.driver.v1.Values.valueAsObject;
+import static org.neo4j.driver.v1.Values.ofObject;
 
 public abstract class InternalEntity implements Entity, AsValue
 {
@@ -56,7 +56,7 @@ public abstract class InternalEntity implements Entity, AsValue
     @Override
     public Map<String,Object> asMap()
     {
-        return asMap( valueAsObject() );
+        return asMap( ofObject() );
     }
 
     @Override

@@ -49,8 +49,6 @@ public class IntegerValueTest
         // Then
         assertThat( value.asLong(), equalTo( 0L ) );
         assertThat( value.asInt(), equalTo( 0 ) );
-        assertThat( value.asShort(), equalTo( (short) 0 ) );
-        assertThat( value.asByte(), equalTo( (byte) 0 ) );
         assertThat( value.asDouble(), equalTo( 0.0 ) );
         assertThat( value.asFloat(), equalTo( (float) 0.0 ) );
         assertThat( value.asNumber(), equalTo( (Number) 0L ) );
@@ -65,8 +63,6 @@ public class IntegerValueTest
         // Then
         assertThat( value.asLong(), equalTo( 1L ) );
         assertThat( value.asInt(), equalTo( 1 ) );
-        assertThat( value.asShort(), equalTo( (short) 1 ) );
-        assertThat( value.asByte(), equalTo( (byte) 1 ) );
         assertThat( value.asDouble(), equalTo( 1.0 ) );
         assertThat( value.asFloat(), equalTo( (float) 1.0 ) );
         assertThat( value.asNumber(), equalTo( (Number) 1L ) );
@@ -115,50 +111,6 @@ public class IntegerValueTest
     {
         InternalValue value = new IntegerValue( 1L );
         assertThat( value.typeConstructor(), equalTo( TypeConstructor.INTEGER_TyCon ) );
-    }
-
-    @Test
-    public void shouldThrowIfLargerThanByteMax()
-    {
-        IntegerValue value1 = new IntegerValue( 127 );
-        IntegerValue value2 = new IntegerValue( 128 );
-
-        assertThat(value1.asByte(), equalTo((byte) 127));
-        exception.expect( LossyCoercion.class );
-        value2.asByte();
-    }
-
-    @Test
-    public void shouldThrowIfSmallerThanByteMin()
-    {
-        IntegerValue value1 = new IntegerValue( -128 );
-        IntegerValue value2 = new IntegerValue( -129 );
-
-        assertThat(value1.asByte(), equalTo((byte) -128));
-        exception.expect( LossyCoercion.class );
-        value2.asByte();
-    }
-
-    @Test
-    public void shouldThrowIfLargerThanShortMax()
-    {
-        IntegerValue value1 = new IntegerValue( Short.MAX_VALUE );
-        IntegerValue value2 = new IntegerValue( Short.MAX_VALUE + 1);
-
-        assertThat(value1.asShort(), equalTo(Short.MAX_VALUE));
-        exception.expect( LossyCoercion.class );
-        value2.asShort();
-    }
-
-    @Test
-    public void shouldThrowIfSmallerThanShortMin()
-    {
-        IntegerValue value1 = new IntegerValue( Short.MIN_VALUE );
-        IntegerValue value2 = new IntegerValue( Short.MIN_VALUE - 1 );
-
-        assertThat(value1.asShort(), equalTo(Short.MIN_VALUE));
-        exception.expect( LossyCoercion.class );
-        value2.asShort();
     }
 
     @Test

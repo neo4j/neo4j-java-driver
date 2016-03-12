@@ -251,8 +251,9 @@ public interface Value extends MapAccessor
 
     /**
      * @param mapFunction a function to map from Value to T. See {@link Values} for some predefined functions, such
-     * as {@link Values#valueAsBoolean()}, {@link Values#valueAsList(Function)}.
+     * as {@link Values#ofBoolean()}, {@link Values#ofList(Function)}.
      * @param <T> the type of target list elements
+     * @see Values for a long list of built-in conversion functions
      * @return the value as a list of T obtained by mapping from the list elements, if possible
      */
     <T> List<T> asList( Function<Value, T> mapFunction );

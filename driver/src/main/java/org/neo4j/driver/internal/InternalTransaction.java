@@ -34,7 +34,7 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.types.TypeSystem;
 
-import static org.neo4j.driver.v1.Values.valueAsIs;
+import static org.neo4j.driver.v1.Values.ofValue;
 
 public class InternalTransaction implements Transaction
 {
@@ -161,7 +161,7 @@ public class InternalTransaction implements Transaction
         {
             InternalStatementResult cursor = new InternalStatementResult( conn, statement );
             conn.run( statement.text(),
-                    statement.parameters().asMap( valueAsIs() ),
+                    statement.parameters().asMap( ofValue() ),
                     cursor.runResponseCollector() );
             conn.pullAll( cursor.pullAllResponseCollector() );
             conn.flush();

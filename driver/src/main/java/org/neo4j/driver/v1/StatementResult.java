@@ -121,7 +121,7 @@ public interface StatementResult extends Iterator<Record>
      *
      * @throws ClientException if the result has already been used
      * @param mapFunction a function to map from Value to T. See {@link Values} for some predefined functions, such
-     * as {@link Values#valueAsBoolean()}, {@link Values#valueAsList(Function)}.
+     * as {@link Values#ofBoolean()}, {@link Values#ofList(Function)}.
      * @param <T> the type of result list elements
      * @return list of all mapped immutable records
      */

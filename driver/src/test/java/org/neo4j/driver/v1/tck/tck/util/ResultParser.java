@@ -45,7 +45,7 @@ import org.neo4j.driver.v1.Values;
 import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.driver.internal.types.InternalTypeSystem.TYPE_SYSTEM;
-import static org.neo4j.driver.v1.Values.valueAsIs;
+import static org.neo4j.driver.v1.Values.ofValue;
 import static org.neo4j.driver.v1.tck.tck.util.Types.Type;
 import static org.neo4j.driver.v1.tck.tck.util.Types.getTypeFromStringConstellation;
 
@@ -255,7 +255,7 @@ public class ResultParser
         if ( TYPE_SYSTEM.LIST().isTypeOf( input ) )
         {
             List<Value> vals = new ArrayList<>();
-            List<Value> givenVals = input.asList( valueAsIs() );
+            List<Value> givenVals = input.asList( ofValue() );
             for ( Value givenValue : givenVals )
             {
                 vals.add( parseGiven( givenValue ) );

@@ -43,7 +43,7 @@ public class AuthTokens
         return new InternalAuthToken( parameters(
                 "scheme", "basic",
                 "principal", username,
-                "credentials", password ).asMap( Values.valueAsIs() ) );
+                "credentials", password ).asMap( Values.ofValue() ) );
     }
 
     /**
@@ -54,6 +54,6 @@ public class AuthTokens
      */
     public static AuthToken none()
     {
-        return new InternalAuthToken( parameters("scheme", "none" ).asMap( Values.valueAsIs() ) );
+        return new InternalAuthToken( parameters("scheme", "none" ).asMap( Values.ofValue() ) );
     }
 }

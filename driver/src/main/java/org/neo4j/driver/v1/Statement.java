@@ -26,7 +26,7 @@ import org.neo4j.driver.v1.util.Immutable;
 
 import static java.lang.String.format;
 import static org.neo4j.driver.v1.Values.value;
-import static org.neo4j.driver.v1.Values.valueAsIs;
+import static org.neo4j.driver.v1.Values.ofValue;
 
 /**
  * An executable statement, i.e. the statements' text and its parameters.
@@ -109,8 +109,8 @@ public class Statement
         else
         {
             Map<String, Value> newParameters = new HashMap<>( Math.max( parameters.size(), updates.size() ) );
-            newParameters.putAll( parameters.asMap( valueAsIs() ) );
-            for ( Map.Entry<String, Value> entry : updates.asMap( valueAsIs() ).entrySet() )
+            newParameters.putAll( parameters.asMap( ofValue() ) );
+            for ( Map.Entry<String, Value> entry : updates.asMap( ofValue() ).entrySet() )
             {
                 Value value = entry.getValue();
                 if ( value.isNull() )

@@ -37,8 +37,8 @@ import org.neo4j.driver.v1.util.Function;
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
 import static org.neo4j.driver.internal.value.InternalValue.Format.VALUE_ONLY;
-import static org.neo4j.driver.v1.Values.valueAsIs;
-import static org.neo4j.driver.v1.Values.valueAsObject;
+import static org.neo4j.driver.v1.Values.ofValue;
+import static org.neo4j.driver.v1.Values.ofObject;
 
 public abstract class ValueAdapter implements InternalValue
 {
@@ -72,6 +72,7 @@ public abstract class ValueAdapter implements InternalValue
         return false;
     }
 
+    @Override
     public boolean containsKey( String key )
     {
         throw new NotMultiValued( type().name() + " is not a keyed collection" );
@@ -100,16 +101,6 @@ public abstract class ValueAdapter implements InternalValue
         throw new Uncoercible( type().name(), "Java int" );
     }
 
-    public short asShort()
-    {
-        throw new Uncoercible( type().name(), "Java short" );
-    }
-
-    public byte asByte()
-    {
-        throw new Uncoercible( type().name(), "Java byte" );
-    }
-
     @Override
     public float asFloat()
     {
@@ -131,7 +122,7 @@ public abstract class ValueAdapter implements InternalValue
     @Override
     public List<Object> asList()
     {
-        return asList( valueAsObject() );
+        return asList( ofObject() );
     }
 
     @Override
@@ -143,7 +134,7 @@ public abstract class ValueAdapter implements InternalValue
     @Override
     public Map<String,Object> asMap()
     {
-        return asMap( valueAsObject() );
+        return asMap( ofObject() );
     }
 
     @Override
@@ -221,7 +212,7 @@ public abstract class ValueAdapter implements InternalValue
     @Override
     public Iterable<Value> values()
     {
-        return values( valueAsIs() );
+        return values( ofValue() );
     }
 
     @Override

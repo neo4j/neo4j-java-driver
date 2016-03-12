@@ -94,7 +94,7 @@ public interface Record
      * Return this record as a map, where each value has been converted to a default
      * java object using {@link Value#asObject()}.
      *
-     * This is equivalent to calling {@link #asMap(Function)} with {@link Values#valueAsObject()}.
+     * This is equivalent to calling {@link #asMap(Function)} with {@link Values#ofObject()}.
      *
      * @return this record as a map
      */
@@ -104,6 +104,7 @@ public interface Record
      * Return this record as a map, where each value has been converted using the provided
      * mapping function. You can find a library of common mapping functions in {@link Values}.
      *
+     * @see Values for a long list of built-in conversion functions
      * @return this record as a map
      */
     <T> Map<String, T> asMap( Function<Value, T> mapper );

@@ -30,12 +30,12 @@ public abstract class Records
 {
     public static Function<Record,Value> column( int index )
     {
-        return column( index, Values.valueAsIs() );
+        return column( index, Values.ofValue() );
     }
 
     public static Function<Record, Value> column( String key )
     {
-        return column( key, Values.valueAsIs() );
+        return column( key, Values.ofValue() );
     }
 
     public static <T> Function<Record, T> column( final int index, final Function<Value, T> mapFunction )
