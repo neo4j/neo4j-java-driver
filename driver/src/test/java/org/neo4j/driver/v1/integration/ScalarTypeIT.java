@@ -54,7 +54,7 @@ public class ScalarTypeIT
     public static Collection<Object[]> typesToTest()
     {
         return Arrays.asList(
-                new Object[]{"RETURN 1 as v", Values.value( 1l )},
+                new Object[]{"RETURN 1 as v", Values.value( 1L )},
                 new Object[]{"RETURN 1.1 as v", Values.value( 1.1d )},
                 new Object[]{"RETURN 'hello' as v", Values.value( "hello" )},
                 new Object[]{"RETURN true as v", Values.value( true )},

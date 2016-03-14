@@ -18,10 +18,13 @@
  */
 package org.neo4j.driver.internal;
 
+import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.ArrayDeque;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -241,6 +244,7 @@ public class ValuesTest
         assertThat( val.asList( ofObject() ), contains((Object)"hello", "world") );
     }
 
+    @SuppressWarnings( "unchecked" )
     @Test
     public void shouldMapMapOfString() throws Throwable
     {
@@ -252,5 +256,18 @@ public class ValuesTest
         // When/Then
         assertThat( val.asList( ofMap() ), contains(map, map) );
         assertThat( val.asList( ofObject() ), contains((Object)map, map) );
+    }
+
+    @Test
+    public void shouldHandleCollection() throws Throwable
+    {
+        // Given
+        Collection<String> collection = new ArrayDeque<>();
+        collection.add( "hello");
+        collection.add( "world");
+        Value val = value( collection );
+
+        // When/Then
+        assertThat( val.asList(), Matchers.<Object>containsInAnyOrder( "hello", "world" ));
     }
 }

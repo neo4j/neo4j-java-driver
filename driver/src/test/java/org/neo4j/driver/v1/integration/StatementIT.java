@@ -21,6 +21,7 @@ package org.neo4j.driver.v1.integration;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.driver.v1.Record;
@@ -49,9 +50,9 @@ public class StatementIT
         assertThat( result.size(), equalTo( 3 ) );
 
         // And it should allow random access
-        assertThat( result.get( 0 ).get( "k" ).asLong(), equalTo( 1l ) );
-        assertThat( result.get( 1 ).get( "k" ).asLong(), equalTo( 2l ) );
-        assertThat( result.get( 2 ).get( "k" ).asLong(), equalTo( 3l ) );
+        assertThat( result.get( 0 ).get( "k" ).asLong(), equalTo( 1L ) );
+        assertThat( result.get( 1 ).get( "k" ).asLong(), equalTo( 2L ) );
+        assertThat( result.get( 2 ).get( "k" ).asLong(), equalTo( 3L ) );
 
         // And it should allow iteration
         long expected = 0;
@@ -60,7 +61,7 @@ public class StatementIT
             expected += 1;
             assertThat( value.get( "k" ), equalTo( Values.value( expected ) ) );
         }
-        assertThat( expected, equalTo( 3l ) );
+        assertThat( expected, equalTo( 3L ) );
     }
 
     @Test
@@ -68,6 +69,15 @@ public class StatementIT
     {
         // When
         session.run( "CREATE (n:FirstNode {name:{name}})", parameters( "name", "Steven" ) );
+
+        // Then nothing should've failed
+    }
+
+    @Test
+    public void shouldRunWithCollectionAsParameter() throws Throwable
+    {
+        // When
+        session.run( "RETURN {param}", parameters( "param", Collections.singleton( "FOO" ) ) );
 
         // Then nothing should've failed
     }
