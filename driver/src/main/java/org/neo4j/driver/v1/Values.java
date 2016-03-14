@@ -35,12 +35,12 @@ import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.internal.value.StringValue;
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.types.TypeSystem;
-import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.types.Entity;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.types.Path;
 import org.neo4j.driver.v1.types.Relationship;
+import org.neo4j.driver.v1.types.TypeSystem;
+import org.neo4j.driver.v1.util.Function;
 
 /**
  * Utility for wrapping regular Java types and exposing them as {@link Value}
@@ -78,7 +78,7 @@ public abstract class Values
         if ( value instanceof Double ) { return value( (double) value ); }
         if ( value instanceof Float ) { return value( (float) value ); }
 
-        if ( value instanceof Collection<?> ) { return value( (List<Object>) value ); }
+        if ( value instanceof List<?> ) { return value( (List<Object>) value ); }
         if ( value instanceof Iterable<?> ) { return value( (Iterable<Object>) value ); }
         if ( value instanceof Map<?, ?> ) { return value( (Map<String,Object>) value ); }
 
@@ -171,12 +171,13 @@ public abstract class Values
         return new ListValue( values );
     }
 
-    public static Value value( List<Object> val )
+    public static Value value( List<Object> vals )
     {
-        Value[] values = new Value[val.size()];
-        for ( int i = 0; i < val.size(); i++ )
+        Value[] values = new Value[vals.size()];
+        int i = 0;
+        for ( Object val : vals )
         {
-            values[i] = value( val.get( i ) );
+            values[i++] = value( val );
         }
         return new ListValue( values );
     }
