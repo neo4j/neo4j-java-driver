@@ -44,15 +44,34 @@ public class Statement
     private final String text;
     private final Value parameters;
 
+    /**
+     * Create a new statement.
+     * @param text the statement text
+     * @param parameters the statement parameters
+     */
     public Statement( String text, Value parameters )
     {
         this.text = text;
         this.parameters = parameters == null ? Values.EmptyMap : parameters;
     }
 
+    /**
+     * Create a new statement.
+     * @param text the statement text
+     * @param parameters the statement parameters
+     */
+    public Statement( String text, Map<String, Object> parameters )
+    {
+        this( text, Values.value( parameters ) );
+    }
+
+    /**
+     * Create a new statement.
+     * @param text the statement text
+     */
     public Statement( String text )
     {
-        this( text, null );
+        this( text, Values.EmptyMap );
     }
 
     /**
@@ -85,6 +104,15 @@ public class Statement
      * @return a new statement with updated parameters
      */
     public Statement withParameters( Value newParameters )
+    {
+        return new Statement( text, newParameters );
+    }
+
+    /**
+     * @param newParameters the new statement's parameters
+     * @return a new statement with updated parameters
+     */
+    public Statement withParameters( Map<String, Object> newParameters )
     {
         return new Statement( text, newParameters );
     }
