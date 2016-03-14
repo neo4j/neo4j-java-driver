@@ -442,7 +442,7 @@ public abstract class Values
     }
 
     /**
-     * Converts values to {@link List<Object>}.
+     * Converts values to {@link List} of {@link Object}.
      * @return a function that returns {@link Value#asList()} of a {@link Value}
      */
     public static Function<Value,List<Object>> ofList()
@@ -458,7 +458,7 @@ public abstract class Values
     }
 
     /**
-     * Converts values to {@link List<T>}.
+     * Converts values to {@link List} of <tt>T</tt>.
      * @param innerMap converter for the values inside the list
      * @param <T> the type of values inside the list
      * @return a function that returns {@link Value#asList(Function)} of a {@link Value}

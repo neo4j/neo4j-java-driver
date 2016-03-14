@@ -105,6 +105,8 @@ public interface Record
      * mapping function. You can find a library of common mapping functions in {@link Values}.
      *
      * @see Values for a long list of built-in conversion functions
+     * @param mapper the mapping function
+     * @param <T> the type to convert to
      * @return this record as a map
      */
     <T> Map<String, T> asMap( Function<Value, T> mapper );

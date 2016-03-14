@@ -289,4 +289,8 @@ public interface Value extends MapAccessor
     // Force implementation
     @Override
     int hashCode();
+
+    //Force implementation
+    @Override
+    String toString();
 }
