@@ -27,27 +27,29 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Extract;
 import org.neo4j.driver.v1.Statement;
+import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.util.Pair;
-import org.neo4j.driver.v1.Value;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.driver.v1.Values.value;
 import static org.neo4j.driver.v1.Values.ofValue;
+import static org.neo4j.driver.v1.Values.value;
 
 public class ExtractTest
 {
@@ -122,6 +124,23 @@ public class ExtractTest
         // THEN
         Collection<Integer> values = mappedMap.values();
         assertThat( values, containsInAnyOrder( 43, 42 ) );
+
+    }
+
+    @Test
+    public void testShouldPreserveMapOrderMapValues() throws Exception
+    {
+        // GIVEN
+        Map<String,Value> map = new LinkedHashMap<>();
+        map.put( "k2", value( 43 ) );
+        map.put( "k1", value( 42 ) );
+
+        // WHEN
+        Map<String,Integer> mappedMap = Extract.map( map, integerExtractor() );
+
+        // THEN
+        Collection<Integer> values = mappedMap.values();
+        assertThat( values, contains( 43, 42) );
 
     }
 
