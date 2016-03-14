@@ -21,6 +21,7 @@ package org.neo4j.driver.internal;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -31,6 +32,7 @@ import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.util.Function;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -143,9 +145,34 @@ public class InternalRecordTest
         Map<String,Integer> map = Extract.map( record, addOne );
 
         // THEN
-        assertThat( map.keySet(), containsInAnyOrder( "k1", "k2" ) );
+        assertThat( map.keySet(), contains( "k1", "k2" ) );
         assertThat( map.get( "k1" ), equalTo( 1 ) );
         assertThat( map.get( "k2" ), equalTo( 2 ) );
+    }
+
+    @Test
+    public void mapExtractionShouldPreserveIterationOrder()
+    {
+        // GIVEN
+        List<String> keys = Arrays.asList( "k2", "k1" );
+        InternalRecord record =  new InternalRecord( keys, new Value[]{value( 0 ), value( 1 )} );
+        Function<Value,Integer> addOne = new Function<Value,Integer>()
+        {
+            @Override
+            public Integer apply( Value value )
+            {
+                return value.asInt() + 1;
+            }
+        };
+
+        // WHEN
+        Map<String,Integer> map = Extract.map( record, addOne );
+
+        // THEN
+        assertThat( map.keySet(), contains( "k2", "k1" )  );
+        Iterator<Integer> values = map.values().iterator();
+        assertThat( values.next(), equalTo( 1 ) );
+        assertThat( values.next(), equalTo( 2 ) );
     }
 
     @Test

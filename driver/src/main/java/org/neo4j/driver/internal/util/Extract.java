@@ -20,16 +20,16 @@ package org.neo4j.driver.internal.util;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.neo4j.driver.internal.InternalPair;
-import org.neo4j.driver.v1.util.Function;
-import org.neo4j.driver.v1.types.MapAccessor;
-import org.neo4j.driver.v1.util.Pair;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.types.MapAccessor;
+import org.neo4j.driver.v1.util.Function;
+import org.neo4j.driver.v1.util.Pair;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
@@ -102,7 +102,7 @@ public final class Extract
                 Map.Entry<String, Value> head = data.entrySet().iterator().next();
                 return singletonMap( head.getKey(), mapFunction.apply( head.getValue() ) );
             } else {
-                Map<String, T> map = new HashMap<>( size );
+                Map<String, T> map = new LinkedHashMap<>( size );
                 for ( Map.Entry<String, Value> entry : data.entrySet() )
                 {
                     map.put( entry.getKey(), mapFunction.apply( entry.getValue() ) );
@@ -124,7 +124,7 @@ public final class Extract
                 return singletonMap( record.keys().get( 0 ), mapFunction.apply( record.get( 0 ) ) );
 
             default:
-                Map<String, T> map = new HashMap<>( size );
+                Map<String, T> map = new LinkedHashMap<>( size );
                 List<String> keys = record.keys();
                 for ( int i = 0; i < size; i++ )
                 {
