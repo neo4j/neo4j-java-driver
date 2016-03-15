@@ -20,6 +20,9 @@ package org.neo4j.driver.v1;
 
 import org.junit.Test;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.driver.v1.Values.parameters;
@@ -55,21 +58,6 @@ public class StatementTest
     }
 
     @Test
-    public void shouldConstructStatementWithNullParameters()
-    {
-        // given
-        String text = "MATCH (n) RETURN n";
-
-        // when
-        Statement statement = new Statement( text, null );
-
-        // then
-        assertThat( statement.text(), equalTo( text ) );
-        assertThat( statement.parameters(), equalTo( Values.EmptyMap ) );
-    }
-
-
-    @Test
     public void shouldUpdateStatementText()
     {
         // when
@@ -96,6 +84,19 @@ public class StatementTest
         assertThat( statement.parameters(), equalTo( initialParameters ) );
     }
 
+    @Test
+    public void shouldReplaceMapParameters()
+    {
+        // when
+        String text = "MATCH (n) RETURN n";
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put( "a", 1 );
+        Statement statement = new Statement( "MATCH (n) RETURN n" ).withParameters( parameters );
+
+        // then
+        assertThat( statement.text(), equalTo( text ) );
+        assertThat( statement.parameters(), equalTo( Values.value( parameters ) ) );
+    }
 
     @Test
     public void shouldUpdateStatementParameters()
