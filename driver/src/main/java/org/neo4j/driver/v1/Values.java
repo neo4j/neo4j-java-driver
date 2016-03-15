@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -81,6 +82,7 @@ public abstract class Values
         if ( value instanceof List<?> ) { return value( (List<Object>) value ); }
         if ( value instanceof Iterable<?> ) { return value( (Iterable<Object>) value ); }
         if ( value instanceof Map<?, ?> ) { return value( (Map<String,Object>) value ); }
+        if ( value instanceof Iterator<?> ) { return value( (Iterator<Object>) value ); }
 
         if ( value instanceof boolean[] ) { return value( (boolean[]) value ); }
         if ( value instanceof String[] ) { return value( (String[]) value ); }
@@ -184,10 +186,15 @@ public abstract class Values
 
     public static Value value( Iterable<Object> val )
     {
+        return value( val.iterator() );
+    }
+
+    public static Value value( Iterator<Object> val )
+    {
         List<Value> values = new ArrayList<>();
-        for ( Object v : val )
+        while ( val.hasNext() )
         {
-            values.add( value( v ) );
+            values.add( value( val.next() ) );
         }
         return new ListValue( values.toArray( new Value[values.size()] ) );
     }

@@ -270,4 +270,15 @@ public class ValuesTest
         // When/Then
         assertThat( val.asList(), Matchers.<Object>containsInAnyOrder( "hello", "world" ));
     }
+
+    @Test
+    public void shouldHandleIterator() throws Throwable
+    {
+        // Given
+        Iterator<String> iterator = asList( "hello", "world" ).iterator();
+        Value val = value( iterator );
+
+        // When/Then
+        assertThat( val.asList(), Matchers.<Object>containsInAnyOrder( "hello", "world" ));
+    }
 }

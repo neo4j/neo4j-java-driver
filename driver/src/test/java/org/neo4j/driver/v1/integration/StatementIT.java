@@ -22,6 +22,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.driver.v1.Record;
@@ -78,6 +79,16 @@ public class StatementIT
     {
         // When
         session.run( "RETURN {param}", parameters( "param", Collections.singleton( "FOO" ) ) );
+
+        // Then nothing should've failed
+    }
+
+    @Test
+    public void shouldRunWithIteratorAsParameter() throws Throwable
+    {
+        Iterator<String> values = asList( "FOO", "BAR", "BAZ" ).iterator();
+        // When
+        session.run( "RETURN {param}", parameters( "param", values ) );
 
         // Then nothing should've failed
     }
