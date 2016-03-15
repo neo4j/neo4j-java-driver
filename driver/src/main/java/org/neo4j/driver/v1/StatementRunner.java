@@ -44,7 +44,7 @@ import org.neo4j.driver.v1.types.TypeSystem;
  *
  * <ul>
  *     <li>Read from or discard a result, for instance via {@link StatementResult#next()},
- *     {@link StatementResult#summarize()}, {@link StatementResult#discard()}.</li>
+ *     {@link StatementResult#consume()}, {@link StatementResult#discard()}.</li>
  *     <li>Explicitly commit a transaction using {@link Transaction#close()}</li>
  *     <li>Return a session to the pool using {@link Session#close()}</li>
  * </ul>

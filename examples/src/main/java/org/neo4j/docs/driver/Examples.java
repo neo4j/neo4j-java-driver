@@ -62,7 +62,7 @@ public class Examples
         StatementResult result =
                 session.run( "CREATE (p:Person { name: {name} })", Values.parameters( "name", "The One" ) );
 
-        int theOnesCreated = result.summarize().updateStatistics().nodesCreated();
+        int theOnesCreated = result.consume().counters().nodesCreated();
         System.out.println( "There were " + theOnesCreated + " the ones created." );
         // end::statement[]
     }
@@ -72,7 +72,7 @@ public class Examples
         // tag::statement-without-parameters[]
         StatementResult result = session.run( "CREATE (p:Person { name: 'The One' })" );
 
-        int theOnesCreated = result.summarize().updateStatistics().nodesCreated();
+        int theOnesCreated = result.consume().counters().nodesCreated();
         System.out.println( "There were " + theOnesCreated + " the ones created." );
         // end::statement-without-parameters[]
     }
@@ -158,7 +158,7 @@ public class Examples
         StatementResult result = session.run( "PROFILE MATCH (p:Person { name: {name} }) RETURN id(p)",
                 Values.parameters( "name", "The One" ) );
 
-        ResultSummary summary = result.summarize();
+        ResultSummary summary = result.consume();
 
         System.out.println( summary.statementType() );
         System.out.println( summary.profile() );
@@ -168,7 +168,7 @@ public class Examples
     public static void notifications( Session session ) throws Exception
     {
         // tag::result-summary-notifications[]
-        ResultSummary summary = session.run( "EXPLAIN MATCH (a), (b) RETURN a,b" ).summarize();
+        ResultSummary summary = session.run( "EXPLAIN MATCH (a), (b) RETURN a,b" ).consume();
 
         for ( Notification notification : summary.notifications() )
         {

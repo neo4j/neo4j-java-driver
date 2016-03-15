@@ -42,9 +42,9 @@ public interface ResultSummary
     Statement statement();
 
     /**
-     * @return update statistics for the statement
+     * @return counters for operations the statement triggered
      */
-    UpdateStatistics updateStatistics();
+    SummaryCounters counters();
 
     /**
      * @return type of statement that has been executed

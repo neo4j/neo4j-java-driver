@@ -18,12 +18,12 @@
  */
 package org.neo4j.driver.internal.summary;
 
-import org.neo4j.driver.v1.summary.UpdateStatistics;
+import org.neo4j.driver.v1.summary.SummaryCounters;
 
-public class InternalUpdateStatistics implements UpdateStatistics
+public class InternalSummaryCounters implements SummaryCounters
 {
-    public static final InternalUpdateStatistics EMPTY_STATS =
-            new InternalUpdateStatistics( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 );
+    public static final InternalSummaryCounters EMPTY_STATS =
+            new InternalSummaryCounters( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 );
     private final int nodesCreated;
     private final int nodesDeleted;
     private final int relationshipsCreated;
@@ -36,7 +36,7 @@ public class InternalUpdateStatistics implements UpdateStatistics
     private final int constraintsAdded;
     private final int constrainsRemoved;
 
-    public InternalUpdateStatistics(
+    public InternalSummaryCounters(
             int nodesCreated, int nodesDeleted,
             int relationshipsCreated, int relationshipsDeleted,
             int propertiesSet,
@@ -152,7 +152,7 @@ public class InternalUpdateStatistics implements UpdateStatistics
             return false;
         }
 
-        InternalUpdateStatistics that = (InternalUpdateStatistics) o;
+        InternalSummaryCounters that = (InternalSummaryCounters) o;
 
         return nodesCreated == that.nodesCreated
             && nodesDeleted == that.nodesDeleted

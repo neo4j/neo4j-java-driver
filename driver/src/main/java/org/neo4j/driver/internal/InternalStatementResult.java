@@ -38,7 +38,7 @@ import org.neo4j.driver.v1.summary.Plan;
 import org.neo4j.driver.v1.summary.ProfiledPlan;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.summary.StatementType;
-import org.neo4j.driver.v1.summary.UpdateStatistics;
+import org.neo4j.driver.v1.summary.SummaryCounters;
 import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.util.Functions;
 
@@ -83,7 +83,7 @@ public class InternalStatementResult implements StatementResult
             public void statementType( StatementType type ) {}
 
             @Override
-            public void statementStatistics( UpdateStatistics statistics ) {}
+            public void statementStatistics( SummaryCounters statistics ) {}
 
             @Override
             public void plan( Plan plan ) {}
@@ -126,7 +126,7 @@ public class InternalStatementResult implements StatementResult
             }
 
             @Override
-            public void statementStatistics( UpdateStatistics statistics )
+            public void statementStatistics( SummaryCounters statistics )
             {
                 summaryBuilder.statementStatistics( statistics );
             }
@@ -288,7 +288,7 @@ public class InternalStatementResult implements StatementResult
             }
             while ( hasNext() );
 
-            discard();
+            consume();
             return result;
         }
         else
@@ -301,24 +301,11 @@ public class InternalStatementResult implements StatementResult
 
     @SuppressWarnings("StatementWithEmptyBody")
     @Override
-    public ResultSummary summarize()
-    {
-        discard();
-        return summary;
-    }
-
-    @Override
-    public void remove()
-    {
-        throw new ClientException( "Removing records from a result is not supported." );
-    }
-
-    @Override
-    public void discard()
+    public ResultSummary consume()
     {
         if(!open)
         {
-            return;
+            return summary;
         }
 
         while ( !done )
@@ -327,6 +314,13 @@ public class InternalStatementResult implements StatementResult
         }
         recordBuffer.clear();
         open = false;
+        return summary;
+    }
+
+    @Override
+    public void remove()
+    {
+        throw new ClientException( "Removing records from a result is not supported." );
     }
 
     private void assertOpen()
