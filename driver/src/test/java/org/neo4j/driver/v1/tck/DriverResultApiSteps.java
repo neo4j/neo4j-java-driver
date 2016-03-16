@@ -1,15 +1,15 @@
 /**
  * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
- * <p>
+ *
  * This file is part of Neo4j.
- * <p>
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -257,16 +257,16 @@ public class DriverResultApiSteps
                 switch ( key )
                 {
                 case "code":
-                    assertThat( expected.get( key ), IsInstanceOf.instanceOf( notification.code().getClass() ) );
-                    assertThat( expected.get( key ), CoreMatchers.<Object>equalTo( notification.code() ) );
+                    compareNotificationValue( notification.code(), expected.get( key ) );
                     break;
                 case "title":
-                    assertThat( expected.get( key ), IsInstanceOf.instanceOf( notification.title().getClass() ) );
-                    assertThat( expected.get( key ), CoreMatchers.<Object>equalTo( notification.title() ) );
+                    compareNotificationValue( notification.title(), expected.get( key ) );
                     break;
                 case "description":
-                    assertThat( expected.get( key ), IsInstanceOf.instanceOf( notification.description().getClass() ) );
-                    assertThat( expected.get( key ), CoreMatchers.<Object>equalTo( notification.description() ) );
+                    compareNotificationValue( notification.description(), expected.get( key ) );
+                    break;
+                case "severity":
+                    compareNotificationValue( notification.severity(), expected.get( key ) );
                     break;
                 case "position":
                     Map<String,Object> expectedPosition = (Map<String,Object>) expected.get( key );
@@ -276,23 +276,31 @@ public class DriverResultApiSteps
                         switch ( positionKey )
                         {
                         case "offset":
-                            assertThat( expectedPosition.get( positionKey ),
-                                    CoreMatchers.<Object>equalTo( position.offset() ) );
+                            compareNotificationValue( position.offset(), expectedPosition.get( positionKey ) );
                             break;
                         case "line":
-                            assertThat( expectedPosition.get( positionKey ),
-                                    CoreMatchers.<Object>equalTo( position.line() ) );
+                            compareNotificationValue( position.line(), expectedPosition.get( positionKey ) );
                             break;
                         case "column":
-                            assertThat( expectedPosition.get( positionKey ),
-                                    CoreMatchers.<Object>equalTo( position.column() ) );
+                            compareNotificationValue( position.column(), expectedPosition.get( positionKey ) );
                             break;
                         }
                     }
+                    break;
+                default:
+                    throw new IllegalArgumentException( "No case for " + key );
                 }
+
+
 
             }
         }
+    }
+
+    private void compareNotificationValue(Object given, Object expected )
+    {
+        assertThat( given, IsInstanceOf.instanceOf( expected.getClass() ) );
+        assertThat( given, CoreMatchers.<Object>equalTo( expected ) );
     }
 
     public HashMap<String,Object> tableToValueMap( DataTable table )
