@@ -22,9 +22,8 @@ import java.util.Map;
 
 import org.neo4j.driver.internal.InternalRelationship;
 import org.neo4j.driver.internal.value.RelationshipValue;
-import org.neo4j.driver.v1.Entity;
-import org.neo4j.driver.v1.Identity;
-import org.neo4j.driver.v1.Relationship;
+import org.neo4j.driver.v1.types.Entity;
+import org.neo4j.driver.v1.types.Relationship;
 import org.neo4j.driver.v1.Value;
 
 public class TestRelationshipValue extends RelationshipValue implements Entity
@@ -52,19 +51,18 @@ public class TestRelationshipValue extends RelationshipValue implements Entity
         }
         RelationshipValue value = (RelationshipValue) o;
         return (value.asRelationship().type().equals( this.asRelationship().type() ) &&
-                value.asRelationship().properties()
-                        .equals( this.asRelationship().properties() ));
+                value.asMap().equals( this.asMap() ));
     }
 
     @Override
     public String toString()
     {
-        return this.asRelationship().type() + this.asRelationship().properties().toString();
+        return this.asRelationship().type() + this.asMap().toString();
     }
 
     @Override
-    public Identity identity()
+    public long id()
     {
-        return this.asRelationship().identity();
+        return this.asRelationship().id();
     }
 }

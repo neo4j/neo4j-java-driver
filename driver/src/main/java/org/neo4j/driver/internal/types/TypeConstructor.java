@@ -137,14 +137,6 @@ public enum TypeConstructor
         {
             return "NULL";
         }
-    },
-
-    IDENTITY_TyCon {
-        @Override
-        public String typeName()
-        {
-            return "IDENTITY";
-        }
     };
 
     private static TypeConstructor typeConstructorOf( Value value )

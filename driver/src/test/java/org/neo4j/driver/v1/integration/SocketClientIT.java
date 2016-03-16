@@ -45,6 +45,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.v1.Values.parameters;
+import static org.neo4j.driver.v1.Values.ofValue;
 
 public class SocketClientIT
 {
@@ -75,8 +76,8 @@ public class SocketClientIT
     {
         // Given
         Queue<Message> messages = new LinkedList<>();
-        messages.add( new InitMessage( "EvilClientV1_Hello", parameters() ) );
-        messages.add( new InitMessage( "EvilClientV1_World", parameters() ) );
+        messages.add( new InitMessage( "EvilClientV1_Hello", parameters().asMap( ofValue() ) ) );
+        messages.add( new InitMessage( "EvilClientV1_World", parameters().asMap( ofValue() ) ) );
 
         SocketResponseHandler handler = mock( SocketResponseHandler.class );
         when( handler.protocolViolationErrorOccurred() ).thenReturn( true );
@@ -88,7 +89,7 @@ public class SocketClientIT
         client.start();
         try
         {
-            client.sendAll( messages );
+            client.send( messages );
             client.receiveAll( handler );
             fail( "The client should receive a protocol violation error" );
         }

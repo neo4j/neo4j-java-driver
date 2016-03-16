@@ -1,15 +1,15 @@
 /**
  * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
- *
+ * <p>
  * This file is part of Neo4j.
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,15 +31,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.driver.v1.InputPosition;
-import org.neo4j.driver.v1.Notification;
-import org.neo4j.driver.v1.Plan;
-import org.neo4j.driver.v1.ProfiledPlan;
-import org.neo4j.driver.v1.ResultSummary;
 import org.neo4j.driver.v1.Statement;
-import org.neo4j.driver.v1.StatementType;
-import org.neo4j.driver.v1.UpdateStatistics;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.summary.InputPosition;
+import org.neo4j.driver.v1.summary.Notification;
+import org.neo4j.driver.v1.summary.Plan;
+import org.neo4j.driver.v1.summary.ProfiledPlan;
+import org.neo4j.driver.v1.summary.ResultSummary;
+import org.neo4j.driver.v1.summary.StatementType;
+import org.neo4j.driver.v1.summary.SummaryCounters;
 import org.neo4j.driver.v1.tck.tck.util.runners.CypherStatementRunner;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -54,30 +55,14 @@ public class DriverResultApiSteps
     List<ResultSummary> summaries;
     List<Statement> statements;
 
-    @When( "^the `Result Cursor` is summarized$" )
+    @When( "^the `Statement Result` is consumed a `Result Summary` is returned$" )
     public void the_result_is_summerized() throws Throwable
     {
         summaries = new ArrayList<>();
         for ( CypherStatementRunner runner : runners )
         {
-            summaries.add( runner.result().summarize() );
+            summaries.add( runner.result().consume() );
         }
-    }
-
-    @Then( "^the `Result Cursor` is fully consumed$" )
-    public void theResultCursorIsFullyConsumed() throws Throwable
-    {
-        for ( CypherStatementRunner runner : runners )
-        {
-            assertThat( runner.result().list().isEmpty(), equalTo( true ) );
-            assertThat( runner.result().atEnd(), equalTo( true ) );
-            assertThat( runner.result().next(), equalTo( false ) );
-        }
-    }
-
-    @And( "^a `Result Summary` is returned$" )
-    public void aResultSummaryIsReturned() throws Throwable
-    {
         ResultSummary first = summaries.get( 0 );
         for ( ResultSummary resultSummary : summaries )
         {
@@ -85,7 +70,24 @@ public class DriverResultApiSteps
         }
     }
 
-    @And( "^I request a `statement` from the `Result Summary`$" )
+    @Then( "^the `Statement Result` is closed$" )
+    public void theResultCursorIsFullyConsumed() throws Throwable
+    {
+        for ( CypherStatementRunner runner : runners )
+        {
+            try
+            {
+                runner.result().peek();
+            }
+            catch ( ClientException e )
+            {
+                return;
+            }
+            assertThat( runner.result().hasNext(), equalTo( false ) );
+        }
+    }
+
+    @And( "^I request a `Statement` from the `Result Summary`$" )
     public void iRequestAStatementFromTheResultSummary() throws Throwable
     {
         statements = new ArrayList<>();
@@ -100,7 +102,7 @@ public class DriverResultApiSteps
     {
         for ( Statement statement : statements )
         {
-            assertThat( statement.template(), equalTo( expected ) );
+            assertThat( statement.text(), equalTo( expected ) );
         }
     }
 
@@ -113,12 +115,12 @@ public class DriverResultApiSteps
         }
     }
 
-    @Then( "^requesting `update statistics` from it should give$" )
+    @Then( "^requesting `Counters` from `Result Summary` should give$" )
     public void iShouldGetUpdateStatisticsContaining( DataTable expectedStatistics ) throws Throwable
     {
         for ( ResultSummary resultSummary : summaries )
         {
-            checkStatistics( resultSummary.updateStatistics(), tableToValueMap( expectedStatistics ) );
+            checkStatistics( resultSummary.counters(), tableToValueMap( expectedStatistics ) );
         }
     }
 
@@ -149,7 +151,7 @@ public class DriverResultApiSteps
         }
     }
 
-    @Then( "^the summary has a `plan`$" )
+    @Then( "^the `Result Summary` has a `Plan`$" )
     public void theSummaryHasAPlan() throws Throwable
     {
         for ( ResultSummary summary : summaries )
@@ -158,7 +160,7 @@ public class DriverResultApiSteps
         }
     }
 
-    @Then( "^the summary does not have a `plan`$" )
+    @Then( "^the `Result Summary` does not have a `Plan`$" )
     public void theSummaryDoesNotHaveAPlan() throws Throwable
     {
         for ( ResultSummary summary : summaries )
@@ -167,7 +169,7 @@ public class DriverResultApiSteps
         }
     }
 
-    @Then( "^the summary has a `profile`$" )
+    @Then( "^the `Result Summary` has a `Profile`$" )
     public void theSummaryHasAProfile() throws Throwable
     {
         for ( ResultSummary summary : summaries )
@@ -176,7 +178,7 @@ public class DriverResultApiSteps
         }
     }
 
-    @And( "^the summary does not have a `profile`$" )
+    @And( "^the `Result Summary` does not have a `Profile`$" )
     public void theSummaryDoesNotHaveAPriofile() throws Throwable
     {
         for ( ResultSummary summary : summaries )
@@ -185,7 +187,7 @@ public class DriverResultApiSteps
         }
     }
 
-    @Then( "^requesting the `plan` it contains$" )
+    @Then( "^requesting the `Plan` it contains$" )
     public void thePlanContains( DataTable expectedTable ) throws Throwable
     {
         HashMap<String,Object> expectedMap = tableToValueMap( expectedTable );
@@ -196,7 +198,7 @@ public class DriverResultApiSteps
 
     }
 
-    @Then( "^requesting the `profile` it contains:$" )
+    @Then( "^requesting the `Profile` it contains:$" )
     public void theProfileContains( DataTable expectedTable ) throws Throwable
     {
         HashMap<String,Object> expectedMap = tableToValueMap( expectedTable );
@@ -206,7 +208,7 @@ public class DriverResultApiSteps
         }
     }
 
-    @And( "^the `plan` also contains method calls for:$" )
+    @And( "^the `Plan` also contains method calls for:$" )
     public void alsoContainsMethodCallsFor( DataTable expectedTable ) throws Throwable
     {
         HashMap<String,String> expectedMap = tableToMap( expectedTable );
@@ -216,7 +218,7 @@ public class DriverResultApiSteps
         }
     }
 
-    @And( "^the `profile` also contains method calls for:$" )
+    @And( "^the `Profile` also contains method calls for:$" )
     public void profileAlsoContainsMethodCallsFor( DataTable expectedTable ) throws Throwable
     {
         HashMap<String,String> expectedMap = tableToMap( expectedTable );
@@ -226,7 +228,7 @@ public class DriverResultApiSteps
         }
     }
 
-    @And( "^the summaries `notifications` is empty list$" )
+    @And( "^the `Result Summary` `Notifications` is empty$" )
     public void theSummaryDoesNotHaveAnyNotifications() throws Throwable
     {
         for ( ResultSummary summary : summaries )
@@ -235,7 +237,7 @@ public class DriverResultApiSteps
         }
     }
 
-    @And( "^the summaries `notifications` has one notification with$" )
+    @And( "^the `Result Summary` `Notifications` has one notification with$" )
     public void theSummaryHasNotifications( DataTable table ) throws Throwable
     {
         HashMap<String,Object> expected = new HashMap<>();
@@ -372,7 +374,7 @@ public class DriverResultApiSteps
         }
     }
 
-    private void checkStatistics( UpdateStatistics statistics, Map<String,Object> expectedStatisticsMap )
+    private void checkStatistics( SummaryCounters statistics, Map<String,Object> expectedStatisticsMap )
     {
         for ( String key : expectedStatisticsMap.keySet() )
         {

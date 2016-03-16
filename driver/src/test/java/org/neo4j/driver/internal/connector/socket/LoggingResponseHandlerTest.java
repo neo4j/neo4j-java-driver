@@ -38,6 +38,7 @@ import org.neo4j.driver.v1.Value;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.driver.v1.Values.parameters;
+import static org.neo4j.driver.v1.Values.ofValue;
 
 public class LoggingResponseHandlerTest
 {
@@ -57,22 +58,23 @@ public class LoggingResponseHandlerTest
     public void shouldLogInitMessage() throws Throwable
     {
         // When
-        handler.handleInitMessage( "client", parameters());
+        handler.handleInitMessage( "client", parameters().asMap( ofValue()));
 
         // Then
         assertEquals( "S: [INIT \"client\"]", log );
-        assertEquals( format( new InitMessage( "client", parameters() ) ), log );
+        assertEquals( format( new InitMessage( "client", parameters().asMap( ofValue()) ) ), log );
     }
 
     @Test
     public void shouldLogRunMessage() throws Throwable
     {
         // When
-        handler.handleRunMessage( "stat", parameters( "value", new String[]{"cat", "cat", "cat"} ) );
+        handler.handleRunMessage( "stat", parameters( "value", new String[]{"cat", "cat", "cat"} ).asMap( ofValue()) );
 
         // Then
         assertEquals( "S: [RUN \"stat\" {value=[\"cat\", \"cat\", \"cat\"]}]", log );
-        assertEquals( format( new RunMessage( "stat", parameters( "value", new String[]{"cat", "cat", "cat"} ) ) ),
+        assertEquals( format( new RunMessage( "stat", parameters( "value", new String[]{"cat", "cat", "cat"} ).asMap(
+                ofValue()) ) ),
                 log );
     }
 

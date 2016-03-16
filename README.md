@@ -13,7 +13,7 @@ Add the driver to your project:
         <dependency>
             <groupId>org.neo4j.driver</groupId>
             <artifactId>neo4j-java-driver</artifactId>
-            <version>1.0.0-M01</version>
+            <version>1.0.0-M04</version>
         </dependency>
     </dependencies>
 
@@ -23,10 +23,12 @@ Connect to a Neo4j 3.0.0+ database
     
     Session session = driver.session();
     
-    Result rs = session.run("CREATE (n) RETURN n");
+    StatementResult rs = session.run("CREATE (n) RETURN n");
     
     session.close();
     
+    driver.close();
+
 # Building
 
 ## Java version

@@ -18,25 +18,25 @@
  */
 package org.neo4j.driver.v1.integration;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+
 import org.neo4j.driver.internal.value.ListValue;
 import org.neo4j.driver.internal.value.MapValue;
-import org.neo4j.driver.v1.ResultCursor;
+import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.neo4j.driver.v1.Values.parameters;
 
 @RunWith(Parameterized.class)
 public class ScalarTypeIT
@@ -54,7 +54,7 @@ public class ScalarTypeIT
     public static Collection<Object[]> typesToTest()
     {
         return Arrays.asList(
-                new Object[]{"RETURN 1 as v", Values.value( 1l )},
+                new Object[]{"RETURN 1 as v", Values.value( 1L )},
                 new Object[]{"RETURN 1.1 as v", Values.value( 1.1d )},
                 new Object[]{"RETURN 'hello' as v", Values.value( "hello" )},
                 new Object[]{"RETURN true as v", Values.value( true )},
@@ -62,7 +62,7 @@ public class ScalarTypeIT
                 new Object[]{"RETURN [1,2,3] as v", new ListValue( Values.value( 1 ), Values.value( 2 ), Values.value( 3 ) )},
                 new Object[]{"RETURN ['hello'] as v", new ListValue( Values.value( "hello" ) )},
                 new Object[]{"RETURN [] as v", new ListValue()},
-                new Object[]{"RETURN {k:'hello'} as v", new MapValue( Values.parameters( "k", Values.value( "hello" ) ) )},
+                new Object[]{"RETURN {k:'hello'} as v", parameters( "k", Values.value( "hello" ) )},
                 new Object[]{"RETURN {} as v", new MapValue( Collections.<String, Value>emptyMap() )}
         );
     }
@@ -71,10 +71,9 @@ public class ScalarTypeIT
     public void shouldHandleType() throws Throwable
     {
         // When
-        ResultCursor cursor = session.run( statement );
+        StatementResult cursor = session.run( statement );
 
         // Then
-        assertTrue( cursor.next() );
-        assertThat( cursor.get( "v" ), equalTo( expectedValue ) );
+        assertThat( cursor.single().get( "v" ), equalTo( expectedValue ) );
     }
 }

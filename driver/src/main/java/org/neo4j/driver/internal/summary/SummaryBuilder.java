@@ -22,13 +22,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.driver.internal.spi.StreamCollector;
-import org.neo4j.driver.v1.Notification;
-import org.neo4j.driver.v1.Plan;
-import org.neo4j.driver.v1.ProfiledPlan;
-import org.neo4j.driver.v1.ResultSummary;
+import org.neo4j.driver.v1.summary.Notification;
+import org.neo4j.driver.v1.summary.Plan;
+import org.neo4j.driver.v1.summary.ProfiledPlan;
+import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.Statement;
-import org.neo4j.driver.v1.StatementType;
-import org.neo4j.driver.v1.UpdateStatistics;
+import org.neo4j.driver.v1.summary.StatementType;
+import org.neo4j.driver.v1.summary.SummaryCounters;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
@@ -37,7 +37,7 @@ public class SummaryBuilder implements StreamCollector
     private final Statement statement;
 
     private StatementType type = null;
-    private UpdateStatistics statistics = null;
+    private SummaryCounters statistics = null;
     private Plan plan = null;
     private ProfiledPlan profile;
     private List<Notification> notifications = null;
@@ -71,7 +71,7 @@ public class SummaryBuilder implements StreamCollector
         }
     }
 
-    public void statementStatistics( UpdateStatistics statistics )
+    public void statementStatistics( SummaryCounters statistics )
     {
         if ( this.statistics == null )
         {
@@ -139,9 +139,9 @@ public class SummaryBuilder implements StreamCollector
             }
 
             @Override
-            public UpdateStatistics updateStatistics()
+            public SummaryCounters counters()
             {
-                return statistics == null ? InternalUpdateStatistics.EMPTY_STATS : statistics;
+                return statistics == null ? InternalSummaryCounters.EMPTY_STATS : statistics;
             }
 
             @Override

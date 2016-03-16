@@ -40,10 +40,10 @@ import org.neo4j.driver.v1.tck.tck.util.runners.CypherStatementRunner;
 import org.neo4j.driver.v1.tck.tck.util.runners.StatementRunner;
 import org.neo4j.driver.v1.tck.tck.util.runners.StringRunner;
 
-import static java.util.Collections.singletonMap;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.driver.v1.tck.Environment.driver;
+import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.tck.Environment.expectedBoltValue;
 import static org.neo4j.driver.v1.tck.Environment.expectedJavaValue;
 import static org.neo4j.driver.v1.tck.Environment.listOfObjects;
@@ -110,7 +110,7 @@ public class DriverComplianceSteps
         stringRunner = new StringRunner( "RETURN " + expectedBoltValue.toString() );
         mappedParametersRunner = createParameterRunner( "RETURN {input}", "input", expectedBoltValue );
         statementRunner = new StatementRunner(
-                new Statement( "RETURN {input}", singletonMap( "input", expectedBoltValue ) ) );
+                new Statement( "RETURN {input}", parameters( "input", expectedBoltValue ) ) );
 
         runners.add( stringRunner );
         runners.add( mappedParametersRunner );

@@ -23,8 +23,7 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.neo4j.driver.internal.value.NodeValue;
-import org.neo4j.driver.v1.Identity;
-import org.neo4j.driver.v1.Node;
+import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.Value;
 
 /**
@@ -41,12 +40,7 @@ public class InternalNode extends InternalEntity implements Node
 
     public InternalNode( long id, Collection<String> labels, Map<String, Value> properties )
     {
-        this( Identities.identity( id ), labels, properties );
-    }
-
-    public InternalNode( Identity identity, Collection<String> labels, Map<String, Value> properties )
-    {
-        super( identity, properties );
+        super( id, properties );
         this.labels = labels;
     }
 
@@ -71,6 +65,6 @@ public class InternalNode extends InternalEntity implements Node
     @Override
     public String toString()
     {
-        return String.format( "node<%s>", identity()  );
+        return String.format( "node<%s>", id()  );
     }
 }

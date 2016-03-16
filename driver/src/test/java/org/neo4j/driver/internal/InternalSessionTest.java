@@ -51,7 +51,7 @@ public class InternalSessionTest
         sess.run( "whatever" );
 
         // Then
-        verify( mock ).sendAll();
+        verify( mock ).flush();
     }
 
     @Test
@@ -107,7 +107,7 @@ public class InternalSessionTest
         sess.run( "whatever" );
 
         // Then
-        verify( mock ).sendAll();
+        verify( mock ).flush();
     }
 
     @Test

@@ -18,22 +18,21 @@
  */
 package org.neo4j.driver.v1.integration;
 
-import java.util.List;
-
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.Collections;
+import java.util.List;
+
 import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.ResultCursor;
+import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-
 import static org.neo4j.driver.v1.Values.parameters;
 
 public class StatementIT
@@ -51,9 +50,9 @@ public class StatementIT
         assertThat( result.size(), equalTo( 3 ) );
 
         // And it should allow random access
-        assertThat( result.get( 0 ).get( "k" ).asLong(), equalTo( 1l ) );
-        assertThat( result.get( 1 ).get( "k" ).asLong(), equalTo( 2l ) );
-        assertThat( result.get( 2 ).get( "k" ).asLong(), equalTo( 3l ) );
+        assertThat( result.get( 0 ).get( "k" ).asLong(), equalTo( 1L ) );
+        assertThat( result.get( 1 ).get( "k" ).asLong(), equalTo( 2L ) );
+        assertThat( result.get( 2 ).get( "k" ).asLong(), equalTo( 3L ) );
 
         // And it should allow iteration
         long expected = 0;
@@ -62,7 +61,7 @@ public class StatementIT
             expected += 1;
             assertThat( value.get( "k" ), equalTo( Values.value( expected ) ) );
         }
-        assertThat( expected, equalTo( 3l ) );
+        assertThat( expected, equalTo( 3L ) );
     }
 
     @Test
@@ -70,6 +69,15 @@ public class StatementIT
     {
         // When
         session.run( "CREATE (n:FirstNode {name:{name}})", parameters( "name", "Steven" ) );
+
+        // Then nothing should've failed
+    }
+
+    @Test
+    public void shouldRunWithCollectionAsParameter() throws Throwable
+    {
+        // When
+        session.run( "RETURN {param}", parameters( "param", Collections.singleton( "FOO" ) ) );
 
         // Then nothing should've failed
     }
@@ -99,20 +107,16 @@ public class StatementIT
     public void shouldRunSimpleStatement() throws Throwable
     {
         // When I run a simple write statement
-        ResultCursor result1 = session.run( "CREATE (a {name:'Adam'})" );
-        while ( result1.next() )
-        {
-            // ignored
-        }
+        session.run( "CREATE (a {name:'Adam'})" );
 
         // And I run a read statement
-        ResultCursor result2 = session.run( "MATCH (a) RETURN a.name" );
+        StatementResult result2 = session.run( "MATCH (a) RETURN a.name" );
 
-        // Then I expect to value the name back
+        // Then I expect to get the name back
         Value name = null;
-        while ( result2.next() )
+        while ( result2.hasNext() )
         {
-            name = result2.get( "a.name" );
+            name = result2.next().get( "a.name" );
         }
 
         assertThat( name.asString(), equalTo( "Adam" ) );

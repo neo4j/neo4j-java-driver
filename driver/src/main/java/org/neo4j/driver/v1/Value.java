@@ -21,8 +21,19 @@ package org.neo4j.driver.v1;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.value.LossyCoercion;
 import org.neo4j.driver.v1.exceptions.value.Uncoercible;
+import org.neo4j.driver.v1.types.Entity;
+import org.neo4j.driver.v1.types.MapAccessor;
+import org.neo4j.driver.v1.types.Node;
+import org.neo4j.driver.v1.types.Path;
+import org.neo4j.driver.v1.types.Relationship;
+import org.neo4j.driver.v1.types.Type;
+import org.neo4j.driver.v1.types.TypeSystem;
+import org.neo4j.driver.v1.util.Experimental;
+import org.neo4j.driver.v1.util.Function;
+import org.neo4j.driver.v1.util.Immutable;
 
 /**
  * Represents a value from Neo4j.
@@ -72,9 +83,10 @@ import org.neo4j.driver.v1.exceptions.value.Uncoercible;
  * }
  * }
  * </pre>
+ * @since 1.0
  */
 @Immutable
-public interface Value extends MapAccessor, ListAccessor
+public interface Value extends MapAccessor
 {
     /**
      * If the underlying value is a collection type, return the number of values in the collection.
@@ -109,6 +121,15 @@ public interface Value extends MapAccessor, ListAccessor
     @Override
     Iterable<String> keys();
 
+    /**
+     * Retrieve the value at the given index
+     *
+     * @param index the index of the value
+     * @return the value or a {@link org.neo4j.driver.internal.value.NullValue} if the index is out of bounds
+     * @throws ClientException if record has not been initialized
+     */
+    Value get( int index );
+
     /** @return The type of this value as defined in the Neo4j type system */
     @Experimental
     Type type();
@@ -139,8 +160,27 @@ public interface Value extends MapAccessor, ListAccessor
 
     /**
      * This returns a java standard library representation of the underlying value,
-     * using a java type that is "sensible" given the underlying type. For instance,
-     * a Neo4j List will return a Java {@code List<Object>} here.
+     * using a java type that is "sensible" given the underlying type. The mapping
+     * for common types is as follows:
+     *
+     * <ul>
+     *     <li>{@link TypeSystem#INTEGER()} - {@link Long}</li>
+     *     <li>{@link TypeSystem#FLOAT()} - {@link Double}</li>
+     *     <li>{@link TypeSystem#NUMBER()} - {@link Number}</li>
+     *     <li>{@link TypeSystem#STRING()} - {@link String}</li>
+     *     <li>{@link TypeSystem#BOOLEAN()} - {@link Boolean}</li>
+     *     <li>{@link TypeSystem#NULL()} - {@code null}</li>
+     *     <li>{@link TypeSystem#NODE()} - {@link Node}</li>
+     *     <li>{@link TypeSystem#RELATIONSHIP()} - {@link Relationship}</li>
+     *     <li>{@link TypeSystem#PATH()} - {@link Path}</li>
+     *     <li>{@link TypeSystem#MAP()} - {@link Map}</li>
+     *     <li>{@link TypeSystem#LIST()} - {@link List}</li>
+     * </ul>
+     *
+     * Note that the types in {@link TypeSystem} refers to the Neo4j type system
+     * where {@link TypeSystem#INTEGER()} and {@link TypeSystem#FLOAT()} are both
+     * 64-bit precision. This is why these types return java {@link Long} and
+     * {@link Double}, respectively.
      *
      * @return the value as a Java Object
      */
@@ -201,36 +241,22 @@ public interface Value extends MapAccessor, ListAccessor
     float asFloat();
 
     /**
-     * @return the value as an {@link Identity}, if possible.
-     * @throws Uncoercible if value types are incompatible.
-     */
-    Identity asIdentity();
-
-    /**
+     * If the underlying type can be viewed as a list, returns a java list of
+     * values, where each value has been converted using {@link #asObject()}.
+     *
+     * @see #asObject()
      * @return the value as a Java list of values, if possible
      */
-    List<Value> asList();
+    List<Object> asList();
 
     /**
      * @param mapFunction a function to map from Value to T. See {@link Values} for some predefined functions, such
-     * as {@link Values#valueAsBoolean()}, {@link Values#valueAsList(Function)}.
+     * as {@link Values#ofBoolean()}, {@link Values#ofList(Function)}.
      * @param <T> the type of target list elements
+     * @see Values for a long list of built-in conversion functions
      * @return the value as a list of T obtained by mapping from the list elements, if possible
      */
     <T> List<T> asList( Function<Value, T> mapFunction );
-
-    /**
-     * @return the value as a Java value map, if possible
-     */
-    Map<String, Value> asMap();
-
-    /**
-     * @param mapFunction a function to map from Value to T. See {@link Values} for some predefined functions, such
-     * as {@link Values#valueAsBoolean()}, {@link Values#valueAsList(Function)}.
-     * @param <T> the type of map values
-     * @return the value as a map from string keys to values of type T obtained from mapping he original map values, if possible
-     */
-    <T> Map<String, T> asMap( Function<Value, T> mapFunction );
 
     /**
      * @return the value as a {@link Entity}, if possible.
@@ -263,4 +289,8 @@ public interface Value extends MapAccessor, ListAccessor
     // Force implementation
     @Override
     int hashCode();
+
+    //Force implementation
+    @Override
+    String toString();
 }

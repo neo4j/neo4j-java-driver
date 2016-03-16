@@ -34,8 +34,10 @@ import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+
 import static org.neo4j.driver.v1.AuthTokens.basic;
 import static org.neo4j.driver.v1.Values.parameters;
+import static org.neo4j.driver.v1.Values.ofValue;
 
 public class CredentialsIT
 {
@@ -60,10 +62,10 @@ public class CredentialsIT
 
         // When
         Session session = driver.session();
-        Value single = session.run( "RETURN 1" ).single( 0 );
+        Value single = session.run( "RETURN 1" ).single().get(0);
 
         // Then
-        assertThat( single.asLong(), equalTo(1l));
+        assertThat( single.asLong(), equalTo( 1L ) );
     }
 
     @Test
@@ -78,10 +80,10 @@ public class CredentialsIT
 
         // Expect
         exception.expect( ClientException.class );
-        exception.expectMessage( "The client provided an incorrect username and/or password." );
+        exception.expectMessage( "The client is unauthorized due to authentication failure." );
 
         // When
-        session.run( "RETURN 1" ).single( 0 );
+        session.run( "RETURN 1" ).single().get(0);
     }
 
     private void enableAuth( String password ) throws Exception
@@ -95,9 +97,9 @@ public class CredentialsIT
                         "scheme", "basic",
                         "principal", "neo4j",
                         "credentials", "neo4j",
-                        "new_credentials", password ) ) );
+                        "new_credentials", password ).asMap( ofValue()) ) );
         Session sess = setPassword.session();
-        sess.run( "RETURN 1" ).close();
+        sess.run( "RETURN 1" ).consume();
         sess.close();
         setPassword.close();
     }

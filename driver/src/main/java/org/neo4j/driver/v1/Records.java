@@ -18,57 +18,46 @@
  */
 package org.neo4j.driver.v1;
 
+import org.neo4j.driver.v1.util.Function;
+
 /**
  * Static utility methods for retaining records
  *
- * @see ResultCursor#list()
+ * @see StatementResult#list()
+ * @since 1.0
  */
 public abstract class Records
 {
-    public static Function<RecordAccessor, Record> recordAsIs()
+    public static Function<Record,Value> column( int index )
     {
-        return RECORD;
+        return column( index, Values.ofValue() );
     }
 
-    public static Function<RecordAccessor, Value> columnAsIs( int index )
+    public static Function<Record, Value> column( String key )
     {
-        return column( index, Values.valueAsIs() );
+        return column( key, Values.ofValue() );
     }
 
-    public static Function<RecordAccessor, Value> columnAsIs( String key )
+    public static <T> Function<Record, T> column( final int index, final Function<Value, T> mapFunction )
     {
-        return column( key, Values.valueAsIs() );
-    }
-
-    public static <T> Function<RecordAccessor, T> column( final int index, final Function<Value, T> mapFunction )
-    {
-        return new Function<RecordAccessor, T>()
+        return new Function<Record, T>()
         {
             @Override
-            public T apply( RecordAccessor recordAccessor )
+            public T apply( Record record )
             {
-                return mapFunction.apply( recordAccessor.get( index ) );
+                return mapFunction.apply( record.get( index ) );
             }
         };
     }
-    public static <T> Function<RecordAccessor, T> column( final String key, final Function<Value, T> mapFunction )
+    public static <T> Function<Record, T> column( final String key, final Function<Value, T> mapFunction )
     {
-        return new Function<RecordAccessor, T>()
+        return new Function<Record, T>()
         {
             @Override
-            public T apply( RecordAccessor recordAccessor )
+            public T apply( Record recordAccessor )
             {
                 return mapFunction.apply( recordAccessor.get( key ) );
             }
         };
     }
-
-    private static final Function<RecordAccessor, Record> RECORD = new Function<RecordAccessor, Record>()
-    {
-        @Override
-        public Record apply( RecordAccessor recordAccessor )
-        {
-            return recordAccessor.record();
-        }
-    };
 }

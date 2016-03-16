@@ -24,11 +24,11 @@ import java.util.List;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
-import org.neo4j.driver.v1.Notification;
-import org.neo4j.driver.v1.Pair;
+import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.summary.Notification;
+import org.neo4j.driver.v1.util.Pair;
 import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.ResultCursor;
-import org.neo4j.driver.v1.ResultSummary;
+import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.Value;
@@ -59,10 +59,10 @@ public class Examples
     public static void statement( Session session ) throws Exception
     {
         // tag::statement[]
-        ResultCursor result =
+        StatementResult result =
                 session.run( "CREATE (p:Person { name: {name} })", Values.parameters( "name", "The One" ) );
 
-        int theOnesCreated = result.summarize().updateStatistics().nodesCreated();
+        int theOnesCreated = result.consume().counters().nodesCreated();
         System.out.println( "There were " + theOnesCreated + " the ones created." );
         // end::statement[]
     }
@@ -70,9 +70,9 @@ public class Examples
     public static void statementWithoutParameters( Session session ) throws Exception
     {
         // tag::statement-without-parameters[]
-        ResultCursor result = session.run( "CREATE (p:Person { name: 'The One' })" );
+        StatementResult result = session.run( "CREATE (p:Person { name: 'The One' })" );
 
-        int theOnesCreated = result.summarize().updateStatistics().nodesCreated();
+        int theOnesCreated = result.consume().counters().nodesCreated();
         System.out.println( "There were " + theOnesCreated + " the ones created." );
         // end::statement-without-parameters[]
     }
@@ -80,15 +80,15 @@ public class Examples
     public static void resultCursor( Session session ) throws Exception
     {
         // tag::result-cursor[]
-        ResultCursor result = session.run( "MATCH (p:Person { name: {name} }) RETURN p.age",
+        StatementResult result = session.run( "MATCH (p:Person { name: {name} }) RETURN p.age",
                 Values.parameters( "name", "The One" ) );
 
-        while ( result.next() )
+        while ( result.hasNext() )
         {
-            System.out.println( "Record: " + result.position() );
-            for ( Pair<String,Value> fieldInRecord : result.fields() )
+            Record record = result.next();
+            for ( Pair<String,Value> fieldInRecord : record.fields() )
             {
-                System.out.println( "  " + fieldInRecord.key() + " = " + fieldInRecord.value() );
+                System.out.println( fieldInRecord.key() + " = " + fieldInRecord.value() );
             }
         }
         // end::result-cursor[]
@@ -97,7 +97,7 @@ public class Examples
     public static void retainResultsForNestedQuerying( Session session ) throws Exception
     {
         // tag::retain-result-query[]
-        ResultCursor result = session.run( "MATCH (p:Person { name: {name} }) RETURN id(p)",
+        StatementResult result = session.run( "MATCH (p:Person { name: {name} }) RETURN id(p)",
                 Values.parameters( "name", "The One" ) );
 
         for ( Record record : result.list() )
@@ -113,7 +113,7 @@ public class Examples
         // tag::retain-result-process[]
         Session session = driver.session();
 
-        ResultCursor result = session.run( "MATCH (p:Person { name: {name} }) RETURN p.age",
+        StatementResult result = session.run( "MATCH (p:Person { name: {name} }) RETURN p.age",
                 Values.parameters( "name", "The One" ) );
 
         List<Record> records = result.list();
@@ -155,10 +155,10 @@ public class Examples
     public static void resultSummary( Session session ) throws Exception
     {
         // tag::result-summary-query-profile[]
-        ResultCursor result = session.run( "PROFILE MATCH (p:Person { name: {name} }) RETURN id(p)",
+        StatementResult result = session.run( "PROFILE MATCH (p:Person { name: {name} }) RETURN id(p)",
                 Values.parameters( "name", "The One" ) );
 
-        ResultSummary summary = result.summarize();
+        ResultSummary summary = result.consume();
 
         System.out.println( summary.statementType() );
         System.out.println( summary.profile() );
@@ -168,7 +168,7 @@ public class Examples
     public static void notifications( Session session ) throws Exception
     {
         // tag::result-summary-notifications[]
-        ResultSummary summary = session.run( "EXPLAIN MATCH (a), (b) RETURN a,b" ).summarize();
+        ResultSummary summary = session.run( "EXPLAIN MATCH (a), (b) RETURN a,b" ).consume();
 
         for ( Notification notification : summary.notifications() )
         {

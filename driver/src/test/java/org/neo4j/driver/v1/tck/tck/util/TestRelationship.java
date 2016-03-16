@@ -18,11 +18,11 @@
  */
 package org.neo4j.driver.v1.tck.tck.util;
 
-import org.neo4j.driver.v1.Function;
-import org.neo4j.driver.v1.Identity;
-import org.neo4j.driver.v1.Pair;
-import org.neo4j.driver.v1.Relationship;
+import java.util.Map;
+
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.types.Relationship;
+import org.neo4j.driver.v1.util.Function;
 
 public class TestRelationship implements Relationship
 {
@@ -49,21 +49,21 @@ public class TestRelationship implements Relationship
     }
 
     @Override
-    public Identity start()
+    public long startNodeId()
     {
-        return this.start.identity();
+        return this.start.id();
     }
 
     @Override
-    public Identity end()
+    public long endNodeId()
     {
-        return this.end.identity();
+        return this.end.id();
     }
 
     @Override
-    public Identity identity()
+    public long id()
     {
-        return trv.identity();
+        return trv.id();
     }
 
     @Override
@@ -103,15 +103,15 @@ public class TestRelationship implements Relationship
     }
 
     @Override
-    public Iterable<Pair<String,Value>> properties()
+    public Map<String,Object> asMap()
     {
-        return trv.properties();
+        return trv.asMap();
     }
 
     @Override
-    public <V> Iterable<Pair<String,V>> properties( Function<Value,V> mapFunction )
+    public <T> Map<String,T> asMap( Function<Value,T> mapFunction )
     {
-        return trv.properties( mapFunction );
+        return trv.asMap( mapFunction );
     }
 
     public TestRelationshipValue getTestRelationshipValue()

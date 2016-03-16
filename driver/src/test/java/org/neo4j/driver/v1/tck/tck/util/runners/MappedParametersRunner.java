@@ -21,19 +21,21 @@ package org.neo4j.driver.v1.tck.tck.util.runners;
 import java.util.Collections;
 import java.util.Map;
 
-import org.neo4j.driver.v1.ResultCursor;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
+import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.Values;
 
 import static org.neo4j.driver.v1.tck.Environment.driver;
 
 public class MappedParametersRunner implements CypherStatementRunner
 {
     private String query;
-    private Map<String,Value> parameters;
-    private ResultCursor result;
     private Session session;
+    private String statement;
+    private Value parameters;
+    private StatementResult result;
 
     public static MappedParametersRunner createParameterRunner( String st, String key, Value value )
     {
@@ -44,7 +46,8 @@ public class MappedParametersRunner implements CypherStatementRunner
     {
         session = driver.session();
         query = st;
-        parameters = params;
+        statement = st;
+        parameters = Values.value(params);
     }
 
     @Override
@@ -56,13 +59,13 @@ public class MappedParametersRunner implements CypherStatementRunner
     }
 
     @Override
-    public ResultCursor result()
+    public StatementResult result()
     {
         return result;
     }
 
     @Override
-    public Map<String,Value> parameters()
+    public Value parameters()
     {
         return parameters;
     }

@@ -19,7 +19,7 @@
 package org.neo4j.driver.internal.value;
 
 import org.neo4j.driver.internal.types.InternalTypeSystem;
-import org.neo4j.driver.v1.Type;
+import org.neo4j.driver.v1.types.Type;
 
 public abstract class BooleanValue extends ScalarValueAdapter
 {

@@ -19,23 +19,24 @@
 package org.neo4j.driver.internal;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
 import org.neo4j.driver.internal.util.Extract;
 import org.neo4j.driver.internal.value.InternalValue;
+import org.neo4j.driver.v1.util.Function;
+import org.neo4j.driver.v1.util.Pair;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 
 import static java.lang.String.format;
-
 import static org.neo4j.driver.internal.util.Format.formatPairs;
-import static org.neo4j.driver.v1.Values.valueAsIs;
+import static org.neo4j.driver.v1.Values.ofValue;
+import static org.neo4j.driver.v1.Values.ofObject;
 
-public class InternalRecord extends InternalRecordAccessor implements Record
+public class InternalRecord implements Record
 {
     private final List<String> keys;
     private final Value[] values;
@@ -51,6 +52,12 @@ public class InternalRecord extends InternalRecordAccessor implements Record
     public List<String> keys()
     {
         return keys;
+    }
+
+    @Override
+    public List<Pair<String, Value>> fields()
+    {
+        return Extract.fields( this, ofValue() );
     }
 
     @Override
@@ -101,21 +108,21 @@ public class InternalRecord extends InternalRecordAccessor implements Record
     }
 
     @Override
-    public Record record()
+    public Map<String, Object> asMap()
     {
-        return this;
+        return Extract.map( this, ofObject() );
     }
 
     @Override
-    public Map<String, Value> asMap()
+    public <T> Map<String,T> asMap( Function<Value,T> mapper )
     {
-        return Extract.map( this, valueAsIs() );
+        return Extract.map( this, mapper );
     }
 
     @Override
     public String toString()
     {
-        return format( "Record<%s>", formatPairs( InternalValue.Format.VALUE_WITH_TYPE, size(), fields() ) );
+        return format( "Record<%s>", formatPairs( InternalValue.Format.VALUE_ONLY, asMap( ofValue() ) ) );
     }
 
     public boolean equals( Object other )

@@ -24,19 +24,20 @@ import java.util.Map;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.StreamCollector;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
-import org.neo4j.driver.v1.ResultCursor;
+import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
+import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
-import org.neo4j.driver.v1.TypeSystem;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
+import org.neo4j.driver.v1.types.TypeSystem;
+
+import static org.neo4j.driver.v1.Values.ofValue;
 
 public class InternalTransaction implements Transaction
 {
-    private final Runnable cleanup;
-    private Connection conn;
-
     private enum State
     {
         /** The transaction is running with no explicit success or failure marked */
@@ -60,6 +61,9 @@ public class InternalTransaction implements Transaction
         /** This transaction has been rolled back */
         ROLLED_BACK
     }
+
+    private final Runnable cleanup;
+    private final Connection conn;
 
     private State state = State.ACTIVE;
 
@@ -89,13 +93,6 @@ public class InternalTransaction implements Transaction
         {
             state = State.MARKED_FAILED;
         }
-    }
-
-    @Override
-    public void defunct()
-    {
-        state = State.ROLLED_BACK;
-        conn = null;
     }
 
     @Override
@@ -131,16 +128,43 @@ public class InternalTransaction implements Transaction
 
     @Override
     @SuppressWarnings( "unchecked" )
-    public ResultCursor run( String statementText, Map<String,Value> statementParameters )
+    public StatementResult run( String statementText, Value statementParameters )
+    {
+        return run( new Statement( statementText, statementParameters ) );
+    }
+
+    @Override
+    public StatementResult run( String statementText )
+    {
+        return run( statementText, Values.EmptyMap );
+    }
+
+    @Override
+    public StatementResult run( String statementText, Map<String,Object> statementParameters )
+    {
+        return run( statementText, Values.value( statementParameters ) );
+    }
+
+    @Override
+    public StatementResult run( String statementTemplate, Record statementParameters )
+    {
+        // TODO: This conversion to map here is pointless, it gets converted right back
+        return run( statementTemplate, statementParameters.asMap() );
+    }
+
+    @Override
+    public StatementResult run( Statement statement )
     {
         ensureNotFailed();
 
         try
         {
-            InternalResultCursor cursor = new InternalResultCursor( conn, this, statementText, statementParameters );
-            conn.run( statementText, statementParameters, cursor.runResponseCollector() );
+            InternalStatementResult cursor = new InternalStatementResult( conn, statement );
+            conn.run( statement.text(),
+                    statement.parameters().asMap( ofValue() ),
+                    cursor.runResponseCollector() );
             conn.pullAll( cursor.pullAllResponseCollector() );
-            conn.sendAll();
+            conn.flush();
             return cursor;
         }
         catch ( Neo4jException e )
@@ -148,18 +172,6 @@ public class InternalTransaction implements Transaction
             state = State.FAILED;
             throw e;
         }
-    }
-
-    @Override
-    public ResultCursor run( String statementTemplate )
-    {
-        return run( statementTemplate, ParameterSupport.NO_PARAMETERS );
-    }
-
-    @Override
-    public ResultCursor run( Statement statement )
-    {
-        return run( statement.template(), statement.parameters() );
     }
 
     @Override
@@ -184,5 +196,14 @@ public class InternalTransaction implements Transaction
     public TypeSystem typeSystem()
     {
         return InternalTypeSystem.TYPE_SYSTEM;
+    }
+
+    // TODO: This is wrong. This is only needed because we changed the SSM
+    // to move to IDLE on any exception (so the normal `ROLLBACK` statement won't work).
+    // We should change the SSM to move to some special ROLLBACK_ONLY state instead and
+    // remove this code path
+    public void markAsRolledBack()
+    {
+        state = State.ROLLED_BACK;
     }
 }

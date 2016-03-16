@@ -18,22 +18,21 @@
  */
 package org.neo4j.driver.v1.integration;
 
-import java.util.List;
-import java.util.Map;
-
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.driver.v1.Notification;
-import org.neo4j.driver.v1.Plan;
-import org.neo4j.driver.v1.ProfiledPlan;
-import org.neo4j.driver.v1.ResultCursor;
-import org.neo4j.driver.v1.ResultSummary;
-import org.neo4j.driver.v1.StatementType;
+import java.util.List;
+import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
+import org.neo4j.driver.v1.summary.Notification;
+import org.neo4j.driver.v1.summary.Plan;
+import org.neo4j.driver.v1.summary.ProfiledPlan;
+import org.neo4j.driver.v1.summary.ResultSummary;
+import org.neo4j.driver.v1.summary.StatementType;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.notNullValue;
@@ -52,65 +51,65 @@ public class SummaryIT
     public void shouldContainBasicMetadata() throws Throwable
     {
         // Given
-        Map<String, Value> statementParameters = Values.parameters( "limit", 10 );
+        Value statementParameters = Values.parameters( "limit", 10 );
         String statementText = "UNWIND [1, 2, 3, 4] AS n RETURN n AS number LIMIT {limit}";
 
         // When
-        ResultCursor result = session.run( statementText, statementParameters );
+        StatementResult result = session.run( statementText, statementParameters );
 
         // Then
-        assertTrue( result.next() );
+        assertTrue( result.hasNext() );
 
         // When
-        ResultSummary summary = result.summarize();
+        ResultSummary summary = result.consume();
 
         // Then
-        assertFalse( result.next() );
+        assertFalse( result.hasNext() );
         assertThat( summary.statementType(), equalTo( StatementType.READ_ONLY ) );
-        assertThat( summary.statement().template(), equalTo( statementText ) );
+        assertThat( summary.statement().text(), equalTo( statementText ) );
         assertThat( summary.statement().parameters(), equalTo( statementParameters ) );
         assertFalse( summary.hasPlan() );
         assertFalse( summary.hasProfile() );
-        assertThat( summary, equalTo( result.summarize() ) );
+        assertThat( summary, equalTo( result.consume() ) );
     }
 
     @Test
     public void shouldContainCorrectStatistics() throws Throwable
     {
-        assertThat( session.run( "CREATE (n)" ).summarize().updateStatistics().nodesCreated(), equalTo( 1 ) );
-        assertThat( session.run( "MATCH (n) DELETE (n)" ).summarize().updateStatistics().nodesDeleted(), equalTo( 1 ) );
+        assertThat( session.run( "CREATE (n)" ).consume().counters().nodesCreated(), equalTo( 1 ) );
+        assertThat( session.run( "MATCH (n) DELETE (n)" ).consume().counters().nodesDeleted(), equalTo( 1 ) );
 
-        assertThat( session.run( "CREATE ()-[:KNOWS]->()" ).summarize().updateStatistics().relationshipsCreated(), equalTo( 1 ) );
-        assertThat( session.run( "MATCH ()-[r:KNOWS]->() DELETE r" ).summarize().updateStatistics().relationshipsDeleted(), equalTo( 1 ) );
+        assertThat( session.run( "CREATE ()-[:KNOWS]->()" ).consume().counters().relationshipsCreated(), equalTo( 1 ) );
+        assertThat( session.run( "MATCH ()-[r:KNOWS]->() DELETE r" ).consume().counters().relationshipsDeleted(), equalTo( 1 ) );
 
-        assertThat( session.run( "CREATE (n:ALabel)" ).summarize().updateStatistics().labelsAdded(), equalTo( 1 ) );
-        assertThat( session.run( "CREATE (n {magic: 42})" ).summarize().updateStatistics().propertiesSet(), equalTo( 1 ) );
-        assertTrue( session.run( "CREATE (n {magic: 42})" ).summarize().updateStatistics().containsUpdates() );
-        assertThat( session.run( "MATCH (n:ALabel) REMOVE n:ALabel " ).summarize().updateStatistics().labelsRemoved(), equalTo( 1 ) );
+        assertThat( session.run( "CREATE (n:ALabel)" ).consume().counters().labelsAdded(), equalTo( 1 ) );
+        assertThat( session.run( "CREATE (n {magic: 42})" ).consume().counters().propertiesSet(), equalTo( 1 ) );
+        assertTrue( session.run( "CREATE (n {magic: 42})" ).consume().counters().containsUpdates() );
+        assertThat( session.run( "MATCH (n:ALabel) REMOVE n:ALabel " ).consume().counters().labelsRemoved(), equalTo( 1 ) );
 
-        assertThat( session.run( "CREATE INDEX ON :ALabel(prop)" ).summarize().updateStatistics().indexesAdded(), equalTo( 1 ) );
-        assertThat( session.run( "DROP INDEX ON :ALabel(prop)" ).summarize().updateStatistics().indexesRemoved(), equalTo( 1 ) );
+        assertThat( session.run( "CREATE INDEX ON :ALabel(prop)" ).consume().counters().indexesAdded(), equalTo( 1 ) );
+        assertThat( session.run( "DROP INDEX ON :ALabel(prop)" ).consume().counters().indexesRemoved(), equalTo( 1 ) );
 
         assertThat( session.run( "CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE" )
-                .summarize().updateStatistics().constraintsAdded(), equalTo( 1 ) );
+                .consume().counters().constraintsAdded(), equalTo( 1 ) );
         assertThat( session.run( "DROP CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE" )
-                .summarize().updateStatistics().constraintsRemoved(), equalTo( 1 ) );
+                .consume().counters().constraintsRemoved(), equalTo( 1 ) );
     }
 
     @Test
     public void shouldContainCorrectStatementType() throws Throwable
     {
-        assertThat( session.run("MATCH (n) RETURN 1").summarize().statementType(), equalTo( StatementType.READ_ONLY ));
-        assertThat( session.run("CREATE (n)").summarize().statementType(), equalTo( StatementType.WRITE_ONLY ));
-        assertThat( session.run("CREATE (n) RETURN (n)").summarize().statementType(), equalTo( StatementType.READ_WRITE ));
-        assertThat( session.run("CREATE INDEX ON :User(p)").summarize().statementType(), equalTo( StatementType.SCHEMA_WRITE ));
+        assertThat( session.run("MATCH (n) RETURN 1").consume().statementType(), equalTo( StatementType.READ_ONLY ));
+        assertThat( session.run("CREATE (n)").consume().statementType(), equalTo( StatementType.WRITE_ONLY ));
+        assertThat( session.run("CREATE (n) RETURN (n)").consume().statementType(), equalTo( StatementType.READ_WRITE ));
+        assertThat( session.run("CREATE INDEX ON :User(p)").consume().statementType(), equalTo( StatementType.SCHEMA_WRITE ));
     }
 
     @Test
     public void shouldContainCorrectPlan() throws Throwable
     {
         // When
-        Plan plan = session.run( "EXPLAIN MATCH (n) RETURN 1" ).summarize().plan();
+        Plan plan = session.run( "EXPLAIN MATCH (n) RETURN 1" ).consume().plan();
 
         // Then
         assertThat( plan.operatorType(), notNullValue() );
@@ -122,7 +121,7 @@ public class SummaryIT
     public void shouldContainProfile() throws Throwable
     {
         // When
-        ResultSummary summary = session.run( "PROFILE RETURN 1" ).summarize();
+        ResultSummary summary = session.run( "PROFILE RETURN 1" ).consume();
 
         // Then
         assertEquals( true, summary.hasProfile() );
@@ -140,15 +139,14 @@ public class SummaryIT
     public void shouldContainNotifications() throws Throwable
     {
         // When
-        ResultSummary summary = session.run( "EXPLAIN MATCH (n), (m) RETURN n, m" ).summarize();
+        ResultSummary summary = session.run( "EXPLAIN MATCH (n), (m) RETURN n, m" ).consume();
 
         // Then
         assertEquals( true, summary.hasPlan() );
         List<Notification> notifications = summary.notifications();
         assertNotNull( notifications );
         assertThat( notifications.size(), equalTo( 1 ) );
-
-        assertThat( notifications.get( 0 ).toString(), equalTo("code=Neo.ClientNotification.Statement.CartesianProduct, title=This query builds a cartesian product between disconnected patterns., description=If a part of a query contains multiple disconnected patterns, this will build a cartesian product between all those parts. This may produce a large amount of data and slow down query processing. While occasionally intended, it may often be possible to reformulate the query that avoids the use of this cross product, perhaps by adding a relationship between the different parts or by using OPTIONAL MATCH (identifier is: (m)), position={offset=0, line=1, column=1}") );
+        assertThat( notifications.get( 0 ).toString(), containsString("CartesianProduct") );
 
     }
 }

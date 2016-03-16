@@ -23,6 +23,7 @@ import java.util.logging.Level;
 
 import org.neo4j.driver.internal.logging.JULogging;
 import org.neo4j.driver.internal.spi.Logging;
+import org.neo4j.driver.v1.util.Immutable;
 
 import static java.lang.System.getProperty;
 import static org.neo4j.driver.v1.Config.TrustStrategy.*;
@@ -39,6 +40,7 @@ import static org.neo4j.driver.v1.Config.TrustStrategy.*;
  *                  .toConfig();
  * }
  * </pre>
+ * @since 1.0
  */
 @Immutable
 public class Config
@@ -203,7 +205,6 @@ public class Config
          * Configure the {@link EncryptionLevel} to use, use this to control wether the driver uses TLS encryption or not.
          * @param level the TLS level to use
          * @return this builder
-         * @see #withTrustStrategy(TrustStrategy)
          */
         public ConfigBuilder withEncryptionLevel( EncryptionLevel level )
         {
@@ -221,7 +222,6 @@ public class Config
          * is really Neo4j, there is no point to encrypt at all, since anyone could pretend to be the remote Neo4j instance.
          * <p>
          * For this reason, there is no option to disable trust verification, if you find this cumbersome you should disable encryption using
-         * {@link #withEncryptionLevel(EncryptionLevel)}. The safety is equivalent and disabling encryption improves latency.
          *
          * @param trustStrategy TLS authentication strategy
          * @return this builder

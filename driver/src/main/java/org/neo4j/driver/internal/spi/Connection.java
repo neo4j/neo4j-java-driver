@@ -31,13 +31,14 @@ public interface Connection extends AutoCloseable
     /**
      * Initialize the connection. This must be done before any other action is allowed.
      * @param clientName should be the driver name and version: "java-driver/1.0.0"
-     * @param authToken
+     * @param authToken a map value
      */
     void init( String clientName, Map<String,Value> authToken );
 
     /**
      * Queue up a run action. The collector will value called with metadata about the stream that will become available
      * for retrieval.
+     * @param parameters a map value of parameters
      */
     void run( String statement, Map<String,Value> parameters, StreamCollector collector );
 
@@ -67,12 +68,7 @@ public interface Connection extends AutoCloseable
     /**
      * Send all pending messages to the server and return the number of messages sent.
      */
-    int sendAll();
-
-    /**
-     * Receive all expected responses for any previous messages sent and return the number received.
-     */
-    int receiveAll();
+    void flush();
 
     /**
      * Receive the next message available.
@@ -92,4 +88,12 @@ public interface Connection extends AutoCloseable
      */
     boolean isOpen();
 
+    /**
+     * If there are any errors that occur on this connection, invoke the given
+     * runnable. This is used in the driver to clean up resources associated with
+     * the connection, like an open transaction.
+     *
+     * @param runnable
+     */
+    void onError( Runnable runnable );
 }

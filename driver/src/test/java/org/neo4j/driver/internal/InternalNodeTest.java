@@ -25,7 +25,7 @@ import java.util.Map;
 
 import org.junit.Test;
 
-import org.neo4j.driver.v1.Function;
+import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.Value;
 
 import static org.hamcrest.CoreMatchers.equalTo;

@@ -55,7 +55,7 @@ public class Neo4jDefaultInstaller extends Neo4jInstaller
     @Override
     File neo4jTarball()
     {
-        return new File( "./target/" + version + ".tar.gz" );
+        return new File( Neo4jInstaller.neo4jDir, version + ".tar.gz" );
     }
 
     @Override

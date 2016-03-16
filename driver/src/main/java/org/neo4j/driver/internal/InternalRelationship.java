@@ -22,35 +22,24 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.neo4j.driver.internal.value.RelationshipValue;
-import org.neo4j.driver.v1.Identity;
-import org.neo4j.driver.v1.Relationship;
+import org.neo4j.driver.v1.types.Relationship;
 import org.neo4j.driver.v1.Value;
 
 /**
- * {@link Relationship} implementation that directly contains type and properties
- * along with {@link Identity} values for start and end nodes.
+ * {@link Relationship} implementation that directly contains type and properties.
  */
 public class InternalRelationship extends InternalEntity implements Relationship
 {
-    private Identity start;
-    private Identity end;
+    private long start;
+    private long end;
     private final String type;
 
     public InternalRelationship( long id, long start, long end, String type )
     {
-        this( Identities.identity( id ), Identities.identity( start ),
-                Identities.identity( end ), type,
-                Collections.<String,Value>emptyMap() );
+        this( id, start, end, type, Collections.<String,Value>emptyMap() );
     }
 
     public InternalRelationship( long id, long start, long end, String type,
-                                 Map<String, Value> properties )
-    {
-        this( Identities.identity( id ), Identities.identity( start ),
-                Identities.identity( end ), type, properties );
-    }
-
-    public InternalRelationship( Identity id, Identity start, Identity end, String type,
                                  Map<String, Value> properties )
     {
         super( id, properties );
@@ -66,20 +55,20 @@ public class InternalRelationship extends InternalEntity implements Relationship
     }
 
     /** Modify the start/end identities of this relationship */
-    public void setStartAndEnd( Identity start, Identity end )
+    public void setStartAndEnd( long start, long end )
     {
         this.start = start;
         this.end = end;
     }
 
     @Override
-    public Identity start()
+    public long startNodeId()
     {
         return start;
     }
 
     @Override
-    public Identity end()
+    public long endNodeId()
     {
         return end;
     }
@@ -99,6 +88,6 @@ public class InternalRelationship extends InternalEntity implements Relationship
     @Override
     public String toString()
     {
-        return String.format( "relationship<%s>", identity() );
+        return String.format( "relationship<%s>", id() );
     }
 }
