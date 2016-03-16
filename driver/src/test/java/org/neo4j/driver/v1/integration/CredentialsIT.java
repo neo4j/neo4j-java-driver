@@ -99,7 +99,7 @@ public class CredentialsIT
                         "credentials", "neo4j",
                         "new_credentials", password ).asMap( ofValue()) ) );
         Session sess = setPassword.session();
-        sess.run( "RETURN 1" ).discard();
+        sess.run( "RETURN 1" ).consume();
         sess.close();
         setPassword.close();
     }

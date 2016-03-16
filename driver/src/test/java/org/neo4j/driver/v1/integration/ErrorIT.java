@@ -51,7 +51,7 @@ public class ErrorIT
 
         // When
         StatementResult result = session.run( "invalid statement" );
-        result.discard();
+        result.consume();
     }
 
     @Test
@@ -61,7 +61,7 @@ public class ErrorIT
         Transaction tx = session.beginTransaction();
 
         // And Given an error has occurred
-        try { tx.run( "invalid" ).discard(); } catch ( ClientException e ) {}
+        try { tx.run( "invalid" ).consume(); } catch ( ClientException e ) {}
 
         // Expect
         exception.expect( ClientException.class );
@@ -77,7 +77,7 @@ public class ErrorIT
     public void shouldAllowNewStatementAfterRecoverableError() throws Throwable
     {
         // Given an error has occurred
-        try { session.run( "invalid" ).discard(); } catch ( ClientException e ) {}
+        try { session.run( "invalid" ).consume(); } catch ( ClientException e ) {}
 
         // When
         StatementResult cursor = session.run( "RETURN 1" );
@@ -93,7 +93,7 @@ public class ErrorIT
         // Given an error has occurred in a prior transaction
         try ( Transaction tx = session.beginTransaction() )
         {
-            tx.run( "invalid" ).discard();
+            tx.run( "invalid" ).consume();
         }
         catch ( ClientException e ) {}
 

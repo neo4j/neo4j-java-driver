@@ -136,7 +136,7 @@ public class ConnectionPoolIT
                 {
                     Session s = driver.session();
                     sessions.add( s );
-                    s.run( "RETURN 1" ).discard();
+                    s.run( "RETURN 1" ).consume();
                 }
             }
             finally
