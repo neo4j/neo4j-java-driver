@@ -61,7 +61,7 @@ public class SummaryIT
         assertTrue( result.hasNext() );
 
         // When
-        ResultSummary summary = result.summarize();
+        ResultSummary summary = result.consume();
 
         // Then
         assertFalse( result.hasNext() );
@@ -70,46 +70,46 @@ public class SummaryIT
         assertThat( summary.statement().parameters(), equalTo( statementParameters ) );
         assertFalse( summary.hasPlan() );
         assertFalse( summary.hasProfile() );
-        assertThat( summary, equalTo( result.summarize() ) );
+        assertThat( summary, equalTo( result.consume() ) );
     }
 
     @Test
     public void shouldContainCorrectStatistics() throws Throwable
     {
-        assertThat( session.run( "CREATE (n)" ).summarize().updateStatistics().nodesCreated(), equalTo( 1 ) );
-        assertThat( session.run( "MATCH (n) DELETE (n)" ).summarize().updateStatistics().nodesDeleted(), equalTo( 1 ) );
+        assertThat( session.run( "CREATE (n)" ).consume().counters().nodesCreated(), equalTo( 1 ) );
+        assertThat( session.run( "MATCH (n) DELETE (n)" ).consume().counters().nodesDeleted(), equalTo( 1 ) );
 
-        assertThat( session.run( "CREATE ()-[:KNOWS]->()" ).summarize().updateStatistics().relationshipsCreated(), equalTo( 1 ) );
-        assertThat( session.run( "MATCH ()-[r:KNOWS]->() DELETE r" ).summarize().updateStatistics().relationshipsDeleted(), equalTo( 1 ) );
+        assertThat( session.run( "CREATE ()-[:KNOWS]->()" ).consume().counters().relationshipsCreated(), equalTo( 1 ) );
+        assertThat( session.run( "MATCH ()-[r:KNOWS]->() DELETE r" ).consume().counters().relationshipsDeleted(), equalTo( 1 ) );
 
-        assertThat( session.run( "CREATE (n:ALabel)" ).summarize().updateStatistics().labelsAdded(), equalTo( 1 ) );
-        assertThat( session.run( "CREATE (n {magic: 42})" ).summarize().updateStatistics().propertiesSet(), equalTo( 1 ) );
-        assertTrue( session.run( "CREATE (n {magic: 42})" ).summarize().updateStatistics().containsUpdates() );
-        assertThat( session.run( "MATCH (n:ALabel) REMOVE n:ALabel " ).summarize().updateStatistics().labelsRemoved(), equalTo( 1 ) );
+        assertThat( session.run( "CREATE (n:ALabel)" ).consume().counters().labelsAdded(), equalTo( 1 ) );
+        assertThat( session.run( "CREATE (n {magic: 42})" ).consume().counters().propertiesSet(), equalTo( 1 ) );
+        assertTrue( session.run( "CREATE (n {magic: 42})" ).consume().counters().containsUpdates() );
+        assertThat( session.run( "MATCH (n:ALabel) REMOVE n:ALabel " ).consume().counters().labelsRemoved(), equalTo( 1 ) );
 
-        assertThat( session.run( "CREATE INDEX ON :ALabel(prop)" ).summarize().updateStatistics().indexesAdded(), equalTo( 1 ) );
-        assertThat( session.run( "DROP INDEX ON :ALabel(prop)" ).summarize().updateStatistics().indexesRemoved(), equalTo( 1 ) );
+        assertThat( session.run( "CREATE INDEX ON :ALabel(prop)" ).consume().counters().indexesAdded(), equalTo( 1 ) );
+        assertThat( session.run( "DROP INDEX ON :ALabel(prop)" ).consume().counters().indexesRemoved(), equalTo( 1 ) );
 
         assertThat( session.run( "CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE" )
-                .summarize().updateStatistics().constraintsAdded(), equalTo( 1 ) );
+                .consume().counters().constraintsAdded(), equalTo( 1 ) );
         assertThat( session.run( "DROP CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE" )
-                .summarize().updateStatistics().constraintsRemoved(), equalTo( 1 ) );
+                .consume().counters().constraintsRemoved(), equalTo( 1 ) );
     }
 
     @Test
     public void shouldContainCorrectStatementType() throws Throwable
     {
-        assertThat( session.run("MATCH (n) RETURN 1").summarize().statementType(), equalTo( StatementType.READ_ONLY ));
-        assertThat( session.run("CREATE (n)").summarize().statementType(), equalTo( StatementType.WRITE_ONLY ));
-        assertThat( session.run("CREATE (n) RETURN (n)").summarize().statementType(), equalTo( StatementType.READ_WRITE ));
-        assertThat( session.run("CREATE INDEX ON :User(p)").summarize().statementType(), equalTo( StatementType.SCHEMA_WRITE ));
+        assertThat( session.run("MATCH (n) RETURN 1").consume().statementType(), equalTo( StatementType.READ_ONLY ));
+        assertThat( session.run("CREATE (n)").consume().statementType(), equalTo( StatementType.WRITE_ONLY ));
+        assertThat( session.run("CREATE (n) RETURN (n)").consume().statementType(), equalTo( StatementType.READ_WRITE ));
+        assertThat( session.run("CREATE INDEX ON :User(p)").consume().statementType(), equalTo( StatementType.SCHEMA_WRITE ));
     }
 
     @Test
     public void shouldContainCorrectPlan() throws Throwable
     {
         // When
-        Plan plan = session.run( "EXPLAIN MATCH (n) RETURN 1" ).summarize().plan();
+        Plan plan = session.run( "EXPLAIN MATCH (n) RETURN 1" ).consume().plan();
 
         // Then
         assertThat( plan.operatorType(), notNullValue() );
@@ -121,7 +121,7 @@ public class SummaryIT
     public void shouldContainProfile() throws Throwable
     {
         // When
-        ResultSummary summary = session.run( "PROFILE RETURN 1" ).summarize();
+        ResultSummary summary = session.run( "PROFILE RETURN 1" ).consume();
 
         // Then
         assertEquals( true, summary.hasProfile() );
@@ -139,7 +139,7 @@ public class SummaryIT
     public void shouldContainNotifications() throws Throwable
     {
         // When
-        ResultSummary summary = session.run( "EXPLAIN MATCH (n), (m) RETURN n, m" ).summarize();
+        ResultSummary summary = session.run( "EXPLAIN MATCH (n), (m) RETURN n, m" ).consume();
 
         // Then
         assertEquals( true, summary.hasPlan() );

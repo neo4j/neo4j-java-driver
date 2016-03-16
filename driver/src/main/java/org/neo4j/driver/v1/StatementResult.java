@@ -128,22 +128,17 @@ public interface StatementResult extends Iterator<Record>
     <T> List<T> list( Function<Record, T> mapFunction );
 
     /**
-     * Summarize the result.
+     * Consume the entire result, yielding a summary of it.
      *
      * Calling this method exhausts the result.
      *
      * <pre class="doctest:ResultDocIT#summarizeUsage">
      * {@code
-     * ResultSummary summary = session.run( "PROFILE MATCH (n:User {id: 12345}) RETURN n" ).summarize();
+     * ResultSummary summary = session.run( "PROFILE MATCH (n:User {id: 12345}) RETURN n" ).consume();
      * }
      * </pre>
      *
      * @return a summary for the whole query
      */
-    ResultSummary summarize();
-
-    /**
-     * Discard this result, freeing up any associated resources.
-     */
-    void discard();
+    ResultSummary consume();
 }

@@ -25,11 +25,11 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.neo4j.driver.internal.spi.StreamCollector;
-import org.neo4j.driver.internal.summary.InternalUpdateStatistics;
+import org.neo4j.driver.internal.summary.InternalSummaryCounters;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.summary.Plan;
 import org.neo4j.driver.v1.summary.StatementType;
-import org.neo4j.driver.v1.summary.UpdateStatistics;
+import org.neo4j.driver.v1.summary.SummaryCounters;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
@@ -91,7 +91,7 @@ public class SocketResponseHandlerTest
                         "properties-set", 12
                 )
         ).asMap( ofValue());
-        UpdateStatistics stats = new InternalUpdateStatistics( 1, 0, 0, 0, 12, 0, 0, 0, 0, 0, 0);
+        SummaryCounters stats = new InternalSummaryCounters( 1, 0, 0, 0, 12, 0, 0, 0, 0, 0, 0);
 
         // When
         handler.handleSuccessMessage( data );
@@ -126,7 +126,7 @@ public class SocketResponseHandlerTest
                 )
         ).asMap( ofValue());
 
-        UpdateStatistics stats = new InternalUpdateStatistics( 1, 0, 0, 0, 12, 0, 0, 0, 0, 0, 0 );
+        SummaryCounters stats = new InternalSummaryCounters( 1, 0, 0, 0, 12, 0, 0, 0, 0, 0, 0 );
         Plan plan = plan(
             "ProduceResults",
                 parameters( "KeyNames", "num", "EstimatedRows", 1.0 ).asMap( ofValue()), singletonList( "num" ),

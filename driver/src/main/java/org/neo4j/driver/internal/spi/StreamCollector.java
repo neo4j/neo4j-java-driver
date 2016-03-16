@@ -24,7 +24,7 @@ import org.neo4j.driver.v1.summary.Notification;
 import org.neo4j.driver.v1.summary.Plan;
 import org.neo4j.driver.v1.summary.ProfiledPlan;
 import org.neo4j.driver.v1.summary.StatementType;
-import org.neo4j.driver.v1.summary.UpdateStatistics;
+import org.neo4j.driver.v1.summary.SummaryCounters;
 import org.neo4j.driver.v1.Value;
 
 public interface StreamCollector
@@ -41,7 +41,7 @@ public interface StreamCollector
         public void statementType( StatementType type ) {}
 
         @Override
-        public void statementStatistics( UpdateStatistics statistics ) {}
+        public void statementStatistics( SummaryCounters statistics ) {}
 
         @Override
         public void plan( Plan plan ) {}
@@ -64,7 +64,7 @@ public interface StreamCollector
 
     void statementType( StatementType type);
 
-    void statementStatistics( UpdateStatistics statistics );
+    void statementStatistics( SummaryCounters statistics );
 
     void plan( Plan plan );
 

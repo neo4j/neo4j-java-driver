@@ -27,7 +27,7 @@ import org.neo4j.driver.internal.spi.StreamCollector;
 import org.neo4j.driver.internal.summary.InternalNotification;
 import org.neo4j.driver.internal.summary.InternalPlan;
 import org.neo4j.driver.internal.summary.InternalProfiledPlan;
-import org.neo4j.driver.internal.summary.InternalUpdateStatistics;
+import org.neo4j.driver.internal.summary.InternalSummaryCounters;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.DatabaseException;
@@ -146,7 +146,7 @@ public class SocketResponseHandler implements MessageHandler
         if ( stats != null )
         {
             collector.statementStatistics(
-                    new InternalUpdateStatistics(
+                    new InternalSummaryCounters(
                             statsValue( stats, "nodes-created" ),
                             statsValue( stats, "nodes-deleted" ),
                             statsValue( stats, "relationships-created" ),

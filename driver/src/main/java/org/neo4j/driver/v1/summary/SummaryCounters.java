@@ -21,11 +21,11 @@ package org.neo4j.driver.v1.summary;
 import org.neo4j.driver.v1.util.Immutable;
 
 /**
- * Contains counters for the number of update operations performed by a statement.
+ * Contains counters for various operations that a statement triggered.
  * @since 1.0
  */
 @Immutable
-public interface UpdateStatistics
+public interface SummaryCounters
 {
     /**
      * Whether there were any updates at all, eg. any of the counters are greater than 0.
