@@ -26,6 +26,7 @@ import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 
 public class InternalDriver implements Driver
@@ -58,6 +59,13 @@ public class InternalDriver implements Driver
      */
     public void close() throws Neo4jException
     {
-        connections.close();
+        try
+        {
+            connections.close();
+        }
+        catch( Exception e )
+        {
+            throw new ClientException( "Failed to close driver.", e );
+        }
     }
 }
