@@ -142,7 +142,7 @@ public class Config
         private long idleTimeBeforeConnectionTest = 200;
         private EncryptionLevel encruptionLevel = EncryptionLevel.REQUIRED;
         private TrustStrategy trustStrategy = trustOnFirstUse(
-                new File( getProperty( "user.home" ), ".neo4j/neo4j_known_hosts" ) );
+                new File( getProperty( "user.home" ), ".neo4j" + File.separator + "known_hosts" ) );
 
         private ConfigBuilder() {}
 

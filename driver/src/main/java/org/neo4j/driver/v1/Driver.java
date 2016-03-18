@@ -20,6 +20,8 @@ package org.neo4j.driver.v1;
 
 import java.net.URI;
 
+import org.neo4j.driver.v1.exceptions.Neo4jException;
+
 /**
  * A Neo4j database driver, through which you can create {@link Session sessions} to run statements against the database.
  * <p>
@@ -78,7 +80,7 @@ public interface Driver extends AutoCloseable
 
     /**
      * Close all the resources assigned to this driver
-     * @throws Exception any error that might happen when releasing all resources
+     * @throws Neo4jException any error that might happen when releasing all resources
      */
-    void close() throws Exception;
+    void close() throws Neo4jException;
 }

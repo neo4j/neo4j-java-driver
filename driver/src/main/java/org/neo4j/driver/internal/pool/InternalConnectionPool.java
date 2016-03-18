@@ -36,6 +36,7 @@ import org.neo4j.driver.internal.util.Consumer;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.Neo4jException;
 
 /**
  * A basic connection pool that optimizes for threads being long-lived, acquiring/releasing many connections.
@@ -156,7 +157,7 @@ public class InternalConnectionPool implements ConnectionPool
     }
 
     @Override
-    public void close() throws Exception
+    public void close() throws Neo4jException
     {
         for ( ThreadCachingPool<PooledConnection> pool : pools.values() )
         {
