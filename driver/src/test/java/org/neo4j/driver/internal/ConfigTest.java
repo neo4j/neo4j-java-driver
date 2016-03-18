@@ -31,7 +31,8 @@ import static org.junit.Assert.assertThat;
 
 public class ConfigTest
 {
-    private static final File DEFAULT_KNOWN_HOSTS = new File( getProperty( "user.home" ), ".neo4j/neo4j_known_hosts" );
+    private static final File DEFAULT_KNOWN_HOSTS = new File( getProperty( "user.home" ),
+            ".neo4j" + File.separator + "known_hosts" );
 
     @Test
     public void shouldDefaultToKnownCerts()
