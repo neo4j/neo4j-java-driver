@@ -26,6 +26,7 @@ import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.exceptions.Neo4jException;
 
 public class InternalDriver implements Driver
 {
@@ -55,7 +56,7 @@ public class InternalDriver implements Driver
      * Close all the resources assigned to this driver
      * @throws Exception any error that might happen when releasing all resources
      */
-    public void close() throws Exception
+    public void close() throws Neo4jException
     {
         connections.close();
     }
