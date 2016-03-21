@@ -33,7 +33,6 @@ public class MappedParametersRunner implements CypherStatementRunner
 {
     private String query;
     private Session session;
-    private String statement;
     private Value parameters;
     private StatementResult result;
 
@@ -46,7 +45,6 @@ public class MappedParametersRunner implements CypherStatementRunner
     {
         session = driver.session();
         query = st;
-        statement = st;
         parameters = Values.value(params);
     }
 
