@@ -13,7 +13,7 @@ Add the driver to your project:
         <dependency>
             <groupId>org.neo4j.driver</groupId>
             <artifactId>neo4j-java-driver</artifactId>
-            <version>1.0.0-M04</version>
+            <version>1.0.0-M05</version>
         </dependency>
     </dependencies>
 
