@@ -44,7 +44,7 @@ public abstract class Neo4jInstaller
         }
     }
 
-    static final String version = System.getProperty( "version", "3.0.0-NIGHTLY" );
+    static final String version = System.getProperty( "version", "3.1.0-NIGHTLY" );
 
     public static final File neo4jDir = new File( "../target/neo4j" );
 
