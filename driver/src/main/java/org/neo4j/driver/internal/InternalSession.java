@@ -137,9 +137,13 @@ public class InternalSession implements Session
             @Override
             public void run()
             {
-                currentTransaction.markAsRolledBack();
-                currentTransaction = null;
-                connection.onError( null );
+                //must check if transaction has been closed
+                if (currentTransaction != null)
+                {
+                    currentTransaction.markAsRolledBack();
+                    currentTransaction = null;
+                    connection.onError( null );
+                }
             }
         });
         return currentTransaction;
