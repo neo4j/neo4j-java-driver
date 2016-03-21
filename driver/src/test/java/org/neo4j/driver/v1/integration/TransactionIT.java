@@ -54,7 +54,7 @@ public class TransactionIT
         // Then the outcome of both statements should be visible
         StatementResult result = session.run( "MATCH (n) RETURN count(n)" );
         long nodes = result.single().get( "count(n)" ).asLong();
-        assertThat( nodes, equalTo( 2l ) );
+        assertThat( nodes, equalTo( 2L ) );
     }
 
     @Test
@@ -70,7 +70,7 @@ public class TransactionIT
         // Then there should be no visible effect of the transaction
         StatementResult cursor = session.run( "MATCH (n) RETURN count(n)" );
         long nodes = cursor.single().get( "count(n)" ).asLong();
-        assertThat( nodes, equalTo( 0l ) );
+        assertThat( nodes, equalTo( 0L ) );
     }
 
     @Test
@@ -144,6 +144,24 @@ public class TransactionIT
         // Then
         // pass - no exception thrown
 
+    }
+
+    //See GH #146
+    @Test
+    public void shouldHandleFailureAfterClosingTransaction()
+    {
+        // GIVEN a successful query in a transaction
+        Transaction tx = session.beginTransaction();
+        StatementResult result = tx.run("CREATE (n) RETURN n");
+        result.consume();
+        tx.success();
+        tx.close();
+
+        // EXPECT
+        exception.expect( ClientException.class );
+
+        //WHEN running a malformed query in the original session
+        session.run("CREAT (n) RETURN n").consume();
     }
 
 }
