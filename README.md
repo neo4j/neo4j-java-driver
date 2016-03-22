@@ -1,9 +1,6 @@
 # Neo4j Java Driver
 
-An alpha-level database driver for a new Neo4j remoting protocol. 
-
-*Note*: This is in active development, the API is not stable. Please try it out and give us feedback, but expect 
-things to break in the medium term!
+A database driver for a new Neo4j remoting protocol. 
 
 ## Minimum viable snippet
 
@@ -13,7 +10,7 @@ Add the driver to your project:
         <dependency>
             <groupId>org.neo4j.driver</groupId>
             <artifactId>neo4j-java-driver</artifactId>
-            <version>1.0.0-M05</version>
+            <version>1.0.0-RC1</version>
         </dependency>
     </dependencies>
 
