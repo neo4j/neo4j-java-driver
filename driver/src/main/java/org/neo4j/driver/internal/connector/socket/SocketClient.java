@@ -228,7 +228,7 @@ public class SocketClient
             }
             case NONE:
             {
-                channel = new AllOrNothingChannel( soChannel );
+                channel = soChannel;
                 break;
             }
             default:

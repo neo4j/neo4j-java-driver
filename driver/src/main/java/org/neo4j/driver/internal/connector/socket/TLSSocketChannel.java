@@ -64,6 +64,8 @@ public class TLSSocketChannel implements ByteChannel
     private ByteBuffer plainIn;
     private ByteBuffer plainOut;
 
+    private static final ByteBuffer DUMMY_BUFFER = ByteBuffer.allocateDirect( 0 );
+
     public TLSSocketChannel( String host, int port, SocketChannel channel, Logger logger,
                              TrustStrategy trustStrategy )
             throws GeneralSecurityException, IOException
@@ -123,7 +125,7 @@ public class TLSSocketChannel implements ByteChannel
                 break;
             case NEED_UNWRAP:
                 // Unwrap the ssl packet to value ssl handshake information
-                handshakeStatus = unwrap( null );
+                handshakeStatus = unwrap( DUMMY_BUFFER );
                 plainIn.clear();
                 break;
             case NEED_WRAP:
@@ -172,6 +174,7 @@ public class TLSSocketChannel implements ByteChannel
      */
     private HandshakeStatus unwrap( ByteBuffer buffer ) throws IOException
     {
+        assert !plainIn.hasRemaining();
         HandshakeStatus handshakeStatus = sslEngine.getHandshakeStatus();
 
         /**
@@ -329,17 +332,17 @@ public class TLSSocketChannel implements ByteChannel
      */
     static int bufferCopy( ByteBuffer from, ByteBuffer to )
     {
-        if ( from == null || to == null )
-        {
-            return 0;
-        }
+        int maxTransfer = Math.min( to.remaining(), from.remaining() );
 
-        int i;
-        for ( i = 0; to.remaining() > 0 && from.remaining() > 0; i++ )
-        {
-            to.put( from.get() );
-        }
-        return i;
+        //use a temp buffer and move all data in one go
+        ByteBuffer temporaryBuffer = from.duplicate();
+        temporaryBuffer.limit( temporaryBuffer.position() + maxTransfer );
+        to.put( temporaryBuffer );
+
+        //move postion so it appears as if we read the buffer
+        from.position( from.position() + maxTransfer );
+
+        return maxTransfer;
     }
 
     /**
@@ -391,23 +394,18 @@ public class TLSSocketChannel implements ByteChannel
          */
         int toRead = dst.remaining();
         plainIn.flip();
-        if ( plainIn.remaining() >= toRead )
+        if ( plainIn.hasRemaining() )
         {
             bufferCopy( plainIn, dst );
             plainIn.compact();
         }
         else
         {
-            dst.put( plainIn );             // Copy whatever left in the plainIn to dst
-            do
-            {
-                plainIn.clear();            // Clear plainIn
-                unwrap( dst );              // Read more data from the underline channel and save the data read into dst
-            }
-            while ( dst.remaining() > 0 );  // If enough bytes read then return otherwise continue reading from channel
+            plainIn.clear();            // Clear plainIn
+            unwrap( dst );              // Read more data from the underline channel and save the data read into dst
         }
 
-        return toRead;
+        return toRead - dst.remaining();
     }
 
     @Override
