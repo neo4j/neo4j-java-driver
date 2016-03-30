@@ -33,7 +33,9 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.DatabaseException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.exceptions.TransientException;
+import org.neo4j.driver.v1.summary.Notification;
 import org.neo4j.driver.v1.summary.StatementType;
+import org.neo4j.driver.v1.util.Function;
 
 public class SocketResponseHandler implements MessageHandler
 {
@@ -95,8 +97,9 @@ public class SocketResponseHandler implements MessageHandler
     {
         if ( notifications != null )
         {
-            collector.notifications( notifications.asList( InternalNotification
-                    .VALUE_TO_NOTIFICATION ) );
+            Function<Value,Notification> notification = InternalNotification
+                    .VALUE_TO_NOTIFICATION;
+            collector.notifications( notifications.asList( notification ) );
         }
     }
 
