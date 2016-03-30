@@ -195,7 +195,7 @@ public class ResultParser
 
     private static Map<String,Value> getProperties( String input )
     {
-        Map<String,Object> result = getMapOfObjects( input );
+        Map<String,Object> result = getMapOfObjects( input, false );
         HashMap<String,Value> properties = new HashMap<>();
         for ( String key : result.keySet() )
         {
@@ -289,6 +289,38 @@ public class ResultParser
         }
     }
 
+    public static Object getJavaValueIntAsLong( String value )
+    {
+        return getJavaValue( value, false );
+    }
+
+    public static Object getJavaValueNormalInts( String value )
+    {
+        return getJavaValue( value, true );
+
+    }
+
+    private static Object getJavaValue( String value, boolean normalInts )
+    {
+        if ( isList( value ) )
+        {
+            ArrayList<Object> values = new ArrayList<>();
+            for ( String val : getList( value ) )
+            {
+                values.add( Types.asObject( val ) );
+            }
+            return values;
+        }
+        else if ( isMap( value ) )
+        {
+            return getMapOfObjects( value, normalInts );
+        }
+        else
+        {
+            return Types.asObject( value );
+        }
+    }
+
     public static Map<String,Value> parseExpected( Collection<String> input, List<String> keys )
     {
         assertEquals( keys.size(), input.size() );
@@ -323,7 +355,7 @@ public class ResultParser
         return resultValue.substring( 1, resultValue.length() - 1 ).split( ", " );
     }
 
-    public static Map<String,Object> getMapOfObjects( String input )
+    public static Map<String,Object> getMapOfObjects( String input, boolean normalInts )
     {
         Map<String,Object> properties = new HashMap<>();
         int i1 = input.indexOf( "{" );
@@ -335,8 +367,8 @@ public class ResultParser
         input = input.substring( i1, i2 + 1 );
         try
         {
-            ObjectMapper mapper = new ObjectMapper(  );
-            mapper.configure( DeserializationFeature.USE_LONG_FOR_INTS, true );
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.configure( DeserializationFeature.USE_LONG_FOR_INTS, !normalInts );
             properties = mapper.readValue( input, HashMap.class );
         }
         catch ( IOException e )

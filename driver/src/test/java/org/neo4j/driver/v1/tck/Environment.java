@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.v1.tck;
 
+import cucumber.api.java.After;
 import cucumber.api.java.Before;
 
 import java.util.ArrayList;
@@ -25,6 +26,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.tck.tck.util.Types;
 import org.neo4j.driver.v1.tck.tck.util.runners.CypherStatementRunner;
@@ -32,7 +35,7 @@ import org.neo4j.driver.v1.tck.tck.util.runners.MappedParametersRunner;
 import org.neo4j.driver.v1.tck.tck.util.runners.StatementRunner;
 import org.neo4j.driver.v1.tck.tck.util.runners.StringRunner;
 
-import static org.neo4j.driver.v1.tck.DriverComplianceIT.session;
+import static org.neo4j.driver.v1.tck.DriverComplianceIT.neo4j;
 
 public class Environment
 {
@@ -45,6 +48,8 @@ public class Environment
     public static List<Object> listOfObjects;
     public static Map<String,Object> mapOfObjects;
     public static Map<String,Types.Type> mappedTypes;
+
+    public static Driver driver = neo4j.driver();
 
 
     @Before
@@ -61,9 +66,21 @@ public class Environment
         mappedTypes = new HashMap<>(  );
     }
 
+    @After
+    public void closeRunners()
+    {
+        for (CypherStatementRunner runner : runners)
+        {
+            runner.close();
+        }
+    }
+
     @Before("@reset_database")
     public void emptyDatabase()
     {
-        session.run( "MATCH (n) DETACH DELETE n" );
+        try ( Session session = driver.session())
+        {
+            session.run( "MATCH (n) DETACH DELETE n" );
+        }
     }
 }

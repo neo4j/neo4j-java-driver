@@ -48,8 +48,8 @@ import static org.junit.Assert.assertThat;
 import static org.neo4j.driver.internal.util.CertificateTool.saveX509Cert;
 import static org.neo4j.driver.v1.Config.TrustStrategy.trustOnFirstUse;
 import static org.neo4j.driver.v1.Config.TrustStrategy.trustSignedBy;
-import static org.neo4j.driver.v1.tck.DriverSecurityComplianceIT.updateEncryptionKeyAndCert;
-import static org.neo4j.driver.v1.tck.DriverSecurityComplianceIT.useDefaultEncryptionKeyAndCert;
+import static org.neo4j.driver.v1.tck.DriverComplianceIT.updateEncryptionKeyAndCert;
+import static org.neo4j.driver.v1.tck.DriverComplianceIT.useDefaultEncryptionKeyAndCert;
 import static org.neo4j.driver.v1.util.CertificateToolTest.generateSelfSignedCertificate;
 
 public class DriverSecurityComplianceSteps

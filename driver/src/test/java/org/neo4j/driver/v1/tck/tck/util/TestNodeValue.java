@@ -53,8 +53,8 @@ public class TestNodeValue extends NodeValue implements Node
             return false;
         }
         NodeValue value = (NodeValue) o;
-        return (value.asNode().labels().equals( this.asNode().labels() ) && value.asMap().toString()
-                .equals( this.asMap().toString() ));
+        return (value.asNode().labels().equals( this.asNode().labels() ) && value.asMap()
+                .equals( this.asMap() ));
     }
 
     @Override
