@@ -42,7 +42,6 @@ import org.neo4j.driver.v1.summary.SummaryCounters;
 import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.util.Functions;
 
-import static java.lang.String.format;
 import static java.util.Collections.emptyList;
 
 public class InternalStatementResult implements StatementResult
@@ -222,7 +221,7 @@ public class InternalStatementResult implements StatementResult
     @Override
     public Record single()
     {
-        if( position > 0 )
+        if( position != -1 )
         {
             throw new NoSuchRecordException(
                     "Cannot retrieve the first record, because other operations have already used the first record. " +
@@ -274,12 +273,7 @@ public class InternalStatementResult implements StatementResult
     @Override
     public <T> List<T> list( Function<Record, T> mapFunction )
     {
-        if ( isEmpty() )
-        {
-            assertOpen();
-            return emptyList();
-        }
-        else if ( position == -1 && hasNext() )
+        if ( hasNext() )
         {
             List<T> result = new ArrayList<>();
             do
@@ -293,9 +287,8 @@ public class InternalStatementResult implements StatementResult
         }
         else
         {
-            throw new ClientException(
-                    format( "Can't retain records when cursor is not pointing at the first record (currently at position %d)", position )
-            );
+            assertOpen();
+            return emptyList();
         }
     }
 
@@ -329,12 +322,6 @@ public class InternalStatementResult implements StatementResult
         {
             throw new ClientException( "Result has been closed" );
         }
-    }
-
-    private boolean isEmpty()
-    {
-        tryFetching();
-        return position == -1 && recordBuffer.isEmpty() && done;
     }
 
     private void tryFetching()
