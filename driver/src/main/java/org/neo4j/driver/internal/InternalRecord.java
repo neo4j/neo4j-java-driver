@@ -55,6 +55,12 @@ public class InternalRecord implements Record
     }
 
     @Override
+    public List<Value> values()
+    {
+        return Values.value( asMap().values()).asList(ofValue());
+    }
+
+    @Override
     public List<Pair<String, Value>> fields()
     {
         return Extract.fields( this, ofValue() );
