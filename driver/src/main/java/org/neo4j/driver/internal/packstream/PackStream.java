@@ -19,7 +19,6 @@
 package org.neo4j.driver.internal.packstream;
 
 import java.io.IOException;
-import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.nio.charset.Charset;
 import java.util.List;
@@ -146,8 +145,6 @@ public class PackStream
 
     private static final String EMPTY_STRING = "";
     private static final Charset UTF_8 = Charset.forName( "UTF-8" );
-
-    private static final int DEFAULT_BUFFER_CAPACITY = 8192;
 
     private PackStream() {}
 
@@ -428,27 +425,9 @@ public class PackStream
     {
         private PackInput in;
 
-        public Unpacker( ReadableByteChannel channel )
-        {
-            this( DEFAULT_BUFFER_CAPACITY );
-            reset( channel );
-        }
-
-        public Unpacker( int bufferCapacity )
-        {
-            assert bufferCapacity >= 8 : "Buffer must be at least 8 bytes.";
-            this.in = new BufferedChannelInput( bufferCapacity );
-        }
-
         public Unpacker( PackInput in )
         {
             this.in = in;
-        }
-
-        public Unpacker reset( ReadableByteChannel ch )
-        {
-            ((BufferedChannelInput)in).reset( ch );
-            return this;
         }
 
         public boolean hasNext() throws IOException

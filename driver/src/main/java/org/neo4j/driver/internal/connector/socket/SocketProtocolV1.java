@@ -37,7 +37,7 @@ public class SocketProtocolV1 implements SocketProtocol
         messageFormat = new PackStreamMessageFormatV1();
 
         ChunkedOutput output = new ChunkedOutput( channel );
-        ChunkedInput input = new ChunkedInput( channel );
+        BufferingChunkedInput input = new BufferingChunkedInput( channel );
 
         this.writer = new PackStreamMessageFormatV1.Writer( output, output.messageBoundaryHook() );
         this.reader = new PackStreamMessageFormatV1.Reader( input, input.messageBoundaryHook() );

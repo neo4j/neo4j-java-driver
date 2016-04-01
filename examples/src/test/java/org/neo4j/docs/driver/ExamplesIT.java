@@ -150,7 +150,7 @@ public class ExamplesIT
     {
         StdIOCapture stdIO = new StdIOCapture();
         try ( AutoCloseable captured = stdIO.capture();
-                Driver driver = GraphDatabase.driver( "bolt://localhost" ); )
+                Driver driver = GraphDatabase.driver( "bolt://localhost" ) )
         {
             try ( Session setup = driver.session() )
             {
@@ -195,6 +195,7 @@ public class ExamplesIT
         }
     }
 
+    @SuppressWarnings( "unchecked" )
     @Test
     public void resultSummary() throws Throwable
     {
