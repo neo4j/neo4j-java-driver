@@ -32,14 +32,13 @@ import java.util.List;
 
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.value.NullValue;
-import org.neo4j.driver.v1.Statement;
-import org.neo4j.driver.v1.StatementResult;
-import org.neo4j.driver.v1.util.Pair;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Records;
+import org.neo4j.driver.v1.Statement;
+import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
+import org.neo4j.driver.v1.util.Pair;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
@@ -101,11 +100,25 @@ public class InternalStatementResultTest
     }
 
     @Test
-    public void singlePastFirstShouldFail()
+    public void singlePastFirstTwoResultsShouldFail()
     {
         // GIVEN
         StatementResult result = createResult( 2 );
         result.next();
+
+
+        // THEN
+        expectedException.expect( NoSuchRecordException.class );
+
+        // THEN
+        result.single();
+    }
+
+    @Test
+    public void singlePastFirstShouldFail()
+    {
+        // GIVEN
+        StatementResult result = createResult( 2 );
         result.next();
 
 
@@ -232,16 +245,6 @@ public class InternalStatementResultTest
         // THEN
         assertFalse(result.hasNext());
         assertThat(records, hasSize( 3 ) );
-    }
-
-    @Test
-    public void retainFailsIfItCannotRetainEntireResult()
-    {
-        StatementResult result = createResult( 17 );
-        result.next();
-
-        expectedException.expect( ClientException.class );
-        result.list();
     }
 
     @Test
