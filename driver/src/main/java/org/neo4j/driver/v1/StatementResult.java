@@ -21,7 +21,6 @@ package org.neo4j.driver.v1;
 import java.util.Iterator;
 import java.util.List;
 
-import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.util.Function;
@@ -80,7 +79,7 @@ public interface StatementResult extends Iterator<Record>
      * Return the first record in the result, failing if there is not exactly
      * one record left in the stream
      *
-     * Calling this method always exhausts the result, even when failing.
+     * Calling this method always exhausts the result, even when {@link NoSuchRecordException} is thrown.
      *
      * @return the first and only record in the stream
      * @throws NoSuchRecordException if there is not exactly one record left in the stream
@@ -107,7 +106,6 @@ public interface StatementResult extends Iterator<Record>
      *
      * Calling this method exhausts the result.
      *
-     * @throws ClientException if the result has already been used
      * @return list of all remaining immutable records
      */
     List<Record> list();
@@ -124,7 +122,6 @@ public interface StatementResult extends Iterator<Record>
      *
      * Calling this method exhausts the result.
      *
-     * @throws ClientException if the result has already been used
      * @param mapFunction a function to map from Value to T. See {@link Values} for some predefined functions, such
      * as {@link Values#ofBoolean()}, {@link Values#ofList(Function)}.
      * @param <T> the type of result list elements
@@ -143,7 +140,7 @@ public interface StatementResult extends Iterator<Record>
      * }
      * </pre>
      *
-     * @return a summary for the whole query
+     * @return a summary for the whole query result
      */
     ResultSummary consume();
 }
