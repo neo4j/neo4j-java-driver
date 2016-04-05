@@ -19,27 +19,27 @@
 package org.neo4j.driver.internal;
 
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
-
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.value.NullValue;
-import org.neo4j.driver.v1.Statement;
-import org.neo4j.driver.v1.StatementResult;
-import org.neo4j.driver.v1.util.Pair;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Records;
+import org.neo4j.driver.v1.Statement;
+import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
+import org.neo4j.driver.v1.util.Pair;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
@@ -48,8 +48,10 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+
 import static org.neo4j.driver.v1.Values.value;
 
 public class InternalStatementResultTest
@@ -190,6 +192,46 @@ public class InternalStatementResultTest
 
         // When
         createResult( 0 ).single();
+    }
+
+    @Test
+    public void singleShouldThrowOnConsumedResult()
+    {
+        // Expect
+        expectedException.expect( NoSuchRecordException.class );
+
+        // When
+        StatementResult result = createResult( 2 );
+        result.consume();
+        result.single();
+    }
+
+    @Test
+    public void singleShouldNotThrowOnPartiallyConsumedResult()
+    {
+        // Given
+        StatementResult result = createResult( 2 );
+        result.next();
+
+        // When + Then
+        assertNotNull( result.single() );
+    }
+
+    @Test
+    public void singleShouldConsumeIfFailing()
+    {
+        // Given
+        StatementResult result = createResult( 2 );
+
+        try
+        {
+            result.single();
+            fail( "Exception expected" );
+        }
+        catch ( NoSuchRecordException e )
+        {
+            assertFalse( result.hasNext() );
+        }
     }
 
     @Test

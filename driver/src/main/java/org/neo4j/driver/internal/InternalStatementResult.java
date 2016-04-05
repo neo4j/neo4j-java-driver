@@ -222,27 +222,24 @@ public class InternalStatementResult implements StatementResult
     @Override
     public Record single()
     {
-        if( position > 0 )
-        {
-            throw new NoSuchRecordException(
-                    "Cannot retrieve the first record, because other operations have already used the first record. " +
-                    "Please ensure you are not calling `first` multiple times, or are mixing it with calls " +
-                    "to `next`, `single`, `list` or any other method that changes the position of the cursor." );
-        }
-
         if( !hasNext() )
         {
-            throw new NoSuchRecordException( "Cannot retrieve the first record, because this result is empty." );
+            throw new NoSuchRecordException( "Cannot retrieve a single record, because this result is empty." );
         }
 
-        Record first = next();
-        if( hasNext() )
+        Record single = next();
+        boolean hasMany = hasNext();
+
+        consume();
+
+        if( hasMany )
         {
             throw new NoSuchRecordException( "Expected a result with a single record, but this result contains at least one more. " +
                     "Ensure your query returns only one record, or use `first` instead of `single` if " +
                     "you do not care about the number of records in the result." );
         }
-        return first;
+
+        return single;
     }
 
     @Override

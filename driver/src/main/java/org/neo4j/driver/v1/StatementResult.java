@@ -76,10 +76,12 @@ public interface StatementResult extends Iterator<Record>
 
     /**
      * Return the first record in the result, failing if there is not exactly
-     * one record, or if this result has already been used to move past the first record.
+     * one record left in the stream
+     *
+     * Calling this method exhausts the result, even when failing.
      *
      * @return the first and only record in the stream
-     * @throws NoSuchRecordException if there is not exactly one record in the stream, or if the cursor has been used already
+     * @throws NoSuchRecordException if there is not exactly one record left in the stream
      */
     Record single() throws NoSuchRecordException;
 
@@ -103,7 +105,7 @@ public interface StatementResult extends Iterator<Record>
      * Calling this method exhausts the result.
      *
      * @throws ClientException if the result has already been used
-     * @return list of all immutable records
+     * @return list of all remaining immutable records
      */
     List<Record> list();
 
@@ -123,7 +125,7 @@ public interface StatementResult extends Iterator<Record>
      * @param mapFunction a function to map from Value to T. See {@link Values} for some predefined functions, such
      * as {@link Values#ofBoolean()}, {@link Values#ofList(Function)}.
      * @param <T> the type of result list elements
-     * @return list of all mapped immutable records
+     * @return list of all mapped remaining immutable records
      */
     <T> List<T> list( Function<Record, T> mapFunction );
 
