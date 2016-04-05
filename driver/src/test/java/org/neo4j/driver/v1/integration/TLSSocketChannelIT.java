@@ -21,6 +21,7 @@ package org.neo4j.driver.v1.integration;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -41,12 +42,10 @@ import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.util.CertificateToolTest;
-import org.neo4j.driver.v1.util.Neo4jInstaller;
 import org.neo4j.driver.v1.util.Neo4jRunner;
 import org.neo4j.driver.v1.util.Neo4jSettings;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
-import static java.io.File.createTempFile;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -59,6 +58,9 @@ public class TLSSocketChannelIT
 {
     @Rule
     public TestNeo4j neo4j = new TestNeo4j();
+
+    @Rule
+    public TemporaryFolder folder = new TemporaryFolder(  );
 
     @BeforeClass
     public static void setup() throws IOException, InterruptedException
@@ -94,13 +96,6 @@ public class TLSSocketChannelIT
         verify( logger, atLeastOnce() ).debug( "TLS connection closed" );
     }
 
-    private File tempFile(String prefix, String suffix) throws Throwable
-    {
-        File file = createTempFile( prefix, suffix );
-        file.deleteOnExit();
-        return file;
-    }
-
     @Test
     public void shouldPerformTLSHandshakeWithTrustedCert() throws Throwable
     {
@@ -108,8 +103,8 @@ public class TLSSocketChannelIT
         {
             // Given
             // Create root certificate
-            File rootCert = tempFile( "temp_root_cert", ".cert" );
-            File rootKey = tempFile( "temp_root_key", ".key" );
+            File rootCert = folder.newFile( "temp_root_cert.cert" );
+            File rootKey = folder.newFile( "temp_root_key.key" );
 
             CertificateToolTest.SelfSignedCertificateGenerator
                     certGenerator = new CertificateToolTest.SelfSignedCertificateGenerator();
@@ -117,8 +112,8 @@ public class TLSSocketChannelIT
             certGenerator.savePrivateKey( rootKey );
 
             // Generate certificate signing request and get a certificate signed by the root private key
-            File cert = tempFile( "temp_cert", ".cert" );
-            File key = tempFile( "temp_key", ".key" );
+            File cert = folder.newFile( "temp_cert.cert" );
+            File key = folder.newFile( "temp_key.key" );
             CertificateToolTest.CertificateSigningRequestGenerator
                     csrGenerator = new CertificateToolTest.CertificateSigningRequestGenerator();
             X509Certificate signedCert = certGenerator.sign(
@@ -127,9 +122,7 @@ public class TLSSocketChannelIT
             CertificateTool.saveX509Cert( signedCert, cert );
 
             // Give the server certs to database
-            neo4j.restartServerOnEmptyDatabase(
-                    Neo4jSettings.DEFAULT
-                            .usingEncryptionKeyAndCert( key, cert ) );
+            neo4j.updateEncryptionKeyAndCert( key, cert );
 
             Logger logger = mock( Logger.class );
             SocketChannel channel = SocketChannel.open();
@@ -208,10 +201,10 @@ public class TLSSocketChannelIT
     public void shouldFailTLSHandshakeDueToServerCertNotSignedByKnownCA() throws Throwable
     {
         // Given
+        neo4j.restartServerOnEmptyDatabase( Neo4jSettings.DEFAULT.updateWith( Neo4jSettings.CERT_DIR, folder.getRoot().getAbsolutePath() ) );
         SocketChannel channel = SocketChannel.open();
         channel.connect( new InetSocketAddress( "localhost", 7687 ) );
-        File trustedCertFile = File.createTempFile( "neo4j_trusted_cert", ".tmp" );
-        trustedCertFile.deleteOnExit();
+        File trustedCertFile = folder.newFile( "neo4j_trusted_cert.tmp" );
         X509Certificate aRandomCert = CertificateToolTest.generateSelfSignedCertificate();
         CertificateTool.saveX509Cert( aRandomCert, trustedCertFile );
 
@@ -249,7 +242,7 @@ public class TLSSocketChannelIT
         // When
         TLSSocketChannel sslChannel = new TLSSocketChannel( "localhost", 7687, channel, logger,
                 Config.TrustStrategy.trustSignedBy(
-                        new File( Neo4jInstaller.neo4jHomeDir, "conf/ssl/snakeoil.cert") ) );
+                       Neo4jSettings.DEFAULT_TLS_CERT_FILE ) );
         sslChannel.close();
 
         // Then

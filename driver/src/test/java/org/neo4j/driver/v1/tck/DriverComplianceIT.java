@@ -20,12 +20,12 @@ package org.neo4j.driver.v1.tck;
 
 import cucumber.api.CucumberOptions;
 import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 
-import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.driver.v1.util.Neo4jSettings;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
 /**
@@ -35,21 +35,13 @@ import org.neo4j.driver.v1.util.TestNeo4j;
 @CucumberOptions( features = {"target/resources/features"}, strict=true, tags={"~@in_dev", "~@db"}, format = {"pretty"})
 public class DriverComplianceIT
 {
+    @Rule
+    TemporaryFolder folder = new TemporaryFolder(  );
+
     @ClassRule
     public static TestNeo4j neo4j = new TestNeo4j();
 
     public DriverComplianceIT() throws IOException
     {
-    }
-
-    public static void updateEncryptionKeyAndCert( File key, File cert ) throws Exception
-    {
-        neo4j.restartServerOnEmptyDatabase(
-                Neo4jSettings.DEFAULT.usingEncryptionKeyAndCert( key, cert ) );
-    }
-
-    public static void useDefaultEncryptionKeyAndCert() throws Exception
-    {
-        neo4j.restartServerOnEmptyDatabase( Neo4jSettings.DEFAULT );
     }
 }
