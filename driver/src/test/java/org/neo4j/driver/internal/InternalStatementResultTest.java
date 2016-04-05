@@ -20,7 +20,6 @@ package org.neo4j.driver.internal;
 
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -33,13 +32,13 @@ import org.mockito.stubbing.Answer;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.Records;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
 import org.neo4j.driver.v1.util.Pair;
+
+import static java.util.Arrays.asList;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
@@ -52,6 +51,8 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
+import static org.neo4j.driver.v1.Records.column;
+import static org.neo4j.driver.v1.Values.ofString;
 import static org.neo4j.driver.v1.Values.value;
 
 public class InternalStatementResultTest
@@ -67,16 +68,20 @@ public class InternalStatementResultTest
 
         // WHEN
         assertTrue( result.hasNext() );
-        assertThat( values( result.next() ), equalTo(Arrays.asList(value("v1-1"), value( "v2-1" ))));
+        assertThat( values( result.next() ), equalTo( asList(value("v1-1"), value( "v2-1" ))));
 
         assertTrue( result.hasNext() );
-        assertThat( values( result.next() ), equalTo(Arrays.asList(value("v1-2"), value( "v2-2" ))));
+        assertThat( values( result.next() ), equalTo( asList(value("v1-2"), value( "v2-2" ))));
 
         assertTrue( result.hasNext() ); //1 -> 2
 
         // THEN
-        assertThat( values( result.next() ), equalTo(Arrays.asList(value("v1-3"), value( "v2-3" ))));
+        assertThat( values( result.next() ), equalTo( asList(value("v1-3"), value( "v2-3" ))));
         assertFalse( result.hasNext() );
+
+        expectedException.expect( NoSuchRecordException.class );
+
+        // WHEN
         assertNull( result.next() );
     }
 
@@ -207,6 +212,44 @@ public class InternalStatementResultTest
     }
 
     @Test
+    public void shouldConsumeTwice()
+    {
+        // GIVEN
+        StatementResult result = createResult( 2 );
+        result.consume();
+
+        // WHEN
+        result.consume();
+
+        // THEN
+        assertFalse( result.hasNext() );
+    }
+
+    @Test
+    public void shouldList()
+    {
+        // GIVEN
+        StatementResult result = createResult( 2 );
+        List<String> records = result.list( column( "k1", ofString() ) );
+
+        // THEN
+        assertThat( records, equalTo( asList( "v1-1", "v1-2" ) ) );
+    }
+
+    @Test
+    public void shouldListTwice()
+    {
+        // GIVEN
+        StatementResult result = createResult( 2 );
+        List<Record> firstList = result.list();
+        assertThat( firstList.size(), equalTo( 2 ) );
+
+        // THEN
+        List<Record> secondList = result.list();
+        assertThat( secondList.size(), equalTo( 0 ) );
+    }
+
+    @Test
     public void singleShouldNotThrowOnPartiallyConsumedResult()
     {
         // Given
@@ -255,7 +298,7 @@ public class InternalStatementResultTest
         StatementResult result = createResult( 3 );
 
         // WHEN
-        List<Value> records = result.list( Records.column( "k1" ) );
+        List<Value> records = result.list( column( "k1" ) );
 
         // THEN
         assertFalse(result.hasNext());
@@ -269,21 +312,11 @@ public class InternalStatementResultTest
         StatementResult result = createResult( 3 );
 
         // WHEN
-        List<Value> records = result.list( Records.column( 0 ) );
+        List<Value> records = result.list( column( 0 ) );
 
         // THEN
         assertFalse(result.hasNext());
         assertThat(records, hasSize( 3 ) );
-    }
-
-    @Test
-    public void retainFailsIfItCannotRetainEntireResult()
-    {
-        StatementResult result = createResult( 17 );
-        result.next();
-
-        expectedException.expect( ClientException.class );
-        result.list();
     }
 
     @Test
@@ -312,7 +345,7 @@ public class InternalStatementResultTest
         // not calling next or single
 
         // THEN
-        assertThat( result.keys(), equalTo( Arrays.asList( "k1", "k2" ) ) );
+        assertThat( result.keys(), equalTo( asList( "k1", "k2" ) ) );
     }
 
     @Test

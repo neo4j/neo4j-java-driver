@@ -42,7 +42,6 @@ import org.neo4j.driver.v1.summary.SummaryCounters;
 import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.util.Functions;
 
-import static java.lang.String.format;
 import static java.util.Collections.emptyList;
 
 public class InternalStatementResult implements StatementResult
@@ -55,7 +54,6 @@ public class InternalStatementResult implements StatementResult
     private List<String> keys = null;
     private ResultSummary summary = null;
 
-    private boolean open = true;
     private long position = -1;
     private boolean done = false;
 
@@ -170,26 +168,17 @@ public class InternalStatementResult implements StatementResult
     @Override
     public List<String> keys()
     {
-        tryFetching();
+        if ( keys == null )
+        {
+            tryFetchNext();
+        }
         return keys;
     }
 
     @Override
     public boolean hasNext()
     {
-        if (!recordBuffer.isEmpty())
-        {
-            return true;
-        }
-        else if (done)
-        {
-            return false;
-        }
-        else
-        {
-            tryFetching();
-            return hasNext();
-        }
+        return tryFetchNext();
     }
 
     @Override
@@ -201,67 +190,52 @@ public class InternalStatementResult implements StatementResult
         // in a way that makes the two equivalent in performance.
         // To get the intended benefit, we need to allocate Record in this method,
         // and have it copy out its fields from some lower level data structure.
-        assertOpen();
-        Record nextRecord = recordBuffer.poll();
-        if ( nextRecord != null )
+        if ( tryFetchNext() )
         {
             position += 1;
-            return nextRecord;
-        }
-        else if ( done )
-        {
-            return null;
+            return recordBuffer.poll();
         }
         else
         {
-            tryFetching();
-            return next();
+            throw new NoSuchRecordException( "No more records" );
         }
     }
 
     @Override
     public Record single()
     {
-        if( !hasNext() )
+        if ( hasNext() )
+        {
+            Record single = next();
+            boolean hasMoreThanOne = hasNext();
+
+            consume();
+
+            if ( hasMoreThanOne )
+            {
+                throw new NoSuchRecordException( "Expected a result with a single record, but this result contains at least one more. " +
+                        "Ensure your query returns only one record, or use `first` instead of `single` if " +
+                        "you do not care about the number of records in the result." );
+            }
+
+            return single;
+        }
+        else
         {
             throw new NoSuchRecordException( "Cannot retrieve a single record, because this result is empty." );
         }
-
-        Record single = next();
-        boolean hasMany = hasNext();
-
-        consume();
-
-        if( hasMany )
-        {
-            throw new NoSuchRecordException( "Expected a result with a single record, but this result contains at least one more. " +
-                    "Ensure your query returns only one record, or use `first` instead of `single` if " +
-                    "you do not care about the number of records in the result." );
-        }
-
-        return single;
     }
 
     @Override
     public Record peek()
     {
-        assertOpen();
-
-        while ( true )
+        if ( tryFetchNext() )
         {
-            tryFetching();
-            Record nextRecord = recordBuffer.peek();
-            if ( nextRecord == null )
-            {
-                if ( done )
-                {
-                    throw new NoSuchRecordException( "Cannot peek past the last record" );
-                }
-            }
-            else
-            {
-                return nextRecord;
-            }
+            return recordBuffer.peek();
+        }
+        else
+        {
+            throw new NoSuchRecordException( "Cannot peek past the last record" );
         }
     }
 
@@ -274,46 +248,34 @@ public class InternalStatementResult implements StatementResult
     @Override
     public <T> List<T> list( Function<Record, T> mapFunction )
     {
-        if ( isEmpty() )
-        {
-            assertOpen();
-            return emptyList();
-        }
-        else if ( position == -1 && hasNext() )
+        if ( hasNext() )
         {
             List<T> result = new ArrayList<>();
+
             do
             {
                 result.add( mapFunction.apply( next() ) );
             }
             while ( hasNext() );
 
-            consume();
             return result;
         }
         else
         {
-            throw new ClientException(
-                    format( "Can't retain records when cursor is not pointing at the first record (currently at position %d)", position )
-            );
+            return emptyList();
         }
     }
 
-    @SuppressWarnings("StatementWithEmptyBody")
     @Override
     public ResultSummary consume()
     {
-        if(!open)
-        {
-            return summary;
-        }
-
         while ( !done )
         {
             connection.receiveOne();
+            recordBuffer.clear();
         }
         recordBuffer.clear();
-        open = false;
+
         return summary;
     }
 
@@ -323,26 +285,17 @@ public class InternalStatementResult implements StatementResult
         throw new ClientException( "Removing records from a result is not supported." );
     }
 
-    private void assertOpen()
+    private boolean tryFetchNext()
     {
-        if ( !open )
+        while ( recordBuffer.isEmpty() )
         {
-            throw new ClientException( "Result has been closed" );
-        }
-    }
-
-    private boolean isEmpty()
-    {
-        tryFetching();
-        return position == -1 && recordBuffer.isEmpty() && done;
-    }
-
-    private void tryFetching()
-    {
-        while ( recordBuffer.isEmpty() && !done )
-        {
+            if ( done )
+            {
+                return false;
+            }
             connection.receiveOne();
         }
-    }
 
+        return true;
+    }
 }
