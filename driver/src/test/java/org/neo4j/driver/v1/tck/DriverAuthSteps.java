@@ -1,0 +1,139 @@
+/**
+ * Copyright (c) 2002-2016 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.neo4j.driver.v1.tck;
+
+
+import cucumber.api.java.After;
+import cucumber.api.java.Before;
+import cucumber.api.java.en.And;
+import cucumber.api.java.en.Given;
+import cucumber.api.java.en.Then;
+import cucumber.runtime.CucumberException;
+
+import java.io.File;
+
+import org.neo4j.driver.internal.auth.InternalAuthToken;
+import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.GraphDatabase;
+import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.util.Neo4jSettings;
+
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.neo4j.driver.v1.Values.ofValue;
+import static org.neo4j.driver.v1.Values.parameters;
+import static org.neo4j.driver.v1.tck.DriverComplianceIT.neo4j;
+
+public class DriverAuthSteps
+{
+
+    Driver driver = null;
+    File tempFile = null;
+
+    @Before( "@auth" )
+    public void setUp()
+    {
+        tempFile = new File( "auth" );
+    }
+
+    @After( "@auth" )
+    public void reset()
+    {
+
+        try
+        {
+            driver.close();
+            neo4j.restartServerOnEmptyDatabase( Neo4jSettings.DEFAULT );
+            tempFile.delete();
+        }
+        catch ( Exception e )
+        {
+            e.printStackTrace();
+            throw new CucumberException( "Failed to reset database" );
+        }
+    }
+
+    @Given( "^a driver is configured with auth enabled and correct password is provided$" )
+    public void aDriverIsConfiguredWithAuthEnabledAndCorrectPasswordIsProvided() throws Throwable
+    {
+        driver = configureCredentials( "neo4j", "neo4j", "password" );
+    }
+
+    @Then( "^reading and writing to the database should be possible$" )
+    public void readingAndWritingToTheDatabaseShouldBePossible() throws Throwable
+    {
+        Session session = driver.session();
+//        session.run( "CREATE (:label1)" ).consume();
+//        session.run( "MATCH (n:label1) RETURN n" ).single();
+        session.run( "RETURN 1" );
+        session.close();
+    }
+
+    @Given( "^a driver is configured with auth enabled and the wrong password is provided$" )
+    public void aDriverIsConfiguredWithAuthEnabledAndTheWrongPasswordIsProvided() throws Throwable
+    {
+        driver = configureCredentials( "neo4j", "neo4j", "password" );
+        driver.close();
+        driver = GraphDatabase.driver( neo4j.address(), new InternalAuthToken(
+                parameters(
+                        "scheme", "basic",
+                        "principal", "neo4j",
+                        "credentials", "wrong" ).asMap( ofValue() ) ) );
+    }
+
+    @Then( "^reading and writing to the database should not be possible$" )
+    public void readingAndWritingToTheDatabaseShouldNotBePossible() throws Throwable
+    {
+        try(Session session = driver.session())
+        {
+            session.run( "CREATE (:label1)" ).consume();
+        }
+        catch ( ClientException e )
+        {
+            assertThat(e.getMessage().startsWith( "The client is unauthorized due to authentication failure" ),
+                    equalTo(true));
+            return;
+        }
+        throw new RuntimeException( "Exception should have been thrown" );
+    }
+
+    @And( "^a `Protocol Error` is raised$" )
+    public void aProtocolErrorIsRaised() throws Throwable
+    {}
+
+    private Driver configureCredentials( String name, String oldPassword, String newPassword ) throws Exception
+    {
+        neo4j.restartServerOnEmptyDatabase( Neo4jSettings.DEFAULT
+                .updateWith( Neo4jSettings.AUTH_ENABLED, "true" )
+                .updateWith( Neo4jSettings.AUTH_FILE, tempFile.getAbsolutePath() ) );
+
+        Driver driver = GraphDatabase.driver( neo4j.address(), new InternalAuthToken(
+                parameters(
+                        "scheme", "basic",
+                        "principal", name,
+                        "credentials", oldPassword,
+                        "new_credentials", newPassword ).asMap( ofValue() ) ) );
+        try(Session session = driver.session())
+        {
+            session.run( "RETURN 1" );
+        }
+        return driver;
+    }
+}
