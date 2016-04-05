@@ -246,19 +246,22 @@ public class InternalStatementResult implements StatementResult
     public Record peek()
     {
         assertOpen();
-        Record nextRecord = recordBuffer.peek();
-        if ( nextRecord != null )
-        {
-            return nextRecord;
-        }
-        else if ( done )
-        {
-            return null;
-        }
-        else
+
+        while ( true )
         {
             tryFetching();
-            return peek();
+            Record nextRecord = recordBuffer.peek();
+            if ( nextRecord == null )
+            {
+                if ( done )
+                {
+                    throw new NoSuchRecordException( "Cannot peek past the last record" );
+                }
+            }
+            else
+            {
+                return nextRecord;
+            }
         }
     }
 

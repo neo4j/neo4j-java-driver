@@ -334,7 +334,10 @@ public class InternalStatementResultTest
         result.next();
 
         // THEN
-        assertNull( result.peek() );
+        expectedException.expect( NoSuchRecordException.class );
+
+        // WHEN
+        result.peek();
     }
 
     @Test
@@ -342,10 +345,12 @@ public class InternalStatementResultTest
     {
         // GIVEN
         StatementResult result = createResult( 0 );
-        Record future = result.peek();
+
+        // THEN
+        expectedException.expect( NoSuchRecordException.class );
 
         // WHEN
-        assertNull( future );
+        Record future = result.peek();
     }
 
     private StatementResult createResult( int numberOfRecords )

@@ -70,6 +70,8 @@ public interface StatementResult extends Iterator<Record>
 
     /**
      * Navigate to and retrieve the next {@link Record} in this result.
+     *
+     * @throws NoSuchRecordException if there is no record left in the stream
      * @return the next record
      */
     @Override Record next();
@@ -78,7 +80,7 @@ public interface StatementResult extends Iterator<Record>
      * Return the first record in the result, failing if there is not exactly
      * one record left in the stream
      *
-     * Calling this method exhausts the result, even when failing.
+     * Calling this method always exhausts the result, even when failing.
      *
      * @return the first and only record in the stream
      * @throws NoSuchRecordException if there is not exactly one record left in the stream
@@ -88,7 +90,8 @@ public interface StatementResult extends Iterator<Record>
     /**
      * Investigate the next upcoming record without moving forward in the result.
      *
-     * @return the next record, or null if there is no next record
+     * @throws NoSuchRecordException if there is no record left in the stream
+     * @return the next record
      */
     Record peek();
 
