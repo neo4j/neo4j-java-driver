@@ -34,10 +34,9 @@ import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-
 import static org.neo4j.driver.v1.AuthTokens.basic;
-import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.Values.ofValue;
+import static org.neo4j.driver.v1.Values.parameters;
 
 public class CredentialsIT
 {
@@ -90,7 +89,7 @@ public class CredentialsIT
     {
         neo4j.restartServerOnEmptyDatabase( Neo4jSettings.DEFAULT
                 .updateWith( Neo4jSettings.AUTH_ENABLED, "true" )
-                .updateWith( Neo4jSettings.AUTH_FILE, tempDir.newFile( "auth" ).getAbsolutePath() ));
+                .updateWith( Neo4jSettings.DATA_DIR, tempDir.getRoot().getAbsolutePath() ));
 
         Driver setPassword = GraphDatabase.driver( neo4j.address(), new InternalAuthToken(
                 parameters(

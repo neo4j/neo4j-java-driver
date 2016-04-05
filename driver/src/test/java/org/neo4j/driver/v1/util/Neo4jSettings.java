@@ -27,7 +27,7 @@ import static org.neo4j.driver.internal.util.Iterables.map;
 public class Neo4jSettings
 {
     public static final String AUTH_ENABLED = "dbms.security.auth_enabled";
-    public static final String AUTH_FILE = "unsupported.dbms.security.auth_store.location";
+    public static final String DATA_DIR = "dbms.directories.data";
 
     private static final String TLS_CERT_KEY = "dbms.security.tls_certificate_file";
     private static final String TLS_KEY_KEY = "dbms.security.tls_key_file";
