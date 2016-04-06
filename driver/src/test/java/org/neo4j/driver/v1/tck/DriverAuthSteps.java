@@ -122,7 +122,7 @@ public class DriverAuthSteps
     {
         neo4j.restartServerOnEmptyDatabase( Neo4jSettings.DEFAULT
                 .updateWith( Neo4jSettings.AUTH_ENABLED, "true" )
-                .updateWith( Neo4jSettings.AUTH_FILE, tempFile.getAbsolutePath() ) );
+                .updateWith( Neo4jSettings.DATA_DIR, tempFile.getAbsolutePath() ) );
 
         Driver driver = GraphDatabase.driver( neo4j.address(), new InternalAuthToken(
                 parameters(
