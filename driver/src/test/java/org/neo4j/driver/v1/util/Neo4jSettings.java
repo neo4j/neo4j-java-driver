@@ -27,22 +27,21 @@ import static org.neo4j.driver.internal.util.Iterables.map;
 public class Neo4jSettings
 {
     public static final String AUTH_ENABLED = "dbms.security.auth_enabled";
-    public static final String AUTH_FILE = "unsupported.dbms.security.auth_store.location";
+    public static final String DATA_DIR = "dbms.directories.data";
+    public static final String CERT_DIR = "dbms.directories.certificates";
 
-    private static final String TLS_CERT_KEY = "dbms.security.tls_certificate_file";
-    private static final String TLS_KEY_KEY = "dbms.security.tls_key_file";
+    private static final String DEFAULT_CERT_DIR = "certificates";
+    private static final String DEFAULT_TLS_CERT_PATH = DEFAULT_CERT_DIR + "/neo4j.cert";
+    private static final String DEFAULT_TLS_KEY_PATH = DEFAULT_CERT_DIR + "/neo4j.key";
 
-    private static final String DEFAULT_TLS_CERT_PATH = "conf/ssl/snakeoil.cert";
-    private static final String DEFAULT_TLS_KEY_PATH = "conf/ssl/snakeoil.key";
-
+    public static final File DEFAULT_TLS_KEY_FILE = new File( Neo4jInstaller.neo4jHomeDir, DEFAULT_TLS_KEY_PATH );
     public static final File DEFAULT_TLS_CERT_FILE = new File( Neo4jInstaller.neo4jHomeDir, DEFAULT_TLS_CERT_PATH );
 
 
     private final Map<String, String> settings;
 
     public static Neo4jSettings DEFAULT = new Neo4jSettings( map(
-            TLS_CERT_KEY, DEFAULT_TLS_CERT_PATH,
-            TLS_KEY_KEY, DEFAULT_TLS_KEY_PATH,
+            CERT_DIR, DEFAULT_CERT_DIR,
             AUTH_ENABLED, "false" ) );
 
     private Neo4jSettings( Map<String, String> settings )
@@ -84,14 +83,6 @@ public class Neo4jSettings
         Neo4jSettings that = (Neo4jSettings) o;
 
         return settings.equals( that.settings );
-    }
-
-    public Neo4jSettings usingEncryptionKeyAndCert( File key, File cert )
-    {
-        return updateWith( map(
-                TLS_CERT_KEY, cert.getAbsolutePath().replaceAll("\\\\", "/"),
-                TLS_KEY_KEY, key.getAbsolutePath().replaceAll("\\\\", "/")
-        ));
     }
 
     @Override
