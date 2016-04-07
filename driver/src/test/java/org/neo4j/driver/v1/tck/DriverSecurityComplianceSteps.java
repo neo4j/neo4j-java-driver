@@ -31,8 +31,8 @@ import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Config.EncryptionLevel;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
-import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.util.CertificateToolTest.CertificateSigningRequestGenerator;
 import org.neo4j.driver.v1.util.CertificateToolTest.SelfSignedCertificateGenerator;
@@ -48,8 +48,7 @@ import static org.junit.Assert.assertThat;
 import static org.neo4j.driver.internal.util.CertificateTool.saveX509Cert;
 import static org.neo4j.driver.v1.Config.TrustStrategy.trustOnFirstUse;
 import static org.neo4j.driver.v1.Config.TrustStrategy.trustSignedBy;
-import static org.neo4j.driver.v1.tck.DriverSecurityComplianceIT.updateEncryptionKeyAndCert;
-import static org.neo4j.driver.v1.tck.DriverSecurityComplianceIT.useDefaultEncryptionKeyAndCert;
+import static org.neo4j.driver.v1.tck.DriverComplianceIT.neo4j;
 import static org.neo4j.driver.v1.util.CertificateToolTest.generateSelfSignedCertificate;
 
 public class DriverSecurityComplianceSteps
@@ -117,7 +116,7 @@ public class DriverSecurityComplianceSteps
         generator.saveSelfSignedCertificate( cert );
         generator.savePrivateKey( key );
 
-        updateEncryptionKeyAndCert( key, cert );
+        neo4j.updateEncryptionKeyAndCert( key, cert );
 
     }
 
@@ -211,7 +210,7 @@ public class DriverSecurityComplianceSteps
         csrGenerator.savePrivateKey( key );
         saveX509Cert( signedCert, cert );
 
-        updateEncryptionKeyAndCert( key, cert );
+        neo4j.updateEncryptionKeyAndCert( key, cert );
     }
 
     @When( "^I connect via a TLS-enabled transport$" )
@@ -269,7 +268,7 @@ public class DriverSecurityComplianceSteps
     @After("@modifies_db_config")
     public void resetDbWithDefaultSettings() throws Throwable
     {
-        useDefaultEncryptionKeyAndCert();
+        neo4j.useDefaultEncryptionKeyAndCert();
     }
 
     private File tempFile(String prefix, String suffix) throws Throwable

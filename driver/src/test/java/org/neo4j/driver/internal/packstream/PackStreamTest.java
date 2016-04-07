@@ -112,7 +112,7 @@ public class PackStreamTest
     private PackStream.Unpacker newUnpacker( byte[] bytes )
     {
         ByteArrayInputStream input = new ByteArrayInputStream( bytes );
-        return new PackStream.Unpacker( Channels.newChannel( input ) );
+        return new PackStream.Unpacker( new BufferedChannelInput( Channels.newChannel( input ) ) );
     }
 
     @Test
@@ -802,8 +802,7 @@ public class PackStreamTest
         packer.flush();
 
         ReadableByteChannel ch = Channels.newChannel( new ByteArrayInputStream( machine.output() ) );
-        PackStream.Unpacker unpacker = new PackStream.Unpacker( 11 );
-        unpacker.reset( ch );
+        PackStream.Unpacker unpacker = new PackStream.Unpacker( new BufferedChannelInput( 11, ch ) );
 
         // Serialized ch will look like, and misalign with the 11-byte unpack buffer:
 

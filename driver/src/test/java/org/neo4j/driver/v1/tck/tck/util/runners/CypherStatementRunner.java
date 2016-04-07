@@ -19,10 +19,15 @@
 package org.neo4j.driver.v1.tck.tck.util.runners;
 
 import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.Value;
 
 public interface CypherStatementRunner
 {
     CypherStatementRunner runCypherStatement();
 
     StatementResult result();
+
+    Value parameters();
+
+    void close();
 }
