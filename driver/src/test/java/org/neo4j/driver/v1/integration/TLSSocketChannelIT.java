@@ -201,7 +201,10 @@ public class TLSSocketChannelIT
     public void shouldFailTLSHandshakeDueToServerCertNotSignedByKnownCA() throws Throwable
     {
         // Given
-        neo4j.restartServerOnEmptyDatabase( Neo4jSettings.DEFAULT.updateWith( Neo4jSettings.CERT_DIR, folder.getRoot().getAbsolutePath() ) );
+        neo4j.restartServerOnEmptyDatabase(
+                Neo4jSettings.DEFAULT.updateWith(
+                        Neo4jSettings.CERT_DIR,
+                        folder.getRoot().getAbsolutePath().replace("\\", "/") ) );
         SocketChannel channel = SocketChannel.open();
         channel.connect( new InetSocketAddress( "localhost", 7687 ) );
         File trustedCertFile = folder.newFile( "neo4j_trusted_cert.tmp" );
