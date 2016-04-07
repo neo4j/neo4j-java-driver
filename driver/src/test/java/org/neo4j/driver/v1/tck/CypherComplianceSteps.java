@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Value;
@@ -36,8 +37,8 @@ import org.neo4j.driver.v1.tck.tck.util.runners.MappedParametersRunner;
 import org.neo4j.driver.v1.tck.tck.util.runners.StringRunner;
 
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.driver.v1.tck.Environment.driver;
 import static org.neo4j.driver.v1.Values.ofValue;
-import static org.neo4j.driver.v1.tck.DriverComplianceIT.session;
 import static org.neo4j.driver.v1.tck.Environment.runners;
 import static org.neo4j.driver.v1.tck.tck.util.ResultParser.parseExpected;
 import static org.neo4j.driver.v1.tck.tck.util.ResultParser.parseGiven;
@@ -48,7 +49,10 @@ public class CypherComplianceSteps
     @Given( "^init: (.*)$" )
     public void init_( String statement ) throws Throwable
     {
-        session.run( statement );
+        try ( Session session = driver.session())
+        {
+            session.run( statement );
+        }
     }
 
     @When( "^running: (.*)$" )

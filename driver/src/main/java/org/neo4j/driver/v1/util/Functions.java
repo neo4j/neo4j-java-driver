@@ -24,6 +24,7 @@ package org.neo4j.driver.v1.util;
  */
 public class Functions
 {
+    @SuppressWarnings( "unchecked" )
     public static <T> Function<T,T> identity()
     {
         return IDENTITY;

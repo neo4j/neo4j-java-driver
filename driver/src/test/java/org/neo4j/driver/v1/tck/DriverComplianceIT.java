@@ -20,11 +20,13 @@ package org.neo4j.driver.v1.tck;
 
 import cucumber.api.CucumberOptions;
 import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
 
-import org.neo4j.driver.v1.util.TestNeo4jSession;
+import org.neo4j.driver.v1.util.TestNeo4j;
 
 /**
  * The base class to run all cucumber tests
@@ -33,15 +35,13 @@ import org.neo4j.driver.v1.util.TestNeo4jSession;
 @CucumberOptions( features = {"target/resources/features"}, strict=true, tags={"~@in_dev", "~@db"}, format = {"pretty"})
 public class DriverComplianceIT
 {
+    @Rule
+    TemporaryFolder folder = new TemporaryFolder(  );
+
     @ClassRule
-    public static TestNeo4jSession session = new TestNeo4jSession();
+    public static TestNeo4j neo4j = new TestNeo4j();
 
     public DriverComplianceIT() throws IOException
     {
-    }
-
-    public static TestNeo4jSession session()
-    {
-        return session;
     }
 }

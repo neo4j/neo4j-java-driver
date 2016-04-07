@@ -31,7 +31,7 @@ import java.util.Map;
 import org.neo4j.driver.internal.InternalNode;
 import org.neo4j.driver.internal.InternalPath;
 import org.neo4j.driver.internal.InternalRelationship;
-import org.neo4j.driver.internal.connector.socket.ChunkedInput;
+import org.neo4j.driver.internal.connector.socket.BufferingChunkedInput;
 import org.neo4j.driver.internal.connector.socket.ChunkedOutput;
 import org.neo4j.driver.internal.packstream.PackInput;
 import org.neo4j.driver.internal.packstream.PackOutput;
@@ -44,12 +44,12 @@ import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.internal.value.NodeValue;
 import org.neo4j.driver.internal.value.PathValue;
 import org.neo4j.driver.internal.value.RelationshipValue;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.types.Entity;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.types.Path;
 import org.neo4j.driver.v1.types.Relationship;
-import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static org.neo4j.driver.v1.Values.value;
 
@@ -87,7 +87,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
     @Override
     public MessageFormat.Reader newReader( ReadableByteChannel ch )
     {
-        ChunkedInput input = new ChunkedInput( ch );
+        BufferingChunkedInput input = new BufferingChunkedInput( ch );
         return new Reader( input, input.messageBoundaryHook() );
     }
 
@@ -534,7 +534,8 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                 {
                 case NODE:
                     ensureCorrectStructSize( "NODE", NODE_FIELDS, size );
-                    return new NodeValue( unpackNode() );
+                    InternalNode adapted = unpackNode();
+                    return new NodeValue( adapted );
                 case RELATIONSHIP:
                     ensureCorrectStructSize( "RELATIONSHIP", 5, size );
                     return unpackRelationship();
@@ -555,7 +556,8 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             String relType = unpacker.unpackString();
             Map<String,Value> props = unpackMap();
 
-            return new RelationshipValue( new InternalRelationship( urn, startUrn, endUrn, relType, props ) );
+            InternalRelationship adapted = new InternalRelationship( urn, startUrn, endUrn, relType, props );
+            return new RelationshipValue( adapted );
         }
 
         private InternalNode unpackNode() throws IOException
