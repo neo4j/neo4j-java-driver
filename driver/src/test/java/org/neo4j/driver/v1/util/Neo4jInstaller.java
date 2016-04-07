@@ -18,11 +18,11 @@
  */
 package org.neo4j.driver.v1.util;
 
+import org.rauschig.jarchivelib.Archiver;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
-
-import org.rauschig.jarchivelib.Archiver;
 
 import static org.neo4j.driver.v1.util.FileTools.extractTarball;
 import static org.neo4j.driver.v1.util.FileTools.streamFileTo;
@@ -49,7 +49,7 @@ public abstract class Neo4jInstaller
     public static final File neo4jDir = new File( "../target/neo4j" );
 
     public static final File neo4jHomeDir = new File( neo4jDir, version );
-    public static final File dbDir = new File( neo4jHomeDir, "data/graph.db" );
+    public static final File dbDir = new File( neo4jHomeDir, "data/databases/graph.db" );
 
     /**
      * download, untar/unzip

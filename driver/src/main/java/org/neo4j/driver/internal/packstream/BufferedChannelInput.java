@@ -30,10 +30,11 @@ public class BufferedChannelInput implements PackInput
 {
     private final ByteBuffer buffer;
     private ReadableByteChannel channel;
+    private static final int DEFAULT_BUFFER_CAPACITY = 8192;
 
-    public BufferedChannelInput( int bufferCapacity )
+    public BufferedChannelInput(ReadableByteChannel ch )
     {
-        this( bufferCapacity, null );
+        this( DEFAULT_BUFFER_CAPACITY, ch );
     }
 
     public BufferedChannelInput( int bufferCapacity, ReadableByteChannel ch )

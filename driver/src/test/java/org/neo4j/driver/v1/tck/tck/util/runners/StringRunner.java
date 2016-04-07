@@ -18,25 +18,30 @@
  */
 package org.neo4j.driver.v1.tck.tck.util.runners;
 
-import org.neo4j.driver.v1.StatementResult;
+import java.util.HashMap;
 
-import static org.junit.Assert.assertNotNull;
-import static org.neo4j.driver.v1.tck.DriverComplianceIT.session;
+import org.neo4j.driver.internal.value.MapValue;
+import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.Value;
+
+import static org.neo4j.driver.v1.tck.Environment.driver;
 
 public class StringRunner implements CypherStatementRunner
 {
     private String statement;
     private StatementResult result;
+    private Session session;
 
     public StringRunner( String st )
     {
+        session = driver.session();
         statement = st;
     }
 
     @Override
     public CypherStatementRunner runCypherStatement()
     {
-        assertNotNull( session() );
         result = session.run( statement );
         return this;
     }
@@ -45,5 +50,17 @@ public class StringRunner implements CypherStatementRunner
     public StatementResult result()
     {
         return result;
+    }
+
+    @Override
+    public Value parameters()
+    {
+        return new MapValue(new HashMap<String, Value>(  ));
+    }
+
+    @Override
+    public void close()
+    {
+        session.close();
     }
 }

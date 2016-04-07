@@ -18,17 +18,17 @@
  */
 package org.neo4j.driver.internal.connector.socket;
 
-import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
-import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLEngineResult;
-import javax.net.ssl.SSLSession;
-
 import junit.framework.TestCase;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
+import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLEngineResult;
+import javax.net.ssl.SSLSession;
 
 import org.neo4j.driver.internal.spi.Logger;
 import org.neo4j.driver.internal.util.BytePrinter;
@@ -37,7 +37,6 @@ import static javax.net.ssl.SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING;
 import static javax.net.ssl.SSLEngineResult.Status.BUFFER_OVERFLOW;
 import static javax.net.ssl.SSLEngineResult.Status.BUFFER_UNDERFLOW;
 import static javax.net.ssl.SSLEngineResult.Status.OK;
-
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.fail;
 import static org.mockito.Matchers.any;
@@ -135,20 +134,23 @@ public class TLSSocketChannelTest
             }
         } ).when( sslEngine ).unwrap( any( ByteBuffer.class ), any( ByteBuffer.class ) );
 
-        // When trying to read 2 bytes out of 6 bytes
-        ByteBuffer buffer = ByteBuffer.allocate( 2 );
-        sslChannel.read( buffer );
+        ByteBuffer twoByteBuffer = ByteBuffer.allocate( 2 );
+        sslChannel.read( twoByteBuffer );
+        sslChannel.read( twoByteBuffer );
+        sslChannel.read( twoByteBuffer );
 
         // Then
         // Should enlarge plainIn buffer to hold all deciphered bytes
         assertEquals( 8, plainIn.capacity() );
-        buffer.flip();
-        TestCase.assertEquals( "00 01 ", BytePrinter.hex( buffer ) );
+        ByteBuffer.allocate( 2 ).flip();
+        TestCase.assertEquals( "00 01 ", BytePrinter.hex( twoByteBuffer ) );
 
         // When trying to read 4 existing bytes and then 6 more bytes
-        buffer = ByteBuffer.allocate( 10 );
-        sslChannel.read( buffer );
-
+        ByteBuffer buffer = ByteBuffer.allocate( 10 );
+        while (buffer.hasRemaining())
+        {
+            sslChannel.read( buffer );
+        }
         // Then
         // Should drain previous deciphered bytes first and then append new bytes after
         assertEquals( 8, plainIn.capacity() );
@@ -212,8 +214,9 @@ public class TLSSocketChannelTest
 
 
         //When
-        ByteBuffer buffer = ByteBuffer.allocate( 2 );
-        sslChannel.read( buffer );
+        sslChannel.read( ByteBuffer.allocate( 2 ) );
+        sslChannel.read( ByteBuffer.allocate( 2 ) );
+        sslChannel.read( ByteBuffer.allocate( 2 ) );
 
         // Then
         assertEquals( 8, cipherIn.capacity() );
@@ -290,8 +293,8 @@ public class TLSSocketChannelTest
         } ).when( sslEngine ).unwrap( any( ByteBuffer.class ), any( ByteBuffer.class ) );
 
         //When
-        ByteBuffer buffer = ByteBuffer.allocate( 2 );
-        sslChannel.read( buffer );
+        sslChannel.read( ByteBuffer.allocate( 8 ) );
+        sslChannel.read( ByteBuffer.allocate( 8 ) );
 
         // Then
         assertEquals( 8, cipherIn.capacity() );
