@@ -269,12 +269,19 @@ public class InternalStatementResult implements StatementResult
     @Override
     public ResultSummary consume()
     {
-        while ( !done )
+        if ( done )
         {
-            connection.receiveOne();
             recordBuffer.clear();
         }
-        recordBuffer.clear();
+        else
+        {
+            do
+            {
+                connection.receiveOne();
+                recordBuffer.clear();
+            }
+            while ( !done );
+        }
 
         return summary;
     }
