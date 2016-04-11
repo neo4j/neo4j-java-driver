@@ -35,6 +35,7 @@ import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.types.TypeSystem;
 
 import static org.neo4j.driver.v1.Values.ofValue;
+import static org.neo4j.driver.v1.Values.value;
 
 public class InternalTransaction implements Transaction
 {
@@ -142,14 +143,15 @@ public class InternalTransaction implements Transaction
     @Override
     public StatementResult run( String statementText, Map<String,Object> statementParameters )
     {
-        return run( statementText, Values.value( statementParameters ) );
+        Value params = statementParameters == null ? Values.EmptyMap : value(statementParameters);
+        return run( statementText, params );
     }
 
     @Override
     public StatementResult run( String statementTemplate, Record statementParameters )
     {
-        // TODO: This conversion to map here is pointless, it gets converted right back
-        return run( statementTemplate, statementParameters.asMap() );
+        Value params = statementParameters == null ? Values.EmptyMap : value( statementParameters.asMap() );
+        return run( statementTemplate, params );
     }
 
     @Override

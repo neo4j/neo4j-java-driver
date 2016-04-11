@@ -24,6 +24,7 @@ import org.junit.Test;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.StatementResult;
@@ -70,6 +71,45 @@ public class StatementIT
     {
         // When
         session.run( "CREATE (n:FirstNode {name:{name}})", parameters( "name", "Steven" ) );
+
+        // Then nothing should've failed
+    }
+
+    @SuppressWarnings( "ConstantConditions" )
+    @Test
+    public void shouldRunWithNullValuesAsParameters() throws Throwable
+    {
+        // Given
+        Value params = null;
+
+        // When
+        session.run( "CREATE (n:FirstNode {name:'Steven'})", params );
+
+        // Then nothing should've failed
+    }
+
+    @SuppressWarnings( "ConstantConditions" )
+    @Test
+    public void shouldRunWithNullRecordAsParameters() throws Throwable
+    {
+        // Given
+        Record params = null;
+
+        // When
+        session.run( "CREATE (n:FirstNode {name:'Steven'})", params );
+
+        // Then nothing should've failed
+    }
+
+    @SuppressWarnings( "ConstantConditions" )
+    @Test
+    public void shouldRunWithNullMapAsParameters() throws Throwable
+    {
+        // Given
+        Map<String, Object> params = null;
+
+        // When
+        session.run( "CREATE (n:FirstNode {name:'Steven'})", params );
 
         // Then nothing should've failed
     }
