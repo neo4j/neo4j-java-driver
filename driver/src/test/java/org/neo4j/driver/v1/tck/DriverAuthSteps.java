@@ -78,9 +78,8 @@ public class DriverAuthSteps
     public void readingAndWritingToTheDatabaseShouldBePossible() throws Throwable
     {
         Session session = driver.session();
-//        session.run( "CREATE (:label1)" ).consume();
-//        session.run( "MATCH (n:label1) RETURN n" ).single();
-        session.run( "RETURN 1" );
+        session.run( "CREATE (:label1)" ).consume();
+        session.run( "MATCH (n:label1) RETURN n" ).single();
         session.close();
     }
 
