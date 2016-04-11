@@ -69,14 +69,15 @@ public class InternalSession implements Session
     @Override
     public StatementResult run( String statementText, Map<String, Object> statementParameters )
     {
-        return run( statementText, value( statementParameters ) );
+        Value params = statementParameters == null ? Values.EmptyMap : value(statementParameters);
+        return run( statementText, params );
     }
 
     @Override
     public StatementResult run( String statementTemplate, Record statementParameters )
     {
-        // TODO: This conversion to map here is pointless, it gets converted right back
-        return run( statementTemplate, statementParameters.asMap() );
+        Value params = statementParameters == null ? Values.EmptyMap : value( statementParameters.asMap() );
+        return run( statementTemplate, params );
     }
 
     @Override

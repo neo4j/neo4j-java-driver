@@ -22,6 +22,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.Map;
+
+import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.Value;
@@ -164,4 +167,48 @@ public class TransactionIT
         session.run("CREAT (n) RETURN n").consume();
     }
 
+    @SuppressWarnings( "ConstantConditions" )
+    @Test
+    public void shouldHandleNullRecordParameters() throws Throwable
+    {
+        // When
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            Record params = null;
+            tx.run( "CREATE (n:FirstNode)", params );
+            tx.success();
+        }
+
+        // Then it wasn't the end of the world as we know it
+    }
+
+    @SuppressWarnings( "ConstantConditions" )
+    @Test
+    public void shouldHandleNullValueParameters() throws Throwable
+    {
+        // When
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            Value params = null;
+            tx.run( "CREATE (n:FirstNode)", params );
+            tx.success();
+        }
+
+        // Then it wasn't the end of the world as we know it
+    }
+
+    @SuppressWarnings( "ConstantConditions" )
+    @Test
+    public void shouldHandleNullMapParameters() throws Throwable
+    {
+        // When
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            Map<String, Object> params = null;
+            tx.run( "CREATE (n:FirstNode)", params );
+            tx.success();
+        }
+
+        // Then it wasn't the end of the world as we know it
+    }
 }

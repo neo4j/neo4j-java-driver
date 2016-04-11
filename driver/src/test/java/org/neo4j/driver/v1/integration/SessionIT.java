@@ -21,6 +21,8 @@ package org.neo4j.driver.v1.integration;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.driver.v1.AuthToken;
+import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
@@ -38,6 +40,36 @@ public class SessionIT
     {
         // Given
         Driver driver = GraphDatabase.driver( neo4j.address() );
+        Session session = driver.session();
+
+        // When
+        session.close();
+
+        // Then
+        assertFalse( session.isOpen() );
+    }
+
+    @Test
+    public void shouldHandleNullConfig() throws Throwable
+    {
+        // Given
+        Driver driver = GraphDatabase.driver( neo4j.address(), AuthTokens.none(), null );
+        Session session = driver.session();
+
+        // When
+        session.close();
+
+        // Then
+        assertFalse( session.isOpen() );
+    }
+
+    @SuppressWarnings( "ConstantConditions" )
+    @Test
+    public void shouldHandleNullAuthToken() throws Throwable
+    {
+        // Given
+        AuthToken token = null;
+        Driver driver = GraphDatabase.driver( neo4j.address(), token);
         Session session = driver.session();
 
         // When
