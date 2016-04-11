@@ -32,7 +32,6 @@ import org.neo4j.driver.internal.auth.InternalAuthToken;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
-import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.util.Neo4jSettings;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -43,7 +42,6 @@ import static org.neo4j.driver.v1.tck.DriverComplianceIT.neo4j;
 
 public class DriverAuthSteps
 {
-
     Driver driver = null;
     File tempFile = null;
 
@@ -105,7 +103,7 @@ public class DriverAuthSteps
         {
             session.run( "CREATE (:label1)" ).consume();
         }
-        catch ( ClientException e )
+        catch ( Exception e )
         {
             assertThat(e.getMessage().startsWith( "The client is unauthorized due to authentication failure" ),
                     equalTo(true));

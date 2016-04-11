@@ -19,7 +19,8 @@
 package org.neo4j.driver.v1.exceptions;
 
 /**
- * This is the base class for all Neo4j exceptions.
+ * This is the base class for all exceptions caused as part of communication with the remote Neo4j server.
+ *
  * @since 1.0
  */
 public abstract class Neo4jException extends RuntimeException

@@ -89,7 +89,7 @@ public class CredentialsIT
     {
         neo4j.restartServerOnEmptyDatabase( Neo4jSettings.DEFAULT
                 .updateWith( Neo4jSettings.AUTH_ENABLED, "true" )
-                .updateWith( Neo4jSettings.DATA_DIR, tempDir.getRoot().getAbsolutePath() ));
+                .updateWith( Neo4jSettings.DATA_DIR, tempDir.getRoot().getAbsolutePath().replace("\\", "/") ));
 
         Driver setPassword = GraphDatabase.driver( neo4j.address(), new InternalAuthToken(
                 parameters(

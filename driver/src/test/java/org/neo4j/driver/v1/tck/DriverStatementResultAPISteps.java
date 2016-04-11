@@ -1,15 +1,15 @@
 /**
  * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
- *
+ * <p>
  * This file is part of Neo4j.
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -30,11 +30,13 @@ import java.util.List;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
+import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.tck.tck.util.ResultParser;
 import org.neo4j.driver.v1.tck.tck.util.runners.CypherStatementRunner;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.driver.v1.Values.ofValue;
 import static org.neo4j.driver.v1.tck.Environment.runners;
@@ -77,8 +79,7 @@ public class DriverStatementResultAPISteps
             }
             catch ( NoSuchRecordException e )
             {
-                assertThat( e.getMessage().startsWith( table.diffableRows().get( 1 ).convertedRow.get( 0 ) ),
-                        equalTo( true ) );
+                assertThat( e.getMessage(), startsWith( table.diffableRows().get( 1 ).convertedRow.get( 0 ) ) );
                 success = false;
             }
             if ( success )
@@ -88,13 +89,19 @@ public class DriverStatementResultAPISteps
         }
     }
 
-    @Then( "^using `Peek` on `Statement Result` gives null$" )
+    @Then( "^using `Peek` on `Statement Result` fails$" )
     public void usingPeekOnStatmentReslutGivesNull() throws Throwable
     {
         for ( CypherStatementRunner runner : runners )
         {
-            Record single = runner.result().peek();
-            assertThat( single, equalTo( null ) );
+            try
+            {
+                runner.result().peek();
+                throw new Exception( "Expected NoSuchErrorException but did not get one." );
+            }
+            catch ( NoSuchRecordException ignore )
+            {
+            }
         }
     }
 
@@ -121,13 +128,19 @@ public class DriverStatementResultAPISteps
         }
     }
 
-    @And( "^using `Next` on `Statement Result` gives null$" )
+    @And( "^using `Next` on `Statement Result` fails$" )
     public void usingNextOnStatementResultGivesNull() throws Throwable
     {
         for ( CypherStatementRunner runner : runners )
         {
-            Record single = runner.result().next();
-            assertThat( single, equalTo( null ) );
+            try
+            {
+                runner.result().next();
+                throw new Exception( "Expected NoSuchErrorException but did not get one." );
+            }
+            catch ( NoSuchRecordException ignore )
+            {
+            }
         }
     }
 
@@ -262,6 +275,27 @@ public class DriverStatementResultAPISteps
         {
             Value given = parseGiven( runner.result().single().get( key ) );
             assertThat( given, equalTo( expected ) );
+        }
+    }
+
+    @Then( "^using `Consume` on `StatementResult` gives `ResultSummary`$" )
+    public void usingConsumeOnStatementResultGivesResultSummary() throws Throwable
+    {
+        for ( CypherStatementRunner runner : runners )
+        {
+            assertThat( runner.result().consume(), instanceOf( ResultSummary.class ) );
+        }
+    }
+
+    @Then( "^using `Consume` on `StatementResult` multiple times gives the same `ResultSummary` each time$" )
+    public void usingConsumeOnStatementResultMultipleTimesGivesTheSameResultSummaryEachTime() throws Throwable
+    {
+        for ( CypherStatementRunner runner : runners )
+        {
+            ResultSummary summary = runner.result().consume();
+            assertThat( summary, instanceOf( ResultSummary.class ) );
+            assertThat( summary.counters().nodesCreated(),
+                    equalTo( runner.result().consume().counters().nodesCreated() ) );
         }
     }
 }

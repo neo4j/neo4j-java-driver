@@ -122,6 +122,9 @@ public class GraphDatabase
      */
     public static Driver driver( URI url, AuthToken authToken, Config config )
     {
-        return new InternalDriver( url, authToken, config );
+        AuthToken tokenToUse = authToken != null ? authToken: AuthTokens.none();
+        Config configToUse = config != null ? config: Config.defaultConfig();
+
+        return new InternalDriver( url, tokenToUse, configToUse );
     }
 }

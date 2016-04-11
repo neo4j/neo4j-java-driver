@@ -100,30 +100,11 @@ public class InternalStatementResultTest
     }
 
     @Test
-    public void singlePastFirstTwoResultsShouldFail()
+    public void singleAfterNextShouldWork()
     {
         // GIVEN
         StatementResult result = createResult( 2 );
         result.next();
-
-
-        // THEN
-        expectedException.expect( NoSuchRecordException.class );
-
-        // THEN
-        result.single();
-    }
-
-    @Test
-    public void singlePastFirstShouldFail()
-    {
-        // GIVEN
-        StatementResult result = createResult( 2 );
-        result.next();
-
-
-        // THEN
-        expectedException.expect( NoSuchRecordException.class );
 
         // THEN
         result.single();

@@ -18,10 +18,16 @@
  */
 package org.neo4j.driver.v1.exceptions;
 
+import java.util.NoSuchElementException;
+
 /**
+ * Thrown whenever a client expected to read a record that was not available (i.e. because it wasn't returned by the server).
+ *
+ * This usually indicates an expectation mismatch between client code and database application logic.
+ *
  * @since 1.0
  */
-public class NoSuchRecordException extends ClientException
+public class NoSuchRecordException extends NoSuchElementException
 {
     private static final long serialVersionUID = 9091962868264042491L;
 
