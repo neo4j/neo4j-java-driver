@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.v1.integration;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
