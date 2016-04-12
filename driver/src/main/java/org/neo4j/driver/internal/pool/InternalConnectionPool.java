@@ -43,13 +43,13 @@ import static java.lang.String.format;
 /**
  * A basic connection pool that optimizes for threads being long-lived, acquiring/releasing many connections.
  * It uses a global queue as a fallback pool, but tries to avoid coordination by storing connections in a ThreadLocal.
- * <p>
+ *
  * Safety is achieved by tracking thread locals getting garbage collected, returning connections to the global pool
  * when this happens.
- * <p>
+ *
  * If threads are long-lived, this pool will achieve linearly scalable performance with overhead equivalent to a
  * hash-map lookup per acquire.
- * <p>
+ *
  * If threads are short-lived, this pool is not ideal.
  */
 public class InternalConnectionPool implements ConnectionPool
@@ -185,7 +185,7 @@ public class InternalConnectionPool implements ConnectionPool
                 if ( connector == null )
                 {
                     throw new ClientException(
-                            format( "Unsupported transport: '%s' in url: '%s'. Supported transports are: '%s'.",
+                            format( "Unsupported URI scheme: '%s' in url: '%s'. Supported transports are: '%s'.",
                                     uri.getScheme(), uri, connectorSchemes() ) );
                 }
                 Connection conn = connector.connect( uri, config, authToken );

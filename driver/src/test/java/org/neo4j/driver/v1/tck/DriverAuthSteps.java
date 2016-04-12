@@ -24,9 +24,10 @@ import cucumber.api.java.Before;
 import cucumber.api.java.en.And;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
-import cucumber.runtime.CucumberException;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 
 import org.neo4j.driver.internal.auth.InternalAuthToken;
 import org.neo4j.driver.v1.Driver;
@@ -43,12 +44,13 @@ import static org.neo4j.driver.v1.tck.DriverComplianceIT.neo4j;
 public class DriverAuthSteps
 {
     Driver driver = null;
-    File tempFile = null;
+    File tempDir = null;
 
     @Before( "@auth" )
-    public void setUp()
+    public void setUp() throws IOException
     {
-        tempFile = new File( "auth" );
+        tempDir = Files.createTempDirectory("dbms").toFile();
+        tempDir.deleteOnExit();
     }
 
     @After( "@auth" )
@@ -57,14 +59,16 @@ public class DriverAuthSteps
 
         try
         {
-            driver.close();
-            neo4j.restartServerOnEmptyDatabase( Neo4jSettings.DEFAULT );
-            tempFile.delete();
+            if (driver != null)
+            {
+                driver.close();
+            }
+            neo4j.useDefaultEncryptionKeyAndCert();
         }
         catch ( Exception e )
         {
             e.printStackTrace();
-            throw new CucumberException( "Failed to reset database" );
+            throw new RuntimeException( "Failed to reset database" );
         }
     }
 
@@ -119,7 +123,7 @@ public class DriverAuthSteps
     {
         neo4j.restartServerOnEmptyDatabase( Neo4jSettings.DEFAULT
                 .updateWith( Neo4jSettings.AUTH_ENABLED, "true" )
-                .updateWith( Neo4jSettings.DATA_DIR, tempFile.getAbsolutePath() ) );
+                .updateWith( Neo4jSettings.DATA_DIR, tempDir.getAbsolutePath().replace("\\", "/") ));
 
         Driver driver = GraphDatabase.driver( neo4j.address(), new InternalAuthToken(
                 parameters(
