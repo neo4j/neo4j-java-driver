@@ -34,8 +34,18 @@ import org.neo4j.driver.v1.Session;
 
 public class TestNeo4j implements TestRule
 {
-    private Neo4jSettings settings = Neo4jSettings.DEFAULT;
+    private final Neo4jSettings settings;
     private Neo4jRunner runner;
+
+    public TestNeo4j()
+    {
+        this( Neo4jSettings.DEFAULT );
+    }
+
+    public TestNeo4j( Neo4jSettings settings )
+    {
+        this.settings = settings;
+    }
 
     @Override
     public Statement apply( final Statement base, final Description description )
@@ -74,7 +84,7 @@ public class TestNeo4j implements TestRule
         tmpFile.deleteOnExit();
         try ( PrintWriter out = new PrintWriter( tmpFile ) )
         {
-            out.println( contents);
+            out.println( contents );
         }
         return tmpFile.toURI().toURL();
     }
@@ -97,12 +107,6 @@ public class TestNeo4j implements TestRule
     public void restartServerOnEmptyDatabase( Neo4jSettings neo4jSettings ) throws Exception
     {
         runner.restart( neo4jSettings );
-    }
-
-    public TestNeo4j withSettings( Neo4jSettings settings )
-    {
-        this.settings = settings;
-        return this;
     }
 
     public void updateEncryptionKeyAndCert( File key, File cert ) throws Exception
