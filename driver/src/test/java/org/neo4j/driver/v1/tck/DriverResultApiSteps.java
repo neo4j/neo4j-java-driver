@@ -33,7 +33,6 @@ import java.util.Map;
 
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.summary.InputPosition;
 import org.neo4j.driver.v1.summary.Notification;
 import org.neo4j.driver.v1.summary.Plan;
@@ -75,15 +74,7 @@ public class DriverResultApiSteps
     {
         for ( CypherStatementRunner runner : runners )
         {
-            try
-            {
-                runner.result().peek();
-            }
-            catch ( ClientException e )
-            {
-                return;
-            }
-            assertThat( runner.result().hasNext(), equalTo( false ) );
+            assertThat( runner.result().list().isEmpty(), equalTo( true ) );
         }
     }
 

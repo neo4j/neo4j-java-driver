@@ -246,7 +246,7 @@ public class DriverSecurityComplianceSteps
         assertThat( exception, notNullValue() );
         assertThat( exception, instanceOf( ClientException.class ) );
         Throwable rootCause = getRootCause( exception );
-        assertThat( rootCause.toString(), containsString( "No trusted certificate found") );
+        assertThat( rootCause.toString(), containsString( "Signature does not match.") );
     }
 
     @After("@tls")

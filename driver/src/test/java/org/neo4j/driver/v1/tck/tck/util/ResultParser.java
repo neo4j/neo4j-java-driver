@@ -321,6 +321,25 @@ public class ResultParser
         }
     }
 
+    public static Value parseStringValue( String value )
+    {
+        if ( isList( value ) )
+        {
+            String[] resultValues = getList( value );
+            Value[] valueArray = new Value[resultValues.length];
+            for ( int j = 0; j < resultValues.length; j++ )
+            {
+                Type type = getTypeFromStringConstellation( resultValues[j] );
+                valueArray[j] = createValue( resultValues[j], type );
+            }
+           return new ListValue( valueArray );
+        }
+        else
+        {
+            return createValue( value, getTypeFromStringConstellation( value ) );
+        }
+    }
+
     public static Map<String,Value> parseExpected( Collection<String> input, List<String> keys )
     {
         assertEquals( keys.size(), input.size() );
@@ -329,22 +348,7 @@ public class ResultParser
         for ( String resultValue : input )
         {
             String key = keys.get( i );
-            if ( isList( resultValue ) )
-            {
-                String[] resultValues = getList( resultValue );
-                Value[] valueArray = new Value[resultValues.length];
-                for ( int j = 0; j < resultValues.length; j++ )
-                {
-                    Type type = getTypeFromStringConstellation( resultValues[j] );
-                    valueArray[j] = createValue( resultValues[j], type );
-                }
-                converted.put( key, new ListValue( valueArray ) );
-            }
-            else
-            {
-                converted.put( key, createValue( resultValue, getTypeFromStringConstellation(
-                        resultValue ) ) );
-            }
+            converted.put( key, parseStringValue( resultValue ) );
             i++;
         }
         return converted;

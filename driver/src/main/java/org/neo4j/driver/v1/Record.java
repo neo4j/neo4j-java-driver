@@ -49,6 +49,13 @@ public interface Record
     List<String> keys();
 
     /**
+     * Retrieve the values of the underlying map
+     *
+     * @return all field keys in order
+     */
+    List<Value> values();
+
+    /**
      * Check if the list of keys contains the given key
      *
      * @param key the key

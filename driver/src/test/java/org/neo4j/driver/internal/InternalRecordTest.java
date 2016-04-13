@@ -21,6 +21,7 @@ package org.neo4j.driver.internal;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -183,6 +184,64 @@ public class InternalRecordTest
         assertThat( record.toString(), equalTo( "Record<{k1: 0, k2: 1}>" ) );
     }
 
+    @Test
+    public void shouldHaveMethodToGetKeys()
+    {
+        //GIVEN
+        List<String> keys = Arrays.asList( "k2", "k1" );
+        InternalRecord record =  new InternalRecord( keys, new Value[]{value( 0 ), value( 1 )} );
+
+        //WHEN
+        List<String> appendedKeys = record.keys();
+
+        //THEN
+        assertThat( appendedKeys, equalTo( keys ) );
+    }
+
+    @Test
+    public void emptyKeysShouldGiveEmptyList()
+    {
+        //GIVEN
+        List<String> keys = Collections.emptyList();
+        InternalRecord record =  new InternalRecord( keys, new Value[]{} );
+
+        //WHEN
+        List<String> appendedKeys = record.keys();
+
+        //THEN
+        assertThat( appendedKeys, equalTo( keys ) );
+    }
+
+
+    @Test
+    public void shouldHaveMethodToGetValues()
+    {
+        //GIVEN
+        List<String> keys = Arrays.asList( "k2", "k1" );
+        Value[] values = new Value[]{value( 0 ), value( 1 )};
+        InternalRecord record =  new InternalRecord( keys, values );
+
+        //WHEN
+        List<Value> appendedValues = record.values();
+
+        //THEN
+        assertThat( appendedValues, equalTo( Arrays.asList( values ) ) );
+    }
+
+    @Test
+    public void emptyValuesShouldGiveEmptyList()
+    {
+        //GIVEN
+        List<String> keys = Collections.emptyList();
+        Value[] values = new Value[]{};
+        InternalRecord record =  new InternalRecord( keys, values );
+
+        //WHEN
+        List<Value> appendedValues = record.values();
+
+        //THEN
+        assertThat( appendedValues, equalTo( Arrays.asList( values ) ) );
+    }
 
     private InternalRecord createRecord()
     {
