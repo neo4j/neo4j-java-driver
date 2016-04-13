@@ -32,6 +32,7 @@ import java.io.InputStream;
 import java.io.PrintWriter;
 import java.net.URL;
 import java.nio.file.Files;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -198,10 +199,10 @@ public class FileTools
     {
         Map<String, String> propertiesMap = new HashMap<>( 1 );
         propertiesMap.put( key, value );
-        updateProperties( propFile, propertiesMap );
+        updateProperties( propFile, propertiesMap, Collections.<String>emptySet() );
     }
 
-    public static void updateProperties( File propFile, Map<String, String> propertiesMap ) throws IOException
+    public static void updateProperties( File propFile, Map<String, String> propertiesMap, Set<String> excludes ) throws IOException
     {
         Scanner in = new Scanner( propFile );
 
@@ -222,6 +223,11 @@ public class FileTools
                     if ( tokens.length == 2 )
                     {
                         String name = tokens[0].trim();
+                        if (excludes.contains( name ))
+                        {
+                            continue;
+                        }
+
                         Object value = propertiesMap.get( name );
                         if ( value != null && !updatedProperties.contains( name ) )
                         {

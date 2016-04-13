@@ -198,7 +198,7 @@ public class Neo4jRunner
                 debug( "%s=%s", name, value );
             }
 
-            updateProperties( oldFile, propertiesMap );
+            updateProperties( oldFile, propertiesMap, currentSettings.excludes() );
         }
         catch ( Exception e )
         {

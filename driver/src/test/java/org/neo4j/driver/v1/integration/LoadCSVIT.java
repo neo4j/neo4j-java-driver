@@ -18,7 +18,6 @@
  */
 package org.neo4j.driver.v1.integration;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -26,8 +25,9 @@ import java.io.IOException;
 
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
-import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.util.Neo4jSettings;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -35,11 +35,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertFalse;
 import static org.neo4j.driver.v1.Values.parameters;
 
-@Ignore
 public class LoadCSVIT
 {
     @Rule
-    public TestNeo4j neo4j = new TestNeo4j();
+    public TestNeo4j neo4j = new TestNeo4j( Neo4jSettings.DEFAULT.without( Neo4jSettings.IMPORT_DIR ));
 
     @Test
     public void shouldLoadCSV() throws Throwable
