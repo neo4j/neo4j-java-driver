@@ -89,7 +89,7 @@ public class InternalSession implements Session
     @Override
     public StatementResult run( Statement statement )
     {
-        ensureConnectionIsValid();
+        ensureConnectionIsValidBeforeRunningSession();
         InternalStatementResult cursor = new InternalStatementResult( connection, statement );
         connection.run( statement.text(), statement.parameters().asMap( Values.ofValue() ), cursor.runResponseCollector() );
         connection.pullAll( cursor.pullAllResponseCollector() );
@@ -132,7 +132,7 @@ public class InternalSession implements Session
     @Override
     public Transaction beginTransaction()
     {
-        ensureConnectionIsValid();
+        ensureConnectionIsValidBeforeOpeningTransaction();
         currentTransaction = new InternalTransaction( connection, txCleanup );
         connection.onError( new Runnable() {
             @Override
@@ -156,9 +156,15 @@ public class InternalSession implements Session
         return InternalTypeSystem.TYPE_SYSTEM;
     }
 
-    private void ensureConnectionIsValid()
+    private void ensureConnectionIsValidBeforeRunningSession()
     {
-        ensureNoOpenTransaction();
+        ensureNoOpenTransactionBeforeRunningSession();
+        ensureConnectionIsOpen();
+    }
+
+    private void ensureConnectionIsValidBeforeOpeningTransaction()
+    {
+        ensureNoOpenTransactionBeforeOpeningTransaction();
         ensureConnectionIsOpen();
     }
 
@@ -174,12 +180,21 @@ public class InternalSession implements Session
         super.finalize();
     }
 
-    private void ensureNoOpenTransaction()
+    private void ensureNoOpenTransactionBeforeRunningSession()
     {
         if ( currentTransaction != null )
         {
-            throw new ClientException( "Please close the currently open transaction object before running " +
-                                       "more statements/transactions in the current session." );
+            throw new ClientException( "Statements cannot be run directly on a session with an open transaction;" +
+                                       " either run from within the transaction or use a different session." );
+        }
+    }
+
+    private void ensureNoOpenTransactionBeforeOpeningTransaction()
+    {
+        if ( currentTransaction != null )
+        {
+            throw new ClientException( "You cannot begin a transaction on a session with an open transaction;" +
+                                       " either run from within the transaction or use a different session." );
         }
     }
 

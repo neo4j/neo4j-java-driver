@@ -19,8 +19,11 @@
 package org.neo4j.driver.v1.util;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import static org.neo4j.driver.internal.util.Iterables.map;
 
@@ -29,24 +32,32 @@ public class Neo4jSettings
     public static final String AUTH_ENABLED = "dbms.security.auth_enabled";
     public static final String DATA_DIR = "dbms.directories.data";
     public static final String CERT_DIR = "dbms.directories.certificates";
+    public static final String IMPORT_DIR = "dbms.directories.import";
 
+    private static final String DEFAULT_IMPORT_DIR = "import";
     private static final String DEFAULT_CERT_DIR = "certificates";
     private static final String DEFAULT_TLS_CERT_PATH = DEFAULT_CERT_DIR + "/neo4j.cert";
     private static final String DEFAULT_TLS_KEY_PATH = DEFAULT_CERT_DIR + "/neo4j.key";
 
+    public static final String DEFAULT_DATA_DIR = "data";
     public static final File DEFAULT_TLS_KEY_FILE = new File( Neo4jInstaller.neo4jHomeDir, DEFAULT_TLS_KEY_PATH );
     public static final File DEFAULT_TLS_CERT_FILE = new File( Neo4jInstaller.neo4jHomeDir, DEFAULT_TLS_CERT_PATH );
 
 
     private final Map<String, String> settings;
+    private final Set<String> excludes;
+
 
     public static Neo4jSettings DEFAULT = new Neo4jSettings( map(
             CERT_DIR, DEFAULT_CERT_DIR,
-            AUTH_ENABLED, "false" ) );
+            DATA_DIR, DEFAULT_DATA_DIR,
+            IMPORT_DIR, DEFAULT_IMPORT_DIR,
+            AUTH_ENABLED, "false" ), Collections.<String>emptySet() );
 
-    private Neo4jSettings( Map<String, String> settings )
+    private Neo4jSettings( Map<String, String> settings, Set<String> excludes )
     {
         this.settings = settings;
+        this.excludes = excludes;
     }
 
     public Map<String, String> propertiesMap()
@@ -56,38 +67,62 @@ public class Neo4jSettings
 
     public Neo4jSettings updateWith( Neo4jSettings other )
     {
-        return updateWith( other.settings );
+        return updateWith( other.settings, other.excludes );
     }
 
     public Neo4jSettings updateWith( String key, String value )
     {
-        return updateWith( map(key, value) );
+        return updateWith( map(key, value), excludes );
     }
 
-    private Neo4jSettings updateWith( Map<String,String> updates )
+    private Neo4jSettings updateWith( Map<String,String> updates, Set<String> excludes )
     {
         HashMap<String,String> newSettings = new HashMap<>( settings );
         for ( Map.Entry<String,String> entry : updates.entrySet() )
         {
             newSettings.put( entry.getKey(), entry.getValue() );
         }
-        return new Neo4jSettings( newSettings );
+        for ( String exclude : excludes )
+        {
+            newSettings.remove( exclude );
+        }
+        return new Neo4jSettings( newSettings, excludes );
+    }
+
+    public Neo4jSettings without(String key)
+    {
+        Set<String> newExcludes = new HashSet<>( excludes );
+        newExcludes.add( key );
+        Map<String,String> newMap = new HashMap<>( this.settings );
+        newMap.remove( key );
+        Neo4jSettings newSettings = new Neo4jSettings( newMap, newExcludes );
+        return newSettings;
     }
 
     @Override
     public boolean equals( Object o )
     {
-        if ( this == o ) { return true; }
-        if ( o == null || getClass() != o.getClass() ) { return false; }
+        if ( this == o )
+        { return true; }
+        if ( o == null || getClass() != o.getClass() )
+        { return false; }
 
         Neo4jSettings that = (Neo4jSettings) o;
 
-        return settings.equals( that.settings );
+        if ( !settings.equals( that.settings ) )
+        { return false; }
+        return excludes.equals( that.excludes );
+
     }
 
     @Override
     public int hashCode()
     {
         return settings.hashCode();
+    }
+
+    public Set<String> excludes()
+    {
+        return excludes;
     }
 }
