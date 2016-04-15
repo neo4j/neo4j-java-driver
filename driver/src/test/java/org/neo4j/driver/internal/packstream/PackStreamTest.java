@@ -653,7 +653,7 @@ public class PackStreamTest
 
         //we cannot have 'too many' fields
         exception.expect( PackStream.Overflow.class );
-        assertStruct( 32768 );
+        assertStruct( 65536 );
     }
 
     @Test
