@@ -1,15 +1,15 @@
 /**
  * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
- *
+ * <p>
  * This file is part of Neo4j.
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,7 +21,6 @@ package org.neo4j.driver.internal.connector.socket;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.mockito.Matchers;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -38,6 +37,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -80,7 +80,8 @@ public class BufferingChunkedInputTest
     public void shouldReadOneByteWhenSplitHeader() throws IOException
     {
         // Given
-        BufferingChunkedInput input = new BufferingChunkedInput( packets( packet( 0 ), packet( 1, 13, 0, 1, 37, 0, 0 ) ) );
+        BufferingChunkedInput input =
+                new BufferingChunkedInput( packets( packet( 0 ), packet( 1, 13, 0, 1, 37, 0, 0 ) ) );
 
         // When
         byte b1 = input.readByte();
@@ -281,7 +282,7 @@ public class BufferingChunkedInputTest
     {
         // Given
         ReadableByteChannel channel = mock( ReadableByteChannel.class );
-        when( channel.read( Matchers.any( ByteBuffer.class ) ) ).thenThrow( new ClosedByInterruptException() );
+        when( channel.read( any( ByteBuffer.class ) ) ).thenThrow( new ClosedByInterruptException() );
 
         BufferingChunkedInput ch = new BufferingChunkedInput( channel, 2 );
 
@@ -339,7 +340,8 @@ public class BufferingChunkedInputTest
     public void shouldPeekOneByteWhenSplitHeader() throws IOException
     {
         // Given
-        BufferingChunkedInput input = new BufferingChunkedInput( packets( packet( 0 ), packet( 1, 13, 0, 1, 37, 0, 0 ) ) );
+        BufferingChunkedInput input =
+                new BufferingChunkedInput( packets( packet( 0 ), packet( 1, 13, 0, 1, 37, 0, 0 ) ) );
 
         // When
         byte peeked1 = input.peekByte();
@@ -371,6 +373,66 @@ public class BufferingChunkedInputTest
         assertThat( read1, equalTo( (byte) 13 ) );
         assertThat( peeked2, equalTo( (byte) 37 ) );
         assertThat( read2, equalTo( (byte) 37 ) );
+    }
+
+    @Test
+    public void shouldNotStackOverflowWhenDataIsNotAvailable() throws IOException
+    {
+        // Given a channel that does not get data from the channel
+        ReadableByteChannel channel = new ReadableByteChannel()
+        {
+            private int counter = 0;
+            private int numberOfTries = 10000;
+
+            @Override
+            public int read( ByteBuffer dst ) throws IOException
+            {
+                if ( counter++ < numberOfTries )
+                {
+                    return 0;
+                }
+                else
+                {
+                    dst.put( (byte) 11 );
+                    return 1;
+                }
+            }
+
+            @Override
+            public boolean isOpen()
+            {
+                return true;
+            }
+
+            @Override
+            public void close() throws IOException
+            {
+
+            }
+        };
+
+        // When
+        BufferingChunkedInput input = new BufferingChunkedInput( channel );
+
+        // Then
+        assertThat(input.readByte(), equalTo( (byte)11 ));
+
+    }
+
+    @Test
+    public void shouldFailNicelyOnClosedConnections() throws IOException
+    {
+        // Given
+        ReadableByteChannel channel = mock( ReadableByteChannel.class );
+        when( channel.read( any( ByteBuffer.class ) ) ).thenReturn( -1 );
+        BufferingChunkedInput input = new BufferingChunkedInput( channel );
+
+        //Expect
+        exception.expect( ClientException.class );
+        exception.expectMessage( "Connection terminated while receiving data. This can happen due to network " +
+                                 "instabilities, or due to restarts of the database." );
+        // When
+        input.readByte();
     }
 
     private ReadableByteChannel packet( int... bytes )

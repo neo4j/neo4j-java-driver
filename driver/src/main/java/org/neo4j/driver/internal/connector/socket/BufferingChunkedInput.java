@@ -1,15 +1,15 @@
 /**
  * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
- *
+ * <p>
  * This file is part of Neo4j.
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -100,8 +100,11 @@ public class BufferingChunkedInput implements PackInput
                     {
                         if ( ctx.buffer.remaining() == 0 )
                         {
-                            //buffer empty, read next packet and try again
-                            readNextPacket( ctx.channel, ctx.buffer );
+                            //buffer empty, block until you get at least at least one byte
+                            while ( ctx.buffer.remaining() == 0 )
+                            {
+                                readNextPacket( ctx.channel, ctx.buffer );
+                            }
                             return AWAITING_CHUNK.readChunkSize( ctx );
                         }
                         else if ( ctx.buffer.remaining() >= 2 )
@@ -132,7 +135,7 @@ public class BufferingChunkedInput implements PackInput
                     public State peekByte( BufferingChunkedInput ctx ) throws IOException
                     {
                         //read chunk size and then proceed to read the rest of the chunk.
-                       return readChunkSize( ctx ).peekByte( ctx );
+                        return readChunkSize( ctx ).peekByte( ctx );
                     }
                 },
         IN_CHUNK
@@ -175,7 +178,7 @@ public class BufferingChunkedInput implements PackInput
                             int bytesToRead = min( ctx.scratchBuffer.remaining(), ctx.remainingChunkSize );
                             copyBytes( ctx.buffer, ctx.scratchBuffer, bytesToRead );
                             ctx.remainingChunkSize -= bytesToRead;
-                            if (ctx.scratchBuffer.remaining() == 0)
+                            if ( ctx.scratchBuffer.remaining() == 0 )
                             {
                                 //we have written all data that was asked for us
                                 return IN_CHUNK;
@@ -229,7 +232,7 @@ public class BufferingChunkedInput implements PackInput
                     }
 
                     @Override
-                    public State read( BufferingChunkedInput ctx) throws IOException
+                    public State read( BufferingChunkedInput ctx ) throws IOException
                     {
                         throw new IllegalStateException( "Cannot read data while in progress of reading header" );
                     }
@@ -271,25 +274,34 @@ public class BufferingChunkedInput implements PackInput
          * @param buffer The buffer to read into
          * @throws IOException
          */
-        private static void readNextPacket(ReadableByteChannel channel, ByteBuffer buffer ) throws IOException
+        private static void readNextPacket( ReadableByteChannel channel, ByteBuffer buffer ) throws IOException
         {
             try
             {
                 buffer.clear();
-                channel.read( buffer );
+                int read = channel.read( buffer );
+                if ( read == -1 )
+                {
+                    throw new ClientException(
+                            "Connection terminated while receiving data. This can happen due to network " +
+                            "instabilities, or due to restarts of the database." );
+                }
                 buffer.flip();
             }
-            catch( ClosedByInterruptException e )
+            catch ( ClosedByInterruptException e )
             {
                 throw new ClientException(
-                        "Connection to the database was lost because someone called `interrupt()` on the driver thread waiting for a reply. " +
-                        "This normally happens because the JVM is shutting down, but it can also happen because your application code or some " +
+                        "Connection to the database was lost because someone called `interrupt()` on the driver " +
+                        "thread waiting for a reply. " +
+                        "This normally happens because the JVM is shutting down, but it can also happen because your " +
+                        "application code or some " +
                         "framework you are using is manually interrupting the thread." );
             }
             catch ( IOException e )
             {
                 String message = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
-                throw new ClientException( "Unable to process request: " + message + " buffer: \n" + BytePrinter.hex( buffer ), e );
+                throw new ClientException(
+                        "Unable to process request: " + message + " buffer: \n" + BytePrinter.hex( buffer ), e );
             }
         }
 
@@ -368,7 +380,7 @@ public class BufferingChunkedInput implements PackInput
     public byte peekByte() throws IOException
     {
         state = state.peekByte( this );
-        return buffer.get(buffer.position());
+        return buffer.get( buffer.position() );
     }
 
     private boolean hasMoreDataUnreadInCurrentChunk()
@@ -382,7 +394,7 @@ public class BufferingChunkedInput implements PackInput
         public void run()
         {
             // the on message complete should only be called when no data unread from the message buffer
-            if( hasMoreDataUnreadInCurrentChunk() )
+            if ( hasMoreDataUnreadInCurrentChunk() )
             {
                 throw new ClientException( "Trying to read message complete ending '00 00' while there are more data " +
                                            "left in the message content unread: buffer [" +
@@ -392,11 +404,12 @@ public class BufferingChunkedInput implements PackInput
             try
             {
                 // read message boundary
-               state.readChunkSize( BufferingChunkedInput.this );
+                state.readChunkSize( BufferingChunkedInput.this );
                 if ( remainingChunkSize != 0 )
                 {
                     throw new ClientException( "Expecting message complete ending '00 00', but got " +
-                                               BytePrinter.hex( ByteBuffer.allocate( 2 ).putShort( (short) remainingChunkSize ) ) );
+                                               BytePrinter.hex( ByteBuffer.allocate( 2 )
+                                                       .putShort( (short) remainingChunkSize ) ) );
                 }
             }
             catch ( IOException e )
