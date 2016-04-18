@@ -19,6 +19,7 @@
 package org.neo4j.driver.v1;
 
 import java.net.URI;
+import java.util.Map;
 
 import org.neo4j.driver.internal.InternalDriver;
 
@@ -124,6 +125,22 @@ public class GraphDatabase
     {
         AuthToken tokenToUse = authToken != null ? authToken: AuthTokens.none();
         Config configToUse = config != null ? config: Config.defaultConfig();
+
+        return new InternalDriver( url, tokenToUse, configToUse );
+    }
+
+    /**
+     * Return a driver for a Neo4j instance with custom configuration.
+     *
+     * @param url the URL to a Neo4j instance
+     * @param authToken authentication to use, see {@link AuthTokens}
+     * @param config user defined configuration
+     * @return a new driver to the database instance specified by the URL
+     */
+    public static Driver driver( URI url, AuthToken authToken, Map<String, Object> config )
+    {
+        AuthToken tokenToUse = authToken != null ? authToken: AuthTokens.none();
+        Config configToUse =  Config.defaultConfig();
 
         return new InternalDriver( url, tokenToUse, configToUse );
     }

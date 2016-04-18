@@ -18,9 +18,13 @@
  */
 package org.neo4j.driver.internal;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.neo4j.driver.v1.Config;
 
@@ -31,6 +35,10 @@ import static org.junit.Assert.assertThat;
 
 public class ConfigTest
 {
+
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
+
     private static final File DEFAULT_KNOWN_HOSTS = new File( getProperty( "user.home" ),
             ".neo4j" + File.separator + "known_hosts" );
 
@@ -85,7 +93,45 @@ public class ConfigTest
         Config config = Config.build().withSessionLivenessCheckTimeout( 1337 ).toConfig();
 
         // then
-        assertThat( config.idleTimeBeforeConnectionTest(), equalTo( 1337l ) );
+        assertThat( config.idleTimeBeforeConnectionTest(), equalTo( 1337L ) );
+    }
+
+    @Test
+    public void shouldConfigureFromMap() throws Throwable
+    {
+        // given
+        Map<String, Object> map = new HashMap<>(  );
+        map.put("trustStrategy", "TRUST_ON_FIRST_USE");
+        map.put("knownHosts", "/dev/null/important_files");
+        map.put("maxSessions", 42);
+        map.put("sessionLivenessCheckTimeout", 1337L);
+        map.put("encryptionLevel", "NONE");
+
+        // when
+        Config config = Config.build().fromMap( map ).toConfig();
+
+        // then
+        assertThat( config.idleTimeBeforeConnectionTest(), equalTo( 1337L ) );
+        assertThat( config.connectionPoolSize(), equalTo( 42 ) );
+        assertThat( config.trustStrategy(), equalTo( Config.TrustStrategy.trustOnFirstUse(
+                new File( "/dev/null/important_files") ) ) );
+        assertThat( config.idleTimeBeforeConnectionTest(), equalTo( 1337L ) );
+        assertThat( config.encryptionLevel(), equalTo( Config.EncryptionLevel.NONE ) );
+    }
+
+    @Test
+    public void shouldFailNicelyWhenInvalidOptions() throws Throwable
+    {
+        // given
+        Map<String, Object> map = new HashMap<>(  );
+        map.put("trustStrategy", "TRUST_ON_SECOND_USE");
+
+        exception.expect( IllegalArgumentException.class );
+        exception.expectMessage( "TRUST_ON_SECOND_USE is not a valid option for 'trustStrategy'. Valid values are " +
+                                 "[TRUST_ON_FIRST_USE, TRUST_SIGNED_CERTIFICATES]" );
+
+        // when
+        Config.build().fromMap( map ).toConfig();
     }
 
     public static void deleteDefaultKnownCertFileIfExists()
