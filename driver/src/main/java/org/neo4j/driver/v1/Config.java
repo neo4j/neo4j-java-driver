@@ -261,6 +261,7 @@ public class Config
     {
         public enum Strategy
         {
+        	TRUST_ALL,
             TRUST_ON_FIRST_USE,
             TRUST_SIGNED_CERTIFICATES
         }
@@ -320,6 +321,16 @@ public class Config
         public static TrustStrategy trustOnFirstUse( File knownHostsFile )
         {
             return new TrustStrategy( Strategy.TRUST_ON_FIRST_USE, knownHostsFile );
+        }
+        
+        /**
+         * Trust all Neo4j instances. ONLY USE THIS FOR TESTING PURPOSES.
+         * 
+         * @return an authentication config
+         */
+        public static TrustStrategy trustAll()
+        {
+            return new TrustStrategy( Strategy.TRUST_ALL, null );
         }
     }
 }
