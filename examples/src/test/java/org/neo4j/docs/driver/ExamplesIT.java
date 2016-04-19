@@ -21,6 +21,7 @@ package org.neo4j.docs.driver;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.junit.rules.ExpectedException;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
@@ -45,6 +46,8 @@ public class ExamplesIT
 {
     @Rule
     public TestNeo4j neo4j = new TestNeo4j();
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
 
     @Test
     public void minimalWorkingExample() throws Throwable
@@ -56,7 +59,7 @@ public class ExamplesIT
         }
 
         // Then
-        assertThat( stdIO.stdout(), equalTo( asList( "Neo is 23 years old." ) ) );
+        assertThat( stdIO.stdout(), equalTo( asList( "King Arthur" ) ) );
     }
 
     @Test
@@ -109,7 +112,7 @@ public class ExamplesIT
     }
 
     @Test
-    public void resultCursor() throws Throwable
+    public void resultTraversal() throws Throwable
     {
         StdIOCapture stdIO = new StdIOCapture();
         try ( AutoCloseable captured = stdIO.capture();
@@ -117,13 +120,31 @@ public class ExamplesIT
                 Session session = driver.session() )
         {
             session.run( "MATCH (n) DETACH DELETE n" );
-            session.run( "CREATE (p:Person { name: 'The One', age:23 })" );
+            session.run( "CREATE (weapon:Weapon { name: 'Sword in the stone' })" );
 
-            Examples.resultCursor( session );
+            Examples.resultTraversal( session );
         }
 
         // Then
-        assertThat( stdIO.stdout(), equalTo( asList( "p.age = 23" ) ) );
+        assertThat( stdIO.stdout(), equalTo( asList( "List of weapons called Sword:", "Sword in the stone" ) ) );
+    }
+
+    @Test
+    public void accessRecord() throws Throwable
+    {
+        StdIOCapture stdIO = new StdIOCapture();
+        try ( AutoCloseable captured = stdIO.capture();
+              Driver driver = GraphDatabase.driver( "bolt://localhost" );
+              Session session = driver.session() )
+        {
+            session.run( "MATCH (n) DETACH DELETE n" );
+            session.run( "CREATE (weapon:Weapon { name: 'Sword in the stone', owner: 'Arthur', material: 'Stone', size: 'Huge' })" );
+
+            Examples.accessRecord( session );
+        }
+
+        // Then
+        assertThat( stdIO.stdout(), equalTo( asList( "List of weapons owned by Arthur:", "[weapon.name: \"Sword in the stone\", weapon.material: \"Stone\", weapon.size: \"Huge\"]" ) ) );
     }
 
     @Test
@@ -135,12 +156,13 @@ public class ExamplesIT
                 Session session = driver.session() )
         {
             session.run( "MATCH (n) DETACH DELETE n" );
-            session.run( "CREATE (p:Person { name: 'The One', age:23 })" );
+            session.run( "CREATE (knight:Person:Knight { name: 'Lancelot', castle: 'Camelot' })" );
+            session.run( "CREATE (knight:Person { name: 'Arthur', title: 'King' })" );
 
             Examples.retainResultsForNestedQuerying( session );
 
             // Then
-            int theOnes = session.run( "MATCH (:Person)-[:HAS_TRAIT]->() RETURN count(*)" ).peek().get( 0 ).asInt();
+            int theOnes = session.run( "MATCH (:Knight)-[:DEFENDS]->() RETURN count(*)" ).peek().get( 0 ).asInt();
             assertEquals( 1, theOnes );
         }
     }
@@ -155,14 +177,27 @@ public class ExamplesIT
             try ( Session setup = driver.session() )
             {
                 setup.run( "MATCH (n) DETACH DELETE n" );
-                setup.run( "CREATE (p:Person { name: 'The One', age:23 })" );
+                setup.run( "CREATE (knight:Person:Knight { name: 'Lancelot', castle: 'Camelot' })" );
             }
 
             Examples.retainResultsForLaterProcessing( driver );
         }
 
         // Then
-        assertThat( stdIO.stdout(), equalTo( asList( "p.age = 23" ) ) );
+        assertThat( stdIO.stdout(), equalTo( asList( "Lancelotis a knight of Camelot" ) ) );
+    }
+
+    @Test
+    public void handleCypherError() throws Throwable
+    {
+        StdIOCapture stdIO = new StdIOCapture();
+        try ( AutoCloseable captured = stdIO.capture();
+              Driver driver = GraphDatabase.driver( "bolt://localhost" );
+              Session session = driver.session() )
+        {
+            exception.expect(RuntimeException.class);
+            Examples.handleCypherError( session );
+        }
     }
 
     @Test
@@ -253,6 +288,16 @@ public class ExamplesIT
     public void trustSignedCertificates() throws Throwable
     {
         Driver driver = Examples.trustSignedCertificates();
+
+        // Then
+        assertNotNull( driver );
+        driver.close();
+    }
+
+    @Test
+    public void connectWithAuthDisabled() throws Throwable
+    {
+        Driver driver = Examples.connectWithAuthDisabled();
 
         // Then
         assertNotNull( driver );

@@ -20,11 +20,7 @@ package org.neo4j.docs.driver;
 
 // NOTE: Be careful about auto-formatting here: All imports should be between the tags below.
 // tag::minimal-example-import[]
-import org.neo4j.driver.v1.Driver;
-import org.neo4j.driver.v1.GraphDatabase;
-import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.StatementResult;
-import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.*;
 // end::minimal-example-import[]
 
 public class MinimalWorkingExample
@@ -32,16 +28,16 @@ public class MinimalWorkingExample
     public static void minimalWorkingExample() throws Exception
     {
         // tag::minimal-example[]
-        Driver driver = GraphDatabase.driver( "bolt://localhost" );
+        Driver driver = GraphDatabase.driver( "bolt://localhost", AuthTokens.basic( "neo4j", "neo4j" ) );
         Session session = driver.session();
 
-        session.run( "CREATE (neo:Person {name:'Neo', age:23})" );
+        session.run( "CREATE (a:Person {name:'Arthur', title:'King'})" );
 
-        StatementResult result = session.run( "MATCH (p:Person) WHERE p.name = 'Neo' RETURN p.age" );
+        StatementResult result = session.run( "MATCH (a:Person) WHERE a.name = 'Arthur' RETURN a.name AS name, a.title AS title" );
         while ( result.hasNext() )
         {
             Record record = result.next();
-            System.out.println( "Neo is " + record.get( "p.age" ).asInt() + " years old." );
+            System.out.println( record.get( "title" ).asString() + " " + record.get("name").asString() );
         }
 
         session.close();
