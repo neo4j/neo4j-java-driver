@@ -215,6 +215,7 @@ public class SocketClient
             SocketChannel soChannel = SocketChannel.open();
             soChannel.setOption( StandardSocketOptions.SO_REUSEADDR, true );
             soChannel.setOption( StandardSocketOptions.SO_KEEPALIVE, true );
+
             soChannel.connect( new InetSocketAddress( host, port ) );
 
             ByteChannel channel;

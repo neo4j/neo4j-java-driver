@@ -91,8 +91,6 @@ public class TLSSocketChannelIT
         sslChannel.close();
 
         // Then
-        verify( logger, atLeastOnce() ).debug( "TLS connection enabled" );
-        verify( logger, atLeastOnce() ).debug( "TLS connection established" );
         verify( logger, atLeastOnce() ).debug( "TLS connection closed" );
     }
 
@@ -135,8 +133,6 @@ public class TLSSocketChannelIT
             sslChannel.close();
 
             // Then
-            verify( logger, atLeastOnce() ).debug( "TLS connection enabled" );
-            verify( logger, atLeastOnce() ).debug( "TLS connection established" );
             verify( logger, atLeastOnce() ).debug( "TLS connection closed" );
         }
         finally
@@ -249,8 +245,6 @@ public class TLSSocketChannelIT
         sslChannel.close();
 
         // Then
-        verify( logger, atLeastOnce() ).debug( "TLS connection enabled" );
-        verify( logger, atLeastOnce() ).debug( "TLS connection established" );
         verify( logger, atLeastOnce() ).debug( "TLS connection closed" );
     }
 
