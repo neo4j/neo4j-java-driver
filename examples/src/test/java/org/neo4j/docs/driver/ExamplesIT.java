@@ -20,8 +20,8 @@ package org.neo4j.docs.driver;
 
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.junit.rules.ExpectedException;
+
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
@@ -29,6 +29,7 @@ import org.neo4j.driver.v1.util.StdIOCapture;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static java.util.Arrays.asList;
+
 import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
@@ -184,7 +185,7 @@ public class ExamplesIT
         }
 
         // Then
-        assertThat( stdIO.stdout(), equalTo( asList( "Lancelotis a knight of Camelot" ) ) );
+        assertThat( stdIO.stdout(), equalTo( asList( "Lancelot is a knight of Camelot" ) ) );
     }
 
     @Test

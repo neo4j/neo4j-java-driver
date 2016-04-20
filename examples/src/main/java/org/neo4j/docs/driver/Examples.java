@@ -22,10 +22,17 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.driver.v1.*;
+import org.neo4j.driver.v1.AuthTokens;
+import org.neo4j.driver.v1.Config;
+import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.GraphDatabase;
+import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.summary.Notification;
-import org.neo4j.driver.v1.util.Pair;
 import org.neo4j.driver.v1.summary.ResultSummary;
 
 public class Examples
@@ -136,7 +143,7 @@ public class Examples
 
         for ( Record record : records )
         {
-            System.out.println( record.get("name").asString() + "is a knight of Camelot" );
+            System.out.println( record.get("name").asString() + " is a knight of Camelot" );
         }
         // end::retain-result[]
     }
