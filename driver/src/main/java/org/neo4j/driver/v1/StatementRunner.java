@@ -28,7 +28,7 @@ import org.neo4j.driver.v1.types.TypeSystem;
  *
  * <h2>Important notes on semantics</h2>
  *
- * Statements ran in the same {@link StatementRunner} are guaranteed
+ * Statements run in the same {@link StatementRunner} are guaranteed
  * to execute in order, meaning changes made by one statement will be seen
  * by all subsequent statements in the same {@link StatementRunner}.
  *
