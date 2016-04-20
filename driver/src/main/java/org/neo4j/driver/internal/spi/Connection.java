@@ -30,7 +30,7 @@ public interface Connection extends AutoCloseable
 {
     /**
      * Initialize the connection. This must be done before any other action is allowed.
-     * @param clientName should be the driver name and version: "java-driver/1.0.0"
+     * @param clientName should be the driver name and version: "java-driver/1.1.0"
      * @param authToken a map value
      */
     void init( String clientName, Map<String,Value> authToken );

@@ -136,6 +136,7 @@ public class PackStream
     public static final byte RESERVED_EF = (byte) 0xEF;
 
     private static final long PLUS_2_TO_THE_31  = 2147483648L;
+    private static final long PLUS_2_TO_THE_16  = 65536L;
     private static final long PLUS_2_TO_THE_15  = 32768L;
     private static final long PLUS_2_TO_THE_7   = 128L;
     private static final long MINUS_2_TO_THE_4  = -16L;
@@ -312,7 +313,7 @@ public class PackStream
                 out.writeByte( BYTES_8 )
                    .writeByte( (byte) size );
             }
-            else if ( size <= Short.MAX_VALUE )
+            else if ( size < PLUS_2_TO_THE_16 )
             {
                 out.writeByte( BYTES_16 )
                    .writeShort( (short) size );
@@ -335,7 +336,7 @@ public class PackStream
                 out.writeByte( STRING_8 )
                    .writeByte( (byte) size );
             }
-            else if ( size <= Short.MAX_VALUE )
+            else if ( size < PLUS_2_TO_THE_16 )
             {
                 out.writeByte( STRING_16 )
                    .writeShort( (short) size );
@@ -358,7 +359,7 @@ public class PackStream
                 out.writeByte( LIST_8 )
                    .writeByte( (byte) size );
             }
-            else if ( size <= Short.MAX_VALUE )
+            else if ( size < PLUS_2_TO_THE_16 )
             {
                 out.writeByte( LIST_16 )
                    .writeShort( (short) size );
@@ -381,7 +382,7 @@ public class PackStream
                 out.writeByte( MAP_8 )
                    .writeByte( (byte) size );
             }
-            else if ( size <= Short.MAX_VALUE )
+            else if ( size < PLUS_2_TO_THE_16 )
             {
                 out.writeByte( MAP_16 )
                    .writeShort( (short) size );
@@ -406,7 +407,7 @@ public class PackStream
                    .writeByte( (byte) size )
                    .writeByte( signature );
             }
-            else if ( size <= Short.MAX_VALUE )
+            else if ( size < PLUS_2_TO_THE_16 )
             {
                 out.writeByte( STRUCT_16 )
                    .writeShort( (short) size )
@@ -415,7 +416,7 @@ public class PackStream
             else
             {
                 throw new Overflow(
-                        "Structures cannot have more than " + Short.MAX_VALUE + " fields" );
+                        "Structures cannot have more than " + (PLUS_2_TO_THE_16 - 1) + " fields" );
             }
         }
 
