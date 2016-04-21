@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.v1.integration;
 
+import java.util.UUID;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -122,5 +124,32 @@ public class ErrorIT
             driver.session();
         }
     }
+
+    @Test
+    public void shouldHandleFailureAtCommitTime() throws Throwable
+    {
+        String label = UUID.randomUUID().toString();  // avoid clashes with other tests
+
+        // given
+        Transaction tx = session.beginTransaction();
+        tx.run( "CREATE CONSTRAINT ON (a:`" + label + "`) ASSERT a.name IS UNIQUE" );
+        tx.success();
+        tx.close();
+
+        // and
+        tx = session.beginTransaction();
+        tx.run( "CREATE INDEX ON :`" + label + "`(name)" );
+        tx.success();
+
+        // then expect
+        exception.expect( ClientException.class );
+        exception.expectMessage( "Label '" + label + "' and property 'name' have a unique " +
+                "constraint defined on them, so an index is already created that matches this." );
+
+        // when
+        tx.close();
+
+    }
+
 
 }
