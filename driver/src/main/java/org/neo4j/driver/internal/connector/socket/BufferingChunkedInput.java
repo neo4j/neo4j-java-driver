@@ -88,6 +88,15 @@ public class BufferingChunkedInput implements PackInput
         this.state = State.AWAITING_CHUNK;
     }
 
+    /*
+     * Use only in tests
+     */
+    int remainingChunkSize()
+    {
+        return remainingChunkSize;
+    }
+
+
     /**
      * Internal state machine used for reading data from the channel into the buffer.
      */
@@ -118,7 +127,7 @@ public class BufferingChunkedInput implements PackInput
                         {
                             //only 1 byte in buffer, read that and continue
                             //to read header
-                            byte partialChunkSize = ctx.buffer.get();
+                            int partialChunkSize = getUnsignedByteFromBuffer( ctx.buffer );
                             ctx.remainingChunkSize = partialChunkSize << 8;
                             return IN_HEADER.readChunkSize( ctx );
                         }
@@ -220,7 +229,7 @@ public class BufferingChunkedInput implements PackInput
                         {
                             //Now we have enough space to read the rest of the chunk size
                             byte partialChunkSize = ctx.buffer.get();
-                            ctx.remainingChunkSize = (ctx.remainingChunkSize | partialChunkSize) & 0xFFFF;
+                            ctx.remainingChunkSize = ctx.remainingChunkSize | (partialChunkSize & 0xFF);
                             return IN_CHUNK;
                         }
                         else
@@ -382,6 +391,12 @@ public class BufferingChunkedInput implements PackInput
         state = state.peekByte( this );
         return buffer.get( buffer.position() );
     }
+
+    static int getUnsignedByteFromBuffer( ByteBuffer buffer )
+    {
+        return buffer.get() & 0xFF;
+    }
+
 
     private boolean hasMoreDataUnreadInCurrentChunk()
     {
