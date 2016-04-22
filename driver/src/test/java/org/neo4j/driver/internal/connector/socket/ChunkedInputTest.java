@@ -18,6 +18,11 @@
  */
 package org.neo4j.driver.internal.connector.socket;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.mockito.Matchers;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -25,11 +30,6 @@ import java.nio.channels.Channels;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Arrays;
-
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.mockito.Matchers;
 
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.util.RecordingByteChannel;

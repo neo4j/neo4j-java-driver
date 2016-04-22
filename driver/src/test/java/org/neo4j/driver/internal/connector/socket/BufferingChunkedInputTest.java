@@ -104,11 +104,33 @@ public class BufferingChunkedInputTest
         assertThat( input.readByte(), equalTo( (byte) 1 ) );
         assertThat( input.remainingChunkSize(), equalTo( packetSize - 1 ) );
 
-        for ( int i = 1; i < 384; i++ )
+        for ( int i = 1; i < packetSize; i++ )
         {
             assertThat( input.readByte(), equalTo( (byte) 1 ) );
         }
         assertThat( input.remainingChunkSize(), equalTo( 0 ) );
+    }
+
+    @Test
+    public void shouldReadChunkWithSplitHeaderForBigMessagesWhenInternalBufferHasOneByte() throws IOException
+    {
+        // Given
+        int packetSize = 32780;
+        BufferingChunkedInput input =
+                new BufferingChunkedInput( packets( packet( -128 ), packet( 12 ), fillPacket( packetSize, 1 ) ), 1);
+
+        // Then
+        assertThat( input.readByte(), equalTo( (byte) 1 ) );
+        assertThat( input.remainingChunkSize(), equalTo( packetSize - 1 ) );
+    }
+
+    @Test
+    public void shouldReadUnsignedByteFromBuffer() throws IOException
+    {
+        ByteBuffer buffer = ByteBuffer.allocate( 1 );
+        buffer.put( (byte) -1 );
+        buffer.flip();
+        assertThat(BufferingChunkedInput.getUnsignedByteFromBuffer( buffer ), equalTo( 255 ));
     }
 
     @Test
