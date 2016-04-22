@@ -88,6 +88,14 @@ public class BufferingChunkedInput implements PackInput
         this.state = State.AWAITING_CHUNK;
     }
 
+    /*
+     * Use only in tests
+     */
+    int remainingChunkSize()
+    {
+        return remainingChunkSize;
+    }
+
     /**
      * Internal state machine used for reading data from the channel into the buffer.
      */
@@ -220,7 +228,7 @@ public class BufferingChunkedInput implements PackInput
                         {
                             //Now we have enough space to read the rest of the chunk size
                             byte partialChunkSize = ctx.buffer.get();
-                            ctx.remainingChunkSize = (ctx.remainingChunkSize | partialChunkSize) & 0xFFFF;
+                            ctx.remainingChunkSize = ctx.remainingChunkSize | (partialChunkSize & 0xFF);
                             return IN_CHUNK;
                         }
                         else
