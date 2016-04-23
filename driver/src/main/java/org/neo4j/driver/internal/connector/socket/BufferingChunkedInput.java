@@ -287,7 +287,7 @@ public class BufferingChunkedInput implements PackInput
         {
             try
             {
-                buffer.clear();
+                buffer.compact();
                 int read = channel.read( buffer );
                 if ( read == -1 )
                 {
