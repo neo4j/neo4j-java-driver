@@ -23,11 +23,13 @@ import org.junit.Test;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.util.Arrays;
+import java.util.Random;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class BufferingChunkedInputExhaustiveTest
+public class BufferingChunkedInputFuzzTest
 {
 
     @Test
@@ -49,6 +51,24 @@ public class BufferingChunkedInputExhaustiveTest
         }
     }
 
+    @Test
+    public void messageSizeFuzzTest() throws IOException
+    {
+        int maxSize = 1 << 16;
+        Random random = new Random();
+        for ( int i = 0; i < 1000; i++)
+        {
+            int size = random.nextInt( maxSize  + 1);
+            byte[] expected = new byte[size];
+            Arrays.fill(expected, (byte)42);
+            BufferingChunkedInput input = new BufferingChunkedInput( channel( expected, 0, size ) );
+
+            byte[] dst = new byte[size];
+            input.readBytes( dst, 0, size);
+
+            assertThat( dst, equalTo( expected ) );
+        }
+    }
 
     ReadableByteChannel splitChannel( byte[] bytes, int split )
     {
