@@ -93,6 +93,21 @@ public class BufferingChunkedInputTest
     }
 
     @Test
+    public void shouldReadBytesAcrossHeaders() throws IOException
+    {
+        // Given
+        BufferingChunkedInput input =
+                new BufferingChunkedInput( packets( packet( 0, 2, 1, 2, 0, 6), packet(3, 4, 5, 6, 7, 8, 0, 0 ) ) );
+
+        // When
+        byte[] dst = new byte[8];
+        input.readBytes(dst, 0, 8);
+
+        // Then
+        assertThat( dst, equalTo( new byte[]{1, 2, 3, 4, 5, 6, 7, 8} ) );
+    }
+
+    @Test
     public void shouldReadChunkWithSplitHeaderForBigMessages() throws IOException
     {
         // Given

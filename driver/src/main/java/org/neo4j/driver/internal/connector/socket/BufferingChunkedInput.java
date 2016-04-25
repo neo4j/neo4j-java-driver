@@ -178,7 +178,10 @@ public class BufferingChunkedInput implements PackInput
                             int bytesToRead = min( ctx.buffer.remaining(), ctx.remainingChunkSize );
                             copyBytes( ctx.buffer, ctx.scratchBuffer, bytesToRead );
                             ctx.remainingChunkSize -= bytesToRead;
-                            readNextPacket( ctx.channel, ctx.buffer );
+                            if ( !ctx.buffer.hasRemaining() )
+                            {
+                                readNextPacket( ctx.channel, ctx.buffer );
+                            }
                             return IN_CHUNK.read( ctx );
                         }
                         else
@@ -285,6 +288,8 @@ public class BufferingChunkedInput implements PackInput
          */
         private static void readNextPacket( ReadableByteChannel channel, ByteBuffer buffer ) throws IOException
         {
+            assert !buffer.hasRemaining();
+
             try
             {
                 buffer.clear();
