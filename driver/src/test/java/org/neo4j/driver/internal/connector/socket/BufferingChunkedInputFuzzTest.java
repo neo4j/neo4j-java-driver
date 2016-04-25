@@ -55,7 +55,7 @@ public class BufferingChunkedInputFuzzTest
     public void messageSizeFuzzTest() throws IOException
     {
         int maxSize = 1 << 16;
-        Random random = new Random();
+        Random random = new Random(11);
         for ( int i = 0; i < 1000; i++)
         {
             int size = random.nextInt( maxSize  + 1);

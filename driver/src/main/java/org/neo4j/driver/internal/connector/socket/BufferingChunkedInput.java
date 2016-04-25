@@ -141,22 +141,15 @@ public class BufferingChunkedInput implements PackInput
     @Override
     public PackInput readBytes( byte[] into, int offset, int toRead ) throws IOException
     {
-        int left = toRead;
-        while ( left > 0 )
-        {
-            int bufferSize = min( 8, left );
-            fillScratchBuffer( bufferSize );
-            scratchBuffer.get( into, offset, bufferSize );
-            left -= bufferSize;
-            offset += bufferSize;
-        }
+        ByteBuffer dst = ByteBuffer.wrap( into, offset, toRead );
+        read( dst );
         return this;
     }
 
     @Override
     public byte peekByte() throws IOException
     {
-        peek();
+        assertOneByteInBuffer();
         return buffer.get( buffer.position() );
     }
 
@@ -186,7 +179,7 @@ public class BufferingChunkedInput implements PackInput
             try
             {
                 // read message boundary
-                readChunkSize( );
+                readChunkSize();
                 if ( remainingChunkSize != 0 )
                 {
                     throw new ClientException( "Expecting message complete ending '00 00', but got " +
@@ -219,7 +212,7 @@ public class BufferingChunkedInput implements PackInput
         assert (bytesToRead <= scratchBuffer.capacity());
         scratchBuffer.clear();
         scratchBuffer.limit( bytesToRead );
-        read();
+        read(scratchBuffer);
         scratchBuffer.flip();
     }
 
@@ -233,7 +226,16 @@ public class BufferingChunkedInput implements PackInput
         IN_HEADER,
     }
 
-    private void read() throws IOException
+    /**
+     * Fills the dst buffer with data.
+     *
+     * If there is enough data in the internal buffer (${@link #buffer}) that data is used, when we run out
+     * of data in the internal buffer more data is fetched from the underlying channel.
+     *
+     * @param dst The buffer to write data to.
+     * @throws IOException
+     */
+    private void read( ByteBuffer dst ) throws IOException
     {
         while ( true )
         {
@@ -250,11 +252,11 @@ public class BufferingChunkedInput implements PackInput
                     //we are done reading the chunk, start reading the next one
                     state = State.AWAITING_CHUNK;
                 }
-                else if ( buffer.remaining() < scratchBuffer.remaining() )
+                else if ( buffer.remaining() < dst.remaining() )
                 {
                     //not enough room in buffer, store what is there and then fetch more data
                     int bytesToRead = min( buffer.remaining(), remainingChunkSize );
-                    copyBytes( buffer, scratchBuffer, bytesToRead );
+                    copyBytes( buffer, dst, bytesToRead );
                     remainingChunkSize -= bytesToRead;
                     if ( !buffer.hasRemaining() )
                     {
@@ -264,10 +266,10 @@ public class BufferingChunkedInput implements PackInput
                 else
                 {
                     //plenty of room in buffer, store it
-                    int bytesToRead = min( scratchBuffer.remaining(), remainingChunkSize );
-                    copyBytes( buffer, scratchBuffer, bytesToRead );
+                    int bytesToRead = min( dst.remaining(), remainingChunkSize );
+                    copyBytes( buffer, dst, bytesToRead );
                     remainingChunkSize -= bytesToRead;
-                    if ( scratchBuffer.remaining() == 0 )
+                    if ( dst.remaining() == 0 )
                     {
                         //we have written all data that was asked for us
                         return;
@@ -286,7 +288,11 @@ public class BufferingChunkedInput implements PackInput
         }
     }
 
-    private void peek() throws IOException
+    /**
+     * Makes sure there is at least one byte in the internal buffer (${@link #buffer}).
+     * @throws IOException
+     */
+    private void assertOneByteInBuffer() throws IOException
     {
         while ( true )
         {
@@ -319,6 +325,10 @@ public class BufferingChunkedInput implements PackInput
         }
     }
 
+    /**
+     * Reads the size of the next chunk and stores it in ${@link #remainingChunkSize}.
+     * @throws IOException
+     */
     private void readChunkSize() throws IOException
     {
         while ( true )
