@@ -156,11 +156,14 @@ public class PooledConnection implements Connection
         {
             reset( StreamCollector.NO_OP );
             sync();
-            release.accept( this );
         }
         catch (Exception ex)
         {
             dispose();
+        }
+        finally
+        {
+            release.accept( this );
         }
     }
 

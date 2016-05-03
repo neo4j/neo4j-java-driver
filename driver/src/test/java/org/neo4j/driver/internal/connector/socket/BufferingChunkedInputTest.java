@@ -93,6 +93,62 @@ public class BufferingChunkedInputTest
     }
 
     @Test
+    public void shouldReadBytesAcrossHeaders() throws IOException
+    {
+        // Given
+        BufferingChunkedInput input =
+                new BufferingChunkedInput( packets( packet( 0, 2, 1, 2, 0, 6), packet(3, 4, 5, 6, 7, 8, 0, 0 ) ) );
+
+        // When
+        byte[] dst = new byte[8];
+        input.readBytes(dst, 0, 8);
+
+        // Then
+        assertThat( dst, equalTo( new byte[]{1, 2, 3, 4, 5, 6, 7, 8} ) );
+    }
+
+    @Test
+    public void shouldReadChunkWithSplitHeaderForBigMessages() throws IOException
+    {
+        // Given
+        int packetSize = 384;
+        BufferingChunkedInput input =
+                new BufferingChunkedInput( packets( packet( 1 ), packet( -128 ), fillPacket( packetSize, 1 ) ) );
+
+        // Then
+        assertThat( input.readByte(), equalTo( (byte) 1 ) );
+        assertThat( input.remainingChunkSize(), equalTo( packetSize - 1 ) );
+
+        for ( int i = 1; i < packetSize; i++ )
+        {
+            assertThat( input.readByte(), equalTo( (byte) 1 ) );
+        }
+        assertThat( input.remainingChunkSize(), equalTo( 0 ) );
+    }
+
+    @Test
+    public void shouldReadChunkWithSplitHeaderForBigMessagesWhenInternalBufferHasOneByte() throws IOException
+    {
+        // Given
+        int packetSize = 32780;
+        BufferingChunkedInput input =
+                new BufferingChunkedInput( packets( packet( -128 ), packet( 12 ), fillPacket( packetSize, 1 ) ), 1);
+
+        // Then
+        assertThat( input.readByte(), equalTo( (byte) 1 ) );
+        assertThat( input.remainingChunkSize(), equalTo( packetSize - 1 ) );
+    }
+
+    @Test
+    public void shouldReadUnsignedByteFromBuffer() throws IOException
+    {
+        ByteBuffer buffer = ByteBuffer.allocate( 1 );
+        buffer.put( (byte) -1 );
+        buffer.flip();
+        assertThat(BufferingChunkedInput.getUnsignedByteFromBuffer( buffer ), equalTo( 255 ));
+    }
+
+    @Test
     public void shouldReadOneByteInOneChunkWhenBustingBuffer() throws IOException
     {
         // Given
@@ -415,7 +471,7 @@ public class BufferingChunkedInputTest
         BufferingChunkedInput input = new BufferingChunkedInput( channel );
 
         // Then
-        assertThat(input.readByte(), equalTo( (byte)11 ));
+        assertThat( input.readByte(), equalTo( (byte) 11 ) );
 
     }
 
@@ -433,6 +489,17 @@ public class BufferingChunkedInputTest
                                  "instabilities, or due to restarts of the database." );
         // When
         input.readByte();
+    }
+
+    private ReadableByteChannel fillPacket( int size, int value )
+    {
+        int[] ints = new int[size];
+        for ( int i = 0; i < size; i++ )
+        {
+            ints[i] = value;
+        }
+
+        return packet( ints );
     }
 
     private ReadableByteChannel packet( int... bytes )

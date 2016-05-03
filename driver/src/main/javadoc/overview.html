@@ -13,13 +13,14 @@ If you are using Java, this is generally the interface you'd use to integrate Ne
 
 <p>Once you have the driver and a connector on your classpath, you can establish sessions with Neo4j.</p>
 
-<pre><code>Driver driver = GraphDatabase.driver("bolt://localhost");
+<pre><code>Driver driver = GraphDatabase.driver( "bolt://localhost", AuthTokens.basic( "neo4j", "p4ssw0rd" ) );
 try( Session session = driver.session() )
 {
-    Result result = session.run("RETURN 'hello, world!'");
-    while(result.next())
+    StatementResult result = session.run( "RETURN 'hello, world!'" );
+    while( result.hasNext() )
     {
-        System.out.println( result.get(0).javaString() );
+        Record record = result.next();
+        System.out.println( record.get(0).asString() );
     }
 }
 </code></pre>
