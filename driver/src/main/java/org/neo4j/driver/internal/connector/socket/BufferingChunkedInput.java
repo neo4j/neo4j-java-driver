@@ -97,238 +97,6 @@ public class BufferingChunkedInput implements PackInput
     }
 
 
-    /**
-     * Internal state machine used for reading data from the channel into the buffer.
-     */
-    private enum State
-    {
-        AWAITING_CHUNK
-                {
-                    @Override
-                    public State readChunkSize( BufferingChunkedInput ctx ) throws IOException
-                    {
-                        if ( ctx.buffer.remaining() == 0 )
-                        {
-                            //buffer empty, block until you get at least at least one byte
-                            while ( ctx.buffer.remaining() == 0 )
-                            {
-                                readNextPacket( ctx.channel, ctx.buffer );
-                            }
-                            return AWAITING_CHUNK.readChunkSize( ctx );
-                        }
-                        else if ( ctx.buffer.remaining() >= 2 )
-                        {
-                            //enough space to read the whole chunk-size, store it and continue
-                            //to read the rest of the chunk
-                            ctx.remainingChunkSize = ctx.buffer.getShort() & 0xFFFF;
-                            return IN_CHUNK;
-                        }
-                        else
-                        {
-                            //only 1 byte in buffer, read that and continue
-                            //to read header
-                            int partialChunkSize = getUnsignedByteFromBuffer( ctx.buffer );
-                            ctx.remainingChunkSize = partialChunkSize << 8;
-                            return IN_HEADER.readChunkSize( ctx );
-                        }
-                    }
-
-                    @Override
-                    public State read( BufferingChunkedInput ctx ) throws IOException
-                    {
-                        //read chunk size and then proceed to read the rest of the chunk.
-                        return readChunkSize( ctx ).read( ctx );
-                    }
-
-                    @Override
-                    public State peekByte( BufferingChunkedInput ctx ) throws IOException
-                    {
-                        //read chunk size and then proceed to read the rest of the chunk.
-                        return readChunkSize( ctx ).peekByte( ctx );
-                    }
-                },
-        IN_CHUNK
-                {
-                    @Override
-                    public State readChunkSize( BufferingChunkedInput ctx ) throws IOException
-                    {
-                        if ( ctx.remainingChunkSize == 0 )
-                        {
-                            //we are done reading the chunk, start reading the next one
-                            return AWAITING_CHUNK.readChunkSize( ctx );
-                        }
-                        else
-                        {
-                            //We should already have read the entire chunk size by now
-                            throw new IllegalStateException( "Chunk size has already been read" );
-                        }
-                    }
-
-                    @Override
-                    public State read( BufferingChunkedInput ctx ) throws IOException
-                    {
-                        if ( ctx.remainingChunkSize == 0 )
-                        {
-                            //we are done reading the chunk, start reading the next one
-                            return AWAITING_CHUNK.read( ctx );
-                        }
-                        else if ( ctx.buffer.remaining() < ctx.scratchBuffer.remaining() )
-                        {
-                            //not enough room in buffer, store what is there and then fetch more data
-                            int bytesToRead = min( ctx.buffer.remaining(), ctx.remainingChunkSize );
-                            copyBytes( ctx.buffer, ctx.scratchBuffer, bytesToRead );
-                            ctx.remainingChunkSize -= bytesToRead;
-                            readNextPacket( ctx.channel, ctx.buffer );
-                            return IN_CHUNK.read( ctx );
-                        }
-                        else
-                        {
-                            //plenty of room in buffer, store it
-                            int bytesToRead = min( ctx.scratchBuffer.remaining(), ctx.remainingChunkSize );
-                            copyBytes( ctx.buffer, ctx.scratchBuffer, bytesToRead );
-                            ctx.remainingChunkSize -= bytesToRead;
-                            if ( ctx.scratchBuffer.remaining() == 0 )
-                            {
-                                //we have written all data that was asked for us
-                                return IN_CHUNK;
-                            }
-                            else
-                            {
-                                //Reached a msg boundary, proceed to next chunk
-                                return AWAITING_CHUNK.read( ctx );
-                            }
-                        }
-                    }
-
-                    @Override
-                    public State peekByte( BufferingChunkedInput ctx ) throws IOException
-                    {
-                        if ( ctx.remainingChunkSize == 0 )
-                        {
-                            //we are done reading the chunk, start reading the next one
-                            return AWAITING_CHUNK.peekByte( ctx );
-                        }
-                        else if ( ctx.buffer.remaining() == 0 )
-                        {
-                            //no data in buffer, fill it up an try again
-                            readNextPacket( ctx.channel, ctx.buffer );
-                            return IN_CHUNK.peekByte( ctx );
-                        }
-                        else
-                        {
-                            return IN_CHUNK;
-                        }
-                    }
-                },
-        IN_HEADER
-                {
-                    @Override
-                    public State readChunkSize( BufferingChunkedInput ctx ) throws IOException
-                    {
-                        if ( ctx.buffer.remaining() >= 1 )
-                        {
-                            //Now we have enough space to read the rest of the chunk size
-                            byte partialChunkSize = ctx.buffer.get();
-                            ctx.remainingChunkSize = ctx.remainingChunkSize | (partialChunkSize & 0xFF);
-                            return IN_CHUNK;
-                        }
-                        else
-                        {
-                            //Buffer is empty, fill it up and try again
-                            readNextPacket( ctx.channel, ctx.buffer );
-                            return IN_HEADER.readChunkSize( ctx );
-                        }
-                    }
-
-                    @Override
-                    public State read( BufferingChunkedInput ctx ) throws IOException
-                    {
-                        throw new IllegalStateException( "Cannot read data while in progress of reading header" );
-                    }
-
-                    @Override
-                    public State peekByte( BufferingChunkedInput ctx ) throws IOException
-                    {
-                        throw new IllegalStateException( "Cannot read data while in progress of reading header" );
-                    }
-                };
-
-        /**
-         * Reads the size of the current incoming chunk.
-         * @param ctx A reference to the input.
-         * @return The next state.
-         * @throws IOException
-         */
-        public abstract State readChunkSize( BufferingChunkedInput ctx ) throws IOException;
-
-        /**
-         * Reads the current incoming chunk.
-         * @param ctx A reference to the input.
-         * @return The next state.
-         * @throws IOException
-         */
-        public abstract State read( BufferingChunkedInput ctx ) throws IOException;
-
-        /**
-         * Makes sure there is at least one byte in the buffer but doesn't consume it.
-         * @param ctx A reference to the input.
-         * @return The next state.
-         * @throws IOException
-         */
-        public abstract State peekByte( BufferingChunkedInput ctx ) throws IOException;
-
-        /**
-         * Read data from the underlying channel into the buffer.
-         * @param channel The channel to read from.
-         * @param buffer The buffer to read into
-         * @throws IOException
-         */
-        private static void readNextPacket( ReadableByteChannel channel, ByteBuffer buffer ) throws IOException
-        {
-            try
-            {
-                buffer.clear();
-                int read = channel.read( buffer );
-                if ( read == -1 )
-                {
-                    throw new ClientException(
-                            "Connection terminated while receiving data. This can happen due to network " +
-                            "instabilities, or due to restarts of the database." );
-                }
-                buffer.flip();
-            }
-            catch ( ClosedByInterruptException e )
-            {
-                throw new ClientException(
-                        "Connection to the database was lost because someone called `interrupt()` on the driver " +
-                        "thread waiting for a reply. " +
-                        "This normally happens because the JVM is shutting down, but it can also happen because your " +
-                        "application code or some " +
-                        "framework you are using is manually interrupting the thread." );
-            }
-            catch ( IOException e )
-            {
-                String message = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
-                throw new ClientException(
-                        "Unable to process request: " + message + " buffer: \n" + BytePrinter.hex( buffer ), e );
-            }
-        }
-
-        /**
-         * Copy data from the buffer into the scratch buffer
-         */
-        private static void copyBytes( ByteBuffer from, ByteBuffer to, int bytesToRead )
-        {
-            //Use a temporary buffer and move over in one go
-            ByteBuffer temporaryBuffer = from.duplicate();
-            temporaryBuffer.limit( temporaryBuffer.position() + bytesToRead );
-            to.put( temporaryBuffer );
-
-            //move position so it looks like we have read from buffer
-            from.position( from.position() + bytesToRead );
-        }
-    }
-
     @Override
     public boolean hasMoreData() throws IOException
     {
@@ -373,22 +141,15 @@ public class BufferingChunkedInput implements PackInput
     @Override
     public PackInput readBytes( byte[] into, int offset, int toRead ) throws IOException
     {
-        int left = toRead;
-        while ( left > 0 )
-        {
-            int bufferSize = min( 8, left );
-            fillScratchBuffer( bufferSize );
-            scratchBuffer.get( into, offset, bufferSize );
-            left -= bufferSize;
-            offset += bufferSize;
-        }
+        ByteBuffer dst = ByteBuffer.wrap( into, offset, toRead );
+        read( dst );
         return this;
     }
 
     @Override
     public byte peekByte() throws IOException
     {
-        state = state.peekByte( this );
+        assertOneByteInBuffer();
         return buffer.get( buffer.position() );
     }
 
@@ -396,7 +157,6 @@ public class BufferingChunkedInput implements PackInput
     {
         return buffer.get() & 0xFF;
     }
-
 
     private boolean hasMoreDataUnreadInCurrentChunk()
     {
@@ -419,7 +179,7 @@ public class BufferingChunkedInput implements PackInput
             try
             {
                 // read message boundary
-                state.readChunkSize( BufferingChunkedInput.this );
+                readChunkSize();
                 if ( remainingChunkSize != 0 )
                 {
                     throw new ClientException( "Expecting message complete ending '00 00', but got " +
@@ -452,7 +212,237 @@ public class BufferingChunkedInput implements PackInput
         assert (bytesToRead <= scratchBuffer.capacity());
         scratchBuffer.clear();
         scratchBuffer.limit( bytesToRead );
-        state = state.read( this );
+        read(scratchBuffer);
         scratchBuffer.flip();
     }
+
+    /**
+     * Internal state machine used for reading data from the channel into the buffer.
+     */
+    private enum State
+    {
+        AWAITING_CHUNK,
+        IN_CHUNK,
+        IN_HEADER,
+    }
+
+    /**
+     * Fills the dst buffer with data.
+     *
+     * If there is enough data in the internal buffer (${@link #buffer}) that data is used, when we run out
+     * of data in the internal buffer more data is fetched from the underlying channel.
+     *
+     * @param dst The buffer to write data to.
+     * @throws IOException
+     */
+    private void read( ByteBuffer dst ) throws IOException
+    {
+        while ( true )
+        {
+            switch ( state )
+            {
+            case AWAITING_CHUNK:
+                //read chunk size and then proceed to read the rest of the chunk.
+                readChunkSize();
+                break;
+
+            case IN_CHUNK:
+                if ( remainingChunkSize == 0 )
+                {
+                    //we are done reading the chunk, start reading the next one
+                    state = State.AWAITING_CHUNK;
+                }
+                else if ( buffer.remaining() < dst.remaining() )
+                {
+                    //not enough room in buffer, store what is there and then fetch more data
+                    int bytesToRead = min( buffer.remaining(), remainingChunkSize );
+                    copyBytes( buffer, dst, bytesToRead );
+                    remainingChunkSize -= bytesToRead;
+                    if ( !buffer.hasRemaining() )
+                    {
+                        readNextPacket( channel, buffer );
+                    }
+                }
+                else
+                {
+                    //plenty of room in buffer, store it
+                    int bytesToRead = min( dst.remaining(), remainingChunkSize );
+                    copyBytes( buffer, dst, bytesToRead );
+                    remainingChunkSize -= bytesToRead;
+                    if ( dst.remaining() == 0 )
+                    {
+                        //we have written all data that was asked for us
+                        return;
+                    }
+                    else
+                    {
+                        //Reached a msg boundary, proceed to next chunk
+                        state = State.AWAITING_CHUNK;
+                    }
+                }
+                break;
+
+            case IN_HEADER:
+                throw new IllegalStateException( "Cannot read data while in progress of reading header" );
+            }
+        }
+    }
+
+    /**
+     * Makes sure there is at least one byte in the internal buffer (${@link #buffer}).
+     * @throws IOException
+     */
+    private void assertOneByteInBuffer() throws IOException
+    {
+        while ( true )
+        {
+            switch ( state )
+            {
+            case AWAITING_CHUNK:
+                readChunkSize();
+                break;
+
+            case IN_CHUNK:
+                if ( remainingChunkSize == 0 )
+                {
+                    //we are done reading the chunk, start reading the next ones
+                    state = State.AWAITING_CHUNK;
+                }
+                else if ( buffer.remaining() == 0 )
+                {
+                    //no data in buffer, fill it up an try again
+                    readNextPacket( channel, buffer );
+                }
+                else
+                {
+                    return;
+                }
+                break;
+
+            case IN_HEADER:
+                throw new IllegalStateException( "Cannot read data while in progress of reading header" );
+            }
+        }
+    }
+
+    /**
+     * Reads the size of the next chunk and stores it in ${@link #remainingChunkSize}.
+     * @throws IOException
+     */
+    private void readChunkSize() throws IOException
+    {
+        while ( true )
+        {
+            switch ( state )
+            {
+            case AWAITING_CHUNK:
+                if ( buffer.remaining() == 0 )
+                {
+                    //buffer empty, block until you get at least at least one byte
+                    while ( buffer.remaining() == 0 )
+                    {
+                        readNextPacket( channel, buffer );
+                    }
+                }
+                else if ( buffer.remaining() >= 2 )
+                {
+                    //enough space to read the whole chunk-size, store it and continue
+                    //to read the rest of the chunk
+                    remainingChunkSize = buffer.getShort() & 0xFFFF;
+                    state = State.IN_CHUNK;
+                    return;
+                }
+                else
+                {
+                    //only 1 byte in buffer, read that and continue
+                    //to read header
+                    int partialChunkSize = getUnsignedByteFromBuffer( buffer );
+                    remainingChunkSize = partialChunkSize << 8;
+                    state = State.IN_HEADER;
+                }
+                break;
+            case IN_CHUNK:
+                if ( remainingChunkSize == 0 )
+                {
+                    //we are done reading the chunk, start reading the next one
+                    state = State.AWAITING_CHUNK;
+                }
+                else
+                {
+                    //We should already have read the entire chunk size by now
+                    throw new IllegalStateException( "Chunk size has already been read" );
+                }
+                break;
+            case IN_HEADER:
+                if ( buffer.remaining() >= 1 )
+                {
+                    //Now we have enough space to read the rest of the chunk size
+                    byte partialChunkSize = buffer.get();
+                    remainingChunkSize = remainingChunkSize | (partialChunkSize & 0xFF);
+                    state = State.IN_CHUNK;
+                    return;
+                }
+                else
+                {
+                    //Buffer is empty, fill it up and try again
+                    readNextPacket( channel, buffer );
+                }
+                break;
+            }
+        }
+    }
+
+    /**
+     * Read data from the underlying channel into the buffer.
+     * @param channel The channel to read from.
+     * @param buffer The buffer to read into
+     * @throws IOException
+     */
+    private static void readNextPacket( ReadableByteChannel channel, ByteBuffer buffer ) throws IOException
+    {
+        assert !buffer.hasRemaining();
+
+        try
+        {
+            buffer.clear();
+            int read = channel.read( buffer );
+            if ( read == -1 )
+            {
+                throw new ClientException(
+                        "Connection terminated while receiving data. This can happen due to network " +
+                        "instabilities, or due to restarts of the database." );
+            }
+            buffer.flip();
+        }
+        catch ( ClosedByInterruptException e )
+        {
+            throw new ClientException(
+                    "Connection to the database was lost because someone called `interrupt()` on the driver " +
+                    "thread waiting for a reply. " +
+                    "This normally happens because the JVM is shutting down, but it can also happen because your " +
+                    "application code or some " +
+                    "framework you are using is manually interrupting the thread." );
+        }
+        catch ( IOException e )
+        {
+            String message = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
+            throw new ClientException(
+                    "Unable to process request: " + message + " buffer: \n" + BytePrinter.hex( buffer ), e );
+        }
+    }
+
+    /**
+     * Copy data from the buffer into the scratch buffer
+     */
+    private static void copyBytes( ByteBuffer from, ByteBuffer to, int bytesToRead )
+    {
+        //Use a temporary buffer and move over in one go
+        ByteBuffer temporaryBuffer = from.duplicate();
+        temporaryBuffer.limit( temporaryBuffer.position() + bytesToRead );
+        to.put( temporaryBuffer );
+
+        //move position so it looks like we have read from buffer
+        from.position( from.position() + bytesToRead );
+    }
+
 }
