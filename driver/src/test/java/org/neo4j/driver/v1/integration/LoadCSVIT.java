@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.v1.integration;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -35,6 +36,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertFalse;
 import static org.neo4j.driver.v1.Values.parameters;
 
+@Ignore
 public class LoadCSVIT
 {
     @Rule
