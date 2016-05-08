@@ -36,7 +36,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertFalse;
 import static org.neo4j.driver.v1.Values.parameters;
 
-@Ignore
 public class LoadCSVIT
 {
     @Rule
