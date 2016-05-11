@@ -65,7 +65,7 @@ public class Neo4jWindowsInstaller extends Neo4jInstaller
     @Override
     String neo4jPackageUrl()
     {
-        String url = System.getProperty( "packageUri", winPackageUrl );
+        String url = System.getProperty( "packageUri", winPackageUrl ).replace('\\', '/');
         return URI.create( url ).toString();
     }
 

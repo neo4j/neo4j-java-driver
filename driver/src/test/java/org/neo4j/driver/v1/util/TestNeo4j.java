@@ -26,8 +26,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Session;
@@ -111,8 +109,8 @@ public class TestNeo4j implements TestRule
 
     public void updateEncryptionKeyAndCert( File key, File cert ) throws Exception
     {
-        Files.copy( key.toPath(), Neo4jSettings.DEFAULT_TLS_KEY_FILE.toPath(), StandardCopyOption.REPLACE_EXISTING );
-        Files.copy( cert.toPath(), Neo4jSettings.DEFAULT_TLS_CERT_FILE.toPath(), StandardCopyOption.REPLACE_EXISTING );
+        FileTools.copyFile( key, Neo4jSettings.DEFAULT_TLS_KEY_FILE );
+        FileTools.copyFile( cert, Neo4jSettings.DEFAULT_TLS_CERT_FILE );
         restartServerOnEmptyDatabase( Neo4jSettings.DEFAULT );
     }
 
