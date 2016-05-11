@@ -54,11 +54,11 @@ public class BufferingChunkedInputFuzzTest
     @Test
     public void messageSizeFuzzTest() throws IOException
     {
-        int maxSize = 1 << 16;
+        int maxSize = 1 << 16; // 0x10000
         Random random = new Random();
         for ( int i = 0; i < 1000; i++)
         {
-            int size = random.nextInt( maxSize  + 1);
+            int size = random.nextInt( maxSize - 1 ) + 1; //[0, 0xFFFF - 1] + 1 = [1, 0xFFFF]
             byte[] expected = new byte[size];
             Arrays.fill(expected, (byte)42);
             BufferingChunkedInput input = new BufferingChunkedInput( channel( expected, 0, size ) );
