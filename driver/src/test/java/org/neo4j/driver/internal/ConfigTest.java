@@ -23,6 +23,7 @@ import org.junit.Test;
 import java.io.File;
 
 import org.neo4j.driver.v1.Config;
+import org.neo4j.driver.v1.util.FileTools;
 
 import static java.lang.System.getProperty;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -92,7 +93,7 @@ public class ConfigTest
     {
         if( DEFAULT_KNOWN_HOSTS.exists() )
         {
-            DEFAULT_KNOWN_HOSTS.delete();
+            FileTools.deleteFile( DEFAULT_KNOWN_HOSTS );
         }
     }
 
