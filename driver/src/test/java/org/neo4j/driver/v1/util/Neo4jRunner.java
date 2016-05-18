@@ -20,19 +20,19 @@ package org.neo4j.driver.v1.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.StandardSocketOptions;
 import java.net.URI;
+import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
-import org.neo4j.driver.internal.connector.socket.SocketClient;
-import org.neo4j.driver.internal.logging.DevNullLogger;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
-import org.neo4j.driver.v1.exceptions.ClientException;
 
-import static java.lang.String.format;
-import static org.neo4j.driver.internal.ConfigTest.deleteDefaultKnownCertFileIfExists;
-import static org.neo4j.driver.v1.util.FileTools.deleteRecursively;
 import static org.neo4j.driver.v1.util.FileTools.updateProperties;
 
 /**
@@ -41,24 +41,21 @@ import static org.neo4j.driver.v1.util.FileTools.updateProperties;
  */
 public class Neo4jRunner
 {
-    private enum ServerStatus
-    {
-        ONLINE, OFFLINE
-    }
-
-    public static final String DEFAULT_URL = "bolt://localhost:7687";
-    private static final boolean debug = Boolean.getBoolean( "neo4j.runner.debug" );
-
     private static Neo4jRunner globalInstance;
 
-    private Neo4jSettings currentSettings = Neo4jSettings.DEFAULT;
-    private Driver currentDriver;
-    public static final Config TEST_CONFIG = Config.build().withEncryptionLevel( Config.EncryptionLevel.NONE ).toConfig();
+    private static final boolean debug = Boolean.getBoolean( "neo4j.runner.debug" );
 
-    private Neo4jInstaller installer = Neo4jInstaller.Neo4jInstallerFactory.create();
+    public static final String DEFAULT_URL = "bolt://localhost:7687";
+    private static final Config TEST_CONFIG = Config.build().withEncryptionLevel( Config.EncryptionLevel.NONE ).toConfig();
+    private Driver driver;
+    private Neo4jSettings currentSettings = Neo4jSettings.DEFAULT_SETTINGS;
+
+    public static final String NEO4J_HOME = "../target/neo4j/neo4jhome";
+    private static final String NEORUN_PATH = new File("../neokit/neorun.py").getAbsolutePath();
+    private static final String NEO4J_CONF = new File( NEO4J_HOME, "conf/neo4j.conf" ).getAbsolutePath();
 
     /** Global runner controlling a single server, used to avoid having to restart the server between tests */
-    public static synchronized Neo4jRunner getOrCreateGlobalRunner() throws Exception
+    public static synchronized Neo4jRunner getOrCreateGlobalRunner() throws IOException
     {
         if ( globalInstance == null )
         {
@@ -67,97 +64,147 @@ public class Neo4jRunner
         return globalInstance;
     }
 
-    private Neo4jRunner() throws Exception
+    private Neo4jRunner() throws IOException
     {
-        if( serverStatus() == ServerStatus.ONLINE )
-        {
-            // TODO: We should just pick a free port instead
-            throw new IllegalStateException( "Cannot run tests, because a Neo4j Database is already running on this " +
-                                             "system." );
-        }
-        installer.installNeo4j();
-        // Install default settings
-        updateServerSettingsFile();
+        startNeo4j();
 
         // Make sure we stop on JVM exit
         installShutdownHook();
     }
 
-    public synchronized void restart() throws Exception
-    {
-        restart( Neo4jSettings.DEFAULT );
-    }
-
-    public void restart( Neo4jSettings neo4jSettings ) throws Exception
-    {
-        stop();
-        ensureRunning( neo4jSettings );
-    }
-
-    public synchronized boolean ensureRunning( Neo4jSettings withSettings ) throws Exception
+    public void ensureRunning(Neo4jSettings neo4jSettings) throws IOException, InterruptedException
     {
         ServerStatus status = serverStatus();
-        switch ( status )
+        switch( status )
         {
-            case OFFLINE:
-                clear( withSettings );
-                return true;
-
-            case ONLINE:
-                if ( updateServerSettings( withSettings ) )
-                {
-                    clear( currentSettings );
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
-        }
-        return true;
-    }
-
-    public synchronized void stop() throws IOException, InterruptedException
-    {
-        if ( serverStatus() == ServerStatus.ONLINE )
-        {
-            debug( "Trying to stop server at %s", Neo4jInstaller.neo4jHomeDir.getCanonicalPath() );
-
-            if ( installer.stopNeo4j() == 0 )
-            {
-                awaitServerStatusOrFail( ServerStatus.OFFLINE );
-            }
-            else
-            {
-                throw new IllegalStateException( "Failed to stop server" );
-            }
+        case OFFLINE:
+            updateServerSettings( neo4jSettings );
+            startNeo4j();
+            break;
+        case ONLINE:
+            restartNeo4j( neo4jSettings );
+            break;
         }
     }
 
     public Driver driver()
     {
-        return currentDriver;
+        return driver;
     }
 
-    /** Delete all database files, apply the specified configuration and restart */
-    private void clear( Neo4jSettings config ) throws Exception
+    private void startNeo4j() throws IOException
     {
-        stop();
-        updateServerSettings( config );
+        startNeo4j( "-v", "3.0.1" );
+    }
 
-        debug( "Deleting database at: %s", Neo4jInstaller.dbDir.getCanonicalPath() );
-
-        deleteRecursively( Neo4jInstaller.dbDir );
-        deleteDefaultKnownCertFileIfExists();
-
-        debug( "Starting server at: ", Neo4jInstaller.neo4jHomeDir.getCanonicalPath() );
-
-        if ( installer.startNeo4j() != 0 )
+    private void startNeo4j(String... opts) throws IOException
+    {
+        List<String> cmds = new ArrayList<>();
+        cmds.addAll( Arrays.asList( "python", NEORUN_PATH, "--start=" + NEO4J_HOME ) );
+        cmds.addAll( Arrays.asList( opts ) );
+        int processStatus = runCommand( cmds.toArray( new String[cmds.size()]) );
+        if (processStatus != 0) // success
         {
-            throw new IllegalStateException( "Failed to start server" );
+            throw new IOException( "Failed to the start neo4j server." );
         }
-        awaitServerStatusOrFail( ServerStatus.ONLINE );
-        currentDriver = GraphDatabase.driver( serverURI(), TEST_CONFIG);
+        driver = GraphDatabase.driver( DEFAULT_URL, TEST_CONFIG );
+    }
+
+    public synchronized void stopNeo4j() throws IOException
+    {
+        if(serverStatus() == ServerStatus.OFFLINE)
+        {
+            return;
+        }
+        if(driver != null)
+        {
+            driver.close();
+            driver = null;
+        }
+
+        int processStatus = runCommand( "python", NEORUN_PATH, "--stop=" + NEO4J_HOME );
+        if( processStatus != 0 )
+        {
+            throw new IOException( "Failed to stop neo4j server." );
+        }
+    }
+
+    public void forceToRestart() throws IOException
+    {
+        stopNeo4j();
+        startNeo4j();
+    }
+
+    /**
+     * Restart the server with default testing server configuration
+     * @throws IOException
+     */
+    public void restartNeo4j() throws IOException
+    {
+        restartNeo4j( Neo4jSettings.TEST_SETTINGS );
+    }
+
+    /**
+     * Will only restart the server if any configuration changes happens
+     * @param neo4jSettings
+     * @throws IOException
+     */
+    public void restartNeo4j(Neo4jSettings neo4jSettings) throws IOException
+    {
+        if( updateServerSettings( neo4jSettings ) ) // needs to update server setting files
+        {
+            stopNeo4j();
+            startNeo4j();
+        }
+    }
+
+    @SuppressWarnings("LoopStatementThatDoesntLoop")
+    private int runCommand( String... cmd ) throws IOException
+    {
+        ProcessBuilder pb = new ProcessBuilder().inheritIO();
+        Map<String,String> env = System.getenv();
+        pb.environment().put( "JAVA_HOME",
+                // This driver is built to work with multiple java versions.
+                // Neo4j, however, works with a specific version of Java. This allows
+                // specifying which Java version to use for Neo4j separately from which
+                // version to use for the driver tests.
+                env.containsKey( "NEO4J_JAVA" ) ? env.get( "NEO4J_JAVA" ) :
+                System.getProperties().getProperty( "java.home" ) );
+        Process process = pb.command( cmd ).start();
+        while (true)
+        {
+            try
+            {
+                return process.waitFor();
+            }
+            catch ( InterruptedException e )
+            {
+                Thread.interrupted();
+            }
+        }
+    }
+
+    private enum ServerStatus
+    {
+        ONLINE, OFFLINE
+
+    }
+
+    private ServerStatus serverStatus()
+    {
+        try
+        {
+            URI uri = URI.create( DEFAULT_URL );
+            SocketChannel soChannel = SocketChannel.open();
+            soChannel.setOption( StandardSocketOptions.SO_REUSEADDR, true );
+            soChannel.connect( new InetSocketAddress( uri.getHost(), uri.getPort() ) );
+            soChannel.close();
+            return ServerStatus.ONLINE;
+        }
+        catch ( IOException e )
+        {
+            return ServerStatus.OFFLINE;
+        }
     }
 
     private boolean updateServerSettings( Neo4jSettings settingsUpdate )
@@ -187,7 +234,7 @@ public class Neo4jRunner
             return;
         }
 
-        File oldFile = new File( Neo4jInstaller.neo4jHomeDir, "conf/neo4j.conf" );
+        File oldFile = new File( NEO4J_CONF );
         try
         {
             debug( "Changing server properties file (for next start): " + oldFile.getCanonicalPath() );
@@ -206,50 +253,6 @@ public class Neo4jRunner
         }
     }
 
-    private void awaitServerStatusOrFail( ServerStatus goalStatus ) throws IOException, InterruptedException
-    {
-        long timeout = System.currentTimeMillis() + 1000 * 30;
-        for (; ;)
-        {
-            if ( serverStatus() == goalStatus )
-            {
-                return;
-            }
-            else
-            {
-                Thread.sleep( 100 );
-            }
-
-            if ( System.currentTimeMillis() > timeout )
-            {
-                throw new RuntimeException( format(
-                        "Waited for 30 seconds for server to become %s but failed, " +
-                        "timing out to avoid blocking forever.", goalStatus ) );
-            }
-        }
-    }
-
-    private ServerStatus serverStatus() throws IOException, InterruptedException
-    {
-        try
-        {
-            URI uri = serverURI();
-            SocketClient client = new SocketClient( uri.getHost(), uri.getPort(), TEST_CONFIG, new DevNullLogger() );
-            client.start();
-            client.stop();
-            return ServerStatus.ONLINE;
-        }
-        catch ( ClientException e )
-        {
-            return ServerStatus.OFFLINE;
-        }
-    }
-
-    private URI serverURI()
-    {
-        return URI.create( DEFAULT_URL );
-    }
-
     private void installShutdownHook()
     {
         Runtime.getRuntime().addShutdownHook( new Thread( new Runnable()
@@ -260,10 +263,8 @@ public class Neo4jRunner
             try
             {
                 debug("Starting shutdown hook");
-                stop();
-                currentSettings = Neo4jSettings.DEFAULT;
-                updateServerSettingsFile();
-                installer.uninstallNeo4j();
+                stopNeo4j();
+                updateServerSettings( Neo4jSettings.TEST_SETTINGS );
                 debug("Finished shutdown hook");
             }
             catch ( Exception e )
