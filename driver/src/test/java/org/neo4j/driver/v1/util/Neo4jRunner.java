@@ -33,6 +33,7 @@ import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 
+import static org.neo4j.driver.internal.ConfigTest.deleteDefaultKnownCertFileIfExists;
 import static org.neo4j.driver.v1.util.FileTools.updateProperties;
 
 /**
@@ -45,12 +46,13 @@ public class Neo4jRunner
 
     private static final boolean debug = Boolean.getBoolean( "neo4j.runner.debug" );
 
+    public static final String NEORUN_START_ARGS = System.getProperty("neorun.start.args", "-v 3.0.1");
     public static final String DEFAULT_URL = "bolt://localhost:7687";
     private static final Config TEST_CONFIG = Config.build().withEncryptionLevel( Config.EncryptionLevel.NONE ).toConfig();
     private Driver driver;
     private Neo4jSettings currentSettings = Neo4jSettings.DEFAULT_SETTINGS;
 
-    public static final String NEO4J_HOME = "../target/neo4j/neo4jhome";
+    public static final String NEO4J_HOME = new File("../target/neo4j/neo4jhome").getAbsolutePath();
     private static final String NEORUN_PATH = new File("../neokit/neorun.py").getAbsolutePath();
     private static final String NEO4J_CONF = new File( NEO4J_HOME, "conf/neo4j.conf" ).getAbsolutePath();
 
@@ -94,7 +96,10 @@ public class Neo4jRunner
 
     private void startNeo4j() throws IOException
     {
-        startNeo4j( "-v", "3.0.1" );
+        // this is required for windows as python scripts cannot delete the file when it is used by driver tests
+        deleteDefaultKnownCertFileIfExists();
+
+        startNeo4j( NEORUN_START_ARGS.split( "\\s" ) );
     }
 
     private void startNeo4j(String... opts) throws IOException
@@ -105,7 +110,7 @@ public class Neo4jRunner
         int processStatus = runCommand( cmds.toArray( new String[cmds.size()]) );
         if (processStatus != 0) // success
         {
-            throw new IOException( "Failed to the start neo4j server." );
+            throw new IOException( "Failed to start neo4j server." );
         }
         driver = GraphDatabase.driver( DEFAULT_URL, TEST_CONFIG );
     }
@@ -153,8 +158,7 @@ public class Neo4jRunner
     {
         if( updateServerSettings( neo4jSettings ) ) // needs to update server setting files
         {
-            stopNeo4j();
-            startNeo4j();
+            forceToRestart();
         }
     }
 

@@ -56,25 +56,13 @@ Java 8, because Neo4j-the-database needs it to run.
 
 ### Windows
 
-If you are building on windows, you need to have Python (v2.7) installed and run install as admin,
-so that Neo4j-the-database could be installed and started with Python scripts for integration tests.
+If you are building on windows, you need to have Python (v2.7) installed and have Python.exe to be added in your system `PATH` variables.
+Then run install as admin, so that Neo4j-the-database could be installed and started with Python scripts for integration tests.
+
 Or you could choose to ignore integration tests by running:
 
-    mvn clean install -DskipITs
+    mvn clean install -DskipITs 
 
-## Q&A
+Without integration tests, there is no need to install Python or run as admin.
 
-**Q**: Where can I find the changelogs?  
-**A**: [wiki](https://github.com/neo4j/neo4j-java-driver/wiki)
-
-
-**Q**: Why my driver stops working today after I upgrade my Neo4j server? It was working well yesterday.  
-**A**: If the driver is configured to use [trust-on-first-use]
-(http://neo4j.com/docs/developer-manual/3.0/index.html#_trust) mode,
-then following the error message you got while using the driver, you might need to modify `known_hosts` file.
-
-
-**Q**: Why I cannot connect the driver to the server at `bolt://localhost:7474`?  
-**A**: Bolt uses port 7687 by default, so try `bolt://localhost:7687` or `bolt://localhost` instead.
-
-For any other questions, please refer to Github issues.
+For more information such as manual, driver API documentations, changelogs, please refer to [wiki](https://github.com/neo4j/neo4j-java-driver/wiki).
