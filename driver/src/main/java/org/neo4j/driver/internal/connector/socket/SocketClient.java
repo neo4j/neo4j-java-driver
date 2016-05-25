@@ -40,6 +40,7 @@ public class SocketClient
 {
     private static final int MAGIC_PREAMBLE = 0x6060B017;
     private static final int VERSION1 = 1;
+    private static final int HTTP = 1213486160;//== 0x48545450 == "HTTP"
     private static final int NO_VERSION = 0;
     private static final int[] SUPPORTED_VERSIONS = new int[]{VERSION1, NO_VERSION, NO_VERSION, NO_VERSION};
 
@@ -127,7 +128,8 @@ public class SocketClient
         reader.read( handler );
 
         // TODO: all the errors come from the following trace should result in the termination of this channel
-        // https://github.com/neo4j/neo4j/blob/3.0/community/bolt/src/main/java/org/neo4j/bolt/v1/transport/BoltProtocolV1.java#L86
+        // https://github.com/neo4j/neo4j/blob/3
+        // .0/community/bolt/src/main/java/org/neo4j/bolt/v1/transport/BoltProtocolV1.java#L86
         if ( handler.protocolViolationErrorOccurred() )
         {
             stop();
@@ -139,7 +141,7 @@ public class SocketClient
     {
         try
         {
-            if( channel != null )
+            if ( channel != null )
             {
                 logger.debug( "~~ [CLOSE]" );
                 channel.close();
@@ -148,13 +150,13 @@ public class SocketClient
         }
         catch ( IOException e )
         {
-            if( e.getMessage().equals( "An existing connection was forcibly closed by the remote host" ) )
+            if ( e.getMessage().equals( "An existing connection was forcibly closed by the remote host" ) )
             {
                 // Swallow this exception as it is caused by connection already closed by server
             }
             else
             {
-                throw new ClientException("Unable to close socket connection properly." + e.getMessage(), e);
+                throw new ClientException( "Unable to close socket connection properly." + e.getMessage(), e );
             }
         }
     }
@@ -192,11 +194,17 @@ public class SocketClient
         case VERSION1:
             logger.debug( "~~ [HANDSHAKE] 1" );
             return new SocketProtocolV1( channel );
-        case NO_VERSION: throw new ClientException( "The server does not support any of the protocol versions supported by " +
-                                           "this driver. Ensure that you are using driver and server versions that " +
-                                           "are compatible with one another." );
-        default: throw new ClientException( "Protocol error, server suggested unexpected protocol version: " +
-                                            proposal );
+        case NO_VERSION:
+            throw new ClientException( "The server does not support any of the protocol versions supported by " +
+                                       "this driver. Ensure that you are using driver and server versions that " +
+                                       "are compatible with one another." );
+        case HTTP:
+            throw new ClientException(
+                    "Server responded HTTP. Make sure you are not trying to connect to the http endpoint " +
+                    "(HTTP defaults to port 7474 whereas BOLT defaults to port 7687)" );
+        default:
+            throw new ClientException( "Protocol error, server suggested unexpected protocol version: " +
+                                       proposal );
         }
     }
 
@@ -236,7 +244,7 @@ public class SocketClient
                 throw new ClientException( "Unknown TLS Level: " + config.encryptionLevel() );
             }
 
-            if( logger.isTraceEnabled() )
+            if ( logger.isTraceEnabled() )
             {
                 channel = new LoggingByteChannel( channel, logger );
             }
