@@ -46,7 +46,7 @@ public class Neo4jRunner
 
     private static final boolean debug = Boolean.getBoolean( "neo4j.runner.debug" );
 
-    public static final String NEORUN_START_ARGS = System.getProperty("neorun.start.args", "-v 3.0.1");
+    public static final String NEORUN_START_ARGS = System.getProperty("neorun.start.args", "");
     public static final String DEFAULT_URL = "bolt://localhost:7687";
     private static final Config TEST_CONFIG = Config.build().withEncryptionLevel( Config.EncryptionLevel.NONE ).toConfig();
     private Driver driver;
