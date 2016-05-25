@@ -18,12 +18,13 @@
  */
 package org.neo4j.driver.v1.integration;
 
-import java.util.UUID;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.UUID;
+
+import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.StatementResult;
@@ -151,5 +152,22 @@ public class ErrorIT
 
     }
 
+    @Test
+    public void shouldGetHelpfulErrorWhenTryingToConnectToHttpPort() throws Throwable
+    {
+        // Given
+        //the http server needs some time to start up
+        Thread.sleep( 2000 );
+        Driver driver = GraphDatabase.driver( "bolt://localhost:7474", Config.build().withEncryptionLevel(
+                Config.EncryptionLevel.NONE ).toConfig());
+
+        // Expect
+        exception.expect( ClientException.class );
+        exception.expectMessage( "Server responded HTTP. Make sure you are not trying to connect to the http endpoint " +
+                                 "(HTTP defaults to port 7474 whereas BOLT defaults to port 7687)" );
+
+        // When
+        driver.session();
+    }
 
 }
