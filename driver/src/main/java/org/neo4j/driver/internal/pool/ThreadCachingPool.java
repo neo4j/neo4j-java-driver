@@ -106,12 +106,9 @@ public class ThreadCachingPool<T> implements AutoCloseable
                 allocator.onAcquire( slot.value );
                 return slot.value;
             }
-            else
-            {
-                // We've acquired the slot, but the validation strategy says it's time for it to die. Dispose of it,
-                // and go to the global pool.
-                dispose( slot );
-            }
+
+            //The slot was invalidated however we cannot put it to the
+            //disposed queue yet since it already exists in the live queue
         }
 
         // 2. If that fails, acquire from big pool
@@ -133,17 +130,18 @@ public class ThreadCachingPool<T> implements AutoCloseable
             if ( slot != null )
             {
                 // Yay, got a slot - can we keep it?
-                if ( slot.availableToClaimed() )
+                if ( slot.isValid( validationStrategy ) )
                 {
-                    if ( slot.isValid( validationStrategy ) )
+                    if ( slot.availableToClaimed() )
                     {
                         break;
                     }
-                    else
-                    {
-                        // We've acquired the slot, but the validation strategy says it's time for it to die.
-                        dispose( slot );
-                    }
+                }
+                // We've acquired the slot, but the validation strategy says it's time for it to die.
+                // Either the slot is already claimed or if it is available make it claimed
+                else if ( slot.isClaimedOrAvailableToClaimed() )
+                {
+                    dispose( slot );
                 }
             }
             else
@@ -186,15 +184,13 @@ public class ThreadCachingPool<T> implements AutoCloseable
 
     private void dispose( Slot<T> slot )
     {
-        if ( !slot.claimedToDisposed() )
+        if ( slot.claimedToDisposed() )
         {
-            throw new IllegalStateException( "Cannot dispose unclaimed pool object: " + slot );
+            // Done before below, in case dispose call fails. This is safe since objects on the
+            // pool are used for read-only operations
+            disposed.add( slot );
+            allocator.onDispose( slot.value );
         }
-
-        // Done before below, in case dispose call fails. This is safe since objects on the
-        // pool are used for read-only operations
-        disposed.add( slot );
-        allocator.onDispose( slot.value );
     }
 
     /**
@@ -234,33 +230,30 @@ public class ThreadCachingPool<T> implements AutoCloseable
             public void accept( T t )
             {
                 slot.updateUsageTimestamp();
-                if ( !slot.isValid( validationStrategy ) )
+                if ( !slot.isValid( validationStrategy) )
                 {
-                    // The value has for some reason become invalid, dispose of it
                     dispose( slot );
                     return;
                 }
 
-                if ( !slot.claimedToAvailable() )
+                if ( slot.claimedToAvailable() )
                 {
-                    throw new IllegalStateException( "Failed to release pooled object: " + slot );
-                }
-
-                // Make sure the pool isn't being stopped in the middle of all these shenanigans
-                if ( !stopped.get() )
-                {
-                    // All good, as you were.
-                    live.add( slot );
-                }
-                else
-                {
-                    // Another thread concurrently closing the pool may have started closing before we
-                    // set our slot to "available". In that case, the slot will not be disposed of by the closing thread
-                    // We mitigate this by trying to claim the slot back - if we are able to, we dispose the slot.
-                    // If we can't claim the slot back, that means another thread is dealing with it.
-                    if ( slot.availableToClaimed() )
+                    // Make sure the pool isn't being stopped in the middle of all these shenanigans
+                    if ( !stopped.get() )
                     {
-                        dispose( slot );
+                        // All good, as you were.
+                        live.add( slot );
+                    }
+                    else
+                    {
+                        // Another thread concurrently closing the pool may have started closing before we
+                        // set our slot to "available". In that case, the slot will not be disposed of by the closing thread
+                        // We mitigate this by trying to claim the slot back - if we are able to, we dispose the slot.
+                        // If we can't claim the slot back, that means another thread is dealing with it.
+                        if ( slot.availableToClaimed() )
+                        {
+                            dispose( slot );
+                        }
                     }
                 }
             }
@@ -304,13 +297,6 @@ class Slot<T>
     long lastUsed;
     T value;
 
-    public static <T> Slot<T> disposed( int index, Clock clock )
-    {
-        Slot<T> slot = new Slot<>( index, clock );
-        slot.claimedToDisposed();
-        return slot;
-    }
-
     /**
      * @param index the index into the {@link ThreadCachingPool#all all} array, used to re-use that slot when this is
      * disposed
@@ -341,6 +327,16 @@ class Slot<T>
     public boolean claimedToDisposed()
     {
         return state.compareAndSet( State.CLAIMED, State.DISPOSED );
+    }
+
+    public boolean isClaimedOrAvailableToClaimed()
+    {
+        return availableToClaimed() || state.get() == State.CLAIMED;
+    }
+
+    public boolean disposed()
+    {
+        return state.get() == State.DISPOSED;
     }
 
     public void updateUsageTimestamp()
