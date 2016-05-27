@@ -94,17 +94,21 @@ public class ThreadCachingPool<T> implements AutoCloseable
 
     public T acquire( long timeout, TimeUnit unit ) throws InterruptedException
     {
+        assert live.size() <= maxSize;
         long deadline = clock.millis() + unit.toMillis( timeout );
 
         // 1. Try and value an object from our local slot
         Slot<T> slot = local.get();
 
-        if ( slot != null && slot.availableToClaimed() )
+        if ( slot != null && slot.availableToThreadLocalClaimed() )
         {
             if ( slot.isValid( validationStrategy ) )
             {
                 allocator.onAcquire( slot.value );
                 return slot.value;
+            }
+            else {
+                dispose( slot );
             }
 
             //The slot was invalidated however we cannot put it to the
@@ -177,14 +181,32 @@ public class ThreadCachingPool<T> implements AutoCloseable
 
         // Keep this slot cached with our thread, so that we can grab this value quickly next time,
         // assuming threads generally availableToClaimed one instance at a time
-        local.set( slot );
+        updateThreadLocal( slot );
         allocator.onAcquire( slot.value );
         return slot.value;
     }
 
+    private void updateThreadLocal(Slot<T> slot)
+    {
+        Slot<T> localSlot = local.get();
+        if ( localSlot != null )
+        {
+            //The old slot is no longer in the tread local
+            localSlot.threadLocalClaimedToClaimed();
+        }
+        else
+        {
+            //There was nothing stored in thread local
+            //no we must also add this slot to the live queue
+            live.add( slot );
+        }
+        slot.claimByThreadLocal();
+        local.set( slot );
+    }
+
     private void dispose( Slot<T> slot )
     {
-        if ( slot.claimedToDisposed() )
+        if ( slot.claimedToDisposed() || slot.threadLocalClaimedToDisposed() )
         {
             // Done before below, in case dispose call fails. This is safe since objects on the
             // pool are used for read-only operations
@@ -213,7 +235,7 @@ public class ThreadCachingPool<T> implements AutoCloseable
             // Return it :)
             return slot;
         }
-        catch( Neo4jException e )
+        catch ( Neo4jException e )
         {
             // Failed to allocate slot, return it to the list of disposed slots, rethrow exception.
             slot.claimedToDisposed();
@@ -230,7 +252,7 @@ public class ThreadCachingPool<T> implements AutoCloseable
             public void accept( T t )
             {
                 slot.updateUsageTimestamp();
-                if ( !slot.isValid( validationStrategy) )
+                if ( !slot.isValid( validationStrategy ) )
                 {
                     dispose( slot );
                     return;
@@ -256,6 +278,17 @@ public class ThreadCachingPool<T> implements AutoCloseable
                         }
                     }
                 }
+
+                // If we are claimed by thread local we are already in the live queue
+                if ( slot.threadLocalClaimedToAvailable() && stopped.get() )
+                {
+                    // As above, try to claim the slot back and dispose
+                    if ( slot.availableToClaimed() )
+                    {
+                        dispose( slot );
+                    }
+                }
+
             }
         };
     }
@@ -286,6 +319,7 @@ class Slot<T>
     enum State
     {
         AVAILABLE,
+        THREAD_LOCAL_CLAIMED,
         CLAIMED,
         DISPOSED
     }
@@ -318,6 +352,11 @@ class Slot<T>
         return state.compareAndSet( State.AVAILABLE, State.CLAIMED );
     }
 
+    public boolean availableToThreadLocalClaimed()
+    {
+        return state.compareAndSet( State.AVAILABLE, State.THREAD_LOCAL_CLAIMED );
+    }
+
     public boolean claimedToAvailable()
     {
         updateUsageTimestamp();
@@ -327,6 +366,26 @@ class Slot<T>
     public boolean claimedToDisposed()
     {
         return state.compareAndSet( State.CLAIMED, State.DISPOSED );
+    }
+
+    public boolean threadLocalClaimedToDisposed()
+    {
+        return state.compareAndSet( State.THREAD_LOCAL_CLAIMED, State.DISPOSED );
+    }
+
+    public boolean threadLocalClaimedToClaimed()
+    {
+        return state.compareAndSet( State.THREAD_LOCAL_CLAIMED, State.CLAIMED );
+    }
+
+    public boolean threadLocalClaimedToAvailable()
+    {
+        return state.compareAndSet( State.THREAD_LOCAL_CLAIMED, State.AVAILABLE );
+    }
+
+    public void claimByThreadLocal()
+    {
+        state.set( State.THREAD_LOCAL_CLAIMED );
     }
 
     public boolean isClaimedOrAvailableToClaimed()

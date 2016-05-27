@@ -303,9 +303,47 @@ public class ThreadCachingPoolTest
         BlockingQueue<Slot<PooledObject>> disposedQueue =
                 (BlockingQueue<Slot<PooledObject>>) disposedQueueGet.invoke( pool );
 
-        assertThat( disposedQueue, empty() );
-        assertThat( liveQueue, hasSize( 1 ) );
-        assertThat( liveQueue.poll( 10, TimeUnit.SECONDS ).value.id, equalTo( 0 ) );
+        assertThat( disposedQueue, hasSize( 1 ) );
+        assertThat( disposedQueue.poll( 10, TimeUnit.SECONDS ).value.id, equalTo( 0 ) );
+        assertThat( liveQueue, empty() );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    @Test
+    public void shouldNotAddToLiveQueueTwice() throws Throwable
+    {
+        // Given
+        ThreadCachingPool<PooledObject>
+                pool = new ThreadCachingPool<>( 4, trackAllocator, checkInvalidateFlag, Clock.SYSTEM );
+
+        // When
+        PooledObject o1 = pool.acquire( 10, TimeUnit.SECONDS );
+        o1.release();
+        PooledObject o2 = pool.acquire( 10, TimeUnit.SECONDS );
+        o2.release();
+
+        // Then
+        BlockingQueue<Slot<PooledObject>> liveQueue = (BlockingQueue<Slot<PooledObject>>) liveQueueGet.invoke( pool );
+        assertThat(liveQueue, hasSize( 1 ));
+    }
+
+    @SuppressWarnings( "unchecked" )
+    @Test
+    public void shouldNotAddToLiveQueueTwice2() throws Throwable
+    {
+        // Given
+        ThreadCachingPool<PooledObject>
+                pool = new ThreadCachingPool<>( 4, trackAllocator, checkInvalidateFlag, Clock.SYSTEM );
+        PooledObject o1 = pool.acquire( 10, TimeUnit.SECONDS );
+        PooledObject o2 = pool.acquire( 10, TimeUnit.SECONDS );
+
+        // When
+        o1.release();
+        o2.release();
+
+        // Then
+        BlockingQueue<Slot<PooledObject>> liveQueue = (BlockingQueue<Slot<PooledObject>>) liveQueueGet.invoke( pool );
+        assertThat(liveQueue, hasSize( 1 ));
     }
 
     private boolean acquireInSeparateThread( final ThreadCachingPool<PooledObject> pool ) throws InterruptedException
@@ -318,7 +356,7 @@ public class ThreadCachingPoolTest
             {
                 try
                 {
-                    PooledObject obj = pool.acquire( 10, TimeUnit.MINUTES );
+                    PooledObject obj = pool.acquire( 10, TimeUnit.SECONDS );
                     obj.release();
                 }
                 catch ( InterruptedException e )
