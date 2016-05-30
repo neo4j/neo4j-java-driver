@@ -38,7 +38,7 @@ import static org.neo4j.driver.v1.Values.parameters;
 public class LoadCSVIT
 {
     @Rule
-    public TestNeo4j neo4j = new TestNeo4j( Neo4jSettings.DEFAULT.without( Neo4jSettings.IMPORT_DIR ));
+    public TestNeo4j neo4j = new TestNeo4j( Neo4jSettings.TEST_SETTINGS.without( Neo4jSettings.IMPORT_DIR ));
 
     @Test
     public void shouldLoadCSV() throws Throwable
