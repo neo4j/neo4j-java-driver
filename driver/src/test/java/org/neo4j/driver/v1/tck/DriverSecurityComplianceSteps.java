@@ -268,7 +268,7 @@ public class DriverSecurityComplianceSteps
     @After("@modifies_db_config")
     public void resetDbWithDefaultSettings() throws Throwable
     {
-        neo4j.useDefaultEncryptionKeyAndCert();
+        neo4j.restart();
     }
 
     private File tempFile(String prefix, String suffix) throws Throwable

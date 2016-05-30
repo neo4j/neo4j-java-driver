@@ -37,7 +37,7 @@ public class TestNeo4j implements TestRule
 
     public TestNeo4j()
     {
-        this( Neo4jSettings.DEFAULT );
+        this( Neo4jSettings.TEST_SETTINGS );
     }
 
     public TestNeo4j( Neo4jSettings settings )
@@ -54,12 +54,10 @@ public class TestNeo4j implements TestRule
             public void evaluate() throws Throwable
             {
                 runner = Neo4jRunner.getOrCreateGlobalRunner();
-                if ( !runner.ensureRunning( settings ) )
+                runner.ensureRunning( settings );
+                try ( Session session = driver().session() )
                 {
-                    try ( Session session = driver().session() )
-                    {
-                        clearDatabaseContents( session, description.toString() );
-                    }
+                    clearDatabaseContents( session, description.toString() );
                 }
                 base.evaluate();
             }
@@ -73,7 +71,12 @@ public class TestNeo4j implements TestRule
 
     public void restart() throws Exception
     {
-        runner.restart();
+        runner.restartNeo4j();
+    }
+
+    public void restart(Neo4jSettings neo4jSettings) throws Exception
+    {
+        runner.restartNeo4j( neo4jSettings );
     }
 
     public URL putTmpFile( String prefix, String suffix, String contents ) throws IOException
@@ -102,20 +105,10 @@ public class TestNeo4j implements TestRule
         session.run( "MATCH (n) DETACH DELETE n" ).consume();
     }
 
-    public void restartServerOnEmptyDatabase( Neo4jSettings neo4jSettings ) throws Exception
-    {
-        runner.restart( neo4jSettings );
-    }
-
     public void updateEncryptionKeyAndCert( File key, File cert ) throws Exception
     {
         FileTools.copyFile( key, Neo4jSettings.DEFAULT_TLS_KEY_FILE );
         FileTools.copyFile( cert, Neo4jSettings.DEFAULT_TLS_CERT_FILE );
-        restartServerOnEmptyDatabase( Neo4jSettings.DEFAULT );
-    }
-
-    public void useDefaultEncryptionKeyAndCert() throws Exception
-    {
-        restartServerOnEmptyDatabase( Neo4jSettings.DEFAULT );
+        runner.forceToRestart(); // needs to force to restart as no configuration changed
     }
 }

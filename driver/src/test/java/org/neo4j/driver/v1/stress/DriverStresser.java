@@ -57,7 +57,7 @@ public class DriverStresser
     public static void setup() throws Exception
     {
         server = Neo4jRunner.getOrCreateGlobalRunner();
-        server.ensureRunning( Neo4jSettings.DEFAULT );
+        server.ensureRunning( Neo4jSettings.TEST_SETTINGS );
         driver = GraphDatabase.driver( "bolt://localhost" );
     }
 
@@ -88,7 +88,7 @@ public class DriverStresser
     public static void tearDown() throws Exception
     {
         driver.close();
-        server.stop();
+        server.stopNeo4j();
     }
 
 

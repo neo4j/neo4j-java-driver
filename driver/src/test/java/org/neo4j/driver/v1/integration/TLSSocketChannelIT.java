@@ -138,7 +138,7 @@ public class TLSSocketChannelIT
         finally
         {
             // always restore the db default settings
-            neo4j.restartServerOnEmptyDatabase( Neo4jSettings.DEFAULT );
+            neo4j.restart();
         }
     }
 
@@ -197,8 +197,8 @@ public class TLSSocketChannelIT
     public void shouldFailTLSHandshakeDueToServerCertNotSignedByKnownCA() throws Throwable
     {
         // Given
-        neo4j.restartServerOnEmptyDatabase(
-                Neo4jSettings.DEFAULT.updateWith(
+        neo4j.restart(
+                Neo4jSettings.TEST_SETTINGS.updateWith(
                         Neo4jSettings.CERT_DIR,
                         folder.getRoot().getAbsolutePath().replace("\\", "/") ) );
         SocketChannel channel = SocketChannel.open();

@@ -40,15 +40,15 @@ public class Neo4jSettings
     private static final String DEFAULT_TLS_KEY_PATH = DEFAULT_CERT_DIR + "/neo4j.key";
 
     public static final String DEFAULT_DATA_DIR = "data";
-    public static final File DEFAULT_TLS_KEY_FILE = new File( Neo4jInstaller.neo4jHomeDir, DEFAULT_TLS_KEY_PATH );
-    public static final File DEFAULT_TLS_CERT_FILE = new File( Neo4jInstaller.neo4jHomeDir, DEFAULT_TLS_CERT_PATH );
+    public static final File DEFAULT_TLS_KEY_FILE = new File( Neo4jRunner.NEO4J_HOME, DEFAULT_TLS_KEY_PATH );
+    public static final File DEFAULT_TLS_CERT_FILE = new File( Neo4jRunner.NEO4J_HOME, DEFAULT_TLS_CERT_PATH );
 
 
     private final Map<String, String> settings;
     private final Set<String> excludes;
 
-
-    public static Neo4jSettings DEFAULT = new Neo4jSettings( map(
+    public static Neo4jSettings DEFAULT_SETTINGS = new Neo4jSettings( new HashMap<String, String>(), Collections.<String>emptySet() );
+    public static Neo4jSettings TEST_SETTINGS = new Neo4jSettings( map(
             CERT_DIR, DEFAULT_CERT_DIR,
             DATA_DIR, DEFAULT_DATA_DIR,
             IMPORT_DIR, DEFAULT_IMPORT_DIR,
