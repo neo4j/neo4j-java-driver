@@ -24,9 +24,6 @@ import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
 import java.net.URI;
 import java.nio.channels.SocketChannel;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 
 import org.neo4j.driver.v1.Config;
@@ -46,7 +43,7 @@ public class Neo4jRunner
 
     private static final boolean debug = Boolean.getBoolean( "neo4j.runner.debug" );
 
-    public static final String NEORUN_START_ARGS = System.getProperty("neorun.start.args", "");
+    public static final String NEORUN_START_ARGS = System.getProperty( "neorun.start.args" );
     public static final String DEFAULT_URL = "bolt://localhost:7687";
     private static final Config TEST_CONFIG = Config.build().withEncryptionLevel( Config.EncryptionLevel.NONE ).toConfig();
     private Driver driver;
@@ -68,10 +65,15 @@ public class Neo4jRunner
 
     private Neo4jRunner() throws IOException
     {
-        startNeo4j();
-
-        // Make sure we stop on JVM exit
-        installShutdownHook();
+        try
+        {
+            startNeo4j();
+        }
+        finally
+        {
+            // Make sure we stop on JVM exit even if start failed
+            installShutdownHook();
+        }
     }
 
     public void ensureRunning(Neo4jSettings neo4jSettings) throws IOException, InterruptedException
@@ -99,16 +101,8 @@ public class Neo4jRunner
         // this is required for windows as python scripts cannot delete the file when it is used by driver tests
         deleteDefaultKnownCertFileIfExists();
 
-        startNeo4j( NEORUN_START_ARGS.split( "\\s" ) );
-    }
-
-    private void startNeo4j(String... opts) throws IOException
-    {
-        List<String> cmds = new ArrayList<>();
-        cmds.addAll( Arrays.asList( "python", NEORUN_PATH, "--start=" + NEO4J_HOME ) );
-        cmds.addAll( Arrays.asList( opts ) );
-        int processStatus = runCommand( cmds.toArray( new String[cmds.size()]) );
-        if (processStatus != 0) // success
+        int processStatus = runCommand( "python", NEORUN_PATH, "--start=" + NEO4J_HOME );
+        if (processStatus != 0) // not success
         {
             throw new IOException( "Failed to start neo4j server." );
         }
@@ -174,6 +168,11 @@ public class Neo4jRunner
                 // version to use for the driver tests.
                 env.containsKey( "NEO4J_JAVA" ) ? env.get( "NEO4J_JAVA" ) :
                 System.getProperties().getProperty( "java.home" ) );
+        if( NEORUN_START_ARGS != null )
+        {
+            // overwrite the env var in the sub process if the system property is specified
+            pb.environment().put( "NEORUN_START_ARGS", NEORUN_START_ARGS );
+        }
         Process process = pb.command( cmd ).start();
         while (true)
         {
