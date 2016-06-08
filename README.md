@@ -30,8 +30,7 @@ Connect to a Neo4j 3.0.0+ database:
     
     driver.close();
 
-For more examples and details of usage, please refer to the [Driver Manual] (http://neo4j.com/docs/developer-manual/3
-.0/index.html#driver-manual-index).
+For more examples and details of usage, please refer to the [Driver Manual] (http://neo4j.com/docs/developer-manual/3.0/index.html#driver-manual-index).
 
 ## Binding
 
