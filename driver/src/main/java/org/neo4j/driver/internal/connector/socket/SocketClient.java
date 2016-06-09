@@ -70,7 +70,6 @@ public class SocketClient
         {
             logger.debug( "~~ [CONNECT] %s:%d.", host, port );
             channel = ChannelFactory.create( host, port, config, logger );
-
             protocol = negotiateProtocol();
             reader = protocol.reader();
             writer = protocol.writer();
@@ -170,7 +169,7 @@ public class SocketClient
     {
         logger.debug( "~~ [HANDSHAKE] [0x6060B017, 1, 0, 0, 0]." );
         //Propose protocol versions
-        ByteBuffer buf = ByteBuffer.allocate( 5 * 4 ).order( BIG_ENDIAN );
+        ByteBuffer buf = ByteBuffer.allocateDirect( 5 * 4 ).order( BIG_ENDIAN );
         buf.putInt( MAGIC_PREAMBLE );
         for ( int version : SUPPORTED_VERSIONS )
         {
@@ -178,13 +177,30 @@ public class SocketClient
         }
         buf.flip();
 
-        channel.write( buf );
+        //Do a blocking write
+        while(buf.hasRemaining())
+        {
+            if (channel.write( buf ) < 0)
+            {
+                throw new ClientException(
+                        "Connection terminated while proposing protocol. This can happen due to network " +
+                        "instabilities, or due to restarts of the database." );
+            }
+        }
 
-        // Read back the servers choice
+        // Read (blocking) back the servers choice
         buf.clear();
         buf.limit( 4 );
 
-        channel.read( buf );
+        while(buf.hasRemaining())
+        {
+            if ( channel.read( buf ) < 0 )
+            {
+                throw new ClientException(
+                        "Connection terminated while negotiating protocol. This can happen due to network " +
+                        "instabilities, or due to restarts of the database." );
+            }
+        }
 
         // Choose protocol, or fail
         buf.flip();
@@ -223,7 +239,6 @@ public class SocketClient
             SocketChannel soChannel = SocketChannel.open();
             soChannel.setOption( StandardSocketOptions.SO_REUSEADDR, true );
             soChannel.setOption( StandardSocketOptions.SO_KEEPALIVE, true );
-
             soChannel.connect( new InetSocketAddress( host, port ) );
 
             ByteChannel channel;
