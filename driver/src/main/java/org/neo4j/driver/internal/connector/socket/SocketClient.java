@@ -35,6 +35,8 @@ import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static java.nio.ByteOrder.BIG_ENDIAN;
+import static org.neo4j.driver.internal.connector.socket.SocketUtils.blockingRead;
+import static org.neo4j.driver.internal.connector.socket.SocketUtils.blockingWrite;
 
 public class SocketClient
 {
@@ -178,29 +180,12 @@ public class SocketClient
         buf.flip();
 
         //Do a blocking write
-        while(buf.hasRemaining())
-        {
-            if (channel.write( buf ) < 0)
-            {
-                throw new ClientException(
-                        "Connection terminated while proposing protocol. This can happen due to network " +
-                        "instabilities, or due to restarts of the database." );
-            }
-        }
+       blockingWrite(channel, buf);
 
         // Read (blocking) back the servers choice
         buf.clear();
         buf.limit( 4 );
-
-        while(buf.hasRemaining())
-        {
-            if ( channel.read( buf ) < 0 )
-            {
-                throw new ClientException(
-                        "Connection terminated while negotiating protocol. This can happen due to network " +
-                        "instabilities, or due to restarts of the database." );
-            }
-        }
+        blockingRead(channel, buf);
 
         // Choose protocol, or fail
         buf.flip();
