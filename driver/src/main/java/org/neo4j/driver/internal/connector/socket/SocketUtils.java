@@ -21,33 +21,25 @@ package org.neo4j.driver.internal.connector.socket;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
-import java.nio.channels.SocketChannel;
 
 import org.neo4j.driver.internal.util.BytePrinter;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
 /**
- * Wraps a regular socket channel such that read and write will not return until the full buffers given have been sent
- * or received, respectively.
+ * Utility class for common operations.
  */
-public class AllOrNothingChannel implements ByteChannel
+public final class SocketUtils
 {
-    private final SocketChannel channel;
-
-    public AllOrNothingChannel( SocketChannel channel ) throws IOException
+    private SocketUtils()
     {
-        this.channel = channel;
-        this.channel.configureBlocking( true );
+        throw new UnsupportedOperationException( "Do not instantiate" );
     }
 
-    @Override
-    public int read( ByteBuffer buf ) throws IOException
+    public static void blockingRead(ByteChannel channel, ByteBuffer buf) throws IOException
     {
-        int toRead = buf.remaining();
-        while ( buf.remaining() > 0 )
+        while(buf.hasRemaining())
         {
-            int read = channel.read( buf );
-            if ( read == -1 )
+            if (channel.read( buf ) < 0)
             {
                 throw new ClientException( String.format(
                         "Connection terminated while receiving data. This can happen due to network " +
@@ -55,17 +47,13 @@ public class AllOrNothingChannel implements ByteChannel
                         buf.limit(), BytePrinter.hex( buf ) ) );
             }
         }
-        return toRead;
     }
 
-    @Override
-    public int write( ByteBuffer buf ) throws IOException
+    public static void blockingWrite(ByteChannel channel, ByteBuffer buf) throws IOException
     {
-        int toWrite = buf.remaining();
-        while( buf.remaining() > 0 )
+        while(buf.hasRemaining())
         {
-            int write = channel.write( buf );
-            if( write == -1 )
+            if (channel.write( buf ) < 0)
             {
                 throw new ClientException( String.format(
                         "Connection terminated while sending data. This can happen due to network " +
@@ -73,18 +61,5 @@ public class AllOrNothingChannel implements ByteChannel
                         buf.limit(), BytePrinter.hex( buf ) ) );
             }
         }
-        return toWrite;
-    }
-
-    @Override
-    public boolean isOpen()
-    {
-        return channel.isOpen();
-    }
-
-    @Override
-    public void close() throws IOException
-    {
-        channel.close();
     }
 }

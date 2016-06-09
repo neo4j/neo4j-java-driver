@@ -35,6 +35,8 @@ import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static java.nio.ByteOrder.BIG_ENDIAN;
+import static org.neo4j.driver.internal.connector.socket.SocketUtils.blockingRead;
+import static org.neo4j.driver.internal.connector.socket.SocketUtils.blockingWrite;
 
 public class SocketClient
 {
@@ -70,7 +72,6 @@ public class SocketClient
         {
             logger.debug( "~~ [CONNECT] %s:%d.", host, port );
             channel = ChannelFactory.create( host, port, config, logger );
-
             protocol = negotiateProtocol();
             reader = protocol.reader();
             writer = protocol.writer();
@@ -170,7 +171,7 @@ public class SocketClient
     {
         logger.debug( "~~ [HANDSHAKE] [0x6060B017, 1, 0, 0, 0]." );
         //Propose protocol versions
-        ByteBuffer buf = ByteBuffer.allocate( 5 * 4 ).order( BIG_ENDIAN );
+        ByteBuffer buf = ByteBuffer.allocateDirect( 5 * 4 ).order( BIG_ENDIAN );
         buf.putInt( MAGIC_PREAMBLE );
         for ( int version : SUPPORTED_VERSIONS )
         {
@@ -178,13 +179,13 @@ public class SocketClient
         }
         buf.flip();
 
-        channel.write( buf );
+        //Do a blocking write
+       blockingWrite(channel, buf);
 
-        // Read back the servers choice
+        // Read (blocking) back the servers choice
         buf.clear();
         buf.limit( 4 );
-
-        channel.read( buf );
+        blockingRead(channel, buf);
 
         // Choose protocol, or fail
         buf.flip();
@@ -223,7 +224,6 @@ public class SocketClient
             SocketChannel soChannel = SocketChannel.open();
             soChannel.setOption( StandardSocketOptions.SO_REUSEADDR, true );
             soChannel.setOption( StandardSocketOptions.SO_KEEPALIVE, true );
-
             soChannel.connect( new InetSocketAddress( host, port ) );
 
             ByteChannel channel;
