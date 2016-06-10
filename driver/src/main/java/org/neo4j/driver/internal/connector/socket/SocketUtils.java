@@ -41,10 +41,11 @@ public final class SocketUtils
         {
             if (channel.read( buf ) < 0)
             {
+                String bufStr = BytePrinter.hex( buf ).trim();
                 throw new ClientException( String.format(
                         "Connection terminated while receiving data. This can happen due to network " +
                         "instabilities, or due to restarts of the database. Expected %s bytes, received %s.",
-                        buf.limit(), BytePrinter.hex( buf ) ) );
+                        buf.limit(), bufStr.isEmpty() ? "none" : bufStr ) );
             }
         }
     }
@@ -55,10 +56,11 @@ public final class SocketUtils
         {
             if (channel.write( buf ) < 0)
             {
+                String bufStr = BytePrinter.hex( buf ).trim();
                 throw new ClientException( String.format(
                         "Connection terminated while sending data. This can happen due to network " +
                         "instabilities, or due to restarts of the database. Expected %s bytes, wrote %s.",
-                        buf.limit(), BytePrinter.hex( buf ) ) );
+                        buf.limit(), bufStr.isEmpty() ? "none" :bufStr ) );
             }
         }
     }

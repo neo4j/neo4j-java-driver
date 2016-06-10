@@ -165,7 +165,7 @@ public class BytePrinter
     }
 
     /**
-     * Convert a full byte buffer to a human readable string of nicely formatted hex numbers.
+     * Convert a full byte buffer from 0 to position to a human readable string of nicely formatted hex numbers.
      * Output looks like:
      * <p>
      * 01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08
@@ -176,7 +176,7 @@ public class BytePrinter
      */
     public static String hex( ByteBuffer bytes )
     {
-        return hex( bytes, 0, bytes.limit() );
+        return hex( bytes, 0, bytes.position() );
     }
 
     /**
@@ -191,7 +191,7 @@ public class BytePrinter
      */
     public static String hex( byte[] bytes )
     {
-        return hex( wrap( bytes ) );
+        return hex( wrap( bytes ), 0, bytes.length );
     }
 
     /**
