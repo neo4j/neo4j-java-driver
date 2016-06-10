@@ -24,15 +24,15 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ServiceLoader;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import org.neo4j.driver.internal.connector.socket.SocketConnector;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.Connector;
 import org.neo4j.driver.internal.util.Clock;
-import org.neo4j.driver.internal.util.Consumer;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.exceptions.ClientException;
@@ -62,36 +62,23 @@ public class InternalConnectionPool implements ConnectionPool
     /**
      * Pools, organized by URL.
      */
-    private final ConcurrentHashMap<URI,ThreadCachingPool<PooledConnection>> pools = new ConcurrentHashMap<>();
-
-    /**
-     * Connections that fail this criteria will be disposed of.
-     */
-    private final ValidationStrategy<PooledConnection> connectionValidation;
+    private final ConcurrentHashMap<URI,BlockingQueue<PooledConnection>> pools = new ConcurrentHashMap<>();
 
     private final AuthToken authToken;
-    /**
-     * Timeout in milliseconds if there are no available sessions.
-     */
-    private final long acquireSessionTimeout;
-
     private final Clock clock;
     private final Config config;
 
     public InternalConnectionPool( Config config, AuthToken authToken )
     {
-        this( loadConnectors(), Clock.SYSTEM, config, authToken,
-                Long.getLong( "neo4j.driver.acquireSessionTimeout", 30_000 ) );
+        this( loadConnectors(), Clock.SYSTEM, config, authToken);
     }
 
     public InternalConnectionPool( Collection<Connector> conns, Clock clock, Config config,
-            AuthToken authToken, long acquireTimeout )
+            AuthToken authToken )
     {
         this.authToken = authToken;
-        this.acquireSessionTimeout = acquireTimeout;
         this.config = config;
         this.clock = clock;
-        this.connectionValidation = new PooledConnectionValidator( config.idleTimeBeforeConnectionTest() );
         for ( Connector connector : conns )
         {
             for ( String s : connector.supportedSchemes() )
@@ -104,37 +91,32 @@ public class InternalConnectionPool implements ConnectionPool
     @Override
     public Connection acquire( URI sessionURI )
     {
-        try
-        {
-            Connection conn = pool( sessionURI ).acquire( acquireSessionTimeout, TimeUnit.MILLISECONDS );
+            BlockingQueue<PooledConnection> connections = pool( sessionURI );
+            PooledConnection conn = connections.poll();
             if ( conn == null )
             {
-                throw new ClientException(
-                        "Failed to acquire a session with Neo4j " +
-                        "as all the connections in the connection pool are already occupied by other sessions. " +
-                        "Please close unused session and retry. " +
-                        "Current Pool size: " + config.connectionPoolSize() +
-                        ". If your application requires running more sessions concurrently than the current pool " +
-                        "size, you should create a driver with a larger connection pool size." );
+                Connector connector = connectors.get( sessionURI.getScheme() );
+                if ( connector == null )
+                {
+                    throw new ClientException(
+                            format( "Unsupported URI scheme: '%s' in url: '%s'. Supported transports are: '%s'.",
+                                    sessionURI.getScheme(), sessionURI, connectorSchemes() ) );
+                }
+                conn = new PooledConnection(connector.connect( sessionURI, config, authToken ), new PooledConnectionReleaseConsumer( connections, config ), clock);
             }
+            conn.updateUsageTimestamp();
             return conn;
-        }
-        catch ( InterruptedException e )
-        {
-            throw new ClientException( "Interrupted while waiting for a connection to Neo4j." );
-        }
     }
 
-    private ThreadCachingPool<PooledConnection> pool( URI sessionURI )
+    private BlockingQueue<PooledConnection> pool( URI sessionURI )
     {
-        ThreadCachingPool<PooledConnection> pool = pools.get( sessionURI );
+        BlockingQueue<PooledConnection> pool = pools.get( sessionURI );
         if ( pool == null )
         {
-            pool = newPool( sessionURI );
+            pool = new LinkedBlockingQueue<>(config.maxIdleConnectionPoolSize());
             if ( pools.putIfAbsent( sessionURI, pool ) != null )
             {
                 // We lost a race to create the pool, dispose of the one we created, and recurse
-                pool.close();
                 return pool( sessionURI );
             }
         }
@@ -161,48 +143,24 @@ public class InternalConnectionPool implements ConnectionPool
     @Override
     public void close() throws Neo4jException
     {
-        for ( ThreadCachingPool<PooledConnection> pool : pools.values() )
+        for ( BlockingQueue<PooledConnection> pool : pools.values() )
         {
-            pool.close();
+            while ( !pool.isEmpty() )
+            {
+                PooledConnection conn = pool.poll();
+                if ( conn != null )
+                {
+                    //close the underlying connection without adding it back to the queue
+                    conn.dispose();
+                }
+            }
         }
+
         pools.clear();
     }
 
     private String connectorSchemes()
     {
         return Arrays.toString( connectors.keySet().toArray( new String[connectors.keySet().size()] ) );
-    }
-
-    private ThreadCachingPool<PooledConnection> newPool( final URI uri )
-    {
-
-        return new ThreadCachingPool<>( config.connectionPoolSize(), new Allocator<PooledConnection>()
-        {
-            @Override
-            public PooledConnection allocate( Consumer<PooledConnection> release )
-            {
-                Connector connector = connectors.get( uri.getScheme() );
-                if ( connector == null )
-                {
-                    throw new ClientException(
-                            format( "Unsupported URI scheme: '%s' in url: '%s'. Supported transports are: '%s'.",
-                                    uri.getScheme(), uri, connectorSchemes() ) );
-                }
-                Connection conn = connector.connect( uri, config, authToken );
-                return new PooledConnection( conn, release );
-            }
-
-            @Override
-            public void onDispose( PooledConnection pooledConnection )
-            {
-                pooledConnection.dispose();
-            }
-
-            @Override
-            public void onAcquire( PooledConnection pooledConnection )
-            {
-
-            }
-        }, connectionValidation, clock );
     }
 }

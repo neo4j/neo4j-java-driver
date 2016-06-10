@@ -57,7 +57,7 @@ public class ServerKilledIT
             s4.close();
 
             // When
-            neo4j.restart();
+            neo4j.forceRestart();
 
             // Then we should be able to start using sessions again, at most O(numSessions) session calls later
             // TODO: These should value evicted immediately, not show up as application-loggingLevel errors first
@@ -77,6 +77,11 @@ public class ServerKilledIT
                               "five: " + e.getMessage() );
                     }
                 }
+            }
+
+            if (toleratedFailures > 0)
+            {
+                fail("This query should have failed " + toleratedFailures + " times");
             }
         }
     }

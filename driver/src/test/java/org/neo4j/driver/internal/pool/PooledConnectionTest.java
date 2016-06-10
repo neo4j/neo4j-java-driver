@@ -24,6 +24,7 @@ import java.util.LinkedList;
 
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.StreamCollector;
+import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Consumer;
 import org.neo4j.driver.v1.exceptions.DatabaseException;
 
@@ -52,7 +53,7 @@ public class PooledConnectionTest
             {
                 returnedToPool.add( pooledConnection );
             }
-        } );
+        }, Clock.SYSTEM );
 
         // When
         pooledConnection.close();
