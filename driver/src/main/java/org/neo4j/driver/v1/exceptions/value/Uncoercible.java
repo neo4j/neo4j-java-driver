@@ -21,6 +21,7 @@ package org.neo4j.driver.v1.exceptions.value;
 import static java.lang.String.format;
 
 /**
+ * A <em>Uncoercible</em> exception indicates that the conversion cannot be achieved.
  * @since 1.0
  */
 public class Uncoercible extends ValueException
