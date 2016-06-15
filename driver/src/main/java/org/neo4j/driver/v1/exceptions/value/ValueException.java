@@ -21,6 +21,7 @@ package org.neo4j.driver.v1.exceptions.value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
 /**
+ * A <em>ValueException</em> indicates that the client has carried out an operation on values incorrectly.
  * @since 1.0
  */
 public class ValueException extends ClientException

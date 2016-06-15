@@ -19,6 +19,8 @@
 package org.neo4j.driver.v1.exceptions.value;
 
 /**
+ * A <em>NotMultiValued</em> exception indicates that the value does not consist of multiple values, a.k.a. not a map
+ * or array.
  * @since 1.0
  */
 public class NotMultiValued extends ValueException

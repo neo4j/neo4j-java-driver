@@ -21,6 +21,7 @@ package org.neo4j.driver.v1.exceptions.value;
 import static java.lang.String.format;
 
 /**
+ * A <em>LossyCoercion</em> exception indicates that the conversion cannot be achieved without losing precision.
  * @since 1.0
  */
 public class LossyCoercion extends ValueException
@@ -29,7 +30,7 @@ public class LossyCoercion extends ValueException
 
     public LossyCoercion( String sourceTypeName, String destinationTypeName )
     {
-        super( format( "Cannot coerce %s to %s without loosing precision", sourceTypeName, destinationTypeName ) );
+        super( format( "Cannot coerce %s to %s without losing precision", sourceTypeName, destinationTypeName ) );
     }
 
 }
