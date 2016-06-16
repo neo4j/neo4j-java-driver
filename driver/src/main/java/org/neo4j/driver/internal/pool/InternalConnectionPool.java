@@ -27,6 +27,7 @@ import java.util.ServiceLoader;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.internal.connector.socket.SocketConnector;
 import org.neo4j.driver.internal.spi.Connection;
@@ -68,6 +69,9 @@ public class InternalConnectionPool implements ConnectionPool
     private final Clock clock;
     private final Config config;
 
+    /** Shutdown flag */
+    private final AtomicBoolean stopped = new AtomicBoolean( false );
+
     public InternalConnectionPool( Config config, AuthToken authToken )
     {
         this( loadConnectors(), Clock.SYSTEM, config, authToken);
@@ -91,21 +95,26 @@ public class InternalConnectionPool implements ConnectionPool
     @Override
     public Connection acquire( URI sessionURI )
     {
-            BlockingQueue<PooledConnection> connections = pool( sessionURI );
-            PooledConnection conn = connections.poll();
-            if ( conn == null )
+        if ( stopped.get() )
+        {
+            throw new IllegalStateException( "Pool has been closed, cannot acquire new values." );
+        }
+        BlockingQueue<PooledConnection> connections = pool( sessionURI );
+        PooledConnection conn = connections.poll();
+        if ( conn == null )
+        {
+            Connector connector = connectors.get( sessionURI.getScheme() );
+            if ( connector == null )
             {
-                Connector connector = connectors.get( sessionURI.getScheme() );
-                if ( connector == null )
-                {
-                    throw new ClientException(
-                            format( "Unsupported URI scheme: '%s' in url: '%s'. Supported transports are: '%s'.",
-                                    sessionURI.getScheme(), sessionURI, connectorSchemes() ) );
-                }
-                conn = new PooledConnection(connector.connect( sessionURI, config, authToken ), new PooledConnectionReleaseConsumer( connections, config ), clock);
+                throw new ClientException(
+                        format( "Unsupported URI scheme: '%s' in url: '%s'. Supported transports are: '%s'.",
+                                sessionURI.getScheme(), sessionURI, connectorSchemes() ) );
             }
-            conn.updateUsageTimestamp();
-            return conn;
+            conn = new PooledConnection(connector.connect( sessionURI, config, authToken ), new
+                    PooledConnectionReleaseConsumer( connections, stopped, config ), clock);
+        }
+        conn.updateUsageTimestamp();
+        return conn;
     }
 
     private BlockingQueue<PooledConnection> pool( URI sessionURI )
@@ -143,6 +152,12 @@ public class InternalConnectionPool implements ConnectionPool
     @Override
     public void close() throws Neo4jException
     {
+        if( !stopped.compareAndSet( false, true ) )
+        {
+            // already closed or some other thread already started close
+            return;
+        }
+
         for ( BlockingQueue<PooledConnection> pool : pools.values() )
         {
             while ( !pool.isEmpty() )

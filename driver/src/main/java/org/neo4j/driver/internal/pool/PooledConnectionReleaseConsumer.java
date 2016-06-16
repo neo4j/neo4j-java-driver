@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.pool;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.internal.spi.StreamCollector;
 import org.neo4j.driver.internal.util.Consumer;
@@ -36,23 +37,37 @@ class PooledConnectionReleaseConsumer implements Consumer<PooledConnection>
     private final BlockingQueue<PooledConnection> connections;
     private final long minIdleBeforeConnectionTest;
     private static final Map<String,Value> NO_PARAMETERS = new HashMap<>();
+    private final AtomicBoolean driverStopped;
 
-    PooledConnectionReleaseConsumer( BlockingQueue<PooledConnection> connections, Config config )
+    PooledConnectionReleaseConsumer( BlockingQueue<PooledConnection> connections, AtomicBoolean driverStopped,
+            Config config )
     {
         this.connections = connections;
+        this.driverStopped = driverStopped;
         this.minIdleBeforeConnectionTest = config.idleTimeBeforeConnectionTest();
     }
 
     @Override
     public void accept( PooledConnection pooledConnection )
     {
-        if ( validConnection( pooledConnection ) )
+        if( driverStopped.get() )
         {
-            connections.offer( pooledConnection );
+            // if the driver already closed, then no need to try to return to pool, just directly close this connection
+            pooledConnection.dispose();
+        }
+        else if ( validConnection( pooledConnection ) )
+        {
+            boolean released = connections.offer( pooledConnection );
+            if( !released )
+            {
+                // if the connection could be put back to the pool, then we let the pool to manage it.
+                // Otherwise, we close the connection directly here.
+                pooledConnection.dispose();
+            }
         }
     }
 
-    private boolean validConnection( PooledConnection pooledConnection )
+    boolean validConnection( PooledConnection pooledConnection )
     {
         return !pooledConnection.hasUnrecoverableErrors() &&
                (pooledConnection.idleTime() <= minIdleBeforeConnectionTest || ping( pooledConnection ));

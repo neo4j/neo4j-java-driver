@@ -23,6 +23,7 @@ import org.mockito.Mockito;
 
 import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Clock;
@@ -64,7 +65,7 @@ public class ConnectionInvalidationTest
         // When/Then
         BlockingQueue<PooledConnection> queue = mock( BlockingQueue.class );
         PooledConnectionReleaseConsumer consumer =
-                new PooledConnectionReleaseConsumer( queue, config );
+                new PooledConnectionReleaseConsumer( queue, new AtomicBoolean( false ), config );
         consumer.accept( conn );
 
         verify( queue, never() ).add( conn );
@@ -83,7 +84,7 @@ public class ConnectionInvalidationTest
         // When/Then
         BlockingQueue<PooledConnection> queue = mock( BlockingQueue.class );
         PooledConnectionReleaseConsumer consumer =
-                new PooledConnectionReleaseConsumer( queue, config );
+                new PooledConnectionReleaseConsumer( queue, new AtomicBoolean( false ), config );
         consumer.accept( conn );
 
         verify( queue ).offer( conn );
@@ -131,7 +132,7 @@ public class ConnectionInvalidationTest
         assertTrue( conn.hasUnrecoverableErrors() );
         BlockingQueue<PooledConnection> queue = mock( BlockingQueue.class );
         PooledConnectionReleaseConsumer consumer =
-                new PooledConnectionReleaseConsumer( queue, Config.defaultConfig() );
+                new PooledConnectionReleaseConsumer( queue, new AtomicBoolean( false ), Config.defaultConfig() );
         consumer.accept( conn );
 
         verify( queue, never() ).offer( conn );
@@ -157,7 +158,7 @@ public class ConnectionInvalidationTest
         assertFalse( conn.hasUnrecoverableErrors() );
         BlockingQueue<PooledConnection> queue = mock( BlockingQueue.class );
         PooledConnectionReleaseConsumer consumer =
-                new PooledConnectionReleaseConsumer( queue, Config.defaultConfig() );
+                new PooledConnectionReleaseConsumer( queue, new AtomicBoolean( false ), Config.defaultConfig() );
         consumer.accept( conn );
 
         verify( queue ).offer( conn );
