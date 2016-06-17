@@ -20,56 +20,96 @@ package org.neo4j.driver.internal.pool;
 
 import org.junit.Test;
 
-import java.util.LinkedList;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.spi.StreamCollector;
 import org.neo4j.driver.internal.util.Clock;
-import org.neo4j.driver.internal.util.Consumer;
 import org.neo4j.driver.v1.Config;
-import org.neo4j.driver.v1.exceptions.DatabaseException;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 
 public class PooledConnectionTest
 {
     @Test
-    public void shouldReturnToPoolIfExceptionDuringReset() throws Throwable
+    public void shouldDisposeConnectionIfNotValidConnection() throws Throwable
     {
         // Given
-        final LinkedList<PooledConnection> returnedToPool = new LinkedList<>();
+        final BlockingQueue<PooledConnection> pool = new LinkedBlockingQueue<>(1);
+
+        final boolean[] flags = {false};
+
         Connection conn = mock( Connection.class );
-
-        doThrow( new DatabaseException( "asd", "asd" ) ).when(conn).reset( any( StreamCollector.class) );
-
-        PooledConnection pooledConnection = new PooledConnection( conn, new Consumer<PooledConnection>()
+        PooledConnectionReleaseConsumer releaseConsumer = new PooledConnectionReleaseConsumer( pool,
+                new AtomicBoolean( false ), Config.defaultConfig() /*Does not matter what config for this test*/ )
         {
             @Override
-            public void accept( PooledConnection pooledConnection )
+            boolean validConnection( PooledConnection conn )
             {
-                returnedToPool.add( pooledConnection );
+                return false;
             }
-        }, Clock.SYSTEM );
+        };
+
+        PooledConnection pooledConnection = new PooledConnection( conn, releaseConsumer, Clock.SYSTEM )
+        {
+            @Override
+            public void dispose()
+            {
+                flags[0] = true;
+            }
+        };
 
         // When
         pooledConnection.close();
 
         // Then
-        assertThat( returnedToPool, hasItem(pooledConnection) );
-        assertThat( returnedToPool.size(), equalTo( 1 ));
+        assertThat( pool.size(), equalTo( 0 ) );
+        assertThat( flags[0], equalTo( true ) );
     }
 
+    @Test
+    public void shouldReturnToThePoolIfIsValidConnectionAndIdlePoolIsNotFull() throws Throwable
+    {
+        // Given
+        final BlockingQueue<PooledConnection> pool = new LinkedBlockingQueue<>(1);
+
+        final boolean[] flags = {false};
+
+        Connection conn = mock( Connection.class );
+        PooledConnectionReleaseConsumer releaseConsumer = new PooledConnectionReleaseConsumer( pool,
+                new AtomicBoolean( false ), Config.defaultConfig() /*Does not matter what config for this test*/ )
+        {
+            @Override
+            boolean validConnection( PooledConnection conn )
+            {
+                return true;
+            }
+        };
+
+        PooledConnection pooledConnection = new PooledConnection( conn, releaseConsumer, Clock.SYSTEM )
+        {
+            @Override
+            public void dispose()
+            {
+                flags[0] = true;
+            }
+        };
+
+        // When
+        pooledConnection.close();
+
+        // Then
+        assertThat( pool, hasItem(pooledConnection) );
+        assertThat( pool.size(), equalTo( 1 ) );
+        assertThat( flags[0], equalTo( false ) );
+    }
 
     @Test
-    public void shouldCallDisposeToCloseConnectionDirectlyIfIdlePoolIsFull() throws Throwable
+    public void shouldDisposeConnectionIfValidConnectionAndIdlePoolIsFull() throws Throwable
     {
         // Given
         final BlockingQueue<PooledConnection> pool = new LinkedBlockingQueue<>(1);
@@ -108,7 +148,7 @@ public class PooledConnectionTest
     }
 
     @Test
-    public void shouldCallDisposeToCloseConnectionIfDriverCloseBeforeSessionClose() throws Throwable
+    public void shouldDisposeConnectionIfPoolAlreadyClosed() throws Throwable
     {
         // driver = GraphDatabase.driver();
         // session = driver.session();
@@ -140,4 +180,45 @@ public class PooledConnectionTest
         assertThat( pool.size(), equalTo( 0 ) );
         assertThat( flags[0], equalTo( true ) ); // make sure that the dispose is called
     }
+
+    @Test
+    public void shouldDisposeConnectionIfPoolStoppedAfterPuttingConnectionBackToPool() throws Throwable
+    {
+        // Given
+        final AtomicBoolean stopped = new AtomicBoolean( false );
+        final BlockingQueue<PooledConnection> pool = new LinkedBlockingQueue<PooledConnection>(1){
+            public boolean offer(PooledConnection conn)
+            {
+                stopped.set( true );
+                // some clean work to close all connection in pool
+                boolean offer = super.offer( conn );
+                assertThat ( this.size(), equalTo( 1 ) );
+                // we successfully put the connection back to the pool
+                return offer;
+            }
+        };
+        final boolean[] flags = {false};
+
+        Connection conn = mock( Connection.class );
+
+        PooledConnectionReleaseConsumer releaseConsumer = new PooledConnectionReleaseConsumer( pool,
+                stopped , Config.defaultConfig() /*Does not matter what config for this test*/ );
+
+        PooledConnection pooledConnection = new PooledConnection( conn, releaseConsumer, Clock.SYSTEM )
+        {
+            @Override
+            public void dispose()
+            {
+                flags[0] = true;
+            }
+        };
+
+        // When
+        pooledConnection.close();
+
+        // Then
+        assertThat( pool.size(), equalTo( 0 ) );
+        assertThat( flags[0], equalTo( true ) ); // make sure that the dispose is called
+    }
+
 }

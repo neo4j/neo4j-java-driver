@@ -64,13 +64,52 @@ class PooledConnectionReleaseConsumer implements Consumer<PooledConnection>
                 // Otherwise, we close the connection directly here.
                 pooledConnection.dispose();
             }
+            else if ( driverStopped.get() )
+            {
+                // If our adding the pooledConnection to the queue was racing with the closing of the driver,
+                // then the loop where the driver is closing all available connections might not observe our newly
+                // added connection. Thus, we must attempt to remove a connection and dispose it. It doesn't matter
+                // which connection we get back, because other threads might be in the same situation as ours. It only
+                // matters that we added *a* connection that might not be observed by the loop, and that we dispose of
+                // *a* connection in response.
+                PooledConnection conn = connections.poll();
+                if ( conn != null )
+                {
+                    conn.dispose();
+                }
+            }
+        }
+        else
+        {
+            pooledConnection.dispose();
         }
     }
 
     boolean validConnection( PooledConnection pooledConnection )
     {
-        return !pooledConnection.hasUnrecoverableErrors() &&
+        return reset(pooledConnection) &&
+               !pooledConnection.hasUnrecoverableErrors() &&
                (pooledConnection.idleTime() <= minIdleBeforeConnectionTest || ping( pooledConnection ));
+    }
+
+    /**
+     *  In case this session has an open result or transaction or something,
+     *  make sure it's reset to a nice state before we reuse it.
+     * @param conn the PooledConnection
+     * @return true if the connection is reset successfully without any error, otherwise false.
+     */
+    private boolean reset( PooledConnection conn )
+    {
+        try
+        {
+            conn.reset( StreamCollector.NO_OP );
+            conn.sync();
+            return true;
+        }
+        catch ( Throwable e )
+        {
+            return false;
+        }
     }
 
     private boolean ping( PooledConnection conn )

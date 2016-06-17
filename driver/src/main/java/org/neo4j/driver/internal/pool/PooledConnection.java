@@ -26,7 +26,26 @@ import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Consumer;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
-
+/**
+ * The state of a pooledConnection from a pool point of view could be one of the following:
+ * Created,
+ * Available,
+ * Claimed,
+ * Closed,
+ * Disposed.
+ *
+ * The state machine looks like:
+ *
+ *                      session.finalize
+ *                       session.close     failed return to pool
+ * Created -------> Claimed  ----------> Closed ---------> Disposed
+ *                    ^                    |                    ^
+ *      pool.acquire  |                    |returned to pool    |
+ *                    |                    |                    |
+ *                    ---- Available <-----                     |
+ *                              |           pool.close          |
+ *                              ---------------------------------
+ */
 public class PooledConnection implements Connection
 {
     /** The real connection who will do all the real jobs */
@@ -157,23 +176,15 @@ public class PooledConnection implements Connection
     }
 
     @Override
+    /**
+     * Make sure only close the connection once on each session to avoid releasing the connection twice, a.k.a.
+     * adding back the connection twice into the pool.
+     */
     public void close()
     {
-        // In case this session has an open result or transaction or something,
-        // make sure it's reset to a nice state before we reuse it.
-        try
-        {
-            reset( StreamCollector.NO_OP );
-            sync();
-        }
-        catch (Exception ex)
-        {
-            dispose();
-        }
-        finally
-        {
-            release.accept( this );
-        }
+        release.accept( this );
+        // put the full logic of deciding whether to dispose the connection or to put it back to
+        // the pool into the release object
     }
 
     @Override
@@ -233,6 +244,7 @@ public class PooledConnection implements Connection
 
     public long idleTime()
     {
-        return clock.millis() - lastUsed;
+        long idleTime = clock.millis() - lastUsed;
+        return idleTime;
     }
 }

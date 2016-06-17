@@ -42,16 +42,16 @@ import org.neo4j.driver.v1.exceptions.Neo4jException;
 import static java.lang.String.format;
 
 /**
- * A basic connection pool that optimizes for threads being long-lived, acquiring/releasing many connections.
- * It uses a global queue as a fallback pool, but tries to avoid coordination by storing connections in a ThreadLocal.
+ * The pool is designed to buffer certain amount of free sessions into session pool. When closing a session, we first
+ * try to return the session into the session pool, however if we failed to return it back, either because the pool
+ * is full or the pool is being cleaned on driver.close, then we directly close the connection attached with the
+ * session.
  *
- * Safety is achieved by tracking thread locals getting garbage collected, returning connections to the global pool
- * when this happens.
+ * The session is NOT meat to be thread safe, each thread should have an independent session and close it (return to
+ * pool) when the work with the session has been done.
  *
- * If threads are long-lived, this pool will achieve linearly scalable performance with overhead equivalent to a
- * hash-map lookup per acquire.
- *
- * If threads are short-lived, this pool is not ideal.
+ * The driver is thread safe. Each thread could try to get a session from the pool and then return it to the pool
+ * at the same time.
  */
 public class InternalConnectionPool implements ConnectionPool
 {

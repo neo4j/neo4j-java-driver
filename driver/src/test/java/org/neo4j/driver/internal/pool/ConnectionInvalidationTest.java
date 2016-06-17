@@ -22,13 +22,16 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.StreamCollector;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Consumers;
 import org.neo4j.driver.v1.Config;
+import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.exceptions.TransientException;
@@ -38,6 +41,10 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyMap;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -57,7 +64,8 @@ public class ConnectionInvalidationTest
     public void shouldInvalidateConnectionThatIsOld() throws Throwable
     {
         // Given a connection that's broken
-        Mockito.doThrow( new ClientException( "That didn't work" ) ).when( delegate ).sync();
+        Mockito.doThrow( new ClientException( "That didn't work" ) )
+                .when( delegate ).run( anyString(), anyMap(), any( StreamCollector.class ) );
         Config config = Config.defaultConfig();
         when( clock.millis() ).thenReturn( 0L, config.idleTimeBeforeConnectionTest() + 1L );
         PooledConnection conn = new PooledConnection( delegate, Consumers.<PooledConnection>noOp(), clock );
@@ -76,7 +84,8 @@ public class ConnectionInvalidationTest
     public void shouldNotInvalidateConnectionThatIsNotOld() throws Throwable
     {
         // Given a connection that's broken
-        Mockito.doThrow( new ClientException( "That didn't work" ) ).when( delegate ).sync();
+        Mockito.doThrow( new ClientException( "That didn't work" ) )
+                .when( delegate ).run( anyString(), anyMap(), any( StreamCollector.class ) );
         Config config = Config.defaultConfig();
         when( clock.millis() ).thenReturn( 0L, config.idleTimeBeforeConnectionTest() - 1L );
         PooledConnection conn = new PooledConnection( delegate, Consumers.<PooledConnection>noOp(), clock );
@@ -88,6 +97,23 @@ public class ConnectionInvalidationTest
         consumer.accept( conn );
 
         verify( queue ).offer( conn );
+    }
+
+    @Test
+    public void shouldInvalidConnectionIfFailedToReset() throws Throwable
+    {
+        // Given a connection that's broken
+        Mockito.doThrow( new ClientException( "That didn't work" ) ).when( delegate ).reset( any( StreamCollector.class ) );
+        Config config = Config.defaultConfig();
+        PooledConnection conn = new PooledConnection( delegate, Consumers.<PooledConnection>noOp(), clock );
+
+        // When/Then
+        BlockingQueue<PooledConnection> queue = mock( BlockingQueue.class );
+        PooledConnectionReleaseConsumer consumer =
+                new PooledConnectionReleaseConsumer( queue, new AtomicBoolean( false ), config );
+        consumer.accept( conn );
+
+        verify( queue, never() ).add( conn );
     }
 
     @Test
@@ -115,12 +141,13 @@ public class ConnectionInvalidationTest
     @SuppressWarnings( "unchecked" )
     private void assertUnrecoverable( Neo4jException exception )
     {
-        doThrow( exception ).when( delegate ).sync();
+        doThrow( exception ).when( delegate )
+                .run( eq("assert unrecoverable"), anyMap(), any( StreamCollector.class ) );
 
         // When
         try
         {
-            conn.sync();
+            conn.run( "assert unrecoverable", new HashMap<String,Value>( ), StreamCollector.NO_OP );
             fail( "Should've rethrown exception" );
         }
         catch ( Neo4jException e )
@@ -141,12 +168,12 @@ public class ConnectionInvalidationTest
     @SuppressWarnings( "unchecked" )
     private void assertRecoverable( Neo4jException exception )
     {
-        doThrow( exception ).when( delegate ).sync();
+        doThrow( exception ).when( delegate ).run( eq("assert recoverable"), anyMap(), any( StreamCollector.class ) );
 
         // When
         try
         {
-            conn.sync();
+            conn.run( "assert recoverable", new HashMap<String,Value>( ), StreamCollector.NO_OP );
             fail( "Should've rethrown exception" );
         }
         catch ( Neo4jException e )

@@ -31,6 +31,8 @@ import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
 
 import static java.util.Collections.singletonList;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -55,10 +57,11 @@ public class InternalConnectionPoolTest
         conn.close();
 
         // When
-        pool.acquire( uri );
+        Connection acquired = pool.acquire( uri );
 
         // Then
         verify( connector, times( 1 ) ).connect( uri, config, AuthTokens.none() );
+        assertThat( acquired, equalTo(conn) );
     }
 
     private Connector connector( String scheme )
