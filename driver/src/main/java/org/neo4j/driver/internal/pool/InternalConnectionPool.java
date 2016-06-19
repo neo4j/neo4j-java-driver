@@ -47,7 +47,7 @@ import static java.lang.String.format;
  * is full or the pool is being cleaned on driver.close, then we directly close the connection attached with the
  * session.
  *
- * The session is NOT meat to be thread safe, each thread should have an independent session and close it (return to
+ * The session is NOT meant to be thread safe, each thread should have an independent session and close it (return to
  * pool) when the work with the session has been done.
  *
  * The driver is thread safe. Each thread could try to get a session from the pool and then return it to the pool

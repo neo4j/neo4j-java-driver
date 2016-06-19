@@ -125,8 +125,14 @@ public class InternalSession implements Session
                     // Best-effort
                 }
             }
-            connection.sync();
-            connection.close();
+            try
+            {
+                connection.sync();
+            }
+            finally
+            {
+                connection.close();
+            }
         }
     }
 
