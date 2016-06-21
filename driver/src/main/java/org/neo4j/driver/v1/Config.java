@@ -67,7 +67,7 @@ public class Config
         this.connectionPoolSize = builder.connectionPoolSize;
         this.idleTimeBeforeConnectionTest = builder.idleTimeBeforeConnectionTest;
 
-        this.encryptionLevel = builder.encruptionLevel;
+        this.encryptionLevel = builder.encryptionLevel;
         this.trustStrategy = builder.trustStrategy;
     }
 
@@ -140,7 +140,7 @@ public class Config
         private Logging logging = new JULogging( Level.INFO );
         private int connectionPoolSize = 50;
         private long idleTimeBeforeConnectionTest = 200;
-        private EncryptionLevel encruptionLevel = EncryptionLevel.REQUIRED;
+        private EncryptionLevel encryptionLevel = EncryptionLevel.REQUIRED_NON_LOCAL;
         private TrustStrategy trustStrategy = trustOnFirstUse(
                 new File( getProperty( "user.home" ), ".neo4j" + File.separator + "known_hosts" ) );
 
@@ -208,7 +208,7 @@ public class Config
          */
         public ConfigBuilder withEncryptionLevel( EncryptionLevel level )
         {
-            this.encruptionLevel = level;
+            this.encryptionLevel = level;
             return this;
         }
 
@@ -249,6 +249,10 @@ public class Config
     {
         /** With this level, the driver will only connect to the server if it can do it without encryption. */
         NONE,
+
+        /** With this level, the driver will only connect to the server without encryption if local but with
+         * encryption otherwise. */
+        REQUIRED_NON_LOCAL,
 
         /** With this level, the driver will only connect to the server it if can do it with encryption. */
         REQUIRED
