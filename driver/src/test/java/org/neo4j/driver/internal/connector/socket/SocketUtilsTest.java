@@ -68,6 +68,7 @@ public class SocketUtilsTest
 
         //Expect
         exception.expect( ClientException.class );
+        exception.expectMessage( "Expected 4 bytes, received none" );
 
         // When
         SocketUtils.blockingRead(channel, buffer );
@@ -95,11 +96,13 @@ public class SocketUtilsTest
     {
         // Given
         ByteBuffer buffer = ByteBuffer.allocate( 4 );
+        buffer.position( 1 );
         ByteChannel channel = mock( ByteChannel.class );
         when(channel.write( buffer )).thenReturn( -1 );
 
         //Expect
         exception.expect( ClientException.class );
+        exception.expectMessage( "Expected 4 bytes, wrote 00" );
 
         // When
         SocketUtils.blockingWrite(channel, buffer );

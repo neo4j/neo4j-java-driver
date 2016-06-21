@@ -40,6 +40,12 @@
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>org.hamcrest</groupId>
+          <artifactId>hamcrest-core</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.mockito</groupId>
@@ -127,8 +133,7 @@
           <docencoding>UTF-8</docencoding>
           <encoding>UTF-8</encoding>
           <sourceFileIncludes>
-            <sourceFileInclude>org/neo4j/driver/v1/*.java</sourceFileInclude>
-            <sourceFileInclude>org/neo4j/driver/v1/exceptions/*.java</sourceFileInclude>
+            <sourceFileInclude>org/neo4j/driver/v1/**/*.java</sourceFileInclude>
           </sourceFileIncludes>
         </configuration>
       </plugin>

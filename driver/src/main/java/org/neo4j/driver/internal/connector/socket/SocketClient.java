@@ -34,6 +34,7 @@ import org.neo4j.driver.internal.spi.Logger;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
+import static java.lang.String.format;
 import static java.nio.ByteOrder.BIG_ENDIAN;
 import static org.neo4j.driver.internal.connector.socket.SocketUtils.blockingRead;
 import static org.neo4j.driver.internal.connector.socket.SocketUtils.blockingWrite;
@@ -78,7 +79,7 @@ public class SocketClient
         }
         catch ( ConnectException e )
         {
-            throw new ClientException( String.format(
+            throw new ClientException( format(
                     "Unable to connect to '%s' on port %s, ensure the database is running and that there is a " +
                     "working network connection to it.", host, port ) );
         }
@@ -180,13 +181,28 @@ public class SocketClient
         buf.flip();
 
         //Do a blocking write
-       blockingWrite(channel, buf);
+        blockingWrite(channel, buf);
 
         // Read (blocking) back the servers choice
         buf.clear();
         buf.limit( 4 );
-        blockingRead(channel, buf);
-
+        try
+        {
+            blockingRead( channel, buf );
+        }
+        catch ( ClientException e )
+        {
+            if ( buf.position() == 0 ) // failed to read any bytes
+            {
+                throw new ClientException( format(
+                        "Failed to establish connection with server. Make sure that you have a server with bolt " +
+                        "enabled on %s:%d", host, port ) );
+            }
+            else
+            {
+                throw e;
+            }
+        }
         // Choose protocol, or fail
         buf.flip();
         final int proposal = buf.getInt();
