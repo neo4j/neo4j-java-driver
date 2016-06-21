@@ -218,7 +218,7 @@ public class Config
          * See {@link TrustStrategy#trustSignedBy(File)} for using certificate signatures instead to verify
          * trust.
          * <p>
-         * This is an important setting to understand, because unless we know that the remote server we have an encrypted connection to
+         * This is an important setting to understand, because unless we know that the remote server we have an isEncrypted connection to
          * is really Neo4j, there is no point to encrypt at all, since anyone could pretend to be the remote Neo4j instance.
          * <p>
          * For this reason, there is no option to disable trust verification, if you find this cumbersome you should disable encryption using
@@ -293,7 +293,7 @@ public class Config
         }
 
         /**
-         * Only encrypted connections to Neo4j instances with certificates signed by a trusted certificate will be accepted.
+         * Only isEncrypted connections to Neo4j instances with certificates signed by a trusted certificate will be accepted.
          * The file specified should contain one or more trusted X.509 certificates.
          * <p>
          * The certificate(s) in the file must be encoded using PEM encoding, meaning the certificates in the file should be encoded using Base64,

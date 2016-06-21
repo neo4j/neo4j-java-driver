@@ -47,7 +47,7 @@ public class InternalDriver implements Driver
     }
 
     @Override
-    public boolean encrypted()
+    public boolean isEncrypted()
     {
 
         Config.EncryptionLevel encryptionLevel = config.encryptionLevel();

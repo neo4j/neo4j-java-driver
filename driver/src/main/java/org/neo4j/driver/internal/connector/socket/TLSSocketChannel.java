@@ -145,7 +145,7 @@ public class TLSSocketChannel implements ByteChannel
     }
 
     /**
-     * This method is mainly responsible for reading encrypted bytes from underlying socket channel and deciphering
+     * This method is mainly responsible for reading isEncrypted bytes from underlying socket channel and deciphering
      * them.
      *
      * These deciphered data would be saved into {@code buffer} if it is specified (not null) and if its size is
@@ -358,7 +358,7 @@ public class TLSSocketChannel implements ByteChannel
         /**
          * First try to read from plainBuffer.
          * If not enough bytes left in plainBuffer,
-         * read encrypted data from underlying channel and put the deciphered data in the plain buffer.
+         * read isEncrypted data from underlying channel and put the deciphered data in the plain buffer.
          * Return how many deciphered data that have been put dst.
          */
         int toRead = dst.remaining();

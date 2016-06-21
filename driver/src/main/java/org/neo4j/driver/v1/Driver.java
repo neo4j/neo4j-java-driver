@@ -75,7 +75,7 @@ public interface Driver extends AutoCloseable
     /**
      * Return a flag to indicate whether or not encryption is used for this driver.
      */
-    boolean encrypted();
+    boolean isEncrypted();
 
     /**
      * Establish a session
