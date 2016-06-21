@@ -29,7 +29,7 @@ import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 
-import static org.neo4j.driver.internal.util.AddressUtil.isLocalhost;
+import static org.neo4j.driver.internal.util.AddressUtil.isLocalHost;
 import static org.neo4j.driver.v1.Config.EncryptionLevel.REQUIRED;
 import static org.neo4j.driver.v1.Config.EncryptionLevel.REQUIRED_NON_LOCAL;
 
@@ -52,7 +52,7 @@ public class InternalDriver implements Driver
 
         Config.EncryptionLevel encryptionLevel = config.encryptionLevel();
         return encryptionLevel.equals( REQUIRED ) ||
-                ( encryptionLevel.equals( REQUIRED_NON_LOCAL ) && !isLocalhost( url.getHost() ) );
+                ( encryptionLevel.equals( REQUIRED_NON_LOCAL ) && !isLocalHost( url.getHost() ) );
     }
 
     /**

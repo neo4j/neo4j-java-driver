@@ -16,32 +16,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.neo4j.driver.internal.util;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
+import org.junit.Test;
 
-public class AddressUtil
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.*;
+import static org.neo4j.driver.internal.util.AddressUtil.isLocalHost;
+
+public class AddressUtilTest
 {
-    /**
-     * Return true if the host provided matches "localhost" or "127.x.x.x".
-     *
-     * @param host the host name to test
-     * @return true if localhost, false otherwise
-     */
-    public static boolean isLocalHost( String host )
+    @Test
+    public void shouldWorkForVariantsOfLocalHost() throws Exception
     {
-        try
-        {
-            // confirmed to work as desired with both "localhost" and "127.x.x.x"
-            return InetAddress.getByName( host ).isLoopbackAddress();
-        }
-        catch ( UnknownHostException e )
-        {
-            // if it's unknown, it's not local so we can safely return false
-            return false;
-        }
+        assertThat( isLocalHost( "localhost" ), equalTo( true ) );
+        assertThat( isLocalHost( "LocalHost" ), equalTo( true ) );
+        assertThat( isLocalHost( "LOCALHOST" ), equalTo( true ) );
+        assertThat( isLocalHost( "127.0.0.1" ), equalTo( true ) );
+        assertThat( isLocalHost( "127.5.6.7" ), equalTo( true ) );
+        assertThat( isLocalHost( "x" ), equalTo( false ) );
     }
 
 }

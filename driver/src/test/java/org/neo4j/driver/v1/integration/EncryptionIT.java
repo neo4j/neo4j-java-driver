@@ -25,7 +25,7 @@ import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.driver.internal.util.AddressUtil.isLocalhost;
+import static org.neo4j.driver.internal.util.AddressUtil.isLocalHost;
 import static org.neo4j.driver.v1.Config.EncryptionLevel.NONE;
 import static org.neo4j.driver.v1.Config.EncryptionLevel.REQUIRED;
 import static org.neo4j.driver.v1.Config.EncryptionLevel.REQUIRED_NON_LOCAL;
@@ -65,7 +65,7 @@ public class EncryptionIT
         Driver driver = GraphDatabase.driver( neo4j.address(), Config.build().withEncryptionLevel( REQUIRED_NON_LOCAL ).toConfig() );
 
         // Then
-        assertThat( driver.isEncrypted(), equalTo( !isLocalhost( neo4j.host() ) ) );
+        assertThat( driver.isEncrypted(), equalTo( !isLocalHost( neo4j.host() ) ) );
 
         // When
         Session session = driver.session();

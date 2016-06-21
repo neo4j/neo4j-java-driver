@@ -37,7 +37,7 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 import static java.nio.ByteOrder.BIG_ENDIAN;
 import static org.neo4j.driver.internal.connector.socket.SocketUtils.blockingRead;
 import static org.neo4j.driver.internal.connector.socket.SocketUtils.blockingWrite;
-import static org.neo4j.driver.internal.util.AddressUtil.isLocalhost;
+import static org.neo4j.driver.internal.util.AddressUtil.isLocalHost;
 
 public class SocketClient
 {
@@ -238,7 +238,7 @@ public class SocketClient
             }
             case REQUIRED_NON_LOCAL:
             {
-                if ( isLocalhost( host ) )
+                if ( isLocalHost( host ) )
                 {
                     channel = soChannel;
                 }
