@@ -21,14 +21,13 @@ available.
 
 Connect to a Neo4j 3.0.0+ database:
 
-    Driver driver = ( "bolt://localhost", AuthTokens.basic( "neo4j", "neo4j" ) );
+    Driver driver = GraphDatabase.driver( "bolt://localhost", AuthTokens.basic( "neo4j", "neo4j" ) );
     
-    Session session = driver.session();
+    try ( Session session = driver.session() )
+    {
+        StatementResult rs = session.run( "CREATE (n) RETURN n" );
+    }
     
-    StatementResult rs = session.run( "CREATE (n) RETURN n" );
-    
-    session.close();
-
     driver.close();
 
 For more examples and details of usage, please refer to the [Driver Manual] (http://neo4j.com/docs/developer-manual/3.0/index.html#driver-manual-index).

@@ -133,17 +133,20 @@ public class Examples
 
     public static void retainResultsForLaterProcessing( Driver driver ) throws Exception
     {
-        Session session = driver.session();
         // tag::retain-result[]
-        StatementResult result = session.run( "MATCH (knight:Person:Knight) WHERE knight.castle = {castle} RETURN knight.name AS name",
-                Values.parameters( "castle", "Camelot" ) );
+        List<Record> records;
+        try ( Session session = driver.session() )
+        {
+            StatementResult result = session.run(
+                    "MATCH (knight:Person:Knight) WHERE knight.castle = {castle} RETURN knight.name AS name",
+                    Values.parameters( "castle", "Camelot" ) );
 
-        List<Record> records = result.list();
-        session.close();
+            records = result.list();
+        }
 
         for ( Record record : records )
         {
-            System.out.println( record.get("name").asString() + " is a knight of Camelot" );
+            System.out.println( record.get( "name" ).asString() + " is a knight of Camelot" );
         }
         // end::retain-result[]
     }
