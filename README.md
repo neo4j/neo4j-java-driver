@@ -22,11 +22,10 @@ Connect to a Neo4j 3.0.0+ database:
 
     Driver driver = GraphDatabase.driver( "bolt://localhost", AuthTokens.basic( "neo4j", "neo4j" ) );
     
-    Session session = driver.session();
-    
-    StatementResult rs = session.run( "CREATE (n) RETURN n" );
-    
-    session.close();
+    try ( Session session = driver.session() )
+    {
+        StatementResult rs = session.run( "CREATE (n) RETURN n" );
+    }
     
     driver.close();
 
