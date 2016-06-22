@@ -18,9 +18,7 @@
  */
 package org.neo4j.driver.internal.pool;
 
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import java.net.URI;
 import java.util.Collections;
@@ -31,7 +29,6 @@ import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
-import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static java.util.Collections.singletonList;
 import static org.mockito.Matchers.any;
@@ -44,30 +41,6 @@ import static org.mockito.Mockito.when;
 public class InternalConnectionPoolTest
 {
 
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
-
-    @Test
-    public void shouldThrowExceptionWhenConnectionPoolIsFull() throws Throwable
-    {
-        // Given
-        URI uri = URI.create( "bolt://asd" );
-        Connector connector = connector( "bolt" );
-        Config config = Config.build().withMaxSessions( 1 ).toConfig();
-        InternalConnectionPool pool = new InternalConnectionPool( singletonList( connector ),
-                Clock.SYSTEM, config, AuthTokens.none(), 100 );
-
-        // When & Then
-        pool.acquire( uri );
-
-        exception.expect( ClientException.class );
-        exception.expectMessage(
-                "Failed to acquire a session with Neo4j as all the connections in the connection pool are already" +
-                " occupied by other sessions.");
-
-        pool.acquire( uri );
-    }
-
     @Test
     public void shouldAcquireAndRelease() throws Throwable
     {
@@ -76,7 +49,7 @@ public class InternalConnectionPoolTest
         Connector connector = connector( "bolt" );
         Config config = Config.defaultConfig();
         InternalConnectionPool pool = new InternalConnectionPool( singletonList( connector ),
-                Clock.SYSTEM, config, AuthTokens.none(), 100 );
+                Clock.SYSTEM, config, AuthTokens.none());
 
         Connection conn = pool.acquire( uri );
         conn.close();

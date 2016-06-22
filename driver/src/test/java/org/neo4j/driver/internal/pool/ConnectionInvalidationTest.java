@@ -22,8 +22,12 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 import java.io.IOException;
+import java.util.concurrent.BlockingQueue;
 
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.util.Clock;
+import org.neo4j.driver.internal.util.Consumers;
+import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.exceptions.TransientException;
@@ -35,22 +39,54 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class ConnectionInvalidationTest
 {
     private final Connection delegate = mock( Connection.class );
-    private final PooledConnection conn = new PooledConnection( delegate, null );
+    Clock clock = mock( Clock.class );
 
+    private final PooledConnection conn =
+            new PooledConnection( delegate, Consumers.<PooledConnection>noOp(), Clock.SYSTEM );
+
+    @SuppressWarnings( "unchecked" )
     @Test
     public void shouldInvalidateConnectionThatIsOld() throws Throwable
     {
         // Given a connection that's broken
         Mockito.doThrow( new ClientException( "That didn't work" ) ).when( delegate ).sync();
+        Config config = Config.defaultConfig();
+        when( clock.millis() ).thenReturn( 0L, config.idleTimeBeforeConnectionTest() + 1L );
+        PooledConnection conn = new PooledConnection( delegate, Consumers.<PooledConnection>noOp(), clock );
 
         // When/Then
-        assertTrue( new PooledConnectionValidator( 10 ).isValid( conn, 1 ) );
-        assertFalse(new PooledConnectionValidator( 10 ).isValid( conn, 100 ));
-        assertFalse(new PooledConnectionValidator( 10 ).isValid( conn, 10 ));
+        BlockingQueue<PooledConnection> queue = mock( BlockingQueue.class );
+        PooledConnectionReleaseConsumer consumer =
+                new PooledConnectionReleaseConsumer( queue, config );
+        consumer.accept( conn );
+
+        verify( queue, never() ).add( conn );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    @Test
+    public void shouldNotInvalidateConnectionThatIsNotOld() throws Throwable
+    {
+        // Given a connection that's broken
+        Mockito.doThrow( new ClientException( "That didn't work" ) ).when( delegate ).sync();
+        Config config = Config.defaultConfig();
+        when( clock.millis() ).thenReturn( 0L, config.idleTimeBeforeConnectionTest() - 1L );
+        PooledConnection conn = new PooledConnection( delegate, Consumers.<PooledConnection>noOp(), clock );
+
+        // When/Then
+        BlockingQueue<PooledConnection> queue = mock( BlockingQueue.class );
+        PooledConnectionReleaseConsumer consumer =
+                new PooledConnectionReleaseConsumer( queue, config );
+        consumer.accept( conn );
+
+        verify( queue ).offer( conn );
     }
 
     @Test
@@ -75,6 +111,7 @@ public class ConnectionInvalidationTest
         assertUnrecoverable( new ClientException( "Neo.ClientError.Request.Invalid", "Hello, world!" ) );
     }
 
+    @SuppressWarnings( "unchecked" )
     private void assertUnrecoverable( Neo4jException exception )
     {
         doThrow( exception ).when( delegate ).sync();
@@ -83,18 +120,24 @@ public class ConnectionInvalidationTest
         try
         {
             conn.sync();
-            fail("Should've rethrown exception");
+            fail( "Should've rethrown exception" );
         }
-        catch( Neo4jException e )
+        catch ( Neo4jException e )
         {
-            assertThat(e, equalTo( exception ));
+            assertThat( e, equalTo( exception ) );
         }
 
         // Then
         assertTrue( conn.hasUnrecoverableErrors() );
-        assertFalse( new PooledConnectionValidator( 100 ).isValid( conn, 1 ) );
+        BlockingQueue<PooledConnection> queue = mock( BlockingQueue.class );
+        PooledConnectionReleaseConsumer consumer =
+                new PooledConnectionReleaseConsumer( queue, Config.defaultConfig() );
+        consumer.accept( conn );
+
+        verify( queue, never() ).offer( conn );
     }
 
+    @SuppressWarnings( "unchecked" )
     private void assertRecoverable( Neo4jException exception )
     {
         doThrow( exception ).when( delegate ).sync();
@@ -103,15 +146,20 @@ public class ConnectionInvalidationTest
         try
         {
             conn.sync();
-            fail("Should've rethrown exception");
+            fail( "Should've rethrown exception" );
         }
-        catch( Neo4jException e )
+        catch ( Neo4jException e )
         {
-            assertThat(e, equalTo( exception ));
+            assertThat( e, equalTo( exception ) );
         }
 
         // Then
         assertFalse( conn.hasUnrecoverableErrors() );
-        assertTrue( new PooledConnectionValidator( 100 ).isValid( conn, 1 ) );
+        BlockingQueue<PooledConnection> queue = mock( BlockingQueue.class );
+        PooledConnectionReleaseConsumer consumer =
+                new PooledConnectionReleaseConsumer( queue, Config.defaultConfig() );
+        consumer.accept( conn );
+
+        verify( queue ).offer( conn );
     }
 }

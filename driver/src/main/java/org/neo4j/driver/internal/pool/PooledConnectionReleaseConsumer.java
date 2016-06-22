@@ -20,36 +20,42 @@ package org.neo4j.driver.internal.pool;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.BlockingQueue;
 
 import org.neo4j.driver.internal.spi.StreamCollector;
+import org.neo4j.driver.internal.util.Consumer;
+import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Value;
 
 /**
- * Validates connections - determining if they are ok to keep in the pool, or if they should be disposed of.
+ * The responsibility of the PooledConnectionReleaseConsumer is to release valid connections
+ * back to the connections queue.
  */
-public class PooledConnectionValidator implements ValidationStrategy<PooledConnection>
+class PooledConnectionReleaseConsumer implements Consumer<PooledConnection>
 {
+    private final BlockingQueue<PooledConnection> connections;
+    private final long minIdleBeforeConnectionTest;
     private static final Map<String,Value> NO_PARAMETERS = new HashMap<>();
 
-    /**
-     * Connections that have been idle longer than this threshold will have a ping test performed on them.
-     */
-    private final long minIdleBeforeConnectionTest;
-
-    public PooledConnectionValidator( long minIdleBeforeConnectionTest )
+    PooledConnectionReleaseConsumer( BlockingQueue<PooledConnection> connections, Config config )
     {
-        this.minIdleBeforeConnectionTest = minIdleBeforeConnectionTest;
+        this.connections = connections;
+        this.minIdleBeforeConnectionTest = config.idleTimeBeforeConnectionTest();
     }
 
     @Override
-    public boolean isValid( PooledConnection conn, long idleTime )
+    public void accept( PooledConnection pooledConnection )
     {
-        if ( conn.hasUnrecoverableErrors() )
+        if ( validConnection( pooledConnection ) )
         {
-            return false;
+            connections.offer( pooledConnection );
         }
+    }
 
-        return idleTime <= minIdleBeforeConnectionTest || ping( conn );
+    private boolean validConnection( PooledConnection pooledConnection )
+    {
+        return !pooledConnection.hasUnrecoverableErrors() &&
+               (pooledConnection.idleTime() <= minIdleBeforeConnectionTest || ping( pooledConnection ));
     }
 
     private boolean ping( PooledConnection conn )
@@ -60,7 +66,8 @@ public class PooledConnectionValidator implements ValidationStrategy<PooledConne
             conn.pullAll( StreamCollector.NO_OP );
             conn.sync();
             return true;
-        } catch( Throwable e )
+        }
+        catch ( Throwable e )
         {
             return false;
         }

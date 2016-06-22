@@ -16,9 +16,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.pool;
+package org.neo4j.driver.internal.util;
 
-public interface ValidationStrategy<T>
+public final class Consumers
 {
-    boolean isValid( T value, long idleTime );
+    private Consumers()
+    {
+        throw new UnsupportedOperationException( "Do not instantiate" );
+    }
+
+    public static <T> Consumer<T> noOp()
+    {
+        return new Consumer<T>()
+        {
+            @Override
+            public void accept( T t )
+            {
+                //Do nothing
+            }
+        };
+    }
 }

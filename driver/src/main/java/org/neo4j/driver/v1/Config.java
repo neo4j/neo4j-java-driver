@@ -51,6 +51,8 @@ public class Config
     /** The size of connection pool for each database url */
     private final int connectionPoolSize;
 
+    private final int maxIdleConnectionPoolSize;
+
     /** Connections that have been idle longer than this threshold will have a ping test performed on them. */
     private final long idleTimeBeforeConnectionTest;
 
@@ -65,6 +67,7 @@ public class Config
         this.logging = builder.logging;
 
         this.connectionPoolSize = builder.connectionPoolSize;
+        this.maxIdleConnectionPoolSize = builder.maxIdleConnectionPoolSize;
         this.idleTimeBeforeConnectionTest = builder.idleTimeBeforeConnectionTest;
 
         this.encryptionLevel = builder.encruptionLevel;
@@ -84,9 +87,19 @@ public class Config
      * Max number of connections per URL for this driver.
      * @return the max number of connections
      */
+    @Deprecated
     public int connectionPoolSize()
     {
-        return connectionPoolSize;
+        return maxIdleConnectionPoolSize;
+    }
+
+    /**
+     * Max number of idle connections per URL for this driver.
+     * @return the max number of connections
+     */
+    public int maxIdleConnectionPoolSize()
+    {
+        return maxIdleConnectionPoolSize;
     }
 
     /**
@@ -139,6 +152,7 @@ public class Config
     {
         private Logging logging = new JULogging( Level.INFO );
         private int connectionPoolSize = 50;
+        private int maxIdleConnectionPoolSize = 10;
         private long idleTimeBeforeConnectionTest = 200;
         private EncryptionLevel encruptionLevel = EncryptionLevel.REQUIRED;
         private TrustStrategy trustStrategy = trustOnFirstUse(
@@ -169,9 +183,24 @@ public class Config
          * @param size the max number of sessions to keep open
          * @return this builder
          */
+        @Deprecated
         public ConfigBuilder withMaxSessions( int size )
         {
             this.connectionPoolSize = size;
+            return this;
+        }
+
+        /**
+         * The max number of idle sessions to keep open at once. Configure this
+         * higher if you want more concurrent sessions, or lower if you want
+         * to lower the pressure on the database instance.
+         *
+         * @param size the max number of idle sessions to keep open
+         * @return this builder
+         */
+        public ConfigBuilder withMaxIdleSessions( int size )
+        {
+            this.maxIdleConnectionPoolSize = size;
             return this;
         }
 
