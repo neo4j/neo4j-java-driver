@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal;
 
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.Logger;
@@ -52,7 +53,7 @@ public class InternalSession implements Session
     };
 
     private InternalTransaction currentTransaction;
-    private boolean isOpen = true;
+    private AtomicBoolean isOpen = new AtomicBoolean( true );
 
     public InternalSession( Connection connection, Logger logger )
     {
@@ -100,19 +101,19 @@ public class InternalSession implements Session
     @Override
     public boolean isOpen()
     {
-        return isOpen;
+        return isOpen.get();
     }
 
     @Override
     public void close()
     {
-        if( !isOpen )
+        // Use atomic operation to protect from closing the connection twice (putting back to the pool twice).
+        if( !isOpen.compareAndSet( true, false ) )
         {
             throw new ClientException( "This session has already been closed." );
         }
         else
         {
-            isOpen = false;
             if ( currentTransaction != null )
             {
                 try
@@ -124,8 +125,14 @@ public class InternalSession implements Session
                     // Best-effort
                 }
             }
-            connection.sync();
-            connection.close();
+            try
+            {
+                connection.sync();
+            }
+            finally
+            {
+                connection.close();
+            }
         }
     }
 
@@ -171,7 +178,7 @@ public class InternalSession implements Session
     @Override
     protected void finalize() throws Throwable
     {
-        if( isOpen )
+        if( isOpen.compareAndSet( true, false ) )
         {
             logger.error( "Neo4j Session object leaked, please ensure that your application calls the `close` " +
                           "method on Sessions before disposing of the objects.", null );

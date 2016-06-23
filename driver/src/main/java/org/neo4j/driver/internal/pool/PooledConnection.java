@@ -22,24 +22,52 @@ import java.util.Map;
 
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.StreamCollector;
+import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Consumer;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
-
+/**
+ * The state of a pooledConnection from a pool point of view could be one of the following:
+ * Created,
+ * Available,
+ * Claimed,
+ * Closed,
+ * Disposed.
+ *
+ * The state machine looks like:
+ *
+ *                      session.finalize
+ *                       session.close     failed return to pool
+ * Created -------> Claimed  ----------> Closed ---------> Disposed
+ *                    ^                    |                    ^
+ *      pool.acquire  |                    |returned to pool    |
+ *                    |                    |                    |
+ *                    ---- Available <-----                     |
+ *                              |           pool.close          |
+ *                              ---------------------------------
+ */
 public class PooledConnection implements Connection
 {
     /** The real connection who will do all the real jobs */
     private final Connection delegate;
-    /** A reference to the {@link ThreadCachingPool pool} so that we could return this resource back */
     private final Consumer<PooledConnection> release;
 
     private boolean unrecoverableErrorsOccurred = false;
     private Runnable onError = null;
+    private final Clock clock;
+    private long lastUsed;
 
-    public PooledConnection( Connection delegate, Consumer<PooledConnection> release )
+    public PooledConnection( Connection delegate, Consumer<PooledConnection> release, Clock clock )
     {
         this.delegate = delegate;
         this.release = release;
+        this.clock = clock;
+        this.lastUsed = clock.millis();
+    }
+
+    public void updateUsageTimestamp()
+    {
+        lastUsed = clock.millis();
     }
 
     @Override
@@ -148,23 +176,15 @@ public class PooledConnection implements Connection
     }
 
     @Override
+    /**
+     * Make sure only close the connection once on each session to avoid releasing the connection twice, a.k.a.
+     * adding back the connection twice into the pool.
+     */
     public void close()
     {
-        // In case this session has an open result or transaction or something,
-        // make sure it's reset to a nice state before we reuse it.
-        try
-        {
-            reset( StreamCollector.NO_OP );
-            sync();
-        }
-        catch (Exception ex)
-        {
-            dispose();
-        }
-        finally
-        {
-            release.accept( this );
-        }
+        release.accept( this );
+        // put the full logic of deciding whether to dispose the connection or to put it back to
+        // the pool into the release object
     }
 
     @Override
@@ -220,5 +240,11 @@ public class PooledConnection implements Connection
         return e instanceof Neo4jException
                && (((Neo4jException) e).neo4jErrorCode().contains( "ClientError" )
                    || ((Neo4jException) e).neo4jErrorCode().contains( "TransientError" ));
+    }
+
+    public long idleTime()
+    {
+        long idleTime = clock.millis() - lastUsed;
+        return idleTime;
     }
 }

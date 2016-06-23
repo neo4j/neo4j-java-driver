@@ -24,10 +24,14 @@ import org.junit.rules.ExpectedException;
 
 import org.neo4j.driver.internal.logging.DevNullLogger;
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.Logger;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
+import static junit.framework.Assert.fail;
 import static junit.framework.TestCase.assertNotNull;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -134,5 +138,31 @@ public class InternalSessionTest
 
         // When
         sess.beginTransaction();
+    }
+
+    @Test
+    public void shouldGetExceptionIfTryingToCloseSessionMoreThanOnce() throws Throwable
+    {
+        // Given
+        InternalSession sess = new InternalSession( mock(Connection.class), mock(Logger.class) );
+        try
+        {
+            sess.close();
+        }
+        catch( Exception e )
+        {
+            fail("Should not get any problem to close first time");
+        }
+
+        // When
+        try
+        {
+            sess.close();
+            fail( "Should have received an error to close second time" );
+        }
+        catch( Exception e )
+        {
+           assertThat( e.getMessage(), equalTo("This session has already been closed." ));
+        }
     }
 }
