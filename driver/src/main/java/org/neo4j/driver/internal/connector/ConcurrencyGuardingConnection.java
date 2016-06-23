@@ -157,15 +157,16 @@ public class ConcurrencyGuardingConnection implements Connection
 
     @Override
     public void close()
-    {try
     {
-        markAsInUse();
-        delegate.close();
-    }
-    finally
-    {
-        markAsAvailable();
-    }
+        try
+        {
+            markAsInUse();
+            delegate.close();
+        }
+        finally
+        {
+            markAsAvailable();
+        }
     }
 
     @Override

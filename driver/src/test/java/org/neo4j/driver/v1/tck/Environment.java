@@ -49,7 +49,7 @@ public class Environment
     public static Map<String,Object> mapOfObjects;
     public static Map<String,Types.Type> mappedTypes;
 
-    public static Driver driver = neo4j.driver();
+    public static Driver driver;
 
 
     @Before
@@ -64,6 +64,7 @@ public class Environment
         stringRunner = null;
         runners = new ArrayList<>();
         mappedTypes = new HashMap<>(  );
+        driver = neo4j.driver();
     }
 
     @After

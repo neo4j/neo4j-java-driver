@@ -74,6 +74,11 @@ public class TestNeo4j implements TestRule
         runner.restartNeo4j();
     }
 
+    public void forceRestart() throws Exception
+    {
+        runner.forceToRestart();
+    }
+
     public void restart(Neo4jSettings neo4jSettings) throws Exception
     {
         runner.restartNeo4j( neo4jSettings );
