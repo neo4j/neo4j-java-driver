@@ -30,7 +30,7 @@ import org.neo4j.driver.internal.messaging.PullAllMessage;
 import org.neo4j.driver.internal.messaging.ResetMessage;
 import org.neo4j.driver.internal.messaging.RunMessage;
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.spi.Logger;
+import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.internal.spi.StreamCollector;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Value;

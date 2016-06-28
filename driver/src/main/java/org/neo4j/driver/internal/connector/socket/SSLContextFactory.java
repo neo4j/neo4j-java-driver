@@ -28,7 +28,7 @@ import javax.net.ssl.TrustManagerFactory;
 
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.internal.spi.Logger;
+import org.neo4j.driver.v1.Logger;
 
 import static org.neo4j.driver.internal.util.CertificateTool.loadX509Cert;
 

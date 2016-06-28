@@ -27,8 +27,8 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
-import org.neo4j.driver.internal.spi.Logger;
-import org.neo4j.driver.internal.spi.Logging;
+import org.neo4j.driver.v1.Logger;
+import org.neo4j.driver.v1.Logging;
 
 /**
  * Print all the logging messages into {@link System#err}.

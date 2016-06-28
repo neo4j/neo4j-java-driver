@@ -35,7 +35,7 @@ import java.security.cert.X509Certificate;
 import javax.net.ssl.SSLHandshakeException;
 
 import org.neo4j.driver.internal.connector.socket.TLSSocketChannel;
-import org.neo4j.driver.internal.spi.Logger;
+import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.internal.util.CertificateTool;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
