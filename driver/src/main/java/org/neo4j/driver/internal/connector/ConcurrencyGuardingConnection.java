@@ -114,6 +114,20 @@ public class ConcurrencyGuardingConnection implements Connection
     }
 
     @Override
+    public void ackFailure( StreamCollector collector )
+    {
+        try
+        {
+            markAsInUse();
+            delegate.ackFailure( collector );
+        }
+        finally
+        {
+            markAsAvailable();
+        }
+    }
+
+    @Override
     public void sync()
     {
         try
