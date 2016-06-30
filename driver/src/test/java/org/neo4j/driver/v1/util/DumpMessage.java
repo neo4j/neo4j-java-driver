@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.driver.internal.connector.socket.ChunkedInput;
-import org.neo4j.driver.internal.messaging.ResetMessage;
+import org.neo4j.driver.internal.messaging.AckFailureMessage;
 import org.neo4j.driver.internal.messaging.DiscardAllMessage;
 import org.neo4j.driver.internal.messaging.FailureMessage;
 import org.neo4j.driver.internal.messaging.IgnoredMessage;
@@ -39,6 +39,7 @@ import org.neo4j.driver.internal.messaging.MessageHandler;
 import org.neo4j.driver.internal.messaging.PackStreamMessageFormatV1;
 import org.neo4j.driver.internal.messaging.PullAllMessage;
 import org.neo4j.driver.internal.messaging.RecordMessage;
+import org.neo4j.driver.internal.messaging.ResetMessage;
 import org.neo4j.driver.internal.messaging.RunMessage;
 import org.neo4j.driver.internal.messaging.SuccessMessage;
 import org.neo4j.driver.internal.packstream.PackInput;
@@ -335,6 +336,12 @@ public class DumpMessage
         public void handleResetMessage()
         {
             outcome.add( new ResetMessage() );
+        }
+
+        @Override
+        public void handleAckFailureMessage()
+        {
+            outcome.add( new AckFailureMessage() );
         }
 
         @Override
