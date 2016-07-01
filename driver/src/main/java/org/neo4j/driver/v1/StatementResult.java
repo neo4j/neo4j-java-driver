@@ -122,8 +122,7 @@ public interface StatementResult extends Iterator<Record>
      *
      * Calling this method exhausts the result.
      *
-     * @param mapFunction a function to map from Value to T. See {@link Values} for some predefined functions, such
-     * as {@link Values#ofBoolean()}, {@link Values#ofList(Function)}.
+     * @param mapFunction a function to map from Record to T. See {@link Records} for some predefined functions.
      * @param <T> the type of result list elements
      * @return list of all mapped remaining immutable records
      */
