@@ -74,15 +74,12 @@ public class CredentialsIT
         String password = "secret";
         enableAuth( password );
 
-        Driver driver = GraphDatabase.driver( neo4j.address(), basic("thisisnotthepassword", password ) );
-        Session session = driver.session();
-
         // Expect
         exception.expect( ClientException.class );
         exception.expectMessage( "The client is unauthorized due to authentication failure." );
 
         // When
-        session.run( "RETURN 1" ).single().get(0);
+        GraphDatabase.driver( neo4j.address(), basic("thisisnotthepassword", password ) ).session();
     }
 
     private void enableAuth( String password ) throws Exception
