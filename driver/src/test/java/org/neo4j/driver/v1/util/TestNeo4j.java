@@ -25,6 +25,7 @@ import org.junit.runners.model.Statement;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.URI;
 import java.net.URL;
 
 import org.neo4j.driver.v1.Driver;
@@ -98,6 +99,11 @@ public class TestNeo4j implements TestRule
     public String address()
     {
         return Neo4jRunner.DEFAULT_URL;
+    }
+
+    public String host()
+    {
+        return URI.create( Neo4jRunner.DEFAULT_URL ).getHost();
     }
 
     static void clearDatabaseContents( Session session, String reason )

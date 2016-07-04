@@ -45,7 +45,6 @@ public class Neo4jRunner
 
     public static final String NEORUN_START_ARGS = System.getProperty( "neorun.start.args" );
     public static final String DEFAULT_URL = "bolt://localhost:7687";
-    private static final Config TEST_CONFIG = Config.build().withEncryptionLevel( Config.EncryptionLevel.NONE ).toConfig();
     private Driver driver;
     private Neo4jSettings currentSettings = Neo4jSettings.DEFAULT_SETTINGS;
 
@@ -106,7 +105,7 @@ public class Neo4jRunner
         {
             throw new IOException( "Failed to start neo4j server." );
         }
-        driver = GraphDatabase.driver( DEFAULT_URL, TEST_CONFIG );
+        driver = GraphDatabase.driver( DEFAULT_URL /* default encryption REQUIRED_NON_LOCAL */ );
     }
 
     public synchronized void stopNeo4j() throws IOException

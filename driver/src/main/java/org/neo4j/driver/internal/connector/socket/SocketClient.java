@@ -38,6 +38,7 @@ import static java.lang.String.format;
 import static java.nio.ByteOrder.BIG_ENDIAN;
 import static org.neo4j.driver.internal.connector.socket.SocketUtils.blockingRead;
 import static org.neo4j.driver.internal.connector.socket.SocketUtils.blockingWrite;
+import static org.neo4j.driver.internal.util.AddressUtil.isLocalHost;
 
 public class SocketClient
 {
@@ -249,6 +250,18 @@ public class SocketClient
             case REQUIRED:
             {
                 channel = new TLSSocketChannel( host, port, soChannel, logger, config.trustStrategy() );
+                break;
+            }
+            case REQUIRED_NON_LOCAL:
+            {
+                if ( isLocalHost( host ) )
+                {
+                    channel = soChannel;
+                }
+                else
+                {
+                    channel = new TLSSocketChannel( host, port, soChannel, logger, config.trustStrategy() );
+                }
                 break;
             }
             case NONE:

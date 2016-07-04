@@ -20,6 +20,7 @@ package org.neo4j.driver.v1;
 
 import java.net.URI;
 
+import org.neo4j.driver.v1.Config.EncryptionLevel;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 
 /**
@@ -71,6 +72,11 @@ import org.neo4j.driver.v1.exceptions.Neo4jException;
  */
 public interface Driver extends AutoCloseable
 {
+    /**
+     * Return a flag to indicate whether or not encryption is used for this driver.
+     */
+    boolean isEncrypted();
+
     /**
      * Establish a session
      * @return a session that could be used to run {@link Session#run(String) a statement} or

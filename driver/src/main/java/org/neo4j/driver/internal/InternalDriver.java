@@ -29,6 +29,10 @@ import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 
+import static org.neo4j.driver.internal.util.AddressUtil.isLocalHost;
+import static org.neo4j.driver.v1.Config.EncryptionLevel.REQUIRED;
+import static org.neo4j.driver.v1.Config.EncryptionLevel.REQUIRED_NON_LOCAL;
+
 public class InternalDriver implements Driver
 {
     private final ConnectionPool connections;
@@ -40,6 +44,15 @@ public class InternalDriver implements Driver
         this.url = url;
         this.connections = new InternalConnectionPool( config, authToken );
         this.config = config;
+    }
+
+    @Override
+    public boolean isEncrypted()
+    {
+
+        Config.EncryptionLevel encryptionLevel = config.encryptionLevel();
+        return encryptionLevel.equals( REQUIRED ) ||
+                ( encryptionLevel.equals( REQUIRED_NON_LOCAL ) && !isLocalHost( url.getHost() ) );
     }
 
     /**
@@ -63,7 +76,7 @@ public class InternalDriver implements Driver
         {
             connections.close();
         }
-        catch( Exception e )
+        catch ( Exception e )
         {
             throw new ClientException( "Failed to close driver.", e );
         }
