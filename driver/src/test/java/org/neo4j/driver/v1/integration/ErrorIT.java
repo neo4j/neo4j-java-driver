@@ -48,9 +48,7 @@ public class ErrorIT
     {
         // Expect
         exception.expect( ClientException.class );
-        exception.expectMessage( "Invalid input 'i': expected <init> (line 1, column 1 (offset: 0))\n" +
-                                 "\"invalid statement\"\n" +
-                                 " ^" );
+        exception.expectMessage( "Invalid input 'i'" );
 
         // When
         StatementResult result = session.run( "invalid statement" );
