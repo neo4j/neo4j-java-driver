@@ -63,7 +63,7 @@ public class Environment
         statementRunner = null;
         stringRunner = null;
         runners = new ArrayList<>();
-        mappedTypes = new HashMap<>(  );
+        mappedTypes = new HashMap<>();
         driver = neo4j.driver();
     }
 
@@ -79,6 +79,7 @@ public class Environment
     @Before("@reset_database")
     public void emptyDatabase()
     {
+        Driver driver = neo4j.driver();
         try ( Session session = driver.session())
         {
             session.run( "MATCH (n) DETACH DELETE n" );

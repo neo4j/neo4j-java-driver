@@ -32,7 +32,8 @@ import org.neo4j.driver.v1.util.TestNeo4j;
  * The base class to run all cucumber tests
  */
 @RunWith( DriverCucumberAdapter.class )
-@CucumberOptions( features = {"target/resources/features"}, strict=true, tags={"~@db", "~@fixed_session_pool"}, format = {"pretty"})
+@CucumberOptions( features = {"target/resources/features"}, strict=true, tags={"~@db", "~@fixed_session_pool"},
+        format = {"default_summary"})
 public class DriverComplianceIT
 {
     @Rule
