@@ -16,21 +16,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.spi;
+package org.neo4j.driver.v1;
 
-public interface Logger
+public interface Logging
 {
-    void error( String message, Throwable cause );
-
-    void info( String message, Object... params );
-
-    void warn( String message, Object... params );
-
-    void debug( String message, Object... params );
-
-    void trace( String message, Object... params );
-
-    boolean isTraceEnabled();
-
-    boolean isDebugEnabled();
+    Logger getLog( String name );
 }

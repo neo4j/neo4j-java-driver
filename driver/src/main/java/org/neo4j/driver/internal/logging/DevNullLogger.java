@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal.logging;
 
-import org.neo4j.driver.internal.spi.Logger;
+import org.neo4j.driver.v1.Logger;
 
 public class DevNullLogger implements Logger
 {
