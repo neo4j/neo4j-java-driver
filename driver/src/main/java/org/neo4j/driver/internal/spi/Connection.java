@@ -61,6 +61,12 @@ public interface Connection extends AutoCloseable
     void reset( StreamCollector collector );
 
     /**
+     * Queue a reset action, output will be handed to the collector once the pull starts. This will
+     * close the stream once its completed, allowing another {@link #run(String, java.util.Map, StreamCollector) run}
+     */
+    void ackFailure( StreamCollector collector );
+
+    /**
      * Ensure all outstanding actions are carried out on the server.
      */
     void sync();

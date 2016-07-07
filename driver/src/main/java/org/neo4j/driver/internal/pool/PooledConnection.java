@@ -137,6 +137,19 @@ public class PooledConnection implements Connection
     }
 
     @Override
+    public void ackFailure( StreamCollector collector )
+    {
+        try
+        {
+            delegate.ackFailure( collector );
+        }
+        catch ( RuntimeException e )
+        {
+            onDelegateException( e );
+        }
+    }
+
+    @Override
     public void sync()
     {
         try

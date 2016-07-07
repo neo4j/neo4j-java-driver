@@ -195,6 +195,12 @@ public class SocketResponseHandler implements MessageHandler
     }
 
     @Override
+    public void handleAckFailureMessage()
+    {
+
+    }
+
+    @Override
     public void handlePullAllMessage()
     {
 

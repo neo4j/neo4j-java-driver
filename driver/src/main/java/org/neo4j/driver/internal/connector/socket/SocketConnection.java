@@ -27,7 +27,6 @@ import java.util.Queue;
 import org.neo4j.driver.internal.messaging.InitMessage;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.PullAllMessage;
-import org.neo4j.driver.internal.messaging.ResetMessage;
 import org.neo4j.driver.internal.messaging.RunMessage;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.v1.Logger;
@@ -37,7 +36,9 @@ import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 
+import static org.neo4j.driver.internal.messaging.AckFailureMessage.ACK_FAILURE;
 import static org.neo4j.driver.internal.messaging.DiscardAllMessage.DISCARD_ALL;
+import static org.neo4j.driver.internal.messaging.ResetMessage.RESET;
 
 public class SocketConnection implements Connection
 {
@@ -91,7 +92,13 @@ public class SocketConnection implements Connection
     @Override
     public void reset( StreamCollector collector )
     {
-        queueMessage( ResetMessage.RESET, collector );
+        queueMessage( RESET, collector );
+    }
+
+    @Override
+    public void ackFailure( StreamCollector collector )
+    {
+        queueMessage( ACK_FAILURE, collector );
     }
 
     @Override
@@ -146,7 +153,7 @@ public class SocketConnection implements Connection
     {
         if ( responseHandler.serverFailureOccurred() )
         {
-            reset( StreamCollector.NO_OP );
+            ackFailure( StreamCollector.NO_OP );
             Neo4jException exception = responseHandler.serverFailure();
             responseHandler.clearError();
             throw exception;
