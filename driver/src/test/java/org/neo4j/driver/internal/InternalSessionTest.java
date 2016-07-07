@@ -24,7 +24,7 @@ import org.junit.rules.ExpectedException;
 
 import org.neo4j.driver.internal.logging.DevNullLogger;
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.spi.Logger;
+import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
 

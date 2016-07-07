@@ -22,7 +22,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
 
-import org.neo4j.driver.internal.spi.Logger;
+import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.internal.util.BytePrinter;
 
 /**

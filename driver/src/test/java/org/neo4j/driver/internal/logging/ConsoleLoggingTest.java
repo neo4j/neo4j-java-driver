@@ -30,7 +30,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.neo4j.driver.internal.logging.ConsoleLogging.ConsoleLogger;
-import org.neo4j.driver.internal.spi.Logger;
+import org.neo4j.driver.v1.Logger;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;

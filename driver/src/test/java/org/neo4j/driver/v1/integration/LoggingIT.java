@@ -23,8 +23,8 @@ import java.net.URI;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.driver.internal.spi.Logger;
-import org.neo4j.driver.internal.spi.Logging;
+import org.neo4j.driver.v1.Logger;
+import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;

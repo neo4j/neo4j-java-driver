@@ -30,7 +30,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Scanner;
 
-import org.neo4j.driver.internal.spi.Logger;
+import org.neo4j.driver.v1.Logger;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
