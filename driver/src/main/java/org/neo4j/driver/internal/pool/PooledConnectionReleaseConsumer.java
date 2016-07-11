@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.internal.spi.StreamCollector;
 import org.neo4j.driver.internal.util.Consumer;
-import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Value;
 
 /**
@@ -40,11 +39,11 @@ class PooledConnectionReleaseConsumer implements Consumer<PooledConnection>
     private final AtomicBoolean driverStopped;
 
     PooledConnectionReleaseConsumer( BlockingQueue<PooledConnection> connections, AtomicBoolean driverStopped,
-            Config config )
+            PoolSettings poolSettings)
     {
         this.connections = connections;
         this.driverStopped = driverStopped;
-        this.minIdleBeforeConnectionTest = config.idleTimeBeforeConnectionTest();
+        this.minIdleBeforeConnectionTest = poolSettings.idleTimeBeforeConnectionTest();
     }
 
     @Override

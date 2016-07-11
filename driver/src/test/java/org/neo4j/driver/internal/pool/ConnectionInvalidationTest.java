@@ -66,14 +66,14 @@ public class ConnectionInvalidationTest
         // Given a connection that's broken
         Mockito.doThrow( new ClientException( "That didn't work" ) )
                 .when( delegate ).run( anyString(), anyMap(), any( StreamCollector.class ) );
-        Config config = Config.defaultConfig();
-        when( clock.millis() ).thenReturn( 0L, config.idleTimeBeforeConnectionTest() + 1L );
+        PoolSettings poolSettings = PoolSettings.defaultSettings();
+        when( clock.millis() ).thenReturn( 0L, poolSettings.idleTimeBeforeConnectionTest() + 1L );
         PooledConnection conn = new PooledConnection( delegate, Consumers.<PooledConnection>noOp(), clock );
 
         // When/Then
         BlockingQueue<PooledConnection> queue = mock( BlockingQueue.class );
         PooledConnectionReleaseConsumer consumer =
-                new PooledConnectionReleaseConsumer( queue, new AtomicBoolean( false ), config );
+                new PooledConnectionReleaseConsumer( queue, new AtomicBoolean( false ), poolSettings );
         consumer.accept( conn );
 
         verify( queue, never() ).add( conn );
@@ -87,13 +87,14 @@ public class ConnectionInvalidationTest
         Mockito.doThrow( new ClientException( "That didn't work" ) )
                 .when( delegate ).run( anyString(), anyMap(), any( StreamCollector.class ) );
         Config config = Config.defaultConfig();
-        when( clock.millis() ).thenReturn( 0L, config.idleTimeBeforeConnectionTest() - 1L );
+        PoolSettings poolSettings = PoolSettings.defaultSettings();
+        when( clock.millis() ).thenReturn( 0L, poolSettings.idleTimeBeforeConnectionTest() - 1L );
         PooledConnection conn = new PooledConnection( delegate, Consumers.<PooledConnection>noOp(), clock );
 
         // When/Then
         BlockingQueue<PooledConnection> queue = mock( BlockingQueue.class );
         PooledConnectionReleaseConsumer consumer =
-                new PooledConnectionReleaseConsumer( queue, new AtomicBoolean( false ), config );
+                new PooledConnectionReleaseConsumer( queue, new AtomicBoolean( false ), poolSettings );
         consumer.accept( conn );
 
         verify( queue ).offer( conn );
@@ -104,13 +105,13 @@ public class ConnectionInvalidationTest
     {
         // Given a connection that's broken
         Mockito.doThrow( new ClientException( "That didn't work" ) ).when( delegate ).reset( any( StreamCollector.class ) );
-        Config config = Config.defaultConfig();
+        PoolSettings poolSettings = PoolSettings.defaultSettings();
         PooledConnection conn = new PooledConnection( delegate, Consumers.<PooledConnection>noOp(), clock );
 
         // When/Then
         BlockingQueue<PooledConnection> queue = mock( BlockingQueue.class );
         PooledConnectionReleaseConsumer consumer =
-                new PooledConnectionReleaseConsumer( queue, new AtomicBoolean( false ), config );
+                new PooledConnectionReleaseConsumer( queue, new AtomicBoolean( false ), poolSettings );
         consumer.accept( conn );
 
         verify( queue, never() ).add( conn );
@@ -157,9 +158,10 @@ public class ConnectionInvalidationTest
 
         // Then
         assertTrue( conn.hasUnrecoverableErrors() );
+        PoolSettings poolSettings = PoolSettings.defaultSettings();
         BlockingQueue<PooledConnection> queue = mock( BlockingQueue.class );
         PooledConnectionReleaseConsumer consumer =
-                new PooledConnectionReleaseConsumer( queue, new AtomicBoolean( false ), Config.defaultConfig() );
+                new PooledConnectionReleaseConsumer( queue, new AtomicBoolean( false ), poolSettings );
         consumer.accept( conn );
 
         verify( queue, never() ).offer( conn );
@@ -183,9 +185,10 @@ public class ConnectionInvalidationTest
 
         // Then
         assertFalse( conn.hasUnrecoverableErrors() );
+        PoolSettings poolSettings = PoolSettings.defaultSettings();
         BlockingQueue<PooledConnection> queue = mock( BlockingQueue.class );
         PooledConnectionReleaseConsumer consumer =
-                new PooledConnectionReleaseConsumer( queue, new AtomicBoolean( false ), Config.defaultConfig() );
+                new PooledConnectionReleaseConsumer( queue, new AtomicBoolean( false ), poolSettings );
         consumer.accept( conn );
 
         verify( queue ).offer( conn );

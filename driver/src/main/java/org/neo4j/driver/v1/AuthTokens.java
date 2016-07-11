@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.v1;
 
-import org.neo4j.driver.internal.auth.InternalAuthToken;
+import org.neo4j.driver.internal.security.InternalAuthToken;
 
 import static org.neo4j.driver.v1.Values.parameters;
 
@@ -54,6 +54,6 @@ public class AuthTokens
      */
     public static AuthToken none()
     {
-        return new InternalAuthToken( parameters("scheme", "none" ).asMap( Values.ofValue() ) );
+        return new InternalAuthToken( parameters( "scheme", "none" ).asMap( Values.ofValue() ) );
     }
 }

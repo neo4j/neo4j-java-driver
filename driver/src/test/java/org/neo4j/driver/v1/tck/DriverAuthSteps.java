@@ -29,7 +29,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 
-import org.neo4j.driver.internal.auth.InternalAuthToken;
+import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;

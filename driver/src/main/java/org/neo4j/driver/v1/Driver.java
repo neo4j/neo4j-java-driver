@@ -20,7 +20,6 @@ package org.neo4j.driver.v1;
 
 import java.net.URI;
 
-import org.neo4j.driver.v1.Config.EncryptionLevel;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 
 /**

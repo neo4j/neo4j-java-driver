@@ -30,12 +30,12 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.internal.connector.socket.SocketConnector;
+import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.Connector;
 import org.neo4j.driver.internal.util.Clock;
-import org.neo4j.driver.v1.AuthToken;
-import org.neo4j.driver.v1.Config;
+import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 
@@ -65,24 +65,26 @@ public class InternalConnectionPool implements ConnectionPool
      */
     private final ConcurrentHashMap<URI,BlockingQueue<PooledConnection>> pools = new ConcurrentHashMap<>();
 
-    private final AuthToken authToken;
+    private final SecurityPlan securityPlan;
     private final Clock clock;
-    private final Config config;
+    private final PoolSettings poolSettings;
+    private final Logging logging;
 
     /** Shutdown flag */
     private final AtomicBoolean stopped = new AtomicBoolean( false );
 
-    public InternalConnectionPool( Config config, AuthToken authToken )
+    public InternalConnectionPool( SecurityPlan securityPlan, PoolSettings poolSettings, Logging logging )
     {
-        this( loadConnectors(), Clock.SYSTEM, config, authToken);
+        this( loadConnectors(), Clock.SYSTEM, securityPlan, poolSettings, logging );
     }
 
-    public InternalConnectionPool( Collection<Connector> conns, Clock clock, Config config,
-            AuthToken authToken )
+    public InternalConnectionPool( Collection<Connector> conns, Clock clock, SecurityPlan securityPlan,
+                                   PoolSettings poolSettings, Logging logging )
     {
-        this.authToken = authToken;
-        this.config = config;
+        this.securityPlan = securityPlan;
         this.clock = clock;
+        this.poolSettings = poolSettings;
+        this.logging = logging;
         for ( Connector connector : conns )
         {
             for ( String s : connector.supportedSchemes() )
@@ -110,8 +112,8 @@ public class InternalConnectionPool implements ConnectionPool
                         format( "Unsupported URI scheme: '%s' in url: '%s'. Supported transports are: '%s'.",
                                 sessionURI.getScheme(), sessionURI, connectorSchemes() ) );
             }
-            conn = new PooledConnection(connector.connect( sessionURI, config, authToken ), new
-                    PooledConnectionReleaseConsumer( connections, stopped, config ), clock);
+            conn = new PooledConnection(connector.connect( sessionURI, securityPlan, logging ), new
+                    PooledConnectionReleaseConsumer( connections, stopped, poolSettings ), clock);
         }
         conn.updateUsageTimestamp();
         return conn;
@@ -122,7 +124,7 @@ public class InternalConnectionPool implements ConnectionPool
         BlockingQueue<PooledConnection> pool = pools.get( sessionURI );
         if ( pool == null )
         {
-            pool = new LinkedBlockingQueue<>(config.maxIdleConnectionPoolSize());
+            pool = new LinkedBlockingQueue<>(poolSettings.maxIdleConnectionPoolSize());
             if ( pools.putIfAbsent( sessionURI, pool ) != null )
             {
                 // We lost a race to create the pool, dispose of the one we created, and recurse

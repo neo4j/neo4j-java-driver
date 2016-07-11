@@ -34,13 +34,11 @@ import java.nio.channels.SocketChannel;
 import java.security.cert.X509Certificate;
 import javax.net.ssl.SSLHandshakeException;
 
-import org.neo4j.driver.internal.connector.socket.TLSSocketChannel;
-import org.neo4j.driver.v1.Logger;
+import org.neo4j.driver.internal.logging.DevNullLogger;
+import org.neo4j.driver.internal.security.SecurityPlan;
+import org.neo4j.driver.internal.security.TLSSocketChannel;
+import org.neo4j.driver.v1.*;
 import org.neo4j.driver.internal.util.CertificateTool;
-import org.neo4j.driver.v1.Config;
-import org.neo4j.driver.v1.Driver;
-import org.neo4j.driver.v1.GraphDatabase;
-import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.util.CertificateToolTest;
 import org.neo4j.driver.v1.util.Neo4jRunner;
 import org.neo4j.driver.v1.util.Neo4jSettings;
@@ -52,7 +50,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.driver.internal.connector.socket.TrustOnFirstUseTrustManager.fingerprint;
+import static org.neo4j.driver.internal.security.TrustOnFirstUseTrustManager.fingerprint;
 
 public class TLSSocketChannelIT
 {
@@ -86,8 +84,10 @@ public class TLSSocketChannelIT
         channel.connect( new InetSocketAddress( "localhost", 7687 ) );
 
         // When
+        URI url = URI.create( "localhost:7687" );
+        SecurityPlan securityPlan = SecurityPlan.forTrustOnFirstUse( AuthTokens.none(), knownCerts, url.getHost(), url.getPort(), new DevNullLogger() );
         TLSSocketChannel sslChannel =
-                new TLSSocketChannel( "localhost", 7687, channel, logger, Config.TrustStrategy.trustOnFirstUse( knownCerts ) );
+                new TLSSocketChannel( url.getHost(), url.getPort(), securityPlan, channel, logger );
         sslChannel.close();
 
         // Then
@@ -127,9 +127,11 @@ public class TLSSocketChannelIT
             channel.connect( new InetSocketAddress( "localhost", 7687 ) );
 
             // When
+            URI url = URI.create( "localhost:7687" );
+            SecurityPlan securityPlan = SecurityPlan.forSignedCertificates( AuthTokens.none(), rootCert );
             TLSSocketChannel sslChannel =
-                    new TLSSocketChannel( "localhost", 7687, channel, logger,
-                            Config.TrustStrategy.trustSignedBy( rootCert ) );
+                    new TLSSocketChannel( url.getHost(), url.getPort(), securityPlan, channel, logger
+                    );
             sslChannel.close();
 
             // Then
@@ -155,11 +157,12 @@ public class TLSSocketChannelIT
         createFakeServerCertPairInKnownCerts( "localhost", 7687, knownCerts );
 
         // When & Then
+        URI url = URI.create( "localhost:7687" );
+        SecurityPlan securityPlan = SecurityPlan.forTrustOnFirstUse( AuthTokens.none(), knownCerts, url.getHost(), url.getPort(), new DevNullLogger() );
         TLSSocketChannel sslChannel = null;
         try
         {
-            sslChannel = new TLSSocketChannel( "localhost", 7687, channel, mock( Logger.class ),
-                    Config.TrustStrategy.trustOnFirstUse( knownCerts ) );
+            sslChannel = new TLSSocketChannel( url.getHost(), url.getPort(), securityPlan, channel, mock( Logger.class ) );
             sslChannel.close();
         }
         catch ( SSLHandshakeException e )
@@ -208,11 +211,12 @@ public class TLSSocketChannelIT
         CertificateTool.saveX509Cert( aRandomCert, trustedCertFile );
 
         // When & Then
+        URI url = URI.create( "localhost:7687" );
+        SecurityPlan securityPlan = SecurityPlan.forSignedCertificates( AuthTokens.none(), trustedCertFile );
         TLSSocketChannel sslChannel = null;
         try
         {
-            sslChannel = new TLSSocketChannel( "localhost", 7687, channel, mock( Logger.class ),
-                    Config.TrustStrategy.trustSignedBy( trustedCertFile ) );
+            sslChannel = new TLSSocketChannel( url.getHost(), url.getPort(), securityPlan, channel, mock( Logger.class ) );
             sslChannel.close();
         }
         catch ( SSLHandshakeException e )
@@ -239,9 +243,9 @@ public class TLSSocketChannelIT
         channel.connect( new InetSocketAddress( "localhost", 7687 ) );
 
         // When
-        TLSSocketChannel sslChannel = new TLSSocketChannel( "localhost", 7687, channel, logger,
-                Config.TrustStrategy.trustSignedBy(
-                       Neo4jSettings.DEFAULT_TLS_CERT_FILE ) );
+        URI url = URI.create( "localhost:7687" );
+        SecurityPlan securityPlan = SecurityPlan.forSignedCertificates( AuthTokens.none(), Neo4jSettings.DEFAULT_TLS_CERT_FILE );
+        TLSSocketChannel sslChannel = new TLSSocketChannel( url.getHost(), url.getPort(), securityPlan, channel, logger );
         sslChannel.close();
 
         // Then

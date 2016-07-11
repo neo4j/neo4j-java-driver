@@ -23,12 +23,14 @@ import org.junit.Test;
 import java.net.URI;
 import java.util.Collections;
 
+import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.Connector;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
+import org.neo4j.driver.v1.Logging;
 
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -50,8 +52,10 @@ public class InternalConnectionPoolTest
         URI uri = URI.create( "bolt://asd" );
         Connector connector = connector( "bolt" );
         Config config = Config.defaultConfig();
-        InternalConnectionPool pool = new InternalConnectionPool( singletonList( connector ),
-                Clock.SYSTEM, config, AuthTokens.none());
+        SecurityPlan securityPlan = SecurityPlan.insecure();
+        PoolSettings poolSettings = PoolSettings.defaultSettings();
+        InternalConnectionPool pool = new InternalConnectionPool(
+                singletonList( connector ), Clock.SYSTEM, securityPlan, poolSettings, config.logging() );
 
         Connection conn = pool.acquire( uri );
         conn.close();
@@ -60,7 +64,7 @@ public class InternalConnectionPoolTest
         Connection acquired = pool.acquire( uri );
 
         // Then
-        verify( connector, times( 1 ) ).connect( uri, config, AuthTokens.none() );
+        verify( connector, times( 1 ) ).connect( uri, securityPlan, config.logging() );
         assertThat( acquired, equalTo(conn) );
     }
 
@@ -68,7 +72,7 @@ public class InternalConnectionPoolTest
     {
         Connector mock = mock( Connector.class );
         when( mock.supportedSchemes() ).thenReturn( Collections.singletonList( scheme ) );
-        when( mock.connect( any( URI.class ), any( Config.class ), any( AuthToken.class ) ) ).thenReturn( mock(
+        when( mock.connect( any( URI.class ), any( SecurityPlan.class ), any( Logging.class ) ) ).thenReturn( mock(
                 Connection.class
         ) );
         return mock;

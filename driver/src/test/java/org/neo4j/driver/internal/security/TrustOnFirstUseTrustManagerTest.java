@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.connector.socket;
+package org.neo4j.driver.internal.security;
 
 import org.junit.After;
 import org.junit.Before;
@@ -30,6 +30,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Scanner;
 
+import org.neo4j.driver.internal.security.TrustOnFirstUseTrustManager;
 import org.neo4j.driver.v1.Logger;
 
 import static org.junit.Assert.assertEquals;
@@ -39,7 +40,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.neo4j.driver.internal.connector.socket.TrustOnFirstUseTrustManager.fingerprint;
+import static org.neo4j.driver.internal.security.TrustOnFirstUseTrustManager.fingerprint;
 
 public class TrustOnFirstUseTrustManagerTest
 {

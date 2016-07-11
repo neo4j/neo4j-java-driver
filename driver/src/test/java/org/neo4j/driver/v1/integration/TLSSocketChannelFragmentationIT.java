@@ -44,7 +44,7 @@ import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
-import org.neo4j.driver.internal.connector.socket.TLSSocketChannel;
+import org.neo4j.driver.internal.security.TLSSocketChannel;
 import org.neo4j.driver.internal.logging.DevNullLogger;
 
 import static org.hamcrest.core.IsEqual.equalTo;

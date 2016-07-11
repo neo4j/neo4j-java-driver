@@ -29,10 +29,11 @@ import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.PullAllMessage;
 import org.neo4j.driver.internal.messaging.ResetMessage;
 import org.neo4j.driver.internal.messaging.RunMessage;
+import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.internal.spi.StreamCollector;
-import org.neo4j.driver.v1.Config;
+import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
@@ -46,9 +47,9 @@ public class SocketConnection implements Connection
 
     private final SocketClient socket;
 
-    public SocketConnection( String host, int port, Config config )
+    public SocketConnection( String host, int port, SecurityPlan securityPlan, Logging logging )
     {
-        Logger logger = config.logging().getLog( String.valueOf( System.currentTimeMillis() ) );
+        Logger logger = logging.getLog( String.valueOf( System.currentTimeMillis() ) );
 
         if( logger.isDebugEnabled() )
         {
@@ -59,7 +60,7 @@ public class SocketConnection implements Connection
             this.responseHandler = new SocketResponseHandler();
         }
 
-        this.socket = new SocketClient( host, port, config, logger );
+        this.socket = new SocketClient( host, port, securityPlan, logger );
         socket.start();
     }
 

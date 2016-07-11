@@ -16,12 +16,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.connector.socket;
+package org.neo4j.driver.internal.security;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
 import java.security.GeneralSecurityException;
+import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
@@ -30,7 +31,6 @@ import javax.net.ssl.SSLEngineResult.Status;
 
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.internal.util.BytePrinter;
-import org.neo4j.driver.v1.Config.TrustStrategy;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.FINISHED;
@@ -63,12 +63,10 @@ public class TLSSocketChannel implements ByteChannel
 
     private static final ByteBuffer DUMMY_BUFFER = ByteBuffer.allocateDirect( 0 );
 
-    public TLSSocketChannel( String host, int port, ByteChannel channel, Logger logger,
-                             TrustStrategy trustStrategy )
+    public TLSSocketChannel( String host, int port, SecurityPlan securityPlan, ByteChannel channel, Logger logger )
             throws GeneralSecurityException, IOException
     {
-        this(channel, logger,
-             createSSLEngine( host, port, new SSLContextFactory( host, port, trustStrategy, logger ).create() ) );
+        this(channel, logger, createSSLEngine( host, port, createSSLContext( securityPlan ) ) );
 
     }
 
@@ -337,6 +335,21 @@ public class TLSSocketChannel implements ByteChannel
         from.position( from.position() + maxTransfer );
 
         return maxTransfer;
+    }
+
+    /**
+     * Create an SSLContext based on a given SecurityPlan.
+     *
+     * @param securityPlan
+     * @return
+     * @throws GeneralSecurityException
+     * @throws IOException
+     */
+    private static SSLContext createSSLContext( SecurityPlan securityPlan ) throws GeneralSecurityException, IOException
+    {
+        SSLContext sslContext = SSLContext.getInstance( "TLS" );
+        sslContext.init( new KeyManager[0], securityPlan.trustManagers(), null );
+        return sslContext;
     }
 
     /**

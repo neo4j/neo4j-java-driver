@@ -30,15 +30,15 @@ import java.util.Queue;
 
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
+import org.neo4j.driver.internal.security.SecurityPlan;
+import org.neo4j.driver.internal.security.TLSSocketChannel;
 import org.neo4j.driver.v1.Logger;
-import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static java.lang.String.format;
 import static java.nio.ByteOrder.BIG_ENDIAN;
 import static org.neo4j.driver.internal.connector.socket.SocketUtils.blockingRead;
 import static org.neo4j.driver.internal.connector.socket.SocketUtils.blockingWrite;
-import static org.neo4j.driver.internal.util.AddressUtil.isLocalHost;
 
 public class SocketClient
 {
@@ -50,8 +50,8 @@ public class SocketClient
 
     private final String host;
     private final int port;
+    private final SecurityPlan securityPlan;
     private final Logger logger;
-    protected final Config config;
 
     private SocketProtocol protocol;
     private MessageFormat.Reader reader;
@@ -59,11 +59,11 @@ public class SocketClient
 
     private ByteChannel channel;
 
-    public SocketClient( String host, int port, Config config, Logger logger )
+    public SocketClient( String host, int port, SecurityPlan securityPlan, Logger logger )
     {
         this.host = host;
         this.port = port;
-        this.config = config;
+        this.securityPlan = securityPlan;
         this.logger = logger;
         this.channel = null;
     }
@@ -73,7 +73,7 @@ public class SocketClient
         try
         {
             logger.debug( "~~ [CONNECT] %s:%d.", host, port );
-            channel = ChannelFactory.create( host, port, config, logger );
+            channel = ChannelFactory.create( host, port, securityPlan, logger );
             protocol = negotiateProtocol();
             reader = protocol.reader();
             writer = protocol.writer();
@@ -235,7 +235,7 @@ public class SocketClient
 
     private static class ChannelFactory
     {
-        public static ByteChannel create( String host, int port, Config config, Logger logger )
+        public static ByteChannel create( String host, int port, SecurityPlan securityPlan, Logger logger )
                 throws IOException, GeneralSecurityException
         {
             SocketChannel soChannel = SocketChannel.open();
@@ -245,32 +245,13 @@ public class SocketClient
 
             ByteChannel channel;
 
-            switch ( config.encryptionLevel() )
+            if (securityPlan.requiresEncryption())
             {
-            case REQUIRED:
-            {
-                channel = new TLSSocketChannel( host, port, soChannel, logger, config.trustStrategy() );
-                break;
+                channel = new TLSSocketChannel( host, port, securityPlan, soChannel, logger );
             }
-            case REQUIRED_NON_LOCAL:
-            {
-                if ( isLocalHost( host ) )
-                {
-                    channel = soChannel;
-                }
-                else
-                {
-                    channel = new TLSSocketChannel( host, port, soChannel, logger, config.trustStrategy() );
-                }
-                break;
-            }
-            case NONE:
+            else
             {
                 channel = soChannel;
-                break;
-            }
-            default:
-                throw new ClientException( "Unknown TLS Level: " + config.encryptionLevel() );
             }
 
             if ( logger.isTraceEnabled() )

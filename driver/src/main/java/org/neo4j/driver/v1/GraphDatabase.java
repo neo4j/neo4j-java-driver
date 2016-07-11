@@ -18,9 +18,18 @@
  */
 package org.neo4j.driver.v1;
 
+import java.io.IOException;
 import java.net.URI;
+import java.security.GeneralSecurityException;
 
 import org.neo4j.driver.internal.InternalDriver;
+import org.neo4j.driver.internal.pool.PoolSettings;
+import org.neo4j.driver.internal.security.SecurityPlan;
+import org.neo4j.driver.v1.exceptions.ClientException;
+
+import static org.neo4j.driver.internal.util.AddressUtil.isLocalHost;
+import static org.neo4j.driver.v1.Config.EncryptionLevel.REQUIRED;
+import static org.neo4j.driver.v1.Config.EncryptionLevel.REQUIRED_NON_LOCAL;
 
 /**
  * Creates {@link Driver drivers}, optionally letting you {@link #driver(URI, Config)} to configure them.
@@ -122,9 +131,64 @@ public class GraphDatabase
      */
     public static Driver driver( URI url, AuthToken authToken, Config config )
     {
-        AuthToken tokenToUse = authToken != null ? authToken: AuthTokens.none();
-        Config configToUse = config != null ? config: Config.defaultConfig();
+        // Fill in defaults
+        if (authToken == null)
+        {
+            authToken = AuthTokens.none();
+        }
+        if (config == null)
+        {
+            config = Config.defaultConfig();
+        }
 
-        return new InternalDriver( url, tokenToUse, configToUse );
+        // Construct security plan
+        SecurityPlan securityPlan;
+        try
+        {
+            securityPlan = createSecurityPlan( url, authToken, config );
+        }
+        catch ( GeneralSecurityException | IOException ex )
+        {
+            throw new ClientException( "Unable to establish SSL parameters", ex );
+        }
+
+        // Establish pool settings
+        PoolSettings poolSettings = new PoolSettings(
+                config.maxIdleConnectionPoolSize(),
+                config.idleTimeBeforeConnectionTest() );
+
+        // Finally, construct the driver proper
+        return new InternalDriver( url, securityPlan, poolSettings, config.logging() );
     }
+
+    /*
+     * Establish a complete SecurityPlan based on the details provided for
+     * driver construction.
+     */
+    private static SecurityPlan createSecurityPlan( URI url, AuthToken authToken, Config config )
+            throws GeneralSecurityException, IOException
+    {
+        Config.EncryptionLevel encryptionLevel = config.encryptionLevel();
+        boolean requiresEncryption = encryptionLevel.equals( REQUIRED ) ||
+                (encryptionLevel.equals( REQUIRED_NON_LOCAL ) && !isLocalHost( url.getHost() ));
+
+        if ( requiresEncryption )
+        {
+            switch ( config.trustStrategy().strategy() )
+            {
+            case TRUST_SIGNED_CERTIFICATES:
+                return SecurityPlan.forSignedCertificates( authToken, config.trustStrategy().certFile() );
+            case TRUST_ON_FIRST_USE:
+                return SecurityPlan.forTrustOnFirstUse( authToken, config.trustStrategy().certFile(),
+                        url.getHost(), url.getPort(), config.logging().getLog( "session" ) );
+            default:
+                throw new ClientException( "Unknown TLS authentication strategy: " + config.trustStrategy().strategy().name() );
+            }
+        }
+        else
+        {
+            return new SecurityPlan( authToken, false );
+        }
+    }
+
 }

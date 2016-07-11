@@ -21,38 +21,34 @@ package org.neo4j.driver.internal;
 import java.net.URI;
 
 import org.neo4j.driver.internal.pool.InternalConnectionPool;
+import org.neo4j.driver.internal.pool.PoolSettings;
+import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.ConnectionPool;
-import org.neo4j.driver.v1.AuthToken;
-import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 
-import static org.neo4j.driver.internal.util.AddressUtil.isLocalHost;
-import static org.neo4j.driver.v1.Config.EncryptionLevel.REQUIRED;
-import static org.neo4j.driver.v1.Config.EncryptionLevel.REQUIRED_NON_LOCAL;
-
 public class InternalDriver implements Driver
 {
-    private final ConnectionPool connections;
     private final URI url;
-    private final Config config;
+    private final SecurityPlan securityPlan;
+    private final Logging logging;
+    private final ConnectionPool connections;
 
-    public InternalDriver( URI url, AuthToken authToken, Config config )
+    public InternalDriver( URI url, SecurityPlan securityPlan, PoolSettings poolSettings, Logging logging )
     {
         this.url = url;
-        this.connections = new InternalConnectionPool( config, authToken );
-        this.config = config;
+        this.securityPlan = securityPlan;
+        this.logging = logging;
+        this.connections = new InternalConnectionPool( securityPlan, poolSettings, logging );
     }
 
     @Override
     public boolean isEncrypted()
     {
-
-        Config.EncryptionLevel encryptionLevel = config.encryptionLevel();
-        return encryptionLevel.equals( REQUIRED ) ||
-                ( encryptionLevel.equals( REQUIRED_NON_LOCAL ) && !isLocalHost( url.getHost() ) );
+        return securityPlan.requiresEncryption();
     }
 
     /**
@@ -63,12 +59,12 @@ public class InternalDriver implements Driver
     @Override
     public Session session()
     {
-        return new InternalSession( connections.acquire( url ), config.logging().getLog( "session" ) );
+        return new InternalSession( connections.acquire( url ), logging.getLog( "session" ) );
     }
 
     /**
      * Close all the resources assigned to this driver
-     * @throws Exception any error that might happen when releasing all resources
+     * @throws Neo4jException any error that might happen when releasing all resources
      */
     public void close() throws Neo4jException
     {

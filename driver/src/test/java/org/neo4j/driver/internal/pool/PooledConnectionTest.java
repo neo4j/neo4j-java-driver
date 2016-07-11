@@ -45,7 +45,7 @@ public class PooledConnectionTest
 
         Connection conn = mock( Connection.class );
         PooledConnectionReleaseConsumer releaseConsumer = new PooledConnectionReleaseConsumer( pool,
-                new AtomicBoolean( false ), Config.defaultConfig() /*Does not matter what config for this test*/ )
+                new AtomicBoolean( false ), PoolSettings.defaultSettings()  /*Does not matter what config for this test*/ )
         {
             @Override
             boolean validConnection( PooledConnection conn )
@@ -81,7 +81,7 @@ public class PooledConnectionTest
 
         Connection conn = mock( Connection.class );
         PooledConnectionReleaseConsumer releaseConsumer = new PooledConnectionReleaseConsumer( pool,
-                new AtomicBoolean( false ), Config.defaultConfig() /*Does not matter what config for this test*/ )
+                new AtomicBoolean( false ), PoolSettings.defaultSettings()  /*Does not matter what config for this test*/ )
         {
             @Override
             boolean validConnection( PooledConnection conn )
@@ -118,7 +118,7 @@ public class PooledConnectionTest
 
         Connection conn = mock( Connection.class );
         PooledConnectionReleaseConsumer releaseConsumer = new PooledConnectionReleaseConsumer( pool,
-                new AtomicBoolean( false ), Config.defaultConfig() /*Does not matter what config for this test*/ )
+                new AtomicBoolean( false ), PoolSettings.defaultSettings()  /*Does not matter what config for this test*/ )
         {
             @Override
             boolean validConnection( PooledConnection conn )
@@ -162,7 +162,7 @@ public class PooledConnectionTest
 
         Connection conn = mock( Connection.class );
         PooledConnectionReleaseConsumer releaseConsumer = new PooledConnectionReleaseConsumer( pool,
-                new AtomicBoolean( true ), Config.defaultConfig() /*Does not matter what config for this test*/ );
+                new AtomicBoolean( true ), PoolSettings.defaultSettings()  /*Does not matter what config for this test*/ );
 
         PooledConnection pooledConnection = new PooledConnection( conn, releaseConsumer, Clock.SYSTEM )
         {
@@ -202,7 +202,7 @@ public class PooledConnectionTest
         Connection conn = mock( Connection.class );
 
         PooledConnectionReleaseConsumer releaseConsumer = new PooledConnectionReleaseConsumer( pool,
-                stopped , Config.defaultConfig() /*Does not matter what config for this test*/ );
+                stopped , PoolSettings.defaultSettings()  /*Does not matter what config for this test*/ );
 
         PooledConnection pooledConnection = new PooledConnection( conn, releaseConsumer, Clock.SYSTEM )
         {

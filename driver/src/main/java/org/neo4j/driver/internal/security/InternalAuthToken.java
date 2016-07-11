@@ -16,12 +16,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.auth;
 
-import java.util.Map;
+package org.neo4j.driver.internal.security;
 
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.Value;
+
+import java.util.Map;
 
 /**
  * A simple common token for authentication schemes that easily convert to

@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import org.neo4j.driver.internal.logging.DevNullLogger;
+import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
@@ -43,10 +44,8 @@ public class SocketClientTest
         // Given a server that will never reply
         ServerSocket server = new ServerSocket( 0 );
 
-        // And given we've configured a client with network timeout
-        int networkTimeout = 100;
-        SocketClient client = new SocketClient( "localhost", server.getLocalPort(),
-                Config.defaultConfig(), new DevNullLogger() );
+        SecurityPlan securityPlan = SecurityPlan.insecure();
+        SocketClient client = new SocketClient( "localhost", server.getLocalPort(), securityPlan, new DevNullLogger() );
 
         // Expect
         exception.expect( ClientException.class );
