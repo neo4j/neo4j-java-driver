@@ -31,6 +31,7 @@ import java.security.cert.X509Certificate;
 import java.util.Scanner;
 
 import org.neo4j.driver.internal.security.TrustOnFirstUseTrustManager;
+import org.neo4j.driver.internal.util.BoltServerAddress;
 import org.neo4j.driver.v1.Logger;
 
 import static org.junit.Assert.assertEquals;
@@ -83,9 +84,10 @@ public class TrustOnFirstUseTrustManagerTest
     public void shouldLoadExistingCert() throws Throwable
     {
         // Given
+        BoltServerAddress knownServerAddress = new BoltServerAddress( knownServerIp, knownServerPort );
         Logger logger = mock(Logger.class);
         TrustOnFirstUseTrustManager manager =
-                new TrustOnFirstUseTrustManager( knownServerIp, knownServerPort, knownCertsFile, logger );
+                new TrustOnFirstUseTrustManager( knownServerAddress, knownCertsFile, logger );
 
         X509Certificate wrongCertificate = mock( X509Certificate.class );
         when( wrongCertificate.getEncoded() ).thenReturn( "fake certificate".getBytes() );
@@ -109,8 +111,9 @@ public class TrustOnFirstUseTrustManagerTest
     {
         // Given
         int newPort = 200;
+        BoltServerAddress address = new BoltServerAddress( knownServerIp, newPort );
         Logger logger = mock(Logger.class);
-        TrustOnFirstUseTrustManager manager = new TrustOnFirstUseTrustManager( knownServerIp, newPort, knownCertsFile, logger );
+        TrustOnFirstUseTrustManager manager = new TrustOnFirstUseTrustManager( address, knownCertsFile, logger );
 
         String fingerprint = fingerprint( knownCertificate );
 

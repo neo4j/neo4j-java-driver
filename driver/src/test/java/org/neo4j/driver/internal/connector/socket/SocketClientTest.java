@@ -27,6 +27,7 @@ import org.junit.rules.ExpectedException;
 
 import org.neo4j.driver.internal.logging.DevNullLogger;
 import org.neo4j.driver.internal.security.SecurityPlan;
+import org.neo4j.driver.internal.util.BoltServerAddress;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
@@ -43,9 +44,10 @@ public class SocketClientTest
     {
         // Given a server that will never reply
         ServerSocket server = new ServerSocket( 0 );
+        BoltServerAddress address = new BoltServerAddress( "localhost", server.getLocalPort() );
 
         SecurityPlan securityPlan = SecurityPlan.insecure();
-        SocketClient client = new SocketClient( "localhost", server.getLocalPort(), securityPlan, new DevNullLogger() );
+        SocketClient client = new SocketClient( address, securityPlan, new DevNullLogger() );
 
         // Expect
         exception.expect( ClientException.class );

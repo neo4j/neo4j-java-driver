@@ -31,6 +31,7 @@ import org.neo4j.driver.internal.messaging.ResetMessage;
 import org.neo4j.driver.internal.messaging.RunMessage;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.util.BoltServerAddress;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.internal.spi.StreamCollector;
 import org.neo4j.driver.v1.Logging;
@@ -47,7 +48,7 @@ public class SocketConnection implements Connection
 
     private final SocketClient socket;
 
-    public SocketConnection( String host, int port, SecurityPlan securityPlan, Logging logging )
+    public SocketConnection( BoltServerAddress address, SecurityPlan securityPlan, Logging logging )
     {
         Logger logger = logging.getLog( String.valueOf( System.currentTimeMillis() ) );
 
@@ -60,7 +61,7 @@ public class SocketConnection implements Connection
             this.responseHandler = new SocketResponseHandler();
         }
 
-        this.socket = new SocketClient( host, port, securityPlan, logger );
+        this.socket = new SocketClient( address, securityPlan, logger );
         socket.start();
     }
 

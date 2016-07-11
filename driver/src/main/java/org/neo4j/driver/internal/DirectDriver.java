@@ -18,31 +18,32 @@
  */
 package org.neo4j.driver.internal;
 
-import java.net.URI;
-
+import org.neo4j.driver.internal.connector.socket.SocketConnector;
 import org.neo4j.driver.internal.pool.InternalConnectionPool;
 import org.neo4j.driver.internal.pool.PoolSettings;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.ConnectionPool;
+import org.neo4j.driver.internal.util.BoltServerAddress;
+import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 
-public class InternalDriver implements Driver
+public class DirectDriver implements Driver
 {
-    private final URI url;
+    private final BoltServerAddress address;
     private final SecurityPlan securityPlan;
     private final Logging logging;
     private final ConnectionPool connections;
 
-    public InternalDriver( URI url, SecurityPlan securityPlan, PoolSettings poolSettings, Logging logging )
+    public DirectDriver( BoltServerAddress address, SecurityPlan securityPlan, PoolSettings poolSettings, Logging logging )
     {
-        this.url = url;
+        this.address = address;
         this.securityPlan = securityPlan;
         this.logging = logging;
-        this.connections = new InternalConnectionPool( securityPlan, poolSettings, logging );
+        this.connections = new InternalConnectionPool( new SocketConnector(), Clock.SYSTEM, securityPlan, poolSettings, logging );
     }
 
     @Override
@@ -59,7 +60,7 @@ public class InternalDriver implements Driver
     @Override
     public Session session()
     {
-        return new InternalSession( connections.acquire( url ), logging.getLog( "session" ) );
+        return new InternalSession( connections.acquire( address ), logging.getLog( "session" ) );
     }
 
     /**

@@ -48,7 +48,7 @@ public class ConnectionPoolIT
     public void shouldRecoverFromDownedServer() throws Throwable
     {
         // Given a driver
-        driver = GraphDatabase.driver( neo4j.address() );
+        driver = GraphDatabase.driver( neo4j.uri() );
 
         // and given I'm heavily using it to acquire and release sessions
         sessionGrabber = new SessionGrabber( driver );

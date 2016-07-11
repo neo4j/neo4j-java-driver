@@ -26,6 +26,7 @@ import java.util.Collections;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.Connector;
+import org.neo4j.driver.internal.util.BoltServerAddress;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.AuthTokens;
@@ -49,22 +50,22 @@ public class InternalConnectionPoolTest
     public void shouldAcquireAndRelease() throws Throwable
     {
         // Given
-        URI uri = URI.create( "bolt://asd" );
+        BoltServerAddress address = BoltServerAddress.LOCAL_DEFAULT;
         Connector connector = connector( "bolt" );
         Config config = Config.defaultConfig();
         SecurityPlan securityPlan = SecurityPlan.insecure();
         PoolSettings poolSettings = PoolSettings.defaultSettings();
         InternalConnectionPool pool = new InternalConnectionPool(
-                singletonList( connector ), Clock.SYSTEM, securityPlan, poolSettings, config.logging() );
+                connector, Clock.SYSTEM, securityPlan, poolSettings, config.logging() );
 
-        Connection conn = pool.acquire( uri );
+        Connection conn = pool.acquire( address );
         conn.close();
 
         // When
-        Connection acquired = pool.acquire( uri );
+        Connection acquired = pool.acquire( address );
 
         // Then
-        verify( connector, times( 1 ) ).connect( uri, securityPlan, config.logging() );
+        verify( connector, times( 1 ) ).connect( address, securityPlan, config.logging() );
         assertThat( acquired, equalTo(conn) );
     }
 
@@ -72,7 +73,7 @@ public class InternalConnectionPoolTest
     {
         Connector mock = mock( Connector.class );
         when( mock.supportedSchemes() ).thenReturn( Collections.singletonList( scheme ) );
-        when( mock.connect( any( URI.class ), any( SecurityPlan.class ), any( Logging.class ) ) ).thenReturn( mock(
+        when( mock.connect( any( BoltServerAddress.class ), any( SecurityPlan.class ), any( Logging.class ) ) ).thenReturn( mock(
                 Connection.class
         ) );
         return mock;

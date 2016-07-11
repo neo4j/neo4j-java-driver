@@ -69,7 +69,7 @@ public class DriverSecurityComplianceSteps
     {
         knownHostsFile = tempFile( "known_hosts", ".tmp" );
         driver = GraphDatabase.driver(
-                Neo4jRunner.DEFAULT_URL,
+                Neo4jRunner.DEFAULT_URI,
                 Config.build().withEncryptionLevel( EncryptionLevel.REQUIRED )
                         .withTrustStrategy( trustOnFirstUse( knownHostsFile ) ).toConfig() );
 
@@ -97,7 +97,7 @@ public class DriverSecurityComplianceSteps
     public void iConnectViaATlsEnabledTransportAgain() throws Throwable
     {
         driver = GraphDatabase.driver(
-                Neo4jRunner.DEFAULT_URL,
+                Neo4jRunner.DEFAULT_URI,
                 Config.build().withEncryptionLevel( EncryptionLevel.REQUIRED )
                         .withTrustStrategy( trustOnFirstUse( knownHostsFile ) ).toConfig() );
     }
@@ -158,7 +158,7 @@ public class DriverSecurityComplianceSteps
 
         File tempFile = tempFile( "known_hosts", ".tmp" );
         driverKitten = GraphDatabase.driver(
-                Neo4jRunner.DEFAULT_URL,
+                Neo4jRunner.DEFAULT_URI,
                 Config.build().withEncryptionLevel( EncryptionLevel.REQUIRED )
                         .withTrustStrategy( trustOnFirstUse( tempFile ) ).toConfig() );
     }
@@ -197,7 +197,7 @@ public class DriverSecurityComplianceSteps
 
         // give root certificate to driver
         driver = GraphDatabase.driver(
-                Neo4jRunner.DEFAULT_URL,
+                Neo4jRunner.DEFAULT_URI,
                 Config.build().withEncryptionLevel( EncryptionLevel.REQUIRED )
                         .withTrustStrategy( trustSignedBy( rootCert ) ).toConfig() );
 
@@ -221,7 +221,7 @@ public class DriverSecurityComplianceSteps
     public void aRunningNeo4jDatabaseUsingThatExactTrustedCertificate()
     {
         driver = GraphDatabase.driver(
-                Neo4jRunner.DEFAULT_URL,
+                Neo4jRunner.DEFAULT_URI,
                 Config.build().withEncryptionLevel( EncryptionLevel.REQUIRED )
                         .withTrustStrategy( trustSignedBy( Neo4jSettings.DEFAULT_TLS_CERT_FILE ) ).toConfig() );
     }
@@ -235,7 +235,7 @@ public class DriverSecurityComplianceSteps
 
         // give root certificate to driver
         driver = GraphDatabase.driver(
-                Neo4jRunner.DEFAULT_URL,
+                Neo4jRunner.DEFAULT_URI,
                 Config.build().withEncryptionLevel( EncryptionLevel.REQUIRED )
                         .withTrustStrategy( trustSignedBy( cert ) ).toConfig() );
     }

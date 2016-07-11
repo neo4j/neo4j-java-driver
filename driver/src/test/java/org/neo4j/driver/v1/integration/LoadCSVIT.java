@@ -44,7 +44,7 @@ public class LoadCSVIT
     public void shouldLoadCSV() throws Throwable
     {
         // Given
-        Driver driver = GraphDatabase.driver( neo4j.address() );
+        Driver driver = GraphDatabase.driver( neo4j.uri() );
         Session session = driver.session();
         String csvFileUrl = createLocalIrisData( session );
 

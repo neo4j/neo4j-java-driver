@@ -16,25 +16,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.neo4j.driver.internal.util;
 
 import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.*;
-import static org.neo4j.driver.internal.util.AddressUtil.isLocalHost;
 
-public class AddressUtilTest
+public class BoltServerAddressTest
 {
     @Test
     public void shouldWorkForVariantsOfLocalHost() throws Exception
     {
-        assertThat( isLocalHost( "localhost" ), equalTo( true ) );
-        assertThat( isLocalHost( "LocalHost" ), equalTo( true ) );
-        assertThat( isLocalHost( "LOCALHOST" ), equalTo( true ) );
-        assertThat( isLocalHost( "127.0.0.1" ), equalTo( true ) );
-        assertThat( isLocalHost( "127.5.6.7" ), equalTo( true ) );
-        assertThat( isLocalHost( "x" ), equalTo( false ) );
+        assertThat( new BoltServerAddress( "localhost", 7687 ).isLocal(), equalTo( true ) );
+        assertThat( new BoltServerAddress( "LocalHost", 7687 ).isLocal(), equalTo( true ) );
+        assertThat( new BoltServerAddress( "LOCALHOST", 7687 ).isLocal(), equalTo( true ) );
+        assertThat( new BoltServerAddress( "127.0.0.1", 7687 ).isLocal(), equalTo( true ) );
+        assertThat( new BoltServerAddress( "127.5.6.7", 7687 ).isLocal(), equalTo( true ) );
+        assertThat( new BoltServerAddress( "x", 7687 ).isLocal(), equalTo( false ) );
     }
 
 }

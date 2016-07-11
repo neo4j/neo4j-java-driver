@@ -19,13 +19,14 @@
 package org.neo4j.driver.internal.spi;
 
 
-import java.net.URI;
+import org.neo4j.driver.internal.util.BoltServerAddress;
 
 public interface ConnectionPool extends AutoCloseable
 {
     /**
      * Acquire a connection - if a live connection exists in the pool, it will be used, otherwise a new connection
      * is created with an applicable {@link Connector}.
+     * @param address
      */
-    Connection acquire( URI sessionURI );
+    Connection acquire( BoltServerAddress address );
 }

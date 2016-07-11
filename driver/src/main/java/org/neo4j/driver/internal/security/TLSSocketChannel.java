@@ -29,6 +29,7 @@ import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 import javax.net.ssl.SSLEngineResult.Status;
 
+import org.neo4j.driver.internal.util.BoltServerAddress;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.internal.util.BytePrinter;
 import org.neo4j.driver.v1.exceptions.ClientException;
@@ -63,10 +64,10 @@ public class TLSSocketChannel implements ByteChannel
 
     private static final ByteBuffer DUMMY_BUFFER = ByteBuffer.allocateDirect( 0 );
 
-    public TLSSocketChannel( String host, int port, SecurityPlan securityPlan, ByteChannel channel, Logger logger )
+    public TLSSocketChannel( BoltServerAddress address, SecurityPlan securityPlan, ByteChannel channel, Logger logger )
             throws GeneralSecurityException, IOException
     {
-        this(channel, logger, createSSLEngine( host, port, createSSLContext( securityPlan ) ) );
+        this(channel, logger, createSSLEngine( address, createSSLContext( securityPlan ) ) );
 
     }
 
@@ -354,13 +355,12 @@ public class TLSSocketChannel implements ByteChannel
 
     /**
      * Create SSLEngine with the SSLContext just created.
-     * @param host
-     * @param port
+     * @param address
      * @param sslContext
      */
-    private static SSLEngine createSSLEngine( String host, int port, SSLContext sslContext )
+    private static SSLEngine createSSLEngine( BoltServerAddress address, SSLContext sslContext )
     {
-        SSLEngine sslEngine = sslContext.createSSLEngine( host, port );
+        SSLEngine sslEngine = sslContext.createSSLEngine( address.host(), address.port() );
         sslEngine.setUseClientMode( true );
         return sslEngine;
     }

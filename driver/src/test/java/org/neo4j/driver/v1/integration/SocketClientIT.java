@@ -24,7 +24,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.net.URI;
 import java.security.GeneralSecurityException;
 import java.util.LinkedList;
 import java.util.Queue;
@@ -35,8 +34,6 @@ import org.neo4j.driver.internal.logging.DevNullLogger;
 import org.neo4j.driver.internal.messaging.InitMessage;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.security.SecurityPlan;
-import org.neo4j.driver.v1.AuthTokens;
-import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
@@ -61,9 +58,8 @@ public class SocketClientIT
     @Before
     public void setup() throws GeneralSecurityException, IOException
     {
-        URI url = URI.create( neo4j.address() );
         SecurityPlan securityPlan = SecurityPlan.insecure();
-        client = new SocketClient( url.getHost(), url.getPort(), securityPlan, new DevNullLogger() );
+        client = new SocketClient( neo4j.address(), securityPlan, new DevNullLogger() );
     }
 
     @After

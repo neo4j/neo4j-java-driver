@@ -19,6 +19,7 @@
 
 package org.neo4j.driver.internal.security;
 
+import org.neo4j.driver.internal.util.BoltServerAddress;
 import org.neo4j.driver.v1.*;
 
 import javax.net.ssl.TrustManager;
@@ -54,10 +55,10 @@ public class SecurityPlan
         return new SecurityPlan( authToken, true, trustManagerFactory.getTrustManagers() );
     }
 
-    public static SecurityPlan forTrustOnFirstUse( AuthToken authToken, File knownHosts, String host, int port, Logger logger )
+    public static SecurityPlan forTrustOnFirstUse( AuthToken authToken, File knownHosts, BoltServerAddress address, Logger logger )
             throws IOException
     {
-        return new SecurityPlan( authToken, true, new TrustOnFirstUseTrustManager( host, port, knownHosts, logger ) );
+        return new SecurityPlan( authToken, true, new TrustOnFirstUseTrustManager( address, knownHosts, logger ) );
     }
 
     public static SecurityPlan insecure()

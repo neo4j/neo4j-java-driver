@@ -92,7 +92,7 @@ public class DriverAuthSteps
     {
         driver = configureCredentials( "neo4j", "neo4j", "password" );
         driver.close();
-        driver = GraphDatabase.driver( neo4j.address(), new InternalAuthToken(
+        driver = GraphDatabase.driver( neo4j.uri(), new InternalAuthToken(
                 parameters(
                         "scheme", "basic",
                         "principal", "neo4j",
@@ -125,7 +125,7 @@ public class DriverAuthSteps
                 .updateWith( Neo4jSettings.AUTH_ENABLED, "true" )
                 .updateWith( Neo4jSettings.DATA_DIR, tempDir.getAbsolutePath().replace("\\", "/") ));
 
-        Driver driver = GraphDatabase.driver( neo4j.address(), new InternalAuthToken(
+        Driver driver = GraphDatabase.driver( neo4j.uri(), new InternalAuthToken(
                 parameters(
                         "scheme", "basic",
                         "principal", name,

@@ -20,26 +20,19 @@ package org.neo4j.driver.internal.pool;
 
 import java.net.URI;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.ServiceLoader;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.driver.internal.connector.socket.SocketConnector;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.Connector;
+import org.neo4j.driver.internal.util.BoltServerAddress;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.Logging;
-import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
-
-import static java.lang.String.format;
 
 /**
  * The pool is designed to buffer certain amount of free sessions into session pool. When closing a session, we first
@@ -55,16 +48,13 @@ import static java.lang.String.format;
  */
 public class InternalConnectionPool implements ConnectionPool
 {
-    /**
-     * Map of scheme -> connector, this is what we use to establish new connections.
-     */
-    private final ConcurrentHashMap<String,Connector> connectors = new ConcurrentHashMap<>();
 
     /**
      * Pools, organized by URL.
      */
-    private final ConcurrentHashMap<URI,BlockingQueue<PooledConnection>> pools = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<BoltServerAddress,BlockingQueue<PooledConnection>> pools = new ConcurrentHashMap<>();
 
+    private final Connector connector;
     private final SecurityPlan securityPlan;
     private final Clock clock;
     private final PoolSettings poolSettings;
@@ -73,82 +63,47 @@ public class InternalConnectionPool implements ConnectionPool
     /** Shutdown flag */
     private final AtomicBoolean stopped = new AtomicBoolean( false );
 
-    public InternalConnectionPool( SecurityPlan securityPlan, PoolSettings poolSettings, Logging logging )
-    {
-        this( loadConnectors(), Clock.SYSTEM, securityPlan, poolSettings, logging );
-    }
-
-    public InternalConnectionPool( Collection<Connector> conns, Clock clock, SecurityPlan securityPlan,
+    public InternalConnectionPool( Connector connector, Clock clock, SecurityPlan securityPlan,
                                    PoolSettings poolSettings, Logging logging )
     {
         this.securityPlan = securityPlan;
         this.clock = clock;
         this.poolSettings = poolSettings;
         this.logging = logging;
-        for ( Connector connector : conns )
-        {
-            for ( String s : connector.supportedSchemes() )
-            {
-                this.connectors.put( s, connector );
-            }
-        }
+        this.connector = connector;
     }
 
     @Override
-    public Connection acquire( URI sessionURI )
+    public Connection acquire( BoltServerAddress address )
     {
         if ( stopped.get() )
         {
             throw new IllegalStateException( "Pool has been closed, cannot acquire new values." );
         }
-        BlockingQueue<PooledConnection> connections = pool( sessionURI );
+        BlockingQueue<PooledConnection> connections = pool( address );
         PooledConnection conn = connections.poll();
         if ( conn == null )
         {
-            Connector connector = connectors.get( sessionURI.getScheme() );
-            if ( connector == null )
-            {
-                throw new ClientException(
-                        format( "Unsupported URI scheme: '%s' in url: '%s'. Supported transports are: '%s'.",
-                                sessionURI.getScheme(), sessionURI, connectorSchemes() ) );
-            }
-            conn = new PooledConnection(connector.connect( sessionURI, securityPlan, logging ), new
+            conn = new PooledConnection(connector.connect( address, securityPlan, logging ), new
                     PooledConnectionReleaseConsumer( connections, stopped, poolSettings ), clock);
         }
         conn.updateUsageTimestamp();
         return conn;
     }
 
-    private BlockingQueue<PooledConnection> pool( URI sessionURI )
+    private BlockingQueue<PooledConnection> pool( BoltServerAddress address )
     {
-        BlockingQueue<PooledConnection> pool = pools.get( sessionURI );
+        BlockingQueue<PooledConnection> pool = pools.get( address );
         if ( pool == null )
         {
             pool = new LinkedBlockingQueue<>(poolSettings.maxIdleConnectionPoolSize());
-            if ( pools.putIfAbsent( sessionURI, pool ) != null )
+            if ( pools.putIfAbsent( address, pool ) != null )
             {
                 // We lost a race to create the pool, dispose of the one we created, and recurse
-                return pool( sessionURI );
+                return pool( address );
             }
         }
         return pool;
-    }
-
-    private static Collection<Connector> loadConnectors()
-    {
-        List<Connector> connectors = new LinkedList<>();
-
-        // Hard code socket connector
-        Connector conn = new SocketConnector();
-        connectors.add( conn );
-
-        // Load custom loadConnectors via JSL
-        ServiceLoader<Connector> load = ServiceLoader.load( Connector.class );
-        for ( Connector connector : load )
-        {
-            connectors.add( connector );
-        }
-        return connectors;
     }
 
     @Override
@@ -176,8 +131,4 @@ public class InternalConnectionPool implements ConnectionPool
         pools.clear();
     }
 
-    private String connectorSchemes()
-    {
-        return Arrays.toString( connectors.keySet().toArray( new String[connectors.keySet().size()] ) );
-    }
 }

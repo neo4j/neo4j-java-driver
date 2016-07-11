@@ -32,6 +32,7 @@ import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.security.TLSSocketChannel;
+import org.neo4j.driver.internal.util.BoltServerAddress;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
@@ -48,8 +49,7 @@ public class SocketClient
     private static final int NO_VERSION = 0;
     private static final int[] SUPPORTED_VERSIONS = new int[]{VERSION1, NO_VERSION, NO_VERSION, NO_VERSION};
 
-    private final String host;
-    private final int port;
+    private final BoltServerAddress address;
     private final SecurityPlan securityPlan;
     private final Logger logger;
 
@@ -59,10 +59,9 @@ public class SocketClient
 
     private ByteChannel channel;
 
-    public SocketClient( String host, int port, SecurityPlan securityPlan, Logger logger )
+    public SocketClient( BoltServerAddress address, SecurityPlan securityPlan, Logger logger )
     {
-        this.host = host;
-        this.port = port;
+        this.address = address;
         this.securityPlan = securityPlan;
         this.logger = logger;
         this.channel = null;
@@ -72,8 +71,8 @@ public class SocketClient
     {
         try
         {
-            logger.debug( "~~ [CONNECT] %s:%d.", host, port );
-            channel = ChannelFactory.create( host, port, securityPlan, logger );
+            logger.debug( "~~ [CONNECT] %s", address );
+            channel = ChannelFactory.create( address, securityPlan, logger );
             protocol = negotiateProtocol();
             reader = protocol.reader();
             writer = protocol.writer();
@@ -81,8 +80,8 @@ public class SocketClient
         catch ( ConnectException e )
         {
             throw new ClientException( format(
-                    "Unable to connect to '%s' on port %s, ensure the database is running and that there is a " +
-                    "working network connection to it.", host, port ) );
+                    "Unable to connect to %s, ensure the database is running and that there is a " +
+                    "working network connection to it.", address ) );
         }
         catch ( IOException e )
         {
@@ -197,7 +196,7 @@ public class SocketClient
             {
                 throw new ClientException( format(
                         "Failed to establish connection with server. Make sure that you have a server with bolt " +
-                        "enabled on %s:%d", host, port ) );
+                        "enabled on %s", address ) );
             }
             else
             {
@@ -235,19 +234,19 @@ public class SocketClient
 
     private static class ChannelFactory
     {
-        public static ByteChannel create( String host, int port, SecurityPlan securityPlan, Logger logger )
+        public static ByteChannel create( BoltServerAddress address, SecurityPlan securityPlan, Logger logger )
                 throws IOException, GeneralSecurityException
         {
             SocketChannel soChannel = SocketChannel.open();
             soChannel.setOption( StandardSocketOptions.SO_REUSEADDR, true );
             soChannel.setOption( StandardSocketOptions.SO_KEEPALIVE, true );
-            soChannel.connect( new InetSocketAddress( host, port ) );
+            soChannel.connect( new InetSocketAddress( address.host(), address.port() ) );
 
             ByteChannel channel;
 
             if (securityPlan.requiresEncryption())
             {
-                channel = new TLSSocketChannel( host, port, securityPlan, soChannel, logger );
+                channel = new TLSSocketChannel( address, securityPlan, soChannel, logger );
             }
             else
             {

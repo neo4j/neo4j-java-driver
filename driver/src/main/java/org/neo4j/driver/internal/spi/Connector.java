@@ -18,10 +18,10 @@
  */
 package org.neo4j.driver.internal.spi;
 
-import java.net.URI;
 import java.util.Collection;
 
 import org.neo4j.driver.internal.security.SecurityPlan;
+import org.neo4j.driver.internal.util.BoltServerAddress;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
@@ -42,12 +42,12 @@ public interface Connector
     /**
      * Establish a connection to a remote listener and attach to the session identified.
      *
-     * @param sessionURL a URL identifying a remote session
+     * @param address a URL identifying a remote session
      * @param securityPlan a security plan for this connection
      * @param logging
      * @return a Connection object
      */
-    Connection connect( URI sessionURL, SecurityPlan securityPlan, Logging logging ) throws ClientException;
+    Connection connect( BoltServerAddress address, SecurityPlan securityPlan, Logging logging ) throws ClientException;
 
     /** List names of supported schemes, used for error messages and similar signaling to end users. */
     Collection<String> supportedSchemes();

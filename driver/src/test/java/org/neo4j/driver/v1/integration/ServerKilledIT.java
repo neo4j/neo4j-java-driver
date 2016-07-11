@@ -43,7 +43,7 @@ public class ServerKilledIT
     public void shouldRecoverFromServerRestart() throws Throwable
     {
         // Given
-        try ( Driver driver = GraphDatabase.driver( Neo4jRunner.DEFAULT_URL ) )
+        try ( Driver driver = GraphDatabase.driver( Neo4jRunner.DEFAULT_URI ) )
         {
             Session s1 = driver.session();
             Session s2 = driver.session();

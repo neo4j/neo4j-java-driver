@@ -30,6 +30,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import javax.net.ssl.X509TrustManager;
 
+import org.neo4j.driver.internal.util.BoltServerAddress;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.internal.util.BytePrinter;
 
@@ -57,10 +58,10 @@ public class TrustOnFirstUseTrustManager implements X509TrustManager
     /** The known certificate we've registered for this server */
     private String fingerprint;
 
-    TrustOnFirstUseTrustManager( String host, int port, File knownHosts, Logger logger ) throws IOException
+    TrustOnFirstUseTrustManager( BoltServerAddress address, File knownHosts, Logger logger ) throws IOException
     {
         this.logger = logger;
-        this.serverId = host + ":" + port;
+        this.serverId = address.toString();
         this.knownHosts = knownHosts;
         load();
     }
