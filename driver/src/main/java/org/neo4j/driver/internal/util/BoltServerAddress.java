@@ -44,6 +44,8 @@ public class BoltServerAddress
     private final String host;
     private final int port;
 
+    private SocketAddress socketAddress = null;  // created lazily if required
+
     public BoltServerAddress( String host, int port )
     {
         this.host = host;
@@ -56,9 +58,58 @@ public class BoltServerAddress
     }
 
     @Override
+    public boolean equals( Object obj )
+    {
+        if ( this == obj )
+        {
+            return true;
+        }
+        if ( !(obj instanceof BoltServerAddress) )
+        {
+            return false;
+        }
+        BoltServerAddress address = (BoltServerAddress) obj;
+        return host.equals( address.host ) && port == address.port;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return 31 * host.hashCode() + port;
+    }
+
+    @Override
     public String toString()
     {
         return format( "%s:%d", host, port );
+    }
+
+    public SocketAddress toSocketAddress()
+    {
+        if (socketAddress == null)
+        {
+            socketAddress = new InetSocketAddress( host, port );
+        }
+        return socketAddress;
+    }
+
+    /**
+     * Resolve the host name down to an IP address, if not already resolved.
+     *
+     * @return this instance if already resolved, otherwise a new address instance
+     * @throws UnknownHostException
+     */
+    public BoltServerAddress resolve() throws UnknownHostException
+    {
+        String hostAddress = InetAddress.getByName( host ).getHostAddress();
+        if ( hostAddress.equals( host ) )
+        {
+            return this;
+        }
+        else
+        {
+            return new BoltServerAddress( hostAddress, port );
+        }
     }
 
     public String host()

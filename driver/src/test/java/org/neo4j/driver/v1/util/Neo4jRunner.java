@@ -199,7 +199,7 @@ public class Neo4jRunner
         {
             SocketChannel soChannel = SocketChannel.open();
             soChannel.setOption( StandardSocketOptions.SO_REUSEADDR, true );
-            soChannel.connect( new InetSocketAddress( DEFAULT_ADDRESS.host(), DEFAULT_ADDRESS.port() ) );
+            soChannel.connect( DEFAULT_ADDRESS.toSocketAddress() );
             soChannel.close();
             return ServerStatus.ONLINE;
         }

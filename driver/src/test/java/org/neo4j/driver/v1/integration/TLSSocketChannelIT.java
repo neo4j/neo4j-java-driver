@@ -83,7 +83,7 @@ public class TLSSocketChannelIT
         Logger logger = mock( Logger.class );
         BoltServerAddress address = BoltServerAddress.LOCAL_DEFAULT;
         SocketChannel channel = SocketChannel.open();
-        channel.connect( new InetSocketAddress( address.host(), address.port() ) );
+        channel.connect( address.toSocketAddress() );
 
         // When
 
@@ -127,7 +127,7 @@ public class TLSSocketChannelIT
 
             Logger logger = mock( Logger.class );
             SocketChannel channel = SocketChannel.open();
-            channel.connect( new InetSocketAddress( address.host(), address.port() ) );
+            channel.connect( address.toSocketAddress() );
 
             // When
             SecurityPlan securityPlan = SecurityPlan.forSignedCertificates( AuthTokens.none(), rootCert );
@@ -152,12 +152,12 @@ public class TLSSocketChannelIT
         // Given
         BoltServerAddress address = BoltServerAddress.LOCAL_DEFAULT;
         SocketChannel channel = SocketChannel.open();
-        channel.connect( new InetSocketAddress( address.host(), address.port() ) );
+        channel.connect( address.toSocketAddress() );
         File knownCerts = File.createTempFile( "neo4j_known_hosts", ".tmp" );
         knownCerts.deleteOnExit();
 
         //create a Fake Cert for the server in knownCert
-        createFakeServerCertPairInKnownCerts( address.host(), address.port(), knownCerts );
+        createFakeServerCertPairInKnownCerts( address, knownCerts );
 
         // When & Then
         SecurityPlan securityPlan = SecurityPlan.forTrustOnFirstUse( AuthTokens.none(), knownCerts, address, new DevNullLogger() );
@@ -183,11 +183,11 @@ public class TLSSocketChannelIT
         }
     }
 
-    private void createFakeServerCertPairInKnownCerts( String host, int port, File knownCerts )
+    private void createFakeServerCertPairInKnownCerts( BoltServerAddress address, File knownCerts )
             throws Throwable
     {
-        String ip = InetAddress.getByName( host ).getHostAddress(); // localhost -> 127.0.0.1
-        String serverId = ip + ":" + port;
+        address = address.resolve();  // localhost -> 127.0.0.1
+        String serverId = address.toString();
 
         X509Certificate cert = CertificateToolTest.generateSelfSignedCertificate();
         String certStr = fingerprint(cert);
@@ -207,7 +207,7 @@ public class TLSSocketChannelIT
                         Neo4jSettings.CERT_DIR,
                         folder.getRoot().getAbsolutePath().replace("\\", "/") ) );
         SocketChannel channel = SocketChannel.open();
-        channel.connect( new InetSocketAddress( neo4j.address().host(), neo4j.address().port() ) );
+        channel.connect( neo4j.address().toSocketAddress() );
         File trustedCertFile = folder.newFile( "neo4j_trusted_cert.tmp" );
         X509Certificate aRandomCert = CertificateToolTest.generateSelfSignedCertificate();
         CertificateTool.saveX509Cert( aRandomCert, trustedCertFile );
@@ -241,7 +241,7 @@ public class TLSSocketChannelIT
         BoltServerAddress address = BoltServerAddress.LOCAL_DEFAULT;
         Logger logger = mock( Logger.class );
         SocketChannel channel = SocketChannel.open();
-        channel.connect( new InetSocketAddress( address.host(), address.port() ) );
+        channel.connect( address.toSocketAddress() );
 
         // When
         URI url = URI.create( "localhost:7687" );

@@ -18,21 +18,22 @@
  */
 package org.neo4j.driver.internal;
 
-import org.neo4j.driver.internal.connector.socket.SocketConnector;
-import org.neo4j.driver.internal.pool.InternalConnectionPool;
+import org.neo4j.driver.internal.pool.SocketConnectionPool;
 import org.neo4j.driver.internal.pool.PoolSettings;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.BoltServerAddress;
-import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 
+import java.util.*;
+
 public class DirectDriver implements Driver
 {
+    private final Set<BoltServerAddress> servers;
     private final BoltServerAddress address;
     private final SecurityPlan securityPlan;
     private final Logging logging;
@@ -41,9 +42,18 @@ public class DirectDriver implements Driver
     public DirectDriver( BoltServerAddress address, SecurityPlan securityPlan, PoolSettings poolSettings, Logging logging )
     {
         this.address = address;
+        Set<BoltServerAddress> servers = new HashSet<>();
+        servers.add( this.address );
+        this.servers = Collections.unmodifiableSet( servers );
         this.securityPlan = securityPlan;
         this.logging = logging;
-        this.connections = new InternalConnectionPool( new SocketConnector(), Clock.SYSTEM, securityPlan, poolSettings, logging );
+        this.connections = new SocketConnectionPool( securityPlan, poolSettings, logging );
+    }
+
+    @Override
+    public Set<BoltServerAddress> servers()
+    {
+        return servers;
     }
 
     @Override

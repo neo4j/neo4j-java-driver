@@ -18,20 +18,26 @@
  */
 package org.neo4j.driver.internal.pool;
 
-import java.net.URI;
-import java.util.Arrays;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.driver.internal.Version;
+import org.neo4j.driver.internal.connector.ConcurrencyGuardingConnection;
+import org.neo4j.driver.internal.connector.socket.SocketConnection;
+import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
-import org.neo4j.driver.internal.spi.Connector;
 import org.neo4j.driver.internal.util.BoltServerAddress;
 import org.neo4j.driver.internal.util.Clock;
+import org.neo4j.driver.v1.AuthToken;
+import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Logging;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 
 /**
@@ -46,31 +52,52 @@ import org.neo4j.driver.v1.exceptions.Neo4jException;
  * The driver is thread safe. Each thread could try to get a session from the pool and then return it to the pool
  * at the same time.
  */
-public class InternalConnectionPool implements ConnectionPool
+public class SocketConnectionPool implements ConnectionPool
 {
 
     /**
-     * Pools, organized by URL.
+     * Pools, organized by server address.
      */
     private final ConcurrentHashMap<BoltServerAddress,BlockingQueue<PooledConnection>> pools = new ConcurrentHashMap<>();
 
-    private final Connector connector;
+    private final Clock clock = Clock.SYSTEM;
+
     private final SecurityPlan securityPlan;
-    private final Clock clock;
     private final PoolSettings poolSettings;
     private final Logging logging;
 
     /** Shutdown flag */
     private final AtomicBoolean stopped = new AtomicBoolean( false );
 
-    public InternalConnectionPool( Connector connector, Clock clock, SecurityPlan securityPlan,
-                                   PoolSettings poolSettings, Logging logging )
+    public SocketConnectionPool( SecurityPlan securityPlan, PoolSettings poolSettings, Logging logging )
     {
         this.securityPlan = securityPlan;
-        this.clock = clock;
         this.poolSettings = poolSettings;
         this.logging = logging;
-        this.connector = connector;
+    }
+
+    private Connection connect( BoltServerAddress address ) throws ClientException
+    {
+        Connection conn = new SocketConnection( address, securityPlan, logging );
+
+        // Because SocketConnection is not thread safe, wrap it in this guard
+        // to ensure concurrent access leads causes application errors
+        conn = new ConcurrencyGuardingConnection( conn );
+        conn.init( "bolt-java-driver/" + Version.driverVersion(), tokenAsMap( securityPlan.authToken() ) );
+        return conn;
+    }
+
+    private static Map<String,Value> tokenAsMap( AuthToken token )
+    {
+        if( token instanceof InternalAuthToken )
+        {
+            return ((InternalAuthToken) token).toMap();
+        }
+        else
+        {
+            throw new ClientException( "Unknown authentication token, `" + token + "`. Please use one of the supported " +
+                    "tokens from `" + AuthTokens.class.getSimpleName() + "`." );
+        }
     }
 
     @Override
@@ -84,8 +111,8 @@ public class InternalConnectionPool implements ConnectionPool
         PooledConnection conn = connections.poll();
         if ( conn == null )
         {
-            conn = new PooledConnection(connector.connect( address, securityPlan, logging ), new
-                    PooledConnectionReleaseConsumer( connections, stopped, poolSettings ), clock);
+            conn = new PooledConnection( connect( address ), new
+                    PooledConnectionReleaseConsumer( connections, stopped, poolSettings ), clock );
         }
         conn.updateUsageTimestamp();
         return conn;

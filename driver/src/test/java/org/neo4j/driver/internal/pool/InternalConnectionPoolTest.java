@@ -18,64 +18,9 @@
  */
 package org.neo4j.driver.internal.pool;
 
-import org.junit.Test;
-
-import java.net.URI;
-import java.util.Collections;
-
-import org.neo4j.driver.internal.security.SecurityPlan;
-import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.spi.Connector;
-import org.neo4j.driver.internal.util.BoltServerAddress;
-import org.neo4j.driver.internal.util.Clock;
-import org.neo4j.driver.v1.AuthToken;
-import org.neo4j.driver.v1.AuthTokens;
-import org.neo4j.driver.v1.Config;
-import org.neo4j.driver.v1.Logging;
-
-import static java.util.Collections.singletonList;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-
 public class InternalConnectionPoolTest
 {
 
-    @Test
-    public void shouldAcquireAndRelease() throws Throwable
-    {
-        // Given
-        BoltServerAddress address = BoltServerAddress.LOCAL_DEFAULT;
-        Connector connector = connector( "bolt" );
-        Config config = Config.defaultConfig();
-        SecurityPlan securityPlan = SecurityPlan.insecure();
-        PoolSettings poolSettings = PoolSettings.defaultSettings();
-        InternalConnectionPool pool = new InternalConnectionPool(
-                connector, Clock.SYSTEM, securityPlan, poolSettings, config.logging() );
+    // TODO: write some tests that actually test something
 
-        Connection conn = pool.acquire( address );
-        conn.close();
-
-        // When
-        Connection acquired = pool.acquire( address );
-
-        // Then
-        verify( connector, times( 1 ) ).connect( address, securityPlan, config.logging() );
-        assertThat( acquired, equalTo(conn) );
-    }
-
-    private Connector connector( String scheme )
-    {
-        Connector mock = mock( Connector.class );
-        when( mock.supportedSchemes() ).thenReturn( Collections.singletonList( scheme ) );
-        when( mock.connect( any( BoltServerAddress.class ), any( SecurityPlan.class ), any( Logging.class ) ) ).thenReturn( mock(
-                Connection.class
-        ) );
-        return mock;
-    }
 }

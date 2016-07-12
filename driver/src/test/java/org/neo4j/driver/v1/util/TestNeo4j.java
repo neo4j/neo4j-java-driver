@@ -107,11 +107,6 @@ public class TestNeo4j implements TestRule
         return Neo4jRunner.DEFAULT_ADDRESS;
     }
 
-    public String host()
-    {
-        return address().host();
-    }
-
     static void clearDatabaseContents( Session session, String reason )
     {
         Neo4jRunner.debug( "Clearing database contents for: %s", reason );

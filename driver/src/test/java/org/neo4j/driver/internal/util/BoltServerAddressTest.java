@@ -27,7 +27,7 @@ import static org.junit.Assert.*;
 public class BoltServerAddressTest
 {
     @Test
-    public void shouldWorkForVariantsOfLocalHost() throws Exception
+    public void variantsOfLocalHostShouldResolveAsLocal() throws Exception
     {
         assertThat( new BoltServerAddress( "localhost", 7687 ).isLocal(), equalTo( true ) );
         assertThat( new BoltServerAddress( "LocalHost", 7687 ).isLocal(), equalTo( true ) );
@@ -35,6 +35,18 @@ public class BoltServerAddressTest
         assertThat( new BoltServerAddress( "127.0.0.1", 7687 ).isLocal(), equalTo( true ) );
         assertThat( new BoltServerAddress( "127.5.6.7", 7687 ).isLocal(), equalTo( true ) );
         assertThat( new BoltServerAddress( "x", 7687 ).isLocal(), equalTo( false ) );
+    }
+
+    @Test
+    public void defaultPortShouldBe7687()
+    {
+        assertThat( BoltServerAddress.DEFAULT_PORT, equalTo( 7687 ) );
+    }
+
+    @Test
+    public void portShouldUseDefaultIfNotSupplied()
+    {
+        assertThat( new BoltServerAddress( "localhost" ).port(), equalTo( BoltServerAddress.DEFAULT_PORT ) );
     }
 
 }

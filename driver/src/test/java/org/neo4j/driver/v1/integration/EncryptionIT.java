@@ -64,7 +64,7 @@ public class EncryptionIT
         Driver driver = GraphDatabase.driver( neo4j.uri(), Config.build().withEncryptionLevel( REQUIRED_NON_LOCAL ).toConfig() );
 
         // Then
-        assertThat( driver.isEncrypted(), equalTo( neo4j.address().isLocal() ) );
+        assertThat( driver.isEncrypted(), equalTo( !neo4j.address().isLocal() ) );
 
         // When
         Session session = driver.session();

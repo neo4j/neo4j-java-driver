@@ -19,7 +19,9 @@
 package org.neo4j.driver.v1;
 
 import java.net.URI;
+import java.util.Set;
 
+import org.neo4j.driver.internal.util.BoltServerAddress;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 
 /**
@@ -55,10 +57,10 @@ import org.neo4j.driver.v1.exceptions.Neo4jException;
  *
  * // Sessions are pooled, to avoid the overhead of creating new connections - this means
  * // it is very important to close your session when you are done with it, otherwise you will
- * // run out of sessions.
+ * // run out of resources.
  * session.close();
  *
- * // And, to clean up resources, always close the driver when your application is done
+ * // And, to clean up, always close the driver when your application is done.
  * driver.close();
  * }
  * </pre>
@@ -71,6 +73,11 @@ import org.neo4j.driver.v1.exceptions.Neo4jException;
  */
 public interface Driver extends AutoCloseable
 {
+    /**
+     * Return a collection of the server addresses known by this driver.
+     */
+    Set<BoltServerAddress> servers();
+
     /**
      * Return a flag to indicate whether or not encryption is used for this driver.
      */

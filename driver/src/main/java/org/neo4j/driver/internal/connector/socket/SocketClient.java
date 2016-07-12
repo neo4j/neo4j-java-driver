@@ -170,7 +170,7 @@ public class SocketClient
 
     private SocketProtocol negotiateProtocol() throws IOException
     {
-        logger.debug( "~~ [HANDSHAKE] [0x6060B017, 1, 0, 0, 0]." );
+        logger.debug( "~~ [HANDSHAKE] [0x6060B017, 1, 0, 0, 0]" );
         //Propose protocol versions
         ByteBuffer buf = ByteBuffer.allocateDirect( 5 * 4 ).order( BIG_ENDIAN );
         buf.putInt( MAGIC_PREAMBLE );
@@ -240,7 +240,7 @@ public class SocketClient
             SocketChannel soChannel = SocketChannel.open();
             soChannel.setOption( StandardSocketOptions.SO_REUSEADDR, true );
             soChannel.setOption( StandardSocketOptions.SO_KEEPALIVE, true );
-            soChannel.connect( new InetSocketAddress( address.host(), address.port() ) );
+            soChannel.connect( address.toSocketAddress() );
 
             ByteChannel channel;
 

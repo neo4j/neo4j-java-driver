@@ -16,17 +16,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.spi;
 
+package org.neo4j.driver.internal.spi;
 
 import org.neo4j.driver.internal.util.BoltServerAddress;
 
 public interface ConnectionPool extends AutoCloseable
 {
     /**
-     * Acquire a connection - if a live connection exists in the pool, it will be used, otherwise a new connection
-     * is created with an applicable {@link Connector}.
+     * Acquire a connection - if a live connection exists in the pool, it will
+     * be used, otherwise a new connection will be created.
+     *
      * @param address
      */
     Connection acquire( BoltServerAddress address );
+
 }

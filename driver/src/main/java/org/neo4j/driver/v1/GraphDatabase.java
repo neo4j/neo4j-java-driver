@@ -165,7 +165,7 @@ public class GraphDatabase
         case "bolt":
             return new DirectDriver( address, securityPlan, poolSettings, config.logging() );
         default:
-            throw new IllegalArgumentException( format( "Scheme '%s' not supported", uri.getScheme() ) );
+            throw new ClientException( format( "Unsupported URI scheme: %s", uri.getScheme() ) );
         }
     }
 
