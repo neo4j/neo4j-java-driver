@@ -148,7 +148,7 @@ public class InternalSession implements Session
                 //must check if transaction has been closed
                 if (currentTransaction != null)
                 {
-                    currentTransaction.markAsRolledBack();
+                    currentTransaction.failure();
                     currentTransaction = null;
                     connection.onError( null );
                 }

@@ -23,7 +23,6 @@ import org.junit.Test;
 
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.StatementResult;
-import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
 import static org.junit.Assert.assertEquals;
@@ -56,20 +55,6 @@ public class ResultStreamIT
         // When
         StatementResult res = session.run( "CREATE (n:TestNode {name:'test'}) RETURN n" );
 
-        // Then
-        assertEquals( "[n]", res.keys().toString() );
-        assertNotNull( res.single() );
-        assertEquals( "[n]", res.keys().toString() );
-    }
-
-    @Test
-    public void should()
-    {
-        // When
-        StatementResult res = session.run( "CREATE (n:TestNode {name:'test', prop: [42]}) RETURN n" );
-
-        Node n = res.next().get( "n" ).asNode();
-        System.out.println( n );
         // Then
         assertEquals( "[n]", res.keys().toString() );
         assertNotNull( res.single() );
