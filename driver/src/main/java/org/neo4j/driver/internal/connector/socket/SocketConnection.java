@@ -153,7 +153,6 @@ public class SocketConnection implements Connection
     {
         if ( responseHandler.serverFailureOccurred() )
         {
-            ackFailure( StreamCollector.NO_OP );
             Neo4jException exception = responseHandler.serverFailure();
             responseHandler.clearError();
             throw exception;
@@ -199,5 +198,11 @@ public class SocketConnection implements Connection
     public void onError( Runnable runnable )
     {
         throw new UnsupportedOperationException( "Error subscribers are not supported on SocketConnection." );
+    }
+
+    @Override
+    public boolean hasUnrecoverableErrors()
+    {
+        throw new UnsupportedOperationException( "Unrecoverable error detection is not supported on SocketConnection." );
     }
 }

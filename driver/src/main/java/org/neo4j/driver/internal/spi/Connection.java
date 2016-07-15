@@ -102,4 +102,7 @@ public interface Connection extends AutoCloseable
      * @param runnable
      */
     void onError( Runnable runnable );
+
+
+    boolean hasUnrecoverableErrors();
 }

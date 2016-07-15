@@ -195,6 +195,12 @@ public class ConcurrencyGuardingConnection implements Connection
         delegate.onError( runnable );
     }
 
+    @Override
+    public boolean hasUnrecoverableErrors()
+    {
+        return delegate.hasUnrecoverableErrors();
+    }
+
     private void markAsAvailable()
     {
         inUse.set( false );

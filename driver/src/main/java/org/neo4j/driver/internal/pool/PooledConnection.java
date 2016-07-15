@@ -228,6 +228,10 @@ public class PooledConnection implements Connection
         {
             unrecoverableErrorsOccurred = true;
         }
+        else
+        {
+            ackFailure( StreamCollector.NO_OP );
+        }
         if( onError != null )
         {
             onError.run();

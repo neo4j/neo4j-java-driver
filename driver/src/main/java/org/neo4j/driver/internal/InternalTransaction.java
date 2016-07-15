@@ -200,5 +200,8 @@ public class InternalTransaction implements Transaction
         return InternalTypeSystem.TYPE_SYSTEM;
     }
 
-
+    public void markToClose()
+    {
+        state = State.FAILED;
+    }
 }
