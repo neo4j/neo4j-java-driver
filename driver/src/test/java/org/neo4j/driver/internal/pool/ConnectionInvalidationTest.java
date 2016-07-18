@@ -103,7 +103,7 @@ public class ConnectionInvalidationTest
     public void shouldInvalidConnectionIfFailedToReset() throws Throwable
     {
         // Given a connection that's broken
-        Mockito.doThrow( new ClientException( "That didn't work" ) ).when( delegate ).reset( any( StreamCollector.class ) );
+        Mockito.doThrow( new ClientException( "That didn't work" ) ).when( delegate ).reset();
         Config config = Config.defaultConfig();
         PooledConnection conn = new PooledConnection( delegate, Consumers.<PooledConnection>noOp(), clock );
 

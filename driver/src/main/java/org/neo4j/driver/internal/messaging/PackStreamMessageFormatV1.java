@@ -327,7 +327,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                     break;
 
                 default:
-                    throw new UnsupportedOperationException( "Unknown type: " + value );
+                    throw new IOException( "Unknown type: " + value );
             }
         }
 

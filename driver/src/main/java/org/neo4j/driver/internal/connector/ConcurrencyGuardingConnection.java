@@ -100,12 +100,12 @@ public class ConcurrencyGuardingConnection implements Connection
     }
 
     @Override
-    public void reset( StreamCollector collector )
+    public void reset()
     {
         try
         {
             markAsInUse();
-            delegate.reset( collector );
+            delegate.reset();
         }
         finally
         {
@@ -114,12 +114,12 @@ public class ConcurrencyGuardingConnection implements Connection
     }
 
     @Override
-    public void ackFailure( StreamCollector collector )
+    public void ackFailure()
     {
         try
         {
             markAsInUse();
-            delegate.ackFailure( collector );
+            delegate.ackFailure();
         }
         finally
         {

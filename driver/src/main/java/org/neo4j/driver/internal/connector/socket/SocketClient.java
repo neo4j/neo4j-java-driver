@@ -129,9 +129,7 @@ public class SocketClient
     {
         reader.read( handler );
 
-        // TODO: all the errors come from the following trace should result in the termination of this channel
-        // https://github.com/neo4j/neo4j/blob/3
-        // .0/community/bolt/src/main/java/org/neo4j/bolt/v1/transport/BoltProtocolV1.java#L86
+        // Stop immediately if bolt protocol error happened on the server
         if ( handler.protocolViolationErrorOccurred() )
         {
             stop();

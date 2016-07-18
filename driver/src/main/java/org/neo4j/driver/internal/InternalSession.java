@@ -198,8 +198,8 @@ public class InternalSession implements Session
     {
         if( connection.hasUnrecoverableErrors() )
         {
-            throw new ClientException( "Cannot run more statements in the current session as unrecoverable errors " +
-                                       "has happened. Please close the currect session and re-run your statement in a" +
+            throw new ClientException( "Cannot run more statements in the current session as an unrecoverable error " +
+                                       "has happened. Please close the current session and re-run your statement in a" +
                                        " new session." );
         }
     }

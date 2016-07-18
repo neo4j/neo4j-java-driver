@@ -67,7 +67,7 @@ public class SocketConnection implements Connection
     @Override
     public void init( String clientName, Map<String,Value> authToken )
     {
-        queueMessage( new InitMessage( clientName, authToken ), StreamCollector.NO_OP );
+        queueMessage( new InitMessage( clientName, authToken ), StreamCollector.INIT );
         sync();
     }
 
@@ -90,15 +90,15 @@ public class SocketConnection implements Connection
     }
 
     @Override
-    public void reset( StreamCollector collector )
+    public void reset()
     {
-        queueMessage( RESET, collector );
+        queueMessage( RESET, StreamCollector.RESET );
     }
 
     @Override
-    public void ackFailure( StreamCollector collector )
+    public void ackFailure()
     {
-        queueMessage( ACK_FAILURE, collector );
+        queueMessage( ACK_FAILURE, StreamCollector.ACK_FAILURE );
     }
 
     @Override

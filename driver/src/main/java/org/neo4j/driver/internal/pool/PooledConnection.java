@@ -124,11 +124,11 @@ public class PooledConnection implements Connection
     }
 
     @Override
-    public void reset( StreamCollector collector )
+    public void reset()
     {
         try
         {
-            delegate.reset( collector );
+            delegate.reset();
         }
         catch ( RuntimeException e )
         {
@@ -137,11 +137,11 @@ public class PooledConnection implements Connection
     }
 
     @Override
-    public void ackFailure( StreamCollector collector )
+    public void ackFailure()
     {
         try
         {
-            delegate.ackFailure( collector );
+            delegate.ackFailure();
         }
         catch ( RuntimeException e )
         {
@@ -230,7 +230,7 @@ public class PooledConnection implements Connection
         }
         else
         {
-            ackFailure( StreamCollector.NO_OP );
+            ackFailure();
         }
         if( onError != null )
         {
