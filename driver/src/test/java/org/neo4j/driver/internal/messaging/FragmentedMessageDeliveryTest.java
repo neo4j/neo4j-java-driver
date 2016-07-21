@@ -29,7 +29,7 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Collections;
 
-import org.neo4j.driver.internal.connector.socket.ChunkedOutput;
+import org.neo4j.driver.internal.net.ChunkedOutput;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.util.DumpMessage;
 

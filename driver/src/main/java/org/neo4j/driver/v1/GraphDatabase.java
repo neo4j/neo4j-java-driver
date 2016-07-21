@@ -22,10 +22,12 @@ import java.io.IOException;
 import java.net.URI;
 import java.security.GeneralSecurityException;
 
+import org.neo4j.driver.internal.ClusterDriver;
 import org.neo4j.driver.internal.DirectDriver;
-import org.neo4j.driver.internal.pool.PoolSettings;
+import org.neo4j.driver.internal.SessionParameters;
+import org.neo4j.driver.internal.net.pooling.PoolSettings;
 import org.neo4j.driver.internal.security.SecurityPlan;
-import org.neo4j.driver.internal.util.BoltServerAddress;
+import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static java.lang.String.format;
@@ -132,12 +134,15 @@ public class GraphDatabase
      */
     public static Driver driver( URI uri, AuthToken authToken, Config config )
     {
-        // Fill in defaults
+        // Break down the URI into its constituent parts
+        String scheme = uri.getScheme();
         BoltServerAddress address = BoltServerAddress.from( uri );
-        if (authToken == null)
-        {
-            authToken = AuthTokens.none();
-        }
+
+        // Collate session parameters
+        SessionParameters sessionParameters =
+                new SessionParameters( authToken == null ? AuthTokens.none() : authToken );
+
+        // Make sure we have some configuration to play with
         if (config == null)
         {
             config = Config.defaultConfig();
@@ -159,13 +164,15 @@ public class GraphDatabase
                 config.maxIdleConnectionPoolSize(),
                 config.idleTimeBeforeConnectionTest() );
 
-        // Finally, construct the driver proper
-        switch ( uri.getScheme() )
+        // And finally, construct the driver proper
+        switch ( scheme )
         {
         case "bolt":
-            return new DirectDriver( address, securityPlan, poolSettings, config.logging() );
+            return new DirectDriver( address, sessionParameters, securityPlan, poolSettings, config.logging() );
+        case "bolt+discovery":
+            return new ClusterDriver( address, sessionParameters, securityPlan, poolSettings, config.logging() );
         default:
-            throw new ClientException( format( "Unsupported URI scheme: %s", uri.getScheme() ) );
+            throw new ClientException( format( "Unsupported URI scheme: %s", scheme ) );
         }
     }
 
@@ -185,9 +192,9 @@ public class GraphDatabase
             switch ( config.trustStrategy().strategy() )
             {
             case TRUST_SIGNED_CERTIFICATES:
-                return SecurityPlan.forSignedCertificates( authToken, config.trustStrategy().certFile() );
+                return SecurityPlan.forSignedCertificates( config.trustStrategy().certFile() );
             case TRUST_ON_FIRST_USE:
-                return SecurityPlan.forTrustOnFirstUse( authToken, config.trustStrategy().certFile(),
+                return SecurityPlan.forTrustOnFirstUse( config.trustStrategy().certFile(),
                         address, config.logging().getLog( "session" ) );
             default:
                 throw new ClientException( "Unknown TLS authentication strategy: " + config.trustStrategy().strategy().name() );
@@ -195,7 +202,7 @@ public class GraphDatabase
         }
         else
         {
-            return new SecurityPlan( authToken, false );
+            return new SecurityPlan( false );
         }
     }
 

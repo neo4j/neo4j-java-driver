@@ -28,8 +28,8 @@ import java.security.GeneralSecurityException;
 import java.util.LinkedList;
 import java.util.Queue;
 
-import org.neo4j.driver.internal.connector.socket.SocketClient;
-import org.neo4j.driver.internal.connector.socket.SocketResponseHandler;
+import org.neo4j.driver.internal.net.SocketClient;
+import org.neo4j.driver.internal.net.SocketResponseHandler;
 import org.neo4j.driver.internal.logging.DevNullLogger;
 import org.neo4j.driver.internal.messaging.InitMessage;
 import org.neo4j.driver.internal.messaging.Message;

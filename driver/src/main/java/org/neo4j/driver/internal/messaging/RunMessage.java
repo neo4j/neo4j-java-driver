@@ -51,7 +51,7 @@ public class RunMessage implements Message
     @Override
     public String toString()
     {
-        return format( "[RUN \"%s\" %s]", statement, parameters );
+        return format( "RUN \"%s\" %s", statement, parameters );
     }
 
     @Override

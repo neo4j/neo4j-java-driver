@@ -39,7 +39,7 @@ public class IgnoredMessage implements Message
     @Override
     public String toString()
     {
-        return "[IGNORED]";
+        return "IGNORED {}";
     }
 
     @Override

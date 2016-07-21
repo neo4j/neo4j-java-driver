@@ -19,7 +19,7 @@
 
 package org.neo4j.driver.internal.spi;
 
-import org.neo4j.driver.internal.util.BoltServerAddress;
+import org.neo4j.driver.internal.net.BoltServerAddress;
 
 public interface ConnectionPool extends AutoCloseable
 {

@@ -29,7 +29,7 @@ import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 import javax.net.ssl.SSLEngineResult.Status;
 
-import org.neo4j.driver.internal.util.BoltServerAddress;
+import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.internal.util.BytePrinter;
 import org.neo4j.driver.v1.exceptions.ClientException;
@@ -111,6 +111,7 @@ public class TLSSocketChannel implements ByteChannel
      */
     private void runHandshake() throws IOException
     {
+        logger.debug( "~~ [OPENING SECURE CHANNEL]" );
         sslEngine.beginHandshake();
         HandshakeStatus handshakeStatus = sslEngine.getHandshakeStatus();
         while ( handshakeStatus != FINISHED && handshakeStatus != NOT_HANDSHAKING )
@@ -442,7 +443,7 @@ public class TLSSocketChannel implements ByteChannel
             }
             // Close transport
             channel.close();
-            logger.debug( "TLS connection closed" );
+            logger.debug( "~~ [CLOSED SECURE CHANNEL]" );
         }
         catch(IOException e)
         {

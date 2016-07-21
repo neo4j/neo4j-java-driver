@@ -21,8 +21,9 @@ package org.neo4j.driver.v1;
 import java.io.File;
 import java.util.logging.Level;
 
+import org.neo4j.driver.internal.logging.ConsoleLogging;
 import org.neo4j.driver.internal.logging.JULogging;
-import org.neo4j.driver.internal.pool.PoolSettings;
+import org.neo4j.driver.internal.net.pooling.PoolSettings;
 import org.neo4j.driver.v1.util.Immutable;
 
 import static java.lang.System.getProperty;

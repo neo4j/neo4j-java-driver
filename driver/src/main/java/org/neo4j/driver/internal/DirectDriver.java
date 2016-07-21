@@ -16,76 +16,47 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.neo4j.driver.internal;
 
-import org.neo4j.driver.internal.pool.SocketConnectionPool;
-import org.neo4j.driver.internal.pool.PoolSettings;
+import org.neo4j.driver.internal.net.pooling.SocketConnectionPool;
+import org.neo4j.driver.internal.net.pooling.PoolSettings;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.ConnectionPool;
-import org.neo4j.driver.internal.util.BoltServerAddress;
-import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Session;
-import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.exceptions.Neo4jException;
 
-import java.util.*;
+import static java.lang.String.format;
 
-public class DirectDriver implements Driver
+public class DirectDriver extends BaseDriver
 {
-    private final Set<BoltServerAddress> servers;
-    private final BoltServerAddress address;
-    private final SecurityPlan securityPlan;
-    private final Logging logging;
     private final ConnectionPool connections;
 
-    public DirectDriver( BoltServerAddress address, SecurityPlan securityPlan, PoolSettings poolSettings, Logging logging )
+    public DirectDriver( BoltServerAddress address, SessionParameters sessionParameters, SecurityPlan securityPlan,
+                         PoolSettings poolSettings, Logging logging )
     {
-        this.address = address;
-        Set<BoltServerAddress> servers = new HashSet<>();
-        servers.add( this.address );
-        this.servers = Collections.unmodifiableSet( servers );
-        this.securityPlan = securityPlan;
-        this.logging = logging;
-        this.connections = new SocketConnectionPool( securityPlan, poolSettings, logging );
+        super( address, sessionParameters, securityPlan, logging );
+        this.connections = new SocketConnectionPool( sessionParameters, securityPlan, poolSettings, logging );
     }
 
-    @Override
-    public Set<BoltServerAddress> servers()
-    {
-        return servers;
-    }
-
-    @Override
-    public boolean isEncrypted()
-    {
-        return securityPlan.requiresEncryption();
-    }
-
-    /**
-     * Establish a session
-     * @return a session that could be used to run {@link Session#run(String) a statement} or
-     * {@link Session#beginTransaction() a transaction }.
-     */
     @Override
     public Session session()
     {
-        return new InternalSession( connections.acquire( address ), logging.getLog( "session" ) );
+        return new InternalSession( connections.acquire( randomServer() ), log );
     }
 
-    /**
-     * Close all the resources assigned to this driver
-     * @throws Neo4jException any error that might happen when releasing all resources
-     */
-    public void close() throws Neo4jException
+    @Override
+    public void close()
     {
         try
         {
             connections.close();
         }
-        catch ( Exception e )
+        catch ( Exception ex )
         {
-            throw new ClientException( "Failed to close driver.", e );
+            log.error( format( "~~ [ERROR] %s", ex.getMessage() ), ex );
         }
     }
+
 }

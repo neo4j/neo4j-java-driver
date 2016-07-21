@@ -30,8 +30,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Scanner;
 
-import org.neo4j.driver.internal.security.TrustOnFirstUseTrustManager;
-import org.neo4j.driver.internal.util.BoltServerAddress;
+import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.v1.Logger;
 
 import static org.junit.Assert.assertEquals;

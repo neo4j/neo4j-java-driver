@@ -56,8 +56,21 @@ public abstract class Neo4jException extends RuntimeException
      *
      * @return the Neo4j Status Code for this exception, or 'N/A' if none is available
      */
+    @Deprecated
     public String neo4jErrorCode()
     {
         return code;
     }
+
+    /**
+     * Access the status code for this exception. The Neo4j manual can
+     * provide further details on the available codes and their meanings.
+     *
+     * @return textual code, such as "Neo.ClientError.Procedure.ProcedureNotFound"
+     */
+    public String code()
+    {
+        return code;
+    }
+
 }

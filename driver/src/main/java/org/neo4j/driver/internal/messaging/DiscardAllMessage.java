@@ -33,7 +33,7 @@ public class DiscardAllMessage implements Message
     @Override
     public String toString()
     {
-        return "[DISCARD_ALL]";
+        return "DISCARD_ALL";
     }
 
     @Override

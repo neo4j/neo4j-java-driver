@@ -38,7 +38,7 @@ public class PullAllMessage implements Message
     @Override
     public String toString()
     {
-        return "[PULL_ALL]";
+        return "PULL_ALL";
     }
 
     @Override

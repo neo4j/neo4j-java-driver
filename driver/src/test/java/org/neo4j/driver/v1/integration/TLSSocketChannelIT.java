@@ -27,8 +27,6 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.channels.SocketChannel;
 import java.security.cert.X509Certificate;
@@ -37,7 +35,7 @@ import javax.net.ssl.SSLHandshakeException;
 import org.neo4j.driver.internal.logging.DevNullLogger;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.security.TLSSocketChannel;
-import org.neo4j.driver.internal.util.BoltServerAddress;
+import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.v1.*;
 import org.neo4j.driver.internal.util.CertificateTool;
 import org.neo4j.driver.v1.util.CertificateToolTest;
@@ -87,13 +85,13 @@ public class TLSSocketChannelIT
 
         // When
 
-        SecurityPlan securityPlan = SecurityPlan.forTrustOnFirstUse( AuthTokens.none(), knownCerts, address, new DevNullLogger() );
+        SecurityPlan securityPlan = SecurityPlan.forTrustOnFirstUse( knownCerts, address, new DevNullLogger() );
         TLSSocketChannel sslChannel =
                 new TLSSocketChannel( address, securityPlan, channel, logger );
         sslChannel.close();
 
         // Then
-        verify( logger, atLeastOnce() ).debug( "TLS connection closed" );
+        verify( logger, atLeastOnce() ).debug( "~~ [CLOSED SECURE CHANNEL]" );
     }
 
     @Test
@@ -130,14 +128,14 @@ public class TLSSocketChannelIT
             channel.connect( address.toSocketAddress() );
 
             // When
-            SecurityPlan securityPlan = SecurityPlan.forSignedCertificates( AuthTokens.none(), rootCert );
+            SecurityPlan securityPlan = SecurityPlan.forSignedCertificates( rootCert );
             TLSSocketChannel sslChannel =
                     new TLSSocketChannel( address, securityPlan, channel, logger
                     );
             sslChannel.close();
 
             // Then
-            verify( logger, atLeastOnce() ).debug( "TLS connection closed" );
+            verify( logger, atLeastOnce() ).debug( "~~ [OPENING SECURE CHANNEL]" );
         }
         finally
         {
@@ -160,7 +158,7 @@ public class TLSSocketChannelIT
         createFakeServerCertPairInKnownCerts( address, knownCerts );
 
         // When & Then
-        SecurityPlan securityPlan = SecurityPlan.forTrustOnFirstUse( AuthTokens.none(), knownCerts, address, new DevNullLogger() );
+        SecurityPlan securityPlan = SecurityPlan.forTrustOnFirstUse( knownCerts, address, new DevNullLogger() );
         TLSSocketChannel sslChannel = null;
         try
         {
@@ -213,7 +211,7 @@ public class TLSSocketChannelIT
         CertificateTool.saveX509Cert( aRandomCert, trustedCertFile );
 
         // When & Then
-        SecurityPlan securityPlan = SecurityPlan.forSignedCertificates( AuthTokens.none(), trustedCertFile );
+        SecurityPlan securityPlan = SecurityPlan.forSignedCertificates( trustedCertFile );
         TLSSocketChannel sslChannel = null;
         try
         {
@@ -245,12 +243,12 @@ public class TLSSocketChannelIT
 
         // When
         URI url = URI.create( "localhost:7687" );
-        SecurityPlan securityPlan = SecurityPlan.forSignedCertificates( AuthTokens.none(), Neo4jSettings.DEFAULT_TLS_CERT_FILE );
+        SecurityPlan securityPlan = SecurityPlan.forSignedCertificates( Neo4jSettings.DEFAULT_TLS_CERT_FILE );
         TLSSocketChannel sslChannel = new TLSSocketChannel( address, securityPlan, channel, logger );
         sslChannel.close();
 
         // Then
-        verify( logger, atLeastOnce() ).debug( "TLS connection closed" );
+        verify( logger, atLeastOnce() ).debug( "~~ [OPENING SECURE CHANNEL]" );
     }
 
     @Test

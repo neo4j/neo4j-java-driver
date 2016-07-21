@@ -49,7 +49,7 @@ public class SuccessMessage implements Message
     @Override
     public String toString()
     {
-        return format( "[SUCCESS %s]", metadata );
+        return format( "SUCCESS %s", metadata );
     }
 
     @Override

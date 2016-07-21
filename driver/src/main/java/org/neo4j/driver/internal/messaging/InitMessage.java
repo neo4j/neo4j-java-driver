@@ -32,25 +32,25 @@ import static java.lang.String.format;
  */
 public class InitMessage implements Message
 {
-    private final String clientNameAndVersion;
+    private final String userAgent;
     private Map<String,Value> authToken;
 
-    public InitMessage( String clientNameAndVersion, Map<String,Value> authToken )
+    public InitMessage( String userAgent, Map<String,Value> authToken )
     {
-        this.clientNameAndVersion = clientNameAndVersion;
+        this.userAgent = userAgent;
         this.authToken = authToken;
     }
 
     @Override
     public void dispatch( MessageHandler handler ) throws IOException
     {
-        handler.handleInitMessage( clientNameAndVersion, authToken );
+        handler.handleInitMessage( userAgent, authToken );
     }
 
     @Override
     public String toString()
     {
-        return format( "[INIT \"%s\"]", clientNameAndVersion );
+        return format( "INIT \"%s\" {...}", userAgent, authToken );
     }
 
     @Override
@@ -63,14 +63,14 @@ public class InitMessage implements Message
 
         InitMessage that = (InitMessage) o;
 
-        return !(clientNameAndVersion != null ? !clientNameAndVersion.equals( that.clientNameAndVersion )
-                                              : that.clientNameAndVersion != null);
+        return !(userAgent != null ? !userAgent.equals( that.userAgent )
+                                              : that.userAgent != null);
 
     }
 
     @Override
     public int hashCode()
     {
-        return clientNameAndVersion != null ? clientNameAndVersion.hashCode() : 0;
+        return userAgent != null ? userAgent.hashCode() : 0;
     }
 }

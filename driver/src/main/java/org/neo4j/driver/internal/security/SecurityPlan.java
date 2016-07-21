@@ -19,7 +19,7 @@
 
 package org.neo4j.driver.internal.security;
 
-import org.neo4j.driver.internal.util.BoltServerAddress;
+import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.v1.*;
 
 import javax.net.ssl.TrustManager;
@@ -32,13 +32,11 @@ import java.security.KeyStore;
 import static org.neo4j.driver.internal.util.CertificateTool.loadX509Cert;
 
 /**
- * A SecurityPlan consists of authentication information,
- * an encryption on/off flag and an array of TrustManager
- * instances that can be used to initialize an SSL context.
+ * A SecurityPlan consists of encryption and trust details.
  */
 public class SecurityPlan
 {
-    public static SecurityPlan forSignedCertificates( AuthToken authToken, File certFile )
+    public static SecurityPlan forSignedCertificates( File certFile )
             throws GeneralSecurityException, IOException
     {
         // A certificate file is specified so we will load the certificates in the file
@@ -52,34 +50,27 @@ public class SecurityPlan
         // Create TrustManager from TrustedKeyStore
         TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance( "SunX509" );
         trustManagerFactory.init( trustedKeyStore );
-        return new SecurityPlan( authToken, true, trustManagerFactory.getTrustManagers() );
+        return new SecurityPlan( true, trustManagerFactory.getTrustManagers() );
     }
 
-    public static SecurityPlan forTrustOnFirstUse( AuthToken authToken, File knownHosts, BoltServerAddress address, Logger logger )
+    public static SecurityPlan forTrustOnFirstUse( File knownHosts, BoltServerAddress address, Logger logger )
             throws IOException
     {
-        return new SecurityPlan( authToken, true, new TrustOnFirstUseTrustManager( address, knownHosts, logger ) );
+        return new SecurityPlan( true, new TrustOnFirstUseTrustManager( address, knownHosts, logger ) );
     }
 
     public static SecurityPlan insecure()
     {
-        return new SecurityPlan( AuthTokens.none(), false );
+        return new SecurityPlan( false );
     }
 
-    private final AuthToken authToken;
     private final boolean requiresEncryption;
     private final TrustManager[] trustManagers;
 
-    public SecurityPlan( AuthToken authToken, boolean requiresEncryption, TrustManager... trustManagers )
+    public SecurityPlan( boolean requiresEncryption, TrustManager... trustManagers )
     {
-        this.authToken = authToken;
         this.requiresEncryption = requiresEncryption;
         this.trustManagers = trustManagers;
-    }
-
-    public AuthToken authToken()
-    {
-        return authToken;
     }
 
     public boolean requiresEncryption()

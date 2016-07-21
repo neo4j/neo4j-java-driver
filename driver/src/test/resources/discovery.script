@@ -1,0 +1,11 @@
+!: AUTO INIT
+!: AUTO RESET
+!: AUTO RUN "RETURN 1 // JavaDriver poll to test connection" {}
+
+C: RUN "CALL dbms.cluster.discoverMembers" {}
+   PULL_ALL
+S: SUCCESS {"fields": ["address"]}
+   RECORD ["127.0.0.1:9001"]
+   RECORD ["127.0.0.1:9002"]
+   RECORD ["127.0.0.1:9003"]
+   SUCCESS {}

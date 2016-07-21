@@ -251,7 +251,7 @@ public class BytePrinter
                 }
                 else if ( (i - offset + 1) % 8 == 0 )
                 {
-                    out.print( "    " );
+                    out.print( "  " );
                 }
                 else
                 {

@@ -21,13 +21,17 @@ package org.neo4j.driver.v1;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.driver.internal.util.BoltServerAddress;
+import org.neo4j.driver.internal.ClusterDriver;
+import org.neo4j.driver.internal.DirectDriver;
+import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
 import java.net.URI;
+import java.util.Collection;
 import java.util.Set;
 
 import static org.hamcrest.core.IsEqual.equalTo;
+import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.*;
 import static org.neo4j.driver.v1.Values.parameters;
 
@@ -37,60 +41,30 @@ public class GraphDatabaseTest
     public TestNeo4jSession session = new TestNeo4jSession();
 
     @Test
-    public void directDriverShouldRegisterSingleServer()
+    public void boltSchemeShouldInstantiateDirectDriver()
     {
         // Given
         URI uri = URI.create( "bolt://localhost:7687" );
-        BoltServerAddress address = BoltServerAddress.from( uri );
 
         // When
         Driver driver = GraphDatabase.driver( uri );
 
         // Then
-        Set<BoltServerAddress> addresses = driver.servers();
-        assertThat( addresses.size(), equalTo( 1 ) );
-        assertThat( addresses.contains( address ), equalTo( true ) );
+        assertThat( driver, instanceOf( DirectDriver.class ) );
 
     }
 
     @Test
-    public void missingPortInURIShouldUseDefault()
+    public void boltPlusDiscoverySchemeShouldInstantiateClusterDriver()
     {
         // Given
-        URI uri = URI.create( "bolt://localhost" );
+        URI uri = URI.create( "bolt+discovery://localhost:7687" );
 
         // When
         Driver driver = GraphDatabase.driver( uri );
 
         // Then
-        Set<BoltServerAddress> addresses = driver.servers();
-        assertThat( addresses.size(), equalTo( 1 ) );
-        for ( BoltServerAddress address : addresses )
-        {
-            assertThat( address.port(), equalTo( BoltServerAddress.DEFAULT_PORT ) );
-        }
-
-    }
-
-    @Test
-    public void shouldBeAbleRunCypherThroughDirectDriver()
-    {
-        // Given
-        URI uri = URI.create( "bolt://localhost:7687" );
-        int x;
-
-        // When
-        try ( Driver driver = GraphDatabase.driver( uri ) )
-        {
-            try ( Session session = driver.session() )
-            {
-                Record record = session.run( "RETURN {x}", parameters( "x", 1 ) ).single();
-                x = record.get( 0 ).asInt();
-            }
-        }
-
-        // Then
-        assertThat( x, equalTo( 1 ) );
+        assertThat( driver, instanceOf( ClusterDriver.class ) );
 
     }
 
