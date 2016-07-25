@@ -24,7 +24,11 @@ import org.neo4j.driver.v1.Session;
 
 import static java.lang.String.format;
 
-public class SessionParameters
+/**
+ * The connection settings are used whenever a new connection is
+ * established to a server, specifically as part of the INIT request.
+ */
+public class ConnectionSettings
 {
     public static final String DEFAULT_USER_AGENT = format( "neo4j-java/%s", driverVersion() );
 
@@ -50,13 +54,13 @@ public class SessionParameters
     private final AuthToken authToken;
     private final String userAgent;
 
-    public SessionParameters( AuthToken authToken, String userAgent )
+    public ConnectionSettings( AuthToken authToken, String userAgent )
     {
         this.authToken = authToken;
         this.userAgent = userAgent;
     }
 
-    public SessionParameters( AuthToken authToken )
+    public ConnectionSettings( AuthToken authToken )
     {
         this( authToken, DEFAULT_USER_AGENT );
     }

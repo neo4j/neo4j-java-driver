@@ -31,15 +31,15 @@ import java.util.concurrent.ThreadLocalRandom;
 
 abstract class BaseDriver implements Driver
 {
-    private final SessionParameters sessionParameters;
+    private final ConnectionSettings connectionSettings;
     private final SecurityPlan securityPlan;
     protected final List<BoltServerAddress> servers = new LinkedList<>();
     protected final Logger log;
 
-    BaseDriver( BoltServerAddress address, SessionParameters sessionParameters, SecurityPlan securityPlan, Logging logging )
+    BaseDriver( BoltServerAddress address, ConnectionSettings connectionSettings, SecurityPlan securityPlan, Logging logging )
     {
         this.servers.add( address );
-        this.sessionParameters = sessionParameters;
+        this.connectionSettings = connectionSettings;
         this.securityPlan = securityPlan;
         this.log = logging.getLog( Session.LOG_NAME );
     }

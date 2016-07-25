@@ -33,11 +33,11 @@ public class DirectDriver extends BaseDriver
 {
     private final ConnectionPool connections;
 
-    public DirectDriver( BoltServerAddress address, SessionParameters sessionParameters, SecurityPlan securityPlan,
+    public DirectDriver( BoltServerAddress address, ConnectionSettings connectionSettings, SecurityPlan securityPlan,
                          PoolSettings poolSettings, Logging logging )
     {
-        super( address, sessionParameters, securityPlan, logging );
-        this.connections = new SocketConnectionPool( sessionParameters, securityPlan, poolSettings, logging );
+        super( address, connectionSettings, securityPlan, logging );
+        this.connections = new SocketConnectionPool( connectionSettings, securityPlan, poolSettings, logging );
     }
 
     @Override

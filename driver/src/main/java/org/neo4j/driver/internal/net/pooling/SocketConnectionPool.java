@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.driver.internal.SessionParameters;
+import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.net.ConcurrencyGuardingConnection;
 import org.neo4j.driver.internal.net.SocketConnection;
@@ -38,7 +38,6 @@ import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.exceptions.Neo4jException;
 
 /**
  * The pool is designed to buffer certain amount of free sessions into session pool. When closing a session, we first
@@ -62,7 +61,7 @@ public class SocketConnectionPool implements ConnectionPool
 
     private final Clock clock = Clock.SYSTEM;
 
-    private final SessionParameters sessionParameters;
+    private final ConnectionSettings connectionSettings;
     private final SecurityPlan securityPlan;
     private final PoolSettings poolSettings;
     private final Logging logging;
@@ -70,10 +69,10 @@ public class SocketConnectionPool implements ConnectionPool
     /** Shutdown flag */
     private final AtomicBoolean stopped = new AtomicBoolean( false );
 
-    public SocketConnectionPool( SessionParameters sessionParameters, SecurityPlan securityPlan,
+    public SocketConnectionPool( ConnectionSettings connectionSettings, SecurityPlan securityPlan,
                                  PoolSettings poolSettings, Logging logging )
     {
-        this.sessionParameters = sessionParameters;
+        this.connectionSettings = connectionSettings;
         this.securityPlan = securityPlan;
         this.poolSettings = poolSettings;
         this.logging = logging;
@@ -86,7 +85,7 @@ public class SocketConnectionPool implements ConnectionPool
         // Because SocketConnection is not thread safe, wrap it in this guard
         // to ensure concurrent access leads causes application errors
         conn = new ConcurrencyGuardingConnection( conn );
-        conn.init( sessionParameters.userAgent(), tokenAsMap( sessionParameters.authToken() ) );
+        conn.init( connectionSettings.userAgent(), tokenAsMap( connectionSettings.authToken() ) );
         return conn;
     }
 

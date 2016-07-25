@@ -19,7 +19,7 @@
 package org.neo4j.driver.v1;
 
 import org.neo4j.driver.internal.DirectDriver;
-import org.neo4j.driver.internal.SessionParameters;
+import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.net.pooling.PoolSettings;
 import org.neo4j.driver.internal.security.SecurityPlan;
@@ -138,8 +138,8 @@ public class GraphDatabase
         BoltServerAddress address = BoltServerAddress.from( uri );
 
         // Collate session parameters
-        SessionParameters sessionParameters =
-                new SessionParameters( authToken == null ? AuthTokens.none() : authToken );
+        ConnectionSettings connectionSettings =
+                new ConnectionSettings( authToken == null ? AuthTokens.none() : authToken );
 
         // Make sure we have some configuration to play with
         if (config == null)
@@ -167,7 +167,7 @@ public class GraphDatabase
         switch ( scheme )
         {
         case "bolt":
-            return new DirectDriver( address, sessionParameters, securityPlan, poolSettings, config.logging() );
+            return new DirectDriver( address, connectionSettings, securityPlan, poolSettings, config.logging() );
         default:
             throw new ClientException( format( "Unsupported URI scheme: %s", scheme ) );
         }
