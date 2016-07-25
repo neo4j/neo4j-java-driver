@@ -18,17 +18,16 @@
  */
 package org.neo4j.driver.v1;
 
+import org.neo4j.driver.internal.DirectDriver;
+import org.neo4j.driver.internal.SessionParameters;
+import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.net.pooling.PoolSettings;
+import org.neo4j.driver.internal.security.SecurityPlan;
+import org.neo4j.driver.v1.exceptions.ClientException;
+
 import java.io.IOException;
 import java.net.URI;
 import java.security.GeneralSecurityException;
-
-import org.neo4j.driver.internal.ClusterDriver;
-import org.neo4j.driver.internal.DirectDriver;
-import org.neo4j.driver.internal.SessionParameters;
-import org.neo4j.driver.internal.net.pooling.PoolSettings;
-import org.neo4j.driver.internal.security.SecurityPlan;
-import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static java.lang.String.format;
 import static org.neo4j.driver.v1.Config.EncryptionLevel.REQUIRED;
@@ -152,7 +151,7 @@ public class GraphDatabase
         SecurityPlan securityPlan;
         try
         {
-            securityPlan = createSecurityPlan( address, authToken, config );
+            securityPlan = createSecurityPlan( address, config );
         }
         catch ( GeneralSecurityException | IOException ex )
         {
@@ -169,8 +168,6 @@ public class GraphDatabase
         {
         case "bolt":
             return new DirectDriver( address, sessionParameters, securityPlan, poolSettings, config.logging() );
-        case "bolt+discovery":
-            return new ClusterDriver( address, sessionParameters, securityPlan, poolSettings, config.logging() );
         default:
             throw new ClientException( format( "Unsupported URI scheme: %s", scheme ) );
         }
@@ -180,7 +177,7 @@ public class GraphDatabase
      * Establish a complete SecurityPlan based on the details provided for
      * driver construction.
      */
-    private static SecurityPlan createSecurityPlan( BoltServerAddress address, AuthToken authToken, Config config )
+    private static SecurityPlan createSecurityPlan( BoltServerAddress address, Config config )
             throws GeneralSecurityException, IOException
     {
         Config.EncryptionLevel encryptionLevel = config.encryptionLevel();

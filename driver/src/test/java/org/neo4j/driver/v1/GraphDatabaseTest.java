@@ -21,19 +21,13 @@ package org.neo4j.driver.v1;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.driver.internal.ClusterDriver;
 import org.neo4j.driver.internal.DirectDriver;
-import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
 import java.net.URI;
-import java.util.Collection;
-import java.util.Set;
 
-import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.*;
-import static org.neo4j.driver.v1.Values.parameters;
 
 public class GraphDatabaseTest
 {
@@ -51,20 +45,6 @@ public class GraphDatabaseTest
 
         // Then
         assertThat( driver, instanceOf( DirectDriver.class ) );
-
-    }
-
-    @Test
-    public void boltPlusDiscoverySchemeShouldInstantiateClusterDriver()
-    {
-        // Given
-        URI uri = URI.create( "bolt+discovery://localhost:7687" );
-
-        // When
-        Driver driver = GraphDatabase.driver( uri );
-
-        // Then
-        assertThat( driver, instanceOf( ClusterDriver.class ) );
 
     }
 
