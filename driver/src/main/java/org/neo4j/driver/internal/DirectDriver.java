@@ -19,11 +19,11 @@
 
 package org.neo4j.driver.internal;
 
-import org.neo4j.driver.internal.net.pooling.SocketConnectionPool;
+import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.net.pooling.PoolSettings;
+import org.neo4j.driver.internal.net.pooling.SocketConnectionPool;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.ConnectionPool;
-import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Session;
 
@@ -31,19 +31,21 @@ import static java.lang.String.format;
 
 public class DirectDriver extends BaseDriver
 {
+    private final BoltServerAddress address;
     private final ConnectionPool connections;
 
     public DirectDriver( BoltServerAddress address, ConnectionSettings connectionSettings, SecurityPlan securityPlan,
                          PoolSettings poolSettings, Logging logging )
     {
-        super( address, connectionSettings, securityPlan, logging );
+        super( securityPlan, logging );
+        this.address = address;
         this.connections = new SocketConnectionPool( connectionSettings, securityPlan, poolSettings, logging );
     }
 
     @Override
     public Session session()
     {
-        return new InternalSession( connections.acquire( randomServer() ), log );
+        return new InternalSession( connections.acquire( address ), log );
     }
 
     @Override

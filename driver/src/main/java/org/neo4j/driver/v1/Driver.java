@@ -19,9 +19,6 @@
 package org.neo4j.driver.v1;
 
 import java.net.URI;
-import java.util.List;
-
-import org.neo4j.driver.internal.net.BoltServerAddress;
 
 /**
  * A Neo4j database driver, through which you can create {@link Session sessions} to run statements against the database.
@@ -73,13 +70,6 @@ import org.neo4j.driver.internal.net.BoltServerAddress;
  */
 public interface Driver extends AutoCloseable
 {
-    /**
-     * Return a collection of the server addresses known by this driver.
-     *
-     * @return list of server addresses
-     */
-    List<BoltServerAddress> servers();
-
     /**
      * Return a flag to indicate whether or not encryption is used for this driver.
      *

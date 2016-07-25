@@ -19,27 +19,19 @@
 
 package org.neo4j.driver.internal;
 
-import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Session;
 
-import java.util.*;
-import java.util.concurrent.ThreadLocalRandom;
-
 abstract class BaseDriver implements Driver
 {
-    private final ConnectionSettings connectionSettings;
     private final SecurityPlan securityPlan;
-    protected final List<BoltServerAddress> servers = new LinkedList<>();
     protected final Logger log;
 
-    BaseDriver( BoltServerAddress address, ConnectionSettings connectionSettings, SecurityPlan securityPlan, Logging logging )
+    BaseDriver( SecurityPlan securityPlan, Logging logging )
     {
-        this.servers.add( address );
-        this.connectionSettings = connectionSettings;
         this.securityPlan = securityPlan;
         this.log = logging.getLog( Session.LOG_NAME );
     }
@@ -48,17 +40,6 @@ abstract class BaseDriver implements Driver
     public boolean isEncrypted()
     {
         return securityPlan.requiresEncryption();
-    }
-
-    @Override
-    public List<BoltServerAddress> servers()
-    {
-        return Collections.unmodifiableList( servers );
-    }
-
-    protected BoltServerAddress randomServer()
-    {
-        return servers.get( ThreadLocalRandom.current().nextInt( 0, servers.size() ) );
     }
 
 }
