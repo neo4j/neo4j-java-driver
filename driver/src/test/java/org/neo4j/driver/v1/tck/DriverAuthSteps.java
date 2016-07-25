@@ -29,7 +29,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 
-import org.neo4j.driver.internal.auth.InternalAuthToken;
+import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
@@ -92,7 +92,7 @@ public class DriverAuthSteps
     {
         driver = configureCredentials( "neo4j", "neo4j", "password" );
         driver.close();
-        driver = GraphDatabase.driver( neo4j.address(), new InternalAuthToken(
+        driver = GraphDatabase.driver( neo4j.uri(), new InternalAuthToken(
                 parameters(
                         "scheme", "basic",
                         "principal", "neo4j",
@@ -125,7 +125,7 @@ public class DriverAuthSteps
                 .updateWith( Neo4jSettings.AUTH_ENABLED, "true" )
                 .updateWith( Neo4jSettings.DATA_DIR, tempDir.getAbsolutePath().replace("\\", "/") ));
 
-        Driver driver = GraphDatabase.driver( neo4j.address(), new InternalAuthToken(
+        Driver driver = GraphDatabase.driver( neo4j.uri(), new InternalAuthToken(
                 parameters(
                         "scheme", "basic",
                         "principal", name,

@@ -28,6 +28,7 @@ import java.io.PrintWriter;
 import java.net.URI;
 import java.net.URL;
 
+import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Session;
 
@@ -96,14 +97,14 @@ public class TestNeo4j implements TestRule
         return tmpFile.toURI().toURL();
     }
 
-    public String address()
+    public URI uri()
     {
-        return Neo4jRunner.DEFAULT_URL;
+        return Neo4jRunner.DEFAULT_URI;
     }
 
-    public String host()
+    public BoltServerAddress address()
     {
-        return URI.create( Neo4jRunner.DEFAULT_URL ).getHost();
+        return Neo4jRunner.DEFAULT_ADDRESS;
     }
 
     static void clearDatabaseContents( Session session, String reason )

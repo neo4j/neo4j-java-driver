@@ -21,19 +21,18 @@ package org.neo4j.docs.driver;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.util.StdIOCapture;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
-import static java.util.Arrays.asList;
+import java.io.FileNotFoundException;
 
+import static java.util.Arrays.asList;
 import static junit.framework.TestCase.assertEquals;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
@@ -288,11 +287,22 @@ public class ExamplesIT
     @Test
     public void trustSignedCertificates() throws Throwable
     {
-        Driver driver = Examples.trustSignedCertificates();
-
-        // Then
-        assertNotNull( driver );
-        driver.close();
+        try
+        {
+            Driver driver = Examples.trustSignedCertificates();
+        }
+        catch ( ClientException ex )
+        {
+            // This will ultimately fail as it can't find "/path/to/ca-certificate.pem"
+            // We'll check for that error specifically and OK it, but die for everything
+            // else. Previously, this was not evaluated on driver construction so never
+            // occurred.
+            // TODO: find a way to mock this properly
+            assertThat( ex.getMessage(), equalTo( "Unable to establish SSL parameters" ) );
+            Throwable cause = ex.getCause();
+            assertThat( cause, instanceOf( FileNotFoundException.class ) );
+            assertThat( cause.getMessage(), equalTo( "/path/to/ca-certificate.pem (No such file or directory)" ) );
+        }
     }
 
     @Test

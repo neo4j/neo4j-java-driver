@@ -52,7 +52,7 @@ public class SessionPoolingStressIT
     @Test
     public void shouldWorkFine() throws InterruptedException
     {
-        Driver driver = driver( neo4j.address(),
+        Driver driver = driver( neo4j.uri(),
                 Config.build()
                         .withEncryptionLevel( Config.EncryptionLevel.NONE )
                         .withMaxSessions( N_THREADS ).toConfig() );

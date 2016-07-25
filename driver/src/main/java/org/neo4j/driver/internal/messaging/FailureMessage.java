@@ -49,7 +49,7 @@ public class FailureMessage implements Message
     @Override
     public String toString()
     {
-        return format( "[FAILURE %s \"%s\"]", code, message );
+        return format( "FAILURE %s \"%s\"", code, message );
     }
 
     @Override

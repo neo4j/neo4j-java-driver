@@ -41,6 +41,8 @@ import org.neo4j.driver.v1.util.Resource;
  */
 public interface Session extends Resource, StatementRunner
 {
+    String LOG_NAME = "session";
+
     /**
      * Begin a new transaction in this session. A session can have at most one transaction running at a time, if you
      * want to run multiple concurrent transactions, you should use multiple concurrent sessions.

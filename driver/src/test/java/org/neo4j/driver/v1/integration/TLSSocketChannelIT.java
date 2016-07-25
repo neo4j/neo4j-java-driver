@@ -27,20 +27,17 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.channels.SocketChannel;
 import java.security.cert.X509Certificate;
 import javax.net.ssl.SSLHandshakeException;
 
-import org.neo4j.driver.internal.connector.socket.TLSSocketChannel;
-import org.neo4j.driver.v1.Logger;
+import org.neo4j.driver.internal.logging.DevNullLogger;
+import org.neo4j.driver.internal.security.SecurityPlan;
+import org.neo4j.driver.internal.security.TLSSocketChannel;
+import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.v1.*;
 import org.neo4j.driver.internal.util.CertificateTool;
-import org.neo4j.driver.v1.Config;
-import org.neo4j.driver.v1.Driver;
-import org.neo4j.driver.v1.GraphDatabase;
-import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.util.CertificateToolTest;
 import org.neo4j.driver.v1.util.Neo4jRunner;
 import org.neo4j.driver.v1.util.Neo4jSettings;
@@ -52,7 +49,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.driver.internal.connector.socket.TrustOnFirstUseTrustManager.fingerprint;
+import static org.neo4j.driver.internal.security.TrustOnFirstUseTrustManager.fingerprint;
 
 public class TLSSocketChannelIT
 {
@@ -82,16 +79,19 @@ public class TLSSocketChannelIT
     {
         // Given
         Logger logger = mock( Logger.class );
+        BoltServerAddress address = BoltServerAddress.LOCAL_DEFAULT;
         SocketChannel channel = SocketChannel.open();
-        channel.connect( new InetSocketAddress( "localhost", 7687 ) );
+        channel.connect( address.toSocketAddress() );
 
         // When
+
+        SecurityPlan securityPlan = SecurityPlan.forTrustOnFirstUse( knownCerts, address, new DevNullLogger() );
         TLSSocketChannel sslChannel =
-                new TLSSocketChannel( "localhost", 7687, channel, logger, Config.TrustStrategy.trustOnFirstUse( knownCerts ) );
+                new TLSSocketChannel( address, securityPlan, channel, logger );
         sslChannel.close();
 
         // Then
-        verify( logger, atLeastOnce() ).debug( "TLS connection closed" );
+        verify( logger, atLeastOnce() ).debug( "~~ [CLOSED SECURE CHANNEL]" );
     }
 
     @Test
@@ -100,6 +100,7 @@ public class TLSSocketChannelIT
         try
         {
             // Given
+            BoltServerAddress address = BoltServerAddress.LOCAL_DEFAULT;
             // Create root certificate
             File rootCert = folder.newFile( "temp_root_cert.cert" );
             File rootKey = folder.newFile( "temp_root_key.key" );
@@ -124,16 +125,17 @@ public class TLSSocketChannelIT
 
             Logger logger = mock( Logger.class );
             SocketChannel channel = SocketChannel.open();
-            channel.connect( new InetSocketAddress( "localhost", 7687 ) );
+            channel.connect( address.toSocketAddress() );
 
             // When
+            SecurityPlan securityPlan = SecurityPlan.forSignedCertificates( rootCert );
             TLSSocketChannel sslChannel =
-                    new TLSSocketChannel( "localhost", 7687, channel, logger,
-                            Config.TrustStrategy.trustSignedBy( rootCert ) );
+                    new TLSSocketChannel( address, securityPlan, channel, logger
+                    );
             sslChannel.close();
 
             // Then
-            verify( logger, atLeastOnce() ).debug( "TLS connection closed" );
+            verify( logger, atLeastOnce() ).debug( "~~ [OPENING SECURE CHANNEL]" );
         }
         finally
         {
@@ -146,20 +148,21 @@ public class TLSSocketChannelIT
     public void shouldFailTLSHandshakeDueToWrongCertInKnownCertsFile() throws Throwable
     {
         // Given
+        BoltServerAddress address = BoltServerAddress.LOCAL_DEFAULT;
         SocketChannel channel = SocketChannel.open();
-        channel.connect( new InetSocketAddress( "localhost", 7687 ) );
+        channel.connect( address.toSocketAddress() );
         File knownCerts = File.createTempFile( "neo4j_known_hosts", ".tmp" );
         knownCerts.deleteOnExit();
 
         //create a Fake Cert for the server in knownCert
-        createFakeServerCertPairInKnownCerts( "localhost", 7687, knownCerts );
+        createFakeServerCertPairInKnownCerts( address, knownCerts );
 
         // When & Then
+        SecurityPlan securityPlan = SecurityPlan.forTrustOnFirstUse( knownCerts, address, new DevNullLogger() );
         TLSSocketChannel sslChannel = null;
         try
         {
-            sslChannel = new TLSSocketChannel( "localhost", 7687, channel, mock( Logger.class ),
-                    Config.TrustStrategy.trustOnFirstUse( knownCerts ) );
+            sslChannel = new TLSSocketChannel( address, securityPlan, channel, mock( Logger.class ) );
             sslChannel.close();
         }
         catch ( SSLHandshakeException e )
@@ -178,11 +181,11 @@ public class TLSSocketChannelIT
         }
     }
 
-    private void createFakeServerCertPairInKnownCerts( String host, int port, File knownCerts )
+    private void createFakeServerCertPairInKnownCerts( BoltServerAddress address, File knownCerts )
             throws Throwable
     {
-        String ip = InetAddress.getByName( host ).getHostAddress(); // localhost -> 127.0.0.1
-        String serverId = ip + ":" + port;
+        address = address.resolve();  // localhost -> 127.0.0.1
+        String serverId = address.toString();
 
         X509Certificate cert = CertificateToolTest.generateSelfSignedCertificate();
         String certStr = fingerprint(cert);
@@ -202,17 +205,17 @@ public class TLSSocketChannelIT
                         Neo4jSettings.CERT_DIR,
                         folder.getRoot().getAbsolutePath().replace("\\", "/") ) );
         SocketChannel channel = SocketChannel.open();
-        channel.connect( new InetSocketAddress( "localhost", 7687 ) );
+        channel.connect( neo4j.address().toSocketAddress() );
         File trustedCertFile = folder.newFile( "neo4j_trusted_cert.tmp" );
         X509Certificate aRandomCert = CertificateToolTest.generateSelfSignedCertificate();
         CertificateTool.saveX509Cert( aRandomCert, trustedCertFile );
 
         // When & Then
+        SecurityPlan securityPlan = SecurityPlan.forSignedCertificates( trustedCertFile );
         TLSSocketChannel sslChannel = null;
         try
         {
-            sslChannel = new TLSSocketChannel( "localhost", 7687, channel, mock( Logger.class ),
-                    Config.TrustStrategy.trustSignedBy( trustedCertFile ) );
+            sslChannel = new TLSSocketChannel( neo4j.address(), securityPlan, channel, mock( Logger.class ) );
             sslChannel.close();
         }
         catch ( SSLHandshakeException e )
@@ -233,19 +236,19 @@ public class TLSSocketChannelIT
     @Test
     public void shouldPerformTLSHandshakeWithTheSameTrustedServerCert() throws Throwable
     {
-
+        BoltServerAddress address = BoltServerAddress.LOCAL_DEFAULT;
         Logger logger = mock( Logger.class );
         SocketChannel channel = SocketChannel.open();
-        channel.connect( new InetSocketAddress( "localhost", 7687 ) );
+        channel.connect( address.toSocketAddress() );
 
         // When
-        TLSSocketChannel sslChannel = new TLSSocketChannel( "localhost", 7687, channel, logger,
-                Config.TrustStrategy.trustSignedBy(
-                       Neo4jSettings.DEFAULT_TLS_CERT_FILE ) );
+        URI url = URI.create( "localhost:7687" );
+        SecurityPlan securityPlan = SecurityPlan.forSignedCertificates( Neo4jSettings.DEFAULT_TLS_CERT_FILE );
+        TLSSocketChannel sslChannel = new TLSSocketChannel( address, securityPlan, channel, logger );
         sslChannel.close();
 
         // Then
-        verify( logger, atLeastOnce() ).debug( "TLS connection closed" );
+        verify( logger, atLeastOnce() ).debug( "~~ [OPENING SECURE CHANNEL]" );
     }
 
     @Test
@@ -254,9 +257,7 @@ public class TLSSocketChannelIT
 
         Config config = Config.build().withEncryptionLevel( Config.EncryptionLevel.REQUIRED ).toConfig();
 
-        Driver driver = GraphDatabase.driver(
-                URI.create( Neo4jRunner.DEFAULT_URL ),
-                config );
+        Driver driver = GraphDatabase.driver( Neo4jRunner.DEFAULT_URI, config );
 
         StatementResult result = driver.session().run( "RETURN 1" );
         assertEquals( 1, result.next().get( 0 ).asInt() );

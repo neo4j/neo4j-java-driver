@@ -18,9 +18,20 @@
  */
 package org.neo4j.driver.v1;
 
-import java.net.URI;
+import org.neo4j.driver.internal.DirectDriver;
+import org.neo4j.driver.internal.ConnectionSettings;
+import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.net.pooling.PoolSettings;
+import org.neo4j.driver.internal.security.SecurityPlan;
+import org.neo4j.driver.v1.exceptions.ClientException;
 
-import org.neo4j.driver.internal.InternalDriver;
+import java.io.IOException;
+import java.net.URI;
+import java.security.GeneralSecurityException;
+
+import static java.lang.String.format;
+import static org.neo4j.driver.v1.Config.EncryptionLevel.REQUIRED;
+import static org.neo4j.driver.v1.Config.EncryptionLevel.REQUIRED_NON_LOCAL;
 
 /**
  * Creates {@link Driver drivers}, optionally letting you {@link #driver(URI, Config)} to configure them.
@@ -32,99 +43,164 @@ public class GraphDatabase
     /**
      * Return a driver for a Neo4j instance with the default configuration settings
      *
-     * @param url the URL to a Neo4j instance
+     * @param uri the URL to a Neo4j instance
      * @return a new driver to the database instance specified by the URL
      */
-    public static Driver driver( String url )
+    public static Driver driver( String uri )
     {
-        return driver( url, Config.defaultConfig() );
+        return driver( uri, Config.defaultConfig() );
     }
 
     /**
      * Return a driver for a Neo4j instance with the default configuration settings
      *
-     * @param url the URL to a Neo4j instance
+     * @param uri the URL to a Neo4j instance
      * @return a new driver to the database instance specified by the URL
      */
-    public static Driver driver( URI url )
+    public static Driver driver( URI uri )
     {
-        return driver( url, Config.defaultConfig() );
+        return driver( uri, Config.defaultConfig() );
     }
 
     /**
      * Return a driver for a Neo4j instance with custom configuration.
      *
-     * @param url the URL to a Neo4j instance
+     * @param uri the URL to a Neo4j instance
      * @param config user defined configuration
      * @return a new driver to the database instance specified by the URL
      */
-    public static Driver driver( URI url, Config config )
+    public static Driver driver( URI uri, Config config )
     {
-        return driver( url, AuthTokens.none(), config );
+        return driver( uri, AuthTokens.none(), config );
     }
 
     /**
      * Return a driver for a Neo4j instance with custom configuration.
      *
-     * @param url the URL to a Neo4j instance
+     * @param uri the URL to a Neo4j instance
      * @param config user defined configuration
      * @return a new driver to the database instance specified by the URL
      */
-    public static Driver driver( String url, Config config )
+    public static Driver driver( String uri, Config config )
     {
-        return driver( URI.create( url ), config );
+        return driver( URI.create( uri ), config );
     }
 
     /**
      * Return a driver for a Neo4j instance with the default configuration settings
      *
-     * @param url the URL to a Neo4j instance
+     * @param uri the URL to a Neo4j instance
      * @param authToken authentication to use, see {@link AuthTokens}
      * @return a new driver to the database instance specified by the URL
      */
-    public static Driver driver( String url, AuthToken authToken )
+    public static Driver driver( String uri, AuthToken authToken )
     {
-        return driver( url, authToken, Config.defaultConfig() );
+        return driver( uri, authToken, Config.defaultConfig() );
     }
 
     /**
      * Return a driver for a Neo4j instance with the default configuration settings
      *
-     * @param url the URL to a Neo4j instance
+     * @param uri the URL to a Neo4j instance
      * @param authToken authentication to use, see {@link AuthTokens}
      * @return a new driver to the database instance specified by the URL
      */
-    public static Driver driver( URI url, AuthToken authToken )
+    public static Driver driver( URI uri, AuthToken authToken )
     {
-        return driver( url, authToken, Config.defaultConfig() );
+        return driver( uri, authToken, Config.defaultConfig() );
     }
 
     /**
      * Return a driver for a Neo4j instance with custom configuration.
      *
-     * @param url the URL to a Neo4j instance
+     * @param uri the URL to a Neo4j instance
      * @param authToken authentication to use, see {@link AuthTokens}
      * @param config user defined configuration
      * @return a new driver to the database instance specified by the URL
      */
-    public static Driver driver( String url, AuthToken authToken, Config config )
+    public static Driver driver( String uri, AuthToken authToken, Config config )
     {
-        return driver( URI.create( url ), authToken, config );
+        return driver( URI.create( uri ), authToken, config );
     }
 
     /**
      * Return a driver for a Neo4j instance with custom configuration.
      *
-     * @param url the URL to a Neo4j instance
+     * @param uri the URL to a Neo4j instance
      * @param authToken authentication to use, see {@link AuthTokens}
      * @param config user defined configuration
      * @return a new driver to the database instance specified by the URL
      */
-    public static Driver driver( URI url, AuthToken authToken, Config config )
+    public static Driver driver( URI uri, AuthToken authToken, Config config )
     {
-        AuthToken tokenToUse = authToken != null ? authToken: AuthTokens.none();
-        Config configToUse = config != null ? config: Config.defaultConfig();
+        // Break down the URI into its constituent parts
+        String scheme = uri.getScheme();
+        BoltServerAddress address = BoltServerAddress.from( uri );
 
-        return new InternalDriver( url, tokenToUse, configToUse );
+        // Collate session parameters
+        ConnectionSettings connectionSettings =
+                new ConnectionSettings( authToken == null ? AuthTokens.none() : authToken );
+
+        // Make sure we have some configuration to play with
+        if (config == null)
+        {
+            config = Config.defaultConfig();
+        }
+
+        // Construct security plan
+        SecurityPlan securityPlan;
+        try
+        {
+            securityPlan = createSecurityPlan( address, config );
+        }
+        catch ( GeneralSecurityException | IOException ex )
+        {
+            throw new ClientException( "Unable to establish SSL parameters", ex );
+        }
+
+        // Establish pool settings
+        PoolSettings poolSettings = new PoolSettings(
+                config.maxIdleConnectionPoolSize(),
+                config.idleTimeBeforeConnectionTest() );
+
+        // And finally, construct the driver proper
+        switch ( scheme )
+        {
+        case "bolt":
+            return new DirectDriver( address, connectionSettings, securityPlan, poolSettings, config.logging() );
+        default:
+            throw new ClientException( format( "Unsupported URI scheme: %s", scheme ) );
+        }
     }
+
+    /*
+     * Establish a complete SecurityPlan based on the details provided for
+     * driver construction.
+     */
+    private static SecurityPlan createSecurityPlan( BoltServerAddress address, Config config )
+            throws GeneralSecurityException, IOException
+    {
+        Config.EncryptionLevel encryptionLevel = config.encryptionLevel();
+        boolean requiresEncryption = encryptionLevel.equals( REQUIRED ) ||
+                (encryptionLevel.equals( REQUIRED_NON_LOCAL ) && !address.isLocal() );
+
+        if ( requiresEncryption )
+        {
+            switch ( config.trustStrategy().strategy() )
+            {
+            case TRUST_SIGNED_CERTIFICATES:
+                return SecurityPlan.forSignedCertificates( config.trustStrategy().certFile() );
+            case TRUST_ON_FIRST_USE:
+                return SecurityPlan.forTrustOnFirstUse( config.trustStrategy().certFile(),
+                        address, config.logging().getLog( "session" ) );
+            default:
+                throw new ClientException( "Unknown TLS authentication strategy: " + config.trustStrategy().strategy().name() );
+            }
+        }
+        else
+        {
+            return new SecurityPlan( false );
+        }
+    }
+
 }

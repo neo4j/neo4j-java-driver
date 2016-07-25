@@ -20,9 +20,6 @@ package org.neo4j.driver.v1;
 
 import java.net.URI;
 
-import org.neo4j.driver.v1.Config.EncryptionLevel;
-import org.neo4j.driver.v1.exceptions.Neo4jException;
-
 /**
  * A Neo4j database driver, through which you can create {@link Session sessions} to run statements against the database.
  * <p>
@@ -68,17 +65,21 @@ import org.neo4j.driver.v1.exceptions.Neo4jException;
  * A driver maintains a connection pool for each Neo4j instance. For resource efficiency reasons you are encouraged
  * to use the same driver instance across your application. You can control the connection pooling behavior when you
  * create the driver using the {@link Config} you pass into {@link GraphDatabase#driver(URI, Config)}.
+ *
  * @since 1.0
  */
 public interface Driver extends AutoCloseable
 {
     /**
      * Return a flag to indicate whether or not encryption is used for this driver.
+     *
+     * @return true if the driver requires encryption, false otherwise
      */
     boolean isEncrypted();
 
     /**
      * Establish a session
+     *
      * @return a session that could be used to run {@link Session#run(String) a statement} or
      * {@link Session#beginTransaction() a transaction }.
      */
@@ -86,7 +87,6 @@ public interface Driver extends AutoCloseable
 
     /**
      * Close all the resources assigned to this driver
-     * @throws Neo4jException any error that might happen when releasing all resources
      */
-    void close() throws Neo4jException;
+    void close();
 }

@@ -23,16 +23,17 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.net.URI;
+import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.util.LinkedList;
 import java.util.Queue;
 
-import org.neo4j.driver.internal.connector.socket.SocketClient;
-import org.neo4j.driver.internal.connector.socket.SocketResponseHandler;
+import org.neo4j.driver.internal.net.SocketClient;
+import org.neo4j.driver.internal.net.SocketResponseHandler;
 import org.neo4j.driver.internal.logging.DevNullLogger;
 import org.neo4j.driver.internal.messaging.InitMessage;
 import org.neo4j.driver.internal.messaging.Message;
-import org.neo4j.driver.v1.Config;
+import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
@@ -55,11 +56,10 @@ public class SocketClientIT
     private SocketClient client = null;
 
     @Before
-    public void setup()
+    public void setup() throws GeneralSecurityException, IOException
     {
-        URI url = URI.create( neo4j.address() );
-        client = new SocketClient( url.getHost(), url.getPort(), Config.defaultConfig(),
-                new DevNullLogger() );
+        SecurityPlan securityPlan = SecurityPlan.insecure();
+        client = new SocketClient( neo4j.address(), securityPlan, new DevNullLogger() );
     }
 
     @After

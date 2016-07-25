@@ -39,7 +39,7 @@ public class SessionIT
     public void shouldKnowSessionIsClosed() throws Throwable
     {
         // Given
-        Driver driver = GraphDatabase.driver( neo4j.address() );
+        Driver driver = GraphDatabase.driver( neo4j.uri() );
         Session session = driver.session();
 
         // When
@@ -53,7 +53,7 @@ public class SessionIT
     public void shouldHandleNullConfig() throws Throwable
     {
         // Given
-        Driver driver = GraphDatabase.driver( neo4j.address(), AuthTokens.none(), null );
+        Driver driver = GraphDatabase.driver( neo4j.uri(), AuthTokens.none(), null );
         Session session = driver.session();
 
         // When
@@ -69,7 +69,7 @@ public class SessionIT
     {
         // Given
         AuthToken token = null;
-        Driver driver = GraphDatabase.driver( neo4j.address(), token);
+        Driver driver = GraphDatabase.driver( neo4j.uri(), token);
         Session session = driver.session();
 
         // When

@@ -114,7 +114,7 @@ public class ErrorIT
     {
         // Expect
         exception.expect( ClientException.class );
-        exception.expectMessage( "Unable to connect to 'localhost' on port 7777, ensure the database is running " +
+        exception.expectMessage( "Unable to connect to localhost:7777, ensure the database is running " +
                                  "and that there is a working network connection to it." );
 
         // When

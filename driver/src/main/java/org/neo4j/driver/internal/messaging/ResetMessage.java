@@ -47,7 +47,7 @@ public class ResetMessage implements Message
     @Override
     public String toString()
     {
-        return "[RESET]";
+        return "RESET";
     }
 
     @Override

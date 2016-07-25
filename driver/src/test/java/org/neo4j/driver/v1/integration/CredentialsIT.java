@@ -23,7 +23,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 
-import org.neo4j.driver.internal.auth.InternalAuthToken;
+import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
@@ -56,7 +56,7 @@ public class CredentialsIT
         String password = "secret";
         enableAuth( password );
 
-        Driver driver = GraphDatabase.driver( neo4j.address(),
+        Driver driver = GraphDatabase.driver( neo4j.uri(),
                 basic("neo4j", password ) );
 
         // When
@@ -79,7 +79,7 @@ public class CredentialsIT
         exception.expectMessage( "The client is unauthorized due to authentication failure." );
 
         // When
-        GraphDatabase.driver( neo4j.address(), basic("thisisnotthepassword", password ) ).session();
+        GraphDatabase.driver( neo4j.uri(), basic("thisisnotthepassword", password ) ).session();
     }
 
     private void enableAuth( String password ) throws Exception
@@ -88,7 +88,7 @@ public class CredentialsIT
                 .updateWith( Neo4jSettings.AUTH_ENABLED, "true" )
                 .updateWith( Neo4jSettings.DATA_DIR, tempDir.getRoot().getAbsolutePath().replace("\\", "/") ));
 
-        Driver setPassword = GraphDatabase.driver( neo4j.address(), new InternalAuthToken(
+        Driver setPassword = GraphDatabase.driver( neo4j.uri(), new InternalAuthToken(
                 parameters(
                         "scheme", "basic",
                         "principal", "neo4j",

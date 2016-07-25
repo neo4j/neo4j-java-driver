@@ -21,7 +21,9 @@ package org.neo4j.driver.v1;
 import java.io.File;
 import java.util.logging.Level;
 
+import org.neo4j.driver.internal.logging.ConsoleLogging;
 import org.neo4j.driver.internal.logging.JULogging;
+import org.neo4j.driver.internal.net.pooling.PoolSettings;
 import org.neo4j.driver.v1.util.Immutable;
 
 import static java.lang.System.getProperty;
@@ -151,8 +153,8 @@ public class Config
     {
         private Logging logging = new JULogging( Level.INFO );
         private int connectionPoolSize = 50;
-        private int maxIdleConnectionPoolSize = 10;
-        private long idleTimeBeforeConnectionTest = 200;
+        private int maxIdleConnectionPoolSize = PoolSettings.DEFAULT_MAX_IDLE_CONNECTION_POOL_SIZE;
+        private long idleTimeBeforeConnectionTest = PoolSettings.DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST;
         private EncryptionLevel encryptionLevel = EncryptionLevel.REQUIRED_NON_LOCAL;
         private TrustStrategy trustStrategy = trustOnFirstUse(
                 new File( getProperty( "user.home" ), ".neo4j" + File.separator + "known_hosts" ) );

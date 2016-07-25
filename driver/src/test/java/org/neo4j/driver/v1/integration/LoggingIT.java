@@ -50,7 +50,7 @@ public class LoggingIT
         Logging logging = mock( Logging.class );
         Logger logger = mock( Logger.class );
         Driver driver = GraphDatabase.driver(
-                URI.create( Neo4jRunner.DEFAULT_URL ),
+                Neo4jRunner.DEFAULT_URI,
                 Config.build().withLogging( logging ).toConfig() );
 
         // When

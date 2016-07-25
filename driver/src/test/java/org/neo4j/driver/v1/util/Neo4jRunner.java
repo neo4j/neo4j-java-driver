@@ -20,13 +20,12 @@ package org.neo4j.driver.v1.util;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
 import java.net.URI;
 import java.nio.channels.SocketChannel;
 import java.util.Map;
 
-import org.neo4j.driver.v1.Config;
+import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 
@@ -44,7 +43,8 @@ public class Neo4jRunner
     private static final boolean debug = Boolean.getBoolean( "neo4j.runner.debug" );
 
     public static final String NEORUN_START_ARGS = System.getProperty( "neorun.start.args" );
-    public static final String DEFAULT_URL = "bolt://localhost:7687";
+    public static final URI DEFAULT_URI = URI.create( "bolt://localhost:7687" );
+    public static final BoltServerAddress DEFAULT_ADDRESS = BoltServerAddress.from( DEFAULT_URI );
     private Driver driver;
     private Neo4jSettings currentSettings = Neo4jSettings.DEFAULT_SETTINGS;
 
@@ -105,7 +105,7 @@ public class Neo4jRunner
         {
             throw new IOException( "Failed to start neo4j server." );
         }
-        driver = GraphDatabase.driver( DEFAULT_URL /* default encryption REQUIRED_NON_LOCAL */ );
+        driver = GraphDatabase.driver( DEFAULT_URI /* default encryption REQUIRED_NON_LOCAL */ );
     }
 
     public synchronized void stopNeo4j() throws IOException
@@ -196,10 +196,9 @@ public class Neo4jRunner
     {
         try
         {
-            URI uri = URI.create( DEFAULT_URL );
             SocketChannel soChannel = SocketChannel.open();
             soChannel.setOption( StandardSocketOptions.SO_REUSEADDR, true );
-            soChannel.connect( new InetSocketAddress( uri.getHost(), uri.getPort() ) );
+            soChannel.connect( DEFAULT_ADDRESS.toSocketAddress() );
             soChannel.close();
             return ServerStatus.ONLINE;
         }
