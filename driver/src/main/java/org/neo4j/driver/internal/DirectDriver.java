@@ -31,21 +31,19 @@ import static java.lang.String.format;
 
 public class DirectDriver extends BaseDriver
 {
-    private final BoltServerAddress address;
     private final ConnectionPool connections;
 
     public DirectDriver( BoltServerAddress address, ConnectionSettings connectionSettings, SecurityPlan securityPlan,
                          PoolSettings poolSettings, Logging logging )
     {
-        super( securityPlan, logging );
-        this.address = address;
+        super( address, securityPlan, logging );
         this.connections = new SocketConnectionPool( connectionSettings, securityPlan, poolSettings, logging );
     }
 
     @Override
     public Session session()
     {
-        return new NetworkSession( connections.acquire( address ), log );
+        return new NetworkSession( connections.acquire( randomServer() ), log );
     }
 
     @Override
