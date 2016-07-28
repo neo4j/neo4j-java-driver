@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.driver.internal.spi.StreamCollector;
+import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.summary.Notification;
 import org.neo4j.driver.v1.summary.Plan;
 import org.neo4j.driver.v1.summary.ProfiledPlan;
@@ -126,6 +127,25 @@ public class SummaryBuilder implements StreamCollector
     @Override
     public void done()
     {
+        // intentionally empty
+    }
+
+    @Override
+    public void doneSuccess()
+    {
+        // intentionally empty
+    }
+
+    @Override
+    public void doneFailure( Neo4jException erro )
+    {
+        // intentionally empty
+    }
+
+    @Override
+    public void doneIgnored()
+    {
+        // intentionally empty
     }
 
     public ResultSummary build()

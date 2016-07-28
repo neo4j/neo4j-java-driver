@@ -56,6 +56,7 @@ import static org.neo4j.driver.v1.Values.value;
 public class PackStreamMessageFormatV1 implements MessageFormat
 {
     public final static byte MSG_INIT = 0x01;
+    public final static byte MSG_ACK_FAILURE = 0x0E;
     public final static byte MSG_RESET = 0x0F;
     public final static byte MSG_RUN = 0x10;
     public final static byte MSG_DISCARD_ALL = 0x2F;
@@ -148,6 +149,13 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         public void handleResetMessage() throws IOException
         {
             packer.packStructHeader( 0, MSG_RESET );
+            onMessageComplete.run();
+        }
+
+        @Override
+        public void handleAckFailureMessage() throws IOException
+        {
+            packer.packStructHeader( 0, MSG_ACK_FAILURE );
             onMessageComplete.run();
         }
 
@@ -319,7 +327,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                     break;
 
                 default:
-                    throw new UnsupportedOperationException( "Unknown type: " + value );
+                    throw new IOException( "Unknown type: " + value );
             }
         }
 

@@ -23,17 +23,17 @@ import org.junit.Test;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.neo4j.driver.internal.net.pooling.PoolSettings;
-import org.neo4j.driver.internal.net.pooling.PooledConnection;
-import org.neo4j.driver.internal.net.pooling.PooledConnectionReleaseConsumer;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Clock;
-
+import org.neo4j.driver.v1.exceptions.ClientException;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 public class PooledConnectionTest
 {
@@ -223,4 +223,100 @@ public class PooledConnectionTest
         assertThat( flags[0], equalTo( true ) ); // make sure that the dispose is called
     }
 
+    @Test
+    public void shouldAckFailureOnRecoverableFailure() throws Throwable
+    {
+        // Given
+        Connection conn = mock( Connection.class );
+        ClientException error = new ClientException( "Neo.ClientError", "a recoverable error" );
+        doThrow( error ).when( conn ).sync();
+        PooledConnection pooledConnection = new PooledConnection(
+                conn,
+                mock( PooledConnectionReleaseConsumer.class ),
+                mock( Clock.class ) );
+
+        // When
+        try
+        {
+            pooledConnection.sync();
+            fail( "Should have thrown a recoverable error" );
+        }
+        // Then
+        catch( ClientException e )
+        {
+            assertThat( e, equalTo( error ) );
+        }
+        verify( conn, times( 1 ) ).ackFailure();
+        assertThat( pooledConnection.hasUnrecoverableErrors(), equalTo( false ) );
+    }
+
+    @Test
+    public void shouldNotAckFailureOnUnRecoverableFailure()
+    {
+        // Given
+        Connection conn = mock( Connection.class );
+        ClientException error = new ClientException( "an unrecoverable error" );
+        doThrow( error ).when( conn ).sync();
+        PooledConnection pooledConnection = new PooledConnection(
+                conn,
+                mock( PooledConnectionReleaseConsumer.class ),
+                mock( Clock.class ) );
+
+        // When
+        try
+        {
+            pooledConnection.sync();
+            fail( "Should have thrown an unrecoverable error" );
+        }
+        //Then
+        catch( ClientException e )
+        {
+            assertThat( e, equalTo( error ) );
+        }
+        verify( conn, times( 0 ) ).ackFailure();
+        assertThat( pooledConnection.hasUnrecoverableErrors(), equalTo( true ) );
+    }
+
+    @Test
+    public void shouldThrowExceptionIfFailureReceivedForAckFailure()
+    {
+        // Given
+        Connection conn = mock( Connection.class );
+        ClientException error = new ClientException( "Neo.ClientError", "a recoverable error" );
+
+        ClientException failedToAckFailError = new ClientException(
+                "Invalid server response message `FAILURE` received for client message `ACK_FAILURE`." );
+        doThrow( error ).doThrow( failedToAckFailError ).when( conn ).sync();
+
+        PooledConnection pooledConnection = new PooledConnection(
+                conn,
+                mock( PooledConnectionReleaseConsumer.class ),
+                mock( Clock.class ) );
+
+        // When & Then
+        try
+        {
+            pooledConnection.sync();
+            fail( "Should have thrown a recoverable error" );
+        }
+        catch( ClientException e )
+        {
+            assertThat( e, equalTo( error ) );
+        }
+        assertThat( pooledConnection.hasUnrecoverableErrors(), equalTo( false ) );
+
+        try
+        {
+            // sync ackFailure
+            pooledConnection.sync();
+            fail( "Should have thrown an unrecoverable error" );
+        }
+        catch( ClientException e )
+        {
+            assertThat( e, equalTo( failedToAckFailError ) );
+        }
+
+        verify( conn, times( 1 ) ).ackFailure();
+        assertThat( pooledConnection.hasUnrecoverableErrors(), equalTo( true ) );
+    }
 }

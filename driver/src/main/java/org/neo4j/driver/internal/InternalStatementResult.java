@@ -66,31 +66,13 @@ public class InternalStatementResult implements StatementResult
 
     private StreamCollector newRunResponseCollector()
     {
-        return new StreamCollector()
+        return new StreamCollector.NoOperationStreamCollector()
         {
             @Override
             public void keys( String[] names )
             {
                 keys = Arrays.asList( names );
             }
-
-            @Override
-            public void record( Value[] fields ) {}
-
-            @Override
-            public void statementType( StatementType type ) {}
-
-            @Override
-            public void statementStatistics( SummaryCounters statistics ) {}
-
-            @Override
-            public void plan( Plan plan ) {}
-
-            @Override
-            public void profile( ProfiledPlan plan ) {}
-
-            @Override
-            public void notifications( List<Notification> notifications ) {}
 
             @Override
             public void done()
@@ -106,11 +88,8 @@ public class InternalStatementResult implements StatementResult
     private StreamCollector newPullAllResponseCollector( Statement statement )
     {
         final SummaryBuilder summaryBuilder = new SummaryBuilder( statement );
-        return new StreamCollector()
+        return new StreamCollector.NoOperationStreamCollector()
         {
-            @Override
-            public void keys( String[] names ) {}
-
             @Override
             public void record( Value[] fields )
             {

@@ -112,8 +112,6 @@ public class InternalTransaction implements Transaction
                 }
                 else if ( state == State.MARKED_FAILED || state == State.ACTIVE )
                 {
-                    // If alwaysValid of the things we've put in the queue have been sent off, there is no need to
-                    // do this, we could just clear the queue. Future optimization.
                     conn.run( "ROLLBACK", Collections.<String, Value>emptyMap(), StreamCollector.NO_OP );
                     conn.discardAll();
                     conn.sync();
@@ -171,6 +169,8 @@ public class InternalTransaction implements Transaction
         }
         catch ( Neo4jException e )
         {
+            // Failed to send messages to the server probably due to IOException in the socket.
+            // So we should stop sending more messages in this transaction
             state = State.FAILED;
             throw e;
         }
@@ -200,12 +200,8 @@ public class InternalTransaction implements Transaction
         return InternalTypeSystem.TYPE_SYSTEM;
     }
 
-    // TODO: This is wrong. This is only needed because we changed the SSM
-    // to move to IDLE on any exception (so the normal `ROLLBACK` statement won't work).
-    // We should change the SSM to move to some special ROLLBACK_ONLY state instead and
-    // remove this code path
-    public void markAsRolledBack()
+    public void markToClose()
     {
-        state = State.ROLLED_BACK;
+        state = State.FAILED;
     }
 }

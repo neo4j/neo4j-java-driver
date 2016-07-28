@@ -20,16 +20,65 @@ package org.neo4j.driver.internal.spi;
 
 import java.util.List;
 
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.summary.Notification;
 import org.neo4j.driver.v1.summary.Plan;
 import org.neo4j.driver.v1.summary.ProfiledPlan;
 import org.neo4j.driver.v1.summary.StatementType;
 import org.neo4j.driver.v1.summary.SummaryCounters;
-import org.neo4j.driver.v1.Value;
 
 public interface StreamCollector
 {
-    StreamCollector NO_OP = new StreamCollector()
+    StreamCollector NO_OP = new NoOperationStreamCollector();
+
+    StreamCollector ACK_FAILURE = new NoOperationStreamCollector()
+    {
+        @Override
+        public void doneFailure( Neo4jException error )
+        {
+            throw new ClientException(
+                    "Invalid server response message `FAILURE` received for client message `ACK_FAILURE`.", error );
+        }
+
+        @Override
+        public void doneIgnored()
+        {
+            throw new ClientException(
+                    "Invalid server response message `IGNORED` received for client message `ACK_FAILURE`." );
+        }
+    };
+
+    StreamCollector INIT = new NoOperationStreamCollector()
+    {
+        @Override
+        public void doneIgnored()
+        {
+            throw new ClientException(
+                    "Invalid server response message `IGNORED` received for client message `INIT`." );
+        }
+    };
+
+
+    StreamCollector RESET = new NoOperationStreamCollector()
+    {
+        @Override
+        public void doneFailure( Neo4jException error )
+        {
+            throw new ClientException(
+                    "Invalid server response message `FAILURE` received for client message `RESET`.", error );
+        }
+
+        @Override
+        public void doneIgnored()
+        {
+            throw new ClientException(
+                    "Invalid server response message `IGNORED` received for client message `RESET`." );
+        }
+    };
+
+    class NoOperationStreamCollector implements StreamCollector
     {
         @Override
         public void keys( String[] names ) {}
@@ -54,7 +103,25 @@ public interface StreamCollector
 
         @Override
         public void done() {}
-    };
+
+        @Override
+        public void doneSuccess()
+        {
+            done();
+        }
+
+        @Override
+        public void doneFailure( Neo4jException error )
+        {
+            done();
+        }
+
+        @Override
+        public void doneIgnored()
+        {
+            done();
+        }
+    }
 
     // TODO: This should be modified to simply have head/record/tail methods
 
@@ -73,5 +140,11 @@ public interface StreamCollector
     void notifications( List<Notification> notifications );
 
     void done();
+
+    void doneSuccess();
+
+    void doneFailure( Neo4jException error );
+
+    void doneIgnored();
 }
 

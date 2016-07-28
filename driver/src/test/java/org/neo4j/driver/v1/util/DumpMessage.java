@@ -29,6 +29,7 @@ import java.util.Map;
 
 import org.neo4j.driver.internal.net.ChunkedInput;
 import org.neo4j.driver.internal.messaging.ResetMessage;
+import org.neo4j.driver.internal.messaging.AckFailureMessage;
 import org.neo4j.driver.internal.messaging.DiscardAllMessage;
 import org.neo4j.driver.internal.messaging.FailureMessage;
 import org.neo4j.driver.internal.messaging.IgnoredMessage;
@@ -335,6 +336,12 @@ public class DumpMessage
         public void handleResetMessage()
         {
             outcome.add( new ResetMessage() );
+        }
+
+        @Override
+        public void handleAckFailureMessage()
+        {
+            outcome.add( new AckFailureMessage() );
         }
 
         @Override

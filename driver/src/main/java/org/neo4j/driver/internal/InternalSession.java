@@ -148,9 +148,14 @@ public class InternalSession implements Session
                 //must check if transaction has been closed
                 if (currentTransaction != null)
                 {
-                    currentTransaction.markAsRolledBack();
-                    currentTransaction = null;
-                    connection.onError( null );
+                    if( connection.hasUnrecoverableErrors() )
+                    {
+                        currentTransaction.markToClose();
+                    }
+                    else
+                    {
+                        currentTransaction.failure();
+                    }
                 }
             }
         });
@@ -165,12 +170,14 @@ public class InternalSession implements Session
 
     private void ensureConnectionIsValidBeforeRunningSession()
     {
+        ensureNoUnrecoverableError();
         ensureNoOpenTransactionBeforeRunningSession();
         ensureConnectionIsOpen();
     }
 
     private void ensureConnectionIsValidBeforeOpeningTransaction()
     {
+        ensureNoUnrecoverableError();
         ensureNoOpenTransactionBeforeOpeningTransaction();
         ensureConnectionIsOpen();
     }
@@ -185,6 +192,16 @@ public class InternalSession implements Session
             connection.close();
         }
         super.finalize();
+    }
+
+    private void ensureNoUnrecoverableError()
+    {
+        if( connection.hasUnrecoverableErrors() )
+        {
+            throw new ClientException( "Cannot run more statements in the current session as an unrecoverable error " +
+                                       "has happened. Please close the current session and re-run your statement in a" +
+                                       " new session." );
+        }
     }
 
     private void ensureNoOpenTransactionBeforeRunningSession()
