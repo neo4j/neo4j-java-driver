@@ -65,7 +65,8 @@ public class ResultStreamIT
     public void shouldGiveHelpfulFailureMessageWhenAccessNonExistingField() throws Throwable
     {
         // Given
-        StatementResult rs = session.run( "CREATE (n:Person {name:{name}}) RETURN n", parameters( "name", "Tom Hanks" ) );
+        StatementResult rs =
+                session.run( "CREATE (n:Person {name:{name}}) RETURN n", parameters( "name", "Tom Hanks" ) );
 
         // When
         Record single = rs.single();
@@ -78,7 +79,8 @@ public class ResultStreamIT
     public void shouldGiveHelpfulFailureMessageWhenAccessNonExistingPropertyOnNode() throws Throwable
     {
         // Given
-        StatementResult rs = session.run( "CREATE (n:Person {name:{name}}) RETURN n", parameters( "name", "Tom Hanks" ) );
+        StatementResult rs =
+                session.run( "CREATE (n:Person {name:{name}}) RETURN n", parameters( "name", "Tom Hanks" ) );
 
         // When
         Record record = rs.single();
@@ -95,5 +97,27 @@ public class ResultStreamIT
 
         // THEN
         assertNotNull( rs.keys() );
+    }
+
+    @Test
+    public void shouldBeAbleToReuseSessionAfterFailure() throws Throwable
+    {
+        // Given
+        StatementResult res1 = session.run( "INVALID" );
+        try
+        {
+            res1.consume();
+        }
+        catch ( Exception e )
+        {
+            //ignore
+        }
+
+        // When
+        StatementResult res2 = session.run( "RETURN 1" );
+
+        // Then
+        assertTrue( res2.hasNext() );
+        assertEquals( res2.next().get("1").asLong(), 1L );
     }
 }

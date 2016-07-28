@@ -100,12 +100,26 @@ public class ConcurrencyGuardingConnection implements Connection
     }
 
     @Override
-    public void reset( StreamCollector collector )
+    public void reset()
     {
         try
         {
             markAsInUse();
-            delegate.reset( collector );
+            delegate.reset();
+        }
+        finally
+        {
+            markAsAvailable();
+        }
+    }
+
+    @Override
+    public void ackFailure()
+    {
+        try
+        {
+            markAsInUse();
+            delegate.ackFailure();
         }
         finally
         {
@@ -179,6 +193,12 @@ public class ConcurrencyGuardingConnection implements Connection
     public void onError( Runnable runnable )
     {
         delegate.onError( runnable );
+    }
+
+    @Override
+    public boolean hasUnrecoverableErrors()
+    {
+        return delegate.hasUnrecoverableErrors();
     }
 
     private void markAsAvailable()

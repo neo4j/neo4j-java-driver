@@ -27,7 +27,6 @@ import java.util.Queue;
 import org.neo4j.driver.internal.messaging.InitMessage;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.PullAllMessage;
-import org.neo4j.driver.internal.messaging.ResetMessage;
 import org.neo4j.driver.internal.messaging.RunMessage;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.v1.Logger;
@@ -37,7 +36,9 @@ import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 
+import static org.neo4j.driver.internal.messaging.AckFailureMessage.ACK_FAILURE;
 import static org.neo4j.driver.internal.messaging.DiscardAllMessage.DISCARD_ALL;
+import static org.neo4j.driver.internal.messaging.ResetMessage.RESET;
 
 public class SocketConnection implements Connection
 {
@@ -66,7 +67,7 @@ public class SocketConnection implements Connection
     @Override
     public void init( String clientName, Map<String,Value> authToken )
     {
-        queueMessage( new InitMessage( clientName, authToken ), StreamCollector.NO_OP );
+        queueMessage( new InitMessage( clientName, authToken ), StreamCollector.INIT );
         sync();
     }
 
@@ -89,9 +90,15 @@ public class SocketConnection implements Connection
     }
 
     @Override
-    public void reset( StreamCollector collector )
+    public void reset()
     {
-        queueMessage( ResetMessage.RESET, collector );
+        queueMessage( RESET, StreamCollector.RESET );
+    }
+
+    @Override
+    public void ackFailure()
+    {
+        queueMessage( ACK_FAILURE, StreamCollector.ACK_FAILURE );
     }
 
     @Override
@@ -146,7 +153,6 @@ public class SocketConnection implements Connection
     {
         if ( responseHandler.serverFailureOccurred() )
         {
-            reset( StreamCollector.NO_OP );
             Neo4jException exception = responseHandler.serverFailure();
             responseHandler.clearError();
             throw exception;
@@ -192,5 +198,11 @@ public class SocketConnection implements Connection
     public void onError( Runnable runnable )
     {
         throw new UnsupportedOperationException( "Error subscribers are not supported on SocketConnection." );
+    }
+
+    @Override
+    public boolean hasUnrecoverableErrors()
+    {
+        throw new UnsupportedOperationException( "Unrecoverable error detection is not supported on SocketConnection." );
     }
 }

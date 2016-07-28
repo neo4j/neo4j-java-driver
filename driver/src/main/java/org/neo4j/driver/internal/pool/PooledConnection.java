@@ -124,11 +124,24 @@ public class PooledConnection implements Connection
     }
 
     @Override
-    public void reset( StreamCollector collector )
+    public void reset()
     {
         try
         {
-            delegate.reset( collector );
+            delegate.reset();
+        }
+        catch ( RuntimeException e )
+        {
+            onDelegateException( e );
+        }
+    }
+
+    @Override
+    public void ackFailure()
+    {
+        try
+        {
+            delegate.ackFailure();
         }
         catch ( RuntimeException e )
         {
@@ -214,6 +227,10 @@ public class PooledConnection implements Connection
         if ( !isClientOrTransientError( e ) || isProtocolViolationError( e ) )
         {
             unrecoverableErrorsOccurred = true;
+        }
+        else
+        {
+            ackFailure();
         }
         if( onError != null )
         {

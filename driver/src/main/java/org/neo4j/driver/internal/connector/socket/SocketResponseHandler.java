@@ -76,7 +76,7 @@ public class SocketResponseHandler implements MessageHandler
         }
         if ( collector != null )
         {
-            collector.done();
+            collector.doneFailure( error );
         }
     }
 
@@ -90,7 +90,7 @@ public class SocketResponseHandler implements MessageHandler
         collectPlan( collector, meta.get( "plan" ) );
         collectProfile( collector, meta.get( "profile" ) );
         collectNotifications( collector, meta.get( "notifications" ) );
-        collector.done();
+        collector.doneSuccess();
     }
 
     private void collectNotifications( StreamCollector collector, Value notifications )
@@ -178,7 +178,7 @@ public class SocketResponseHandler implements MessageHandler
         StreamCollector collector = collectors.remove();
         if (collector != null)
         {
-            collector.done();
+            collector.doneIgnored();
         }
     }
 
@@ -190,6 +190,12 @@ public class SocketResponseHandler implements MessageHandler
 
     @Override
     public void handleResetMessage()
+    {
+
+    }
+
+    @Override
+    public void handleAckFailureMessage()
     {
 
     }

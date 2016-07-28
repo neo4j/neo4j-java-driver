@@ -55,10 +55,17 @@ public interface Connection extends AutoCloseable
     void pullAll( StreamCollector collector );
 
     /**
-     * Queue a reset action, output will be handed to the collector once the pull starts. This will
+     * Queue a reset action, throw {@link org.neo4j.driver.v1.exceptions.ClientException} if an ignored message is received. This will
      * close the stream once its completed, allowing another {@link #run(String, java.util.Map, StreamCollector) run}
      */
-    void reset( StreamCollector collector );
+    void reset();
+
+    /**
+     * Queue a ack_failure action, valid output could only be success. Throw {@link org.neo4j.driver.v1.exceptions.ClientException} if
+     * a failure or ignored message is received. This will close the stream once it is completed, allowing another
+     * {@link #run(String, java.util.Map, StreamCollector) run}
+     */
+    void ackFailure();
 
     /**
      * Ensure all outstanding actions are carried out on the server.
@@ -96,4 +103,7 @@ public interface Connection extends AutoCloseable
      * @param runnable
      */
     void onError( Runnable runnable );
+
+
+    boolean hasUnrecoverableErrors();
 }

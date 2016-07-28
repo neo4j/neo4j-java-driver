@@ -87,8 +87,10 @@ class PooledConnectionReleaseConsumer implements Consumer<PooledConnection>
 
     boolean validConnection( PooledConnection pooledConnection )
     {
-        return reset(pooledConnection) &&
-               !pooledConnection.hasUnrecoverableErrors() &&
+        // once the pooledConn has marked to have unrecoverable errors, there is no way to remove the error
+        // and we should close the conn without bothering to reset the conn at all
+        return !pooledConnection.hasUnrecoverableErrors() &&
+               reset(pooledConnection) &&
                (pooledConnection.idleTime() <= minIdleBeforeConnectionTest || ping( pooledConnection ));
     }
 
@@ -102,7 +104,7 @@ class PooledConnectionReleaseConsumer implements Consumer<PooledConnection>
     {
         try
         {
-            conn.reset( StreamCollector.NO_OP );
+            conn.reset();
             conn.sync();
             return true;
         }
