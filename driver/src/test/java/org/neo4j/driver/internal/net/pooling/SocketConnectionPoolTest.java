@@ -18,6 +18,9 @@
  */
 package org.neo4j.driver.internal.net.pooling;
 
+import org.junit.Ignore;
+
+@Ignore
 public class SocketConnectionPoolTest
 {
 
