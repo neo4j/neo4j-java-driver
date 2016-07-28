@@ -36,6 +36,7 @@ import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static junit.framework.TestCase.fail;
 
+@Ignore // TODO: re-enable this test when detecting a started server becomes more predictable
 public class ConnectionPoolIT
 {
     @Rule
@@ -43,7 +44,6 @@ public class ConnectionPoolIT
     private Driver driver;
     private SessionGrabber sessionGrabber;
 
-    @Ignore  // TODO: re-enable this test when detecting a started server becomes more predictable
     @Test
     public void shouldRecoverFromDownedServer() throws Throwable
     {
