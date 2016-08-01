@@ -81,9 +81,9 @@ public class BufferingChunkedInput implements PackInput
     public BufferingChunkedInput( ReadableByteChannel channel, int bufferCapacity )
     {
         assert bufferCapacity >= 1;
-        this.buffer = ByteBuffer.allocateDirect( bufferCapacity ).order( ByteOrder.BIG_ENDIAN );
+        this.buffer = ByteBuffer.allocate( bufferCapacity ).order( ByteOrder.BIG_ENDIAN );
         this.buffer.limit( 0 );
-        this.scratchBuffer = ByteBuffer.allocateDirect( 8 ).order( ByteOrder.BIG_ENDIAN );
+        this.scratchBuffer = ByteBuffer.allocate( 8 ).order( ByteOrder.BIG_ENDIAN );
         this.channel = channel;
         this.state = State.AWAITING_CHUNK;
     }

@@ -201,7 +201,7 @@ public class SocketClient
     private SocketProtocol negotiateProtocol() throws IOException
     {
         //Propose protocol versions
-        ByteBuffer buf = ByteBuffer.allocateDirect( 5 * 4 ).order( BIG_ENDIAN );
+        ByteBuffer buf = ByteBuffer.allocate( 5 * 4 ).order( BIG_ENDIAN );
         logger.debug( "C: [HANDSHAKE] 0x6060B017" );
         buf.putInt( MAGIC_PREAMBLE );
         logger.debug( "C: [HANDSHAKE] [1, 0, 0, 0]" );
