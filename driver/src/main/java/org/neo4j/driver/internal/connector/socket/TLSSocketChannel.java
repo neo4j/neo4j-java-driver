@@ -61,7 +61,7 @@ public class TLSSocketChannel implements ByteChannel
     private ByteBuffer plainIn;
     private ByteBuffer plainOut;
 
-    private static final ByteBuffer DUMMY_BUFFER = ByteBuffer.allocateDirect( 0 );
+    private static final ByteBuffer DUMMY_BUFFER = ByteBuffer.allocate( 0 );
 
     public TLSSocketChannel( String host, int port, ByteChannel channel, Logger logger,
                              TrustStrategy trustStrategy )
@@ -75,10 +75,10 @@ public class TLSSocketChannel implements ByteChannel
     public TLSSocketChannel( ByteChannel channel, Logger logger, SSLEngine sslEngine ) throws GeneralSecurityException, IOException
     {
         this(channel, logger, sslEngine,
-             ByteBuffer.allocateDirect( sslEngine.getSession().getApplicationBufferSize() ),
-             ByteBuffer.allocateDirect( sslEngine.getSession().getPacketBufferSize() ),
-             ByteBuffer.allocateDirect( sslEngine.getSession().getApplicationBufferSize() ),
-             ByteBuffer.allocateDirect( sslEngine.getSession().getPacketBufferSize() ) );
+             ByteBuffer.allocate( sslEngine.getSession().getApplicationBufferSize() ),
+             ByteBuffer.allocate( sslEngine.getSession().getPacketBufferSize() ),
+             ByteBuffer.allocate( sslEngine.getSession().getApplicationBufferSize() ),
+             ByteBuffer.allocate( sslEngine.getSession().getPacketBufferSize() ) );
     }
 
     TLSSocketChannel( ByteChannel channel, Logger logger, SSLEngine sslEngine,
@@ -216,7 +216,7 @@ public class TLSSocketChannel implements ByteChannel
                                            "buffer size allowed is %s. The content in the buffer is: %s\n",
                                     curAppSize, newAppSize, appSize * 2, BytePrinter.hex( plainIn ) ) );
                 }
-                ByteBuffer newPlainIn = ByteBuffer.allocateDirect( newAppSize );
+                ByteBuffer newPlainIn = ByteBuffer.allocate( newAppSize );
                 newPlainIn.put( plainIn );
                 plainIn = newPlainIn;
                 logger.debug( "Enlarged application input buffer from %s to %s. " +
@@ -229,7 +229,7 @@ public class TLSSocketChannel implements ByteChannel
                 // Resize buffer if needed.
                 if ( netSize > curNetSize )
                 {
-                    ByteBuffer newCipherIn = ByteBuffer.allocateDirect( netSize );
+                    ByteBuffer newCipherIn = ByteBuffer.allocate( netSize );
                     newCipherIn.put( cipherIn );
                     cipherIn = newCipherIn;
                     logger.debug( "Enlarged network input buffer from %s to %s. " +
@@ -297,7 +297,7 @@ public class TLSSocketChannel implements ByteChannel
                                        "new network buffer.", curNetSize, netSize, buffer.capacity() ) );
             }
 
-            cipherOut = ByteBuffer.allocateDirect( netSize );
+            cipherOut = ByteBuffer.allocate( netSize );
             logger.debug( "Enlarged network output buffer from %s to %s. " +
                           "This operation should be a rare operation.", curNetSize, netSize );
             break;

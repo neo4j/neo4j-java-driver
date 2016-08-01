@@ -37,7 +37,7 @@ public class ChunkedInput implements PackInput
     private final ByteBuffer buffer;
 
     /* a special buffer for chunk header */
-    private final ByteBuffer chunkHeaderBuffer = ByteBuffer.allocateDirect( 2 );
+    private final ByteBuffer chunkHeaderBuffer = ByteBuffer.allocate( 2 );
 
     /* the size of bytes that have not been read in current incoming chunk */
     private int unreadChunkSize = 0;
@@ -52,7 +52,7 @@ public class ChunkedInput implements PackInput
     public ChunkedInput( int bufferCapacity, ReadableByteChannel channel )
     {
         assert bufferCapacity >= 1;
-        buffer = ByteBuffer.allocateDirect( bufferCapacity ).order( ByteOrder.BIG_ENDIAN );
+        buffer = ByteBuffer.allocate( bufferCapacity ).order( ByteOrder.BIG_ENDIAN );
         buffer.limit( 0 );
         this.channel = channel;
     }
