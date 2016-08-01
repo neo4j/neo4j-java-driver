@@ -106,4 +106,9 @@ public interface Connection extends AutoCloseable
 
 
     boolean hasUnrecoverableErrors();
+
+    /**
+     * Asynchronously sending reset and flush to the socket output channel.
+     */
+    void resetAndFlushAsync();
 }

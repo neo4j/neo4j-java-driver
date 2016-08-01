@@ -206,4 +206,11 @@ public class SocketConnection implements Connection
     {
         throw new UnsupportedOperationException( "Unrecoverable error detection is not supported on SocketConnection." );
     }
+
+    @Override
+    public void resetAndFlushAsync()
+    {
+        reset();
+        flush();
+    }
 }

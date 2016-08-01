@@ -58,7 +58,10 @@ public interface Session extends Resource, StatementRunner
      */
     Transaction beginTransaction();
 
-
+    /**
+     * Stop running more statements in this session and rest the session to a clean state.
+     */
+    void kill();
     /**
      * Signal that you are done using this session. In the default driver usage, closing
      * and accessing sessions is very low cost, because sessions are pooled by {@link Driver}.

@@ -211,6 +211,19 @@ public class PooledConnection implements Connection
         return unrecoverableErrorsOccurred;
     }
 
+    @Override
+    public void resetAndFlushAsync()
+    {
+        try
+        {
+            delegate.resetAndFlushAsync();
+        }
+        catch( RuntimeException e )
+        {
+            onDelegateException( e );
+        }
+    }
+
     public void dispose()
     {
         delegate.close();
