@@ -170,7 +170,7 @@ public class SocketClient
     {
         logger.debug( "~~ [HANDSHAKE] [0x6060B017, 1, 0, 0, 0]." );
         //Propose protocol versions
-        ByteBuffer buf = ByteBuffer.allocateDirect( 5 * 4 ).order( BIG_ENDIAN );
+        ByteBuffer buf = ByteBuffer.allocate( 5 * 4 ).order( BIG_ENDIAN );
         buf.putInt( MAGIC_PREAMBLE );
         for ( int version : SUPPORTED_VERSIONS )
         {
