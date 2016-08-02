@@ -80,8 +80,8 @@ public abstract class Values
         if ( value instanceof Float ) { return value( (float) value ); }
 
         if ( value instanceof List<?> ) { return value( (List<Object>) value ); }
-        if ( value instanceof Iterable<?> ) { return value( (Iterable<Object>) value ); }
         if ( value instanceof Map<?, ?> ) { return value( (Map<String,Object>) value ); }
+        if ( value instanceof Iterable<?> ) { return value( (Iterable<Object>) value ); }
         if ( value instanceof Iterator<?> ) { return value( (Iterator<Object>) value ); }
 
         if ( value instanceof boolean[] ) { return value( (boolean[]) value ); }
