@@ -202,9 +202,15 @@ public class ConcurrencyGuardingConnection implements Connection
     }
 
     @Override
-    public void resetAndFlushAsync()
+    public void resetAsync()
     {
-        delegate.resetAndFlushAsync();
+        delegate.resetAsync();
+    }
+
+    @Override
+    public boolean isInterrupted()
+    {
+        return delegate.isInterrupted();
     }
 
     private void markAsAvailable()

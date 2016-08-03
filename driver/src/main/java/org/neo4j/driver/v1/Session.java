@@ -59,9 +59,13 @@ public interface Session extends Resource, StatementRunner
     Transaction beginTransaction();
 
     /**
-     * Stop running more statements in this session and rest the session to a clean state.
+     * Reset the current session. This sends an immediate RESET signal to the server which both interrupts
+     * any statement that is currently executing and ignores any subsequently queued statements. Following
+     * the reset, the current transaction will have been rolled back and any outstanding failures will
+     * have been acknowledged.
      */
-    void kill();
+    void reset();
+
     /**
      * Signal that you are done using this session. In the default driver usage, closing
      * and accessing sessions is very low cost, because sessions are pooled by {@link Driver}.

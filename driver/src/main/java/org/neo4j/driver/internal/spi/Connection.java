@@ -108,7 +108,13 @@ public interface Connection extends AutoCloseable
     boolean hasUnrecoverableErrors();
 
     /**
-     * Asynchronously sending reset and flush to the socket output channel.
+     * Asynchronously sending reset to the socket output channel.
      */
-    void resetAndFlushAsync();
+    void resetAsync();
+
+    /**
+     * Return true if the current session statement execution has been interrupted by another thread, otherwise false.
+     * @return true if the current session statement execution has been interrupted by another thread, otherwise false
+     */
+    boolean isInterrupted();
 }

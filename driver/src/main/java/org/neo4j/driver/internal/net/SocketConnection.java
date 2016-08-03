@@ -23,6 +23,7 @@ import java.net.SocketTimeoutException;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.internal.messaging.InitMessage;
 import org.neo4j.driver.internal.messaging.Message;
@@ -30,8 +31,8 @@ import org.neo4j.driver.internal.messaging.PullAllMessage;
 import org.neo4j.driver.internal.messaging.RunMessage;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.internal.spi.StreamCollector;
+import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
@@ -45,6 +46,7 @@ public class SocketConnection implements Connection
 {
     private final Queue<Message> pendingMessages = new LinkedList<>();
     private final SocketResponseHandler responseHandler;
+    private AtomicBoolean interrupted = new AtomicBoolean( false );
 
     private final SocketClient socket;
 
@@ -208,9 +210,25 @@ public class SocketConnection implements Connection
     }
 
     @Override
-    public void resetAndFlushAsync()
+    public void resetAsync()
     {
-        reset();
-        flush();
+        if( interrupted.compareAndSet( false, true ) )
+        {
+            queueMessage( RESET, new StreamCollector.ResetStreamCollector( new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    interrupted.set( false );
+                }
+            } ) );
+            flush();
+        }
+    }
+
+    @Override
+    public boolean isInterrupted()
+    {
+        return interrupted.get();
     }
 }

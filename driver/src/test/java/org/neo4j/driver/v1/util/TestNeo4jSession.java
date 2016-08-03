@@ -101,9 +101,9 @@ public class TestNeo4jSession extends TestNeo4j implements Session
     }
 
     @Override
-    public void kill()
+    public void reset()
     {
-        realSession.kill();
+        realSession.reset();
     }
 
     @Override
