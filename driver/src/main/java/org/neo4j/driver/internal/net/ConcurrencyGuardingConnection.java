@@ -201,6 +201,18 @@ public class ConcurrencyGuardingConnection implements Connection
         return delegate.hasUnrecoverableErrors();
     }
 
+    @Override
+    public void resetAsync()
+    {
+        delegate.resetAsync();
+    }
+
+    @Override
+    public boolean isInterrupted()
+    {
+        return delegate.isInterrupted();
+    }
+
     private void markAsAvailable()
     {
         inUse.set( false );

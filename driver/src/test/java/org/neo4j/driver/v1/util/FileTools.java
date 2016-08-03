@@ -164,7 +164,7 @@ public class FileTools
         catch ( IOException e )
         {
             // Because the message from this cause may not mention which file it's about
-            throw new IOException( "Could not copy '" + srcFile + "' to '" + dstFile + "'", e );
+            throw new IOException( "Could not copy '" + srcFile.getCanonicalPath() + "' to '" + dstFile.getCanonicalPath() + "'", e );
         }
         finally
         {

@@ -123,4 +123,14 @@ public class TestNeo4j implements TestRule
         FileTools.copyFile( cert, Neo4jSettings.DEFAULT_TLS_CERT_FILE );
         runner.forceToRestart(); // needs to force to restart as no configuration changed
     }
+
+    public void ensureProcedures( String jarName ) throws IOException
+    {
+        File procedureJar = new File( Neo4jRunner.NEO4J_HOME, "plugins/" + jarName );
+        if( !procedureJar.exists() )
+        {
+            FileTools.copyFile( new File( "src/test/resources", jarName ), procedureJar );
+            runner.forceToRestart(); // needs to force to restart as no configuration changed
+        }
+    }
 }

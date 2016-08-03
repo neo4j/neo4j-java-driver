@@ -98,6 +98,14 @@ public class InternalSession implements Session
         return cursor;
     }
 
+    public void reset()
+    {
+        ensureNoUnrecoverableError();
+        ensureConnectionIsOpen();
+
+        connection.resetAsync();
+    }
+
     @Override
     public boolean isOpen()
     {

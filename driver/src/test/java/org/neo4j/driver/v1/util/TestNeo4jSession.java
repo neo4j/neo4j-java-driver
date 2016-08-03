@@ -101,6 +101,12 @@ public class TestNeo4jSession extends TestNeo4j implements Session
     }
 
     @Override
+    public void reset()
+    {
+        realSession.reset();
+    }
+
+    @Override
     public StatementResult run( String statementText, Map<String,Object> statementParameters )
     {
         return realSession.run( statementText, statementParameters );

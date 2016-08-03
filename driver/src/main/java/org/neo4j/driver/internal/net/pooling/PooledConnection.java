@@ -211,6 +211,25 @@ public class PooledConnection implements Connection
         return unrecoverableErrorsOccurred;
     }
 
+    @Override
+    public void resetAsync()
+    {
+        try
+        {
+            delegate.resetAsync();
+        }
+        catch( RuntimeException e )
+        {
+            onDelegateException( e );
+        }
+    }
+
+    @Override
+    public boolean isInterrupted()
+    {
+        return delegate.isInterrupted();
+    }
+
     public void dispose()
     {
         delegate.close();
@@ -228,7 +247,7 @@ public class PooledConnection implements Connection
         {
             unrecoverableErrorsOccurred = true;
         }
-        else
+        else if( !isInterrupted() )
         {
             ackFailure();
         }

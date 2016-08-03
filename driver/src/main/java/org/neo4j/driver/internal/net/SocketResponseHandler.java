@@ -244,5 +244,4 @@ public class SocketResponseHandler implements MessageHandler
     {
         error = null;
     }
-
 }

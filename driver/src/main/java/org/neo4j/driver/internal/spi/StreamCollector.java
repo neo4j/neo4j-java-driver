@@ -60,9 +60,22 @@ public interface StreamCollector
         }
     };
 
+    StreamCollector RESET = new ResetStreamCollector();
 
-    StreamCollector RESET = new NoOperationStreamCollector()
+    class ResetStreamCollector extends NoOperationStreamCollector
     {
+        private final Runnable doneSuccessCallBack;
+
+        public ResetStreamCollector()
+        {
+            this( null );
+        }
+
+        public ResetStreamCollector( Runnable doneSuccessCallBack )
+        {
+            this.doneSuccessCallBack = doneSuccessCallBack;
+        }
+
         @Override
         public void doneFailure( Neo4jException error )
         {
@@ -76,7 +89,17 @@ public interface StreamCollector
             throw new ClientException(
                     "Invalid server response message `IGNORED` received for client message `RESET`." );
         }
-    };
+
+        @Override
+        public void doneSuccess()
+        {
+            if( doneSuccessCallBack != null )
+            {
+                doneSuccessCallBack.run();
+            }
+        }
+    }
+
 
     class NoOperationStreamCollector implements StreamCollector
     {
