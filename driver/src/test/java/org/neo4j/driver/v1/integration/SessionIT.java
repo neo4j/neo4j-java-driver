@@ -105,7 +105,8 @@ public class SessionIT
         final int killTimeout = 1; // 1s
         long startTime = -1, endTime;
 
-        try( final Session session = driver.session() )
+        final Session session = driver.session();
+        try
         {
             StatementResult result =
                     session.run( "CALL test.driver.longRunningStatement({seconds})",
@@ -123,12 +124,17 @@ public class SessionIT
         {
             endTime = System.currentTimeMillis();
             assertTrue( startTime > 0 );
-            assertTrue( endTime - startTime > killTimeout * 1000 ); // get killed by session.kill
+            assertTrue( endTime - startTime > killTimeout * 1000 ); // get reset by session.reset
             assertTrue( endTime - startTime < executionTimeout * 1000 / 2 ); // finished before execution finished
+            assertFalse( session.isOpen() );
         }
         catch ( Exception e )
         {
             fail( "Should be a Neo4jException" );
+        }
+        finally
+        {
+            session.close();
         }
     }
 
@@ -168,7 +174,7 @@ public class SessionIT
             assertThat( recordCount, greaterThan(1) );
 
             assertTrue( startTime > 0 );
-            assertTrue( endTime - startTime > killTimeout * 1000 ); // get killed by session.kill
+            assertTrue( endTime - startTime > killTimeout * 1000 ); // get reset by session.reset
             assertTrue( endTime - startTime < executionTimeout * 1000 / 2 ); // finished before execution finished
         }
     }
@@ -190,7 +196,7 @@ public class SessionIT
                 }
                 finally
                 {
-                    session.reset(); // kill the session after timeout
+                    session.reset(); // reset the session after timeout
                 }
             }
         } ).start();

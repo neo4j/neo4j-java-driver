@@ -113,7 +113,7 @@ public class SocketConnection implements Connection
     }
 
     @Override
-    public void flush()
+    public synchronized void flush()
     {
         try
         {
@@ -180,7 +180,7 @@ public class SocketConnection implements Connection
         }
     }
 
-    private void queueMessage( Message msg, Collector collector )
+    private synchronized void queueMessage( Message msg, Collector collector )
     {
         pendingMessages.add( msg );
         responseHandler.appendResultCollector( collector );

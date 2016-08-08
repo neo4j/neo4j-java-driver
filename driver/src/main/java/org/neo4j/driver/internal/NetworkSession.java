@@ -59,6 +59,7 @@ public class NetworkSession implements Session
 
     private ExplicitTransaction currentTransaction;
     private AtomicBoolean isOpen = new AtomicBoolean( true );
+    private AtomicBoolean markedToClose = new AtomicBoolean( false );
 
     NetworkSession( Connection connection, Logger logger )
     {
@@ -108,13 +109,16 @@ public class NetworkSession implements Session
         ensureNoUnrecoverableError();
         ensureConnectionIsOpen();
 
-        connection.resetAsync();
+        if( markedToClose.compareAndSet( false, true ) )
+        {
+            connection.resetAsync();
+        }
     }
 
     @Override
     public boolean isOpen()
     {
-        return isOpen.get();
+        return isOpen.get() && !markedToClose.get();
     }
 
     @Override
@@ -261,6 +265,18 @@ public class NetworkSession implements Session
             throw new ClientException( "The current session cannot be reused as the underlying connection with the " +
                                        "server has been closed due to unrecoverable errors. " +
                                        "Please close this session and retry your statement in another new session." );
+        }
+    }
+
+    private void ensureSessionIsOpen()
+    {
+        if( !isOpen() )
+        {
+            throw new ClientException(
+                    "No more interaction with this session is allowed " +
+                    "as the current session is already closed or marked as closed. " +
+                    "You get this error either because you have a bad reference to a session that has already be closed " +
+                    "or you are trying to reuse a session that you have called `reset` on it." );
         }
     }
 }
