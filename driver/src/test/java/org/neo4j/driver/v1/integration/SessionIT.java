@@ -28,6 +28,7 @@ import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -112,14 +113,16 @@ public class SessionIT
 
             fail("Should have got an exception about statement get killed.");
         }
-        catch( ClientException e )
+        catch( Neo4jException e )
         {
             endTime = System.currentTimeMillis();
-            assertThat( e.code(), equalTo("Neo.ClientError.Procedure.ProcedureCallFailed") );
-
             assertTrue( startTime > 0 );
             assertTrue( endTime - startTime > killTimeout * 1000 ); // get killed by session.kill
             assertTrue( endTime - startTime < executionTimeout * 1000 / 2 ); // finished before execution finished
+        }
+        catch ( Exception e )
+        {
+            fail( "Should be a Neo4jException" );
         }
     }
 
