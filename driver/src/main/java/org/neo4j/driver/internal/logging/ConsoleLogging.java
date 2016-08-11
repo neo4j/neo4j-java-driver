@@ -71,9 +71,9 @@ public class ConsoleLogging implements Logging
             logger.setUseParentHandlers( false );
             // remove all other logging handlers
             Handler[] handlers = logger.getHandlers();
-            for ( int i = 0; i < handlers.length; i++ )
+            for ( Handler handler1 : handlers )
             {
-                logger.removeHandler( handlers[i] );
+                logger.removeHandler( handler1 );
             }
 
             handler = new ConsoleHandler();
