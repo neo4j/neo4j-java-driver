@@ -24,6 +24,7 @@ import java.util.Map;
 import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
+import org.neo4j.driver.v1.types.MapAccessorWithDefaultValue;
 import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.util.Immutable;
 import org.neo4j.driver.v1.util.Pair;
@@ -39,7 +40,7 @@ import org.neo4j.driver.v1.util.Pair;
  * @since 1.0
  */
 @Immutable
-public interface Record
+public interface Record extends MapAccessorWithDefaultValue
 {
     /**
      * Retrieve the keys of the underlying map
