@@ -35,11 +35,12 @@ import java.security.cert.X509Certificate;
 import javax.net.ssl.SSLHandshakeException;
 
 import org.neo4j.driver.internal.connector.socket.TLSSocketChannel;
-import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.internal.util.CertificateTool;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
+import org.neo4j.driver.v1.Logger;
+import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.util.CertificateToolTest;
 import org.neo4j.driver.v1.util.Neo4jRunner;
@@ -254,14 +255,12 @@ public class TLSSocketChannelIT
 
         Config config = Config.build().withEncryptionLevel( Config.EncryptionLevel.REQUIRED ).toConfig();
 
-        Driver driver = GraphDatabase.driver(
-                URI.create( Neo4jRunner.DEFAULT_URL ),
-                config );
-
-        StatementResult result = driver.session().run( "RETURN 1" );
-        assertEquals( 1, result.next().get( 0 ).asInt() );
-        assertFalse( result.hasNext() );
-
-        driver.close();
+        try( Driver driver = GraphDatabase.driver( URI.create( Neo4jRunner.DEFAULT_URL ), config );
+             Session session = driver.session() )
+        {
+            StatementResult result = session.run( "RETURN 1" );
+            assertEquals( 1, result.next().get( 0 ).asInt() );
+            assertFalse( result.hasNext() );
+        }
     }
 }

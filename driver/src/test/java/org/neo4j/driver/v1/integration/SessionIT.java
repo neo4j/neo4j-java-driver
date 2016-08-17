@@ -39,28 +39,32 @@ public class SessionIT
     public void shouldKnowSessionIsClosed() throws Throwable
     {
         // Given
-        Driver driver = GraphDatabase.driver( neo4j.address() );
-        Session session = driver.session();
+        try( Driver driver = GraphDatabase.driver( neo4j.address() ) )
+        {
+            Session session = driver.session();
 
-        // When
-        session.close();
+            // When
+            session.close();
 
-        // Then
-        assertFalse( session.isOpen() );
+            // Then
+            assertFalse( session.isOpen() );
+        }
     }
 
     @Test
     public void shouldHandleNullConfig() throws Throwable
     {
         // Given
-        Driver driver = GraphDatabase.driver( neo4j.address(), AuthTokens.none(), null );
-        Session session = driver.session();
+        try( Driver driver = GraphDatabase.driver( neo4j.address(), AuthTokens.none(), null ) )
+        {
+            Session session = driver.session();
 
-        // When
-        session.close();
+            // When
+            session.close();
 
-        // Then
-        assertFalse( session.isOpen() );
+            // Then
+            assertFalse( session.isOpen() );
+        }
     }
 
     @SuppressWarnings( "ConstantConditions" )
@@ -69,13 +73,15 @@ public class SessionIT
     {
         // Given
         AuthToken token = null;
-        Driver driver = GraphDatabase.driver( neo4j.address(), token);
-        Session session = driver.session();
+        try ( Driver driver = GraphDatabase.driver( neo4j.address(), token ) )
+        {
+            Session session = driver.session();
 
-        // When
-        session.close();
+            // When
+            session.close();
 
-        // Then
-        assertFalse( session.isOpen() );
+            // Then
+            assertFalse( session.isOpen() );
+        }
     }
 }
