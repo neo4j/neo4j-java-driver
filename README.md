@@ -40,7 +40,12 @@ code with git tags instead.
 
 ### Java version
 
-To compile the code and run all tests, if you are running Java 8:
+To compile the code and run all tests, you first need to prepare the `neokit` submodule which is used for integration tests:
+
+    git submodule init
+    git submodule update
+
+Then if you are running Java 8:
 
     mvn clean install
 
