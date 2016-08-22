@@ -18,16 +18,16 @@
  */
 package org.neo4j.driver.v1.integration;
 
-import java.net.URI;
-
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.driver.v1.Logger;
-import org.neo4j.driver.v1.Logging;
+import java.net.URI;
+
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
+import org.neo4j.driver.v1.Logger;
+import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.util.Neo4jRunner;
 import org.neo4j.driver.v1.util.TestNeo4j;
@@ -49,19 +49,20 @@ public class LoggingIT
         // Given
         Logging logging = mock( Logging.class );
         Logger logger = mock( Logger.class );
-        Driver driver = GraphDatabase.driver(
-                URI.create( Neo4jRunner.DEFAULT_URL ),
-                Config.build().withLogging( logging ).toConfig() );
 
-        // When
-        when( logging.getLog( anyString() ) ).thenReturn( logger );
-        when( logger.isDebugEnabled() ).thenReturn( true );
-        when( logger.isTraceEnabled() ).thenReturn( true );
-        Session session = driver.session();
-        session.run( "CREATE (a {name:'Cat'})" );
+        try( Driver driver = GraphDatabase.driver( URI.create( Neo4jRunner.DEFAULT_URL ),
+                Config.build().withLogging( logging ).toConfig() ) )
+        {
+            // When
+            when( logging.getLog( anyString() ) ).thenReturn( logger );
+            when( logger.isDebugEnabled() ).thenReturn( true );
+            when( logger.isTraceEnabled() ).thenReturn( true );
 
-        session.close();
-        driver.close();
+            try( Session session = driver.session() )
+            {
+                session.run( "CREATE (a {name:'Cat'})" );
+            }
+        }
 
         // Then
         verify( logger, atLeastOnce() ).debug( anyString() );

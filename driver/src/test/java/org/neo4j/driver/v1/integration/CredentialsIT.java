@@ -56,15 +56,13 @@ public class CredentialsIT
         String password = "secret";
         enableAuth( password );
 
-        Driver driver = GraphDatabase.driver( neo4j.address(),
-                basic("neo4j", password ) );
-
-        // When
-        Session session = driver.session();
-        Value single = session.run( "RETURN 1" ).single().get(0);
-
-        // Then
-        assertThat( single.asLong(), equalTo( 1L ) );
+        // When & Then
+        try( Driver driver = GraphDatabase.driver( neo4j.address(), basic("neo4j", password ) );
+             Session session = driver.session() )
+        {
+            Value single = session.run( "RETURN 1" ).single().get( 0 );
+            assertThat( single.asLong(), equalTo( 1L ) );
+        }
     }
 
     @Test
@@ -79,7 +77,8 @@ public class CredentialsIT
         exception.expectMessage( "The client is unauthorized due to authentication failure." );
 
         // When
-        GraphDatabase.driver( neo4j.address(), basic("thisisnotthepassword", password ) ).session();
+        try( Driver driver = GraphDatabase.driver( neo4j.address(), basic("thisisnotthepassword", password ) );
+             Session session = driver.session() ) {}
     }
 
     private void enableAuth( String password ) throws Exception
@@ -88,15 +87,15 @@ public class CredentialsIT
                 .updateWith( Neo4jSettings.AUTH_ENABLED, "true" )
                 .updateWith( Neo4jSettings.DATA_DIR, tempDir.getRoot().getAbsolutePath().replace("\\", "/") ));
 
-        Driver setPassword = GraphDatabase.driver( neo4j.address(), new InternalAuthToken(
-                parameters(
+        try ( Driver setPassword =
+                      GraphDatabase.driver( neo4j.address(), new InternalAuthToken( parameters(
                         "scheme", "basic",
                         "principal", "neo4j",
                         "credentials", "neo4j",
                         "new_credentials", password ).asMap( ofValue()) ) );
-        Session sess = setPassword.session();
-        sess.run( "RETURN 1" ).consume();
-        sess.close();
-        setPassword.close();
+              Session sess = setPassword.session() )
+        {
+            sess.run( "RETURN 1" ).consume();
+        }
     }
 }
