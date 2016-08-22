@@ -25,6 +25,7 @@ import java.util.NoSuchElementException;
 
 import org.neo4j.driver.internal.util.Extract;
 import org.neo4j.driver.internal.value.InternalValue;
+import org.neo4j.driver.internal.types.InternalMapAccessorWithDefaultValue;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
@@ -36,7 +37,7 @@ import static org.neo4j.driver.internal.util.Format.formatPairs;
 import static org.neo4j.driver.v1.Values.ofObject;
 import static org.neo4j.driver.v1.Values.ofValue;
 
-public class InternalRecord implements Record
+public class InternalRecord extends InternalMapAccessorWithDefaultValue implements Record
 {
     private final List<String> keys;
     private final Value[] values;

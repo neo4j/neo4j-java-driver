@@ -26,6 +26,7 @@ import org.neo4j.driver.v1.exceptions.value.LossyCoercion;
 import org.neo4j.driver.v1.exceptions.value.Uncoercible;
 import org.neo4j.driver.v1.types.Entity;
 import org.neo4j.driver.v1.types.MapAccessor;
+import org.neo4j.driver.v1.types.MapAccessorWithDefaultValue;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.types.Path;
 import org.neo4j.driver.v1.types.Relationship;
@@ -86,7 +87,7 @@ import org.neo4j.driver.v1.util.Immutable;
  * @since 1.0
  */
 @Immutable
-public interface Value extends MapAccessor
+public interface Value extends MapAccessor, MapAccessorWithDefaultValue
 {
     /**
      * If the underlying value is a collection type, return the number of values in the collection.

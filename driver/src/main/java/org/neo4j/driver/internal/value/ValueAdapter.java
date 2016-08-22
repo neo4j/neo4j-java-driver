@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.value;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.driver.internal.types.InternalMapAccessorWithDefaultValue;
 import org.neo4j.driver.internal.types.TypeConstructor;
 import org.neo4j.driver.internal.types.TypeRepresentation;
 import org.neo4j.driver.v1.Value;
@@ -40,7 +41,7 @@ import static org.neo4j.driver.internal.value.InternalValue.Format.VALUE_ONLY;
 import static org.neo4j.driver.v1.Values.ofValue;
 import static org.neo4j.driver.v1.Values.ofObject;
 
-public abstract class ValueAdapter implements InternalValue
+public abstract class ValueAdapter extends InternalMapAccessorWithDefaultValue implements InternalValue
 {
     @Override
     public Value asValue()
