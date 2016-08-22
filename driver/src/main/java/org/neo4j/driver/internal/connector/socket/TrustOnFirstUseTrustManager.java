@@ -30,9 +30,10 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import javax.net.ssl.X509TrustManager;
 
-import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.internal.util.BytePrinter;
+import org.neo4j.driver.v1.Logger;
 
+import static java.lang.String.format;
 import static org.neo4j.driver.internal.util.CertificateTool.X509CertToString;
 
 /**
@@ -77,6 +78,8 @@ public class TrustOnFirstUseTrustManager implements X509TrustManager
             return;
         }
 
+        assertKnownHostFileReadable();
+
         BufferedReader reader = new BufferedReader( new FileReader( knownHosts ) );
         String line;
         while ( (line = reader.readLine()) != null )
@@ -107,10 +110,36 @@ public class TrustOnFirstUseTrustManager implements X509TrustManager
         logger.warn( "Adding %s as known and trusted certificate for %s.", fingerprint, serverId );
         createKnownCertFileIfNotExists();
 
+        assertKnownHostFileWritable();
         BufferedWriter writer = new BufferedWriter( new FileWriter( knownHosts, true ) );
         writer.write( serverId + " " + this.fingerprint );
         writer.newLine();
         writer.close();
+    }
+
+
+    private void assertKnownHostFileReadable() throws IOException
+    {
+        if( !knownHosts.canRead() )
+        {
+            throw new IOException( format(
+                    "Failed to load certificates from file %s as you have no read permissions to it.\n" +
+                    "Try configuring the Neo4j driver to use a file system location you do have read permissions to.",
+                    knownHosts.getAbsolutePath()
+            ) );
+        }
+    }
+
+    private void assertKnownHostFileWritable() throws IOException
+    {
+        if( !knownHosts.canWrite() )
+        {
+            throw new IOException( format(
+                    "Failed to write certificates to file %s as you have no write permissions to it.\n" +
+                    "Try configuring the Neo4j driver to use a file system location you do have write permissions to.",
+                    knownHosts.getAbsolutePath()
+            ) );
+        }
     }
 
     /*
@@ -140,7 +169,7 @@ public class TrustOnFirstUseTrustManager implements X509TrustManager
             }
             catch ( IOException e )
             {
-                throw new CertificateException( String.format(
+                throw new CertificateException( format(
                         "Failed to save the server ID and the certificate received from the server to file %s.\n" +
                         "Server ID: %s\nReceived cert:\n%s",
                         knownHosts.getAbsolutePath(), serverId, X509CertToString( cert ) ), e );
@@ -150,7 +179,7 @@ public class TrustOnFirstUseTrustManager implements X509TrustManager
         {
             if ( !this.fingerprint.equals( cert ) )
             {
-                throw new CertificateException( String.format(
+                throw new CertificateException( format(
                         "Unable to connect to neo4j at `%s`, because the certificate the server uses has changed. " +
                         "This is a security feature to protect against man-in-the-middle attacks.\n" +
                         "If you trust the certificate the server uses now, simply remove the line that starts with " +
