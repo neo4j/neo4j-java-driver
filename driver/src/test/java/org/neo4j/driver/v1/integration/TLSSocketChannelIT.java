@@ -38,6 +38,7 @@ import org.neo4j.driver.internal.security.TLSSocketChannel;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.v1.*;
 import org.neo4j.driver.internal.util.CertificateTool;
+
 import org.neo4j.driver.v1.util.CertificateToolTest;
 import org.neo4j.driver.v1.util.Neo4jRunner;
 import org.neo4j.driver.v1.util.Neo4jSettings;
@@ -257,12 +258,12 @@ public class TLSSocketChannelIT
 
         Config config = Config.build().withEncryptionLevel( Config.EncryptionLevel.REQUIRED ).toConfig();
 
-        Driver driver = GraphDatabase.driver( Neo4jRunner.DEFAULT_URI, config );
-
-        StatementResult result = driver.session().run( "RETURN 1" );
-        assertEquals( 1, result.next().get( 0 ).asInt() );
-        assertFalse( result.hasNext() );
-
-        driver.close();
+        try( Driver driver = GraphDatabase.driver( Neo4jRunner.DEFAULT_URI, config );
+             Session session = driver.session() )
+        {
+            StatementResult result = session.run( "RETURN 1" );
+            assertEquals( 1, result.next().get( 0 ).asInt() );
+            assertFalse( result.hasNext() );
+        }
     }
 }

@@ -43,25 +43,27 @@ public class LoadCSVIT
     @Test
     public void shouldLoadCSV() throws Throwable
     {
-        // Given
-        Driver driver = GraphDatabase.driver( neo4j.uri() );
-        Session session = driver.session();
-        String csvFileUrl = createLocalIrisData( session );
+        try( Driver driver =  GraphDatabase.driver( neo4j.uri() );
+             Session session = driver.session() )
+        {
+            String csvFileUrl = createLocalIrisData( session );
 
-        // When
-        StatementResult result = session.run(
-            "USING PERIODIC COMMIT 40\n" +
-            "LOAD CSV WITH HEADERS FROM {csvFileUrl} AS l\n" +
-            "MATCH (c:Class {name: l.class_name})\n" +
-            "CREATE (s:Sample {sepal_length: l.sepal_length, sepal_width: l.sepal_width, petal_length: l.petal_length, petal_width: l.petal_width})\n" +
-            "CREATE (c)<-[:HAS_CLASS]-(s) " +
-            "RETURN count(*) AS c",
-        parameters( "csvFileUrl", csvFileUrl ) );
+            // When
+            StatementResult result = session.run(
+                    "USING PERIODIC COMMIT 40\n" +
+                    "LOAD CSV WITH HEADERS FROM {csvFileUrl} AS l\n" +
+                    "MATCH (c:Class {name: l.class_name})\n" +
+                    "CREATE (s:Sample {sepal_length: l.sepal_length, sepal_width: l.sepal_width, petal_length: l.petal_length, petal_width: l.petal_width})\n" +
+
+                    "CREATE (c)<-[:HAS_CLASS]-(s) " +
+                    "RETURN count(*) AS c",
+                    parameters( "csvFileUrl", csvFileUrl ) );
 
 
-        // Then
-        assertThat( result.next().get( "c" ).asInt(), equalTo( 150 ) );
-        assertFalse( result.hasNext() );
+            // Then
+            assertThat( result.next().get( "c" ).asInt(), equalTo( 150 ) );
+            assertFalse( result.hasNext() );
+        }
     }
 
     private String createLocalIrisData( Session session ) throws IOException
