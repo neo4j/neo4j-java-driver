@@ -25,6 +25,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
@@ -33,7 +34,9 @@ import java.util.Scanner;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.v1.Logger;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
@@ -143,5 +146,56 @@ public class TrustOnFirstUseTrustManagerTest
         }
         while ( line.trim().startsWith( "#" ) );
         return line;
+    }
+
+    @Test
+    public void shouldThrowMeaningfulExceptionIfHasNoReadPermissionToKnownHostFile() throws Throwable
+    {
+        // Given
+        File knownHostFile = mock( File.class );
+        when( knownHostFile.canRead() ).thenReturn( false );
+        when( knownHostFile.exists() ).thenReturn( true );
+
+        // When & Then
+        try
+        {
+            new TrustOnFirstUseTrustManager( new BoltServerAddress( knownServerIp, knownServerPort ), knownHostFile, null );
+            fail( "Should have failed in load certs" );
+        }
+        catch( IOException e )
+        {
+            assertThat( e.getMessage(), containsString( "you have no read permissions to it" ) );
+        }
+        catch( Exception e )
+        {
+            fail( "Should not get any other error besides no permission to read" );
+        }
+    }
+
+    @Test
+    public void shouldThrowMeaningfulExceptionIfHasNoWritePermissionToKnownHostFile() throws Throwable
+    {
+        // Given
+        File knownHostFile = mock( File.class );
+        when( knownHostFile.exists() ).thenReturn( false /*skip reading*/, true );
+        when( knownHostFile.canWrite() ).thenReturn( false );
+
+        // When & Then
+        try
+        {
+            TrustOnFirstUseTrustManager manager =
+                    new TrustOnFirstUseTrustManager( new BoltServerAddress( knownServerIp, knownServerPort ), knownHostFile, mock( Logger.class ) );
+            manager.checkServerTrusted( new X509Certificate[]{ knownCertificate}, null );
+            fail( "Should have failed in write to certs" );
+        }
+        catch( CertificateException e )
+        {
+            assertThat( e.getCause().getMessage(), containsString( "you have no write permissions to it" ) );
+        }
+        catch( Exception e )
+        {
+            e.printStackTrace();
+            fail( "Should not get any other error besides no permission to write" );
+        }
     }
 }
