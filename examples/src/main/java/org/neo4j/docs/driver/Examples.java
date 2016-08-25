@@ -239,7 +239,7 @@ public class Examples
         // tag::tls-signed[]
         Driver driver = GraphDatabase.driver( "bolt://localhost", AuthTokens.basic("neo4j", "neo4j"), Config.build()
                 .withEncryptionLevel( Config.EncryptionLevel.REQUIRED )
-                .withTrustStrategy( Config.TrustStrategy.trustSignedBy( new File( "/path/to/ca-certificate.pem") ) )
+                .withTrustStrategy( Config.TrustStrategy.trustCustomCertificateSignedBy( new File( "/path/to/ca-certificate.pem") ) )
                 .toConfig() );
         // end::tls-signed[]
 

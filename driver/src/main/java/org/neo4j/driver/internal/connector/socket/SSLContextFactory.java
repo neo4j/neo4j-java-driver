@@ -27,8 +27,8 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 
 import org.neo4j.driver.v1.Config;
-import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.Logger;
+import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static org.neo4j.driver.internal.util.CertificateTool.loadX509Cert;
 
@@ -55,6 +55,10 @@ class SSLContextFactory
 
         switch ( authConfig.strategy() ) {
         case TRUST_SIGNED_CERTIFICATES:
+            logger.warn( "Option `TRUST_SIGNED_CERTIFICATE` has been deprecated and will be removed in a future version " +
+                         "of the driver. Please switch to use `TRUST_CUSTOM_CA_SIGNED_CERTIFICATES` instead." );
+            //intentional fallthrough
+        case TRUST_CUSTOM_CA_SIGNED_CERTIFICATES:
             // A certificate file is specified so we will load the certificates in the file
             // Init a in memory TrustedKeyStore
             KeyStore trustedKeyStore = KeyStore.getInstance( "JKS" );
@@ -67,7 +71,13 @@ class SSLContextFactory
             TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance( "SunX509" );
             trustManagerFactory.init( trustedKeyStore );
             trustManagers = trustManagerFactory.getTrustManagers();
+
             break;
+
+        //just rely on system defaults
+        case TRUST_SYSTEM_CA_SIGNED_CERTIFICATES:
+            return SSLContext.getDefault();
+
         case TRUST_ON_FIRST_USE:
             trustManagers = new TrustManager[]{new TrustOnFirstUseTrustManager( host, port, authConfig.certFile(), logger )};
             break;

@@ -46,8 +46,8 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.driver.internal.util.CertificateTool.saveX509Cert;
+import static org.neo4j.driver.v1.Config.TrustStrategy.trustCustomCertificateSignedBy;
 import static org.neo4j.driver.v1.Config.TrustStrategy.trustOnFirstUse;
-import static org.neo4j.driver.v1.Config.TrustStrategy.trustSignedBy;
 import static org.neo4j.driver.v1.tck.DriverComplianceIT.neo4j;
 import static org.neo4j.driver.v1.util.CertificateToolTest.generateSelfSignedCertificate;
 
@@ -199,7 +199,7 @@ public class DriverSecurityComplianceSteps
         driver = GraphDatabase.driver(
                 Neo4jRunner.DEFAULT_URL,
                 Config.build().withEncryptionLevel( EncryptionLevel.REQUIRED )
-                        .withTrustStrategy( trustSignedBy( rootCert ) ).toConfig() );
+                        .withTrustStrategy( trustCustomCertificateSignedBy( rootCert ) ).toConfig() );
 
         // generate certificate signing request and get a certificate signed by the root private key
         File cert = tempFile( "temp_cert", ".cert" );
@@ -223,7 +223,7 @@ public class DriverSecurityComplianceSteps
         driver = GraphDatabase.driver(
                 Neo4jRunner.DEFAULT_URL,
                 Config.build().withEncryptionLevel( EncryptionLevel.REQUIRED )
-                        .withTrustStrategy( trustSignedBy( Neo4jSettings.DEFAULT_TLS_CERT_FILE ) ).toConfig() );
+                        .withTrustStrategy( trustCustomCertificateSignedBy( Neo4jSettings.DEFAULT_TLS_CERT_FILE ) ).toConfig() );
     }
 
     // invalid cert
@@ -237,7 +237,7 @@ public class DriverSecurityComplianceSteps
         driver = GraphDatabase.driver(
                 Neo4jRunner.DEFAULT_URL,
                 Config.build().withEncryptionLevel( EncryptionLevel.REQUIRED )
-                        .withTrustStrategy( trustSignedBy( cert ) ).toConfig() );
+                        .withTrustStrategy( trustCustomCertificateSignedBy( cert ) ).toConfig() );
     }
 
     @And( "^I should get a helpful error explaining that no trusted certificate found$" )
