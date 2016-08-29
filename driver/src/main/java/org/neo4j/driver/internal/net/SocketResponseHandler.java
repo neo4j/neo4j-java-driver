@@ -91,6 +91,7 @@ public class SocketResponseHandler implements MessageHandler
         collectProfile( collector, meta.get( "profile" ) );
         collectNotifications( collector, meta.get( "notifications" ) );
         collectResultAvailableAfter( collector, meta.get("result_available_after"));
+        collectResultConsumedAfter( collector, meta.get("result_consumed_after"));
         collector.doneSuccess();
     }
 
@@ -99,6 +100,14 @@ public class SocketResponseHandler implements MessageHandler
         if (resultAvailableAfter != null)
         {
             collector.resultAvailableAfter(resultAvailableAfter.asLong());
+        }
+    }
+
+    private void collectResultConsumedAfter( StreamCollector collector, Value resultConsumedAfter )
+    {
+        if (resultConsumedAfter != null)
+        {
+            collector.resultConsumedAfter(resultConsumedAfter.asLong());
         }
     }
 

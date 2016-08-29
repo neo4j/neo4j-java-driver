@@ -74,6 +74,7 @@ public class SummaryIT
         assertFalse( summary.hasProfile() );
         assertThat( summary, equalTo( result.consume() ) );
         assertThat( summary.resultAvailableAfter( TimeUnit.MILLISECONDS ), greaterThan( 0L ) );
+        assertThat( summary.resultConsumedAfter( TimeUnit.MILLISECONDS ), greaterThan( 0L ) );
     }
 
     @Test

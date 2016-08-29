@@ -44,6 +44,7 @@ public class SummaryBuilder implements StreamCollector
     private ProfiledPlan profile;
     private List<Notification> notifications = null;
     private long resultAvailableAfter;
+    private long resultConsumedAfter;
 
     public SummaryBuilder( Statement statement )
     {
@@ -156,6 +157,12 @@ public class SummaryBuilder implements StreamCollector
       this.resultAvailableAfter = l;
     }
 
+    @Override
+    public void resultConsumedAfter( long l )
+    {
+        this.resultConsumedAfter = l;
+    }
+
     public ResultSummary build()
     {
         return new ResultSummary()
@@ -212,6 +219,12 @@ public class SummaryBuilder implements StreamCollector
             public long resultAvailableAfter( TimeUnit timeUnit )
             {
                 return timeUnit.convert( resultAvailableAfter, TimeUnit.MILLISECONDS );
+            }
+
+            @Override
+            public long resultConsumedAfter( TimeUnit timeUnit )
+            {
+                return timeUnit.convert( resultConsumedAfter, TimeUnit.MILLISECONDS );
             }
         };
     }

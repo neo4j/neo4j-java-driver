@@ -144,6 +144,12 @@ public class InternalStatementResult implements StatementResult
             {
                 summaryBuilder.resultAvailableAfter( l );
             }
+
+            @Override
+            public void resultConsumedAfter(long l)
+            {
+                summaryBuilder.resultConsumedAfter( l );
+            }
         };
     }
 

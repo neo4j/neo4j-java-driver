@@ -150,6 +150,12 @@ public interface StreamCollector
         {
 
         }
+
+        @Override
+        public void resultConsumedAfter( long l )
+        {
+
+        }
     }
 
     // TODO: This should be modified to simply have head/record/tail methods
@@ -177,5 +183,7 @@ public interface StreamCollector
     void doneIgnored();
 
     void resultAvailableAfter( long l );
+
+    void resultConsumedAfter( long l );
 }
 
