@@ -144,6 +144,12 @@ public interface StreamCollector
         {
             done();
         }
+
+        @Override
+        public void resultAvailableAfter( long l )
+        {
+
+        }
     }
 
     // TODO: This should be modified to simply have head/record/tail methods
@@ -169,5 +175,7 @@ public interface StreamCollector
     void doneFailure( Neo4jException error );
 
     void doneIgnored();
+
+    void resultAvailableAfter( long l );
 }
 

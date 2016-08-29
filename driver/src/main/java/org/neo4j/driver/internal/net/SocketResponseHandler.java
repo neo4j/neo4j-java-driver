@@ -90,7 +90,16 @@ public class SocketResponseHandler implements MessageHandler
         collectPlan( collector, meta.get( "plan" ) );
         collectProfile( collector, meta.get( "profile" ) );
         collectNotifications( collector, meta.get( "notifications" ) );
+        collectResultAvailableAfter( collector, meta.get("result_available_after"));
         collector.doneSuccess();
+    }
+
+    private void collectResultAvailableAfter( StreamCollector collector, Value resultAvailableAfter )
+    {
+        if (resultAvailableAfter != null)
+        {
+            collector.resultAvailableAfter(resultAvailableAfter.asLong());
+        }
     }
 
     private void collectNotifications( StreamCollector collector, Value notifications )

@@ -22,6 +22,8 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
@@ -71,6 +73,7 @@ public class SummaryIT
         assertFalse( summary.hasPlan() );
         assertFalse( summary.hasProfile() );
         assertThat( summary, equalTo( result.consume() ) );
+        assertThat( summary.resultAvailableAfter( TimeUnit.MILLISECONDS ), greaterThan( 0L ) );
     }
 
     @Test
