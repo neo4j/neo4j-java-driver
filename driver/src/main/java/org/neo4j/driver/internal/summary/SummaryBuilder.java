@@ -163,6 +163,12 @@ public class SummaryBuilder implements StreamCollector
         this.resultConsumedAfter = l;
     }
 
+    @Override
+    public void server( String server )
+    {
+        // intentionally empty
+    }
+
     public ResultSummary build()
     {
         return new ResultSummary()

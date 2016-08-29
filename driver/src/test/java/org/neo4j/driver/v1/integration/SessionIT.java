@@ -34,6 +34,7 @@ import org.neo4j.driver.v1.util.TestNeo4j;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -48,7 +49,7 @@ public class SessionIT
     public void shouldKnowSessionIsClosed() throws Throwable
     {
         // Given
-        try( Driver driver =  GraphDatabase.driver( neo4j.uri() ); )
+        try( Driver driver =  GraphDatabase.driver( neo4j.uri() ) )
         {
             Session session = driver.session();
 
@@ -170,6 +171,19 @@ public class SessionIT
             assertTrue( startTime > 0 );
             assertTrue( endTime - startTime > killTimeout * 1000 ); // get killed by session.kill
             assertTrue( endTime - startTime < executionTimeout * 1000 / 2 ); // finished before execution finished
+        }
+    }
+
+    @Test
+    public void shouldShowServerVersion() throws Throwable
+    {
+        // Given
+        try( Driver driver = GraphDatabase.driver( neo4j.uri() ) )
+        {
+            try ( Session session = driver.session() )
+            {
+                assertNotNull( session.server() );
+            }
         }
     }
 
