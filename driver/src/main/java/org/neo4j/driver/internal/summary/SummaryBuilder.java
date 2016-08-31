@@ -43,8 +43,8 @@ public class SummaryBuilder implements StreamCollector
     private Plan plan = null;
     private ProfiledPlan profile;
     private List<Notification> notifications = null;
-    private long resultAvailableAfter;
-    private long resultConsumedAfter;
+    private long resultAvailableAfter = -1L;
+    private long resultConsumedAfter = -1L;
 
     public SummaryBuilder( Statement statement )
     {

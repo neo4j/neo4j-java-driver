@@ -43,6 +43,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.driver.v1.util.ServerVersion.v3_1_0;
+import static org.neo4j.driver.v1.util.ServerVersion.version;
 
 public class SummaryIT
 {
@@ -73,8 +75,27 @@ public class SummaryIT
         assertFalse( summary.hasPlan() );
         assertFalse( summary.hasProfile() );
         assertThat( summary, equalTo( result.consume() ) );
-        assertThat( summary.resultAvailableAfter( TimeUnit.MILLISECONDS ), greaterThan( 0L ) );
-        assertThat( summary.resultConsumedAfter( TimeUnit.MILLISECONDS ), greaterThan( 0L ) );
+
+    }
+
+    @Test
+    public void shouldContainTimeInformation()
+    {
+        // Given
+        ResultSummary summary = session.run( "UNWIND range(1,1000) AS n RETURN n AS number" ).consume();
+
+        // Then
+        if ( version( session.server() ).greaterThanOrEqual( v3_1_0 ) )
+        {
+            assertThat( summary.resultAvailableAfter( TimeUnit.MILLISECONDS ), greaterThan( 0L ) );
+            assertThat( summary.resultConsumedAfter( TimeUnit.MILLISECONDS ), greaterThan( 0L ) );
+        }
+        else
+        {
+            //Not passed through by older versions of the server
+            assertThat( summary.resultAvailableAfter( TimeUnit.MILLISECONDS ), equalTo( -1L ) );
+            assertThat( summary.resultConsumedAfter( TimeUnit.MILLISECONDS ), equalTo( -1L ) );
+        }
     }
 
     @Test
