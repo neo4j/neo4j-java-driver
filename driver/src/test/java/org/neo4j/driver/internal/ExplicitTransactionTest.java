@@ -33,7 +33,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-public class InternalTransactionTest
+public class ExplicitTransactionTest
 {
     @Test
     public void shouldRollbackOnImplicitFailure() throws Throwable
@@ -42,7 +42,7 @@ public class InternalTransactionTest
         Connection conn = mock( Connection.class );
         when( conn.isOpen() ).thenReturn( true );
         Runnable cleanup = mock( Runnable.class );
-        InternalTransaction tx = new InternalTransaction( conn, cleanup );
+        ExplicitTransaction tx = new ExplicitTransaction( conn, cleanup );
 
         // When
         tx.close();
@@ -66,7 +66,7 @@ public class InternalTransactionTest
         Connection conn = mock( Connection.class );
         when( conn.isOpen() ).thenReturn( true );
         Runnable cleanup = mock( Runnable.class );
-        InternalTransaction tx = new InternalTransaction( conn, cleanup );
+        ExplicitTransaction tx = new ExplicitTransaction( conn, cleanup );
 
         // When
         tx.failure();
@@ -92,7 +92,7 @@ public class InternalTransactionTest
         Connection conn = mock( Connection.class );
         when( conn.isOpen() ).thenReturn( true );
         Runnable cleanup = mock( Runnable.class );
-        InternalTransaction tx = new InternalTransaction( conn, cleanup );
+        ExplicitTransaction tx = new ExplicitTransaction( conn, cleanup );
 
         // When
         tx.success();

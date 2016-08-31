@@ -34,10 +34,13 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.types.TypeSystem;
 
+import static java.util.Collections.emptyMap;
+import static java.util.Collections.singletonMap;
+
 import static org.neo4j.driver.v1.Values.ofValue;
 import static org.neo4j.driver.v1.Values.value;
 
-public class InternalTransaction implements Transaction
+class ExplicitTransaction implements Transaction
 {
     private enum State
     {
@@ -68,13 +71,26 @@ public class InternalTransaction implements Transaction
 
     private State state = State.ACTIVE;
 
-    public InternalTransaction( Connection conn, Runnable cleanup )
+    ExplicitTransaction( Connection conn, Runnable cleanup )
+    {
+        this( conn, cleanup, null );
+    }
+
+    ExplicitTransaction( Connection conn, Runnable cleanup, String bookmark )
     {
         this.conn = conn;
         this.cleanup = cleanup;
 
-        // Note there is no sync here, so this will just value queued locally
-        conn.run( "BEGIN", Collections.<String, Value>emptyMap(), StreamCollector.NO_OP );
+        final Map<String, Value> parameters;
+        if ( bookmark == null )
+        {
+            parameters = emptyMap();
+        }
+        else
+        {
+            parameters = singletonMap( "bookmark", value( bookmark ) );
+        }
+        conn.run( "BEGIN", parameters, StreamCollector.NO_OP );
         conn.discardAll();
     }
 

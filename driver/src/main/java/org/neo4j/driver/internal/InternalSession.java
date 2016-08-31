@@ -52,7 +52,7 @@ public class InternalSession implements Session
         }
     };
 
-    private InternalTransaction currentTransaction;
+    private ExplicitTransaction currentTransaction;
     private AtomicBoolean isOpen = new AtomicBoolean( true );
 
     public InternalSession( Connection connection, Logger logger )
@@ -153,16 +153,23 @@ public class InternalSession implements Session
     @Override
     public Transaction beginTransaction()
     {
+        return beginTransaction( null );
+    }
+
+    @Override
+    public Transaction beginTransaction( String bookmark )
+    {
         ensureConnectionIsValidBeforeOpeningTransaction();
-        currentTransaction = new InternalTransaction( connection, txCleanup );
-        connection.onError( new Runnable() {
+        currentTransaction = new ExplicitTransaction( connection, txCleanup, bookmark );
+        connection.onError( new Runnable()
+        {
             @Override
             public void run()
             {
-                //must check if transaction has been closed
-                if (currentTransaction != null)
+                // must check if transaction has been closed
+                if ( currentTransaction != null )
                 {
-                    if( connection.hasUnrecoverableErrors() )
+                    if ( connection.hasUnrecoverableErrors() )
                     {
                         currentTransaction.markToClose();
                     }
@@ -172,7 +179,7 @@ public class InternalSession implements Session
                     }
                 }
             }
-        });
+        } );
         return currentTransaction;
     }
 
