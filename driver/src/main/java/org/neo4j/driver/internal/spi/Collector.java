@@ -29,11 +29,11 @@ import org.neo4j.driver.v1.summary.ProfiledPlan;
 import org.neo4j.driver.v1.summary.StatementType;
 import org.neo4j.driver.v1.summary.SummaryCounters;
 
-public interface StreamCollector
+public interface Collector
 {
-    StreamCollector NO_OP = new NoOperationStreamCollector();
+    Collector NO_OP = new NoOperationCollector();
 
-    StreamCollector ACK_FAILURE = new NoOperationStreamCollector()
+    Collector ACK_FAILURE = new NoOperationCollector()
     {
         @Override
         public void doneFailure( Neo4jException error )
@@ -50,7 +50,7 @@ public interface StreamCollector
         }
     };
 
-    class InitStreamCollector extends NoOperationStreamCollector
+    class InitCollector extends NoOperationCollector
     {
         private String server;
         @Override
@@ -72,18 +72,18 @@ public interface StreamCollector
         }
     }
 
-    StreamCollector RESET = new ResetStreamCollector();
+    Collector RESET = new ResetCollector();
 
-    class ResetStreamCollector extends NoOperationStreamCollector
+    class ResetCollector extends NoOperationCollector
     {
         private final Runnable doneSuccessCallBack;
 
-        public ResetStreamCollector()
+        public ResetCollector()
         {
             this( null );
         }
 
-        public ResetStreamCollector( Runnable doneSuccessCallBack )
+        public ResetCollector( Runnable doneSuccessCallBack )
         {
             this.doneSuccessCallBack = doneSuccessCallBack;
         }
@@ -113,7 +113,7 @@ public interface StreamCollector
     }
 
 
-    class NoOperationStreamCollector implements StreamCollector
+    class NoOperationCollector implements Collector
     {
         @Override
         public void keys( String[] names ) {}
@@ -135,6 +135,9 @@ public interface StreamCollector
 
         @Override
         public void notifications( List<Notification> notifications ) {}
+
+        @Override
+        public void bookmark( String bookmark ) {}
 
         @Override
         public void done() {}
@@ -182,6 +185,8 @@ public interface StreamCollector
     void profile( ProfiledPlan plan );
 
     void notifications( List<Notification> notifications );
+
+    void bookmark( String bookmark );
 
     void done();
 

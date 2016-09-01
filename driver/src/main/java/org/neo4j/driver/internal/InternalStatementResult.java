@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.Queue;
 
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.spi.StreamCollector;
+import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.summary.SummaryBuilder;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
@@ -47,8 +47,8 @@ import static java.util.Collections.emptyList;
 public class InternalStatementResult implements StatementResult
 {
     private final Connection connection;
-    private final StreamCollector runResponseCollector;
-    private final StreamCollector pullAllResponseCollector;
+    private final Collector runResponseCollector;
+    private final Collector pullAllResponseCollector;
     private final Queue<Record> recordBuffer = new LinkedList<>();
 
     private List<String> keys = null;
@@ -57,16 +57,16 @@ public class InternalStatementResult implements StatementResult
     private long position = -1;
     private boolean done = false;
 
-    public InternalStatementResult( Connection connection, Statement statement )
+    InternalStatementResult( Connection connection, ExplicitTransaction transaction, Statement statement )
     {
         this.connection = connection;
         this.runResponseCollector = newRunResponseCollector();
-        this.pullAllResponseCollector = newPullAllResponseCollector( statement );
+        this.pullAllResponseCollector = newStreamResponseCollector( transaction, statement );
     }
 
-    private StreamCollector newRunResponseCollector()
+    private Collector newRunResponseCollector()
     {
-        return new StreamCollector.NoOperationStreamCollector()
+        return new Collector.NoOperationCollector()
         {
             @Override
             public void keys( String[] names )
@@ -91,11 +91,11 @@ public class InternalStatementResult implements StatementResult
         };
     }
 
-    private StreamCollector newPullAllResponseCollector( Statement statement )
+    private Collector newStreamResponseCollector( final ExplicitTransaction transaction, final Statement statement )
     {
         final SummaryBuilder summaryBuilder = new SummaryBuilder( statement );
 
-        return new StreamCollector.NoOperationStreamCollector()
+        return new Collector.NoOperationCollector()
         {
             @Override
             public void record( Value[] fields )
@@ -134,7 +134,17 @@ public class InternalStatementResult implements StatementResult
             }
 
             @Override
-            public void done() {
+            public void bookmark( String bookmark )
+            {
+                if ( transaction != null )
+                {
+                    transaction.setBookmark( bookmark );
+                }
+            }
+
+            @Override
+            public void done()
+            {
                 summary = summaryBuilder.build();
                 done = true;
             }
@@ -153,12 +163,12 @@ public class InternalStatementResult implements StatementResult
         };
     }
 
-    StreamCollector runResponseCollector()
+    Collector runResponseCollector()
     {
         return runResponseCollector;
     }
 
-    StreamCollector pullAllResponseCollector()
+    Collector pullAllResponseCollector()
     {
         return pullAllResponseCollector;
     }

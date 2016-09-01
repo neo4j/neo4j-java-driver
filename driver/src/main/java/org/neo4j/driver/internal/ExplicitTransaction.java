@@ -22,7 +22,7 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.spi.StreamCollector;
+import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
@@ -69,6 +69,7 @@ class ExplicitTransaction implements Transaction
     private final Runnable cleanup;
     private final Connection conn;
 
+    private String bookmark = null;
     private State state = State.ACTIVE;
 
     ExplicitTransaction( Connection conn, Runnable cleanup )
@@ -90,8 +91,8 @@ class ExplicitTransaction implements Transaction
         {
             parameters = singletonMap( "bookmark", value( bookmark ) );
         }
-        conn.run( "BEGIN", parameters, StreamCollector.NO_OP );
-        conn.discardAll();
+        conn.run( "BEGIN", parameters, Collector.NO_OP );
+        conn.discardAll( Collector.NO_OP );
     }
 
     @Override
@@ -121,15 +122,15 @@ class ExplicitTransaction implements Transaction
             {
                 if ( state == State.MARKED_SUCCESS )
                 {
-                    conn.run( "COMMIT", Collections.<String, Value>emptyMap(), StreamCollector.NO_OP );
-                    conn.discardAll();
+                    conn.run( "COMMIT", Collections.<String, Value>emptyMap(), Collector.NO_OP );
+                    conn.discardAll( new BookmarkCollector( this ) );
                     conn.sync();
                     state = State.SUCCEEDED;
                 }
                 else if ( state == State.MARKED_FAILED || state == State.ACTIVE )
                 {
-                    conn.run( "ROLLBACK", Collections.<String, Value>emptyMap(), StreamCollector.NO_OP );
-                    conn.discardAll();
+                    conn.run( "ROLLBACK", Collections.<String, Value>emptyMap(), Collector.NO_OP );
+                    conn.discardAll( new BookmarkCollector( this ) );
                     conn.sync();
                     state = State.ROLLED_BACK;
                 }
@@ -175,7 +176,7 @@ class ExplicitTransaction implements Transaction
 
         try
         {
-            InternalStatementResult cursor = new InternalStatementResult( conn, statement );
+            InternalStatementResult cursor = new InternalStatementResult( conn, this, statement );
             conn.run( statement.text(),
                     statement.parameters().asMap( ofValue() ),
                     cursor.runResponseCollector() );
@@ -220,4 +221,15 @@ class ExplicitTransaction implements Transaction
     {
         state = State.FAILED;
     }
+
+    public String bookmark()
+    {
+        return bookmark;
+    }
+
+    void setBookmark( String bookmark )
+    {
+        this.bookmark = bookmark;
+    }
+
 }

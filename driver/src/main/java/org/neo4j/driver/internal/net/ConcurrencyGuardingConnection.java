@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.spi.StreamCollector;
+import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
@@ -58,7 +58,7 @@ public class ConcurrencyGuardingConnection implements Connection
 
     @Override
     public void run( String statement, Map<String,Value> parameters,
-            StreamCollector collector )
+            Collector collector )
     {
         try
         {
@@ -72,12 +72,12 @@ public class ConcurrencyGuardingConnection implements Connection
     }
 
     @Override
-    public void discardAll()
+    public void discardAll( Collector collector )
     {
         try
         {
             markAsInUse();
-            delegate.discardAll();
+            delegate.discardAll( collector );
         }
         finally
         {
@@ -86,7 +86,7 @@ public class ConcurrencyGuardingConnection implements Connection
     }
 
     @Override
-    public void pullAll( StreamCollector collector )
+    public void pullAll( Collector collector )
     {
         try
         {

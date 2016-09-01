@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.driver.internal.spi.StreamCollector;
+import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
@@ -34,7 +34,7 @@ import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.summary.StatementType;
 import org.neo4j.driver.v1.summary.SummaryCounters;
 
-public class SummaryBuilder implements StreamCollector
+public class SummaryBuilder implements Collector
 {
     private final Statement statement;
 
@@ -125,6 +125,12 @@ public class SummaryBuilder implements StreamCollector
         {
             throw new ClientException( "Received notifications twice" );
         }
+    }
+
+    @Override
+    public void bookmark( String bookmark )
+    {
+        // intentionally empty
     }
 
     @Override

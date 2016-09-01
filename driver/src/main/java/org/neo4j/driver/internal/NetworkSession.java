@@ -36,26 +36,31 @@ import org.neo4j.driver.v1.types.TypeSystem;
 
 import static org.neo4j.driver.v1.Values.value;
 
-public class InternalSession implements Session
+public class NetworkSession implements Session
 {
     private final Connection connection;
-
     private final Logger logger;
 
-    /** Called when a transaction object is closed */
+    private String lastBookmark = null;
+
+    // Called when a transaction object is closed
     private final Runnable txCleanup = new Runnable()
     {
         @Override
         public void run()
         {
-            currentTransaction = null;
+            if ( currentTransaction != null )
+            {
+                lastBookmark = currentTransaction.bookmark();
+                currentTransaction = null;
+            }
         }
     };
 
     private ExplicitTransaction currentTransaction;
     private AtomicBoolean isOpen = new AtomicBoolean( true );
 
-    public InternalSession( Connection connection, Logger logger )
+    NetworkSession( Connection connection, Logger logger )
     {
         this.connection = connection;
         this.logger = logger;
@@ -91,7 +96,7 @@ public class InternalSession implements Session
     public StatementResult run( Statement statement )
     {
         ensureConnectionIsValidBeforeRunningSession();
-        InternalStatementResult cursor = new InternalStatementResult( connection, statement );
+        InternalStatementResult cursor = new InternalStatementResult( connection, null, statement );
         connection.run( statement.text(), statement.parameters().asMap( Values.ofValue() ), cursor.runResponseCollector() );
         connection.pullAll( cursor.pullAllResponseCollector() );
         connection.flush();
@@ -181,6 +186,12 @@ public class InternalSession implements Session
             }
         } );
         return currentTransaction;
+    }
+
+    @Override
+    public String lastBookmark()
+    {
+        return lastBookmark;
     }
 
     @Override

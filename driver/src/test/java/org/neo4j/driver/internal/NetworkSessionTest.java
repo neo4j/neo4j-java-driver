@@ -36,20 +36,20 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class InternalSessionTest
+public class NetworkSessionTest
 {
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
     private final Connection mock = mock( Connection.class );
-    private InternalSession sess = new InternalSession( mock, new DevNullLogger() );
+    private NetworkSession sess = new NetworkSession( mock, new DevNullLogger() );
 
     @Test
     public void shouldSendAllOnRun() throws Throwable
     {
         // Given
         when( mock.isOpen() ).thenReturn( true );
-        InternalSession sess = new InternalSession( mock, new DevNullLogger() );
+        NetworkSession sess = new NetworkSession( mock, new DevNullLogger() );
 
         // When
         sess.run( "whatever" );
@@ -144,7 +144,7 @@ public class InternalSessionTest
     public void shouldGetExceptionIfTryingToCloseSessionMoreThanOnce() throws Throwable
     {
         // Given
-        InternalSession sess = new InternalSession( mock(Connection.class), mock(Logger.class) );
+        NetworkSession sess = new NetworkSession( mock(Connection.class), mock(Logger.class) );
         try
         {
             sess.close();

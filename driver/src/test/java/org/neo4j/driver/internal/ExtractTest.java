@@ -170,7 +170,7 @@ public class ExtractTest
         Connection connection = mock( Connection.class );
         String statement = "<unknown>";
 
-        InternalStatementResult cursor = new InternalStatementResult( connection, new Statement( statement ) );
+        InternalStatementResult cursor = new InternalStatementResult( connection, null, new Statement( statement ) );
         cursor.runResponseCollector().keys( new String[]{"k1"} );
         cursor.runResponseCollector().done();
         cursor.pullAllResponseCollector().record( new Value[]{value( 42 )} );

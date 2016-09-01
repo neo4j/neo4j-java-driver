@@ -80,6 +80,16 @@ public interface Session extends Resource, StatementRunner
     Transaction beginTransaction( String bookmark );
 
     /**
+     * Return the bookmark received following the last completed
+     * {@linkplain Transaction transaction}. If no bookmark was received
+     * or if this transaction was rolled back, the bookmark value will
+     * be null.
+     *
+     * @return a reference to a previous transaction
+     */
+    String lastBookmark();
+
+    /**
      * Reset the current session. This sends an immediate RESET signal to the server which both interrupts
      * any statement that is currently executing and ignores any subsequently queued statements. Following
      * the reset, the current transaction will have been rolled back and any outstanding failures will

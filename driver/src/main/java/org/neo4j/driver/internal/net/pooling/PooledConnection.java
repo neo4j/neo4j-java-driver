@@ -21,7 +21,7 @@ package org.neo4j.driver.internal.net.pooling;
 import java.util.Map;
 
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.spi.StreamCollector;
+import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Consumer;
 import org.neo4j.driver.v1.Value;
@@ -85,7 +85,7 @@ public class PooledConnection implements Connection
 
     @Override
     public void run( String statement, Map<String,Value> parameters,
-            StreamCollector collector )
+            Collector collector )
     {
         try
         {
@@ -98,26 +98,26 @@ public class PooledConnection implements Connection
     }
 
     @Override
-    public void discardAll()
+    public void discardAll( Collector collector )
     {
         try
         {
-            delegate.discardAll();
+            delegate.discardAll( collector );
         }
-        catch(RuntimeException e)
+        catch ( RuntimeException e )
         {
             onDelegateException( e );
         }
     }
 
     @Override
-    public void pullAll( StreamCollector collector )
+    public void pullAll( Collector collector )
     {
         try
         {
             delegate.pullAll( collector );
         }
-        catch(RuntimeException e)
+        catch ( RuntimeException e )
         {
             onDelegateException( e );
         }

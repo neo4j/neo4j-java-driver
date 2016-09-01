@@ -45,7 +45,7 @@ public class DirectDriver extends BaseDriver
     @Override
     public Session session()
     {
-        return new InternalSession( connections.acquire( address ), log );
+        return new NetworkSession( connections.acquire( address ), log );
     }
 
     @Override

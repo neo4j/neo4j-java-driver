@@ -27,11 +27,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.internal.messaging.InitMessage;
 import org.neo4j.driver.internal.messaging.Message;
-import org.neo4j.driver.internal.messaging.PullAllMessage;
 import org.neo4j.driver.internal.messaging.RunMessage;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.spi.StreamCollector;
+import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Value;
@@ -40,6 +39,7 @@ import org.neo4j.driver.v1.exceptions.Neo4jException;
 
 import static org.neo4j.driver.internal.messaging.AckFailureMessage.ACK_FAILURE;
 import static org.neo4j.driver.internal.messaging.DiscardAllMessage.DISCARD_ALL;
+import static org.neo4j.driver.internal.messaging.PullAllMessage.PULL_ALL;
 import static org.neo4j.driver.internal.messaging.ResetMessage.RESET;
 
 public class SocketConnection implements Connection
@@ -47,7 +47,7 @@ public class SocketConnection implements Connection
     private final Queue<Message> pendingMessages = new LinkedList<>();
     private final SocketResponseHandler responseHandler;
     private AtomicBoolean interrupted = new AtomicBoolean( false );
-    private final StreamCollector.InitStreamCollector initStreamCollector = new StreamCollector.InitStreamCollector();
+    private final Collector.InitCollector initCollector = new Collector.InitCollector();
 
     private final SocketClient socket;
 
@@ -71,38 +71,38 @@ public class SocketConnection implements Connection
     @Override
     public void init( String clientName, Map<String,Value> authToken )
     {
-        queueMessage( new InitMessage( clientName, authToken ), initStreamCollector );
+        queueMessage( new InitMessage( clientName, authToken ), initCollector );
         sync();
     }
 
     @Override
-    public void run( String statement, Map<String,Value> parameters, StreamCollector collector )
+    public void run( String statement, Map<String,Value> parameters, Collector collector )
     {
         queueMessage( new RunMessage( statement, parameters ), collector );
     }
 
     @Override
-    public void discardAll()
+    public void discardAll( Collector collector )
     {
-        queueMessage( DISCARD_ALL, StreamCollector.NO_OP );
+        queueMessage( DISCARD_ALL, collector );
     }
 
     @Override
-    public void pullAll( StreamCollector collector )
+    public void pullAll( Collector collector )
     {
-        queueMessage( PullAllMessage.PULL_ALL, collector );
+        queueMessage( PULL_ALL, collector );
     }
 
     @Override
     public void reset()
     {
-        queueMessage( RESET, StreamCollector.RESET );
+        queueMessage( RESET, Collector.RESET );
     }
 
     @Override
     public void ackFailure()
     {
-        queueMessage( ACK_FAILURE, StreamCollector.ACK_FAILURE );
+        queueMessage( ACK_FAILURE, Collector.ACK_FAILURE );
     }
 
     @Override
@@ -180,7 +180,7 @@ public class SocketConnection implements Connection
         }
     }
 
-    private void queueMessage( Message msg, StreamCollector collector )
+    private void queueMessage( Message msg, Collector collector )
     {
         pendingMessages.add( msg );
         responseHandler.appendResultCollector( collector );
@@ -215,7 +215,7 @@ public class SocketConnection implements Connection
     {
         if( interrupted.compareAndSet( false, true ) )
         {
-            queueMessage( RESET, new StreamCollector.ResetStreamCollector( new Runnable()
+            queueMessage( RESET, new Collector.ResetCollector( new Runnable()
             {
                 @Override
                 public void run()
@@ -236,6 +236,6 @@ public class SocketConnection implements Connection
     @Override
     public String server()
     {
-        return initStreamCollector.server(  );
+        return initCollector.server(  );
     }
 }

@@ -24,9 +24,10 @@ import org.mockito.InOrder;
 import java.util.Collections;
 
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.spi.StreamCollector;
+import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.v1.Value;
 
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -49,11 +50,11 @@ public class ExplicitTransactionTest
 
         // Then
         InOrder order = inOrder( conn );
-        order.verify( conn ).run( "BEGIN", Collections.<String, Value>emptyMap(), StreamCollector.NO_OP );
-        order.verify( conn ).discardAll();
+        order.verify( conn ).run( "BEGIN", Collections.<String, Value>emptyMap(), Collector.NO_OP );
+        order.verify( conn ).discardAll( any( BookmarkCollector.class ) );
         order.verify( conn ).isOpen();
-        order.verify( conn ).run( "ROLLBACK", Collections.<String, Value>emptyMap(), StreamCollector.NO_OP );
-        order.verify( conn ).discardAll();
+        order.verify( conn ).run( "ROLLBACK", Collections.<String, Value>emptyMap(), Collector.NO_OP );
+        order.verify( conn ).discardAll( any( BookmarkCollector.class ) );
         order.verify( conn ).sync();
         verify( cleanup ).run();
         verifyNoMoreInteractions( conn, cleanup );
@@ -75,11 +76,11 @@ public class ExplicitTransactionTest
 
         // Then
         InOrder order = inOrder( conn );
-        order.verify( conn ).run( "BEGIN", Collections.<String, Value>emptyMap(), StreamCollector.NO_OP);
-        order.verify( conn ).discardAll();
+        order.verify( conn ).run( "BEGIN", Collections.<String, Value>emptyMap(), Collector.NO_OP );
+        order.verify( conn ).discardAll( any( BookmarkCollector.class ) );
         order.verify( conn ).isOpen();
-        order.verify( conn ).run( "ROLLBACK", Collections.<String, Value>emptyMap(), StreamCollector.NO_OP);
-        order.verify( conn ).discardAll();
+        order.verify( conn ).run( "ROLLBACK", Collections.<String, Value>emptyMap(), Collector.NO_OP );
+        order.verify( conn ).discardAll( any( BookmarkCollector.class ) );
         order.verify( conn ).sync();
         verify( cleanup ).run();
         verifyNoMoreInteractions( conn, cleanup );
@@ -101,11 +102,11 @@ public class ExplicitTransactionTest
         // Then
 
         InOrder order = inOrder( conn );
-        order.verify( conn ).run( "BEGIN", Collections.<String, Value>emptyMap(), StreamCollector.NO_OP);
-        order.verify( conn ).discardAll();
+        order.verify( conn ).run( "BEGIN", Collections.<String, Value>emptyMap(), Collector.NO_OP );
+        order.verify( conn ).discardAll( any( BookmarkCollector.class ) );
         order.verify( conn ).isOpen();
-        order.verify( conn ).run( "COMMIT", Collections.<String, Value>emptyMap(), StreamCollector.NO_OP);
-        order.verify( conn ).discardAll();
+        order.verify( conn ).run( "COMMIT", Collections.<String, Value>emptyMap(), Collector.NO_OP );
+        order.verify( conn ).discardAll( any( BookmarkCollector.class ) );
         order.verify( conn ).sync();
         verify( cleanup ).run();
         verifyNoMoreInteractions( conn, cleanup );

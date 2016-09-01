@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.Queue;
 
 import org.neo4j.driver.internal.messaging.MessageHandler;
-import org.neo4j.driver.internal.spi.StreamCollector;
+import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.summary.InternalNotification;
 import org.neo4j.driver.internal.summary.InternalPlan;
 import org.neo4j.driver.internal.summary.InternalProfiledPlan;
@@ -39,7 +39,7 @@ import org.neo4j.driver.v1.util.Function;
 
 public class SocketResponseHandler implements MessageHandler
 {
-    private final Queue<StreamCollector> collectors = new LinkedList<>();
+    private final Queue<Collector> collectors = new LinkedList<>();
 
     /** If a failure occurs, the error gets stored here */
     private Neo4jException error;
@@ -52,14 +52,14 @@ public class SocketResponseHandler implements MessageHandler
     @Override
     public void handleRecordMessage( Value[] fields )
     {
-        StreamCollector collector = collectors.element();
+        Collector collector = collectors.element();
         collector.record( fields );
     }
 
     @Override
     public void handleFailureMessage( String code, String message )
     {
-        StreamCollector collector = collectors.remove();
+        Collector collector = collectors.remove();
         String[] parts = code.split( "\\." );
         String classification = parts[1];
         switch ( classification )
@@ -83,7 +83,7 @@ public class SocketResponseHandler implements MessageHandler
     @Override
     public void handleSuccessMessage( Map<String,Value> meta )
     {
-        StreamCollector collector = collectors.remove();
+        Collector collector = collectors.remove();
         collectServer( collector, meta.get( "server" ));
         collectFields( collector, meta.get( "fields" ) );
         collectType( collector, meta.get( "type" ) );
@@ -93,10 +93,11 @@ public class SocketResponseHandler implements MessageHandler
         collectNotifications( collector, meta.get( "notifications" ) );
         collectResultAvailableAfter( collector, meta.get("result_available_after"));
         collectResultConsumedAfter( collector, meta.get("result_consumed_after"));
+        collectBookmark( collector, meta.get( "bookmark" ) );
         collector.doneSuccess();
     }
 
-    private void collectServer( StreamCollector collector, Value server )
+    private void collectServer( Collector collector, Value server )
     {
         if (server != null)
         {
@@ -104,7 +105,7 @@ public class SocketResponseHandler implements MessageHandler
         }
     }
 
-    private void collectResultAvailableAfter( StreamCollector collector, Value resultAvailableAfter )
+    private void collectResultAvailableAfter( Collector collector, Value resultAvailableAfter )
     {
         if (resultAvailableAfter != null)
         {
@@ -112,7 +113,7 @@ public class SocketResponseHandler implements MessageHandler
         }
     }
 
-    private void collectResultConsumedAfter( StreamCollector collector, Value resultConsumedAfter )
+    private void collectResultConsumedAfter( Collector collector, Value resultConsumedAfter )
     {
         if (resultConsumedAfter != null)
         {
@@ -120,7 +121,7 @@ public class SocketResponseHandler implements MessageHandler
         }
     }
 
-    private void collectNotifications( StreamCollector collector, Value notifications )
+    private void collectNotifications( Collector collector, Value notifications )
     {
         if ( notifications != null )
         {
@@ -130,7 +131,7 @@ public class SocketResponseHandler implements MessageHandler
         }
     }
 
-    private void collectPlan( StreamCollector collector, Value plan )
+    private void collectPlan( Collector collector, Value plan )
     {
         if ( plan != null )
         {
@@ -138,7 +139,7 @@ public class SocketResponseHandler implements MessageHandler
         }
     }
 
-    private void collectProfile( StreamCollector collector, Value plan )
+    private void collectProfile( Collector collector, Value plan )
     {
         if ( plan != null )
         {
@@ -146,7 +147,7 @@ public class SocketResponseHandler implements MessageHandler
         }
     }
 
-    private void collectFields( StreamCollector collector, Value fieldValue )
+    private void collectFields( Collector collector, Value fieldValue )
     {
         if ( fieldValue != null )
         {
@@ -163,7 +164,7 @@ public class SocketResponseHandler implements MessageHandler
         }
     }
 
-    private void collectType( StreamCollector collector, Value type )
+    private void collectType( Collector collector, Value type )
     {
         if ( type != null )
         {
@@ -171,7 +172,7 @@ public class SocketResponseHandler implements MessageHandler
         }
     }
 
-    private void collectStatistics( StreamCollector collector, Value stats )
+    private void collectStatistics( Collector collector, Value stats )
     {
         if ( stats != null )
         {
@@ -193,6 +194,14 @@ public class SocketResponseHandler implements MessageHandler
         }
     }
 
+    private void collectBookmark( Collector collector, Value bookmark )
+    {
+        if ( bookmark != null )
+        {
+            collector.bookmark( bookmark.asString() );
+        }
+    }
+
     private int statsValue( Value stats, String name )
     {
         Value value = stats.get( name );
@@ -202,7 +211,7 @@ public class SocketResponseHandler implements MessageHandler
     @Override
     public void handleIgnoredMessage()
     {
-        StreamCollector collector = collectors.remove();
+        Collector collector = collectors.remove();
         if (collector != null)
         {
             collector.doneIgnored();
@@ -245,7 +254,7 @@ public class SocketResponseHandler implements MessageHandler
 
     }
 
-    public void appendResultCollector( StreamCollector collector )
+    public void appendResultCollector( Collector collector )
     {
         assert collector != null;
 

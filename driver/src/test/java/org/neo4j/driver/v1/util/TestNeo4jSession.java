@@ -113,6 +113,12 @@ public class TestNeo4jSession extends TestNeo4j implements Session
     }
 
     @Override
+    public String lastBookmark()
+    {
+        return realSession.lastBookmark();
+    }
+
+    @Override
     public void reset()
     {
         realSession.reset();
