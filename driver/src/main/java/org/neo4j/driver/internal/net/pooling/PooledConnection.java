@@ -230,6 +230,12 @@ public class PooledConnection implements Connection
         return delegate.isInterrupted();
     }
 
+    @Override
+    public String server()
+    {
+        return delegate.server();
+    }
+
     public void dispose()
     {
         delegate.close();
@@ -280,7 +286,6 @@ public class PooledConnection implements Connection
 
     public long idleTime()
     {
-        long idleTime = clock.millis() - lastUsed;
-        return idleTime;
+        return clock.millis() - lastUsed;
     }
 }

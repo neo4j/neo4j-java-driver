@@ -84,13 +84,40 @@ public class SocketResponseHandler implements MessageHandler
     public void handleSuccessMessage( Map<String,Value> meta )
     {
         StreamCollector collector = collectors.remove();
+        collectServer( collector, meta.get( "server" ));
         collectFields( collector, meta.get( "fields" ) );
         collectType( collector, meta.get( "type" ) );
         collectStatistics( collector, meta.get( "stats" ) );
         collectPlan( collector, meta.get( "plan" ) );
         collectProfile( collector, meta.get( "profile" ) );
         collectNotifications( collector, meta.get( "notifications" ) );
+        collectResultAvailableAfter( collector, meta.get("result_available_after"));
+        collectResultConsumedAfter( collector, meta.get("result_consumed_after"));
         collector.doneSuccess();
+    }
+
+    private void collectServer( StreamCollector collector, Value server )
+    {
+        if (server != null)
+        {
+            collector.server( server.asString() );
+        }
+    }
+
+    private void collectResultAvailableAfter( StreamCollector collector, Value resultAvailableAfter )
+    {
+        if (resultAvailableAfter != null)
+        {
+            collector.resultAvailableAfter(resultAvailableAfter.asLong());
+        }
+    }
+
+    private void collectResultConsumedAfter( StreamCollector collector, Value resultConsumedAfter )
+    {
+        if (resultConsumedAfter != null)
+        {
+            collector.resultConsumedAfter(resultConsumedAfter.asLong());
+        }
     }
 
     private void collectNotifications( StreamCollector collector, Value notifications )

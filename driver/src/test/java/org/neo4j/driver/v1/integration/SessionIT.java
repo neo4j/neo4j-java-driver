@@ -48,7 +48,7 @@ public class SessionIT
     public void shouldKnowSessionIsClosed() throws Throwable
     {
         // Given
-        try( Driver driver =  GraphDatabase.driver( neo4j.uri() ); )
+        try( Driver driver =  GraphDatabase.driver( neo4j.uri() ) )
         {
             Session session = driver.session();
 

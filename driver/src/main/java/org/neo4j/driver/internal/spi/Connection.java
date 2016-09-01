@@ -100,7 +100,7 @@ public interface Connection extends AutoCloseable
      * runnable. This is used in the driver to clean up resources associated with
      * the connection, like an open transaction.
      *
-     * @param runnable
+     * @param runnable To be run on error.
      */
     void onError( Runnable runnable );
 
@@ -117,4 +117,10 @@ public interface Connection extends AutoCloseable
      * @return true if the current session statement execution has been interrupted by another thread, otherwise false
      */
     boolean isInterrupted();
+
+    /**
+     * Returns the version of the server connected to.
+     * @return The version of the server connected to.
+     */
+    String server();
 }

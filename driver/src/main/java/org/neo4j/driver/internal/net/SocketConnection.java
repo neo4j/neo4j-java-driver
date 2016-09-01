@@ -47,6 +47,7 @@ public class SocketConnection implements Connection
     private final Queue<Message> pendingMessages = new LinkedList<>();
     private final SocketResponseHandler responseHandler;
     private AtomicBoolean interrupted = new AtomicBoolean( false );
+    private final StreamCollector.InitStreamCollector initStreamCollector = new StreamCollector.InitStreamCollector();
 
     private final SocketClient socket;
 
@@ -70,7 +71,7 @@ public class SocketConnection implements Connection
     @Override
     public void init( String clientName, Map<String,Value> authToken )
     {
-        queueMessage( new InitMessage( clientName, authToken ), StreamCollector.INIT );
+        queueMessage( new InitMessage( clientName, authToken ), initStreamCollector );
         sync();
     }
 
@@ -230,5 +231,11 @@ public class SocketConnection implements Connection
     public boolean isInterrupted()
     {
         return interrupted.get();
+    }
+
+    @Override
+    public String server()
+    {
+        return initStreamCollector.server(  );
     }
 }
