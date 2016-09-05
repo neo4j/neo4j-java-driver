@@ -82,6 +82,12 @@ public class InternalStatementResult implements StatementResult
                     keys = new ArrayList<>();
                 }
             }
+
+            @Override
+            public void resultAvailableAfter( long l )
+            {
+              pullAllResponseCollector.resultAvailableAfter( l );
+            }
         };
     }
 
@@ -130,6 +136,18 @@ public class InternalStatementResult implements StatementResult
             public void done() {
                 summary = summaryBuilder.build();
                 done = true;
+            }
+
+            @Override
+            public void resultAvailableAfter(long l)
+            {
+                summaryBuilder.resultAvailableAfter( l );
+            }
+
+            @Override
+            public void resultConsumedAfter(long l)
+            {
+                summaryBuilder.resultConsumedAfter( l );
             }
         };
     }

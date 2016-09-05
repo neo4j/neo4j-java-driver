@@ -22,8 +22,8 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
+import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
@@ -134,6 +134,12 @@ public class InternalSession implements Session
                 connection.close();
             }
         }
+    }
+
+    @Override
+    public String server()
+    {
+        return connection.server();
     }
 
     @Override

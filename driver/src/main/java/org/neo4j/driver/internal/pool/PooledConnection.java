@@ -259,6 +259,13 @@ public class PooledConnection implements Connection
                    || ((Neo4jException) e).neo4jErrorCode().contains( "TransientError" ));
     }
 
+
+    @Override
+    public String server()
+    {
+        return delegate.server();
+    }
+
     public long idleTime()
     {
         long idleTime = clock.millis() - lastUsed;

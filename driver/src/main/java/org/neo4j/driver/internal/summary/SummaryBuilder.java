@@ -20,18 +20,19 @@ package org.neo4j.driver.internal.summary;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.driver.internal.spi.StreamCollector;
+import org.neo4j.driver.v1.Statement;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.summary.Notification;
 import org.neo4j.driver.v1.summary.Plan;
 import org.neo4j.driver.v1.summary.ProfiledPlan;
 import org.neo4j.driver.v1.summary.ResultSummary;
-import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.summary.StatementType;
 import org.neo4j.driver.v1.summary.SummaryCounters;
-import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.exceptions.ClientException;
 
 public class SummaryBuilder implements StreamCollector
 {
@@ -42,6 +43,8 @@ public class SummaryBuilder implements StreamCollector
     private Plan plan = null;
     private ProfiledPlan profile;
     private List<Notification> notifications = null;
+    private long resultAvailableAfter = -1L;
+    private long resultConsumedAfter = -1L;
 
     public SummaryBuilder( Statement statement )
     {
@@ -148,6 +151,25 @@ public class SummaryBuilder implements StreamCollector
         // intentionally empty
     }
 
+    @Override
+    public void resultAvailableAfter( long l )
+    {
+        this.resultAvailableAfter = l;
+    }
+
+    @Override
+    public void resultConsumedAfter( long l )
+    {
+        this.resultConsumedAfter = l;
+    }
+
+    @Override
+    public void server( String server )
+    {
+        // intentionally empty
+    }
+
+
     public ResultSummary build()
     {
         return new ResultSummary()
@@ -198,6 +220,18 @@ public class SummaryBuilder implements StreamCollector
             public List<Notification> notifications()
             {
                 return notifications == null ? new ArrayList<Notification>() : notifications;
+            }
+
+            @Override
+            public long resultAvailableAfter( TimeUnit timeUnit )
+            {
+                return timeUnit.convert( resultAvailableAfter, TimeUnit.MILLISECONDS );
+            }
+
+            @Override
+            public long resultConsumedAfter( TimeUnit timeUnit )
+            {
+                return timeUnit.convert( resultConsumedAfter, TimeUnit.MILLISECONDS );
             }
         };
     }

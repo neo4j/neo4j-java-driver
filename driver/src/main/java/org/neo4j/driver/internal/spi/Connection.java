@@ -106,4 +106,11 @@ public interface Connection extends AutoCloseable
 
 
     boolean hasUnrecoverableErrors();
+
+
+    /**
+     * Returns the version of the server connected to.
+     * @return The version of the server connected to.
+     */
+    String server();
 }

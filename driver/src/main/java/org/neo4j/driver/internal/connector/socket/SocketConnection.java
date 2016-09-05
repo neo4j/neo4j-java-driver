@@ -29,9 +29,9 @@ import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.PullAllMessage;
 import org.neo4j.driver.internal.messaging.RunMessage;
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.internal.spi.StreamCollector;
 import org.neo4j.driver.v1.Config;
+import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
@@ -44,6 +44,7 @@ public class SocketConnection implements Connection
 {
     private final Queue<Message> pendingMessages = new LinkedList<>();
     private final SocketResponseHandler responseHandler;
+    private final StreamCollector.InitStreamCollector initStreamCollector = new StreamCollector.InitStreamCollector();
 
     private final SocketClient socket;
 
@@ -67,7 +68,7 @@ public class SocketConnection implements Connection
     @Override
     public void init( String clientName, Map<String,Value> authToken )
     {
-        queueMessage( new InitMessage( clientName, authToken ), StreamCollector.INIT );
+        queueMessage( new InitMessage( clientName, authToken ), initStreamCollector );
         sync();
     }
 
@@ -204,5 +205,11 @@ public class SocketConnection implements Connection
     public boolean hasUnrecoverableErrors()
     {
         throw new UnsupportedOperationException( "Unrecoverable error detection is not supported on SocketConnection." );
+    }
+
+    @Override
+    public String server()
+    {
+        return initStreamCollector.server(  );
     }
 }
