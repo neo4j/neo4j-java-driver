@@ -89,6 +89,23 @@ public class CredentialsIT
     }
 
     @Test
+    public void shouldBeAbleToProvideRealmWithBasicAuth() throws Throwable
+    {
+        // Given
+        String password = "secret";
+        enableAuth( password );
+
+        // When & Then
+        try( Driver driver = GraphDatabase.driver( neo4j.uri(),
+                basic("neo4j", password, "native") );
+             Session session = driver.session() )
+        {
+            Value single = session.run( "CREATE () RETURN 1" ).single().get( 0 );
+            assertThat( single.asLong(), equalTo( 1L ) );
+        }
+    }
+
+    @Test
     public void shouldBeAbleToConnectWithCustomToken() throws Throwable
     {
         // Given
