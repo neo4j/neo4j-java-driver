@@ -28,6 +28,8 @@ import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.util.ServerVersion;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.StringStartsWith.startsWith;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assume.assumeTrue;
@@ -63,5 +65,6 @@ public class BookmarkIT
 
         // Then
         assertNotNull( session.lastBookmark() );
+        assertThat( session.lastBookmark(), startsWith( "neo4j:bookmark:v1:tx" ) );
     }
 }

@@ -123,14 +123,14 @@ class ExplicitTransaction implements Transaction
                 if ( state == State.MARKED_SUCCESS )
                 {
                     conn.run( "COMMIT", Collections.<String, Value>emptyMap(), Collector.NO_OP );
-                    conn.discardAll( new BookmarkCollector( this ) );
+                    conn.pullAll( new BookmarkCollector( this ) );
                     conn.sync();
                     state = State.SUCCEEDED;
                 }
                 else if ( state == State.MARKED_FAILED || state == State.ACTIVE )
                 {
                     conn.run( "ROLLBACK", Collections.<String, Value>emptyMap(), Collector.NO_OP );
-                    conn.discardAll( new BookmarkCollector( this ) );
+                    conn.pullAll( new BookmarkCollector( this ) );
                     conn.sync();
                     state = State.ROLLED_BACK;
                 }
