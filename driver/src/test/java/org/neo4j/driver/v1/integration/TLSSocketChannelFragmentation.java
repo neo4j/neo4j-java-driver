@@ -1,0 +1,143 @@
+package org.neo4j.driver.v1.integration;
+
+import org.junit.Before;
+import org.junit.Test;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.ByteChannel;
+import java.security.GeneralSecurityException;
+import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+
+public abstract class TLSSocketChannelFragmentation
+{
+    protected SSLContext sslCtx;
+
+    @Before
+    public void setup() throws Throwable
+    {
+        createSSLContext();
+        createServer();
+    }
+
+    @Test
+    public void shouldHandleFuzziness() throws Throwable
+    {
+        // Given
+        int networkFrameSize, userBufferSize, blobOfDataSize;
+
+        for(int dataBlobMagnitude = 1; dataBlobMagnitude < 16; dataBlobMagnitude+=2 )
+        {
+            blobOfDataSize = (int) Math.pow( 2, dataBlobMagnitude );
+
+            for ( int frameSizeMagnitude = 1; frameSizeMagnitude < 16; frameSizeMagnitude+=2 )
+            {
+                networkFrameSize = (int) Math.pow( 2, frameSizeMagnitude );
+                for ( int userBufferMagnitude = 1; userBufferMagnitude < 16; userBufferMagnitude+=2 )
+                {
+                    userBufferSize = (int) Math.pow( 2, userBufferMagnitude );
+                    testForBufferSizes( blobOfDataSize, networkFrameSize, userBufferSize );
+                }
+            }
+        }
+    }
+
+    protected void createSSLContext()
+            throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException,
+            UnrecoverableKeyException, KeyManagementException
+    {
+        KeyStore ks = KeyStore.getInstance("JKS");
+        char[] password = "password".toCharArray();
+        ks.load( getClass().getResourceAsStream( "/keystore.jks" ), password );
+        KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
+        kmf.init(ks, password);
+
+        sslCtx = SSLContext.getInstance("TLS");
+        sslCtx.init( kmf.getKeyManagers(), new TrustManager[]{new X509TrustManager() {
+            public void checkClientTrusted( X509Certificate[] chain, String authType) throws CertificateException
+            {
+            }
+
+            public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+            }
+
+            public X509Certificate[] getAcceptedIssuers() {
+                return null;
+            }
+        }}, null );
+    }
+
+    protected abstract void testForBufferSizes( int blobOfDataSize, int networkFrameSize, int userBufferSize ) throws IOException,
+            GeneralSecurityException;
+
+    protected abstract void createServer() throws IOException;
+
+    /**
+     * Delegates to underlying channel, but only reads up to the set amount at a time, used to emulate
+     * different network frame sizes in this test.
+     */
+    protected static class LittleAtATimeChannel implements ByteChannel
+    {
+        private final ByteChannel delegate;
+        private final int maxFrameSize;
+
+        public LittleAtATimeChannel( ByteChannel delegate, int maxFrameSize )
+        {
+
+            this.delegate = delegate;
+            this.maxFrameSize = maxFrameSize;
+        }
+
+        @Override
+        public boolean isOpen()
+        {
+            return delegate.isOpen();
+        }
+
+        @Override
+        public void close() throws IOException
+        {
+            delegate.close();
+        }
+
+        @Override
+        public int write( ByteBuffer src ) throws IOException
+        {
+            int originalLimit = src.limit();
+            try
+            {
+                src.limit( Math.min( src.limit(), src.position() + maxFrameSize ) );
+                return delegate.write( src );
+            }
+            finally
+            {
+                src.limit(originalLimit);
+            }
+        }
+
+        @Override
+        public int read( ByteBuffer dst ) throws IOException
+        {
+            int originalLimit = dst.limit();
+            try
+            {
+                dst.limit( Math.min( dst.limit(), dst.position() + maxFrameSize ) );
+                return delegate.read( dst );
+            }
+            finally
+            {
+                dst.limit(originalLimit);
+            }
+        }
+    }
+}
