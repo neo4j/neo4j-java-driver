@@ -92,7 +92,7 @@ class ExplicitTransaction implements Transaction
             parameters = singletonMap( "bookmark", value( bookmark ) );
         }
         conn.run( "BEGIN", parameters, Collector.NO_OP );
-        conn.discardAll( Collector.NO_OP );
+        conn.pullAll( Collector.NO_OP );
     }
 
     @Override
