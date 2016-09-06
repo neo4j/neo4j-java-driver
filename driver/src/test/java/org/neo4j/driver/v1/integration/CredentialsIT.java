@@ -30,7 +30,7 @@ import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.util.Neo4jSettings;
-import org.neo4j.driver.v1.util.TestNeo4j;
+import org.neo4j.driver.testing.TestNeo4j;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -57,8 +57,7 @@ public class CredentialsIT
         enableAuth( password );
 
         // When & Then
-        try( Driver driver = GraphDatabase.driver( neo4j.uri(),
-                basic("neo4j", password ) );
+        try( Driver driver = GraphDatabase.driver( neo4j.boltURI(), basic("neo4j", password ) );
              Session session = driver.session() )
         {
             Value single = session.run( "RETURN 1" ).single().get( 0 );
@@ -79,7 +78,7 @@ public class CredentialsIT
         exception.expectMessage( "The client is unauthorized due to authentication failure." );
 
         // When
-        try( Driver driver = GraphDatabase.driver( neo4j.uri(), basic("thisisnotthepassword", password ) );
+        try( Driver driver = GraphDatabase.driver( neo4j.boltURI(), basic("thisisnotthepassword", password ) );
              Session ignored = driver.session() ) {
             //empty
         }
@@ -92,7 +91,7 @@ public class CredentialsIT
                 .updateWith( Neo4jSettings.DATA_DIR, tempDir.getRoot().getAbsolutePath().replace("\\", "/") ));
 
         try ( Driver setPassword =
-                      GraphDatabase.driver( neo4j.uri(), new InternalAuthToken(
+                      GraphDatabase.driver( neo4j.boltURI(), new InternalAuthToken(
                                       parameters(
                         "scheme", "basic",
                         "principal", "neo4j",

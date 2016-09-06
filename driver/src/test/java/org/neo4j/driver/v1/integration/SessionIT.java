@@ -29,7 +29,7 @@ import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
-import org.neo4j.driver.v1.util.TestNeo4j;
+import org.neo4j.driver.testing.TestNeo4j;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
@@ -48,7 +48,7 @@ public class SessionIT
     public void shouldKnowSessionIsClosed() throws Throwable
     {
         // Given
-        try( Driver driver =  GraphDatabase.driver( neo4j.uri() ) )
+        try( Driver driver =  GraphDatabase.driver( neo4j.boltURI() ) )
         {
             Session session = driver.session();
 
@@ -64,7 +64,7 @@ public class SessionIT
     public void shouldHandleNullConfig() throws Throwable
     {
         // Given
-        try( Driver driver = GraphDatabase.driver( neo4j.uri(), AuthTokens.none(), null ) )
+        try( Driver driver = GraphDatabase.driver( neo4j.boltURI(), AuthTokens.none(), null ) )
         {
             Session session = driver.session();
 
@@ -82,7 +82,7 @@ public class SessionIT
     {
         // Given
         AuthToken token = null;
-        try ( Driver driver = GraphDatabase.driver( neo4j.uri(), token) )
+        try ( Driver driver = GraphDatabase.driver( neo4j.boltURI(), token) )
         {
             Session session = driver.session();
 
@@ -99,7 +99,7 @@ public class SessionIT
     {
         neo4j.ensureProcedures( "longRunningStatement.jar" );
         // Given
-        Driver driver = GraphDatabase.driver( neo4j.uri() );
+        Driver driver = GraphDatabase.driver( neo4j.boltURI() );
 
         int executionTimeout = 10; // 10s
         final int killTimeout = 1; // 1s
@@ -137,7 +137,7 @@ public class SessionIT
     {
         neo4j.ensureProcedures( "longRunningStatement.jar" );
         // Given
-        Driver driver = GraphDatabase.driver( neo4j.uri() );
+        Driver driver = GraphDatabase.driver( neo4j.boltURI() );
 
         int executionTimeout = 10; // 10s
         final int killTimeout = 1; // 1s

@@ -23,7 +23,7 @@ import org.junit.Test;
 
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.StatementResult;
-import org.neo4j.driver.v1.util.TestNeo4jSession;
+import org.neo4j.driver.testing.TestNeo4jSession;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;

@@ -25,6 +25,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.driver.testing.Neo4jRunner;
+
 import static org.neo4j.driver.internal.util.Iterables.map;
 
 public class Neo4jSettings
@@ -36,12 +38,13 @@ public class Neo4jSettings
 
     private static final String DEFAULT_IMPORT_DIR = "import";
     private static final String DEFAULT_CERT_DIR = "certificates";
-    private static final String DEFAULT_TLS_CERT_PATH = DEFAULT_CERT_DIR + "/neo4j.cert";
-    private static final String DEFAULT_TLS_KEY_PATH = DEFAULT_CERT_DIR + "/neo4j.key";
+
+    public static final String DEFAULT_TLS_CERT_PATH = DEFAULT_CERT_DIR + "/neo4j.cert";
+    public static final String DEFAULT_TLS_KEY_PATH = DEFAULT_CERT_DIR + "/neo4j.key";
 
     public static final String DEFAULT_DATA_DIR = "data";
-    public static final File DEFAULT_TLS_KEY_FILE = new File( Neo4jRunner.NEO4J_HOME, DEFAULT_TLS_KEY_PATH );
-    public static final File DEFAULT_TLS_CERT_FILE = new File( Neo4jRunner.NEO4J_HOME, DEFAULT_TLS_CERT_PATH );
+    //public static final File DEFAULT_TLS_KEY_FILE = new File( Neo4jRunner.NEO4J_HOME, DEFAULT_TLS_KEY_PATH );
+    //public static final File DEFAULT_TLS_CERT_FILE = new File( Neo4jRunner.NEO4J_HOME, DEFAULT_TLS_CERT_PATH );
 
 
     private final Map<String, String> settings;

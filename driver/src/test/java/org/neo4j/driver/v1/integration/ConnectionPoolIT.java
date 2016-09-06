@@ -32,7 +32,7 @@ import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.DatabaseException;
-import org.neo4j.driver.v1.util.TestNeo4j;
+import org.neo4j.driver.testing.TestNeo4j;
 
 import static junit.framework.TestCase.fail;
 
@@ -48,7 +48,7 @@ public class ConnectionPoolIT
     public void shouldRecoverFromDownedServer() throws Throwable
     {
         // Given a driver
-        driver = GraphDatabase.driver( neo4j.uri() );
+        driver = GraphDatabase.driver( neo4j.boltURI() );
 
         // and given I'm heavily using it to acquire and release sessions
         sessionGrabber = new SessionGrabber( driver );
