@@ -28,7 +28,7 @@ import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.util.Neo4jSettings;
-import org.neo4j.driver.v1.util.TestNeo4j;
+import org.neo4j.driver.testing.TestNeo4j;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -43,7 +43,7 @@ public class LoadCSVIT
     @Test
     public void shouldLoadCSV() throws Throwable
     {
-        try( Driver driver =  GraphDatabase.driver( neo4j.uri() );
+        try( Driver driver =  GraphDatabase.driver( neo4j.boltURI() );
              Session session = driver.session() )
         {
             String csvFileUrl = createLocalIrisData( session );

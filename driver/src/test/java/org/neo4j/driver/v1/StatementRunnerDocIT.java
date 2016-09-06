@@ -23,7 +23,7 @@ import javadoctest.DocTestRunner;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
 
-import org.neo4j.driver.v1.util.TestNeo4jSession;
+import org.neo4j.driver.testing.TestNeo4jSession;
 
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;

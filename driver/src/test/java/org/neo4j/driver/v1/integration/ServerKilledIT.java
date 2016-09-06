@@ -25,8 +25,7 @@ import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.util.Neo4jRunner;
-import org.neo4j.driver.v1.util.TestNeo4j;
+import org.neo4j.driver.testing.TestNeo4j;
 
 import static org.junit.Assert.fail;
 
@@ -43,7 +42,7 @@ public class ServerKilledIT
     public void shouldRecoverFromServerRestart() throws Throwable
     {
         // Given
-        try ( Driver driver = GraphDatabase.driver( Neo4jRunner.DEFAULT_URI ) )
+        try ( Driver driver = GraphDatabase.driver( neo4j.boltURI() ) )
         {
             Session s1 = driver.session();
             Session s2 = driver.session();

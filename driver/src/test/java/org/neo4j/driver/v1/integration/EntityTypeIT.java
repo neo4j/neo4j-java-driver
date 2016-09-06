@@ -22,7 +22,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.driver.v1.StatementResult;
-import org.neo4j.driver.v1.util.TestNeo4jSession;
+import org.neo4j.driver.testing.TestNeo4jSession;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.types.Path;
 import org.neo4j.driver.v1.types.Relationship;

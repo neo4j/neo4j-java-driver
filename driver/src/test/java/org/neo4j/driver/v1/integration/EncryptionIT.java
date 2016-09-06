@@ -21,7 +21,7 @@ package org.neo4j.driver.v1.integration;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.driver.v1.*;
-import org.neo4j.driver.v1.util.TestNeo4j;
+import org.neo4j.driver.testing.TestNeo4j;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -38,7 +38,7 @@ public class EncryptionIT
     public void shouldOperateWithNoEncryption() throws Exception
     {
         // Given
-        Driver driver = GraphDatabase.driver( neo4j.uri(), Config.build().withEncryptionLevel( NONE ).toConfig() );
+        Driver driver = GraphDatabase.driver( neo4j.boltURI(), Config.build().withEncryptionLevel( NONE ).toConfig() );
 
         // Then
         assertThat( driver.isEncrypted(), equalTo( false ) );
@@ -61,7 +61,7 @@ public class EncryptionIT
     public void shouldOperateWithRequiredNonLocalEncryption() throws Exception
     {
         // Given
-        Driver driver = GraphDatabase.driver( neo4j.uri(), Config.build().withEncryptionLevel( REQUIRED_NON_LOCAL ).toConfig() );
+        Driver driver = GraphDatabase.driver( neo4j.boltURI(), Config.build().withEncryptionLevel( REQUIRED_NON_LOCAL ).toConfig() );
 
         // Then
         assertThat( driver.isEncrypted(), equalTo( !neo4j.address().isLocal() ) );
@@ -84,7 +84,7 @@ public class EncryptionIT
     public void shouldOperateWithRequiredEncryption() throws Exception
     {
         // Given
-        Driver driver = GraphDatabase.driver( neo4j.uri(), Config.build().withEncryptionLevel( REQUIRED ).toConfig() );
+        Driver driver = GraphDatabase.driver( neo4j.boltURI(), Config.build().withEncryptionLevel( REQUIRED ).toConfig() );
 
         // Then
         assertThat( driver.isEncrypted(), equalTo( true ) );

@@ -18,31 +18,33 @@
  */
 package org.neo4j.driver.v1.integration;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.channels.SocketChannel;
+import java.security.cert.X509Certificate;
+import javax.net.ssl.SSLHandshakeException;
+
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.net.URI;
-import java.nio.channels.SocketChannel;
-import java.security.cert.X509Certificate;
-import javax.net.ssl.SSLHandshakeException;
-
 import org.neo4j.driver.internal.logging.DevNullLogger;
+import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.security.TLSSocketChannel;
-import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.v1.*;
 import org.neo4j.driver.internal.util.CertificateTool;
-
+import org.neo4j.driver.testing.TestNeo4j;
+import org.neo4j.driver.v1.Config;
+import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.GraphDatabase;
+import org.neo4j.driver.v1.Logger;
+import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.util.CertificateToolTest;
-import org.neo4j.driver.v1.util.Neo4jRunner;
 import org.neo4j.driver.v1.util.Neo4jSettings;
-import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -50,6 +52,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+
 import static org.neo4j.driver.internal.security.TrustOnFirstUseTrustManager.fingerprint;
 
 public class TLSSocketChannelIT
@@ -243,8 +246,7 @@ public class TLSSocketChannelIT
         channel.connect( address.toSocketAddress() );
 
         // When
-        URI url = URI.create( "localhost:7687" );
-        SecurityPlan securityPlan = SecurityPlan.forSignedCertificates( Neo4jSettings.DEFAULT_TLS_CERT_FILE );
+        SecurityPlan securityPlan = SecurityPlan.forSignedCertificates( neo4j.certFile() );
         TLSSocketChannel sslChannel = new TLSSocketChannel( address, securityPlan, channel, logger );
         sslChannel.close();
 
@@ -258,7 +260,7 @@ public class TLSSocketChannelIT
 
         Config config = Config.build().withEncryptionLevel( Config.EncryptionLevel.REQUIRED ).toConfig();
 
-        try( Driver driver = GraphDatabase.driver( Neo4jRunner.DEFAULT_URI, config );
+        try( Driver driver = GraphDatabase.driver( neo4j.boltURI(), config );
              Session session = driver.session() )
         {
             StatementResult result = session.run( "RETURN 1" );
