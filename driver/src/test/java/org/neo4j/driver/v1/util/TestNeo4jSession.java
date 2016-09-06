@@ -107,6 +107,18 @@ public class TestNeo4jSession extends TestNeo4j implements Session
     }
 
     @Override
+    public Transaction beginTransaction( String bookmark )
+    {
+        return realSession.beginTransaction( bookmark );
+    }
+
+    @Override
+    public String lastBookmark()
+    {
+        return realSession.lastBookmark();
+    }
+
+    @Override
     public void reset()
     {
         realSession.reset();

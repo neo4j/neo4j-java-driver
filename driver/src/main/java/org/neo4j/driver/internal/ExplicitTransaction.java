@@ -22,7 +22,7 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.spi.StreamCollector;
+import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
@@ -34,10 +34,13 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.types.TypeSystem;
 
+import static java.util.Collections.emptyMap;
+import static java.util.Collections.singletonMap;
+
 import static org.neo4j.driver.v1.Values.ofValue;
 import static org.neo4j.driver.v1.Values.value;
 
-public class InternalTransaction implements Transaction
+class ExplicitTransaction implements Transaction
 {
     private enum State
     {
@@ -66,16 +69,30 @@ public class InternalTransaction implements Transaction
     private final Runnable cleanup;
     private final Connection conn;
 
+    private String bookmark = null;
     private State state = State.ACTIVE;
 
-    public InternalTransaction( Connection conn, Runnable cleanup )
+    ExplicitTransaction( Connection conn, Runnable cleanup )
+    {
+        this( conn, cleanup, null );
+    }
+
+    ExplicitTransaction( Connection conn, Runnable cleanup, String bookmark )
     {
         this.conn = conn;
         this.cleanup = cleanup;
 
-        // Note there is no sync here, so this will just value queued locally
-        conn.run( "BEGIN", Collections.<String, Value>emptyMap(), StreamCollector.NO_OP );
-        conn.discardAll();
+        final Map<String, Value> parameters;
+        if ( bookmark == null )
+        {
+            parameters = emptyMap();
+        }
+        else
+        {
+            parameters = singletonMap( "bookmark", value( bookmark ) );
+        }
+        conn.run( "BEGIN", parameters, Collector.NO_OP );
+        conn.discardAll( Collector.NO_OP );
     }
 
     @Override
@@ -105,15 +122,15 @@ public class InternalTransaction implements Transaction
             {
                 if ( state == State.MARKED_SUCCESS )
                 {
-                    conn.run( "COMMIT", Collections.<String, Value>emptyMap(), StreamCollector.NO_OP );
-                    conn.discardAll();
+                    conn.run( "COMMIT", Collections.<String, Value>emptyMap(), Collector.NO_OP );
+                    conn.discardAll( new BookmarkCollector( this ) );
                     conn.sync();
                     state = State.SUCCEEDED;
                 }
                 else if ( state == State.MARKED_FAILED || state == State.ACTIVE )
                 {
-                    conn.run( "ROLLBACK", Collections.<String, Value>emptyMap(), StreamCollector.NO_OP );
-                    conn.discardAll();
+                    conn.run( "ROLLBACK", Collections.<String, Value>emptyMap(), Collector.NO_OP );
+                    conn.discardAll( new BookmarkCollector( this ) );
                     conn.sync();
                     state = State.ROLLED_BACK;
                 }
@@ -159,7 +176,7 @@ public class InternalTransaction implements Transaction
 
         try
         {
-            InternalStatementResult cursor = new InternalStatementResult( conn, statement );
+            InternalStatementResult cursor = new InternalStatementResult( conn, this, statement );
             conn.run( statement.text(),
                     statement.parameters().asMap( ofValue() ),
                     cursor.runResponseCollector() );
@@ -204,4 +221,15 @@ public class InternalTransaction implements Transaction
     {
         state = State.FAILED;
     }
+
+    public String bookmark()
+    {
+        return bookmark;
+    }
+
+    void setBookmark( String bookmark )
+    {
+        this.bookmark = bookmark;
+    }
+
 }

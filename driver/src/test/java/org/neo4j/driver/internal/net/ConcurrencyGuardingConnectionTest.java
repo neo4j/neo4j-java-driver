@@ -120,7 +120,7 @@ public class ConcurrencyGuardingConnectionTest
         @Override
         public Void apply( Connection connection )
         {
-            connection.discardAll();
+            connection.discardAll(null);
             return null;
         }
     };

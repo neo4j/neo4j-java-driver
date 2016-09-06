@@ -24,7 +24,7 @@ import org.junit.Test;
 import java.util.Collections;
 import java.util.Map;
 
-import org.neo4j.driver.internal.spi.StreamCollector;
+import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.summary.InternalSummaryCounters;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.summary.Plan;
@@ -44,7 +44,7 @@ import static org.neo4j.driver.v1.Values.values;
 public class SocketResponseHandlerTest
 {
     private final SocketResponseHandler handler = new SocketResponseHandler();
-    private final StreamCollector collector = mock( StreamCollector.class );
+    private final Collector collector = mock( Collector.class );
 
     @Before
     public void setup()

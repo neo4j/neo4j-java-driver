@@ -40,30 +40,30 @@ public interface Connection extends AutoCloseable
      * for retrieval.
      * @param parameters a map value of parameters
      */
-    void run( String statement, Map<String,Value> parameters, StreamCollector collector );
+    void run( String statement, Map<String,Value> parameters, Collector collector );
 
     /**
      * Queue a discard all action, consuming any items left in the current stream.This will
-     * close the stream once its completed, allowing another {@link #run(String, java.util.Map, StreamCollector) run}
+     * close the stream once its completed, allowing another {@link #run(String, java.util.Map, Collector) run}
      */
-    void discardAll();
+    void discardAll( Collector collector );
 
     /**
      * Queue a pull-all action, output will be handed to the collector once the pull starts. This will
-     * close the stream once its completed, allowing another {@link #run(String, java.util.Map, StreamCollector) run}
+     * close the stream once its completed, allowing another {@link #run(String, java.util.Map, Collector) run}
      */
-    void pullAll( StreamCollector collector );
+    void pullAll( Collector collector );
 
     /**
      * Queue a reset action, throw {@link org.neo4j.driver.v1.exceptions.ClientException} if an ignored message is received. This will
-     * close the stream once its completed, allowing another {@link #run(String, java.util.Map, StreamCollector) run}
+     * close the stream once its completed, allowing another {@link #run(String, java.util.Map, Collector) run}
      */
     void reset();
 
     /**
      * Queue a ack_failure action, valid output could only be success. Throw {@link org.neo4j.driver.v1.exceptions.ClientException} if
      * a failure or ignored message is received. This will close the stream once it is completed, allowing another
-     * {@link #run(String, java.util.Map, StreamCollector) run}
+     * {@link #run(String, java.util.Map, Collector) run}
      */
     void ackFailure();
 

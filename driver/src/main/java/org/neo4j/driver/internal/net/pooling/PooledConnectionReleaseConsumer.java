@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.driver.internal.spi.StreamCollector;
+import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.util.Consumer;
 import org.neo4j.driver.v1.Value;
 
@@ -117,8 +117,8 @@ class PooledConnectionReleaseConsumer implements Consumer<PooledConnection>
     {
         try
         {
-            conn.run( "RETURN 1 // JavaDriver poll to test connection", NO_PARAMETERS, StreamCollector.NO_OP );
-            conn.pullAll( StreamCollector.NO_OP );
+            conn.run( "RETURN 1 // JavaDriver poll to test connection", NO_PARAMETERS, Collector.NO_OP );
+            conn.pullAll( Collector.NO_OP );
             conn.sync();
             return true;
         }

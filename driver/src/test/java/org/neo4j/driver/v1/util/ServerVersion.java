@@ -39,7 +39,7 @@ public class ServerVersion
         this.patch = patch;
     }
     public static final ServerVersion v3_1_0 = new ServerVersion(3, 1, 0);
-    public static final ServerVersion v3_0_0 = new ServerVersion(3, 1, 0);
+    public static final ServerVersion v3_0_0 = new ServerVersion(3, 0, 0);
 
     public static ServerVersion version( String server )
     {

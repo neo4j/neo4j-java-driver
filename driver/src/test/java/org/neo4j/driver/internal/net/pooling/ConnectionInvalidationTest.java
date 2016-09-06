@@ -26,10 +26,8 @@ import java.util.HashMap;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.driver.internal.net.pooling.PoolSettings;
-import org.neo4j.driver.internal.net.pooling.PooledConnection;
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.spi.StreamCollector;
+import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Consumers;
 import org.neo4j.driver.v1.Config;
@@ -67,7 +65,7 @@ public class ConnectionInvalidationTest
     {
         // Given a connection that's broken
         Mockito.doThrow( new ClientException( "That didn't work" ) )
-                .when( delegate ).run( anyString(), anyMap(), any( StreamCollector.class ) );
+                .when( delegate ).run( anyString(), anyMap(), any( Collector.class ) );
         PoolSettings poolSettings = PoolSettings.defaultSettings();
         when( clock.millis() ).thenReturn( 0L, poolSettings.idleTimeBeforeConnectionTest() + 1L );
         PooledConnection conn = new PooledConnection( delegate, Consumers.<PooledConnection>noOp(), clock );
@@ -87,7 +85,7 @@ public class ConnectionInvalidationTest
     {
         // Given a connection that's broken
         Mockito.doThrow( new ClientException( "That didn't work" ) )
-                .when( delegate ).run( anyString(), anyMap(), any( StreamCollector.class ) );
+                .when( delegate ).run( anyString(), anyMap(), any( Collector.class ) );
         Config config = Config.defaultConfig();
         PoolSettings poolSettings = PoolSettings.defaultSettings();
         when( clock.millis() ).thenReturn( 0L, poolSettings.idleTimeBeforeConnectionTest() - 1L );
@@ -145,12 +143,12 @@ public class ConnectionInvalidationTest
     private void assertUnrecoverable( Neo4jException exception )
     {
         doThrow( exception ).when( delegate )
-                .run( eq("assert unrecoverable"), anyMap(), any( StreamCollector.class ) );
+                .run( eq("assert unrecoverable"), anyMap(), any( Collector.class ) );
 
         // When
         try
         {
-            conn.run( "assert unrecoverable", new HashMap<String,Value>( ), StreamCollector.NO_OP );
+            conn.run( "assert unrecoverable", new HashMap<String,Value>( ), Collector.NO_OP );
             fail( "Should've rethrown exception" );
         }
         catch ( Neo4jException e )
@@ -172,12 +170,12 @@ public class ConnectionInvalidationTest
     @SuppressWarnings( "unchecked" )
     private void assertRecoverable( Neo4jException exception )
     {
-        doThrow( exception ).when( delegate ).run( eq("assert recoverable"), anyMap(), any( StreamCollector.class ) );
+        doThrow( exception ).when( delegate ).run( eq("assert recoverable"), anyMap(), any( Collector.class ) );
 
         // When
         try
         {
-            conn.run( "assert recoverable", new HashMap<String,Value>( ), StreamCollector.NO_OP );
+            conn.run( "assert recoverable", new HashMap<String,Value>( ), Collector.NO_OP );
             fail( "Should've rethrown exception" );
         }
         catch ( Neo4jException e )

@@ -391,7 +391,7 @@ public class InternalStatementResultTest
         Connection connection = mock( Connection.class );
         String statement = "<unknown>";
 
-        final InternalStatementResult cursor = new InternalStatementResult( connection, new Statement( statement ) );
+        final InternalStatementResult cursor = new InternalStatementResult( connection, null, new Statement( statement ) );
 
         // Each time the cursor calls `recieveOne`, we'll run one of these,
         // to emulate how messages are handed over to the cursor
