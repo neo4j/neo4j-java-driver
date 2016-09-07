@@ -59,7 +59,6 @@ public class NetworkSession implements Session
 
     private ExplicitTransaction currentTransaction;
     private AtomicBoolean isOpen = new AtomicBoolean( true );
-    private AtomicBoolean markedToClose = new AtomicBoolean( false );
 
     NetworkSession( Connection connection, Logger logger )
     {
@@ -106,19 +105,17 @@ public class NetworkSession implements Session
 
     public void reset()
     {
+        ensureSessionIsOpen();
         ensureNoUnrecoverableError();
         ensureConnectionIsOpen();
 
-        if( markedToClose.compareAndSet( false, true ) )
-        {
-            connection.resetAsync();
-        }
+        connection.resetAsync();
     }
 
     @Override
     public boolean isOpen()
     {
-        return isOpen.get() && !markedToClose.get();
+        return isOpen.get();
     }
 
     @Override
@@ -206,6 +203,7 @@ public class NetworkSession implements Session
 
     private void ensureConnectionIsValidBeforeRunningSession()
     {
+        ensureSessionIsOpen();
         ensureNoUnrecoverableError();
         ensureNoOpenTransactionBeforeRunningSession();
         ensureConnectionIsOpen();
@@ -213,6 +211,7 @@ public class NetworkSession implements Session
 
     private void ensureConnectionIsValidBeforeOpeningTransaction()
     {
+        ensureSessionIsOpen();
         ensureNoUnrecoverableError();
         ensureNoOpenTransactionBeforeOpeningTransaction();
         ensureConnectionIsOpen();

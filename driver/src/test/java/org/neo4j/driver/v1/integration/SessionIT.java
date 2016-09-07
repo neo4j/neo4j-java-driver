@@ -21,12 +21,7 @@ package org.neo4j.driver.v1.integration;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.driver.v1.AuthToken;
-import org.neo4j.driver.v1.AuthTokens;
-import org.neo4j.driver.v1.Driver;
-import org.neo4j.driver.v1.GraphDatabase;
-import org.neo4j.driver.v1.Session;
-import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.*;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.util.TestNeo4j;
@@ -126,7 +121,6 @@ public class SessionIT
             assertTrue( startTime > 0 );
             assertTrue( endTime - startTime > killTimeout * 1000 ); // get reset by session.reset
             assertTrue( endTime - startTime < executionTimeout * 1000 / 2 ); // finished before execution finished
-            assertFalse( session.isOpen() );
         }
         catch ( Exception e )
         {
@@ -200,5 +194,48 @@ public class SessionIT
                 }
             }
         } ).start();
+    }
+
+    @Test
+    public void shouldAllowMoreStatementAfterSessionReset()
+    {
+        // Given
+        try( Driver driver =  GraphDatabase.driver( neo4j.uri() );
+             Session session = driver.session() )
+        {
+
+            session.run( "Return 1" ).consume();
+
+            // When reset the state of this session
+            session.reset();
+
+            // Then can run successfully more statements without any error
+            session.run( "Return 2" ).consume();
+        }
+    }
+
+    @Test
+    public void shouldAllowMoreTxAfterSessionReset()
+    {
+        // Given
+        try( Driver driver =  GraphDatabase.driver( neo4j.uri() );
+             Session session = driver.session() )
+        {
+            try( Transaction tx = session.beginTransaction() )
+            {
+                tx.run("Return 1");
+                tx.success();
+            }
+
+            // When reset the state of this session
+            session.reset();
+
+            // Then can run more Tx
+            try( Transaction tx = session.beginTransaction() )
+            {
+                tx.run("Return 2");
+                tx.success();
+            }
+        }
     }
 }
