@@ -51,9 +51,11 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.security.TrustOnFirstUseTrustManager.fingerprint;
 
 public class TLSSocketChannelIT
@@ -290,26 +292,36 @@ public class TLSSocketChannelIT
         }
     }
 
-//    @Test
-//    public void shouldWarnIfUsingDeprecatedTLSOption() throws Throwable
-//    {
-//
-//        Logger logger = mock( Logger.class );
-//        SocketChannel channel = SocketChannel.open();
-//        channel.connect( new InetSocketAddress( "localhost", 7687 ) );
-//
-//        // When
-//        TLSSocketChannel sslChannel = new TLSSocketChannel( "localhost", 7687, channel, logger,
-//                Config.TrustStrategy.trustSignedBy(
-//                        Neo4jSettings.DEFAULT_TLS_CERT_FILE ) );
-//        sslChannel.close();
-//
-//        // Then
-//        verify( logger, atLeastOnce() )
-//                .warn( "Option `TRUST_SIGNED_CERTIFICATE` has been deprecated and will be removed " +
-//                       "in a future version of the driver. Please switch to use " +
-//                       "`TRUST_CUSTOM_CA_SIGNED_CERTIFICATES` instead." );
-//    }
+    @Test
+    public void shouldWarnIfUsingDeprecatedTLSOption() throws Throwable
+    {
+
+        Logger logger = mock( Logger.class );
+        Logging logging = mock( Logging.class );
+        when(logging.getLog( anyString() )).thenReturn( logger );
+
+        SocketChannel channel = SocketChannel.open();
+        channel.connect( new InetSocketAddress( "localhost", 7687 ) );
+
+        Config config = Config.build()
+                .withEncryptionLevel( Config.EncryptionLevel.REQUIRED )
+                .withTrustStrategy( Config.TrustStrategy.trustSignedBy( Neo4jSettings.DEFAULT_TLS_CERT_FILE ) )
+                .withLogging( logging )
+                .toConfig();
+
+        // When
+        try ( Driver driver = GraphDatabase.driver( Neo4jRunner.DEFAULT_URI, config );
+              Session session = driver.session() )
+        {
+            session.run( "RETURN 1" ).consume();
+        }
+
+        // Then
+        verify( logger, atLeastOnce() )
+                .warn( "Option `TRUST_SIGNED_CERTIFICATE` has been deprecated and will be removed " +
+                       "in a future version of the driver. Please switch to use " +
+                       "`TRUST_CUSTOM_CA_SIGNED_CERTIFICATES` instead." );
+    }
 
     private void performTLSHandshakeUsingKnownCerts( File knownCerts ) throws Throwable
     {
