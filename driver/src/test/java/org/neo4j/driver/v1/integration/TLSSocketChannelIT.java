@@ -129,7 +129,7 @@ public class TLSSocketChannelIT
             {
                 TLSSocketChannel sslChannel =
                         new TLSSocketChannel( "localhost", 7687, channel, logger,
-                                Config.TrustStrategy.trustSystemCertifcates() );
+                                Config.TrustStrategy.trustSystemCertificates() );
                 sslChannel.close();
             }
             catch ( SSLHandshakeException e )
