@@ -19,21 +19,20 @@
 
 package org.neo4j.driver.v1;
 
-import org.junit.Rule;
 import org.junit.Test;
+import org.neo4j.driver.internal.ClusterDriver;
 import org.neo4j.driver.internal.DirectDriver;
-import org.neo4j.driver.v1.util.TestNeo4jSession;
+import org.neo4j.driver.v1.util.StubServer;
 
+import java.io.IOException;
 import java.net.URI;
 
+import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
 
 public class GraphDatabaseTest
 {
-    @Rule
-    public TestNeo4jSession session = new TestNeo4jSession();
-
     @Test
     public void boltSchemeShouldInstantiateDirectDriver()
     {
@@ -46,6 +45,24 @@ public class GraphDatabaseTest
         // Then
         assertThat( driver, instanceOf( DirectDriver.class ) );
 
+    }
+
+    @Test
+    public void boltPlusDiscoverySchemeShouldInstantiateClusterDriver() throws IOException, InterruptedException, StubServer.ForceKilled
+    {
+        // Given
+        StubServer server = StubServer.start( "../driver/src/test/resources/discovery.script" );
+        URI uri = URI.create( "bolt+discovery://localhost:7687" );
+
+        // When
+        Driver driver = GraphDatabase.driver( uri );
+
+        // Then
+        assertThat( driver, instanceOf( ClusterDriver.class ) );
+
+        // Finally
+        driver.close();
+        assertThat( server.exitStatus(), equalTo( 0 ) );
     }
 
 }
