@@ -109,6 +109,10 @@ public class NetworkSession implements Session
         ensureNoUnrecoverableError();
         ensureConnectionIsOpen();
 
+        if( currentTransaction != null )
+        {
+            currentTransaction.markToClose();
+        }
         connection.resetAsync();
     }
 

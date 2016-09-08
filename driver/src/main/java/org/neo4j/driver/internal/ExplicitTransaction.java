@@ -170,7 +170,7 @@ class ExplicitTransaction implements Transaction
     }
 
     @Override
-    public StatementResult run( Statement statement )
+    public synchronized StatementResult run( Statement statement )
     {
         ensureNotFailed();
 
@@ -217,7 +217,7 @@ class ExplicitTransaction implements Transaction
         return InternalTypeSystem.TYPE_SYSTEM;
     }
 
-    public void markToClose()
+    public synchronized void markToClose()
     {
         state = State.FAILED;
     }

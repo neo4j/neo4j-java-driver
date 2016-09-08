@@ -27,6 +27,7 @@ import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -235,6 +236,28 @@ public class SessionIT
             {
                 tx.run("Return 2");
                 tx.success();
+            }
+        }
+    }
+
+    @Test
+    public void shouldMarkTxAsFailedAndDisallowRunAfterSessionReset()
+    {
+        // Given
+        try( Driver driver =  GraphDatabase.driver( neo4j.uri() );
+             Session session = driver.session() )
+        {
+            try( Transaction tx = session.beginTransaction() )
+            {
+                // When reset the state of this session
+                session.reset();
+                 // Then
+                tx.run( "Return 1" );
+                fail( "Should not allow tx run as tx is already failed." );
+            }
+            catch( Exception e )
+            {
+                assertThat( e.getMessage(), startsWith( "Cannot run more statements in this transaction" ) );
             }
         }
     }
