@@ -105,9 +105,14 @@ public class NetworkSession implements Session
 
     public void reset()
     {
+        ensureSessionIsOpen();
         ensureNoUnrecoverableError();
         ensureConnectionIsOpen();
 
+        if( currentTransaction != null )
+        {
+            currentTransaction.markToClose();
+        }
         connection.resetAsync();
     }
 
@@ -202,6 +207,7 @@ public class NetworkSession implements Session
 
     private void ensureConnectionIsValidBeforeRunningSession()
     {
+        ensureSessionIsOpen();
         ensureNoUnrecoverableError();
         ensureNoOpenTransactionBeforeRunningSession();
         ensureConnectionIsOpen();
@@ -209,6 +215,7 @@ public class NetworkSession implements Session
 
     private void ensureConnectionIsValidBeforeOpeningTransaction()
     {
+        ensureSessionIsOpen();
         ensureNoUnrecoverableError();
         ensureNoOpenTransactionBeforeOpeningTransaction();
         ensureConnectionIsOpen();
@@ -261,6 +268,18 @@ public class NetworkSession implements Session
             throw new ClientException( "The current session cannot be reused as the underlying connection with the " +
                                        "server has been closed due to unrecoverable errors. " +
                                        "Please close this session and retry your statement in another new session." );
+        }
+    }
+
+    private void ensureSessionIsOpen()
+    {
+        if( !isOpen() )
+        {
+            throw new ClientException(
+                    "No more interaction with this session is allowed " +
+                    "as the current session is already closed or marked as closed. " +
+                    "You get this error either because you have a bad reference to a session that has already be closed " +
+                    "or you are trying to reuse a session that you have called `reset` on it." );
         }
     }
 }

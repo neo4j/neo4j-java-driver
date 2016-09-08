@@ -18,9 +18,9 @@
  */
 package org.neo4j.driver.internal.net;
 
-import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.neo4j.driver.internal.messaging.MessageHandler;
 import org.neo4j.driver.internal.spi.Collector;
@@ -39,7 +39,7 @@ import org.neo4j.driver.v1.util.Function;
 
 public class SocketResponseHandler implements MessageHandler
 {
-    private final Queue<Collector> collectors = new LinkedList<>();
+    private final Queue<Collector> collectors = new ConcurrentLinkedQueue<>();
 
     /** If a failure occurs, the error gets stored here */
     private Neo4jException error;
