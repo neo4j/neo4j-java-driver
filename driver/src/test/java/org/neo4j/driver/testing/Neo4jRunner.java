@@ -132,7 +132,7 @@ public class Neo4jRunner
     private String installNeo4j( String serverVersion ) throws IOException
     {
         purgeDirectory( new File( WORK_DIR ) );
-        Process process = runCommand( "neotest-install", serverVersion, WORK_DIR );
+        Process process = runCommand( "neoctrl-install", serverVersion, WORK_DIR );
         if (process.exitValue() != 0) // not success
         {
             throw new IOException( "Failed to install Neo4j server." );
@@ -154,17 +154,14 @@ public class Neo4jRunner
         // this is required for windows as python scripts cannot delete the file when it is used by driver tests
         deleteDefaultKnownCertFileIfExists();
 
-        Process process1 = runCommand( "neotest-start", home );
-        if ( process1.exitValue() != 0 )
+        Process process = runCommand( "neoctrl-start", home );
+        if ( process.exitValue() != 0 )
         {
             throw new IOException( "Failed to start neo4j server." );
         }
-        final BufferedReader reader = new BufferedReader( new InputStreamReader( process1.getInputStream() ) );
-        final String addressLine = reader.readLine();
-        System.out.println( addressLine );
-        String[] addresses = addressLine.split( " " );
-        httpURI = URI.create( addresses[0] );
-        boltURI = URI.create( addresses[1] );
+        final BufferedReader reader = new BufferedReader( new InputStreamReader( process.getInputStream() ) );
+        httpURI = URI.create( reader.readLine() );
+        boltURI = URI.create( reader.readLine() );
         httpAddress = new InetSocketAddress( httpURI.getHost(), httpURI.getPort() );
         boltAddress = new InetSocketAddress( boltURI.getHost(), boltURI.getPort() );
 
@@ -176,7 +173,7 @@ public class Neo4jRunner
     {
         if ( user == null )
         {
-            Process process = runCommand( "neotest-create-user", home, "test", "test" );
+            Process process = runCommand( "neoctrl-create-user", home, "test", "test" );
             if ( process.exitValue() != 0 )
             {
                 throw new IOException( "Failed to set password." );
@@ -198,7 +195,7 @@ public class Neo4jRunner
             driver = null;
         }
 
-        Process process1 = runCommand( "neotest-stop", home );
+        Process process1 = runCommand( "neoctrl-stop", home );
         if ( process1.exitValue() != 0 )
         {
             throw new IOException( "Failed to stop neo4j server." );
