@@ -27,7 +27,7 @@ import org.neo4j.driver.internal.net.pooling.PoolSettings;
 import org.neo4j.driver.v1.util.Immutable;
 
 import static java.lang.System.getProperty;
-import static org.neo4j.driver.v1.Config.TrustStrategy.*;
+import static org.neo4j.driver.v1.Config.TrustStrategy.trustOnFirstUse;
 
 /**
  * A configuration class to config driver properties.
@@ -245,7 +245,7 @@ public class Config
         /**
          * Specify how to determine the authenticity of an encryption certificate provided by the Neo4j instance we are connecting to.
          * This defaults to {@link TrustStrategy#trustOnFirstUse(File)}.
-         * See {@link TrustStrategy#trustSignedBy(File)} for using certificate signatures instead to verify
+         * See {@link TrustStrategy#trustCustomCertificateSignedBy(File)} for using certificate signatures instead to verify
          * trust.
          * <p>
          * This is an important setting to understand, because unless we know that the remote server we have an encrypted connection to
@@ -296,11 +296,19 @@ public class Config
         public enum Strategy
         {
             TRUST_ON_FIRST_USE,
-            TRUST_SIGNED_CERTIFICATES
+            @Deprecated
+            TRUST_SIGNED_CERTIFICATES,
+            TRUST_CUSTOM_CA_SIGNED_CERTIFICATES,
+            TRUST_SYSTEM_CA_SIGNED_CERTIFICATES
         }
 
         private final Strategy strategy;
         private final File certFile;
+
+        private TrustStrategy( Strategy strategy )
+        {
+            this( strategy, null );
+        }
 
         private TrustStrategy( Strategy strategy, File certFile )
         {
@@ -323,6 +331,15 @@ public class Config
         }
 
         /**
+         * Use {@link #trustCustomCertificateSignedBy(File)} instead.
+         */
+        @Deprecated
+        public static TrustStrategy trustSignedBy( File certFile )
+        {
+            return new TrustStrategy( Strategy.TRUST_SIGNED_CERTIFICATES, certFile );
+        }
+
+        /**
          * Only encrypted connections to Neo4j instances with certificates signed by a trusted certificate will be accepted.
          * The file specified should contain one or more trusted X.509 certificates.
          * <p>
@@ -332,9 +349,14 @@ public class Config
          * @param certFile the trusted certificate file
          * @return an authentication config
          */
-        public static TrustStrategy trustSignedBy( File certFile )
+        public static TrustStrategy trustCustomCertificateSignedBy( File certFile )
         {
-            return new TrustStrategy( Strategy.TRUST_SIGNED_CERTIFICATES, certFile );
+            return new TrustStrategy( Strategy.TRUST_CUSTOM_CA_SIGNED_CERTIFICATES, certFile );
+        }
+
+        public static TrustStrategy trustSystemCertifcates()
+        {
+            return new TrustStrategy( Strategy.TRUST_SYSTEM_CA_SIGNED_CERTIFICATES );
         }
 
         /**
@@ -345,7 +367,7 @@ public class Config
          * Each time we reconnect to a known host, we verify that its certificate remains the same, guarding against attackers intercepting our communication.
          * <p>
          * Note that this approach is vulnerable to man-in-the-middle attacks the very first time you connect to a new Neo4j instance.
-         * If you do not trust the network you are connecting over, consider using {@link #trustSignedBy(File) signed certificates} instead, or manually adding the
+         * If you do not trust the network you are connecting over, consider using {@link #trustCustomCertificateSignedBy(File)}  signed certificates} instead, or manually adding the
          * trusted host line into the specified file.
          *
          * @param knownHostsFile a file where known certificates are stored.

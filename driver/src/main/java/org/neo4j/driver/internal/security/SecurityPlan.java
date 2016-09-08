@@ -22,12 +22,17 @@ package org.neo4j.driver.internal.security;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.v1.*;
 
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.security.KeyManagementException;
 import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 
 import static org.neo4j.driver.internal.util.CertificateTool.loadX509Cert;
 
@@ -50,27 +55,40 @@ public class SecurityPlan
         // Create TrustManager from TrustedKeyStore
         TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance( "SunX509" );
         trustManagerFactory.init( trustedKeyStore );
-        return new SecurityPlan( true, trustManagerFactory.getTrustManagers() );
+
+        SSLContext sslContext = SSLContext.getInstance( "TLS" );
+        sslContext.init( new KeyManager[0], trustManagerFactory.getTrustManagers(), null );
+
+        return new SecurityPlan( true, sslContext);
     }
 
-    public static SecurityPlan forTrustOnFirstUse( File knownHosts, BoltServerAddress address, Logger logger )
-            throws IOException
+    public static SecurityPlan forSystemCertificates() throws NoSuchAlgorithmException, KeyStoreException
     {
-        return new SecurityPlan( true, new TrustOnFirstUseTrustManager( address, knownHosts, logger ) );
+        return new SecurityPlan( true, SSLContext.getDefault() );
+    }
+
+
+    public static SecurityPlan forTrustOnFirstUse( File knownHosts, BoltServerAddress address, Logger logger )
+            throws IOException, KeyManagementException, NoSuchAlgorithmException
+    {
+        SSLContext sslContext = SSLContext.getInstance( "TLS" );
+        sslContext.init( new KeyManager[0], new TrustManager[]{new TrustOnFirstUseTrustManager( address, knownHosts, logger )}, null );
+
+        return new SecurityPlan( true, sslContext);
     }
 
     public static SecurityPlan insecure()
     {
-        return new SecurityPlan( false );
+        return new SecurityPlan( false, null );
     }
 
     private final boolean requiresEncryption;
-    private final TrustManager[] trustManagers;
+    private final SSLContext sslContext;
 
-    public SecurityPlan( boolean requiresEncryption, TrustManager... trustManagers )
+    private SecurityPlan( boolean requiresEncryption, SSLContext sslContext)
     {
         this.requiresEncryption = requiresEncryption;
-        this.trustManagers = trustManagers;
+        this.sslContext = sslContext;
     }
 
     public boolean requiresEncryption()
@@ -78,9 +96,7 @@ public class SecurityPlan
         return requiresEncryption;
     }
 
-    public TrustManager[] trustManagers()
-    {
-        return trustManagers;
-    }
+
+    public SSLContext sslContext() {return sslContext;}
 
 }

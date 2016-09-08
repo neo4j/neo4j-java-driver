@@ -30,6 +30,7 @@ import java.net.URI;
 import java.security.GeneralSecurityException;
 
 import static java.lang.String.format;
+import static org.neo4j.driver.internal.security.SecurityPlan.insecure;
 import static org.neo4j.driver.v1.Config.EncryptionLevel.REQUIRED;
 import static org.neo4j.driver.v1.Config.EncryptionLevel.REQUIRED_NON_LOCAL;
 
@@ -186,21 +187,25 @@ public class GraphDatabase
 
         if ( requiresEncryption )
         {
+            Logger logger = config.logging().getLog( "session" );
             switch ( config.trustStrategy().strategy() )
             {
             case TRUST_SIGNED_CERTIFICATES:
+                logger.warn( "Option `TRUST_SIGNED_CERTIFICATE` has been deprecated and will be removed in a future version " +
+                                                    "of the driver. Please switch to use `TRUST_CUSTOM_CA_SIGNED_CERTIFICATES` instead." );
+                            //intentional fallthrough
+            case TRUST_CUSTOM_CA_SIGNED_CERTIFICATES:
                 return SecurityPlan.forSignedCertificates( config.trustStrategy().certFile() );
             case TRUST_ON_FIRST_USE:
                 return SecurityPlan.forTrustOnFirstUse( config.trustStrategy().certFile(),
-                        address, config.logging().getLog( "session" ) );
+                        address, logger );
             default:
                 throw new ClientException( "Unknown TLS authentication strategy: " + config.trustStrategy().strategy().name() );
             }
         }
         else
         {
-            return new SecurityPlan( false );
+            return insecure();
         }
     }
-
 }

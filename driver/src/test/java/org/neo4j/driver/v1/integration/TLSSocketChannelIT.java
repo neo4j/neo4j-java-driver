@@ -27,6 +27,8 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.channels.SocketChannel;
 import java.security.cert.X509Certificate;
@@ -44,6 +46,8 @@ import org.neo4j.driver.v1.util.Neo4jRunner;
 import org.neo4j.driver.v1.util.Neo4jSettings;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -58,7 +62,7 @@ public class TLSSocketChannelIT
     public TestNeo4j neo4j = new TestNeo4j();
 
     @Rule
-    public TemporaryFolder folder = new TemporaryFolder(  );
+    public TemporaryFolder folder = new TemporaryFolder();
 
     @BeforeClass
     public static void setup() throws IOException, InterruptedException
@@ -76,24 +80,6 @@ public class TLSSocketChannelIT
         performTLSHandshakeUsingKnownCerts( knownCerts );
     }
 
-    private void performTLSHandshakeUsingKnownCerts( File knownCerts ) throws Throwable
-    {
-        // Given
-        Logger logger = mock( Logger.class );
-        BoltServerAddress address = BoltServerAddress.LOCAL_DEFAULT;
-        SocketChannel channel = SocketChannel.open();
-        channel.connect( address.toSocketAddress() );
-
-        // When
-
-        SecurityPlan securityPlan = SecurityPlan.forTrustOnFirstUse( knownCerts, address, new DevNullLogger() );
-        TLSSocketChannel sslChannel =
-                new TLSSocketChannel( address, securityPlan, channel, logger );
-        sslChannel.close();
-
-        // Then
-        verify( logger, atLeastOnce() ).debug( "~~ [CLOSED SECURE CHANNEL]" );
-    }
 
     @Test
     public void shouldPerformTLSHandshakeWithTrustedCert() throws Throwable
@@ -137,6 +123,43 @@ public class TLSSocketChannelIT
 
             // Then
             verify( logger, atLeastOnce() ).debug( "~~ [OPENING SECURE CHANNEL]" );
+        }
+        finally
+        {
+            // always restore the db default settings
+            neo4j.restart();
+        }
+    }
+
+    @Test
+    public void shouldNotPerformTLSHandshakeWithNonSystemCert() throws Throwable
+    {
+        try
+        {
+            // Given
+            BoltServerAddress address = BoltServerAddress.LOCAL_DEFAULT;
+            // Install a root certificate unknown by the system certificate chain
+            installRootCertificate();
+
+            Logger logger = mock( Logger.class );
+            SocketChannel channel = SocketChannel.open();
+            channel.connect( new InetSocketAddress( "localhost", 7687 ) );
+            SecurityPlan securityPlan = SecurityPlan.forSystemCertificates();
+
+            // When
+            try
+            {
+                TLSSocketChannel sslChannel =
+                        new TLSSocketChannel(address, securityPlan, channel, logger);
+                sslChannel.close();
+            }
+            catch ( SSLHandshakeException e )
+            {
+                assertEquals( "General SSLEngine problem", e.getMessage() );
+                assertEquals( "General SSLEngine problem", e.getCause().getMessage() );
+                assertThat( e.getCause().getCause().getMessage(),
+                        containsString( "unable to find valid certification path to requested target" ) );
+            }
         }
         finally
         {
@@ -204,7 +227,7 @@ public class TLSSocketChannelIT
         neo4j.restart(
                 Neo4jSettings.TEST_SETTINGS.updateWith(
                         Neo4jSettings.CERT_DIR,
-                        folder.getRoot().getAbsolutePath().replace("\\", "/") ) );
+                        folder.getRoot().getAbsolutePath().replace( "\\", "/" ) ) );
         SocketChannel channel = SocketChannel.open();
         channel.connect( neo4j.address().toSocketAddress() );
         File trustedCertFile = folder.newFile( "neo4j_trusted_cert.tmp" );
@@ -266,4 +289,85 @@ public class TLSSocketChannelIT
             assertFalse( result.hasNext() );
         }
     }
+
+//    @Test
+//    public void shouldWarnIfUsingDeprecatedTLSOption() throws Throwable
+//    {
+//
+//        Logger logger = mock( Logger.class );
+//        SocketChannel channel = SocketChannel.open();
+//        channel.connect( new InetSocketAddress( "localhost", 7687 ) );
+//
+//        // When
+//        TLSSocketChannel sslChannel = new TLSSocketChannel( "localhost", 7687, channel, logger,
+//                Config.TrustStrategy.trustSignedBy(
+//                        Neo4jSettings.DEFAULT_TLS_CERT_FILE ) );
+//        sslChannel.close();
+//
+//        // Then
+//        verify( logger, atLeastOnce() )
+//                .warn( "Option `TRUST_SIGNED_CERTIFICATE` has been deprecated and will be removed " +
+//                       "in a future version of the driver. Please switch to use " +
+//                       "`TRUST_CUSTOM_CA_SIGNED_CERTIFICATES` instead." );
+//    }
+
+    private void performTLSHandshakeUsingKnownCerts( File knownCerts ) throws Throwable
+    {
+        // Given
+        Logger logger = mock( Logger.class );
+        BoltServerAddress address = BoltServerAddress.LOCAL_DEFAULT;
+        SocketChannel channel = SocketChannel.open();
+        channel.connect( address.toSocketAddress() );
+
+        // When
+
+        SecurityPlan securityPlan = SecurityPlan.forTrustOnFirstUse( knownCerts, address, new DevNullLogger() );
+        TLSSocketChannel sslChannel =
+                new TLSSocketChannel( address, securityPlan, channel, logger );
+        sslChannel.close();
+
+        // Then
+        verify( logger, atLeastOnce() ).debug( "~~ [CLOSED SECURE CHANNEL]" );
+    }
+
+    private File installRootCertificate() throws Exception
+    {
+        File rootCert = folder.newFile( "temp_root_cert.cert" );
+        File rootKey = folder.newFile( "temp_root_key.key" );
+
+        CertificateToolTest.SelfSignedCertificateGenerator
+                certGenerator = new CertificateToolTest.SelfSignedCertificateGenerator();
+        certGenerator.saveSelfSignedCertificate( rootCert );
+        certGenerator.savePrivateKey( rootKey );
+
+        // Generate certificate signing request and get a certificate signed by the root private key
+        File cert = folder.newFile( "temp_cert.cert" );
+        File key = folder.newFile( "temp_key.key" );
+        CertificateToolTest.CertificateSigningRequestGenerator
+                csrGenerator = new CertificateToolTest.CertificateSigningRequestGenerator();
+        X509Certificate signedCert = certGenerator.sign(
+                csrGenerator.certificateSigningRequest(), csrGenerator.publicKey() );
+        csrGenerator.savePrivateKey( key );
+        CertificateTool.saveX509Cert( signedCert, cert );
+
+        // Give the server certs to database
+        neo4j.updateEncryptionKeyAndCert( key, cert );
+        return rootCert;
+    }
+
+    private void createFakeServerCertPairInKnownCerts( String host, int port, File knownCerts )
+            throws Throwable
+    {
+        String ip = InetAddress.getByName( host ).getHostAddress(); // localhost -> 127.0.0.1
+        String serverId = ip + ":" + port;
+
+        X509Certificate cert = CertificateToolTest.generateSelfSignedCertificate();
+        String certStr = fingerprint( cert );
+
+        BufferedWriter writer = new BufferedWriter( new FileWriter( knownCerts, true ) );
+        writer.write( serverId + "," + certStr );
+        writer.newLine();
+        writer.close();
+    }
+
 }

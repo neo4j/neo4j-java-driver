@@ -22,13 +22,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
-import java.nio.channels.SocketChannel;
 import java.security.GeneralSecurityException;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
@@ -39,16 +34,8 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
-
-import org.neo4j.driver.internal.security.TLSSocketChannel;
-import org.neo4j.driver.internal.logging.DevNullLogger;
-
-import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertThat;
 
 /**
  * This tests that the TLSSocketChannel handles every combination of network buffer sizes that we
@@ -63,28 +50,15 @@ import static org.junit.Assert.assertThat;
  * to the write path as well would be useful. For each size, it sets up a TLS server and tests the
  * handshake, transferring the data, and verifying the data is correct after decryption.
  */
-public class TLSSocketChannelFragmentationIT
+public abstract class TLSSocketChannelFragmentation
 {
-    private SSLContext sslCtx;
-    private byte[] blobOfData;
-    private ServerSocket server;
+    protected SSLContext sslCtx;
 
     @Before
     public void setup() throws Throwable
     {
         createSSLContext();
         createServer();
-    }
-
-    private void blobOfDataSize( int dataBlobSize )
-    {
-        blobOfData = new byte[dataBlobSize];
-        // If the blob is all zeros, we'd miss data corruption problems in assertions, so
-        // fill the data blob with different values.
-        for ( int i = 0; i < blobOfData.length; i++ )
-        {
-            blobOfData[i] = (byte) (i % 128);
-        }
     }
 
     @Test
@@ -109,34 +83,9 @@ public class TLSSocketChannelFragmentationIT
         }
     }
 
-    private void testForBufferSizes( int blobOfDataSize, int networkFrameSize, int userBufferSize ) throws IOException, GeneralSecurityException
-    {
-        blobOfDataSize(blobOfDataSize);
-        SSLEngine engine = sslCtx.createSSLEngine();
-        engine.setUseClientMode( true );
-        ByteChannel ch = SocketChannel.open( new InetSocketAddress( server.getInetAddress(), server.getLocalPort() ) );
-        ch = new LittleAtATimeChannel( ch, networkFrameSize );
-
-        TLSSocketChannel channel = new TLSSocketChannel(ch, new DevNullLogger(), engine);
-        try
-        {
-            ByteBuffer readBuffer = ByteBuffer.allocate( blobOfData.length );
-            while ( readBuffer.position() < readBuffer.capacity() )
-            {
-                readBuffer.limit(Math.min( readBuffer.capacity(), readBuffer.position() + userBufferSize ));
-                channel.read( readBuffer );
-            }
-
-            assertThat(readBuffer.array(), equalTo(blobOfData));
-        }
-        finally
-        {
-            channel.close();
-        }
-    }
-
-    private void createSSLContext()
-            throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException, UnrecoverableKeyException, KeyManagementException
+    protected void createSSLContext()
+            throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException,
+            UnrecoverableKeyException, KeyManagementException
     {
         KeyStore ks = KeyStore.getInstance("JKS");
         char[] password = "password".toCharArray();
@@ -159,40 +108,16 @@ public class TLSSocketChannelFragmentationIT
         }}, null );
     }
 
-    private void createServer() throws IOException
-    {
-        SSLServerSocketFactory ssf = sslCtx.getServerSocketFactory();
-        server = ssf.createServerSocket(0);
+    protected abstract void testForBufferSizes( int blobOfDataSize, int networkFrameSize, int userBufferSize ) throws IOException,
+            GeneralSecurityException;
 
-        new Thread(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                try
-                {
-                    while(true)
-                    {
-                        Socket client = server.accept();
-                        OutputStream outputStream = client.getOutputStream();
-                        outputStream.write( blobOfData );
-                        outputStream.flush();
-                        // client.close(); // TODO: Uncomment this, fix resulting error handling CLOSED event
-                    }
-                }
-                catch ( IOException e )
-                {
-                    e.printStackTrace();
-                }
-            }
-        }).start();
-    }
+    protected abstract void createServer() throws IOException;
 
     /**
      * Delegates to underlying channel, but only reads up to the set amount at a time, used to emulate
      * different network frame sizes in this test.
      */
-    private static class LittleAtATimeChannel implements ByteChannel
+    protected static class LittleAtATimeChannel implements ByteChannel
     {
         private final ByteChannel delegate;
         private final int maxFrameSize;

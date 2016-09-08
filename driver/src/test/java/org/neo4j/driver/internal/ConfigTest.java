@@ -69,13 +69,13 @@ public class ConfigTest
     {
         // Given
         File trustedCert = new File( "trusted_cert" );
-        Config config = Config.build().withTrustStrategy( Config.TrustStrategy.trustSignedBy( trustedCert ) ).toConfig();
+        Config config = Config.build().withTrustStrategy( Config.TrustStrategy.trustCustomCertificateSignedBy( trustedCert ) ).toConfig();
 
         // When
         Config.TrustStrategy authConfig = config.trustStrategy();
 
         // Then
-        assertEquals( authConfig.strategy(), Config.TrustStrategy.Strategy.TRUST_SIGNED_CERTIFICATES );
+        assertEquals( authConfig.strategy(), Config.TrustStrategy.Strategy.TRUST_CUSTOM_CA_SIGNED_CERTIFICATES );
         assertEquals( trustedCert.getAbsolutePath(), authConfig.certFile().getAbsolutePath() );
     }
 
@@ -86,7 +86,7 @@ public class ConfigTest
         Config config = Config.build().withSessionLivenessCheckTimeout( 1337 ).toConfig();
 
         // then
-        assertThat( config.idleTimeBeforeConnectionTest(), equalTo( 1337l ) );
+        assertThat( config.idleTimeBeforeConnectionTest(), equalTo( 1337L ) );
     }
 
     public static void deleteDefaultKnownCertFileIfExists()

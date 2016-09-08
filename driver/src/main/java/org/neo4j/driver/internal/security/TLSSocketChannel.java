@@ -32,6 +32,9 @@ import javax.net.ssl.SSLEngineResult.Status;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.internal.util.BytePrinter;
+import org.neo4j.driver.internal.util.BytePrinter;
+import org.neo4j.driver.v1.Config.TrustStrategy;
+import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.FINISHED;
@@ -67,8 +70,7 @@ public class TLSSocketChannel implements ByteChannel
     public TLSSocketChannel( BoltServerAddress address, SecurityPlan securityPlan, ByteChannel channel, Logger logger )
             throws GeneralSecurityException, IOException
     {
-        this(channel, logger, createSSLEngine( address, createSSLContext( securityPlan ) ) );
-
+        this( channel, logger, createSSLEngine( address, securityPlan.sslContext() ) );
     }
 
     public TLSSocketChannel( ByteChannel channel, Logger logger, SSLEngine sslEngine ) throws GeneralSecurityException, IOException
@@ -163,8 +165,8 @@ public class TLSSocketChannel implements ByteChannel
      * To verify if deciphering is done successfully, we could check if any bytes has been read into {@code buffer},
      * as the deciphered bytes will only be saved into {@code buffer} when deciphering is carried out successfully.
      *
-     * @param buffer
-     * @return
+     * @param buffer to read data into.
+     * @return The status of the current handshake.
      * @throws IOException
      */
     private HandshakeStatus unwrap( ByteBuffer buffer ) throws IOException
@@ -261,7 +263,7 @@ public class TLSSocketChannel implements ByteChannel
      * a loop
      *
      * @param buffer contains the bytes to send to channel
-     * @return
+     * @return The status of the current handshake
      * @throws IOException
      */
     private HandshakeStatus wrap( ByteBuffer buffer ) throws IOException
@@ -277,7 +279,7 @@ public class TLSSocketChannel implements ByteChannel
         case OK:
             handshakeStatus = runDelegatedTasks();
             cipherOut.flip();
-            while(cipherOut.hasRemaining())
+            while ( cipherOut.hasRemaining() )
             {
                 channel.write( cipherOut );
             }
@@ -287,19 +289,30 @@ public class TLSSocketChannel implements ByteChannel
             // Enlarge the buffer and return the old status
             int curNetSize = cipherOut.capacity();
             int netSize = sslEngine.getSession().getPacketBufferSize();
-            if ( curNetSize >= netSize || buffer.capacity() > netSize )
+            if ( netSize > curNetSize )
             {
-                // TODO
-                throw new ClientException(
-                        String.format( "Failed to enlarge network buffer from %s to %s. This is either because the " +
-                                       "new size is however less than the old size, or because the application " +
-                                       "buffer size %s is so big that the application data still cannot fit into the " +
-                                       "new network buffer.", curNetSize, netSize, buffer.capacity() ) );
+                // enlarge the peer application data buffer
+                cipherOut = ByteBuffer.allocate( netSize );
+                logger.debug( "Enlarged network output buffer from %s to %s. " +
+                              "This operation should be a rare operation.", curNetSize, netSize );
             }
-
-            cipherOut = ByteBuffer.allocate( netSize );
-            logger.debug( "Enlarged network output buffer from %s to %s. " +
-                          "This operation should be a rare operation.", curNetSize, netSize );
+            else
+            {
+                // flush as much data as possible
+                cipherOut.flip();
+                int written = channel.write( cipherOut );
+                if (written == 0)
+                {
+                    throw new ClientException(
+                            String.format(
+                                    "Failed to enlarge network buffer from %s to %s. This is either because the " +
+                                    "new size is however less than the old size, or because the application " +
+                                    "buffer size %s is so big that the application data still cannot fit into the " +
+                                    "new network buffer.", curNetSize, netSize, buffer.capacity() ) );
+                }
+                cipherOut.compact();
+                logger.debug( "Network output buffer couldn't be enlarged, flushing data to the channel instead." );
+            }
             break;
         default:
             throw new ClientException( "Got unexpected status " + status );
@@ -320,9 +333,9 @@ public class TLSSocketChannel implements ByteChannel
      * After the method call, the new position of {@code from.pos} will be {@code from.pos + p}, and similarly,
      * the new position of {@code to.pos} will be {@code to.pos + p}
      *
-     * @param from
-     * @param to
-     * @return
+     * @param from buffer to copy from
+     * @param to buffer to copy to
+     * @return the number of transferred bytes
      */
     static int bufferCopy( ByteBuffer from, ByteBuffer to )
     {
@@ -340,24 +353,9 @@ public class TLSSocketChannel implements ByteChannel
     }
 
     /**
-     * Create an SSLContext based on a given SecurityPlan.
-     *
-     * @param securityPlan
-     * @return
-     * @throws GeneralSecurityException
-     * @throws IOException
-     */
-    private static SSLContext createSSLContext( SecurityPlan securityPlan ) throws GeneralSecurityException, IOException
-    {
-        SSLContext sslContext = SSLContext.getInstance( "TLS" );
-        sslContext.init( new KeyManager[0], securityPlan.trustManagers(), null );
-        return sslContext;
-    }
-
-    /**
      * Create SSLEngine with the SSLContext just created.
-     * @param address
-     * @param sslContext
+     * @param address the host to connect to
+     * @param sslContext the current ssl context
      */
     private static SSLEngine createSSLEngine( BoltServerAddress address, SSLContext sslContext )
     {
@@ -445,10 +443,10 @@ public class TLSSocketChannel implements ByteChannel
             channel.close();
             logger.debug( "~~ [CLOSED SECURE CHANNEL]" );
         }
-        catch(IOException e)
+        catch ( IOException e )
         {
             // Treat this as ok - the connection is closed, even if the TLS session did not exit cleanly.
-            logger.warn( "TLS socket could not be closed cleanly: '"+e.getMessage()+"'", e );
+            logger.warn( "TLS socket could not be closed cleanly: '" + e.getMessage() + "'", e );
         }
     }
 
