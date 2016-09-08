@@ -39,7 +39,6 @@ import static java.lang.String.format;
 public class ClusterDriver extends BaseDriver
 {
     private static final String DISCOVER_MEMBERS = "dbms.cluster.discoverMembers";
-    private static final String ACQUIRE_ENDPOINTS = "dbms.cluster.acquireEndpoints";
 
     private final ConnectionPool connections;
 
@@ -82,46 +81,9 @@ public class ClusterDriver extends BaseDriver
         }
     }
 
-//    public void acquire(final String role)
-//    {
-//        BoltServerAddress server;
-//        try
-//        {
-//            call( ACQUIRE_ENDPOINTS, new Function<Record, Integer>()
-//            {
-//                @Override
-//                public Integer apply( Record record )
-//                {
-//                    if (record.get( "role" ).asString().equals( role ))
-//                    {
-//                        server = new BoltServerAddress( record.get( "address" ).asString() );
-//                    }
-//                    return 0;
-//                }
-//            } );
-//            this.servers.clear();
-//            this.servers.addAll( newServers );
-//            log.debug( "~~ [MEMBERS] -> %s", newServers );
-//        }
-//        catch ( ClientException ex )
-//        {
-//            if ( ex.code().equals( "Neo.ClientError.Procedure.ProcedureNotFound" ) )
-//            {
-//                // no discovery available; keep servers as they are
-//                log.warn( "C: Discovery failed; could not find procedure %s", DISCOVER_MEMBERS );
-//            }
-//            else
-//            {
-//                throw ex;
-//            }
-//        }
-//    }
-
-//    public void
-
     void call( String procedureName, Function<Record, Integer> recorder )
     {
-        try ( Session session = new InternalSession( connections.acquire( randomServer() ), log ) )
+        try ( Session session = new NetworkSession( connections.acquire( randomServer() ), log ) )
         {
             StatementResult records = session.run( format( "CALL %s", procedureName ) );
             while ( records.hasNext() )
