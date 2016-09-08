@@ -354,7 +354,7 @@ public class Config
             return new TrustStrategy( Strategy.TRUST_CUSTOM_CA_SIGNED_CERTIFICATES, certFile );
         }
 
-        public static TrustStrategy trustSystemCertifcates()
+        public static TrustStrategy trustSystemCertificates()
         {
             return new TrustStrategy( Strategy.TRUST_SYSTEM_CA_SIGNED_CERTIFICATES );
         }
