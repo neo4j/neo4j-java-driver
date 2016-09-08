@@ -33,7 +33,7 @@ import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
-import org.neo4j.driver.v1.util.TestNeo4j;
+import org.neo4j.driver.testing.TestNeo4j;
 
 import static java.util.Arrays.asList;
 import static org.neo4j.driver.v1.GraphDatabase.driver;
@@ -52,7 +52,7 @@ public class SessionPoolingStressIT
     @Test
     public void shouldWorkFine() throws InterruptedException
     {
-        Driver driver = driver( neo4j.uri(),
+        Driver driver = driver( neo4j.boltURI(),
                 Config.build()
                         .withEncryptionLevel( Config.EncryptionLevel.NONE )
                         .withMaxSessions( N_THREADS ).toConfig() );

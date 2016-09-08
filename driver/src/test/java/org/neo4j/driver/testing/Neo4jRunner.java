@@ -16,18 +16,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1.util;
+package org.neo4j.driver.testing;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.net.StandardSocketOptions;
 import java.net.URI;
 import java.nio.channels.SocketChannel;
 import java.util.Map;
 
-import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
+import org.neo4j.driver.v1.util.Neo4jSettings;
 
 import static org.neo4j.driver.internal.ConfigTest.deleteDefaultKnownCertFileIfExists;
 import static org.neo4j.driver.v1.util.FileTools.updateProperties;
@@ -42,31 +47,44 @@ public class Neo4jRunner
 
     private static final boolean debug = Boolean.getBoolean( "neo4j.runner.debug" );
 
-    public static final String NEORUN_START_ARGS = System.getProperty( "neorun.start.args" );
-    public static final URI DEFAULT_URI = URI.create( "bolt://localhost:7687" );
-    public static final BoltServerAddress DEFAULT_ADDRESS = BoltServerAddress.from( DEFAULT_URI );
+    //public static final String NEORUN_START_ARGS = System.getProperty( "neorun.start.args" );
+    //public static final URI DEFAULT_URI = URI.create( "bolt://localhost:7687" );
+    //public static final BoltServerAddress DEFAULT_ADDRESS = BoltServerAddress.from( DEFAULT_URI );
     private Driver driver;
     private Neo4jSettings currentSettings = Neo4jSettings.DEFAULT_SETTINGS;
 
-    public static final String NEO4J_HOME = new File("../target/neo4j/neo4jhome").getAbsolutePath();
-    private static final String NEORUN_PATH = new File("../neokit/neorun.py").getAbsolutePath();
-    private static final String NEO4J_CONF = new File( NEO4J_HOME, "conf/neo4j.conf" ).getAbsolutePath();
+    public static final String NEO4J_SERVER_VERSION = "3.1.0-M09";
 
-    /** Global runner controlling a single server, used to avoid having to restart the server between tests */
+    //public static final String NEO4J_HOME = new File("../target/neo4j/neo4jhome").getAbsolutePath();
+    public static final String WORK_DIR = new File("../target/neo4j").getAbsolutePath();
+    //private static final String NEORUN_PATH = new File("../neokit/neorun.py").getAbsolutePath();
+    //private static final String NEO4J_CONF = new File( NEO4J_HOME, "conf/neo4j.conf" ).getAbsolutePath();
+
+    private final String home;
+
+    private URI httpURI = null;
+    private URI boltURI = null;
+    private SocketAddress httpAddress = null;
+    private SocketAddress boltAddress = null;
+
+    private String user = null;
+    private String password = null;
+
+    // Global runner controlling a single server, used to avoid having to restart the server between tests
     public static synchronized Neo4jRunner getOrCreateGlobalRunner() throws IOException
     {
         if ( globalInstance == null )
         {
-            globalInstance = new Neo4jRunner();
+            globalInstance = new Neo4jRunner( NEO4J_SERVER_VERSION );
         }
         return globalInstance;
     }
 
-    private Neo4jRunner() throws IOException
+    private Neo4jRunner( String serverVersion ) throws IOException
     {
         try
         {
-            startNeo4j();
+            home = installNeo4j( serverVersion );
         }
         finally
         {
@@ -95,17 +113,74 @@ public class Neo4jRunner
         return driver;
     }
 
+    private void purgeDirectory( File dir )
+    {
+        final File[] files = dir.listFiles();
+        if ( files != null )
+        {
+            for ( File file : files )
+            {
+                if ( file.isDirectory() )
+                {
+                    purgeDirectory( file );
+                }
+                file.delete();
+            }
+        }
+    }
+
+    private String installNeo4j( String serverVersion ) throws IOException
+    {
+        purgeDirectory( new File( WORK_DIR ) );
+        Process process = runCommand( "neoctrl-install", serverVersion, WORK_DIR );
+        if (process.exitValue() != 0) // not success
+        {
+            throw new IOException( "Failed to install Neo4j server." );
+        }
+        final BufferedReader reader = new BufferedReader( new InputStreamReader( process.getInputStream() ) );
+        final String home = reader.readLine();
+        System.out.println( home );
+        user = null;
+        password = null;
+        return home;
+    }
+
     private void startNeo4j() throws IOException
     {
+        if ( home == null )
+        {
+            throw new IOException( "Neo4j home dir has not been set, cannot start server" );
+        }
         // this is required for windows as python scripts cannot delete the file when it is used by driver tests
         deleteDefaultKnownCertFileIfExists();
 
-        int processStatus = runCommand( "python", NEORUN_PATH, "--start=" + NEO4J_HOME );
-        if (processStatus != 0) // not success
+        Process process = runCommand( "neoctrl-start", home );
+        if ( process.exitValue() != 0 )
         {
             throw new IOException( "Failed to start neo4j server." );
         }
-        driver = GraphDatabase.driver( DEFAULT_URI /* default encryption REQUIRED_NON_LOCAL */ );
+        final BufferedReader reader = new BufferedReader( new InputStreamReader( process.getInputStream() ) );
+        httpURI = URI.create( reader.readLine() );
+        boltURI = URI.create( reader.readLine() );
+        httpAddress = new InetSocketAddress( httpURI.getHost(), httpURI.getPort() );
+        boltAddress = new InetSocketAddress( boltURI.getHost(), boltURI.getPort() );
+
+        ensureUserCreated();
+        driver = GraphDatabase.driver( boltURI.toString(), AuthTokens.basic( user, password ) );
+    }
+
+    private void ensureUserCreated() throws IOException
+    {
+        if ( user == null )
+        {
+            Process process = runCommand( "neoctrl-create-user", home, "test", "test" );
+            if ( process.exitValue() != 0 )
+            {
+                throw new IOException( "Failed to set password." );
+            }
+            user = "test";
+            password = "test";
+        }
     }
 
     public synchronized void stopNeo4j() throws IOException
@@ -120,8 +195,8 @@ public class Neo4jRunner
             driver = null;
         }
 
-        int processStatus = runCommand( "python", NEORUN_PATH, "--stop=" + NEO4J_HOME );
-        if( processStatus != 0 )
+        Process process1 = runCommand( "neoctrl-stop", home );
+        if ( process1.exitValue() != 0 )
         {
             throw new IOException( "Failed to stop neo4j server." );
         }
@@ -156,9 +231,9 @@ public class Neo4jRunner
     }
 
     @SuppressWarnings("LoopStatementThatDoesntLoop")
-    private int runCommand( String... cmd ) throws IOException
+    private Process runCommand( String... cmd ) throws IOException
     {
-        ProcessBuilder pb = new ProcessBuilder().inheritIO();
+        ProcessBuilder pb = new ProcessBuilder().redirectError( ProcessBuilder.Redirect.INHERIT );
         Map<String,String> env = System.getenv();
         pb.environment().put( "JAVA_HOME",
                 // This driver is built to work with multiple java versions.
@@ -167,17 +242,30 @@ public class Neo4jRunner
                 // version to use for the driver tests.
                 env.containsKey( "NEO4J_JAVA" ) ? env.get( "NEO4J_JAVA" ) :
                 System.getProperties().getProperty( "java.home" ) );
-        if( NEORUN_START_ARGS != null )
+        pb.environment().put( "NEO4J_BUILD_ADDRESS", "build.neohq.net" );
+        pb.environment().put( "NEO4J_BUILD_USER", "TODO" );
+        pb.environment().put( "NEO4J_BUILD_PASSWORD", "TODO" );
+        pb.environment().put( "NEO4J_DIST_ADDRESS", "dist.local" );
+//        if( NEORUN_START_ARGS != null )
+//        {
+//            // overwrite the env var in the sub process if the system property is specified
+//            pb.environment().put( "NEORUN_START_ARGS", NEORUN_START_ARGS );
+//        }
+        StringBuilder s = new StringBuilder("$");
+        for (String word:cmd)
         {
-            // overwrite the env var in the sub process if the system property is specified
-            pb.environment().put( "NEORUN_START_ARGS", NEORUN_START_ARGS );
+            s.append(' ');
+            s.append(word);
         }
+        System.out.println(s.toString());
+
         Process process = pb.command( cmd ).start();
         while (true)
         {
             try
             {
-                return process.waitFor();
+                process.waitFor();
+                return process;
             }
             catch ( InterruptedException e )
             {
@@ -194,11 +282,16 @@ public class Neo4jRunner
 
     private ServerStatus serverStatus()
     {
+        if ( boltAddress == null )
+        {
+            return ServerStatus.OFFLINE;
+        }
+
         try
         {
             SocketChannel soChannel = SocketChannel.open();
             soChannel.setOption( StandardSocketOptions.SO_REUSEADDR, true );
-            soChannel.connect( DEFAULT_ADDRESS.toSocketAddress() );
+            soChannel.connect( boltAddress );
             soChannel.close();
             return ServerStatus.ONLINE;
         }
@@ -235,7 +328,7 @@ public class Neo4jRunner
             return;
         }
 
-        File oldFile = new File( NEO4J_CONF );
+        File oldFile = configFile();
         try
         {
             debug( "Changing server properties file (for next start): " + oldFile.getCanonicalPath() );
@@ -283,5 +376,36 @@ public class Neo4jRunner
             System.err.println( "Neo4jRunner: " + String.format( text, args ) );
         }
     }
+
+    public String home()
+    {
+        return home;
+    }
+
+    public File configFile()
+    {
+        return new File( home, "conf/neo4j.conf" );
+    }
+
+    public URI httpURI()
+    {
+        return httpURI;
+    }
+
+    public URI boltURI()
+    {
+        return boltURI;
+    }
+
+    public SocketAddress httpAddress()
+    {
+        return httpAddress;
+    }
+
+    public SocketAddress boltAddress()
+    {
+        return boltAddress;
+    }
+
 }
 

@@ -21,16 +21,13 @@ package org.neo4j.driver.v1.integration;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.net.URI;
-
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Session;
-import org.neo4j.driver.v1.util.Neo4jRunner;
-import org.neo4j.driver.v1.util.TestNeo4j;
+import org.neo4j.driver.testing.TestNeo4j;
 
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.atLeastOnce;
@@ -51,7 +48,7 @@ public class LoggingIT
         Logger logger = mock( Logger.class );
 
         try( Driver driver = GraphDatabase.driver(
-                Neo4jRunner.DEFAULT_URI,
+                server.boltURI(),
                 Config.build().withLogging( logging ).toConfig() ) )
         {
             // When

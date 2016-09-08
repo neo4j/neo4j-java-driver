@@ -26,7 +26,7 @@ import org.junit.runner.RunWith;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.neo4j.driver.v1.util.TestNeo4jSession;
+import org.neo4j.driver.testing.TestNeo4jSession;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;

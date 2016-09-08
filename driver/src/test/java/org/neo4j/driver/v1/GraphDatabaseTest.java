@@ -22,7 +22,7 @@ package org.neo4j.driver.v1;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.driver.internal.DirectDriver;
-import org.neo4j.driver.v1.util.TestNeo4jSession;
+import org.neo4j.driver.testing.TestNeo4jSession;
 
 import java.net.URI;
 

@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1.util;
+package org.neo4j.driver.testing;
 
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
@@ -31,6 +31,11 @@ import java.net.URL;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.util.FileTools;
+import org.neo4j.driver.v1.util.Neo4jSettings;
+
+import static org.neo4j.driver.v1.util.Neo4jSettings.DEFAULT_TLS_CERT_PATH;
+import static org.neo4j.driver.v1.util.Neo4jSettings.DEFAULT_TLS_KEY_PATH;
 
 public class TestNeo4j implements TestRule
 {
@@ -97,14 +102,14 @@ public class TestNeo4j implements TestRule
         return tmpFile.toURI().toURL();
     }
 
-    public URI uri()
+    public URI boltURI()
     {
-        return Neo4jRunner.DEFAULT_URI;
+        return runner.boltURI();
     }
 
     public BoltServerAddress address()
     {
-        return Neo4jRunner.DEFAULT_ADDRESS;
+        return BoltServerAddress.from( runner.boltURI() );
     }
 
     static void clearDatabaseContents( Session session, String reason )
@@ -119,18 +124,29 @@ public class TestNeo4j implements TestRule
 
     public void updateEncryptionKeyAndCert( File key, File cert ) throws Exception
     {
-        FileTools.copyFile( key, Neo4jSettings.DEFAULT_TLS_KEY_FILE );
-        FileTools.copyFile( cert, Neo4jSettings.DEFAULT_TLS_CERT_FILE );
+        FileTools.copyFile( key, keyFile() );
+        FileTools.copyFile( cert, certFile() );
         runner.forceToRestart(); // needs to force to restart as no configuration changed
     }
 
     public void ensureProcedures( String jarName ) throws IOException
     {
-        File procedureJar = new File( Neo4jRunner.NEO4J_HOME, "plugins/" + jarName );
+        File procedureJar = new File( runner.home(), "plugins/" + jarName );
         if( !procedureJar.exists() )
         {
             FileTools.copyFile( new File( "src/test/resources", jarName ), procedureJar );
             runner.forceToRestart(); // needs to force to restart as no configuration changed
         }
     }
+
+    public File keyFile()
+    {
+        return new File( runner.home(), DEFAULT_TLS_KEY_PATH );
+    }
+
+    public File certFile()
+    {
+        return new File( runner.home(), DEFAULT_TLS_CERT_PATH );
+    }
+
 }

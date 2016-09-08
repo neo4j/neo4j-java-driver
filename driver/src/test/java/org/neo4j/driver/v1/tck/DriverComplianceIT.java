@@ -26,7 +26,7 @@ import org.junit.runner.RunWith;
 
 import java.io.IOException;
 
-import org.neo4j.driver.v1.util.TestNeo4j;
+import org.neo4j.driver.testing.TestNeo4j;
 
 /**
  * The base class to run all cucumber tests
