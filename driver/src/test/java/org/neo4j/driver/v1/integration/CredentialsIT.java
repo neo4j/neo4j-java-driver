@@ -23,6 +23,8 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 
+import java.util.HashMap;
+
 import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
@@ -35,6 +37,7 @@ import org.neo4j.driver.v1.util.TestNeo4j;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.neo4j.driver.v1.AuthTokens.basic;
+import static org.neo4j.driver.v1.AuthTokens.custom;
 import static org.neo4j.driver.v1.Values.ofValue;
 import static org.neo4j.driver.v1.Values.parameters;
 
@@ -82,6 +85,59 @@ public class CredentialsIT
         try( Driver driver = GraphDatabase.driver( neo4j.uri(), basic("thisisnotthepassword", password ) );
              Session ignored = driver.session() ) {
             //empty
+        }
+    }
+
+    @Test
+    public void shouldBeAbleToProvideRealmWithBasicAuth() throws Throwable
+    {
+        // Given
+        String password = "secret";
+        enableAuth( password );
+
+        // When & Then
+        try( Driver driver = GraphDatabase.driver( neo4j.uri(),
+                basic("neo4j", password, "native") );
+             Session session = driver.session() )
+        {
+            Value single = session.run( "CREATE () RETURN 1" ).single().get( 0 );
+            assertThat( single.asLong(), equalTo( 1L ) );
+        }
+    }
+
+    @Test
+    public void shouldBeAbleToConnectWithCustomToken() throws Throwable
+    {
+        // Given
+        String password = "secret";
+        enableAuth( password );
+
+        // When & Then
+        try( Driver driver = GraphDatabase.driver( neo4j.uri(),
+                custom("neo4j", password, "native", "basic" ) );
+             Session session = driver.session() )
+        {
+            Value single = session.run( "CREATE () RETURN 1" ).single().get( 0 );
+            assertThat( single.asLong(), equalTo( 1L ) );
+        }
+    }
+
+    @Test
+    public void shouldBeAbleToConnectWithCustomTokenWithAdditionalParameters() throws Throwable
+    {
+        // Given
+        String password = "secret";
+        enableAuth( password );
+        HashMap<String,Object> parameters = new HashMap<>();
+        parameters.put( "secret", 16 );
+
+        // When & Then
+        try( Driver driver = GraphDatabase.driver( neo4j.uri(),
+                custom("neo4j", password, "native", "basic", parameters ) );
+             Session session = driver.session() )
+        {
+            Value single = session.run( "CREATE () RETURN 1" ).single().get( 0 );
+            assertThat( single.asLong(), equalTo( 1L ) );
         }
     }
 
