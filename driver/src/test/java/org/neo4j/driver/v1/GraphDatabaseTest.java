@@ -19,6 +19,7 @@
 
 package org.neo4j.driver.v1;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.driver.internal.ClusterDriver;
 import org.neo4j.driver.internal.DirectDriver;
@@ -47,7 +48,7 @@ public class GraphDatabaseTest
 
     }
 
-    @Test
+    @Ignore
     public void boltPlusDiscoverySchemeShouldInstantiateClusterDriver() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given

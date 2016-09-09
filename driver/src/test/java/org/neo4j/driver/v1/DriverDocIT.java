@@ -21,18 +21,21 @@ package org.neo4j.driver.v1;
 import javadoctest.DocSnippet;
 import javadoctest.DocTestRunner;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.runner.RunWith;
-import org.neo4j.driver.v1.util.StubServer;
 
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
+
+import org.neo4j.driver.v1.util.StubServer;
 
 import static org.hamcrest.core.IsEqual.equalTo;
 
 @RunWith( DocTestRunner.class )
 public class DriverDocIT
 {
+    @Ignore
     /** @see Driver */
     @SuppressWarnings("unchecked")
     public void exampleUsage( DocSnippet snippet ) throws IOException, InterruptedException, StubServer.ForceKilled

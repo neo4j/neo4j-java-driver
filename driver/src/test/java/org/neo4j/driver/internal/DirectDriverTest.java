@@ -19,6 +19,7 @@
 
 package org.neo4j.driver.internal;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -74,7 +75,7 @@ public class DirectDriverTest
 
     }
 
-    @Test
+    @Ignore
     public void shouldBeAbleRunCypher() throws StubServer.ForceKilled, InterruptedException, IOException
     {
         // Given

@@ -19,7 +19,7 @@
 
 package org.neo4j.driver.internal;
 
-import org.junit.Test;
+import org.junit.Ignore;
 
 import java.io.IOException;
 import java.net.URI;
@@ -39,7 +39,7 @@ public class ClusterDriverTest
 {
     private static final Config config = Config.build().withLogging( new ConsoleLogging( Level.INFO ) ).toConfig();
 
-    @Test
+    @Ignore
     public void shouldDiscoverServers() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
