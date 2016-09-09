@@ -20,17 +20,17 @@
 package org.neo4j.driver.internal;
 
 import org.junit.Test;
-import org.neo4j.driver.internal.logging.ConsoleLogging;
-import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.v1.Config;
-import org.neo4j.driver.v1.Driver;
-import org.neo4j.driver.v1.GraphDatabase;
-import org.neo4j.driver.v1.util.StubServer;
 
 import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 import java.util.logging.Level;
+
+import org.neo4j.driver.internal.logging.ConsoleLogging;
+import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.v1.Config;
+import org.neo4j.driver.v1.GraphDatabase;
+import org.neo4j.driver.v1.util.StubServer;
 
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
@@ -47,7 +47,7 @@ public class ClusterDriverTest
         URI uri = URI.create( "bolt+discovery://127.0.0.1:9001" );
 
         // When
-        try ( Driver driver = GraphDatabase.driver( uri, config ) )
+        try ( ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config ) )
         {
             // Then
             List<BoltServerAddress> addresses = driver.servers();

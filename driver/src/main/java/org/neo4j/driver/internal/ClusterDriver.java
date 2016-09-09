@@ -19,6 +19,9 @@
 
 package org.neo4j.driver.internal;
 
+import java.util.LinkedList;
+import java.util.List;
+
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.net.pooling.PoolSettings;
 import org.neo4j.driver.internal.net.pooling.SocketConnectionPool;
@@ -30,9 +33,6 @@ import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.util.Function;
-
-import java.util.LinkedList;
-import java.util.List;
 
 import static java.lang.String.format;
 
@@ -50,7 +50,7 @@ public class ClusterDriver extends BaseDriver
         discover();
     }
 
-    public void discover()
+    void discover()
     {
         final List<BoltServerAddress> newServers = new LinkedList<>(  );
         try

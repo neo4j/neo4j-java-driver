@@ -20,16 +20,17 @@
 package org.neo4j.driver.internal;
 
 import org.junit.Test;
+
+import java.io.IOException;
+import java.net.URI;
+import java.util.Collection;
+
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.util.StubServer;
-
-import java.io.IOException;
-import java.net.URI;
-import java.util.Collection;
 
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
@@ -44,7 +45,7 @@ public class DirectDriverTest
         URI uri = URI.create( "bolt://localhost" );
 
         // When
-        Driver driver = GraphDatabase.driver( uri );
+        DirectDriver driver = (DirectDriver) GraphDatabase.driver( uri );
 
         // Then
         Collection<BoltServerAddress> addresses = driver.servers();
@@ -64,7 +65,7 @@ public class DirectDriverTest
         BoltServerAddress address = BoltServerAddress.from( uri );
 
         // When
-        Driver driver = GraphDatabase.driver( uri );
+        DirectDriver driver = (DirectDriver) GraphDatabase.driver( uri );
 
         // Then
         Collection<BoltServerAddress> addresses = driver.servers();

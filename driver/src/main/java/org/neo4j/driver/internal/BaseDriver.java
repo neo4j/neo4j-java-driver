@@ -19,17 +19,17 @@
 
 package org.neo4j.driver.internal;
 
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
+
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Session;
-
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 
 abstract class BaseDriver implements Driver
 {
@@ -50,8 +50,7 @@ abstract class BaseDriver implements Driver
         return securityPlan.requiresEncryption();
     }
 
-    @Override
-    public List<BoltServerAddress> servers()
+    List<BoltServerAddress> servers()
     {
         return Collections.unmodifiableList( servers );
     }
