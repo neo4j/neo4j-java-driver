@@ -31,6 +31,7 @@ import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.ConnectionFailureException;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -63,7 +64,7 @@ public class ErrorIT
         Transaction tx = session.beginTransaction();
 
         // And Given an error has occurred
-        try { tx.run( "invalid" ).consume(); } catch ( ClientException e ) {}
+        try { tx.run( "invalid" ).consume(); } catch ( ClientException e ) {/*empty*/}
 
         // Expect
         exception.expect( ClientException.class );
@@ -79,7 +80,7 @@ public class ErrorIT
     public void shouldAllowNewStatementAfterRecoverableError() throws Throwable
     {
         // Given an error has occurred
-        try { session.run( "invalid" ).consume(); } catch ( ClientException e ) {}
+        try { session.run( "invalid" ).consume(); } catch ( ClientException e ) {/*empty*/}
 
         // When
         StatementResult cursor = session.run( "RETURN 1" );
@@ -97,7 +98,7 @@ public class ErrorIT
         {
             tx.run( "invalid" ).consume();
         }
-        catch ( ClientException e ) {}
+        catch ( ClientException e ) {/*empty*/}
 
         // When
         try ( Transaction tx = session.beginTransaction() )
@@ -114,13 +115,14 @@ public class ErrorIT
     public void shouldExplainConnectionError() throws Throwable
     {
         // Expect
-        exception.expect( ClientException.class );
+        exception.expect( ConnectionFailureException.class );
         exception.expectMessage( "Unable to connect to localhost:7777, ensure the database is running " +
                                  "and that there is a working network connection to it." );
 
         // When
+        //noinspection EmptyTryBlock
         try ( Driver driver = GraphDatabase.driver( "bolt://localhost:7777" );
-              Session session = driver.session()) {}
+              Session ignore = driver.session()) {/*empty*/}
     }
 
     @Test
@@ -165,7 +167,8 @@ public class ErrorIT
                     "(HTTP defaults to port 7474 whereas BOLT defaults to port 7687)" );
 
             // When
-            try(Session session = driver.session() ){}
+            //noinspection EmptyTryBlock
+            try(Session ignore = driver.session() ){/*empty*/}
         }
     }
 

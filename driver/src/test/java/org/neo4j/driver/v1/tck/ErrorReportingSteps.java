@@ -35,12 +35,13 @@ import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.ConnectionFailureException;
 
 import static junit.framework.Assert.assertNull;
 import static junit.framework.TestCase.assertNotNull;
-import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.driver.v1.tck.Environment.driver;
 
 public class ErrorReportingSteps
@@ -176,7 +177,9 @@ public class ErrorReportingSteps
     public void itThrowsAnClientException( List<String> data ) throws Throwable
     {
         assertNotNull( exception );
-        assertThat( exception, instanceOf( ClientException.class ) );
+        //TODO tck needs update, connection failures should not be client exceptions
+        assertTrue( exception instanceof ConnectionFailureException ||
+                    exception instanceof ClientException );
         assertThat( exception.getMessage(), startsWith( data.get( 1 ) ) );
     }
 

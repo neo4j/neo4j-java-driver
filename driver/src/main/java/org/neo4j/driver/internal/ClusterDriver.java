@@ -26,13 +26,16 @@ import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.net.pooling.PoolSettings;
 import org.neo4j.driver.internal.net.pooling.SocketConnectionPool;
 import org.neo4j.driver.internal.security.SecurityPlan;
+import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
+import org.neo4j.driver.internal.util.Consumer;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.util.Function;
+import org.neo4j.driver.v1.exceptions.ClusterUnavailableException;
+import org.neo4j.driver.v1.exceptions.ConnectionFailureException;
 
 import static java.lang.String.format;
 
@@ -55,18 +58,29 @@ public class ClusterDriver extends BaseDriver
         final List<BoltServerAddress> newServers = new LinkedList<>(  );
         try
         {
-            call( DISCOVER_MEMBERS, new Function<Record, Integer>()
+            boolean success = false;
+            while ( !servers.isEmpty() && !success )
             {
-                @Override
-                public Integer apply( Record record )
+                success = call( DISCOVER_MEMBERS, new Consumer<Record>()
                 {
-                    newServers.add( new BoltServerAddress( record.get( "address" ).asString() ) );
-                    return 0;
-                }
-            } );
-            this.servers.clear();
-            this.servers.addAll( newServers );
-            log.debug( "~~ [MEMBERS] -> %s", newServers );
+                    @Override
+                    public void accept( Record record )
+                    {
+                        newServers.add( new BoltServerAddress( record.get( "address" ).asString() ) );
+                    }
+                } );
+
+            }
+            if ( success )
+            {
+                this.servers.clear();
+                this.servers.addAll( newServers );
+                log.debug( "~~ [MEMBERS] -> %s", newServers );
+            }
+            else
+            {
+                throw new ClusterUnavailableException( "Run out of servers" );
+            }
         }
         catch ( ClientException ex )
         {
@@ -81,16 +95,31 @@ public class ClusterDriver extends BaseDriver
         }
     }
 
-    void call( String procedureName, Function<Record, Integer> recorder )
+    private boolean call( String procedureName, Consumer<Record> recorder )
     {
-        try ( Session session = new NetworkSession( connections.acquire( randomServer() ), log ) )
+
+        BoltServerAddress address = randomServer();
+        Connection acquire =  connections.acquire( address );
+        try ( Session session = new NetworkSession( acquire, log ) )
         {
             StatementResult records = session.run( format( "CALL %s", procedureName ) );
             while ( records.hasNext() )
             {
-                recorder.apply( records.next() );
+                recorder.accept( records.next() );
             }
         }
+        catch ( ConnectionFailureException e )
+        {
+            forget(address );
+            return false;
+        }
+        return true;
+    }
+
+    private void forget(BoltServerAddress address)
+    {
+        servers.remove( address );
+        connections.purge(address);
     }
 
     @Override

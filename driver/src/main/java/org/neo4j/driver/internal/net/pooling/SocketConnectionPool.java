@@ -136,6 +136,24 @@ public class SocketConnectionPool implements ConnectionPool
     }
 
     @Override
+    public void purge( BoltServerAddress address )
+    {
+        BlockingQueue<PooledConnection> connections = pools.get( address );
+        if ( connections == null )
+        {
+            return;
+        }
+        while (!connections.isEmpty())
+        {
+            PooledConnection connection = connections.poll();
+            if ( connection != null)
+            {
+                connection.dispose();
+            }
+        }
+    }
+
+    @Override
     public void close()
     {
         if( !stopped.compareAndSet( false, true ) )

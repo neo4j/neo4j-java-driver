@@ -24,7 +24,7 @@ import org.junit.Test;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
-import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.ConnectionFailureException;
 import org.neo4j.driver.v1.util.Neo4jRunner;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
@@ -68,7 +68,7 @@ public class ServerKilledIT
                 {
                     s.run( "RETURN 'Hello, world!'" );
                 }
-                catch ( ClientException e )
+                catch ( ConnectionFailureException e )
                 {
                     if ( toleratedFailures-- == 0 )
                     {

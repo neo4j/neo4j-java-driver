@@ -27,6 +27,7 @@ import java.nio.channels.ReadableByteChannel;
 import org.neo4j.driver.internal.packstream.PackInput;
 import org.neo4j.driver.internal.util.BytePrinter;
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.ConnectionFailureException;
 
 import static java.lang.Math.min;
 
@@ -408,15 +409,15 @@ public class BufferingChunkedInput implements PackInput
             int read = channel.read( buffer );
             if ( read == -1 )
             {
-                throw new ClientException(
+                throw new ConnectionFailureException(
                         "Connection terminated while receiving data. This can happen due to network " +
-                        "instabilities, or due to restarts of the database." );
+                        "instabilities, or due to restarts of the database.");
             }
             buffer.flip();
         }
         catch ( ClosedByInterruptException e )
         {
-            throw new ClientException(
+            throw new ConnectionFailureException(
                     "Connection to the database was lost because someone called `interrupt()` on the driver " +
                     "thread waiting for a reply. " +
                     "This normally happens because the JVM is shutting down, but it can also happen because your " +

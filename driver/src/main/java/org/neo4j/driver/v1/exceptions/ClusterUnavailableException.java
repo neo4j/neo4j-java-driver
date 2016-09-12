@@ -16,24 +16,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.neo4j.driver.v1.exceptions;
 
-package org.neo4j.driver.internal.spi;
-
-import org.neo4j.driver.internal.net.BoltServerAddress;
-
-public interface ConnectionPool extends AutoCloseable
+/**
+ * An <em>ClusterUnavailableException</em> indicates that the driver cannot communicate with the cluster.
+ * @since 1.1
+ */
+public class ClusterUnavailableException extends Neo4jException
 {
-    /**
-     * Acquire a connection - if a live connection exists in the pool, it will
-     * be used, otherwise a new connection will be created.
-     *
-     * @param address The address to acquire
-     */
-    Connection acquire( BoltServerAddress address );
-
-    /**
-     * Removes all connections to a given address from the pool.
-     * @param address The address to remove.
-     */
-    void purge( BoltServerAddress address );
+    public ClusterUnavailableException( String message )
+    {
+        super( message );
+    }
 }
