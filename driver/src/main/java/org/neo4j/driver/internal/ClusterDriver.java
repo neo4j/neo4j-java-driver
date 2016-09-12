@@ -29,9 +29,11 @@ import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Consumer;
+import org.neo4j.driver.internal.util.Supplier;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.SessionMode;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ClusterUnavailableException;
@@ -42,6 +44,8 @@ import static java.lang.String.format;
 public class ClusterDriver extends BaseDriver
 {
     private static final String DISCOVER_MEMBERS = "dbms.cluster.discoverMembers";
+    private static final String ACQUIRE_ENDPOINTS = "dbms.cluster.acquireEndpoints";
+    private static final int MINIMUM_NUMBER_OF_SERVERS = 3;
 
     private final ConnectionPool connections;
 
@@ -122,10 +126,56 @@ public class ClusterDriver extends BaseDriver
         connections.purge(address);
     }
 
+    //TODO this could return a WRITE session but that may lead to users using the LEADER too much
+    //a `ClientException` may be what we want
     @Override
     public Session session()
     {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Session session( final SessionMode mode )
+    {
+        return new ClusteredSession( new Supplier<Connection>()
+        {
+            @Override
+            public Connection get()
+            {
+                return acquireConnection( mode );
+            }
+        }, log );
+    }
+
+    private Connection acquireConnection( SessionMode mode )
+    {
+        //if we are short on servers, find new ones
+        if ( servers.size() < MINIMUM_NUMBER_OF_SERVERS )
+        {
+            discover();
+        }
+
+        final BoltServerAddress[] addresses = new BoltServerAddress[2];
+        call( ACQUIRE_ENDPOINTS, new Consumer<Record>()
+        {
+            @Override
+            public void accept( Record record )
+            {
+                addresses[0] = new BoltServerAddress( record.get( "READ" ).asString() );
+                addresses[1] = new BoltServerAddress( record.get( "WRITE" ).asString() );
+            }
+        } );
+
+
+        switch ( mode )
+        {
+        case READ:
+            return connections.acquire( addresses[0] );
+        case WRITE:
+            return connections.acquire( addresses[0] );
+        default:
+            throw new ClientException( mode + " is not supported for creating new sessions" );
+        }
     }
 
     @Override

@@ -38,7 +38,7 @@ import static org.neo4j.driver.v1.Values.value;
 
 public class NetworkSession implements Session
 {
-    private final Connection connection;
+    protected Connection connection;
     private final Logger logger;
 
     private String lastBookmark = null;

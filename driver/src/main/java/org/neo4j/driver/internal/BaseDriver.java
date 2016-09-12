@@ -20,8 +20,8 @@
 package org.neo4j.driver.internal;
 
 import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
@@ -35,7 +35,7 @@ abstract class BaseDriver implements Driver
 {
     private final SecurityPlan securityPlan;
     protected final Logger log;
-    protected final List<BoltServerAddress> servers = new LinkedList<>();
+    protected final Set<BoltServerAddress> servers = new HashSet<>();
 
     BaseDriver( BoltServerAddress address, SecurityPlan securityPlan, Logging logging )
     {
@@ -50,14 +50,26 @@ abstract class BaseDriver implements Driver
         return securityPlan.requiresEncryption();
     }
 
-    List<BoltServerAddress> servers()
+    Set<BoltServerAddress> servers()
     {
-        return Collections.unmodifiableList( servers );
+        return Collections.unmodifiableSet( servers );
     }
 
+    //This is somewhat silly and has O(n) complexity
     protected BoltServerAddress randomServer()
     {
-        return servers.get( ThreadLocalRandom.current().nextInt( 0, servers.size() ) );
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        int item = random.nextInt(servers.size());
+        int i = 0;
+        for ( BoltServerAddress server : servers )
+        {
+            if (i == item)
+            {
+                return server;
+            }
+        }
+
+        throw new IllegalStateException( "This cannot happen" );
     }
 
 }

@@ -26,6 +26,7 @@ import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.SessionMode;
 
 import static java.lang.String.format;
 
@@ -44,6 +45,12 @@ public class DirectDriver extends BaseDriver
     public Session session()
     {
         return new NetworkSession( connections.acquire( randomServer() ), log );
+    }
+
+    @Override
+    public Session session( SessionMode ignore )
+    {
+        return session();
     }
 
     @Override
