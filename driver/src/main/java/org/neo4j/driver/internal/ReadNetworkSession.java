@@ -20,28 +20,33 @@ package org.neo4j.driver.internal;
 
 
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.util.Consumer;
 import org.neo4j.driver.internal.util.Supplier;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementResult;
-import org.neo4j.driver.v1.exceptions.ClusterUnavailableException;
 import org.neo4j.driver.v1.exceptions.ConnectionFailureException;
+import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
-public class ClusteredSession extends NetworkSession
+public class ReadNetworkSession extends NetworkSession
 {
-    private static final int RETRIES = 3;
     private final Supplier<Connection> connectionSupplier;
+    private final Consumer<Connection> failed;
+    private final ClusterSettings clusterSettings;
 
-    ClusteredSession(Supplier<Connection> connectionSupplier, Logger logger )
+    ReadNetworkSession(Supplier<Connection> connectionSupplier, Consumer<Connection> failed,
+            ClusterSettings clusterSettings, Logger logger )
     {
         super(connectionSupplier.get(), logger);
         this.connectionSupplier = connectionSupplier;
+        this.clusterSettings = clusterSettings;
+        this.failed = failed;
     }
 
     @Override
     public StatementResult run( Statement statement )
     {
-        for ( int i = 0; i < RETRIES; i++ )
+        for ( int i = 0; i < clusterSettings.readRetry(); i++ )
         {
             try
             {
@@ -49,11 +54,11 @@ public class ClusteredSession extends NetworkSession
             }
             catch ( ConnectionFailureException e )
             {
-                //connection
+                failed.accept(connection);
                 connection = connectionSupplier.get();
             }
         }
 
-        throw new ClusterUnavailableException( "Not able to connect to any members of the cluster" );
+        throw new ServiceUnavailableException( "Not able to connect to any members of the cluster" );
     }
 }

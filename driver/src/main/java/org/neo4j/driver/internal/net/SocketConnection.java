@@ -29,8 +29,8 @@ import org.neo4j.driver.internal.messaging.InitMessage;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.RunMessage;
 import org.neo4j.driver.internal.security.SecurityPlan;
-import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.Collector;
+import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Value;
@@ -237,5 +237,11 @@ public class SocketConnection implements Connection
     public String server()
     {
         return initCollector.server(  );
+    }
+
+    @Override
+    public BoltServerAddress address()
+    {
+        return this.socket.address();
     }
 }

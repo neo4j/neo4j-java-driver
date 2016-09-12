@@ -23,6 +23,7 @@ import java.net.URI;
 import java.security.GeneralSecurityException;
 
 import org.neo4j.driver.internal.ClusterDriver;
+import org.neo4j.driver.internal.ClusterSettings;
 import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.DirectDriver;
 import org.neo4j.driver.internal.net.BoltServerAddress;
@@ -171,7 +172,7 @@ public class GraphDatabase
         case "bolt":
             return new DirectDriver( address, connectionSettings, securityPlan, poolSettings, config.logging() );
         case "bolt+discovery":
-            return new ClusterDriver( address, connectionSettings, securityPlan, poolSettings, config.logging() );
+            return new ClusterDriver( address, connectionSettings, ClusterSettings.fromConfig( config ), securityPlan, poolSettings, config.logging() );
         default:
             throw new ClientException( format( "Unsupported URI scheme: %s", scheme ) );
         }

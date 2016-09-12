@@ -20,8 +20,9 @@ package org.neo4j.driver.internal.net.pooling;
 
 import java.util.Map;
 
-import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Collector;
+import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Consumer;
 import org.neo4j.driver.v1.Value;
@@ -234,6 +235,12 @@ public class PooledConnection implements Connection
     public String server()
     {
         return delegate.server();
+    }
+
+    @Override
+    public BoltServerAddress address()
+    {
+        return delegate.address();
     }
 
     public void dispose()

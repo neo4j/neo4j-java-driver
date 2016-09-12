@@ -293,4 +293,9 @@ public class SocketClient
             return channel;
         }
     }
+
+    public BoltServerAddress address()
+    {
+        return address;
+    }
 }

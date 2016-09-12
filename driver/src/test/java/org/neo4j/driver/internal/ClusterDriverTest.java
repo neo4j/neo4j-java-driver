@@ -19,7 +19,9 @@
 
 package org.neo4j.driver.internal;
 
-import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
 import java.net.URI;
@@ -33,18 +35,23 @@ import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.util.StubServer;
 
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
 
 public class ClusterDriverTest
 {
+
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
+
     private static final Config config = Config.build().withLogging( new ConsoleLogging( Level.INFO ) ).toConfig();
 
-    @Ignore
+    @Test
     public void shouldDiscoverServers() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
-        StubServer server = StubServer.start( "../driver/src/test/resources/discovery.script", 9001 );
+        StubServer server = StubServer.start( "../driver/src/test/resources/discover_servers.script", 9001 );
         URI uri = URI.create( "bolt+discovery://127.0.0.1:9001" );
 
         // When
@@ -52,7 +59,7 @@ public class ClusterDriverTest
         {
             // Then
             Set<BoltServerAddress> addresses = driver.servers();
-            assertThat( addresses.size(), equalTo( 3 ) );
+            assertThat( addresses, hasSize( 3 ) );
             assertThat( addresses, hasItem( new BoltServerAddress( "127.0.0.1", 9001 ) ) );
             assertThat( addresses, hasItem( new BoltServerAddress( "127.0.0.1", 9002 ) ) );
             assertThat( addresses, hasItem( new BoltServerAddress( "127.0.0.1", 9003 ) ) );
@@ -62,4 +69,26 @@ public class ClusterDriverTest
         assertThat( server.exitStatus(), equalTo( 0 ) );
     }
 
+    @Test
+    public void shouldDiscoverNewServers() throws IOException, InterruptedException, StubServer.ForceKilled
+    {
+        // Given
+        StubServer server = StubServer.start( "../driver/src/test/resources/discover_new_servers.script", 9001 );
+        URI uri = URI.create( "bolt+discovery://127.0.0.1:9001" );
+
+        // When
+        try ( ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config ) )
+        {
+            // Then
+            Set<BoltServerAddress> addresses = driver.servers();
+            assertThat( addresses, hasSize( 4 ) );
+            assertThat( addresses, hasItem( new BoltServerAddress( "127.0.0.1", 9001 ) ) );
+            assertThat( addresses, hasItem( new BoltServerAddress( "127.0.0.1", 9002 ) ) );
+            assertThat( addresses, hasItem( new BoltServerAddress( "127.0.0.1", 9003 ) ) );
+            assertThat( addresses, hasItem( new BoltServerAddress( "127.0.0.1", 9004 ) ) );
+        }
+
+        // Finally
+        assertThat( server.exitStatus(), equalTo( 0 ) );
+    }
 }

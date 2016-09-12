@@ -19,13 +19,11 @@
 
 package org.neo4j.driver.internal;
 
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.security.SecurityPlan;
+import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
@@ -35,11 +33,12 @@ abstract class BaseDriver implements Driver
 {
     private final SecurityPlan securityPlan;
     protected final Logger log;
-    protected final Set<BoltServerAddress> servers = new HashSet<>();
+    protected final ConnectionPool connections;
 
-    BaseDriver( BoltServerAddress address, SecurityPlan securityPlan, Logging logging )
+    BaseDriver( ConnectionPool connections, BoltServerAddress address, SecurityPlan securityPlan, Logging logging )
     {
-        this.servers.add( address );
+        this.connections = connections;
+        this.connections.add( address );
         this.securityPlan = securityPlan;
         this.log = logging.getLog( Session.LOG_NAME );
     }
@@ -50,26 +49,9 @@ abstract class BaseDriver implements Driver
         return securityPlan.requiresEncryption();
     }
 
+    //Used for testing
     Set<BoltServerAddress> servers()
     {
-        return Collections.unmodifiableSet( servers );
+        return connections.addresses();
     }
-
-    //This is somewhat silly and has O(n) complexity
-    protected BoltServerAddress randomServer()
-    {
-        ThreadLocalRandom random = ThreadLocalRandom.current();
-        int item = random.nextInt(servers.size());
-        int i = 0;
-        for ( BoltServerAddress server : servers )
-        {
-            if (i == item)
-            {
-                return server;
-            }
-        }
-
-        throw new IllegalStateException( "This cannot happen" );
-    }
-
 }

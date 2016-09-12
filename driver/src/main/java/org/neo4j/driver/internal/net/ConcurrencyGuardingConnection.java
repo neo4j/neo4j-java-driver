@@ -21,8 +21,8 @@ package org.neo4j.driver.internal.net;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.Collector;
+import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
@@ -233,5 +233,11 @@ public class ConcurrencyGuardingConnection implements Connection
     public String server()
     {
         return delegate.server();
+    }
+
+    @Override
+    public BoltServerAddress address()
+    {
+        return delegate.address();
     }
 }

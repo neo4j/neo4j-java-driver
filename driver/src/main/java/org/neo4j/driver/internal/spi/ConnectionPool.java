@@ -19,6 +19,8 @@
 
 package org.neo4j.driver.internal.spi;
 
+import java.util.Set;
+
 import org.neo4j.driver.internal.net.BoltServerAddress;
 
 public interface ConnectionPool extends AutoCloseable
@@ -32,8 +34,39 @@ public interface ConnectionPool extends AutoCloseable
     Connection acquire( BoltServerAddress address );
 
     /**
+     * Acquire a connection to one of the addresses that are currently in the pool
+     * @return A connection to one of the addresses in the pool
+     * @throws IllegalStateException if the pool is empty
+     */
+    Connection acquire();
+
+    /**
      * Removes all connections to a given address from the pool.
      * @param address The address to remove.
      */
     void purge( BoltServerAddress address );
+
+    /**
+     * Checks if the connection pool is empty
+     * @return <code>true</code> if the pool is empty, otherwise <code>false</code>
+     */
+    boolean isEmpty();
+
+    /**
+     * Returns the number of addresses stored in the pool.
+     * @return the current number of addresses stored in the pool
+     */
+    int addressCount();
+
+    /**
+     * Adds an address to the pool.
+     * @param address the address to add
+     */
+    void add( BoltServerAddress address );
+
+    /**
+     * Returns all addresses known by the pool
+     * @return the addresses known by the pool
+     */
+    Set<BoltServerAddress> addresses();
 }
