@@ -26,7 +26,6 @@ import org.neo4j.driver.internal.net.pooling.SocketConnectionPool;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Consumer;
-import org.neo4j.driver.internal.util.Supplier;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
@@ -180,6 +179,10 @@ public class ClusterDriver extends BaseDriver
     private synchronized void forget( BoltServerAddress address )
     {
         connections.purge( address );
+        if ( endpoints.contains( address ) )
+        {
+            endpoints.clear();
+        }
     }
 
     @Override
@@ -191,32 +194,17 @@ public class ClusterDriver extends BaseDriver
     @Override
     public Session session( final SessionMode mode )
     {
-        switch ( mode )
+        return new ClusteredNetworkSession( acquireConnection( mode ), clusterSettings, new Consumer<BoltServerAddress>()
         {
-        case READ:
-            return new ReadNetworkSession( new Supplier<Connection>()
+            @Override
+            public void accept( BoltServerAddress address )
             {
-                @Override
-                public Connection get()
-                {
-                    return acquireConnection( mode );
-                }
-            }, new Consumer<Connection>()
-            {
-                @Override
-                public void accept( Connection connection )
-                {
-                    forget( connection.address() );
-                }
-            }, clusterSettings, log );
-        case WRITE:
-            return new WriteNetworkSession( acquireConnection( mode ), clusterSettings, log );
-        default:
-            throw new UnsupportedOperationException();
-        }
+                forget( address );
+            }
+        }, log );
     }
 
-    private synchronized Connection acquireConnection( SessionMode mode )
+    private Connection acquireConnection( SessionMode mode )
     {
         if (!discoverable)
         {
@@ -228,7 +216,24 @@ public class ClusterDriver extends BaseDriver
         {
             discover();
         }
+        if ( !endpoints.valid() )
+        {
+            discoverEndpoints();
+        }
 
+        switch ( mode )
+        {
+        case READ:
+            return connections.acquire( endpoints.readServer );
+        case WRITE:
+            return connections.acquire( endpoints.writeServer );
+        default:
+            throw new ClientException( mode + " is not supported for creating new sessions" );
+        }
+    }
+
+    private synchronized void discoverEndpoints()
+    {
         endpoints.clear();
         try
         {
@@ -255,7 +260,9 @@ public class ClusterDriver extends BaseDriver
             {
                 log.warn( "Could not find procedure %s", ACQUIRE_ENDPOINTS );
                 discoverable = false;
-                return connections.acquire();
+                Connection connection = connections.acquire();
+                endpoints.readServer = connection.address();
+                endpoints.writeServer = connection.address();
             }
             throw e;
         }
@@ -263,17 +270,6 @@ public class ClusterDriver extends BaseDriver
         if ( !endpoints.valid() )
         {
             throw new ServiceUnavailableException("Could not establish any endpoints for the call");
-        }
-
-
-        switch ( mode )
-        {
-        case READ:
-            return connections.acquire( endpoints.readServer );
-        case WRITE:
-            return connections.acquire( endpoints.writeServer );
-        default:
-            throw new ClientException( mode + " is not supported for creating new sessions" );
         }
     }
 
@@ -292,8 +288,8 @@ public class ClusterDriver extends BaseDriver
 
     private static class Endpoints
     {
-        BoltServerAddress readServer;
-        BoltServerAddress writeServer;
+        private BoltServerAddress readServer;
+        private BoltServerAddress writeServer;
 
         public boolean valid()
         {
@@ -304,6 +300,22 @@ public class ClusterDriver extends BaseDriver
         {
             readServer = null;
             writeServer = null;
+        }
+
+        boolean contains(BoltServerAddress address)
+        {
+            if (readServer != null && writeServer != null)
+            {
+                return readServer.equals( address ) || writeServer.equals( address );
+            }
+            else if ( readServer != null )
+            {
+                return readServer.equals( address );
+            }
+            else
+            {
+                return writeServer != null && writeServer.equals( address );
+            }
         }
     }
 

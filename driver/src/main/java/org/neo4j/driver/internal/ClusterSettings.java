@@ -23,23 +23,16 @@ import org.neo4j.driver.v1.Config;
 
 public class ClusterSettings
 {
-    private final int readRetry;
     private final int minimumNumberOfServers;
 
-    public ClusterSettings( int readRetry, int minimumNumberOfServers )
+    public ClusterSettings( int minimumNumberOfServers )
     {
-        this.readRetry = readRetry;
         this.minimumNumberOfServers = minimumNumberOfServers;
     }
 
     public static ClusterSettings fromConfig( Config config )
     {
-        return new ClusterSettings( config.maximumReadRetriesForCluster(), config.minimumKnownClusterSize() ) ;
-    }
-
-    public int readRetry()
-    {
-        return readRetry;
+        return new ClusterSettings( config.minimumKnownClusterSize() ) ;
     }
 
     public int minimumNumberOfServers()

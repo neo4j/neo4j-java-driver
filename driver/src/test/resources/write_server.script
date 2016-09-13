@@ -3,7 +3,7 @@
 !: AUTO RUN "RETURN 1 // JavaDriver poll to test connection" {}
 !: AUTO PULL_ALL
 
-C: RUN "CALL dbms.cluster.discoverEndpointAcquisitionServers" {}
+C: RUN "CREATE (n {name:'Bob'})" {}
    PULL_ALL
-S: SUCCESS {"fields": ["address"]}
+S: SUCCESS {}
    SUCCESS {}

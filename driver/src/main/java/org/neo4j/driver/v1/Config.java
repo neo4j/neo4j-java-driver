@@ -23,7 +23,6 @@ import java.util.logging.Level;
 
 import org.neo4j.driver.internal.logging.JULogging;
 import org.neo4j.driver.internal.net.pooling.PoolSettings;
-import org.neo4j.driver.v1.exceptions.ConnectionFailureException;
 import org.neo4j.driver.v1.util.Immutable;
 
 import static java.lang.System.getProperty;
@@ -64,7 +63,6 @@ public class Config
     private final TrustStrategy trustStrategy;
 
     private final int minServersInCluster;
-    private final int readRetries;
 
     private Config( ConfigBuilder builder)
     {
@@ -77,7 +75,6 @@ public class Config
         this.encryptionLevel = builder.encryptionLevel;
         this.trustStrategy = builder.trustStrategy;
         this.minServersInCluster = builder.minServersInCluster;
-        this.readRetries = builder.readRetries;
     }
 
     /**
@@ -135,14 +132,6 @@ public class Config
     }
 
     /**
-     * @return the number of retries to be attempted for read sessions
-     */
-    public int maximumReadRetriesForCluster()
-    {
-        return readRetries;
-    }
-
-    /**
      * @return the minimum number of servers the driver should know about.
      */
     public int minimumKnownClusterSize()
@@ -180,7 +169,6 @@ public class Config
         private TrustStrategy trustStrategy = trustOnFirstUse(
                 new File( getProperty( "user.home" ), ".neo4j" + File.separator + "known_hosts" ) );
         public int minServersInCluster = 3;
-        public int readRetries = 3;
 
         private ConfigBuilder() {}
 
@@ -282,21 +270,6 @@ public class Config
         public ConfigBuilder withTrustStrategy( TrustStrategy trustStrategy )
         {
             this.trustStrategy = trustStrategy;
-            return this;
-        }
-
-        /**
-         * For read queries the driver can do automatic retries upon server failures,
-         *
-         * This setting specifies how many retries that should be attempted before giving up
-         * and throw a {@link ConnectionFailureException}. If not specified this setting defaults to 3 retries before
-         * giving up.
-         * @param retries The number or retries to attempt before giving up.
-         * @return this builder
-         */
-        public ConfigBuilder withMaximumReadRetriesForCluster( int retries )
-        {
-            this.readRetries = retries;
             return this;
         }
 

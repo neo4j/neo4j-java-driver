@@ -3,10 +3,16 @@
 !: AUTO RUN "RETURN 1 // JavaDriver poll to test connection" {}
 !: AUTO PULL_ALL
 
-C: RUN "CALL dbms.cluster.discoverMembers" {}
+C: RUN "CALL dbms.cluster.discoverEndpointAcquisitionServers" {}
    PULL_ALL
 S: SUCCESS {"fields": ["address"]}
    RECORD ["127.0.0.1:9001"]
    RECORD ["127.0.0.1:9002"]
    RECORD ["127.0.0.1:9003"]
+   SUCCESS {}
+C: RUN "CALL dbms.cluster.acquireEndpoints" {}
+   PULL_ALL
+S: SUCCESS {"fields": ["address", "role"]}
+   RECORD ["127.0.0.1:9005", "READ"]
+   RECORD ["127.0.0.1:9006", "WRITE"]
    SUCCESS {}

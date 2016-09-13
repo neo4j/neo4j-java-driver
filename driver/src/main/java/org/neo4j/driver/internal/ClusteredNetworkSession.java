@@ -19,46 +19,37 @@
 package org.neo4j.driver.internal;
 
 
+import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Consumer;
-import org.neo4j.driver.internal.util.Supplier;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.exceptions.ConnectionFailureException;
-import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 
-public class ReadNetworkSession extends NetworkSession
+public class ClusteredNetworkSession extends NetworkSession
 {
-    private final Supplier<Connection> connectionSupplier;
-    private final Consumer<Connection> failed;
-    private final ClusterSettings clusterSettings;
+    private final Consumer<BoltServerAddress> onFailedConnection;
 
-    ReadNetworkSession(Supplier<Connection> connectionSupplier, Consumer<Connection> failed,
-            ClusterSettings clusterSettings, Logger logger )
+    ClusteredNetworkSession( Connection connection, ClusterSettings clusterSettings, Consumer<BoltServerAddress> onFailedConnection, Logger logger )
     {
-        super(connectionSupplier.get(), logger);
-        this.connectionSupplier = connectionSupplier;
-        this.clusterSettings = clusterSettings;
-        this.failed = failed;
+        super( connection, logger );
+        this.onFailedConnection = onFailedConnection;
     }
 
     @Override
     public StatementResult run( Statement statement )
     {
-        for ( int i = 0; i < clusterSettings.readRetry(); i++ )
+        try
         {
-            try
-            {
-                return super.run( statement );
-            }
-            catch ( ConnectionFailureException e )
-            {
-                failed.accept(connection);
-                connection = connectionSupplier.get();
-            }
+            return new ClusteredStatementResult( super.run( statement ), connection.address(), onFailedConnection );
+        }//TODO we need to catch exceptions due to leader switches etc here
+        catch ( ConnectionFailureException e )
+        {
+            onFailedConnection.accept( connection.address() );
+            throw new SessionExpiredException( "Failed to perform write load to server", e );
         }
 
-        throw new ServiceUnavailableException( "Not able to connect to any members of the cluster" );
     }
 }
