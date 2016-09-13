@@ -34,6 +34,7 @@ import org.neo4j.driver.internal.security.TLSSocketChannel;
 import org.neo4j.driver.internal.util.BytePrinter;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.ConnectionFailureException;
 
 import static java.lang.String.format;
 import static java.nio.ByteOrder.BIG_ENDIAN;
@@ -76,7 +77,7 @@ public class SocketClient
             if (channel.read( buf ) < 0)
             {
                 String bufStr = BytePrinter.hex( buf ).trim();
-                throw new ClientException( format(
+                throw new ConnectionFailureException( format(
                         "Connection terminated while receiving data. This can happen due to network " +
                         "instabilities, or due to restarts of the database. Expected %s bytes, received %s.",
                         buf.limit(), bufStr.isEmpty() ? "none" : bufStr ) );
@@ -91,7 +92,7 @@ public class SocketClient
             if (channel.write( buf ) < 0)
             {
                 String bufStr = BytePrinter.hex( buf ).trim();
-                throw new ClientException( format(
+                throw new ConnectionFailureException( format(
                         "Connection terminated while sending data. This can happen due to network " +
                         "instabilities, or due to restarts of the database. Expected %s bytes, wrote %s.",
                         buf.limit(), bufStr.isEmpty() ? "none" :bufStr ) );
@@ -111,7 +112,7 @@ public class SocketClient
         }
         catch ( ConnectException e )
         {
-            throw new ClientException( format(
+            throw new ConnectionFailureException( format(
                     "Unable to connect to %s, ensure the database is running and that there is a " +
                     "working network connection to it.", address ) );
         }
@@ -182,6 +183,7 @@ public class SocketClient
         }
         catch ( IOException e )
         {
+            //noinspection StatementWithEmptyBody
             if ( e.getMessage().equals( "An existing connection was forcibly closed by the remote host" ) )
             {
                 // Swallow this exception as it is caused by connection already closed by server
@@ -290,5 +292,10 @@ public class SocketClient
 
             return channel;
         }
+    }
+
+    public BoltServerAddress address()
+    {
+        return address;
     }
 }

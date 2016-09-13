@@ -19,7 +19,11 @@
 
 package org.neo4j.driver.internal;
 
+import java.util.Set;
+
+import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.security.SecurityPlan;
+import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
@@ -29,9 +33,12 @@ abstract class BaseDriver implements Driver
 {
     private final SecurityPlan securityPlan;
     protected final Logger log;
+    protected final ConnectionPool connections;
 
-    BaseDriver( SecurityPlan securityPlan, Logging logging )
+    BaseDriver( ConnectionPool connections, BoltServerAddress address, SecurityPlan securityPlan, Logging logging )
     {
+        this.connections = connections;
+        this.connections.add( address );
         this.securityPlan = securityPlan;
         this.log = logging.getLog( Session.LOG_NAME );
     }
@@ -42,4 +49,9 @@ abstract class BaseDriver implements Driver
         return securityPlan.requiresEncryption();
     }
 
+    //Used for testing
+    Set<BoltServerAddress> servers()
+    {
+        return connections.addresses();
+    }
 }

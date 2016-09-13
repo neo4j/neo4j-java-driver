@@ -16,6 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.neo4j.driver.v1;
 
 import java.net.URI;
@@ -84,6 +85,8 @@ public interface Driver extends AutoCloseable
      * {@link Session#beginTransaction() a transaction }.
      */
     Session session();
+
+    Session session(SessionMode mode);
 
     /**
      * Close all the resources assigned to this driver

@@ -19,7 +19,11 @@
 
 package org.neo4j.driver.internal.net;
 
-import java.net.*;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.net.URI;
+import java.net.UnknownHostException;
 
 import static java.lang.String.format;
 
@@ -151,5 +155,4 @@ public class BoltServerAddress
             return false;
         }
     }
-
 }

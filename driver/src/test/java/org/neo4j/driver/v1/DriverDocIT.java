@@ -20,39 +20,35 @@ package org.neo4j.driver.v1;
 
 import javadoctest.DocSnippet;
 import javadoctest.DocTestRunner;
-import org.junit.Rule;
+import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.runner.RunWith;
 
+import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.neo4j.driver.v1.util.TestNeo4jSession;
+import org.neo4j.driver.v1.util.StubServer;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.core.IsEqual.equalTo;
 
 @RunWith( DocTestRunner.class )
 public class DriverDocIT
 {
-    @Rule
-    public TestNeo4jSession session = new TestNeo4jSession();
-
+    @Ignore
     /** @see Driver */
     @SuppressWarnings("unchecked")
-    public void exampleUsage( DocSnippet snippet )
+    public void exampleUsage( DocSnippet snippet ) throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // given
+        StubServer server = StubServer.start( "../driver/src/test/resources/driver_snippet.script" );
         snippet.addImport( List.class );
         snippet.addImport( LinkedList.class );
-        session.run( "MATCH (n) DETACH DELETE (n)" );
 
         // when
         snippet.run();
 
-        // then it should've created a bunch of data
-        StatementResult result = session.run( "MATCH (n) RETURN count(n)" );
-        assertEquals( 3, result.single().get( 0 ).asInt() );
-        assertThat( (List<String>)snippet.get( "names" ), containsInAnyOrder( "Bob", "Alice", "Tina" ) );
+        // then
+        Assert.assertThat( server.exitStatus(), equalTo( 0 ) );
     }
 }

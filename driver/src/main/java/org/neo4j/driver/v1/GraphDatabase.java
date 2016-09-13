@@ -18,16 +18,18 @@
  */
 package org.neo4j.driver.v1;
 
-import org.neo4j.driver.internal.DirectDriver;
+import java.io.IOException;
+import java.net.URI;
+import java.security.GeneralSecurityException;
+
+import org.neo4j.driver.internal.ClusterDriver;
+import org.neo4j.driver.internal.ClusterSettings;
 import org.neo4j.driver.internal.ConnectionSettings;
+import org.neo4j.driver.internal.DirectDriver;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.net.pooling.PoolSettings;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.v1.exceptions.ClientException;
-
-import java.io.IOException;
-import java.net.URI;
-import java.security.GeneralSecurityException;
 
 import static java.lang.String.format;
 import static org.neo4j.driver.internal.security.SecurityPlan.insecure;
@@ -165,10 +167,12 @@ public class GraphDatabase
                 config.idleTimeBeforeConnectionTest() );
 
         // And finally, construct the driver proper
-        switch ( scheme )
+        switch ( scheme.toLowerCase() )
         {
         case "bolt":
             return new DirectDriver( address, connectionSettings, securityPlan, poolSettings, config.logging() );
+        case "bolt+discovery":
+            return new ClusterDriver( address, connectionSettings, ClusterSettings.fromConfig( config ), securityPlan, poolSettings, config.logging() );
         default:
             throw new ClientException( format( "Unsupported URI scheme: %s", scheme ) );
         }
