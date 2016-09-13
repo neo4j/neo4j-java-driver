@@ -40,7 +40,7 @@ import static java.lang.String.format;
 
 public class ClusterDriver extends BaseDriver
 {
-    private static final String DISCOVER_MEMBERS = "dbms.cluster.discoverMembers";
+    private static final String DISCOVER_MEMBERS = "dbms.cluster.discoverEndpointAcquisitionServers";
     private static final String ACQUIRE_ENDPOINTS = "dbms.cluster.acquireEndpoints";
 
     private final Endpoints endpoints = new Endpoints();
@@ -210,7 +210,7 @@ public class ClusterDriver extends BaseDriver
                 }
             }, clusterSettings, log );
         case WRITE:
-            throw new UnsupportedOperationException();
+            return new WriteNetworkSession( acquireConnection( mode ), clusterSettings, log );
         default:
             throw new UnsupportedOperationException();
         }
@@ -237,7 +237,7 @@ public class ClusterDriver extends BaseDriver
                 @Override
                 public void accept( Record record )
                 {
-                    String serverMode = record.get( "mode" ).asString();
+                    String serverMode = record.get( "role" ).asString();
                     if ( serverMode.equals( "READ" ) )
                     {
                         endpoints.readServer = new BoltServerAddress( record.get( "address" ).asString() );

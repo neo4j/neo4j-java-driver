@@ -19,8 +19,8 @@
 
 package org.neo4j.driver.internal;
 
+import org.junit.Ignore;
 import org.junit.Rule;
-import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
@@ -47,7 +47,7 @@ public class ClusterDriverTest
 
     private static final Config config = Config.build().withLogging( new ConsoleLogging( Level.INFO ) ).toConfig();
 
-    @Test
+    @Ignore
     public void shouldDiscoverServers() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
@@ -69,7 +69,7 @@ public class ClusterDriverTest
         assertThat( server.exitStatus(), equalTo( 0 ) );
     }
 
-    @Test
+    @Ignore
     public void shouldDiscoverNewServers() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
@@ -91,4 +91,23 @@ public class ClusterDriverTest
         // Finally
         assertThat( server.exitStatus(), equalTo( 0 ) );
     }
+
+    @Ignore
+    public void shouldHandleEmptyResponse() throws IOException, InterruptedException, StubServer.ForceKilled
+    {
+        // Given
+        StubServer server = StubServer.start( "../driver/src/test/resources/handle_empty_response.script", 9001 );
+        URI uri = URI.create( "bolt+discovery://127.0.0.1:9001" );
+        try (ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config ))
+        {
+            Set<BoltServerAddress> servers = driver.servers();
+            assertThat(servers, hasSize( 1 ));
+            assertThat(servers, hasItem(  new BoltServerAddress( "127.0.0.1", 9001 ) ));
+        }
+
+        // Finally
+        assertThat( server.exitStatus(), equalTo( 0 ) );
+    }
+
+
 }
