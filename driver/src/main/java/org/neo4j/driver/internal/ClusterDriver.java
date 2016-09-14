@@ -286,6 +286,18 @@ public class ClusterDriver extends BaseDriver
         }
     }
 
+    //For testing
+    BoltServerAddress readServer()
+    {
+        return endpoints.readServer;
+    }
+
+    //For testing
+    BoltServerAddress writeServer()
+    {
+        return endpoints.writeServer;
+    }
+
     private static class Endpoints
     {
         private BoltServerAddress readServer;

@@ -179,7 +179,7 @@ public class SocketConnectionPool implements ConnectionPool
     @Override
     public void add( BoltServerAddress address )
     {
-        pools.putIfAbsent( address, new LinkedBlockingQueue<PooledConnection>(  ) );
+        pools.putIfAbsent( address, new LinkedBlockingQueue<PooledConnection>( poolSettings.maxIdleConnectionPoolSize() ) );
     }
 
     @Override
@@ -194,6 +194,7 @@ public class SocketConnectionPool implements ConnectionPool
         if ( pool == null )
         {
             pool = new LinkedBlockingQueue<>(poolSettings.maxIdleConnectionPoolSize());
+
             if ( pools.putIfAbsent( address, pool ) != null )
             {
                 // We lost a race to create the pool, dispose of the one we created, and recurse

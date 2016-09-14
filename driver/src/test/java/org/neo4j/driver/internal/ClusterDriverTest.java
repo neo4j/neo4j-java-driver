@@ -20,6 +20,7 @@ package org.neo4j.driver.internal;
 
 import org.junit.Ignore;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
@@ -37,13 +38,13 @@ import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.SessionMode;
-import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.util.StubServer;
 
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
@@ -163,18 +164,7 @@ public class ClusterDriverTest
         try ( ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config );
               Session session = driver.session( SessionMode.READ ) )
         {
-            StatementResult run = session.run( "MATCH (n) RETURN n.name" );
-            List<String> result = run.list( new Function<Record,String>()
-            {
-                @Override
-                public String apply( Record record )
-                {
-                    return record.get( "n.name" ).asString();
-                }
-            } );
-
-            assertThat( result, equalTo( Arrays.asList( "Bob", "Alice", "Tina" ) ) );
-
+            session.run( "MATCH (n) RETURN n.name" );
         }
         // Finally
         assertThat( server.exitStatus(), equalTo( 0 ) );
@@ -217,6 +207,57 @@ public class ClusterDriverTest
         {
             session.run( "CREATE (n {name:'Bob'})" );
         }
+        // Finally
+        assertThat( server.exitStatus(), equalTo( 0 ) );
+    }
+
+    @Ignore
+    public void shouldRememberEndpoints() throws IOException, InterruptedException, StubServer.ForceKilled
+    {
+        // Given
+        StubServer server = StubServer.start( resource( "acquire_endpoints.script" ), 9001 );
+
+        //START a read server
+        StubServer.start( resource( "read_server.script" ), 9005 );
+        URI uri = URI.create( "bolt+discovery://127.0.0.1:9001" );
+        try ( ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config );
+              Session session = driver.session( SessionMode.READ ) )
+        {
+            session.run( "MATCH (n) RETURN n.name" ).consume();
+
+            assertThat( driver.readServer(), equalTo( new BoltServerAddress( "127.0.0.1", 9005 ) ) );
+            assertThat( driver.writeServer(), equalTo( new BoltServerAddress( "127.0.0.1", 9006 ) ) );
+
+        }
+        // Finally
+        assertThat( server.exitStatus(), equalTo( 0 ) );
+    }
+
+    @Ignore
+    public void shouldForgetEndpointsOnFailure() throws IOException, InterruptedException, StubServer.ForceKilled
+    {
+        // Given
+        StubServer server = StubServer.start( resource( "acquire_endpoints.script" ), 9001 );
+
+        //START a read server
+        StubServer.start( resource( "dead_server.script" ), 9005 );
+        URI uri = URI.create( "bolt+discovery://127.0.0.1:9001" );
+        ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config );
+        try
+        {
+            Session session = driver.session( SessionMode.READ );
+            session.run( "MATCH (n) RETURN n.name" ).consume();
+            session.close();
+        }
+        catch ( SessionExpiredException e )
+        {
+            //ignore
+        }
+
+        assertThat( driver.readServer(), nullValue() );
+        assertThat( driver.writeServer(), nullValue() );
+        driver.close();
+
         // Finally
         assertThat( server.exitStatus(), equalTo( 0 ) );
     }

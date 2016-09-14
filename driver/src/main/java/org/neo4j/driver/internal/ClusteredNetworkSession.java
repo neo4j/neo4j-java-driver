@@ -19,6 +19,8 @@
 package org.neo4j.driver.internal;
 
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Consumer;
@@ -31,6 +33,7 @@ import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 public class ClusteredNetworkSession extends NetworkSession
 {
     private final Consumer<BoltServerAddress> onFailedConnection;
+    private final AtomicBoolean isOpen = new AtomicBoolean( true );
 
     ClusteredNetworkSession( Connection connection, ClusterSettings clusterSettings, Consumer<BoltServerAddress> onFailedConnection, Logger logger )
     {
@@ -43,13 +46,35 @@ public class ClusteredNetworkSession extends NetworkSession
     {
         try
         {
-            return new ClusteredStatementResult( super.run( statement ), connection.address(), onFailedConnection );
+            return new ClusteredStatementResult( super.run( statement ), connection.address(),
+                    new Consumer<BoltServerAddress>()
+                    {
+                        @Override
+                        public void accept( BoltServerAddress address )
+                        {
+                            onFailedConnection.accept( address );
+                        }
+                    } );
         }//TODO we need to catch exceptions due to leader switches etc here
         catch ( ConnectionFailureException e )
         {
             onFailedConnection.accept( connection.address() );
             throw new SessionExpiredException( "Failed to perform write load to server", e );
         }
+    }
 
+    @Override
+    public void close()
+    {
+        try
+        {
+            super.close();
+        }
+        catch ( ConnectionFailureException e )
+        {
+            BoltServerAddress address = connection.address();
+            onFailedConnection.accept( address );
+            throw new SessionExpiredException( String.format( "Server at %s is no longer available", address.toString()), e);
+        }
     }
 }
