@@ -3,9 +3,9 @@
 !: AUTO RUN "RETURN 1 // JavaDriver poll to test connection" {}
 !: AUTO PULL_ALL
 
-C: RUN "CALL dbms.cluster.routing.getServers" {}
+C: RUN "CREATE ()" {}
 C: PULL_ALL
-S: FAILURE {"code": "Neo.ClientError.Procedure.ProcedureNotFound", "message": "blabla"}
+S: FAILURE {"code": "Neo.ClientError.General.ForbiddenOnFollower", "message": "blabla"}
 S: IGNORED
 C: ACK_FAILURE
 S: SUCCESS {}

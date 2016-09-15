@@ -18,7 +18,6 @@
  */
 package org.neo4j.driver.internal;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -38,7 +37,6 @@ import org.neo4j.driver.internal.logging.ConsoleLogging;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Config;
-import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
@@ -49,6 +47,7 @@ import org.neo4j.driver.v1.util.StubServer;
 
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertThat;
@@ -73,7 +72,7 @@ public class ClusterDriverTest
         try ( ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config ) )
         {
             // Then
-            Set<BoltServerAddress> addresses = driver.discoveryServers();
+            Set<BoltServerAddress> addresses = driver.routingServers();
             assertThat( addresses, hasSize( 3 ) );
             assertThat( addresses, hasItem( new BoltServerAddress( "127.0.0.1", 9001 ) ) );
             assertThat( addresses, hasItem( new BoltServerAddress( "127.0.0.1", 9002 ) ) );
@@ -95,7 +94,7 @@ public class ClusterDriverTest
         try ( ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config ) )
         {
             // Then
-            Set<BoltServerAddress> addresses = driver.discoveryServers();
+            Set<BoltServerAddress> addresses = driver.routingServers();
             assertThat( addresses, hasSize( 4 ) );
             assertThat( addresses, hasItem( new BoltServerAddress( "127.0.0.1", 9001 ) ) );
             assertThat( addresses, hasItem( new BoltServerAddress( "127.0.0.1", 9002 ) ) );
@@ -115,7 +114,7 @@ public class ClusterDriverTest
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         try ( ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config ) )
         {
-            Set<BoltServerAddress> servers = driver.discoveryServers();
+            Set<BoltServerAddress> servers = driver.routingServers();
             assertThat( servers, hasSize( 1 ) );
             assertThat( servers, hasItem( new BoltServerAddress( "127.0.0.1", 9001 ) ) );
         }
@@ -235,8 +234,8 @@ public class ClusterDriverTest
             assertThat( driver.writeServers(), hasSize( 1 ));
             assertThat( driver.writeServers(), hasItem( new BoltServerAddress( "127.0.0.1", 9006 ) ) );
             //Make sure we don't cache acquired servers as discovery servers
-            assertThat( driver.discoveryServers(), not(hasItem(  new BoltServerAddress( "127.0.0.1", 9005 ))));
-            assertThat( driver.discoveryServers(), not(hasItem(  new BoltServerAddress( "127.0.0.1", 9006 ))));
+            assertThat( driver.routingServers(), not(hasItem(  new BoltServerAddress( "127.0.0.1", 9005 ))));
+            assertThat( driver.routingServers(), not(hasItem(  new BoltServerAddress( "127.0.0.1", 9006 ))));
         }
         // Finally
         assertThat( server.exitStatus(), equalTo( 0 ) );
@@ -285,16 +284,16 @@ public class ClusterDriverTest
 
         //On creation we only find ourselves
         ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config );
-        assertThat( driver.discoveryServers(), hasSize( 1 ) );
-        assertThat( driver.discoveryServers(), hasItem( new BoltServerAddress( "127.0.0.1", 9001 ) ));
+        assertThat( driver.routingServers(), hasSize( 1 ) );
+        assertThat( driver.routingServers(), hasItem( new BoltServerAddress( "127.0.0.1", 9001 ) ));
 
         //since we know about less than three servers a rediscover should be triggered
         Session session = driver.session( AccessMode.READ );
-        assertThat( driver.discoveryServers(), hasSize( 4 ) );
-        assertThat( driver.discoveryServers(), hasItem( new BoltServerAddress( "127.0.0.1", 9001 ) ));
-        assertThat( driver.discoveryServers(), hasItem( new BoltServerAddress( "127.0.0.1", 9002 ) ));
-        assertThat( driver.discoveryServers(), hasItem( new BoltServerAddress( "127.0.0.1", 9003 ) ));
-        assertThat( driver.discoveryServers(), hasItem( new BoltServerAddress( "127.0.0.1", 9004 ) ));
+        assertThat( driver.routingServers(), hasSize( 4 ) );
+        assertThat( driver.routingServers(), hasItem( new BoltServerAddress( "127.0.0.1", 9001 ) ));
+        assertThat( driver.routingServers(), hasItem( new BoltServerAddress( "127.0.0.1", 9002 ) ));
+        assertThat( driver.routingServers(), hasItem( new BoltServerAddress( "127.0.0.1", 9003 ) ));
+        assertThat( driver.routingServers(), hasItem( new BoltServerAddress( "127.0.0.1", 9004 ) ));
 
         session.close();
         driver.close();
@@ -303,8 +302,8 @@ public class ClusterDriverTest
         assertThat( server.exitStatus(), equalTo( 0 ) );
     }
 
-    @Ignore
-    public void shouldOnlyDiscoverOnce() throws IOException, InterruptedException, StubServer.ForceKilled
+    @Test
+    public void shouldOnlyGetServersOnce() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
         StubServer server = StubServer.start( resource( "rediscover.script" ), 9001 );
@@ -315,8 +314,8 @@ public class ClusterDriverTest
 
         //On creation we only find ourselves
         final ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config );
-        assertThat( driver.discoveryServers(), hasSize( 1 ) );
-        assertThat( driver.discoveryServers(), hasItem( new BoltServerAddress( "127.0.0.1", 9001 ) ));
+        assertThat( driver.routingServers(), hasSize( 1 ) );
+        assertThat( driver.routingServers(), hasItem( new BoltServerAddress( "127.0.0.1", 9001 ) ));
 
         ExecutorService runner = Executors.newFixedThreadPool( 10 );
         for ( int i = 0; i < 10; i++ )
@@ -337,11 +336,11 @@ public class ClusterDriverTest
         }
         runner.awaitTermination( 10, TimeUnit.SECONDS );
         //since we know about less than three servers a rediscover should be triggered
-        assertThat( driver.discoveryServers(), hasSize( 4 ) );
-        assertThat( driver.discoveryServers(), hasItem( new BoltServerAddress( "127.0.0.1", 9001 ) ));
-        assertThat( driver.discoveryServers(), hasItem( new BoltServerAddress( "127.0.0.1", 9002 ) ));
-        assertThat( driver.discoveryServers(), hasItem( new BoltServerAddress( "127.0.0.1", 9003 ) ));
-        assertThat( driver.discoveryServers(), hasItem( new BoltServerAddress( "127.0.0.1", 9004 ) ));
+        assertThat( driver.routingServers(), hasSize( 4 ) );
+        assertThat( driver.routingServers(), hasItem( new BoltServerAddress( "127.0.0.1", 9001 ) ));
+        assertThat( driver.routingServers(), hasItem( new BoltServerAddress( "127.0.0.1", 9002 ) ));
+        assertThat( driver.routingServers(), hasItem( new BoltServerAddress( "127.0.0.1", 9003 ) ));
+        assertThat( driver.routingServers(), hasItem( new BoltServerAddress( "127.0.0.1", 9004 ) ));
 
         driver.close();
 
@@ -360,7 +359,7 @@ public class ClusterDriverTest
         //noinspection EmptyTryBlock
         try
         {
-            Driver ignore = GraphDatabase.driver( uri, config );
+            GraphDatabase.driver( uri, config );
         }
         catch ( ServiceUnavailableException e )
         {
@@ -368,6 +367,35 @@ public class ClusterDriverTest
         }
         assertTrue( failed );
 
+        // Finally
+        assertThat( server.exitStatus(), equalTo( 0 ) );
+    }
+
+    @Test
+    public void shouldHandleLeaderSwitchWhenWriting()
+            throws IOException, InterruptedException, StubServer.ForceKilled
+    {
+        //Expect
+        exception.expect( SessionExpiredException.class );
+        exception.expectMessage( "Server at 127.0.0.1:9006 no longer accepts writes" );
+
+        // Given
+        StubServer server = StubServer.start( resource( "acquire_endpoints.script" ), 9001 );
+
+        //START a write server that doesn't accept writes
+        StubServer.start( resource( "not_able_to_write_server.script" ), 9006 );
+        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+        ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config );
+        try ( Session session = driver.session( AccessMode.WRITE ) )
+        {
+            assertThat(driver.writeServers(), hasItem( new BoltServerAddress( "127.0.0.1", 9006 ) ));
+            session.run( "CREATE ()" ).consume();
+        }
+
+        assertThat( driver.writeServers(), not( hasItem( new BoltServerAddress( "127.0.0.1", 9006 ) ) ) );
+        assertTrue( driver.connectionPool().hasAddress( new BoltServerAddress( "127.0.0.1", 9006 ) ) );
+
+        driver.close();
         // Finally
         assertThat( server.exitStatus(), equalTo( 0 ) );
     }

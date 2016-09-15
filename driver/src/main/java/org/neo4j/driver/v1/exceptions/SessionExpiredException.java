@@ -26,6 +26,11 @@ package org.neo4j.driver.v1.exceptions;
  */
 public class SessionExpiredException extends Neo4jException
 {
+    public SessionExpiredException( String message)
+    {
+        super( message );
+    }
+
     public SessionExpiredException( String message, Throwable throwable )
     {
         super( message, throwable );

@@ -36,4 +36,6 @@ public interface ConnectionPool extends AutoCloseable
      * @param address The address to remove.
      */
     void purge( BoltServerAddress address );
+
+    boolean hasAddress( BoltServerAddress address );
 }

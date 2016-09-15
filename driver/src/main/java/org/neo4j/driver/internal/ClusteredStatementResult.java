@@ -24,6 +24,7 @@ import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.util.Consumer;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ConnectionFailureException;
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
@@ -35,24 +36,62 @@ public class ClusteredStatementResult implements StatementResult
     private final StatementResult delegate;
     private final BoltServerAddress address;
     private final Consumer<BoltServerAddress> onFailedConnection;
+    private final Consumer<BoltServerAddress> onFailedWrite;
 
-    ClusteredStatementResult( StatementResult delegate, BoltServerAddress address, Consumer<BoltServerAddress> onFailedConnection )
+    ClusteredStatementResult( StatementResult delegate, BoltServerAddress address, Consumer<BoltServerAddress> onFailedConnection, Consumer<BoltServerAddress> onFailedWrite)
     {
         this.delegate = delegate;
         this.address = address;
         this.onFailedConnection = onFailedConnection;
+        this.onFailedWrite = onFailedWrite;
     }
 
     @Override
     public List<String> keys()
     {
-        return delegate.keys();
+        try
+        {
+            return delegate.keys();
+        }
+        catch ( ConnectionFailureException e )
+        {
+            throw sessionExpired( e );
+        }
+        catch ( ClientException e )
+        {
+            if ( isFailedToWrite( e ) )
+            {
+                throw failedWrite();
+            }
+            else
+            {
+                throw e;
+            }
+        }
     }
 
     @Override
     public boolean hasNext()
     {
-        return delegate.hasNext();
+        try
+        {
+            return delegate.hasNext();
+        }
+        catch ( ConnectionFailureException e )
+        {
+            throw sessionExpired( e );
+        }
+        catch ( ClientException e )
+        {
+            if ( isFailedToWrite( e ) )
+            {
+                throw failedWrite();
+            }
+            else
+            {
+                throw e;
+            }
+        }
     }
 
     @Override
@@ -65,6 +104,17 @@ public class ClusteredStatementResult implements StatementResult
         catch ( ConnectionFailureException e )
         {
             throw sessionExpired( e );
+        }
+        catch ( ClientException e )
+        {
+            if ( isFailedToWrite( e ) )
+            {
+                throw failedWrite();
+            }
+            else
+            {
+                throw e;
+            }
         }
     }
 
@@ -80,6 +130,17 @@ public class ClusteredStatementResult implements StatementResult
         {
             throw sessionExpired( e );
         }
+        catch ( ClientException e )
+        {
+            if ( isFailedToWrite( e ) )
+            {
+               throw failedWrite();
+            }
+            else
+            {
+                throw e;
+            }
+        }
     }
 
     @Override
@@ -92,6 +153,17 @@ public class ClusteredStatementResult implements StatementResult
         catch ( ConnectionFailureException e )
         {
             throw sessionExpired( e );
+        }
+        catch ( ClientException e )
+        {
+            if ( isFailedToWrite( e ) )
+            {
+                throw failedWrite();
+            }
+            else
+            {
+                throw e;
+            }
         }
     }
 
@@ -106,6 +178,17 @@ public class ClusteredStatementResult implements StatementResult
         {
             throw sessionExpired( e );
         }
+        catch ( ClientException e )
+        {
+            if ( isFailedToWrite( e ) )
+            {
+                throw failedWrite();
+            }
+            else
+            {
+                throw e;
+            }
+        }
     }
 
     @Override
@@ -118,6 +201,17 @@ public class ClusteredStatementResult implements StatementResult
         catch ( ConnectionFailureException e )
         {
             throw sessionExpired( e );
+        }
+        catch ( ClientException e )
+        {
+            if ( isFailedToWrite( e ) )
+            {
+                throw failedWrite();
+            }
+            else
+            {
+                throw e;
+            }
         }
     }
 
@@ -132,11 +226,34 @@ public class ClusteredStatementResult implements StatementResult
         {
             throw sessionExpired( e );
         }
+        catch ( ClientException e )
+        {
+            if ( isFailedToWrite( e ) )
+            {
+                throw failedWrite();
+            }
+            else
+            {
+                throw e;
+            }
+        }
     }
 
     private SessionExpiredException sessionExpired( ConnectionFailureException e )
     {
         onFailedConnection.accept( address );
         return new SessionExpiredException( String.format( "Server at %s is no longer available", address.toString()), e);
+    }
+
+    private SessionExpiredException failedWrite()
+    {
+
+        onFailedWrite.accept( address );
+        return new SessionExpiredException( String.format( "Server at %s no longer accepts writes", address.toString()));
+    }
+
+    private boolean isFailedToWrite( ClientException e )
+    {
+        return e.code().equals( "Neo.ClientError.General.ForbiddenOnFollower" );
     }
 }

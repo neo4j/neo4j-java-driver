@@ -53,7 +53,6 @@ import org.neo4j.driver.v1.exceptions.ClientException;
  */
 public class SocketConnectionPool implements ConnectionPool
 {
-
     /**
      * Pools, organized by server address.
      */
@@ -152,6 +151,12 @@ public class SocketConnectionPool implements ConnectionPool
                 connection.dispose();
             }
         }
+    }
+
+    @Override
+    public boolean hasAddress( BoltServerAddress address )
+    {
+        return pools.contains( address );
     }
 
     @Override
