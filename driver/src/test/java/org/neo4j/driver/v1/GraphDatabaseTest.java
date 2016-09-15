@@ -54,7 +54,7 @@ public class GraphDatabaseTest
     {
         // Given
         StubServer server = StubServer.start( "../driver/src/test/resources/discover_servers.script" );
-        URI uri = URI.create( "bolt+discovery://localhost:7687" );
+        URI uri = URI.create( "bolt+routing://localhost:7687" );
 
         // When
         Driver driver = GraphDatabase.driver( uri );

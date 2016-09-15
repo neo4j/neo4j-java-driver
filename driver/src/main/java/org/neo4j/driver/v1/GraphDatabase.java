@@ -171,7 +171,7 @@ public class GraphDatabase
         {
         case "bolt":
             return new DirectDriver( address, connectionSettings, securityPlan, poolSettings, config.logging() );
-        case "bolt+discovery":
+        case "bolt+routing":
             return new ClusterDriver( address, connectionSettings, ClusterSettings.fromConfig( config ), securityPlan, poolSettings, config.logging() );
         default:
             throw new ClientException( format( "Unsupported URI scheme: %s", scheme ) );

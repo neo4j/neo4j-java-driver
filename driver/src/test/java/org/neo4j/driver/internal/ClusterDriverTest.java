@@ -67,7 +67,7 @@ public class ClusterDriverTest
     {
         // Given
         StubServer server = StubServer.start( resource( "discover_servers.script" ), 9001 );
-        URI uri = URI.create( "bolt+discovery://127.0.0.1:9001" );
+        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
 
         // When
         try ( ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config ) )
@@ -89,7 +89,7 @@ public class ClusterDriverTest
     {
         // Given
         StubServer server = StubServer.start( resource( "discover_new_servers.script" ), 9001 );
-        URI uri = URI.create( "bolt+discovery://127.0.0.1:9001" );
+        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
 
         // When
         try ( ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config ) )
@@ -112,7 +112,7 @@ public class ClusterDriverTest
     {
         // Given
         StubServer server = StubServer.start( resource( "handle_empty_response.script" ), 9001 );
-        URI uri = URI.create( "bolt+discovery://127.0.0.1:9001" );
+        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         try ( ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config ) )
         {
             Set<BoltServerAddress> servers = driver.discoveryServers();
@@ -132,7 +132,7 @@ public class ClusterDriverTest
 
         //START a read server
         StubServer.start( resource( "read_server.script" ), 9005 );
-        URI uri = URI.create( "bolt+discovery://127.0.0.1:9001" );
+        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         try ( ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config );
               Session session = driver.session( AccessMode.READ ) )
         {
@@ -165,7 +165,7 @@ public class ClusterDriverTest
 
         //START a read server
         StubServer.start( resource( "dead_server.script" ), 9005 );
-        URI uri = URI.create( "bolt+discovery://127.0.0.1:9001" );
+        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         try ( ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config );
               Session session = driver.session( AccessMode.READ ) )
         {
@@ -188,7 +188,7 @@ public class ClusterDriverTest
 
         //START a read server
         StubServer.start( resource( "dead_server.script" ), 9006 );
-        URI uri = URI.create( "bolt+discovery://127.0.0.1:9001" );
+        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         try ( ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config );
               Session session = driver.session( AccessMode.WRITE ) )
         {
@@ -206,7 +206,7 @@ public class ClusterDriverTest
 
         //START a write server
         StubServer.start( resource( "write_server.script" ), 9006 );
-        URI uri = URI.create( "bolt+discovery://127.0.0.1:9001" );
+        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         try ( ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config );
               Session session = driver.session( AccessMode.WRITE ) )
         {
@@ -224,7 +224,7 @@ public class ClusterDriverTest
 
         //START a read server
         StubServer.start( resource( "read_server.script" ), 9005 );
-        URI uri = URI.create( "bolt+discovery://127.0.0.1:9001" );
+        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         try ( ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config );
               Session session = driver.session( AccessMode.READ ) )
         {
@@ -250,7 +250,7 @@ public class ClusterDriverTest
 
         //START a read server
         StubServer.start( resource( "dead_server.script" ), 9005 );
-        URI uri = URI.create( "bolt+discovery://127.0.0.1:9001" );
+        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config );
         boolean failed = false;
         try
@@ -279,7 +279,7 @@ public class ClusterDriverTest
         // Given
         StubServer server = StubServer.start( resource( "rediscover.script" ), 9001 );
 
-        URI uri = URI.create( "bolt+discovery://127.0.0.1:9001" );
+        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         //START a read server
         StubServer.start( resource( "read_server.script" ), 9005 );
 
@@ -309,7 +309,7 @@ public class ClusterDriverTest
         // Given
         StubServer server = StubServer.start( resource( "rediscover.script" ), 9001 );
 
-        URI uri = URI.create( "bolt+discovery://127.0.0.1:9001" );
+        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         //START a read server
         StubServer.start( resource( "read_server.script" ), 9005 );
 
@@ -355,7 +355,7 @@ public class ClusterDriverTest
         // When
         StubServer server = StubServer.start( resource( "non_discovery_server.script" ), 9001 );
 
-        URI uri = URI.create( "bolt+discovery://127.0.0.1:9001" );
+        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         boolean failed = false;
         //noinspection EmptyTryBlock
         try
