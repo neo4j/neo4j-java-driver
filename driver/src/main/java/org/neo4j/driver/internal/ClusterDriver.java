@@ -67,7 +67,6 @@ public class ClusterDriver extends BaseDriver
     private final ConcurrentRingSet<BoltServerAddress> discoveryServers = new ConcurrentRingSet<>(COMPARATOR);
     private final ConcurrentRingSet<BoltServerAddress> readServers = new ConcurrentRingSet<>(COMPARATOR);
     private final ConcurrentRingSet<BoltServerAddress> writeServers = new ConcurrentRingSet<>(COMPARATOR);
-    private boolean discoverable = true;
 
     public ClusterDriver( BoltServerAddress seedAddress, ConnectionSettings connectionSettings,
             ClusterSettings clusterSettings,
@@ -95,16 +94,14 @@ public class ClusterDriver extends BaseDriver
     //must be called from a synchronized block
     private void discover()
     {
-        if ( !discoverable )
-        {
-            return;
-        }
+        BoltServerAddress address = null;
         try
         {
             boolean success = false;
             while ( !discoveryServers.isEmpty() && !success )
             {
-                success = call( DISCOVER_MEMBERS, new Consumer<Record>()
+                address = discoveryServers.next();
+                success = call( address,  DISCOVER_MEMBERS, new Consumer<Record>()
                 {
                     @Override
                     public void accept( Record record )
@@ -125,7 +122,9 @@ public class ClusterDriver extends BaseDriver
                 //no procedure there, not much to do, stick with what we've got
                 //this may happen because server is running in standalone mode
                 log.warn( "Could not find procedure %s", DISCOVER_MEMBERS );
-                discoverable = false;
+                throw new ServiceUnavailableException(
+                        String.format( "Server %s couldn't perform discovery",
+                                address == null ? "`UNKNOWN`" : address.toString()),  ex );
             }
             else
             {
@@ -135,13 +134,13 @@ public class ClusterDriver extends BaseDriver
     }
 
     //must be called from a synchronized method
-    private boolean call( String procedureName, Consumer<Record> recorder )
+    private boolean call( BoltServerAddress address, String procedureName, Consumer<Record> recorder )
     {
         Connection acquire = null;
         Session session = null;
         try
         {
-            acquire = connections.acquire(discoveryServers.next());
+            acquire = connections.acquire(address);
             session = new NetworkSession( acquire, log );
 
             StatementResult records = session.run( format( "CALL %s", procedureName ) );
@@ -173,7 +172,7 @@ public class ClusterDriver extends BaseDriver
     }
 
     //must be called from a synchronized method
-    private void callWithRetry( String procedureName, Consumer<Record> recorder )
+    private void callWithRetry( BoltServerAddress address, String procedureName, Consumer<Record> recorder )
     {
         while ( !discoveryServers.isEmpty() )
         {
@@ -181,7 +180,7 @@ public class ClusterDriver extends BaseDriver
             Session session = null;
             try
             {
-                acquire = connections.acquire(discoveryServers.next());
+                acquire = connections.acquire(address);
                 session = new NetworkSession( acquire, log );
                 List<Record> list = session.run( format( "CALL %s", procedureName ) ).list();
                 for ( Record record : list )
@@ -244,11 +243,6 @@ public class ClusterDriver extends BaseDriver
 
     private Connection acquireConnection( SessionMode mode )
     {
-        if ( !discoverable )
-        {
-            return connections.acquire(discoveryServers.next());
-        }
-
         //if we are short on servers, find new ones
         if ( discoveryServers.size() < clusterSettings.minimumNumberOfServers() )
         {
@@ -274,11 +268,13 @@ public class ClusterDriver extends BaseDriver
         }
     }
 
-    private synchronized void discoverEndpoints()
+    private synchronized void discoverEndpoints() throws ServiceUnavailableException
     {
+        BoltServerAddress address = null;
         try
         {
-            callWithRetry( ACQUIRE_ENDPOINTS, new Consumer<Record>()
+            address = discoveryServers.next();
+            callWithRetry( address, ACQUIRE_ENDPOINTS, new Consumer<Record>()
             {
                 @Override
                 public void accept( Record record )
@@ -300,10 +296,11 @@ public class ClusterDriver extends BaseDriver
             if ( e.code().equals( "Neo.ClientError.Procedure.ProcedureNotFound" ) )
             {
                 log.warn( "Could not find procedure %s", ACQUIRE_ENDPOINTS );
-                discoverable = false;
-                Connection connection = connections.acquire(discoveryServers.next());
-                readServers.add( connection.address() );
-                writeServers.add( connection.address() );
+                throw new ServiceUnavailableException(
+                        String.format( "Server %s couldn't perform discovery",
+                                address == null ? "`UNKNOWN`" : address.toString()),  e );
+
+
             }
             throw e;
         }

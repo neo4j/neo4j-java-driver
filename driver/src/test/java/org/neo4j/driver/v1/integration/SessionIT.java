@@ -21,7 +21,13 @@ package org.neo4j.driver.v1.integration;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.driver.v1.*;
+import org.neo4j.driver.v1.AuthToken;
+import org.neo4j.driver.v1.AuthTokens;
+import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.GraphDatabase;
+import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.util.TestNeo4j;
@@ -47,6 +53,25 @@ public class SessionIT
         try( Driver driver =  GraphDatabase.driver( neo4j.uri() ) )
         {
             Session session = driver.session();
+
+            // When
+            session.close();
+
+            // Then
+            assertFalse( session.isOpen() );
+        }
+    }
+
+    @Test
+    public void should() throws Throwable
+    {
+        // Given
+        try( Driver driver =  GraphDatabase.driver( neo4j.uri() ) )
+        {
+            Session session = driver.session();
+
+            session.run("CALL dbms.cluster.discoverEndpointAcquisitionServers");
+
 
             // When
             session.close();
@@ -101,8 +126,7 @@ public class SessionIT
         final int killTimeout = 1; // 1s
         long startTime = -1, endTime;
 
-        final Session session = driver.session();
-        try
+        try ( Session session = driver.session() )
         {
             StatementResult result =
                     session.run( "CALL test.driver.longRunningStatement({seconds})",
@@ -114,9 +138,9 @@ public class SessionIT
             startTime = System.currentTimeMillis();
             result.consume();// blocking to run the statement
 
-            fail("Should have got an exception about statement get killed.");
+            fail( "Should have got an exception about statement get killed." );
         }
-        catch( Neo4jException e )
+        catch ( Neo4jException e )
         {
             endTime = System.currentTimeMillis();
             assertTrue( startTime > 0 );
@@ -126,10 +150,6 @@ public class SessionIT
         catch ( Exception e )
         {
             fail( "Should be a Neo4jException" );
-        }
-        finally
-        {
-            session.close();
         }
     }
 

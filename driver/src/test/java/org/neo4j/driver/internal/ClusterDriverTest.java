@@ -37,10 +37,12 @@ import java.util.logging.Level;
 import org.neo4j.driver.internal.logging.ConsoleLogging;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.v1.Config;
+import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.SessionMode;
+import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.util.StubServer;
@@ -342,6 +344,21 @@ public class ClusterDriverTest
         assertThat( driver.discoveryServers(), hasItem( new BoltServerAddress( "127.0.0.1", 9004 ) ));
 
         driver.close();
+
+        // Finally
+        assertThat( server.exitStatus(), equalTo( 0 ) );
+    }
+
+    @Test
+    public void shouldFailOnNonDiscoverableServer() throws IOException, InterruptedException, StubServer.ForceKilled
+    {
+        // Expect
+        exception.expect( ServiceUnavailableException.class );
+
+        // When
+        StubServer server = StubServer.start( resource( "non_discovery_server.script" ), 9001 );
+        URI uri = URI.create( "bolt+discovery://127.0.0.1:9001" );
+        Driver driver = GraphDatabase.driver( uri, config );
 
         // Finally
         assertThat( server.exitStatus(), equalTo( 0 ) );
