@@ -22,10 +22,14 @@ package org.neo4j.driver.internal.util;
 import org.junit.Test;
 
 import java.util.Comparator;
+import java.util.HashSet;
 
 import static java.util.Arrays.asList;
+import static junit.framework.TestCase.assertFalse;
+import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 
 public class ConcurrentRoundRobinSetTest
 {
@@ -71,5 +75,96 @@ public class ConcurrentRoundRobinSetTest
         assertThat( integers.hop(), equalTo( 4 ) );
         assertThat( integers.hop(), equalTo( 3 ) );
         //....
+    }
+
+    @Test
+    public void shouldBeAbleToClearSet()
+    {
+        // Given
+        ConcurrentRoundRobinSet<Integer> integers = new ConcurrentRoundRobinSet<>();
+
+        // When
+        integers.addAll( asList( 0, 1, 2, 3, 4 ) );
+        integers.clear();
+
+        // Then
+        assertThat( integers, empty() );
+    }
+
+    @Test
+    public void shouldBeAbleToCheckIfContainsElement()
+    {
+        // Given
+        ConcurrentRoundRobinSet<Integer> integers = new ConcurrentRoundRobinSet<>();
+
+        // When
+        integers.addAll( asList( 0, 1, 2, 3, 4 ) );
+
+
+        // Then
+        assertTrue( integers.contains( 3 ) );
+        assertFalse( integers.contains( 7 ) );
+    }
+
+    @Test
+    public void shouldBeAbleToCheckIfContainsMultipleElements()
+    {
+        // Given
+        ConcurrentRoundRobinSet<Integer> integers = new ConcurrentRoundRobinSet<>();
+
+        // When
+        integers.addAll( asList( 0, 1, 2, 3, 4 ) );
+
+
+        // Then
+        assertTrue( integers.containsAll( asList( 3, 1 ) ) );
+        assertFalse( integers.containsAll( asList( 2, 3, 4, 7 ) ) );
+    }
+
+    @Test
+    public void shouldBeAbleToCheckIfEmptyAndSize()
+    {
+        // Given
+        ConcurrentRoundRobinSet<Integer> integers = new ConcurrentRoundRobinSet<>();
+
+        // When
+        integers.addAll( asList( 0, 1, 2, 3, 4 ) );
+
+
+        // Then
+        assertFalse( integers.isEmpty() );
+        assertThat( integers.size(), equalTo( 5 ) );
+        integers.clear();
+        assertTrue( integers.isEmpty() );
+        assertThat( integers.size(), equalTo( 0 ) );
+    }
+
+
+    @Test
+    public void shouldBeAbleToCreateArray()
+    {
+        // Given
+        ConcurrentRoundRobinSet<Integer> integers = new ConcurrentRoundRobinSet<>();
+
+        // When
+        integers.addAll( asList( 0, 1, 2, 3, 4 ) );
+        Object[] objects = integers.toArray();
+
+        // Then
+        assertThat( objects, equalTo( new Object[]{0, 1, 2, 3, 4} ) );
+    }
+
+    @Test
+    public void shouldBeAbleToCreateTypedArray()
+    {
+        // Given
+        ConcurrentRoundRobinSet<Integer> integers = new ConcurrentRoundRobinSet<>();
+
+        // When
+        integers.addAll( asList( 0, 1, 2, 3, 4 ) );
+        Integer[] array = integers.toArray( new Integer[5] );
+
+        // Then
+        assertThat( array, equalTo( new Integer[]{0, 1, 2, 3, 4} ) );
     }
 }

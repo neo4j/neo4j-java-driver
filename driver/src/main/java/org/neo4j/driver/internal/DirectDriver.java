@@ -16,12 +16,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.neo4j.driver.internal;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.internal.net.pooling.PoolSettings;
-import org.neo4j.driver.internal.net.pooling.SocketConnectionPool;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.v1.AccessMode;
@@ -35,18 +32,18 @@ public class DirectDriver extends BaseDriver
     protected final ConnectionPool connections;
     private final BoltServerAddress address;
 
-    public DirectDriver( BoltServerAddress address, ConnectionSettings connectionSettings, SecurityPlan securityPlan,
-                         PoolSettings poolSettings, Logging logging )
+    public DirectDriver( BoltServerAddress address, ConnectionPool connections, SecurityPlan securityPlan,
+            Logging logging )
     {
-        super(securityPlan, logging );
-        this.connections = new SocketConnectionPool( connectionSettings, securityPlan, poolSettings, logging );
+        super( securityPlan, logging );
+        this.connections = connections;
         this.address = address;
     }
 
     @Override
     public Session session()
     {
-        return new NetworkSession( connections.acquire(address), log );
+        return new NetworkSession( connections.acquire( address ), log );
     }
 
     @Override

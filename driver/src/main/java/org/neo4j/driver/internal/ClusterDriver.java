@@ -23,14 +23,13 @@ import java.util.Comparator;
 import java.util.Set;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.internal.net.pooling.PoolSettings;
-import org.neo4j.driver.internal.net.pooling.SocketConnectionPool;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.ConcurrentRoundRobinSet;
 import org.neo4j.driver.internal.util.Consumer;
 import org.neo4j.driver.v1.AccessMode;
+import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
@@ -38,6 +37,7 @@ import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ConnectionFailureException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.v1.util.BiFunction;
 
 import static java.lang.String.format;
 
@@ -59,20 +59,23 @@ public class ClusterDriver extends BaseDriver
         }
     };
     private static final int MIN_SERVERS = 2;
-
-    protected final ConnectionPool connections;
+    private final ConnectionPool connections;
+    private final BiFunction<Connection,Logger, Session> sessionProvider;
 
     private final ConcurrentRoundRobinSet<BoltServerAddress> routingServers = new ConcurrentRoundRobinSet<>(COMPARATOR);
     private final ConcurrentRoundRobinSet<BoltServerAddress> readServers = new ConcurrentRoundRobinSet<>(COMPARATOR);
     private final ConcurrentRoundRobinSet<BoltServerAddress> writeServers = new ConcurrentRoundRobinSet<>(COMPARATOR);
 
-    public ClusterDriver( BoltServerAddress seedAddress, ConnectionSettings connectionSettings,
+    public ClusterDriver( BoltServerAddress seedAddress,
+            ConnectionPool connections,
             SecurityPlan securityPlan,
-            PoolSettings poolSettings, Logging logging )
+            BiFunction<Connection,Logger, Session> sessionProvider,
+            Logging logging )
     {
         super( securityPlan, logging );
         routingServers.add( seedAddress );
-        this.connections = new SocketConnectionPool( connectionSettings, securityPlan, poolSettings, logging );
+        this.connections = connections;
+        this.sessionProvider = sessionProvider;
         checkServers();
     }
 
@@ -80,7 +83,6 @@ public class ClusterDriver extends BaseDriver
     {
         synchronized ( routingServers )
         {
-            //todo remove setting hardcode to 2
             if ( routingServers.size() < MIN_SERVERS ||
                  readServers.isEmpty() ||
                  writeServers.isEmpty())
@@ -152,7 +154,7 @@ public class ClusterDriver extends BaseDriver
         try
         {
             acquire = connections.acquire(address);
-            session = new NetworkSession( acquire, log );
+            session = sessionProvider.apply( acquire, log );
 
             StatementResult records = session.run( format( "CALL %s", procedureName ) );
             while ( records.hasNext() )
