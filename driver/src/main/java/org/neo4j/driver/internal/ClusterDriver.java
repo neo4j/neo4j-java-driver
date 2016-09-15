@@ -28,7 +28,7 @@ import org.neo4j.driver.internal.net.pooling.SocketConnectionPool;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
-import org.neo4j.driver.internal.util.ConcurrentRingSet;
+import org.neo4j.driver.internal.util.ConcurrentRoundRobinSet;
 import org.neo4j.driver.internal.util.Consumer;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Logging;
@@ -62,9 +62,9 @@ public class ClusterDriver extends BaseDriver
 
     protected final ConnectionPool connections;
 
-    private final ConcurrentRingSet<BoltServerAddress> routingServers = new ConcurrentRingSet<>(COMPARATOR);
-    private final ConcurrentRingSet<BoltServerAddress> readServers = new ConcurrentRingSet<>(COMPARATOR);
-    private final ConcurrentRingSet<BoltServerAddress> writeServers = new ConcurrentRingSet<>(COMPARATOR);
+    private final ConcurrentRoundRobinSet<BoltServerAddress> routingServers = new ConcurrentRoundRobinSet<>(COMPARATOR);
+    private final ConcurrentRoundRobinSet<BoltServerAddress> readServers = new ConcurrentRoundRobinSet<>(COMPARATOR);
+    private final ConcurrentRoundRobinSet<BoltServerAddress> writeServers = new ConcurrentRoundRobinSet<>(COMPARATOR);
 
     public ClusterDriver( BoltServerAddress seedAddress, ConnectionSettings connectionSettings,
             SecurityPlan securityPlan,
@@ -99,7 +99,7 @@ public class ClusterDriver extends BaseDriver
             boolean success = false;
             while ( !routingServers.isEmpty() && !success )
             {
-                address = routingServers.next();
+                address = routingServers.hop();
                 success = call( address, GET_SERVERS, new Consumer<Record>()
                 {
                     @Override
@@ -224,9 +224,9 @@ public class ClusterDriver extends BaseDriver
         switch ( mode )
         {
         case READ:
-            return connections.acquire( readServers.next() );
+            return connections.acquire( readServers.hop() );
         case WRITE:
-            return connections.acquire( writeServers.next() );
+            return connections.acquire( writeServers.hop() );
         default:
             throw new ClientException( mode + " is not supported for creating new sessions" );
         }

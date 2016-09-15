@@ -156,7 +156,7 @@ public class SocketConnectionPool implements ConnectionPool
     @Override
     public boolean hasAddress( BoltServerAddress address )
     {
-        return pools.contains( address );
+        return pools.containsKey( address );
     }
 
     @Override

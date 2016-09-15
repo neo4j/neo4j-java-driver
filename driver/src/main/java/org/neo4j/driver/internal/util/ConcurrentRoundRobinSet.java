@@ -25,25 +25,25 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 /**
- *
- * @param <T>
+ * A set that exposes a method {@link #hop()} that cycles through the members of the set.
+ * @param <T> the type of elements in the set
  */
-public class ConcurrentRingSet<T> implements Set<T>
+public class ConcurrentRoundRobinSet<T> implements Set<T>
 {
     private final ConcurrentSkipListSet<T> set;
     private T current;
 
-    public ConcurrentRingSet()
+    public ConcurrentRoundRobinSet()
     {
         set = new ConcurrentSkipListSet<>();
     }
 
-    public ConcurrentRingSet( Comparator<T> comparator )
+    public ConcurrentRoundRobinSet( Comparator<T> comparator )
     {
         set = new ConcurrentSkipListSet<>( comparator );
     }
 
-    public T next()
+    public T hop()
     {
         if ( current == null )
         {

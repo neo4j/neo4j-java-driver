@@ -47,7 +47,6 @@ import org.neo4j.driver.v1.util.StubServer;
 
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertThat;
@@ -375,10 +374,6 @@ public class ClusterDriverTest
     public void shouldHandleLeaderSwitchWhenWriting()
             throws IOException, InterruptedException, StubServer.ForceKilled
     {
-        //Expect
-        exception.expect( SessionExpiredException.class );
-        exception.expectMessage( "Server at 127.0.0.1:9006 no longer accepts writes" );
-
         // Given
         StubServer server = StubServer.start( resource( "acquire_endpoints.script" ), 9001 );
 
@@ -386,12 +381,18 @@ public class ClusterDriverTest
         StubServer.start( resource( "not_able_to_write_server.script" ), 9006 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config );
+        boolean failed = false;
         try ( Session session = driver.session( AccessMode.WRITE ) )
         {
             assertThat(driver.writeServers(), hasItem( new BoltServerAddress( "127.0.0.1", 9006 ) ));
             session.run( "CREATE ()" ).consume();
         }
-
+        catch (SessionExpiredException e)
+        {
+            failed = true;
+            assertThat(e.getMessage(), equalTo( "Server at 127.0.0.1:9006 no longer accepts writes" ));
+        }
+        assertTrue( failed );
         assertThat( driver.writeServers(), not( hasItem( new BoltServerAddress( "127.0.0.1", 9006 ) ) ) );
         assertTrue( driver.connectionPool().hasAddress( new BoltServerAddress( "127.0.0.1", 9006 ) ) );
 

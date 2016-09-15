@@ -27,14 +27,14 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class ConcurrentRingSetTest
+public class ConcurrentRoundRobinSetTest
 {
 
     @Test
     public void shouldBeAbleToIterateIndefinitely()
     {
         // Given
-        ConcurrentRingSet<Integer> integers = new ConcurrentRingSet<>();
+        ConcurrentRoundRobinSet<Integer> integers = new ConcurrentRoundRobinSet<>();
 
         // When
         integers.addAll( asList( 0, 1, 2, 3, 4 ) );
@@ -42,7 +42,7 @@ public class ConcurrentRingSetTest
         // Then
         for ( int i = 0; i < 100; i++ )
         {
-            assertThat(integers.next(), equalTo( i % 5));
+            assertThat( integers.hop(), equalTo( i % 5 ) );
         }
     }
 
@@ -50,7 +50,7 @@ public class ConcurrentRingSetTest
     public void shouldBeAbleToUseCustomComparator()
     {
         // Given
-        ConcurrentRingSet<Integer> integers = new ConcurrentRingSet<>( new Comparator<Integer>()
+        ConcurrentRoundRobinSet<Integer> integers = new ConcurrentRoundRobinSet<>( new Comparator<Integer>()
         {
             @Override
             public int compare( Integer o1, Integer o2 )
@@ -63,13 +63,13 @@ public class ConcurrentRingSetTest
         integers.addAll( asList( 0, 1, 2, 3, 4 ) );
 
         // Then
-        assertThat(integers.next(), equalTo( 4));
-        assertThat(integers.next(), equalTo( 3));
-        assertThat(integers.next(), equalTo( 2));
-        assertThat(integers.next(), equalTo( 1));
-        assertThat(integers.next(), equalTo( 0));
-        assertThat(integers.next(), equalTo( 4));
-        assertThat(integers.next(), equalTo( 3));
+        assertThat( integers.hop(), equalTo( 4 ) );
+        assertThat( integers.hop(), equalTo( 3 ) );
+        assertThat( integers.hop(), equalTo( 2 ) );
+        assertThat( integers.hop(), equalTo( 1 ) );
+        assertThat( integers.hop(), equalTo( 0 ) );
+        assertThat( integers.hop(), equalTo( 4 ) );
+        assertThat( integers.hop(), equalTo( 3 ) );
         //....
     }
 }
