@@ -21,7 +21,6 @@ package org.neo4j.driver.internal;
 import java.util.List;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.internal.util.Consumer;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.exceptions.ClientException;
@@ -35,15 +34,13 @@ public class ClusteredStatementResult implements StatementResult
 {
     private final StatementResult delegate;
     private final BoltServerAddress address;
-    private final Consumer<BoltServerAddress> onFailedConnection;
-    private final Consumer<BoltServerAddress> onFailedWrite;
+    private final ClusteredErrorHandler onError;
 
-    ClusteredStatementResult( StatementResult delegate, BoltServerAddress address, Consumer<BoltServerAddress> onFailedConnection, Consumer<BoltServerAddress> onFailedWrite)
+    ClusteredStatementResult( StatementResult delegate, BoltServerAddress address, ClusteredErrorHandler onError )
     {
         this.delegate = delegate;
         this.address = address;
-        this.onFailedConnection = onFailedConnection;
-        this.onFailedWrite = onFailedWrite;
+        this.onError = onError;
     }
 
     @Override
@@ -241,14 +238,13 @@ public class ClusteredStatementResult implements StatementResult
 
     private SessionExpiredException sessionExpired( ConnectionFailureException e )
     {
-        onFailedConnection.accept( address );
+        onError.onConnectionFailure( address );
         return new SessionExpiredException( String.format( "Server at %s is no longer available", address.toString()), e);
     }
 
     private SessionExpiredException failedWrite()
     {
-
-        onFailedWrite.accept( address );
+        onError.onWriteFailure( address );
         return new SessionExpiredException( String.format( "Server at %s no longer accepts writes", address.toString()));
     }
 

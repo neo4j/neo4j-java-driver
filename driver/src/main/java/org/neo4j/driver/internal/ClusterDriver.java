@@ -198,21 +198,20 @@ public class ClusterDriver extends BaseDriver
     public Session session( final AccessMode mode )
     {
         return new ClusteredNetworkSession( acquireConnection( mode ),
-                new Consumer<BoltServerAddress>()
+                new ClusteredErrorHandler()
                 {
                     @Override
-                    public void accept( BoltServerAddress address )
+                    public void onConnectionFailure( BoltServerAddress address )
                     {
                         forget( address );
                     }
-                }, new Consumer<BoltServerAddress>()
-        {
-            @Override
-            public void accept( BoltServerAddress address )
-            {
-                writeServers.remove( address );
-            }
-        },
+
+                    @Override
+                    public void onWriteFailure( BoltServerAddress address )
+                    {
+                        writeServers.remove( address );
+                    }
+                },
                 log );
     }
 

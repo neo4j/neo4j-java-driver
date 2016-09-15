@@ -21,7 +21,6 @@ package org.neo4j.driver.internal;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.util.Consumer;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementResult;
@@ -31,17 +30,13 @@ import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 
 public class ClusteredNetworkSession extends NetworkSession
 {
-    private final Consumer<BoltServerAddress> onFailedConnection;
-    private final Consumer<BoltServerAddress> onFailedWrite;
+    private final ClusteredErrorHandler onError;
 
-    //TODO combine failure handling
     ClusteredNetworkSession( Connection connection,
-            Consumer<BoltServerAddress> onFailedConnection,
-            Consumer<BoltServerAddress> onFailedWrite, Logger logger )
+            ClusteredErrorHandler onError, Logger logger )
     {
         super( connection, logger );
-        this.onFailedConnection = onFailedConnection;
-        this.onFailedWrite = onFailedWrite;
+        this.onError = onError;
     }
 
     @Override
@@ -49,18 +44,18 @@ public class ClusteredNetworkSession extends NetworkSession
     {
         try
         {
-            return new ClusteredStatementResult( super.run( statement ), connection.address(), onFailedConnection, onFailedWrite);
+            return new ClusteredStatementResult( super.run( statement ), connection.address(), onError );
         }
         catch ( ConnectionFailureException e )
         {
-            onFailedConnection.accept( connection.address() );
+            onError.onConnectionFailure( connection.address() );
             throw new SessionExpiredException( "Failed to perform write load to server", e );
         }
         catch ( ClientException e )
         {
             if ( e.code().equals( "Neo.ClientError.General.ForbiddenOnFollower" ) )
             {
-                onFailedWrite.accept( connection.address() );
+                onError.onWriteFailure( connection.address() );
                 throw new SessionExpiredException(
                         String.format( "Server at %s no longer accepts writes", connection.address().toString() ) );
             }
@@ -81,8 +76,9 @@ public class ClusteredNetworkSession extends NetworkSession
         catch ( ConnectionFailureException e )
         {
             BoltServerAddress address = connection.address();
-            onFailedConnection.accept( address );
-            throw new SessionExpiredException( String.format( "Server at %s is no longer available", address.toString()), e);
+            onError.onConnectionFailure( address );
+            throw new SessionExpiredException(
+                    String.format( "Server at %s is no longer available", address.toString() ), e );
         }
     }
 }
