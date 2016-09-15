@@ -129,7 +129,7 @@ public class ClusterDriverTest
         StubServer server = StubServer.start( resource( "acquire_endpoints.script" ), 9001 );
 
         //START a read server
-        StubServer.start( resource( "read_server.script" ), 9005 );
+        StubServer readServer = StubServer.start( resource( "read_server.script" ), 9005 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         try ( ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config );
               Session session = driver.session( AccessMode.READ ) )
@@ -148,6 +148,41 @@ public class ClusterDriverTest
         }
         // Finally
         assertThat( server.exitStatus(), equalTo( 0 ) );
+        assertThat( readServer.exitStatus(), equalTo( 0 ) );
+    }
+
+    @Test
+    public void shouldRoundRobinReadServers() throws IOException, InterruptedException, StubServer.ForceKilled
+    {
+        // Given
+        StubServer server = StubServer.start( resource( "acquire_endpoints.script" ), 9001 );
+
+        //START two read servers
+        StubServer readServer1 = StubServer.start( resource( "read_server.script" ), 9005 );
+        StubServer readServer2 = StubServer.start( resource( "read_server.script" ), 9006 );
+        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+        try ( ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config ) )
+        {
+            // Run twice, one on each read server
+            for ( int i = 0; i < 2; i++ )
+            {
+                try ( Session session = driver.session( AccessMode.READ ) )
+                {
+                    assertThat( session.run( "MATCH (n) RETURN n.name" ).list( new Function<Record,String>()
+                    {
+                        @Override
+                        public String apply( Record record )
+                        {
+                            return record.get( "n.name" ).asString();
+                        }
+                    } ), equalTo( Arrays.asList( "Bob", "Alice", "Tina" ) ) );
+                }
+            }
+        }
+        // Finally
+        assertThat( server.exitStatus(), equalTo( 0 ) );
+        assertThat( readServer1.exitStatus(), equalTo( 0 ) );
+        assertThat( readServer2.exitStatus(), equalTo( 0 ) );
     }
 
     @Test
@@ -179,13 +214,13 @@ public class ClusterDriverTest
     {
         //Expect
         exception.expect( SessionExpiredException.class );
-        exception.expectMessage( "Server at 127.0.0.1:9006 is no longer available" );
+        //exception.expectMessage( "Server at 127.0.0.1:9006 is no longer available" );
 
         // Given
         StubServer server = StubServer.start( resource( "acquire_endpoints.script" ), 9001 );
 
-        //START a read server
-        StubServer.start( resource( "dead_server.script" ), 9006 );
+        //START a dead write servers
+        StubServer.start( resource( "dead_server.script" ), 9007 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         try ( ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config );
               Session session = driver.session( AccessMode.WRITE ) )
@@ -203,7 +238,7 @@ public class ClusterDriverTest
         StubServer server = StubServer.start( resource( "acquire_endpoints.script" ), 9001 );
 
         //START a write server
-        StubServer.start( resource( "write_server.script" ), 9006 );
+        StubServer writeServer = StubServer.start( resource( "write_server.script" ), 9007 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         try ( ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config );
               Session session = driver.session( AccessMode.WRITE ) )
@@ -212,6 +247,33 @@ public class ClusterDriverTest
         }
         // Finally
         assertThat( server.exitStatus(), equalTo( 0 ) );
+        assertThat( writeServer.exitStatus(), equalTo( 0 ) );
+    }
+
+    @Test
+    public void shouldRoundRobinWriteSessions() throws IOException, InterruptedException, StubServer.ForceKilled
+    {
+        // Given
+        StubServer server = StubServer.start( resource( "acquire_endpoints.script" ), 9001 );
+
+        //START a write server
+        StubServer writeServer1 = StubServer.start( resource( "write_server.script" ), 9007 );
+        StubServer writeServer2 = StubServer.start( resource( "write_server.script" ), 9008 );
+        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+        try ( ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config ) )
+        {
+            for ( int i = 0; i < 2; i++ )
+            {
+                try(Session session = driver.session() )
+                {
+                    session.run( "CREATE (n {name:'Bob'})" );
+                }
+            }
+        }
+        // Finally
+        assertThat( server.exitStatus(), equalTo( 0 ) );
+        assertThat( writeServer1.exitStatus(), equalTo( 0 ) );
+        assertThat( writeServer2.exitStatus(), equalTo( 0 ) );
     }
 
     @Test
@@ -221,23 +283,26 @@ public class ClusterDriverTest
         StubServer server = StubServer.start( resource( "acquire_endpoints.script" ), 9001 );
 
         //START a read server
-        StubServer.start( resource( "read_server.script" ), 9005 );
+        StubServer readServer = StubServer.start( resource( "read_server.script" ), 9005 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         try ( ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config );
               Session session = driver.session( AccessMode.READ ) )
         {
             session.run( "MATCH (n) RETURN n.name" ).consume();
 
-            assertThat( driver.readServers(), hasSize( 1 ));
+            assertThat( driver.readServers(), hasSize( 2 ));
             assertThat( driver.readServers(), hasItem( new BoltServerAddress( "127.0.0.1", 9005 ) ) );
-            assertThat( driver.writeServers(), hasSize( 1 ));
-            assertThat( driver.writeServers(), hasItem( new BoltServerAddress( "127.0.0.1", 9006 ) ) );
+            assertThat( driver.readServers(), hasItem( new BoltServerAddress( "127.0.0.1", 9006 ) ) );
+            assertThat( driver.writeServers(), hasSize( 2 ));
+            assertThat( driver.writeServers(), hasItem( new BoltServerAddress( "127.0.0.1", 9007 ) ) );
+            assertThat( driver.writeServers(), hasItem( new BoltServerAddress( "127.0.0.1", 9008 ) ) );
             //Make sure we don't cache acquired servers as discovery servers
             assertThat( driver.routingServers(), not(hasItem(  new BoltServerAddress( "127.0.0.1", 9005 ))));
             assertThat( driver.routingServers(), not(hasItem(  new BoltServerAddress( "127.0.0.1", 9006 ))));
         }
         // Finally
         assertThat( server.exitStatus(), equalTo( 0 ) );
+        assertThat( readServer.exitStatus(), equalTo( 0 ) );
     }
 
     @Test
@@ -263,8 +328,8 @@ public class ClusterDriverTest
         }
 
         assertTrue( failed );
-        assertThat( driver.readServers(), hasSize( 0 ) );
-        assertThat( driver.writeServers(), hasSize( 1 ) );
+        assertThat( driver.readServers(), not(hasItem( new BoltServerAddress( "127.0.0.1", 9005 ) ) ));
+        assertThat( driver.writeServers(), hasSize( 2 ) );
         driver.close();
 
         // Finally
@@ -378,23 +443,25 @@ public class ClusterDriverTest
         StubServer server = StubServer.start( resource( "acquire_endpoints.script" ), 9001 );
 
         //START a write server that doesn't accept writes
-        StubServer.start( resource( "not_able_to_write_server.script" ), 9006 );
+        StubServer.start( resource( "not_able_to_write_server.script" ), 9007 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config );
         boolean failed = false;
         try ( Session session = driver.session( AccessMode.WRITE ) )
         {
-            assertThat(driver.writeServers(), hasItem( new BoltServerAddress( "127.0.0.1", 9006 ) ));
+            assertThat(driver.writeServers(), hasItem( new BoltServerAddress( "127.0.0.1", 9007 ) ));
+            assertThat(driver.writeServers(), hasItem( new BoltServerAddress( "127.0.0.1", 9008 ) ));
             session.run( "CREATE ()" ).consume();
         }
         catch (SessionExpiredException e)
         {
             failed = true;
-            assertThat(e.getMessage(), equalTo( "Server at 127.0.0.1:9006 no longer accepts writes" ));
+            assertThat(e.getMessage(), equalTo( "Server at 127.0.0.1:9007 no longer accepts writes" ));
         }
         assertTrue( failed );
-        assertThat( driver.writeServers(), not( hasItem( new BoltServerAddress( "127.0.0.1", 9006 ) ) ) );
-        assertTrue( driver.connectionPool().hasAddress( new BoltServerAddress( "127.0.0.1", 9006 ) ) );
+        assertThat( driver.writeServers(), not( hasItem( new BoltServerAddress( "127.0.0.1", 9007 ) ) ) );
+        assertThat( driver.writeServers(), hasItem( new BoltServerAddress( "127.0.0.1", 9008 ) ) );
+        assertTrue( driver.connectionPool().hasAddress( new BoltServerAddress( "127.0.0.1", 9007 ) ) );
 
         driver.close();
         // Finally
