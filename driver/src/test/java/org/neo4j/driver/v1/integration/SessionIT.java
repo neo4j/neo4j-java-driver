@@ -63,25 +63,6 @@ public class SessionIT
     }
 
     @Test
-    public void should() throws Throwable
-    {
-        // Given
-        try( Driver driver =  GraphDatabase.driver( neo4j.uri() ) )
-        {
-            Session session = driver.session();
-
-            session.run("CALL dbms.cluster.discoverEndpointAcquisitionServers");
-
-
-            // When
-            session.close();
-
-            // Then
-            assertFalse( session.isOpen() );
-        }
-    }
-
-    @Test
     public void shouldHandleNullConfig() throws Throwable
     {
         // Given

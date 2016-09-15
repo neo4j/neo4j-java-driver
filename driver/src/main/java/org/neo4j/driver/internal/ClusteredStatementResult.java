@@ -213,6 +213,12 @@ public class ClusteredStatementResult implements StatementResult
     }
 
     @Override
+    public void remove()
+    {
+        throw new ClientException( "Removing records from a result is not supported." );
+    }
+
+    @Override
     public ResultSummary consume()
     {
         try
