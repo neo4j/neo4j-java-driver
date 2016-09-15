@@ -24,9 +24,9 @@ import org.neo4j.driver.internal.net.pooling.PoolSettings;
 import org.neo4j.driver.internal.net.pooling.SocketConnectionPool;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.ConnectionPool;
+import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Session;
-import org.neo4j.driver.v1.SessionMode;
 
 import static java.lang.String.format;
 
@@ -50,7 +50,7 @@ public class DirectDriver extends BaseDriver
     }
 
     @Override
-    public Session session( SessionMode ignore )
+    public Session session( AccessMode ignore )
     {
         return session();
     }

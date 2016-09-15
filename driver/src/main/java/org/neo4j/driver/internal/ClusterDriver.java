@@ -31,10 +31,10 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.ConcurrentRingSet;
 import org.neo4j.driver.internal.util.Consumer;
+import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
-import org.neo4j.driver.v1.SessionMode;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ConnectionFailureException;
@@ -121,7 +121,7 @@ public class ClusterDriver extends BaseDriver
             {
                 //no procedure there, not much to do, stick with what we've got
                 //this may happen because server is running in standalone mode
-                log.warn( "Could not find procedure %s", DISCOVER_MEMBERS );
+                this.close();
                 throw new ServiceUnavailableException(
                         String.format( "Server %s couldn't perform discovery",
                                 address == null ? "`UNKNOWN`" : address.toString()),  ex );
@@ -151,31 +151,30 @@ public class ClusterDriver extends BaseDriver
         }
         catch ( ConnectionFailureException e )
         {
-            if ( acquire != null )
-            {
-                forget( acquire.address() );
-            }
+            forget( address );
             return false;
         }
         finally
         {
-            if ( acquire != null )
-            {
-                acquire.close();
-            }
             if ( session != null )
             {
                 session.close();
             }
+            if ( acquire != null )
+            {
+                acquire.close();
+            }
+
         }
         return true;
     }
 
     //must be called from a synchronized method
-    private void callWithRetry( BoltServerAddress address, String procedureName, Consumer<Record> recorder )
+    private void callWithRetry( String procedureName, Consumer<Record> recorder )
     {
         while ( !discoveryServers.isEmpty() )
         {
+            BoltServerAddress address = discoveryServers.next();
             Connection acquire = null;
             Session session = null;
             try
@@ -224,11 +223,11 @@ public class ClusterDriver extends BaseDriver
     @Override
     public Session session()
     {
-        return session( SessionMode.WRITE );
+        return session( AccessMode.WRITE );
     }
 
     @Override
-    public Session session( final SessionMode mode )
+    public Session session( final AccessMode mode )
     {
         return new ClusteredNetworkSession( acquireConnection( mode ), clusterSettings,
                 new Consumer<BoltServerAddress>()
@@ -241,7 +240,7 @@ public class ClusterDriver extends BaseDriver
                 }, log );
     }
 
-    private Connection acquireConnection( SessionMode mode )
+    private Connection acquireConnection( AccessMode mode )
     {
         //if we are short on servers, find new ones
         if ( discoveryServers.size() < clusterSettings.minimumNumberOfServers() )
@@ -270,11 +269,9 @@ public class ClusterDriver extends BaseDriver
 
     private synchronized void discoverEndpoints() throws ServiceUnavailableException
     {
-        BoltServerAddress address = null;
         try
         {
-            address = discoveryServers.next();
-            callWithRetry( address, ACQUIRE_ENDPOINTS, new Consumer<Record>()
+            callWithRetry( ACQUIRE_ENDPOINTS, new Consumer<Record>()
             {
                 @Override
                 public void accept( Record record )
@@ -296,10 +293,7 @@ public class ClusterDriver extends BaseDriver
             if ( e.code().equals( "Neo.ClientError.Procedure.ProcedureNotFound" ) )
             {
                 log.warn( "Could not find procedure %s", ACQUIRE_ENDPOINTS );
-                throw new ServiceUnavailableException(
-                        String.format( "Server %s couldn't perform discovery",
-                                address == null ? "`UNKNOWN`" : address.toString()),  e );
-
+                throw new ServiceUnavailableException("Server couldn't perform discovery", e );
 
             }
             throw e;

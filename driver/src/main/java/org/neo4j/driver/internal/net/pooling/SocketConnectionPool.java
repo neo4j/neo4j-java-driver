@@ -18,10 +18,9 @@
  */
 package org.neo4j.driver.internal.net.pooling;
 
-import java.util.Comparator;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -58,22 +57,7 @@ public class SocketConnectionPool implements ConnectionPool
     /**
      * Pools, organized by server address.
      */
-    private final ConcurrentSkipListMap<BoltServerAddress,BlockingQueue<PooledConnection>> pools = new ConcurrentSkipListMap<>(
-
-            new Comparator<BoltServerAddress>()
-            {
-                @Override
-                public int compare( BoltServerAddress o1, BoltServerAddress o2 )
-                {
-                    int compare = o1.host().compareTo( o2.host() );
-                    if (compare == 0)
-                    {
-                        compare = Integer.compare( o1.port(), o2.port() );
-                    }
-
-                    return compare;
-                }
-            } );
+    private final ConcurrentHashMap<BoltServerAddress,BlockingQueue<PooledConnection>> pools = new ConcurrentHashMap<>();
 
     private final Clock clock = Clock.SYSTEM;
 
@@ -81,8 +65,6 @@ public class SocketConnectionPool implements ConnectionPool
     private final SecurityPlan securityPlan;
     private final PoolSettings poolSettings;
     private final Logging logging;
-
-    private BoltServerAddress current = null;
 
     /** Shutdown flag */
     private final AtomicBoolean stopped = new AtomicBoolean( false );

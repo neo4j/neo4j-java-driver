@@ -36,12 +36,12 @@ import java.util.logging.Level;
 
 import org.neo4j.driver.internal.logging.ConsoleLogging;
 import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
-import org.neo4j.driver.v1.SessionMode;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 import org.neo4j.driver.v1.util.Function;
@@ -134,7 +134,7 @@ public class ClusterDriverTest
         StubServer.start( resource( "read_server.script" ), 9005 );
         URI uri = URI.create( "bolt+discovery://127.0.0.1:9001" );
         try ( ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config );
-              Session session = driver.session( SessionMode.READ ) )
+              Session session = driver.session( AccessMode.READ ) )
         {
             List<String> result = session.run( "MATCH (n) RETURN n.name" ).list( new Function<Record,String>()
             {
@@ -167,7 +167,7 @@ public class ClusterDriverTest
         StubServer.start( resource( "dead_server.script" ), 9005 );
         URI uri = URI.create( "bolt+discovery://127.0.0.1:9001" );
         try ( ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config );
-              Session session = driver.session( SessionMode.READ ) )
+              Session session = driver.session( AccessMode.READ ) )
         {
             session.run( "MATCH (n) RETURN n.name" );
         }
@@ -190,7 +190,7 @@ public class ClusterDriverTest
         StubServer.start( resource( "dead_server.script" ), 9006 );
         URI uri = URI.create( "bolt+discovery://127.0.0.1:9001" );
         try ( ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config );
-              Session session = driver.session( SessionMode.WRITE ) )
+              Session session = driver.session( AccessMode.WRITE ) )
         {
             session.run( "MATCH (n) RETURN n.name" ).consume();
         }
@@ -208,7 +208,7 @@ public class ClusterDriverTest
         StubServer.start( resource( "write_server.script" ), 9006 );
         URI uri = URI.create( "bolt+discovery://127.0.0.1:9001" );
         try ( ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config );
-              Session session = driver.session( SessionMode.WRITE ) )
+              Session session = driver.session( AccessMode.WRITE ) )
         {
             session.run( "CREATE (n {name:'Bob'})" );
         }
@@ -226,7 +226,7 @@ public class ClusterDriverTest
         StubServer.start( resource( "read_server.script" ), 9005 );
         URI uri = URI.create( "bolt+discovery://127.0.0.1:9001" );
         try ( ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config );
-              Session session = driver.session( SessionMode.READ ) )
+              Session session = driver.session( AccessMode.READ ) )
         {
             session.run( "MATCH (n) RETURN n.name" ).consume();
 
@@ -255,7 +255,7 @@ public class ClusterDriverTest
         boolean failed = false;
         try
         {
-            Session session = driver.session( SessionMode.READ );
+            Session session = driver.session( AccessMode.READ );
             session.run( "MATCH (n) RETURN n.name" ).consume();
             session.close();
         }
@@ -281,7 +281,7 @@ public class ClusterDriverTest
 
         URI uri = URI.create( "bolt+discovery://127.0.0.1:9001" );
         //START a read server
-        StubServer.start( resource( "dead_server.script" ), 9005 );
+        StubServer.start( resource( "read_server.script" ), 9005 );
 
         //On creation we only find ourselves
         ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config );
@@ -289,7 +289,7 @@ public class ClusterDriverTest
         assertThat( driver.discoveryServers(), hasItem( new BoltServerAddress( "127.0.0.1", 9001 ) ));
 
         //since we know about less than three servers a rediscover should be triggered
-        Session session = driver.session( SessionMode.READ );
+        Session session = driver.session( AccessMode.READ );
         assertThat( driver.discoveryServers(), hasSize( 4 ) );
         assertThat( driver.discoveryServers(), hasItem( new BoltServerAddress( "127.0.0.1", 9001 ) ));
         assertThat( driver.discoveryServers(), hasItem( new BoltServerAddress( "127.0.0.1", 9002 ) ));
@@ -311,7 +311,7 @@ public class ClusterDriverTest
 
         URI uri = URI.create( "bolt+discovery://127.0.0.1:9001" );
         //START a read server
-        StubServer.start( resource( "dead_server.script" ), 9005 );
+        StubServer.start( resource( "read_server.script" ), 9005 );
 
         //On creation we only find ourselves
         final ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config );
@@ -327,7 +327,7 @@ public class ClusterDriverTest
                 public void run()
                 {
                     //noinspection EmptyTryBlock
-                    try(Session ignore = driver.session( SessionMode.READ ))
+                    try(Session ignore = driver.session( AccessMode.READ ))
                     {
                         //empty
                     }
@@ -352,13 +352,21 @@ public class ClusterDriverTest
     @Test
     public void shouldFailOnNonDiscoverableServer() throws IOException, InterruptedException, StubServer.ForceKilled
     {
-        // Expect
-        exception.expect( ServiceUnavailableException.class );
-
         // When
         StubServer server = StubServer.start( resource( "non_discovery_server.script" ), 9001 );
+
         URI uri = URI.create( "bolt+discovery://127.0.0.1:9001" );
-        Driver driver = GraphDatabase.driver( uri, config );
+        boolean failed = false;
+        //noinspection EmptyTryBlock
+        try
+        {
+            Driver ignore = GraphDatabase.driver( uri, config );
+        }
+        catch ( ServiceUnavailableException e )
+        {
+            failed = true;
+        }
+        assertTrue( failed );
 
         // Finally
         assertThat( server.exitStatus(), equalTo( 0 ) );

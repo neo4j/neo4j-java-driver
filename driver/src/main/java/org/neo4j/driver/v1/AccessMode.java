@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.v1;
 
-public enum SessionMode
+public enum AccessMode
 {
     READ,
     WRITE
