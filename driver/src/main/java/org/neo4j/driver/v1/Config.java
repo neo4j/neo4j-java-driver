@@ -48,9 +48,6 @@ public class Config
     /** User defined logging */
     private final Logging logging;
 
-    /** The size of connection pool for each database url */
-    private final int connectionPoolSize;
-
     private final int maxIdleConnectionPoolSize;
 
     /** Connections that have been idle longer than this threshold will have a ping test performed on them. */
@@ -68,7 +65,6 @@ public class Config
     {
         this.logging = builder.logging;
 
-        this.connectionPoolSize = builder.connectionPoolSize;
         this.maxIdleConnectionPoolSize = builder.maxIdleConnectionPoolSize;
         this.idleTimeBeforeConnectionTest = builder.idleTimeBeforeConnectionTest;
 
@@ -132,14 +128,6 @@ public class Config
     }
 
     /**
-     * @return the minimum number of servers the driver should know about.
-     */
-    public int minimumKnownClusterSize()
-    {
-        return minServersInCluster;
-    }
-
-    /**
      * Return a {@link ConfigBuilder} instance
      * @return a {@link ConfigBuilder} instance
      */
@@ -162,7 +150,6 @@ public class Config
     public static class ConfigBuilder
     {
         private Logging logging = new JULogging( Level.INFO );
-        private int connectionPoolSize = 50;
         private int maxIdleConnectionPoolSize = PoolSettings.DEFAULT_MAX_IDLE_CONNECTION_POOL_SIZE;
         private long idleTimeBeforeConnectionTest = PoolSettings.DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST;
         private EncryptionLevel encryptionLevel = EncryptionLevel.REQUIRED_NON_LOCAL;
@@ -198,7 +185,6 @@ public class Config
         @Deprecated
         public ConfigBuilder withMaxSessions( int size )
         {
-            this.connectionPoolSize = size;
             return this;
         }
 
@@ -270,22 +256,6 @@ public class Config
         public ConfigBuilder withTrustStrategy( TrustStrategy trustStrategy )
         {
             this.trustStrategy = trustStrategy;
-            return this;
-        }
-
-        /**
-         * Specifies the minimum numbers in a cluster a driver should know about.
-         * <p>
-         * Once the number of servers drops below this threshold, the driver will automatically trigger a discovery
-         * event
-         * asking the servers for more members.
-         *
-         * @param minNumberOfServers the minimum number of servers the driver should know about
-         * @return this builder
-         */
-        public ConfigBuilder withMinimumKnownClusterSize( int minNumberOfServers )
-        {
-            this.minServersInCluster = minNumberOfServers;
             return this;
         }
 

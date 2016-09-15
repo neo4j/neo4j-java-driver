@@ -58,23 +58,21 @@ public class ClusterDriver extends BaseDriver
             return compare;
         }
     };
+    private static final int MIN_SERVERS = 2;
 
     protected final ConnectionPool connections;
 
-    private final ClusterSettings clusterSettings;
     private final ConcurrentRingSet<BoltServerAddress> routingServers = new ConcurrentRingSet<>(COMPARATOR);
     private final ConcurrentRingSet<BoltServerAddress> readServers = new ConcurrentRingSet<>(COMPARATOR);
     private final ConcurrentRingSet<BoltServerAddress> writeServers = new ConcurrentRingSet<>(COMPARATOR);
 
     public ClusterDriver( BoltServerAddress seedAddress, ConnectionSettings connectionSettings,
-            ClusterSettings clusterSettings,
             SecurityPlan securityPlan,
             PoolSettings poolSettings, Logging logging )
     {
         super( securityPlan, logging );
         routingServers.add( seedAddress );
         this.connections = new SocketConnectionPool( connectionSettings, securityPlan, poolSettings, logging );
-        this.clusterSettings = clusterSettings;
         checkServers();
     }
 
@@ -83,7 +81,7 @@ public class ClusterDriver extends BaseDriver
         synchronized ( routingServers )
         {
             //todo remove setting hardcode to 2
-            if ( routingServers.size() < clusterSettings.minimumNumberOfServers() ||
+            if ( routingServers.size() < MIN_SERVERS ||
                  readServers.isEmpty() ||
                  writeServers.isEmpty())
             {
