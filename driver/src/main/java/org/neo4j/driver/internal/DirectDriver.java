@@ -23,6 +23,7 @@ import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.net.pooling.PoolSettings;
 import org.neo4j.driver.internal.net.pooling.SocketConnectionPool;
 import org.neo4j.driver.internal.security.SecurityPlan;
+import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.SessionMode;
@@ -31,16 +32,21 @@ import static java.lang.String.format;
 
 public class DirectDriver extends BaseDriver
 {
+    protected final ConnectionPool connections;
+    private final BoltServerAddress address;
+
     public DirectDriver( BoltServerAddress address, ConnectionSettings connectionSettings, SecurityPlan securityPlan,
                          PoolSettings poolSettings, Logging logging )
     {
-        super( new SocketConnectionPool( connectionSettings, securityPlan, poolSettings, logging ), address, securityPlan, logging );
+        super(securityPlan, logging );
+        this.connections = new SocketConnectionPool( connectionSettings, securityPlan, poolSettings, logging );
+        this.address = address;
     }
 
     @Override
     public Session session()
     {
-        return new NetworkSession( connections.acquire(), log );
+        return new NetworkSession( connections.acquire(address), log );
     }
 
     @Override
@@ -60,5 +66,10 @@ public class DirectDriver extends BaseDriver
         {
             log.error( format( "~~ [ERROR] %s", ex.getMessage() ), ex );
         }
+    }
+
+    BoltServerAddress server()
+    {
+        return address;
     }
 }

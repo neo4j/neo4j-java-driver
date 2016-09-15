@@ -18,13 +18,18 @@
  */
 package org.neo4j.driver.internal;
 
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.net.pooling.PoolSettings;
 import org.neo4j.driver.internal.net.pooling.SocketConnectionPool;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.ConnectionPool;
+import org.neo4j.driver.internal.util.ConcurrentRingSet;
 import org.neo4j.driver.internal.util.Consumer;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Record;
@@ -41,9 +46,27 @@ public class ClusterDriver extends BaseDriver
 {
     private static final String DISCOVER_MEMBERS = "dbms.cluster.discoverEndpointAcquisitionServers";
     private static final String ACQUIRE_ENDPOINTS = "dbms.cluster.acquireEndpoints";
+    private final static Comparator<BoltServerAddress> COMPARATOR = new Comparator<BoltServerAddress>()
+    {
+        @Override
+        public int compare( BoltServerAddress o1, BoltServerAddress o2 )
+        {
+            int compare = o1.host().compareTo( o2.host() );
+            if (compare == 0)
+            {
+                compare = Integer.compare( o1.port(), o2.port() );
+            }
 
-    private final Endpoints endpoints = new Endpoints();
+            return compare;
+        }
+    };
+
+    protected final ConnectionPool connections;
+
     private final ClusterSettings clusterSettings;
+    private final ConcurrentRingSet<BoltServerAddress> discoveryServers = new ConcurrentRingSet<>(COMPARATOR);
+    private final ConcurrentRingSet<BoltServerAddress> readServers = new ConcurrentRingSet<>(COMPARATOR);
+    private final ConcurrentRingSet<BoltServerAddress> writeServers = new ConcurrentRingSet<>(COMPARATOR);
     private boolean discoverable = true;
 
     public ClusterDriver( BoltServerAddress seedAddress, ConnectionSettings connectionSettings,
@@ -51,29 +74,42 @@ public class ClusterDriver extends BaseDriver
             SecurityPlan securityPlan,
             PoolSettings poolSettings, Logging logging )
     {
-        super( new SocketConnectionPool( connectionSettings, securityPlan, poolSettings, logging ),seedAddress, securityPlan, logging );
+        super( securityPlan, logging );
+        discoveryServers.add( seedAddress );
+        this.connections = new SocketConnectionPool( connectionSettings, securityPlan, poolSettings, logging );
         this.clusterSettings = clusterSettings;
-        discover();
+        tryDiscover();
     }
 
-    synchronized void discover()
+    private void tryDiscover()
     {
-        if (!discoverable)
+        synchronized ( discoveryServers )
+        {
+            if ( discoveryServers.size() < clusterSettings.minimumNumberOfServers() )
+            {
+                discover();
+            }
+        }
+    }
+
+    //must be called from a synchronized block
+    private void discover()
+    {
+        if ( !discoverable )
         {
             return;
         }
-
         try
         {
             boolean success = false;
-            while ( !connections.isEmpty() && !success )
+            while ( !discoveryServers.isEmpty() && !success )
             {
                 success = call( DISCOVER_MEMBERS, new Consumer<Record>()
                 {
                     @Override
                     public void accept( Record record )
                     {
-                        connections.add(new BoltServerAddress( record.get( "address" ).asString() ));
+                        discoveryServers.add( new BoltServerAddress( record.get( "address" ).asString() ) );
                     }
                 } );
             }
@@ -103,8 +139,9 @@ public class ClusterDriver extends BaseDriver
     {
         Connection acquire = null;
         Session session = null;
-        try {
-            acquire = connections.acquire();
+        try
+        {
+            acquire = connections.acquire(discoveryServers.next());
             session = new NetworkSession( acquire, log );
 
             StatementResult records = session.run( format( "CALL %s", procedureName ) );
@@ -115,7 +152,7 @@ public class ClusterDriver extends BaseDriver
         }
         catch ( ConnectionFailureException e )
         {
-            if (acquire != null)
+            if ( acquire != null )
             {
                 forget( acquire.address() );
             }
@@ -123,11 +160,11 @@ public class ClusterDriver extends BaseDriver
         }
         finally
         {
-            if (acquire != null)
+            if ( acquire != null )
             {
                 acquire.close();
             }
-            if (session != null)
+            if ( session != null )
             {
                 session.close();
             }
@@ -136,14 +173,15 @@ public class ClusterDriver extends BaseDriver
     }
 
     //must be called from a synchronized method
-    private void callWithRetry(String procedureName, Consumer<Record> recorder )
+    private void callWithRetry( String procedureName, Consumer<Record> recorder )
     {
-        while ( !connections.isEmpty() )
+        while ( !discoveryServers.isEmpty() )
         {
             Connection acquire = null;
             Session session = null;
-            try {
-                acquire = connections.acquire();
+            try
+            {
+                acquire = connections.acquire(discoveryServers.next());
                 session = new NetworkSession( acquire, log );
                 List<Record> list = session.run( format( "CALL %s", procedureName ) ).list();
                 for ( Record record : list )
@@ -155,18 +193,18 @@ public class ClusterDriver extends BaseDriver
             }
             catch ( ConnectionFailureException e )
             {
-                if (acquire != null)
+                if ( acquire != null )
                 {
                     forget( acquire.address() );
                 }
             }
             finally
             {
-                if (acquire != null)
+                if ( acquire != null )
                 {
-                 acquire.close();
+                    acquire.close();
                 }
-                if (session != null)
+                if ( session != null )
                 {
                     session.close();
                 }
@@ -179,10 +217,9 @@ public class ClusterDriver extends BaseDriver
     private synchronized void forget( BoltServerAddress address )
     {
         connections.purge( address );
-        if ( endpoints.contains( address ) )
-        {
-            endpoints.clear();
-        }
+        discoveryServers.remove( address );
+        readServers.remove( address );
+        writeServers.remove( address );
     }
 
     @Override
@@ -194,39 +231,44 @@ public class ClusterDriver extends BaseDriver
     @Override
     public Session session( final SessionMode mode )
     {
-        return new ClusteredNetworkSession( acquireConnection( mode ), clusterSettings, new Consumer<BoltServerAddress>()
-        {
-            @Override
-            public void accept( BoltServerAddress address )
-            {
-                forget( address );
-            }
-        }, log );
+        return new ClusteredNetworkSession( acquireConnection( mode ), clusterSettings,
+                new Consumer<BoltServerAddress>()
+                {
+                    @Override
+                    public void accept( BoltServerAddress address )
+                    {
+                        forget( address );
+                    }
+                }, log );
     }
 
     private Connection acquireConnection( SessionMode mode )
     {
-        if (!discoverable)
+        if ( !discoverable )
         {
-            return connections.acquire();
+            return connections.acquire(discoveryServers.next());
         }
 
         //if we are short on servers, find new ones
-        if ( connections.addressCount() < clusterSettings.minimumNumberOfServers() )
+        if ( discoveryServers.size() < clusterSettings.minimumNumberOfServers() )
         {
             discover();
-        }
-        if ( !endpoints.valid() )
-        {
-            discoverEndpoints();
         }
 
         switch ( mode )
         {
         case READ:
-            return connections.acquire( endpoints.readServer );
+            if ( readServers.size() < 3 )
+            {
+                discoverEndpoints();
+            }
+            return connections.acquire( readServers.next() );
         case WRITE:
-            return connections.acquire( endpoints.writeServer );
+            if ( writeServers.size() < 1 )
+            {
+                discoverEndpoints();
+            }
+            return connections.acquire( writeServers.next() );
         default:
             throw new ClientException( mode + " is not supported for creating new sessions" );
         }
@@ -234,7 +276,6 @@ public class ClusterDriver extends BaseDriver
 
     private synchronized void discoverEndpoints()
     {
-        endpoints.clear();
         try
         {
             callWithRetry( ACQUIRE_ENDPOINTS, new Consumer<Record>()
@@ -242,34 +283,34 @@ public class ClusterDriver extends BaseDriver
                 @Override
                 public void accept( Record record )
                 {
-                    String serverMode = record.get( "role" ).asString();
-                    if ( serverMode.equals( "READ" ) )
+                    switch ( record.get( "role" ).asString().toUpperCase() )
                     {
-                        endpoints.readServer = new BoltServerAddress( record.get( "address" ).asString() );
-                    }
-                    else if ( serverMode.equals( "WRITE" ) )
-                    {
-                        endpoints.writeServer = new BoltServerAddress( record.get( "address" ).asString() );
+                    case "READ":
+                        readServers.add( new BoltServerAddress( record.get( "address" ).asString() ) );
+                        break;
+                    case "WRITE":
+                        writeServers.add( new BoltServerAddress( record.get( "address" ).asString() ) );
+                        break;
                     }
                 }
             } );
         }
-        catch (ClientException e)
+        catch ( ClientException e )
         {
             if ( e.code().equals( "Neo.ClientError.Procedure.ProcedureNotFound" ) )
             {
                 log.warn( "Could not find procedure %s", ACQUIRE_ENDPOINTS );
                 discoverable = false;
-                Connection connection = connections.acquire();
-                endpoints.readServer = connection.address();
-                endpoints.writeServer = connection.address();
+                Connection connection = connections.acquire(discoveryServers.next());
+                readServers.add( connection.address() );
+                writeServers.add( connection.address() );
             }
             throw e;
         }
 
-        if ( !endpoints.valid() )
+        if ( readServers.isEmpty() || writeServers.isEmpty() )
         {
-            throw new ServiceUnavailableException("Could not establish any endpoints for the call");
+            throw new ServiceUnavailableException( "Could not establish any endpoints for the call" );
         }
     }
 
@@ -287,48 +328,22 @@ public class ClusterDriver extends BaseDriver
     }
 
     //For testing
-    BoltServerAddress readServer()
+    Set<BoltServerAddress> discoveryServers()
     {
-        return endpoints.readServer;
+        return Collections.unmodifiableSet( discoveryServers);
+    }
+
+
+    //For testing
+    Set<BoltServerAddress> readServers()
+    {
+        return Collections.unmodifiableSet(readServers);
     }
 
     //For testing
-    BoltServerAddress writeServer()
+    Set<BoltServerAddress> writeServers()
     {
-        return endpoints.writeServer;
-    }
-
-    private static class Endpoints
-    {
-        private BoltServerAddress readServer;
-        private BoltServerAddress writeServer;
-
-        public boolean valid()
-        {
-            return readServer != null && writeServer != null;
-        }
-
-        public void clear()
-        {
-            readServer = null;
-            writeServer = null;
-        }
-
-        boolean contains(BoltServerAddress address)
-        {
-            if (readServer != null && writeServer != null)
-            {
-                return readServer.equals( address ) || writeServer.equals( address );
-            }
-            else if ( readServer != null )
-            {
-                return readServer.equals( address );
-            }
-            else
-            {
-                return writeServer != null && writeServer.equals( address );
-            }
-        }
+        return Collections.unmodifiableSet( writeServers);
     }
 
 }

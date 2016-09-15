@@ -20,7 +20,6 @@ package org.neo4j.driver.internal.net.pooling;
 
 import java.util.Comparator;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -137,55 +136,6 @@ public class SocketConnectionPool implements ConnectionPool
         }
         conn.updateUsageTimestamp();
         return conn;
-    }
-
-    @Override
-    public Connection acquire()
-    {
-        if ( current == null )
-        {
-            current = pools.firstKey();
-        }
-        else
-        {
-            current = pools.higherKey( current );
-            //We've gone through all connections, start over
-            if (current == null)
-            {
-                current = pools.firstKey();
-            }
-        }
-
-        if ( current == null )
-        {
-            throw new IllegalStateException( "Cannot acquire connection from an empty pool" );
-        }
-
-        return acquire( current );
-    }
-
-    @Override
-    public boolean isEmpty()
-    {
-        return pools.isEmpty();
-    }
-
-    @Override
-    public int addressCount()
-    {
-        return pools.size();
-    }
-
-    @Override
-    public void add( BoltServerAddress address )
-    {
-        pools.putIfAbsent( address, new LinkedBlockingQueue<PooledConnection>( poolSettings.maxIdleConnectionPoolSize() ) );
-    }
-
-    @Override
-    public Set<BoltServerAddress> addresses()
-    {
-        return pools.keySet();
     }
 
     private BlockingQueue<PooledConnection> pool( BoltServerAddress address )
