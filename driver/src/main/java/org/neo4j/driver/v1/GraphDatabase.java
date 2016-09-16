@@ -23,13 +23,17 @@ import java.net.URI;
 import java.security.GeneralSecurityException;
 
 import org.neo4j.driver.internal.ClusterDriver;
-import org.neo4j.driver.internal.ClusterSettings;
 import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.DirectDriver;
+import org.neo4j.driver.internal.NetworkSession;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.net.pooling.PoolSettings;
+import org.neo4j.driver.internal.net.pooling.SocketConnectionPool;
 import org.neo4j.driver.internal.security.SecurityPlan;
+import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.util.BiFunction;
 
 import static java.lang.String.format;
 import static org.neo4j.driver.internal.security.SecurityPlan.insecure;
@@ -43,6 +47,17 @@ import static org.neo4j.driver.v1.Config.EncryptionLevel.REQUIRED_NON_LOCAL;
  */
 public class GraphDatabase
 {
+
+    private static final BiFunction<Connection,Logger,Session>
+            SESSION_PROVIDER = new BiFunction<Connection,Logger,Session>()
+    {
+        @Override
+        public Session apply( Connection connection, Logger logger )
+        {
+            return new NetworkSession( connection, logger );
+        }
+    };
+
     /**
      * Return a driver for a Neo4j instance with the default configuration settings
      *
@@ -145,7 +160,7 @@ public class GraphDatabase
                 new ConnectionSettings( authToken == null ? AuthTokens.none() : authToken );
 
         // Make sure we have some configuration to play with
-        if (config == null)
+        if ( config == null )
         {
             config = Config.defaultConfig();
         }
@@ -167,12 +182,14 @@ public class GraphDatabase
                 config.idleTimeBeforeConnectionTest() );
 
         // And finally, construct the driver proper
+        ConnectionPool connectionPool =
+                new SocketConnectionPool( connectionSettings, securityPlan, poolSettings, config.logging() );
         switch ( scheme.toLowerCase() )
         {
         case "bolt":
-            return new DirectDriver( address, connectionSettings, securityPlan, poolSettings, config.logging() );
-        case "bolt+discovery":
-            return new ClusterDriver( address, connectionSettings, ClusterSettings.fromConfig( config ), securityPlan, poolSettings, config.logging() );
+            return new DirectDriver( address, connectionPool, securityPlan, config.logging() );
+        case "bolt+routing":
+            return new ClusterDriver( address, connectionPool, securityPlan, SESSION_PROVIDER, config.logging() );
         default:
             throw new ClientException( format( "Unsupported URI scheme: %s", scheme ) );
         }
@@ -187,7 +204,7 @@ public class GraphDatabase
     {
         Config.EncryptionLevel encryptionLevel = config.encryptionLevel();
         boolean requiresEncryption = encryptionLevel.equals( REQUIRED ) ||
-                (encryptionLevel.equals( REQUIRED_NON_LOCAL ) && !address.isLocal() );
+                                     (encryptionLevel.equals( REQUIRED_NON_LOCAL ) && !address.isLocal());
 
         if ( requiresEncryption )
         {
@@ -195,16 +212,19 @@ public class GraphDatabase
             switch ( config.trustStrategy().strategy() )
             {
             case TRUST_SIGNED_CERTIFICATES:
-                logger.warn( "Option `TRUST_SIGNED_CERTIFICATE` has been deprecated and will be removed in a future version " +
-                                                    "of the driver. Please switch to use `TRUST_CUSTOM_CA_SIGNED_CERTIFICATES` instead." );
-                            //intentional fallthrough
+                logger.warn(
+                        "Option `TRUST_SIGNED_CERTIFICATE` has been deprecated and will be removed in a future " +
+                        "version " +
+                        "of the driver. Please switch to use `TRUST_CUSTOM_CA_SIGNED_CERTIFICATES` instead." );
+                //intentional fallthrough
             case TRUST_CUSTOM_CA_SIGNED_CERTIFICATES:
                 return SecurityPlan.forSignedCertificates( config.trustStrategy().certFile() );
             case TRUST_ON_FIRST_USE:
                 return SecurityPlan.forTrustOnFirstUse( config.trustStrategy().certFile(),
                         address, logger );
             default:
-                throw new ClientException( "Unknown TLS authentication strategy: " + config.trustStrategy().strategy().name() );
+                throw new ClientException(
+                        "Unknown TLS authentication strategy: " + config.trustStrategy().strategy().name() );
             }
         }
         else

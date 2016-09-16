@@ -16,35 +16,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.neo4j.driver.internal;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.internal.net.pooling.PoolSettings;
-import org.neo4j.driver.internal.net.pooling.SocketConnectionPool;
 import org.neo4j.driver.internal.security.SecurityPlan;
+import org.neo4j.driver.internal.spi.ConnectionPool;
+import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Session;
-import org.neo4j.driver.v1.SessionMode;
 
 import static java.lang.String.format;
 
 public class DirectDriver extends BaseDriver
 {
-    public DirectDriver( BoltServerAddress address, ConnectionSettings connectionSettings, SecurityPlan securityPlan,
-                         PoolSettings poolSettings, Logging logging )
+    protected final ConnectionPool connections;
+    private final BoltServerAddress address;
+
+    public DirectDriver( BoltServerAddress address, ConnectionPool connections, SecurityPlan securityPlan,
+            Logging logging )
     {
-        super( new SocketConnectionPool( connectionSettings, securityPlan, poolSettings, logging ), address, securityPlan, logging );
+        super( securityPlan, logging );
+        this.connections = connections;
+        this.address = address;
     }
 
     @Override
     public Session session()
     {
-        return new NetworkSession( connections.acquire(), log );
+        return new NetworkSession( connections.acquire( address ), log );
     }
 
     @Override
-    public Session session( SessionMode ignore )
+    public Session session( AccessMode ignore )
     {
         return session();
     }
@@ -60,5 +63,10 @@ public class DirectDriver extends BaseDriver
         {
             log.error( format( "~~ [ERROR] %s", ex.getMessage() ), ex );
         }
+    }
+
+    BoltServerAddress server()
+    {
+        return address;
     }
 }

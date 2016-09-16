@@ -60,7 +60,7 @@ public class NetworkSession implements Session
     private ExplicitTransaction currentTransaction;
     private AtomicBoolean isOpen = new AtomicBoolean( true );
 
-    NetworkSession( Connection connection, Logger logger )
+    public NetworkSession( Connection connection, Logger logger )
     {
         this.connection = connection;
         this.logger = logger;

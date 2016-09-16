@@ -16,34 +16,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.neo4j.driver.v1;
 
-package org.neo4j.driver.internal;
-
-import org.neo4j.driver.v1.Config;
-
-public class ClusterSettings
+public enum AccessMode
 {
-    private final int readRetry;
-    private final int minimumNumberOfServers;
-
-    public ClusterSettings( int readRetry, int minimumNumberOfServers )
-    {
-        this.readRetry = readRetry;
-        this.minimumNumberOfServers = minimumNumberOfServers;
-    }
-
-    public static ClusterSettings fromConfig( Config config )
-    {
-        return new ClusterSettings( config.maximumReadRetriesForCluster(), config.minimumKnownClusterSize() ) ;
-    }
-
-    public int readRetry()
-    {
-        return readRetry;
-    }
-
-    public int minimumNumberOfServers()
-    {
-        return minimumNumberOfServers;
-    }
+    READ,
+    WRITE
 }

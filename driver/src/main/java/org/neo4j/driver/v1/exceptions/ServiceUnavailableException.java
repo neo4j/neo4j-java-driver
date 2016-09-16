@@ -28,4 +28,9 @@ public class ServiceUnavailableException extends Neo4jException
     {
         super( message );
     }
+
+    public ServiceUnavailableException( String message, Throwable throwable )
+    {
+        super( message, throwable);
+    }
 }

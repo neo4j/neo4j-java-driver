@@ -18,11 +18,9 @@
  */
 package org.neo4j.driver.internal.net.pooling;
 
-import java.util.Comparator;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -55,26 +53,10 @@ import org.neo4j.driver.v1.exceptions.ClientException;
  */
 public class SocketConnectionPool implements ConnectionPool
 {
-
     /**
      * Pools, organized by server address.
      */
-    private final ConcurrentSkipListMap<BoltServerAddress,BlockingQueue<PooledConnection>> pools = new ConcurrentSkipListMap<>(
-
-            new Comparator<BoltServerAddress>()
-            {
-                @Override
-                public int compare( BoltServerAddress o1, BoltServerAddress o2 )
-                {
-                    int compare = o1.host().compareTo( o2.host() );
-                    if (compare == 0)
-                    {
-                        compare = Integer.compare( o1.port(), o2.port() );
-                    }
-
-                    return compare;
-                }
-            } );
+    private final ConcurrentHashMap<BoltServerAddress,BlockingQueue<PooledConnection>> pools = new ConcurrentHashMap<>();
 
     private final Clock clock = Clock.SYSTEM;
 
@@ -82,8 +64,6 @@ public class SocketConnectionPool implements ConnectionPool
     private final SecurityPlan securityPlan;
     private final PoolSettings poolSettings;
     private final Logging logging;
-
-    private BoltServerAddress current = null;
 
     /** Shutdown flag */
     private final AtomicBoolean stopped = new AtomicBoolean( false );
@@ -139,61 +119,13 @@ public class SocketConnectionPool implements ConnectionPool
         return conn;
     }
 
-    @Override
-    public Connection acquire()
-    {
-        if ( current == null )
-        {
-            current = pools.firstKey();
-        }
-        else
-        {
-            current = pools.higherKey( current );
-            //We've gone through all connections, start over
-            if (current == null)
-            {
-                current = pools.firstKey();
-            }
-        }
-
-        if ( current == null )
-        {
-            throw new IllegalStateException( "Cannot acquire connection from an empty pool" );
-        }
-
-        return acquire( current );
-    }
-
-    @Override
-    public boolean isEmpty()
-    {
-        return pools.isEmpty();
-    }
-
-    @Override
-    public int addressCount()
-    {
-        return pools.size();
-    }
-
-    @Override
-    public void add( BoltServerAddress address )
-    {
-        pools.putIfAbsent( address, new LinkedBlockingQueue<PooledConnection>(  ) );
-    }
-
-    @Override
-    public Set<BoltServerAddress> addresses()
-    {
-        return pools.keySet();
-    }
-
     private BlockingQueue<PooledConnection> pool( BoltServerAddress address )
     {
         BlockingQueue<PooledConnection> pool = pools.get( address );
         if ( pool == null )
         {
             pool = new LinkedBlockingQueue<>(poolSettings.maxIdleConnectionPoolSize());
+
             if ( pools.putIfAbsent( address, pool ) != null )
             {
                 // We lost a race to create the pool, dispose of the one we created, and recurse
@@ -219,6 +151,12 @@ public class SocketConnectionPool implements ConnectionPool
                 connection.dispose();
             }
         }
+    }
+
+    @Override
+    public boolean hasAddress( BoltServerAddress address )
+    {
+        return pools.containsKey( address );
     }
 
     @Override

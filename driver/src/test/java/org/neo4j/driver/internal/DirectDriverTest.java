@@ -24,7 +24,6 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.Collection;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.v1.Driver;
@@ -49,13 +48,8 @@ public class DirectDriverTest
         DirectDriver driver = (DirectDriver) GraphDatabase.driver( uri );
 
         // Then
-        Collection<BoltServerAddress> addresses = driver.servers();
-        assertThat( addresses.size(), equalTo( 1 ) );
-        for ( BoltServerAddress address : addresses )
-        {
-            assertThat( address.port(), equalTo( BoltServerAddress.DEFAULT_PORT ) );
-        }
-
+        BoltServerAddress address = driver.server();
+        assertThat( address.port(), equalTo( BoltServerAddress.DEFAULT_PORT ) );
     }
 
     @Test
@@ -69,9 +63,8 @@ public class DirectDriverTest
         DirectDriver driver = (DirectDriver) GraphDatabase.driver( uri );
 
         // Then
-        Collection<BoltServerAddress> addresses = driver.servers();
-        assertThat( addresses.size(), equalTo( 1 ) );
-        assertThat( addresses.contains( address ), equalTo( true ) );
+        BoltServerAddress driverAddress = driver.server();
+        assertThat( driverAddress, equalTo( address ));
 
     }
 

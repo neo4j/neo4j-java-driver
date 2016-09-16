@@ -16,10 +16,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1;
+package org.neo4j.driver.internal;
 
-public enum SessionMode
+import org.neo4j.driver.internal.net.BoltServerAddress;
+
+/**
+ * Interface used for tracking errors when connected to a cluster.
+ */
+interface ClusteredErrorHandler
 {
-    READ,
-    WRITE
+    void onConnectionFailure( BoltServerAddress address );
+
+    void onWriteFailure( BoltServerAddress address );
 }

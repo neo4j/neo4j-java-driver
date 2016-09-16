@@ -23,7 +23,6 @@ import java.util.logging.Level;
 
 import org.neo4j.driver.internal.logging.JULogging;
 import org.neo4j.driver.internal.net.pooling.PoolSettings;
-import org.neo4j.driver.v1.exceptions.ConnectionFailureException;
 import org.neo4j.driver.v1.util.Immutable;
 
 import static java.lang.System.getProperty;
@@ -49,9 +48,6 @@ public class Config
     /** User defined logging */
     private final Logging logging;
 
-    /** The size of connection pool for each database url */
-    private final int connectionPoolSize;
-
     private final int maxIdleConnectionPoolSize;
 
     /** Connections that have been idle longer than this threshold will have a ping test performed on them. */
@@ -64,20 +60,17 @@ public class Config
     private final TrustStrategy trustStrategy;
 
     private final int minServersInCluster;
-    private final int readRetries;
 
     private Config( ConfigBuilder builder)
     {
         this.logging = builder.logging;
 
-        this.connectionPoolSize = builder.connectionPoolSize;
         this.maxIdleConnectionPoolSize = builder.maxIdleConnectionPoolSize;
         this.idleTimeBeforeConnectionTest = builder.idleTimeBeforeConnectionTest;
 
         this.encryptionLevel = builder.encryptionLevel;
         this.trustStrategy = builder.trustStrategy;
         this.minServersInCluster = builder.minServersInCluster;
-        this.readRetries = builder.readRetries;
     }
 
     /**
@@ -135,22 +128,6 @@ public class Config
     }
 
     /**
-     * @return the number of retries to be attempted for read sessions
-     */
-    public int maximumReadRetriesForCluster()
-    {
-        return readRetries;
-    }
-
-    /**
-     * @return the minimum number of servers the driver should know about.
-     */
-    public int minimumKnownClusterSize()
-    {
-        return minServersInCluster;
-    }
-
-    /**
      * Return a {@link ConfigBuilder} instance
      * @return a {@link ConfigBuilder} instance
      */
@@ -173,14 +150,12 @@ public class Config
     public static class ConfigBuilder
     {
         private Logging logging = new JULogging( Level.INFO );
-        private int connectionPoolSize = 50;
         private int maxIdleConnectionPoolSize = PoolSettings.DEFAULT_MAX_IDLE_CONNECTION_POOL_SIZE;
         private long idleTimeBeforeConnectionTest = PoolSettings.DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST;
         private EncryptionLevel encryptionLevel = EncryptionLevel.REQUIRED_NON_LOCAL;
         private TrustStrategy trustStrategy = trustOnFirstUse(
                 new File( getProperty( "user.home" ), ".neo4j" + File.separator + "known_hosts" ) );
         public int minServersInCluster = 3;
-        public int readRetries = 3;
 
         private ConfigBuilder() {}
 
@@ -210,7 +185,6 @@ public class Config
         @Deprecated
         public ConfigBuilder withMaxSessions( int size )
         {
-            this.connectionPoolSize = size;
             return this;
         }
 
@@ -282,37 +256,6 @@ public class Config
         public ConfigBuilder withTrustStrategy( TrustStrategy trustStrategy )
         {
             this.trustStrategy = trustStrategy;
-            return this;
-        }
-
-        /**
-         * For read queries the driver can do automatic retries upon server failures,
-         *
-         * This setting specifies how many retries that should be attempted before giving up
-         * and throw a {@link ConnectionFailureException}. If not specified this setting defaults to 3 retries before
-         * giving up.
-         * @param retries The number or retries to attempt before giving up.
-         * @return this builder
-         */
-        public ConfigBuilder withMaximumReadRetriesForCluster( int retries )
-        {
-            this.readRetries = retries;
-            return this;
-        }
-
-        /**
-         * Specifies the minimum numbers in a cluster a driver should know about.
-         * <p>
-         * Once the number of servers drops below this threshold, the driver will automatically trigger a discovery
-         * event
-         * asking the servers for more members.
-         *
-         * @param minNumberOfServers the minimum number of servers the driver should know about
-         * @return this builder
-         */
-        public ConfigBuilder withMinimumKnownClusterSize( int minNumberOfServers )
-        {
-            this.minServersInCluster = minNumberOfServers;
             return this;
         }
 

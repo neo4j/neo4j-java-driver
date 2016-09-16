@@ -16,26 +16,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.neo4j.driver.v1.util;
 
-package org.neo4j.driver.internal.spi;
+/**
+ * Same as {@link java.util.function.BiFunction}, but defined here to work in versions older than java 8.
+ *
+ * @param <T> the type of the first argument to the function
+ * @param <U> the type of the second argument to the function
+ * @param <R> the type of the result of the function
+ *
+ */
+public interface BiFunction<T, U, R> {
 
-import org.neo4j.driver.internal.net.BoltServerAddress;
-
-public interface ConnectionPool extends AutoCloseable
-{
     /**
-     * Acquire a connection - if a live connection exists in the pool, it will
-     * be used, otherwise a new connection will be created.
+     * Applies this function to the given arguments.
      *
-     * @param address The address to acquire
+     * @param t the first function argument
+     * @param u the second function argument
+     * @return the function result
      */
-    Connection acquire( BoltServerAddress address );
-
-    /**
-     * Removes all connections to a given address from the pool.
-     * @param address The address to remove.
-     */
-    void purge( BoltServerAddress address );
-
-    boolean hasAddress( BoltServerAddress address );
+    R apply(T t, U u);
 }
