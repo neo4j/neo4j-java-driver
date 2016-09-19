@@ -20,6 +20,7 @@ package org.neo4j.driver.internal;
 
 import org.junit.Ignore;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
@@ -52,7 +53,7 @@ import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
+@Ignore
 public class ClusterDriverStubTest
 {
     @Rule
@@ -60,7 +61,7 @@ public class ClusterDriverStubTest
 
     private static final Config config = Config.build().withLogging( new ConsoleLogging( Level.INFO ) ).toConfig();
 
-   @Ignore
+    @Test
     public void shouldDiscoverServers() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
@@ -82,7 +83,7 @@ public class ClusterDriverStubTest
         assertThat( server.exitStatus(), equalTo( 0 ) );
     }
 
-   @Ignore
+    @Test
     public void shouldDiscoverNewServers() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
@@ -105,7 +106,7 @@ public class ClusterDriverStubTest
         assertThat( server.exitStatus(), equalTo( 0 ) );
     }
 
-   @Ignore
+    @Test
     public void shouldHandleEmptyResponse() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
@@ -122,7 +123,7 @@ public class ClusterDriverStubTest
         assertThat( server.exitStatus(), equalTo( 0 ) );
     }
 
-   @Ignore
+    @Test
     public void shouldHandleAcquireReadSession() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
@@ -151,7 +152,7 @@ public class ClusterDriverStubTest
         assertThat( readServer.exitStatus(), equalTo( 0 ) );
     }
 
-   @Ignore
+    @Test
     public void shouldRoundRobinReadServers() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
@@ -185,7 +186,7 @@ public class ClusterDriverStubTest
         assertThat( readServer2.exitStatus(), equalTo( 0 ) );
     }
 
-   @Ignore
+    @Test
     public void shouldThrowSessionExpiredIfReadServerDisappears()
             throws IOException, InterruptedException, StubServer.ForceKilled
     {
@@ -208,7 +209,7 @@ public class ClusterDriverStubTest
         assertThat( server.exitStatus(), equalTo( 0 ) );
     }
 
-   @Ignore
+    @Test
     public void shouldThrowSessionExpiredIfWriteServerDisappears()
             throws IOException, InterruptedException, StubServer.ForceKilled
     {
@@ -231,7 +232,7 @@ public class ClusterDriverStubTest
         assertThat( server.exitStatus(), equalTo( 0 ) );
     }
 
-   @Ignore
+    @Test
     public void shouldHandleAcquireWriteSession() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
@@ -250,7 +251,7 @@ public class ClusterDriverStubTest
         assertThat( writeServer.exitStatus(), equalTo( 0 ) );
     }
 
-   @Ignore
+    @Test
     public void shouldRoundRobinWriteSessions() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
@@ -276,7 +277,7 @@ public class ClusterDriverStubTest
         assertThat( writeServer2.exitStatus(), equalTo( 0 ) );
     }
 
-   @Ignore
+    @Test
     public void shouldRememberEndpoints() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
@@ -305,7 +306,7 @@ public class ClusterDriverStubTest
         assertThat( readServer.exitStatus(), equalTo( 0 ) );
     }
 
-   @Ignore
+    @Test
     public void shouldForgetEndpointsOnFailure() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
@@ -336,7 +337,7 @@ public class ClusterDriverStubTest
         assertThat( server.exitStatus(), equalTo( 0 ) );
     }
 
-   @Ignore
+    @Test
     public void shouldRediscoverIfNecessaryOnSessionAcquisition() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
@@ -366,7 +367,7 @@ public class ClusterDriverStubTest
         assertThat( server.exitStatus(), equalTo( 0 ) );
     }
 
-   @Ignore
+    @Test
     public void shouldOnlyGetServersOnce() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
@@ -412,7 +413,7 @@ public class ClusterDriverStubTest
         assertThat( server.exitStatus(), equalTo( 0 ) );
     }
 
-   @Ignore
+    @Test
     public void shouldFailOnNonDiscoverableServer() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // When
@@ -435,7 +436,7 @@ public class ClusterDriverStubTest
         assertThat( server.exitStatus(), equalTo( 0 ) );
     }
 
-   @Ignore
+    @Test
     public void shouldHandleLeaderSwitchWhenWriting()
             throws IOException, InterruptedException, StubServer.ForceKilled
     {
