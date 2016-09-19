@@ -427,7 +427,7 @@ public class BufferingChunkedInput implements PackInput
         catch ( IOException e )
         {
             String message = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
-            throw new ClientException(
+            throw new ConnectionFailureException(
                     "Unable to process request: " + message + " buffer: \n" + BytePrinter.hex( buffer ), e );
         }
     }

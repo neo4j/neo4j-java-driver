@@ -29,4 +29,9 @@ public class ConnectionFailureException extends Neo4jException
     {
         super( message );
     }
+
+    public ConnectionFailureException( String message, Throwable e )
+    {
+        super( message, e );
+    }
 }
