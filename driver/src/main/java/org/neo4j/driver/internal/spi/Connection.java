@@ -114,12 +114,6 @@ public interface Connection extends AutoCloseable
     void resetAsync();
 
     /**
-     * Return true if the current session statement execution has been interrupted by another thread, otherwise false.
-     * @return true if the current session statement execution has been interrupted by another thread, otherwise false
-     */
-    boolean isInterrupted();
-
-    /**
      * Returns the version of the server connected to.
      * @return The version of the server connected to.
      */

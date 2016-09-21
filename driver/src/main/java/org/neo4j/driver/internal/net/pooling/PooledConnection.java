@@ -226,12 +226,6 @@ public class PooledConnection implements Connection
     }
 
     @Override
-    public boolean isInterrupted()
-    {
-        return delegate.isInterrupted();
-    }
-
-    @Override
     public String server()
     {
         return delegate.server();
@@ -260,7 +254,7 @@ public class PooledConnection implements Connection
         {
             unrecoverableErrorsOccurred = true;
         }
-        else if( !isInterrupted() )
+        else
         {
             ackFailure();
         }

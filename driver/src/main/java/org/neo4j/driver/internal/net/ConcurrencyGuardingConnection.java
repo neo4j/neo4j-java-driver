@@ -207,12 +207,6 @@ public class ConcurrencyGuardingConnection implements Connection
         delegate.resetAsync();
     }
 
-    @Override
-    public boolean isInterrupted()
-    {
-        return delegate.isInterrupted();
-    }
-
     private void markAsAvailable()
     {
         inUse.set( false );
