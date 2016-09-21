@@ -1,15 +1,15 @@
 /**
  * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
- *
+ * <p>
  * This file is part of Neo4j.
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,14 +24,13 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.Collections;
-import java.util.Iterator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
-import org.neo4j.driver.internal.value.IntegerValue;
-import org.neo4j.driver.internal.value.StringValue;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
@@ -56,6 +55,7 @@ import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.security.SecurityPlan.insecure;
+import static org.neo4j.driver.v1.Values.value;
 
 public class ClusterDriverTest
 {
@@ -64,7 +64,7 @@ public class ClusterDriverTest
 
     private static final BoltServerAddress SEED = new BoltServerAddress( "localhost", 7687 );
     private static final String GET_SERVERS = "CALL dbms.cluster.routing.getServers";
-    private static final List<BoltServerAddress> NO_ADDRESSES = Collections.<BoltServerAddress>emptyList();
+    private static final List<String> NO_ADDRESSES = Collections.emptyList();
 
     @Test
     public void shouldDoRoutingOnInitialization()
@@ -72,9 +72,9 @@ public class ClusterDriverTest
         // Given
         final Session session = mock( Session.class );
         when( session.run( GET_SERVERS ) ).thenReturn(
-                getServers( singletonList( boltAddress( "localhost", 1111 ) ),
-                        singletonList( boltAddress( "localhost", 2222 ) ),
-                        singletonList( boltAddress( "localhost", 3333 ) ) ) );
+                getServers( singletonList( "localhost:1111" ),
+                        singletonList( "localhost:2222" ),
+                        singletonList( "localhost:3333" ) ) );
 
         // When
         ClusterDriver clusterDriver = forSession( session );
@@ -96,11 +96,11 @@ public class ClusterDriverTest
         final Session session = mock( Session.class );
         when( session.run( GET_SERVERS ) )
                 .thenReturn(
-                        getServers( singletonList( boltAddress( "localhost", 1111 ) ), NO_ADDRESSES, NO_ADDRESSES ) )
+                        getServers( singletonList( "localhost:1111" ), NO_ADDRESSES, NO_ADDRESSES ) )
                 .thenReturn(
-                        getServers( singletonList( boltAddress( "localhost", 1112 ) ),
-                                singletonList( boltAddress( "localhost", 2222 ) ),
-                                singletonList( boltAddress( "localhost", 3333 ) ) ) );
+                        getServers( singletonList( "localhost:1112" ),
+                                singletonList( "localhost:2222" ),
+                                singletonList( "localhost:3333" ) ) );
 
         ClusterDriver clusterDriver = forSession( session );
 
@@ -129,12 +129,11 @@ public class ClusterDriverTest
         final Session session = mock( Session.class );
         when( session.run( GET_SERVERS ) )
                 .thenReturn(
-                        getServers( asList( boltAddress( "localhost", 1111 ), boltAddress( "localhost", 1112 ),
-                                boltAddress( "localhost", 1113 ) ),
-                                singletonList( boltAddress( "localhost", 2222 ) ),
-                                singletonList( boltAddress( "localhost", 3333 ) ) ) )
+                        getServers( asList( "localhost:1111", "localhost:1112", "localhost:1113" ),
+                                singletonList( "localhost:2222" ),
+                                singletonList( "localhost:3333" ) ) )
                 .thenReturn(
-                        getServers( singletonList( boltAddress( "localhost", 5555 ) ), NO_ADDRESSES, NO_ADDRESSES ) );
+                        getServers( singletonList( "localhost:5555" ), NO_ADDRESSES, NO_ADDRESSES ) );
 
         ClusterDriver clusterDriver = forSession( session );
 
@@ -180,59 +179,34 @@ public class ClusterDriverTest
         return new BoltServerAddress( host, port );
     }
 
-    StatementResult getServers( final List<BoltServerAddress> routers, final List<BoltServerAddress> readers,
-            final List<BoltServerAddress> writers )
+    StatementResult getServers( final List<String> routers, final List<String> readers,
+            final List<String> writers )
     {
-
-
         return new StatementResult()
         {
-            private final int totalSize = routers.size() + readers.size() + writers.size();
-            private final Iterator<BoltServerAddress> routeIterator = routers.iterator();
-            private final Iterator<BoltServerAddress> readIterator = readers.iterator();
-            private final Iterator<BoltServerAddress> writeIterator = writers.iterator();
             private int counter = 0;
 
             @Override
             public List<String> keys()
             {
-                return asList( "address", "mode", "expires" );
+                return asList( "ttl", "servers" );
             }
 
             @Override
             public boolean hasNext()
             {
-                return counter++ < totalSize;
+                return counter++ < 1;
             }
 
             @Override
             public Record next()
             {
-                if ( routeIterator.hasNext() )
-                {
-                    return new InternalRecord( asList( "address", "mode", "expires" ),
-                            new Value[]{new StringValue( routeIterator.next().toString() ),
-                                    new StringValue( "ROUTE" ),
-                                    new IntegerValue( Long.MAX_VALUE )} );
-                }
-                else if ( readIterator.hasNext() )
-                {
-                    return new InternalRecord( asList( "address", "mode", "expires" ),
-                            new Value[]{new StringValue( readIterator.next().toString() ),
-                                    new StringValue( "READ" ),
-                                    new IntegerValue( Long.MAX_VALUE )} );
-                }
-                else if ( writeIterator.hasNext() )
-                {
-                    return new InternalRecord( asList( "address", "mode", "expires" ),
-                            new Value[]{new StringValue( writeIterator.next().toString() ),
-                                    new StringValue( "WRITE" ),
-                                    new IntegerValue( Long.MAX_VALUE )} );
-                }
-                else
-                {
-                    return Collections.<Record>emptyIterator().next();
-                }
+                return new InternalRecord( asList( "ttl", "servers" ),
+                        new Value[]{
+                                value( Long.MAX_VALUE ),
+                                value( asList( serverInfo( "ROUTE", routers ), serverInfo( "WRITE", writers ),
+                                        serverInfo( "READ", readers ) ) )
+                        } );
             }
 
             @Override
@@ -268,9 +242,18 @@ public class ClusterDriverTest
             @Override
             public void remove()
             {
-                throw new UnsupportedOperationException(  );
+                throw new UnsupportedOperationException();
             }
         };
+    }
+
+    private Map<String,Object> serverInfo( String role, List<String> addresses )
+    {
+        Map<String,Object> map = new HashMap<>();
+        map.put( "role", role );
+        map.put( "addresses", addresses );
+
+        return map;
     }
 
     private ConnectionPool pool()

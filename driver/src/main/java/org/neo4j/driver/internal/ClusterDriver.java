@@ -1,15 +1,15 @@
 /**
  * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
- *
+ * <p>
  * This file is part of Neo4j.
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,6 +20,7 @@ package org.neo4j.driver.internal;
 
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Set;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
@@ -34,10 +35,12 @@ import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ConnectionFailureException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.util.BiFunction;
+import org.neo4j.driver.v1.util.Function;
 
 import static java.lang.String.format;
 
@@ -50,7 +53,7 @@ public class ClusterDriver extends BaseDriver
         public int compare( BoltServerAddress o1, BoltServerAddress o2 )
         {
             int compare = o1.host().compareTo( o2.host() );
-            if (compare == 0)
+            if ( compare == 0 )
             {
                 compare = Integer.compare( o1.port(), o2.port() );
             }
@@ -60,16 +63,17 @@ public class ClusterDriver extends BaseDriver
     };
     private static final int MIN_SERVERS = 2;
     private final ConnectionPool connections;
-    private final BiFunction<Connection,Logger, Session> sessionProvider;
+    private final BiFunction<Connection,Logger,Session> sessionProvider;
 
-    private final ConcurrentRoundRobinSet<BoltServerAddress> routingServers = new ConcurrentRoundRobinSet<>(COMPARATOR);
-    private final ConcurrentRoundRobinSet<BoltServerAddress> readServers = new ConcurrentRoundRobinSet<>(COMPARATOR);
-    private final ConcurrentRoundRobinSet<BoltServerAddress> writeServers = new ConcurrentRoundRobinSet<>(COMPARATOR);
+    private final ConcurrentRoundRobinSet<BoltServerAddress> routingServers =
+            new ConcurrentRoundRobinSet<>( COMPARATOR );
+    private final ConcurrentRoundRobinSet<BoltServerAddress> readServers = new ConcurrentRoundRobinSet<>( COMPARATOR );
+    private final ConcurrentRoundRobinSet<BoltServerAddress> writeServers = new ConcurrentRoundRobinSet<>( COMPARATOR );
 
     public ClusterDriver( BoltServerAddress seedAddress,
             ConnectionPool connections,
             SecurityPlan securityPlan,
-            BiFunction<Connection,Logger, Session> sessionProvider,
+            BiFunction<Connection,Logger,Session> sessionProvider,
             Logging logging )
     {
         super( securityPlan, logging );
@@ -85,7 +89,7 @@ public class ClusterDriver extends BaseDriver
         {
             if ( routingServers.size() < MIN_SERVERS ||
                  readServers.isEmpty() ||
-                 writeServers.isEmpty())
+                 writeServers.isEmpty() )
             {
                 getServers();
             }
@@ -107,18 +111,22 @@ public class ClusterDriver extends BaseDriver
                     @Override
                     public void accept( Record record )
                     {
-                        BoltServerAddress newAddress = new BoltServerAddress( record.get( "address" ).asString() );
-                        switch ( record.get( "mode" ).asString().toUpperCase() )
+                        long ttl = record.get( "ttl" ).asLong();
+                        List<ServerInfo> servers = servers( record );
+                        for ( ServerInfo server : servers )
                         {
-                        case "READ":
-                            readServers.add( newAddress );
-                            break;
-                        case "WRITE":
-                            writeServers.add( newAddress );
-                            break;
-                        case "ROUTE":
-                            routingServers.add( newAddress );
-                            break;
+                            switch ( server.role() )
+                            {
+                            case "READ":
+                                readServers.addAll( server.addresses() );
+                                break;
+                            case "WRITE":
+                                writeServers.addAll( server.addresses() );
+                                break;
+                            case "ROUTE":
+                                routingServers.addAll( server.addresses() );
+                                break;
+                            }
                         }
                     }
                 } );
@@ -137,13 +145,54 @@ public class ClusterDriver extends BaseDriver
                 this.close();
                 throw new ServiceUnavailableException(
                         String.format( "Server %s couldn't perform discovery",
-                                address == null ? "`UNKNOWN`" : address.toString()),  ex );
+                                address == null ? "`UNKNOWN`" : address.toString() ), ex );
             }
             else
             {
                 throw ex;
             }
         }
+    }
+
+    private static class ServerInfo
+    {
+        private final List<BoltServerAddress> addresses;
+        private final String role;
+
+        public ServerInfo( List<BoltServerAddress> addresses, String role )
+        {
+            this.addresses = addresses;
+            this.role = role;
+        }
+
+        public String role()
+        {
+            return role;
+        }
+
+        List<BoltServerAddress> addresses()
+        {
+            return addresses;
+        }
+    }
+
+    private List<ServerInfo> servers( Record record )
+    {
+        return record.get( "servers" ).asList( new Function<Value,ServerInfo>()
+        {
+            @Override
+            public ServerInfo apply( Value value )
+            {
+                return new ServerInfo( value.get("addresses").asList( new Function<Value,BoltServerAddress>()
+                {
+                    @Override
+                    public BoltServerAddress apply( Value value )
+                    {
+                        return new BoltServerAddress( value.asString() );
+                    }
+                } ), value.get("role").asString() );
+            }
+        } );
     }
 
     //must be called from a synchronized method
@@ -153,7 +202,7 @@ public class ClusterDriver extends BaseDriver
         Session session = null;
         try
         {
-            acquire = connections.acquire(address);
+            acquire = connections.acquire( address );
             session = sessionProvider.apply( acquire, log );
 
             StatementResult records = session.run( format( "CALL %s", procedureName ) );
@@ -255,13 +304,13 @@ public class ClusterDriver extends BaseDriver
     //For testing
     Set<BoltServerAddress> readServers()
     {
-        return Collections.unmodifiableSet(readServers);
+        return Collections.unmodifiableSet( readServers );
     }
 
     //For testing
     Set<BoltServerAddress> writeServers()
     {
-        return Collections.unmodifiableSet( writeServers);
+        return Collections.unmodifiableSet( writeServers );
     }
 
     //For testing

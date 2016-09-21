@@ -5,5 +5,5 @@
 
 C: RUN "CALL dbms.cluster.routing.getServers" {}
    PULL_ALL
-S: SUCCESS {"fields": ["address", "mode", "expires"]}
+S: SUCCESS {"fields": ["ttl", "servers"]}
    SUCCESS {}
