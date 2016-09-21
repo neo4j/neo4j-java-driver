@@ -53,6 +53,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.core.IsNot.not;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.security.SecurityPlan.insecure;
 import static org.neo4j.driver.v1.Values.value;
@@ -65,6 +66,7 @@ public class ClusterDriverTest
     private static final BoltServerAddress SEED = new BoltServerAddress( "localhost", 7687 );
     private static final String GET_SERVERS = "CALL dbms.cluster.routing.getServers";
     private static final List<String> NO_ADDRESSES = Collections.emptyList();
+    private final ConnectionPool pool = pool();
 
     @Test
     public void shouldDoRoutingOnInitialization()
@@ -81,7 +83,7 @@ public class ClusterDriverTest
 
         // Then
         assertThat( clusterDriver.routingServers(),
-                containsInAnyOrder( boltAddress( "localhost", 1111 ), SEED ) );
+                containsInAnyOrder( boltAddress( "localhost", 1111 )) );
         assertThat( clusterDriver.readServers(),
                 containsInAnyOrder( boltAddress( "localhost", 2222 ) ) );
         assertThat( clusterDriver.writeServers(),
@@ -105,7 +107,7 @@ public class ClusterDriverTest
         ClusterDriver clusterDriver = forSession( session );
 
         assertThat( clusterDriver.routingServers(),
-                containsInAnyOrder( boltAddress( "localhost", 1111 ), SEED ) );
+                containsInAnyOrder( boltAddress( "localhost", 1111 )) );
         assertThat( clusterDriver.readServers(), Matchers.<BoltServerAddress>empty() );
         assertThat( clusterDriver.writeServers(), Matchers.<BoltServerAddress>empty() );
 
@@ -115,7 +117,7 @@ public class ClusterDriverTest
 
         // Then
         assertThat( clusterDriver.routingServers(),
-                containsInAnyOrder( boltAddress( "localhost", 1111 ), boltAddress( "localhost", 1112 ), SEED ) );
+                containsInAnyOrder( boltAddress( "localhost", 1112 ) ));
         assertThat( clusterDriver.readServers(),
                 containsInAnyOrder( boltAddress( "localhost", 2222 ) ) );
         assertThat( clusterDriver.writeServers(),
@@ -161,9 +163,37 @@ public class ClusterDriverTest
         forSession( session );
     }
 
+    @Test
+    public void shouldForgetAboutServersOnRerouting()
+    {
+        // Given
+        final Session session = mock( Session.class );
+        when( session.run( GET_SERVERS ) )
+                .thenReturn(
+                        getServers( singletonList( "localhost:1111" ), NO_ADDRESSES, NO_ADDRESSES ) )
+                .thenReturn(
+                        getServers( singletonList( "localhost:1112" ),
+                                singletonList( "localhost:2222" ),
+                                singletonList( "localhost:3333" ) ) );
+
+        ClusterDriver clusterDriver = forSession( session );
+
+        assertThat( clusterDriver.routingServers(),
+                containsInAnyOrder( boltAddress( "localhost", 1111 )) );
+
+
+        // When
+        clusterDriver.session( AccessRole.READ );
+
+        // Then
+        assertThat( clusterDriver.routingServers(),
+                containsInAnyOrder( boltAddress( "localhost", 1112 ) ));
+        verify( pool ).purge( boltAddress( "localhost", 1111 ) );
+    }
+
     private ClusterDriver forSession( final Session session )
     {
-        return new ClusterDriver( SEED, pool(), insecure(),
+        return new ClusterDriver( SEED, pool, insecure(),
                 new BiFunction<Connection,Logger,Session>()
                 {
                     @Override

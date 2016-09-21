@@ -20,6 +20,7 @@ package org.neo4j.driver.internal;
 
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -96,6 +97,18 @@ public class ClusterDriver extends BaseDriver
         }
     }
 
+    private Set<BoltServerAddress> forgetAllServers()
+    {
+        final Set<BoltServerAddress> seen = new HashSet<>(  );
+        seen.addAll( routingServers );
+        seen.addAll( readServers );
+        seen.addAll( writeServers );
+        routingServers.clear();
+        readServers.clear();
+        writeServers.clear();
+        return seen;
+    }
+
     //must be called from a synchronized block
     private void getServers()
     {
@@ -103,9 +116,12 @@ public class ClusterDriver extends BaseDriver
         try
         {
             boolean success = false;
-            while ( !routingServers.isEmpty() && !success )
+
+            ConcurrentRoundRobinSet<BoltServerAddress> routers = new ConcurrentRoundRobinSet<>( routingServers );
+            final Set<BoltServerAddress> seen = forgetAllServers();
+            while ( !routers.isEmpty() && !success )
             {
-                address = routingServers.hop();
+                address = routers.hop();
                 success = call( address, GET_SERVERS, new Consumer<Record>()
                 {
                     @Override
@@ -115,6 +131,7 @@ public class ClusterDriver extends BaseDriver
                         List<ServerInfo> servers = servers( record );
                         for ( ServerInfo server : servers )
                         {
+                            seen.removeAll( server.addresses() );
                             switch ( server.role() )
                             {
                             case "READ":
@@ -134,6 +151,12 @@ public class ClusterDriver extends BaseDriver
             if ( !success )
             {
                 throw new ServiceUnavailableException( "Run out of servers" );
+            }
+
+            //the server no longer think we should care about these
+            for ( BoltServerAddress remove : seen )
+            {
+                connections.purge( remove );
             }
         }
         catch ( ClientException ex )
