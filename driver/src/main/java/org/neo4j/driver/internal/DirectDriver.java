@@ -21,7 +21,7 @@ package org.neo4j.driver.internal;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.ConnectionPool;
-import org.neo4j.driver.v1.AccessMode;
+import org.neo4j.driver.v1.AccessRole;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Session;
 
@@ -47,7 +47,7 @@ public class DirectDriver extends BaseDriver
     }
 
     @Override
-    public Session session( AccessMode ignore )
+    public Session session( AccessRole ignore )
     {
         return session();
     }

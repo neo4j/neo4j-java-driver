@@ -29,7 +29,7 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.ConcurrentRoundRobinSet;
 import org.neo4j.driver.internal.util.Consumer;
-import org.neo4j.driver.v1.AccessMode;
+import org.neo4j.driver.v1.AccessRole;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Record;
@@ -242,13 +242,13 @@ public class ClusterDriver extends BaseDriver
     @Override
     public Session session()
     {
-        return session( AccessMode.WRITE );
+        return session( AccessRole.WRITE );
     }
 
     @Override
-    public Session session( final AccessMode mode )
+    public Session session( final AccessRole role )
     {
-        return new ClusteredNetworkSession( acquireConnection( mode ),
+        return new ClusteredNetworkSession( acquireConnection( role ),
                 new ClusteredErrorHandler()
                 {
                     @Override
@@ -266,19 +266,19 @@ public class ClusterDriver extends BaseDriver
                 log );
     }
 
-    private Connection acquireConnection( AccessMode mode )
+    private Connection acquireConnection( AccessRole role )
     {
         //Potentially rediscover servers if we are not happy with our current knowledge
         checkServers();
 
-        switch ( mode )
+        switch ( role )
         {
         case READ:
             return connections.acquire( readServers.hop() );
         case WRITE:
             return connections.acquire( writeServers.hop() );
         default:
-            throw new ClientException( mode + " is not supported for creating new sessions" );
+            throw new ClientException( role + " is not supported for creating new sessions" );
         }
     }
 

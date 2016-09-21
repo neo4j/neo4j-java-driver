@@ -31,7 +31,7 @@ import java.util.Map;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
-import org.neo4j.driver.v1.AccessMode;
+import org.neo4j.driver.v1.AccessRole;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Record;
@@ -111,7 +111,7 @@ public class ClusterDriverTest
 
 
         // When
-        clusterDriver.session( AccessMode.READ );
+        clusterDriver.session( AccessRole.READ );
 
         // Then
         assertThat( clusterDriver.routingServers(),
@@ -138,7 +138,7 @@ public class ClusterDriverTest
         ClusterDriver clusterDriver = forSession( session );
 
         // When
-        clusterDriver.session( AccessMode.WRITE );
+        clusterDriver.session( AccessRole.WRITE );
 
         // Then
         assertThat( clusterDriver.routingServers(),

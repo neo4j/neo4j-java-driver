@@ -36,7 +36,7 @@ import java.util.logging.Level;
 
 import org.neo4j.driver.internal.logging.ConsoleLogging;
 import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.v1.AccessMode;
+import org.neo4j.driver.v1.AccessRole;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Record;
@@ -133,7 +133,7 @@ public class ClusterDriverStubTest
         StubServer readServer = StubServer.start( resource( "read_server.script" ), 9005 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         try ( ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config );
-              Session session = driver.session( AccessMode.READ ) )
+              Session session = driver.session( AccessRole.READ ) )
         {
             List<String> result = session.run( "MATCH (n) RETURN n.name" ).list( new Function<Record,String>()
             {
@@ -167,7 +167,7 @@ public class ClusterDriverStubTest
             // Run twice, one on each read server
             for ( int i = 0; i < 2; i++ )
             {
-                try ( Session session = driver.session( AccessMode.READ ) )
+                try ( Session session = driver.session( AccessRole.READ ) )
                 {
                     assertThat( session.run( "MATCH (n) RETURN n.name" ).list( new Function<Record,String>()
                     {
@@ -201,7 +201,7 @@ public class ClusterDriverStubTest
         StubServer.start( resource( "dead_server.script" ), 9005 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         try ( ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config );
-              Session session = driver.session( AccessMode.READ ) )
+              Session session = driver.session( AccessRole.READ ) )
         {
             session.run( "MATCH (n) RETURN n.name" );
         }
@@ -224,7 +224,7 @@ public class ClusterDriverStubTest
         StubServer.start( resource( "dead_server.script" ), 9007 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         try ( ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config );
-              Session session = driver.session( AccessMode.WRITE ) )
+              Session session = driver.session( AccessRole.WRITE ) )
         {
             session.run( "MATCH (n) RETURN n.name" ).consume();
         }
@@ -242,7 +242,7 @@ public class ClusterDriverStubTest
         StubServer writeServer = StubServer.start( resource( "write_server.script" ), 9007 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         try ( ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config );
-              Session session = driver.session( AccessMode.WRITE ) )
+              Session session = driver.session( AccessRole.WRITE ) )
         {
             session.run( "CREATE (n {name:'Bob'})" );
         }
@@ -287,7 +287,7 @@ public class ClusterDriverStubTest
         StubServer readServer = StubServer.start( resource( "read_server.script" ), 9005 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         try ( ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config );
-              Session session = driver.session( AccessMode.READ ) )
+              Session session = driver.session( AccessRole.READ ) )
         {
             session.run( "MATCH (n) RETURN n.name" ).consume();
 
@@ -319,7 +319,7 @@ public class ClusterDriverStubTest
         boolean failed = false;
         try
         {
-            Session session = driver.session( AccessMode.READ );
+            Session session = driver.session( AccessRole.READ );
             session.run( "MATCH (n) RETURN n.name" ).consume();
             session.close();
         }
@@ -353,7 +353,7 @@ public class ClusterDriverStubTest
         assertThat( driver.routingServers(), hasItem( new BoltServerAddress( "127.0.0.1", 9001 ) ));
 
         //since we know about less than three servers a rediscover should be triggered
-        Session session = driver.session( AccessMode.READ );
+        Session session = driver.session( AccessRole.READ );
         assertThat( driver.routingServers(), hasSize( 4 ) );
         assertThat( driver.routingServers(), hasItem( new BoltServerAddress( "127.0.0.1", 9001 ) ));
         assertThat( driver.routingServers(), hasItem( new BoltServerAddress( "127.0.0.1", 9002 ) ));
@@ -391,7 +391,7 @@ public class ClusterDriverStubTest
                 public void run()
                 {
                     //noinspection EmptyTryBlock
-                    try(Session ignore = driver.session( AccessMode.READ ))
+                    try(Session ignore = driver.session( AccessRole.READ ))
                     {
                         //empty
                     }
@@ -448,7 +448,7 @@ public class ClusterDriverStubTest
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config );
         boolean failed = false;
-        try ( Session session = driver.session( AccessMode.WRITE ) )
+        try ( Session session = driver.session( AccessRole.WRITE ) )
         {
             assertThat(driver.writeServers(), hasItem( new BoltServerAddress( "127.0.0.1", 9007 ) ));
             assertThat(driver.writeServers(), hasItem( new BoltServerAddress( "127.0.0.1", 9008 ) ));

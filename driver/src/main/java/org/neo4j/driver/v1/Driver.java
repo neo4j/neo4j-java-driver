@@ -86,7 +86,7 @@ public interface Driver extends AutoCloseable
      */
     Session session();
 
-    Session session(AccessMode mode);
+    Session session(AccessRole role);
 
     /**
      * Close all the resources assigned to this driver
