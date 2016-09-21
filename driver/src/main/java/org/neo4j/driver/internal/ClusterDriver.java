@@ -1,15 +1,15 @@
 /**
  * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
- * <p>
+ *
  * This file is part of Neo4j.
- * <p>
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,11 +23,13 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
+import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.ConcurrentRoundRobinSet;
 import org.neo4j.driver.internal.util.Consumer;
 import org.neo4j.driver.v1.AccessRole;
@@ -48,6 +50,7 @@ import static java.lang.String.format;
 public class ClusterDriver extends BaseDriver
 {
     private static final String GET_SERVERS = "dbms.cluster.routing.getServers";
+    private static final long MAX_TTL = Long.MAX_VALUE / 1000L;
     private final static Comparator<BoltServerAddress> COMPARATOR = new Comparator<BoltServerAddress>()
     {
         @Override
@@ -65,22 +68,25 @@ public class ClusterDriver extends BaseDriver
     private static final int MIN_SERVERS = 2;
     private final ConnectionPool connections;
     private final BiFunction<Connection,Logger,Session> sessionProvider;
-
+    private final Clock clock;
     private final ConcurrentRoundRobinSet<BoltServerAddress> routingServers =
             new ConcurrentRoundRobinSet<>( COMPARATOR );
     private final ConcurrentRoundRobinSet<BoltServerAddress> readServers = new ConcurrentRoundRobinSet<>( COMPARATOR );
     private final ConcurrentRoundRobinSet<BoltServerAddress> writeServers = new ConcurrentRoundRobinSet<>( COMPARATOR );
+    private final AtomicLong expires = new AtomicLong( 0L );
 
     public ClusterDriver( BoltServerAddress seedAddress,
             ConnectionPool connections,
             SecurityPlan securityPlan,
             BiFunction<Connection,Logger,Session> sessionProvider,
+            Clock clock,
             Logging logging )
     {
         super( securityPlan, logging );
         routingServers.add( seedAddress );
         this.connections = connections;
         this.sessionProvider = sessionProvider;
+        this.clock = clock;
         checkServers();
     }
 
@@ -88,7 +94,8 @@ public class ClusterDriver extends BaseDriver
     {
         synchronized ( routingServers )
         {
-            if ( routingServers.size() < MIN_SERVERS ||
+            if ( expires.get() < clock.millis() ||
+                 routingServers.size() < MIN_SERVERS ||
                  readServers.isEmpty() ||
                  writeServers.isEmpty() )
             {
@@ -99,7 +106,7 @@ public class ClusterDriver extends BaseDriver
 
     private Set<BoltServerAddress> forgetAllServers()
     {
-        final Set<BoltServerAddress> seen = new HashSet<>(  );
+        final Set<BoltServerAddress> seen = new HashSet<>();
         seen.addAll( routingServers );
         seen.addAll( readServers );
         seen.addAll( writeServers );
@@ -107,6 +114,20 @@ public class ClusterDriver extends BaseDriver
         readServers.clear();
         writeServers.clear();
         return seen;
+    }
+
+    private long calculateNewExpiry( Record record )
+    {
+        long ttl = record.get( "ttl" ).asLong();
+        long nextExpiry = clock.millis() + 1000L * ttl;
+        if ( ttl < 0 || ttl >= MAX_TTL || nextExpiry < 0 )
+        {
+            return Long.MAX_VALUE;
+        }
+        else
+        {
+            return nextExpiry;
+        }
     }
 
     //must be called from a synchronized block
@@ -127,7 +148,7 @@ public class ClusterDriver extends BaseDriver
                     @Override
                     public void accept( Record record )
                     {
-                        long ttl = record.get( "ttl" ).asLong();
+                        expires.set( calculateNewExpiry( record ) );
                         List<ServerInfo> servers = servers( record );
                         for ( ServerInfo server : servers )
                         {
@@ -206,14 +227,14 @@ public class ClusterDriver extends BaseDriver
             @Override
             public ServerInfo apply( Value value )
             {
-                return new ServerInfo( value.get("addresses").asList( new Function<Value,BoltServerAddress>()
+                return new ServerInfo( value.get( "addresses" ).asList( new Function<Value,BoltServerAddress>()
                 {
                     @Override
                     public BoltServerAddress apply( Value value )
                     {
                         return new BoltServerAddress( value.asString() );
                     }
-                } ), value.get("role").asString() );
+                } ), value.get( "role" ).asString() );
             }
         } );
     }

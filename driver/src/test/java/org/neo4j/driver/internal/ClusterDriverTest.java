@@ -1,15 +1,15 @@
 /**
  * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
- * <p>
+ *
  * This file is part of Neo4j.
- * <p>
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,6 +31,7 @@ import java.util.Map;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
+import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.AccessRole;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
@@ -191,7 +192,63 @@ public class ClusterDriverTest
         verify( pool ).purge( boltAddress( "localhost", 1111 ) );
     }
 
+    @Test
+    public void shouldRediscoverOnTimeout()
+    {
+        // Given
+        final Session session = mock( Session.class );
+        Clock clock = mock( Clock.class );
+        when(clock.millis()).thenReturn( 0L, 11000L, 22000L );
+        when( session.run( GET_SERVERS ) )
+                .thenReturn(
+                        getServers( asList( "localhost:1111", "localhost:1112", "localhost:1113" ),
+                                singletonList( "localhost:2222" ),
+                                singletonList( "localhost:3333" ), 10L/*seconds*/ ) )
+                .thenReturn(
+                        getServers( singletonList( "localhost:5555" ), singletonList( "localhost:5555" ), singletonList( "localhost:5555" ) ) );
+
+        ClusterDriver clusterDriver = forSession( session, clock );
+
+        // When
+        clusterDriver.session( AccessRole.WRITE );
+
+        // Then
+        assertThat( clusterDriver.routingServers(), containsInAnyOrder( boltAddress( "localhost", 5555 ) ) );
+        assertThat( clusterDriver.readServers(), containsInAnyOrder( boltAddress( "localhost", 5555 ) ) );
+        assertThat( clusterDriver.writeServers(), containsInAnyOrder( boltAddress( "localhost", 5555 ) ) );
+    }
+
+    @Test
+    public void shouldNotRediscoverWheNoTimeout()
+    {
+        // Given
+        final Session session = mock( Session.class );
+        Clock clock = mock( Clock.class );
+        when(clock.millis()).thenReturn( 0L, 9900L, 18800L );
+        when( session.run( GET_SERVERS ) )
+                .thenReturn(
+                        getServers( asList( "localhost:1111", "localhost:1112", "localhost:1113" ),
+                                singletonList( "localhost:2222" ),
+                                singletonList( "localhost:3333" ), 10L/*seconds*/ ) )
+                .thenReturn(
+                        getServers( singletonList( "localhost:5555" ), singletonList( "localhost:5555" ), singletonList( "localhost:5555" ) ) );
+
+        ClusterDriver clusterDriver = forSession( session, clock );
+
+        // When
+        clusterDriver.session( AccessRole.WRITE );
+
+        // Then
+        assertThat( clusterDriver.routingServers(), containsInAnyOrder( boltAddress( "localhost", 1111 ), boltAddress( "localhost", 1112 ), boltAddress( "localhost", 1113 ) ) );
+        assertThat( clusterDriver.readServers(), containsInAnyOrder( boltAddress( "localhost", 2222 ) ) );
+        assertThat( clusterDriver.writeServers(), containsInAnyOrder( boltAddress( "localhost", 3333 ) ) );
+    }
+
     private ClusterDriver forSession( final Session session )
+    {
+        return forSession( session, Clock.SYSTEM );
+    }
+    private ClusterDriver forSession( final Session session, Clock clock )
     {
         return new ClusterDriver( SEED, pool, insecure(),
                 new BiFunction<Connection,Logger,Session>()
@@ -201,7 +258,7 @@ public class ClusterDriverTest
                     {
                         return session;
                     }
-                }, logging() );
+                }, clock, logging() );
     }
 
     private BoltServerAddress boltAddress( String host, int port )
@@ -209,8 +266,15 @@ public class ClusterDriverTest
         return new BoltServerAddress( host, port );
     }
 
+
     StatementResult getServers( final List<String> routers, final List<String> readers,
             final List<String> writers )
+    {
+        return getServers( routers,readers, writers, Long.MAX_VALUE );
+    }
+
+    StatementResult getServers( final List<String> routers, final List<String> readers,
+            final List<String> writers, final long ttl )
     {
         return new StatementResult()
         {
@@ -233,7 +297,7 @@ public class ClusterDriverTest
             {
                 return new InternalRecord( asList( "ttl", "servers" ),
                         new Value[]{
-                                value( Long.MAX_VALUE ),
+                                value( ttl ),
                                 value( asList( serverInfo( "ROUTE", routers ), serverInfo( "WRITE", writers ),
                                         serverInfo( "READ", readers ) ) )
                         } );
