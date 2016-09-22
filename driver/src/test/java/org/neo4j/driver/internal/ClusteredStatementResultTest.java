@@ -68,7 +68,7 @@ public class ClusteredStatementResultTest
     {
         // Given
         when( delegate.consume() )
-                .thenThrow( new ClientException( "Neo.ClientError.General.ForbiddenOnFollower", "oh no!" ) );
+                .thenThrow( new ClientException( "Neo.ClientError.Cluster.NotALeader", "oh no!" ) );
         ClusteredStatementResult result =
                 new ClusteredStatementResult( delegate, LOCALHOST, onError );
 
@@ -117,7 +117,7 @@ public class ClusteredStatementResultTest
     {
         // Given
         when( delegate.hasNext() )
-                .thenThrow( new ClientException( "Neo.ClientError.General.ForbiddenOnFollower", "oh no!" ) );
+                .thenThrow( new ClientException( "Neo.ClientError.Cluster.NotALeader", "oh no!" ) );
         ClusteredStatementResult result =
                 new ClusteredStatementResult( delegate, LOCALHOST, onError );
 
@@ -166,7 +166,7 @@ public class ClusteredStatementResultTest
     {
         // Given
         when( delegate.keys() )
-                .thenThrow( new ClientException( "Neo.ClientError.General.ForbiddenOnFollower", "oh no!" ) );
+                .thenThrow( new ClientException( "Neo.ClientError.Cluster.NotALeader", "oh no!" ) );
         ClusteredStatementResult result =
                 new ClusteredStatementResult( delegate, LOCALHOST, onError );
 
@@ -215,7 +215,7 @@ public class ClusteredStatementResultTest
     {
         // Given
         when( delegate.list() )
-                .thenThrow( new ClientException( "Neo.ClientError.General.ForbiddenOnFollower", "oh no!" ) );
+                .thenThrow( new ClientException( "Neo.ClientError.Cluster.NotALeader", "oh no!" ) );
         ClusteredStatementResult result =
                 new ClusteredStatementResult( delegate, LOCALHOST, onError );
 
@@ -264,7 +264,7 @@ public class ClusteredStatementResultTest
     {
         // Given
         when( delegate.next() )
-                .thenThrow( new ClientException( "Neo.ClientError.General.ForbiddenOnFollower", "oh no!" ) );
+                .thenThrow( new ClientException( "Neo.ClientError.Cluster.NotALeader", "oh no!" ) );
         ClusteredStatementResult result =
                 new ClusteredStatementResult( delegate, LOCALHOST, onError );
 
@@ -313,7 +313,7 @@ public class ClusteredStatementResultTest
     {
         // Given
         when( delegate.peek() )
-                .thenThrow( new ClientException( "Neo.ClientError.General.ForbiddenOnFollower", "oh no!" ) );
+                .thenThrow( new ClientException( "Neo.ClientError.Cluster.NotALeader", "oh no!" ) );
         ClusteredStatementResult result =
                 new ClusteredStatementResult( delegate, LOCALHOST, onError );
 
@@ -362,7 +362,7 @@ public class ClusteredStatementResultTest
     {
         // Given
         when( delegate.single() )
-                .thenThrow( new ClientException( "Neo.ClientError.General.ForbiddenOnFollower", "oh no!" ) );
+                .thenThrow( new ClientException( "Neo.ClientError.Cluster.NotALeader", "oh no!" ) );
         ClusteredStatementResult result =
                 new ClusteredStatementResult( delegate, LOCALHOST, onError );
 

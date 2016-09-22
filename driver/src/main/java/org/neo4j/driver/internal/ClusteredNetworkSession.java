@@ -53,7 +53,7 @@ public class ClusteredNetworkSession extends NetworkSession
         }
         catch ( ClientException e )
         {
-            if ( e.code().equals( "Neo.ClientError.General.ForbiddenOnFollower" ) )
+            if ( e.code().equals( "Neo.ClientError.Cluster.NotALeader" ) )
             {
                 onError.onWriteFailure( connection.address() );
                 throw new SessionExpiredException(
