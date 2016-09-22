@@ -32,7 +32,7 @@ import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.ConcurrentRoundRobinSet;
 import org.neo4j.driver.internal.util.Consumer;
-import org.neo4j.driver.v1.AccessRole;
+import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Record;
@@ -286,13 +286,13 @@ public class ClusterDriver extends BaseDriver
     @Override
     public Session session()
     {
-        return session( AccessRole.WRITE );
+        return session( AccessMode.WRITE );
     }
 
     @Override
-    public Session session( final AccessRole role )
+    public Session session( final AccessMode mode )
     {
-        return new ClusteredNetworkSession( acquireConnection( role ),
+        return new ClusteredNetworkSession( acquireConnection( mode ),
                 new ClusteredErrorHandler()
                 {
                     @Override
@@ -310,7 +310,7 @@ public class ClusterDriver extends BaseDriver
                 log );
     }
 
-    private Connection acquireConnection( AccessRole role )
+    private Connection acquireConnection( AccessMode role )
     {
         //Potentially rediscover servers if we are not happy with our current knowledge
         checkServers();

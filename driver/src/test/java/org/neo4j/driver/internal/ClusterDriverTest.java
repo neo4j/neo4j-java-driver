@@ -32,7 +32,7 @@ import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Clock;
-import org.neo4j.driver.v1.AccessRole;
+import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Record;
@@ -114,7 +114,7 @@ public class ClusterDriverTest
 
 
         // When
-        clusterDriver.session( AccessRole.READ );
+        clusterDriver.session( AccessMode.READ );
 
         // Then
         assertThat( clusterDriver.routingServers(),
@@ -141,7 +141,7 @@ public class ClusterDriverTest
         ClusterDriver clusterDriver = forSession( session );
 
         // When
-        clusterDriver.session( AccessRole.WRITE );
+        clusterDriver.session( AccessMode.WRITE );
 
         // Then
         assertThat( clusterDriver.routingServers(),
@@ -184,7 +184,7 @@ public class ClusterDriverTest
 
 
         // When
-        clusterDriver.session( AccessRole.READ );
+        clusterDriver.session( AccessMode.READ );
 
         // Then
         assertThat( clusterDriver.routingServers(),
@@ -210,7 +210,7 @@ public class ClusterDriverTest
         ClusterDriver clusterDriver = forSession( session, clock );
 
         // When
-        clusterDriver.session( AccessRole.WRITE );
+        clusterDriver.session( AccessMode.WRITE );
 
         // Then
         assertThat( clusterDriver.routingServers(), containsInAnyOrder( boltAddress( "localhost", 5555 ) ) );
@@ -236,7 +236,7 @@ public class ClusterDriverTest
         ClusterDriver clusterDriver = forSession( session, clock );
 
         // When
-        clusterDriver.session( AccessRole.WRITE );
+        clusterDriver.session( AccessMode.WRITE );
 
         // Then
         assertThat( clusterDriver.routingServers(), containsInAnyOrder( boltAddress( "localhost", 1111 ), boltAddress( "localhost", 1112 ), boltAddress( "localhost", 1113 ) ) );

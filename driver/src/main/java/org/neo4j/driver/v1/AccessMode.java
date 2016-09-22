@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.v1;
 
-public enum AccessRole
+public enum AccessMode
 {
     READ,
     WRITE
