@@ -65,7 +65,7 @@ public class ClusterDriver extends BaseDriver
             return compare;
         }
     };
-    private static final int MIN_SERVERS = 2;
+    private static final int MIN_SERVERS = 1;
     private final ConnectionPool connections;
     private final BiFunction<Connection,Logger,Session> sessionProvider;
     private final Clock clock;
