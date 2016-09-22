@@ -32,11 +32,9 @@ import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.exceptions.TransientException;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -217,50 +215,8 @@ public class TransactionIT
         // Then it wasn't the end of the world as we know it
     }
 
-
     @Test
-    public void shouldThrowExceptionDueToNotConsumingResetFailure() throws Throwable
-    {
-        // Given
-        Transaction tx = session.beginTransaction();
-        tx.run( "UNWIND range(1,1) AS n RETURN n AS number" );
-        session.reset();
-
-        exception.expect( ClientException.class );
-        exception.expectMessage( startsWith(
-                "Failed to execute more statements as the session has been reset " +
-                "and an error has occurred due to the cancellation of executing the previous statement." ) );
-
-        // When & Then
-        tx = session.beginTransaction();
-    }
-
-    @Test
-    public void shouldBeAbleToRunMoreStatementAfterConsumingResetFailure() throws Throwable
-    {
-        Transaction tx = session.beginTransaction();
-        StatementResult failingResult = tx.run( "UNWIND range(1,1) AS n RETURN n AS number" );
-        session.reset();
-
-        exception.expect( TransientException.class );
-        exception.expectMessage( startsWith(
-                "The transaction has been terminated." ) );
-
-        failingResult.consume(); // fail with errors
-
-        tx = session.beginTransaction();
-        tx.run( "CREATE (n:FirstNode)" );
-        tx.success();
-        tx.close();
-
-        // Then the outcome of both statements should be visible
-        StatementResult result = session.run( "MATCH (n) RETURN count(n)" );
-        long nodes = result.single().get( "count(n)" ).asLong();
-        assertThat( nodes, equalTo( 1L ) );
-    }
-
-    @Test
-    public void shouldBeAbleToRunMoreStatementAfterEmptyReset() throws Throwable
+    public void shouldBeAbleToRunMoreStatementsAfterResetOnNoErrorState() throws Throwable
     {
         // Given
         session.reset();

@@ -47,6 +47,7 @@ public class SocketConnection implements Connection
     private final Queue<Message> pendingMessages = new LinkedList<>();
     private final SocketResponseHandler responseHandler;
     private AtomicBoolean isInterrupted = new AtomicBoolean( false );
+    private AtomicBoolean isAckFailureMuted = new AtomicBoolean( false );
     private final Collector.InitCollector initCollector = new Collector.InitCollector();
 
     private final SocketClient socket;
@@ -134,16 +135,19 @@ public class SocketConnection implements Connection
         {
             if( isInterrupted.get() )
             {
-                receiveAll();
+                // receive each of it and throw error immediately
+                while ( responseHandler.collectorsWaiting() > 0 )
+                {
+                    receiveOne();
+                }
             }
         }
         catch ( Neo4jException e )
         {
             throw new ClientException(
-                    "Failed to execute more statements as the session has been reset " +
-                    "and an error has occurred due to the cancellation of executing the previous statement. " +
+                    "An error has occurred due to the cancellation of executing a previous statement. " +
                     "You received this error probably because you did not consume the result immediately after " +
-                    "running the statement which get cancelled in this session.", e );
+                    "running the statement which get reset in this session.", e );
         }
 
     }
@@ -244,10 +248,18 @@ public class SocketConnection implements Connection
             public void run()
             {
                 isInterrupted.set( false );
+                isAckFailureMuted.set( false );
             }
         } ) );
         flush();
         isInterrupted.set( true );
+        isAckFailureMuted.set( true );
+    }
+
+    @Override
+    public boolean isAckFailureMuted()
+    {
+        return isAckFailureMuted.get();
     }
 
     @Override

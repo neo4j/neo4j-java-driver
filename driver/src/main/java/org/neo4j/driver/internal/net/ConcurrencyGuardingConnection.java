@@ -207,6 +207,12 @@ public class ConcurrencyGuardingConnection implements Connection
         delegate.resetAsync();
     }
 
+    @Override
+    public boolean isAckFailureMuted()
+    {
+        return delegate.isAckFailureMuted();
+    }
+
     private void markAsAvailable()
     {
         inUse.set( false );
