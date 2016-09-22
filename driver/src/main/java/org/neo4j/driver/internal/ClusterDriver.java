@@ -180,21 +180,15 @@ public class ClusterDriver extends BaseDriver
                 connections.purge( remove );
             }
         }
-        catch ( ClientException ex )
+        catch ( Exception ex )
         {
-            if ( ex.code().equals( "Neo.ClientError.Procedure.ProcedureNotFound" ) )
-            {
-                //no procedure there, not much to do, stick with what we've got
-                //this may happen because server is running in standalone mode
-                this.close();
-                throw new ServiceUnavailableException(
-                        String.format( "Server %s couldn't perform discovery",
-                                address == null ? "`UNKNOWN`" : address.toString() ), ex );
-            }
-            else
-            {
-                throw ex;
-            }
+            //discovery failed, not much to do, stick with what we've got
+            //this may happen because server is running in standalone mode
+            this.close();
+            throw new ServiceUnavailableException(
+                    String.format( "Server %s couldn't perform discovery",
+                            address == null ? "`UNKNOWN`" : address.toString() ), ex );
+
         }
     }
 
