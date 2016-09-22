@@ -32,7 +32,6 @@ import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
-import org.neo4j.driver.v1.exceptions.TransientException;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -248,11 +247,11 @@ public class SessionIT
             try
             {
                 procedureResult.consume();
-                fail( "Should procedure call with an exception as we interrupted procedure call" );
+                fail( "Should procedure throw an exception as we interrupted procedure call" );
             }
-            catch ( TransientException e )
+            catch ( Neo4jException e )
             {
-                MatcherAssert.assertThat( e.getMessage(), startsWith( "The transaction has been terminated." ) );
+                MatcherAssert.assertThat( e.getMessage(), startsWith( "The transaction has been terminated" ) );
             }
             catch ( Throwable e )
             {
