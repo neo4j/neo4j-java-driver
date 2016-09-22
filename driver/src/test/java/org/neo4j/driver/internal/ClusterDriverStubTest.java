@@ -406,24 +406,29 @@ public class ClusterDriverStubTest
     @Test
     public void shouldFailOnNonDiscoverableServer() throws IOException, InterruptedException, StubServer.ForceKilled
     {
-        // When
-        StubServer server = StubServer.start( resource( "non_discovery_server.script" ), 9001 );
+        //Expect
+        exception.expect( ServiceUnavailableException.class );
 
+        // Given
+        StubServer.start( resource( "non_discovery_server.script" ), 9001 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
-        boolean failed = false;
-        //noinspection EmptyTryBlock
-        try
-        {
-            GraphDatabase.driver( uri, config );
-        }
-        catch ( ServiceUnavailableException e )
-        {
-            failed = true;
-        }
-        assertTrue( failed );
 
-        // Finally
-        assertThat( server.exitStatus(), equalTo( 0 ) );
+        // When
+        GraphDatabase.driver( uri, config );
+    }
+
+    @Test
+    public void shouldFailRandomFailureInGetServers() throws IOException, InterruptedException, StubServer.ForceKilled
+    {
+        //Expect
+        exception.expect( ServiceUnavailableException.class );
+
+        // Given
+        StubServer.start( resource( "failed_discovery.script" ), 9001 );
+        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+
+        // When
+        GraphDatabase.driver( uri, config );
     }
 
     @Test
