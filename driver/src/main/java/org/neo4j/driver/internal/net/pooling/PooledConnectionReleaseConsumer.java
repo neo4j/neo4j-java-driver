@@ -18,14 +18,11 @@
  */
 package org.neo4j.driver.internal.net.pooling;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.util.Consumer;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.util.Function;
 
 /**
  * The responsibility of the PooledConnectionReleaseConsumer is to release valid connections
@@ -34,16 +31,15 @@ import org.neo4j.driver.v1.Value;
 class PooledConnectionReleaseConsumer implements Consumer<PooledConnection>
 {
     private final BlockingQueue<PooledConnection> connections;
-    private final long minIdleBeforeConnectionTest;
-    private static final Map<String,Value> NO_PARAMETERS = new HashMap<>();
     private final AtomicBoolean driverStopped;
+    private final Function<PooledConnection, Boolean> validConnection;
 
     PooledConnectionReleaseConsumer( BlockingQueue<PooledConnection> connections, AtomicBoolean driverStopped,
-            PoolSettings poolSettings)
+            Function<PooledConnection, Boolean> validConnection)
     {
         this.connections = connections;
         this.driverStopped = driverStopped;
-        this.minIdleBeforeConnectionTest = poolSettings.idleTimeBeforeConnectionTest();
+        this.validConnection = validConnection;
     }
 
     @Override
@@ -54,7 +50,7 @@ class PooledConnectionReleaseConsumer implements Consumer<PooledConnection>
             // if the driver already closed, then no need to try to return to pool, just directly close this connection
             pooledConnection.dispose();
         }
-        else if ( validConnection( pooledConnection ) )
+        else if ( validConnection.apply( pooledConnection ) )
         {
             boolean released = connections.offer( pooledConnection );
             if( !released )
@@ -81,50 +77,6 @@ class PooledConnectionReleaseConsumer implements Consumer<PooledConnection>
         else
         {
             pooledConnection.dispose();
-        }
-    }
-
-    boolean validConnection( PooledConnection pooledConnection )
-    {
-        // once the pooledConn has marked to have unrecoverable errors, there is no way to remove the error
-        // and we should close the conn without bothering to reset the conn at all
-        return !pooledConnection.hasUnrecoverableErrors() &&
-               reset(pooledConnection) &&
-               (pooledConnection.idleTime() <= minIdleBeforeConnectionTest || ping( pooledConnection ));
-    }
-
-    /**
-     *  In case this session has an open result or transaction or something,
-     *  make sure it's reset to a nice state before we reuse it.
-     * @param conn the PooledConnection
-     * @return true if the connection is reset successfully without any error, otherwise false.
-     */
-    private boolean reset( PooledConnection conn )
-    {
-        try
-        {
-            conn.reset();
-            conn.sync();
-            return true;
-        }
-        catch ( Throwable e )
-        {
-            return false;
-        }
-    }
-
-    private boolean ping( PooledConnection conn )
-    {
-        try
-        {
-            conn.run( "RETURN 1 // JavaDriver poll to test connection", NO_PARAMETERS, Collector.NO_OP );
-            conn.pullAll( Collector.NO_OP );
-            conn.sync();
-            return true;
-        }
-        catch ( Throwable e )
-        {
-            return false;
         }
     }
 }

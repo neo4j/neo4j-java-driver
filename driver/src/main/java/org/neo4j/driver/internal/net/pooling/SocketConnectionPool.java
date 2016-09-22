@@ -113,7 +113,7 @@ public class SocketConnectionPool implements ConnectionPool
         if ( conn == null )
         {
             conn = new PooledConnection( connect( address ), new
-                    PooledConnectionReleaseConsumer( connections, stopped, poolSettings ), clock );
+                    PooledConnectionReleaseConsumer( connections, stopped, new PooledConnectionValidator( this, poolSettings ) ), clock );
         }
         conn.updateUsageTimestamp();
         return conn;
