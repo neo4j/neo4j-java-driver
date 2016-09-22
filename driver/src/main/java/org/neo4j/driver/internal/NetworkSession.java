@@ -49,10 +49,13 @@ public class NetworkSession implements Session
         @Override
         public void run()
         {
-            if ( currentTransaction != null )
+            synchronized ( NetworkSession.this )
             {
-                lastBookmark = currentTransaction.bookmark();
-                currentTransaction = null;
+                if ( currentTransaction != null )
+                {
+                    lastBookmark = currentTransaction.bookmark();
+                    currentTransaction = null;
+                }
             }
         }
     };
@@ -73,9 +76,9 @@ public class NetworkSession implements Session
     }
 
     @Override
-    public StatementResult run( String statementText, Map<String, Object> statementParameters )
+    public StatementResult run( String statementText, Map<String,Object> statementParameters )
     {
-        Value params = statementParameters == null ? Values.EmptyMap : value(statementParameters);
+        Value params = statementParameters == null ? Values.EmptyMap : value( statementParameters );
         return run( statementText, params );
     }
 
@@ -97,21 +100,24 @@ public class NetworkSession implements Session
     {
         ensureConnectionIsValidBeforeRunningSession();
         InternalStatementResult cursor = new InternalStatementResult( connection, null, statement );
-        connection.run( statement.text(), statement.parameters().asMap( Values.ofValue() ), cursor.runResponseCollector() );
+        connection.run( statement.text(), statement.parameters().asMap( Values.ofValue() ),
+                cursor.runResponseCollector() );
         connection.pullAll( cursor.pullAllResponseCollector() );
         connection.flush();
         return cursor;
     }
 
-    public void reset()
+    public synchronized void reset()
     {
         ensureSessionIsOpen();
         ensureNoUnrecoverableError();
         ensureConnectionIsOpen();
 
-        if( currentTransaction != null )
+        if ( currentTransaction != null )
         {
             currentTransaction.markToClose();
+            lastBookmark = currentTransaction.bookmark();
+            currentTransaction = null;
         }
         connection.resetAsync();
     }
@@ -126,21 +132,24 @@ public class NetworkSession implements Session
     public void close()
     {
         // Use atomic operation to protect from closing the connection twice (putting back to the pool twice).
-        if( !isOpen.compareAndSet( true, false ) )
+        if ( !isOpen.compareAndSet( true, false ) )
         {
             throw new ClientException( "This session has already been closed." );
         }
         else
         {
-            if ( currentTransaction != null )
+            synchronized ( this )
             {
-                try
+                if ( currentTransaction != null )
                 {
-                    currentTransaction.close();
-                }
-                catch ( Throwable e )
-                {
-                    // Best-effort
+                    try
+                    {
+                        currentTransaction.close();
+                    }
+                    catch ( Throwable e )
+                    {
+                        // Best-effort
+                    }
                 }
             }
             try
@@ -167,7 +176,7 @@ public class NetworkSession implements Session
     }
 
     @Override
-    public Transaction beginTransaction( String bookmark )
+    public synchronized Transaction beginTransaction( String bookmark )
     {
         ensureConnectionIsValidBeforeOpeningTransaction();
         currentTransaction = new ExplicitTransaction( connection, txCleanup, bookmark );
@@ -224,7 +233,7 @@ public class NetworkSession implements Session
     @Override
     protected void finalize() throws Throwable
     {
-        if( isOpen.compareAndSet( true, false ) )
+        if ( isOpen.compareAndSet( true, false ) )
         {
             logger.error( "Neo4j Session object leaked, please ensure that your application calls the `close` " +
                           "method on Sessions before disposing of the objects.", null );
@@ -235,7 +244,7 @@ public class NetworkSession implements Session
 
     private void ensureNoUnrecoverableError()
     {
-        if( connection.hasUnrecoverableErrors() )
+        if ( connection.hasUnrecoverableErrors() )
         {
             throw new ClientException( "Cannot run more statements in the current session as an unrecoverable error " +
                                        "has happened. Please close the current session and re-run your statement in a" +
@@ -243,6 +252,7 @@ public class NetworkSession implements Session
         }
     }
 
+    //should be called from a synchronized block
     private void ensureNoOpenTransactionBeforeRunningSession()
     {
         if ( currentTransaction != null )
@@ -252,6 +262,7 @@ public class NetworkSession implements Session
         }
     }
 
+    //should be called from a synchronized block
     private void ensureNoOpenTransactionBeforeOpeningTransaction()
     {
         if ( currentTransaction != null )
@@ -273,12 +284,13 @@ public class NetworkSession implements Session
 
     private void ensureSessionIsOpen()
     {
-        if( !isOpen() )
+        if ( !isOpen() )
         {
             throw new ClientException(
                     "No more interaction with this session is allowed " +
                     "as the current session is already closed or marked as closed. " +
-                    "You get this error either because you have a bad reference to a session that has already be closed " +
+                    "You get this error either because you have a bad reference to a session that has already be " +
+                    "closed " +
                     "or you are trying to reuse a session that you have called `reset` on it." );
         }
     }

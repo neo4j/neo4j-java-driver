@@ -46,7 +46,8 @@ public class SocketConnection implements Connection
 {
     private final Queue<Message> pendingMessages = new LinkedList<>();
     private final SocketResponseHandler responseHandler;
-    private AtomicBoolean interrupted = new AtomicBoolean( false );
+    private AtomicBoolean isInterrupted = new AtomicBoolean( false );
+    private AtomicBoolean isAckFailureMuted = new AtomicBoolean( false );
     private final Collector.InitCollector initCollector = new Collector.InitCollector();
 
     private final SocketClient socket;
@@ -115,6 +116,8 @@ public class SocketConnection implements Connection
     @Override
     public synchronized void flush()
     {
+        ensureNotInterrupted();
+
         try
         {
             socket.send( pendingMessages );
@@ -124,6 +127,29 @@ public class SocketConnection implements Connection
             String message = e.getMessage();
             throw new ClientException( "Unable to send messages to server: " + message, e );
         }
+    }
+
+    private void ensureNotInterrupted()
+    {
+        try
+        {
+            if( isInterrupted.get() )
+            {
+                // receive each of it and throw error immediately
+                while ( responseHandler.collectorsWaiting() > 0 )
+                {
+                    receiveOne();
+                }
+            }
+        }
+        catch ( Neo4jException e )
+        {
+            throw new ClientException(
+                    "An error has occurred due to the cancellation of executing a previous statement. " +
+                    "You received this error probably because you did not consume the result immediately after " +
+                    "running the statement which get reset in this session.", e );
+        }
+
     }
 
     private void receiveAll()
@@ -159,6 +185,7 @@ public class SocketConnection implements Connection
         {
             Neo4jException exception = responseHandler.serverFailure();
             responseHandler.clearError();
+            isInterrupted.set( false );
             throw exception;
         }
     }
@@ -182,6 +209,8 @@ public class SocketConnection implements Connection
 
     private synchronized void queueMessage( Message msg, Collector collector )
     {
+        ensureNotInterrupted();
+
         pendingMessages.add( msg );
         responseHandler.appendResultCollector( collector );
     }
@@ -211,26 +240,26 @@ public class SocketConnection implements Connection
     }
 
     @Override
-    public void resetAsync()
+    public synchronized void resetAsync()
     {
-        if( interrupted.compareAndSet( false, true ) )
+        queueMessage( RESET, new Collector.ResetCollector( new Runnable()
         {
-            queueMessage( RESET, new Collector.ResetCollector( new Runnable()
+            @Override
+            public void run()
             {
-                @Override
-                public void run()
-                {
-                    interrupted.set( false );
-                }
-            } ) );
-            flush();
-        }
+                isInterrupted.set( false );
+                isAckFailureMuted.set( false );
+            }
+        } ) );
+        flush();
+        isInterrupted.set( true );
+        isAckFailureMuted.set( true );
     }
 
     @Override
-    public boolean isInterrupted()
+    public boolean isAckFailureMuted()
     {
-        return interrupted.get();
+        return isAckFailureMuted.get();
     }
 
     @Override

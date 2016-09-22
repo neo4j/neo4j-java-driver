@@ -208,9 +208,9 @@ public class ConcurrencyGuardingConnection implements Connection
     }
 
     @Override
-    public boolean isInterrupted()
+    public boolean isAckFailureMuted()
     {
-        return delegate.isInterrupted();
+        return delegate.isAckFailureMuted();
     }
 
     private void markAsAvailable()

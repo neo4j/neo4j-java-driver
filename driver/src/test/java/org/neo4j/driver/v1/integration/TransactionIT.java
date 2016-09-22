@@ -23,6 +23,9 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.StatementResult;
@@ -142,7 +145,7 @@ public class TransactionIT
     public void shouldHandleNullParametersGracefully()
     {
         // When
-        session.run("match (n) return count(n)", (Value)null);
+        session.run( "match (n) return count(n)", (Value) null );
 
         // Then
         // pass - no exception thrown
@@ -155,7 +158,7 @@ public class TransactionIT
     {
         // GIVEN a successful query in a transaction
         Transaction tx = session.beginTransaction();
-        StatementResult result = tx.run("CREATE (n) RETURN n");
+        StatementResult result = tx.run( "CREATE (n) RETURN n" );
         result.consume();
         tx.success();
         tx.close();
@@ -164,7 +167,7 @@ public class TransactionIT
         exception.expect( ClientException.class );
 
         //WHEN running a malformed query in the original session
-        session.run("CREAT (n) RETURN n").consume();
+        session.run( "CREAT (n) RETURN n" ).consume();
     }
 
     @SuppressWarnings( "ConstantConditions" )
@@ -204,11 +207,100 @@ public class TransactionIT
         // When
         try ( Transaction tx = session.beginTransaction() )
         {
-            Map<String, Object> params = null;
+            Map<String,Object> params = null;
             tx.run( "CREATE (n:FirstNode)", params );
             tx.success();
         }
 
         // Then it wasn't the end of the world as we know it
+    }
+
+    @Test
+    public void shouldBeAbleToRunMoreStatementsAfterResetOnNoErrorState() throws Throwable
+    {
+        // Given
+        session.reset();
+
+        // When
+        Transaction tx = session.beginTransaction();
+        tx.run( "CREATE (n:FirstNode)" );
+        tx.success();
+        tx.close();
+
+        // Then the outcome of both statements should be visible
+        StatementResult result = session.run( "MATCH (n) RETURN count(n)" );
+        long nodes = result.single().get( "count(n)" ).asLong();
+        assertThat( nodes, equalTo( 1L ) );
+    }
+
+    @Test
+    public void shouldHandleResetBeforeRun() throws Throwable
+    {
+        // Expect
+        exception.expect( ClientException.class );
+        exception.expectMessage( "Cannot run more statements in this transaction, because previous statements in the " +
+                                 "transaction has failed and the transaction has been rolled back. Please start a new" +
+                                 " transaction to run another statement." );
+        // When
+        Transaction tx = session.beginTransaction();
+        session.reset();
+        tx.run( "CREATE (n:FirstNode)" );
+    }
+
+    private Transaction globalTx = null;
+    @Test
+    public void shouldHandleResetFromMultipleThreads() throws Throwable
+    {
+        // When
+        ExecutorService runner = Executors.newFixedThreadPool( 2 );
+        runner.execute( new Runnable()
+
+        {
+            @Override
+            public void run()
+            {
+                globalTx = session.beginTransaction();
+                    globalTx.run( "CREATE (n:FirstNode)" );
+                try
+                {
+                    Thread.sleep( 1000 );
+                }
+                catch ( InterruptedException e )
+                {
+                    new AssertionError( e );
+                }
+
+                globalTx = session.beginTransaction();
+                globalTx.run( "CREATE (n:FirstNode)" );
+                globalTx.success();
+                globalTx.close();
+
+            }
+        } );
+        runner.execute( new Runnable()
+
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    Thread.sleep( 500 );
+                }
+                catch ( InterruptedException e )
+                {
+                    new AssertionError( e );
+                }
+
+                session.reset();
+            }
+        } );
+
+        runner.awaitTermination( 5, TimeUnit.SECONDS );
+
+        // Then the outcome of both statements should be visible
+        StatementResult result = session.run( "MATCH (n) RETURN count(n)" );
+        long nodes = result.single().get( "count(n)" ).asLong();
+        assertThat( nodes, equalTo( 1L ) );
     }
 }

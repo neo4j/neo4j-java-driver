@@ -114,10 +114,10 @@ public interface Connection extends AutoCloseable
     void resetAsync();
 
     /**
-     * Return true if the current session statement execution has been interrupted by another thread, otherwise false.
-     * @return true if the current session statement execution has been interrupted by another thread, otherwise false
+     * Return true if ack_failure message is temporarily muted as the failure message will be acked using reset instead
+     * @return true if no ack_failre message should be sent when ackable failures are received.
      */
-    boolean isInterrupted();
+    boolean isAckFailureMuted();
 
     /**
      * Returns the version of the server connected to.

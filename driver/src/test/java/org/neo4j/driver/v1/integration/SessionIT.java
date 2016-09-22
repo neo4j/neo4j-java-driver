@@ -18,8 +18,10 @@
  */
 package org.neo4j.driver.v1.integration;
 
+import org.hamcrest.MatcherAssert;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.AuthTokens;
@@ -30,9 +32,11 @@ import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
+import org.neo4j.driver.v1.exceptions.TransientException;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertFalse;
@@ -45,6 +49,9 @@ public class SessionIT
 {
     @Rule
     public TestNeo4j neo4j = new TestNeo4j();
+
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
 
     @Test
     public void shouldKnowSessionIsClosed() throws Throwable
@@ -161,7 +168,7 @@ public class SessionIT
                 recordCount++;
             }
 
-            fail("Should have got an exception about statement get killed.");
+            fail("Should have got an exception about streaming get killed.");
         }
         catch( ClientException e )
         {
@@ -172,6 +179,96 @@ public class SessionIT
             assertTrue( startTime > 0 );
             assertTrue( endTime - startTime > killTimeout * 1000 ); // get reset by session.reset
             assertTrue( endTime - startTime < executionTimeout * 1000 / 2 ); // finished before execution finished
+        }
+    }
+
+    @Test
+    public void shouldNotAllowBeginTxIfResetFailureIsNotConsumed() throws Throwable
+    {
+        // Given
+        neo4j.ensureProcedures( "longRunningStatement.jar" );
+        Driver driver = GraphDatabase.driver( neo4j.uri() );
+
+        try( Session session = driver.session() )
+        {
+            Transaction tx = session.beginTransaction();
+
+            tx.run("CALL test.driver.longRunningStatement({seconds})",
+                    parameters( "seconds", 10 ) );
+            Thread.sleep( 1* 1000 );
+            session.reset();
+
+            exception.expect( ClientException.class );
+            exception.expectMessage( startsWith(
+                    "An error has occurred due to the cancellation of executing a previous statement." ) );
+
+            // When & Then
+            tx = session.beginTransaction();
+            assertThat( tx, notNullValue() );
+        }
+    }
+
+    @Test
+    public void shouldThrowExceptionOnCloseIfResetFailureIsNotConsumed() throws Throwable
+    {
+        // Given
+        neo4j.ensureProcedures( "longRunningStatement.jar" );
+        Driver driver = GraphDatabase.driver( neo4j.uri() );
+
+        Session session = driver.session();
+        session.run( "CALL test.driver.longRunningStatement({seconds})",
+                parameters( "seconds", 10 ) );
+        Thread.sleep( 1 * 1000 );
+        session.reset();
+
+        exception.expect( ClientException.class );
+        exception.expectMessage( startsWith(
+                "An error has occurred due to the cancellation of executing a previous statement." ) );
+
+        // When & Then
+        session.close();
+    }
+
+    @Test
+    public void shouldBeAbleToBeginTxAfterResetFailureIsConsumed() throws Throwable
+    {
+        // Given
+        neo4j.ensureProcedures( "longRunningStatement.jar" );
+        Driver driver = GraphDatabase.driver( neo4j.uri() );
+
+        try( Session session = driver.session() )
+        {
+            Transaction tx = session.beginTransaction();
+
+            StatementResult procedureResult = tx.run("CALL test.driver.longRunningStatement({seconds})",
+                    parameters( "seconds", 10 ) );
+            Thread.sleep( 1* 1000 );
+            session.reset();
+
+            try
+            {
+                procedureResult.consume();
+                fail( "Should procedure call with an exception as we interrupted procedure call" );
+            }
+            catch ( TransientException e )
+            {
+                MatcherAssert.assertThat( e.getMessage(), startsWith( "The transaction has been terminated." ) );
+            }
+            catch ( Throwable e )
+            {
+                fail( "Expected exception is different from what we've received: " + e.getMessage() );
+            }
+
+            // When
+            tx = session.beginTransaction();
+            tx.run( "CREATE (n:FirstNode)" );
+            tx.success();
+            tx.close();
+
+            // Then
+            StatementResult result = session.run( "MATCH (n) RETURN count(n)" );
+            long nodes = result.single().get( "count(n)" ).asLong();
+            MatcherAssert.assertThat( nodes, equalTo( 1L ) );
         }
     }
 
