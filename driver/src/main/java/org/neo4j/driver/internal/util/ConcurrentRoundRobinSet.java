@@ -43,6 +43,12 @@ public class ConcurrentRoundRobinSet<T> implements Set<T>
         set = new ConcurrentSkipListSet<>( comparator );
     }
 
+    public ConcurrentRoundRobinSet(ConcurrentRoundRobinSet<T> original)
+    {
+        set = new ConcurrentSkipListSet<>( original.set.comparator() );
+        set.addAll( original );
+    }
+
     public T hop()
     {
         if ( current == null )

@@ -24,14 +24,14 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.Collections;
-import java.util.Iterator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
-import org.neo4j.driver.internal.value.IntegerValue;
-import org.neo4j.driver.internal.value.StringValue;
+import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
@@ -54,8 +54,10 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.core.IsNot.not;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.security.SecurityPlan.insecure;
+import static org.neo4j.driver.v1.Values.value;
 
 public class ClusterDriverTest
 {
@@ -64,7 +66,8 @@ public class ClusterDriverTest
 
     private static final BoltServerAddress SEED = new BoltServerAddress( "localhost", 7687 );
     private static final String GET_SERVERS = "CALL dbms.cluster.routing.getServers";
-    private static final List<BoltServerAddress> NO_ADDRESSES = Collections.<BoltServerAddress>emptyList();
+    private static final List<String> NO_ADDRESSES = Collections.emptyList();
+    private final ConnectionPool pool = pool();
 
     @Test
     public void shouldDoRoutingOnInitialization()
@@ -72,16 +75,16 @@ public class ClusterDriverTest
         // Given
         final Session session = mock( Session.class );
         when( session.run( GET_SERVERS ) ).thenReturn(
-                getServers( singletonList( boltAddress( "localhost", 1111 ) ),
-                        singletonList( boltAddress( "localhost", 2222 ) ),
-                        singletonList( boltAddress( "localhost", 3333 ) ) ) );
+                getServers( singletonList( "localhost:1111" ),
+                        singletonList( "localhost:2222" ),
+                        singletonList( "localhost:3333" ) ) );
 
         // When
         ClusterDriver clusterDriver = forSession( session );
 
         // Then
         assertThat( clusterDriver.routingServers(),
-                containsInAnyOrder( boltAddress( "localhost", 1111 ), SEED ) );
+                containsInAnyOrder( boltAddress( "localhost", 1111 )) );
         assertThat( clusterDriver.readServers(),
                 containsInAnyOrder( boltAddress( "localhost", 2222 ) ) );
         assertThat( clusterDriver.writeServers(),
@@ -96,16 +99,16 @@ public class ClusterDriverTest
         final Session session = mock( Session.class );
         when( session.run( GET_SERVERS ) )
                 .thenReturn(
-                        getServers( singletonList( boltAddress( "localhost", 1111 ) ), NO_ADDRESSES, NO_ADDRESSES ) )
+                        getServers( singletonList( "localhost:1111" ), NO_ADDRESSES, NO_ADDRESSES ) )
                 .thenReturn(
-                        getServers( singletonList( boltAddress( "localhost", 1112 ) ),
-                                singletonList( boltAddress( "localhost", 2222 ) ),
-                                singletonList( boltAddress( "localhost", 3333 ) ) ) );
+                        getServers( singletonList( "localhost:1112" ),
+                                singletonList( "localhost:2222" ),
+                                singletonList( "localhost:3333" ) ) );
 
         ClusterDriver clusterDriver = forSession( session );
 
         assertThat( clusterDriver.routingServers(),
-                containsInAnyOrder( boltAddress( "localhost", 1111 ), SEED ) );
+                containsInAnyOrder( boltAddress( "localhost", 1111 )) );
         assertThat( clusterDriver.readServers(), Matchers.<BoltServerAddress>empty() );
         assertThat( clusterDriver.writeServers(), Matchers.<BoltServerAddress>empty() );
 
@@ -115,7 +118,7 @@ public class ClusterDriverTest
 
         // Then
         assertThat( clusterDriver.routingServers(),
-                containsInAnyOrder( boltAddress( "localhost", 1111 ), boltAddress( "localhost", 1112 ), SEED ) );
+                containsInAnyOrder( boltAddress( "localhost", 1112 ) ));
         assertThat( clusterDriver.readServers(),
                 containsInAnyOrder( boltAddress( "localhost", 2222 ) ) );
         assertThat( clusterDriver.writeServers(),
@@ -129,12 +132,11 @@ public class ClusterDriverTest
         final Session session = mock( Session.class );
         when( session.run( GET_SERVERS ) )
                 .thenReturn(
-                        getServers( asList( boltAddress( "localhost", 1111 ), boltAddress( "localhost", 1112 ),
-                                boltAddress( "localhost", 1113 ) ),
-                                singletonList( boltAddress( "localhost", 2222 ) ),
-                                singletonList( boltAddress( "localhost", 3333 ) ) ) )
+                        getServers( asList( "localhost:1111", "localhost:1112", "localhost:1113" ),
+                                singletonList( "localhost:2222" ),
+                                singletonList( "localhost:3333" ) ) )
                 .thenReturn(
-                        getServers( singletonList( boltAddress( "localhost", 5555 ) ), NO_ADDRESSES, NO_ADDRESSES ) );
+                        getServers( singletonList( "localhost:5555" ), NO_ADDRESSES, NO_ADDRESSES ) );
 
         ClusterDriver clusterDriver = forSession( session );
 
@@ -162,9 +164,93 @@ public class ClusterDriverTest
         forSession( session );
     }
 
+    @Test
+    public void shouldForgetAboutServersOnRerouting()
+    {
+        // Given
+        final Session session = mock( Session.class );
+        when( session.run( GET_SERVERS ) )
+                .thenReturn(
+                        getServers( singletonList( "localhost:1111" ), NO_ADDRESSES, NO_ADDRESSES ) )
+                .thenReturn(
+                        getServers( singletonList( "localhost:1112" ),
+                                singletonList( "localhost:2222" ),
+                                singletonList( "localhost:3333" ) ) );
+
+        ClusterDriver clusterDriver = forSession( session );
+
+        assertThat( clusterDriver.routingServers(),
+                containsInAnyOrder( boltAddress( "localhost", 1111 )) );
+
+
+        // When
+        clusterDriver.session( AccessMode.READ );
+
+        // Then
+        assertThat( clusterDriver.routingServers(),
+                containsInAnyOrder( boltAddress( "localhost", 1112 ) ));
+        verify( pool ).purge( boltAddress( "localhost", 1111 ) );
+    }
+
+    @Test
+    public void shouldRediscoverOnTimeout()
+    {
+        // Given
+        final Session session = mock( Session.class );
+        Clock clock = mock( Clock.class );
+        when(clock.millis()).thenReturn( 0L, 11000L, 22000L );
+        when( session.run( GET_SERVERS ) )
+                .thenReturn(
+                        getServers( asList( "localhost:1111", "localhost:1112", "localhost:1113" ),
+                                singletonList( "localhost:2222" ),
+                                singletonList( "localhost:3333" ), 10L/*seconds*/ ) )
+                .thenReturn(
+                        getServers( singletonList( "localhost:5555" ), singletonList( "localhost:5555" ), singletonList( "localhost:5555" ) ) );
+
+        ClusterDriver clusterDriver = forSession( session, clock );
+
+        // When
+        clusterDriver.session( AccessMode.WRITE );
+
+        // Then
+        assertThat( clusterDriver.routingServers(), containsInAnyOrder( boltAddress( "localhost", 5555 ) ) );
+        assertThat( clusterDriver.readServers(), containsInAnyOrder( boltAddress( "localhost", 5555 ) ) );
+        assertThat( clusterDriver.writeServers(), containsInAnyOrder( boltAddress( "localhost", 5555 ) ) );
+    }
+
+    @Test
+    public void shouldNotRediscoverWheNoTimeout()
+    {
+        // Given
+        final Session session = mock( Session.class );
+        Clock clock = mock( Clock.class );
+        when(clock.millis()).thenReturn( 0L, 9900L, 18800L );
+        when( session.run( GET_SERVERS ) )
+                .thenReturn(
+                        getServers( asList( "localhost:1111", "localhost:1112", "localhost:1113" ),
+                                singletonList( "localhost:2222" ),
+                                singletonList( "localhost:3333" ), 10L/*seconds*/ ) )
+                .thenReturn(
+                        getServers( singletonList( "localhost:5555" ), singletonList( "localhost:5555" ), singletonList( "localhost:5555" ) ) );
+
+        ClusterDriver clusterDriver = forSession( session, clock );
+
+        // When
+        clusterDriver.session( AccessMode.WRITE );
+
+        // Then
+        assertThat( clusterDriver.routingServers(), containsInAnyOrder( boltAddress( "localhost", 1111 ), boltAddress( "localhost", 1112 ), boltAddress( "localhost", 1113 ) ) );
+        assertThat( clusterDriver.readServers(), containsInAnyOrder( boltAddress( "localhost", 2222 ) ) );
+        assertThat( clusterDriver.writeServers(), containsInAnyOrder( boltAddress( "localhost", 3333 ) ) );
+    }
+
     private ClusterDriver forSession( final Session session )
     {
-        return new ClusterDriver( SEED, pool(), insecure(),
+        return forSession( session, Clock.SYSTEM );
+    }
+    private ClusterDriver forSession( final Session session, Clock clock )
+    {
+        return new ClusterDriver( SEED, pool, insecure(),
                 new BiFunction<Connection,Logger,Session>()
                 {
                     @Override
@@ -172,7 +258,7 @@ public class ClusterDriverTest
                     {
                         return session;
                     }
-                }, logging() );
+                }, clock, logging() );
     }
 
     private BoltServerAddress boltAddress( String host, int port )
@@ -180,59 +266,41 @@ public class ClusterDriverTest
         return new BoltServerAddress( host, port );
     }
 
-    StatementResult getServers( final List<BoltServerAddress> routers, final List<BoltServerAddress> readers,
-            final List<BoltServerAddress> writers )
+
+    StatementResult getServers( final List<String> routers, final List<String> readers,
+            final List<String> writers )
     {
+        return getServers( routers,readers, writers, Long.MAX_VALUE );
+    }
 
-
+    StatementResult getServers( final List<String> routers, final List<String> readers,
+            final List<String> writers, final long ttl )
+    {
         return new StatementResult()
         {
-            private final int totalSize = routers.size() + readers.size() + writers.size();
-            private final Iterator<BoltServerAddress> routeIterator = routers.iterator();
-            private final Iterator<BoltServerAddress> readIterator = readers.iterator();
-            private final Iterator<BoltServerAddress> writeIterator = writers.iterator();
             private int counter = 0;
 
             @Override
             public List<String> keys()
             {
-                return asList( "address", "mode", "expires" );
+                return asList( "ttl", "servers" );
             }
 
             @Override
             public boolean hasNext()
             {
-                return counter++ < totalSize;
+                return counter++ < 1;
             }
 
             @Override
             public Record next()
             {
-                if ( routeIterator.hasNext() )
-                {
-                    return new InternalRecord( asList( "address", "mode", "expires" ),
-                            new Value[]{new StringValue( routeIterator.next().toString() ),
-                                    new StringValue( "ROUTE" ),
-                                    new IntegerValue( Long.MAX_VALUE )} );
-                }
-                else if ( readIterator.hasNext() )
-                {
-                    return new InternalRecord( asList( "address", "mode", "expires" ),
-                            new Value[]{new StringValue( readIterator.next().toString() ),
-                                    new StringValue( "READ" ),
-                                    new IntegerValue( Long.MAX_VALUE )} );
-                }
-                else if ( writeIterator.hasNext() )
-                {
-                    return new InternalRecord( asList( "address", "mode", "expires" ),
-                            new Value[]{new StringValue( writeIterator.next().toString() ),
-                                    new StringValue( "WRITE" ),
-                                    new IntegerValue( Long.MAX_VALUE )} );
-                }
-                else
-                {
-                    return Collections.<Record>emptyIterator().next();
-                }
+                return new InternalRecord( asList( "ttl", "servers" ),
+                        new Value[]{
+                                value( ttl ),
+                                value( asList( serverInfo( "ROUTE", routers ), serverInfo( "WRITE", writers ),
+                                        serverInfo( "READ", readers ) ) )
+                        } );
             }
 
             @Override
@@ -268,9 +336,18 @@ public class ClusterDriverTest
             @Override
             public void remove()
             {
-                throw new UnsupportedOperationException(  );
+                throw new UnsupportedOperationException();
             }
         };
+    }
+
+    private Map<String,Object> serverInfo( String role, List<String> addresses )
+    {
+        Map<String,Object> map = new HashMap<>();
+        map.put( "role", role );
+        map.put( "addresses", addresses );
+
+        return map;
     }
 
     private ConnectionPool pool()

@@ -23,9 +23,12 @@ import org.junit.Test;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.util.Function;
+
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -37,6 +40,26 @@ import static org.mockito.Mockito.verify;
 
 public class PooledConnectionTest
 {
+
+    private static final Function<PooledConnection,Boolean>
+            VALID_CONNECTION = new Function<PooledConnection,Boolean>()
+    {
+        @Override
+        public Boolean apply( PooledConnection pooledConnection )
+        {
+            return true;
+        }
+    };
+    private static final Function<PooledConnection,Boolean>
+            INVALID_CONNECTION = new Function<PooledConnection,Boolean>()
+    {
+        @Override
+        public Boolean apply( PooledConnection pooledConnection )
+        {
+            return false;
+        }
+    };
+
     @Test
     public void shouldDisposeConnectionIfNotValidConnection() throws Throwable
     {
@@ -47,14 +70,8 @@ public class PooledConnectionTest
 
         Connection conn = mock( Connection.class );
         PooledConnectionReleaseConsumer releaseConsumer = new PooledConnectionReleaseConsumer( pool,
-                new AtomicBoolean( false ), PoolSettings.defaultSettings()  /*Does not matter what config for this test*/ )
-        {
-            @Override
-            boolean validConnection( PooledConnection conn )
-            {
-                return false;
-            }
-        };
+                new AtomicBoolean( false ), INVALID_CONNECTION );
+
 
         PooledConnection pooledConnection = new PooledConnection( conn, releaseConsumer, Clock.SYSTEM )
         {
@@ -83,16 +100,9 @@ public class PooledConnectionTest
 
         Connection conn = mock( Connection.class );
         PooledConnectionReleaseConsumer releaseConsumer = new PooledConnectionReleaseConsumer( pool,
-                new AtomicBoolean( false ), PoolSettings.defaultSettings()  /*Does not matter what config for this test*/ )
-        {
-            @Override
-            boolean validConnection( PooledConnection conn )
-            {
-                return true;
-            }
-        };
+                new AtomicBoolean( false ), VALID_CONNECTION );
 
-        PooledConnection pooledConnection = new PooledConnection( conn, releaseConsumer, Clock.SYSTEM )
+                PooledConnection pooledConnection = new PooledConnection( conn, releaseConsumer, Clock.SYSTEM )
         {
             @Override
             public void dispose()
@@ -120,14 +130,7 @@ public class PooledConnectionTest
 
         Connection conn = mock( Connection.class );
         PooledConnectionReleaseConsumer releaseConsumer = new PooledConnectionReleaseConsumer( pool,
-                new AtomicBoolean( false ), PoolSettings.defaultSettings()  /*Does not matter what config for this test*/ )
-        {
-            @Override
-            boolean validConnection( PooledConnection conn )
-            {
-                return true;
-            }
-        };
+                new AtomicBoolean( false ), VALID_CONNECTION);
 
         PooledConnection pooledConnection = new PooledConnection( conn, releaseConsumer, Clock.SYSTEM );
         PooledConnection shouldBeClosedConnection = new PooledConnection( conn, releaseConsumer, Clock.SYSTEM )
@@ -164,7 +167,7 @@ public class PooledConnectionTest
 
         Connection conn = mock( Connection.class );
         PooledConnectionReleaseConsumer releaseConsumer = new PooledConnectionReleaseConsumer( pool,
-                new AtomicBoolean( true ), PoolSettings.defaultSettings()  /*Does not matter what config for this test*/ );
+                new AtomicBoolean( true ), VALID_CONNECTION);
 
         PooledConnection pooledConnection = new PooledConnection( conn, releaseConsumer, Clock.SYSTEM )
         {
@@ -204,7 +207,7 @@ public class PooledConnectionTest
         Connection conn = mock( Connection.class );
 
         PooledConnectionReleaseConsumer releaseConsumer = new PooledConnectionReleaseConsumer( pool,
-                stopped , PoolSettings.defaultSettings()  /*Does not matter what config for this test*/ );
+                stopped , VALID_CONNECTION);
 
         PooledConnection pooledConnection = new PooledConnection( conn, releaseConsumer, Clock.SYSTEM )
         {

@@ -5,7 +5,7 @@
 
 C: RUN "CREATE ()" {}
 C: PULL_ALL
-S: FAILURE {"code": "Neo.ClientError.General.ForbiddenOnFollower", "message": "blabla"}
+S: FAILURE {"code": "Neo.ClientError.Cluster.NotALeader", "message": "blabla"}
 S: IGNORED
 C: ACK_FAILURE
 S: SUCCESS {}

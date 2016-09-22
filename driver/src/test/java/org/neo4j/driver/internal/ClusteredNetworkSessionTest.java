@@ -88,7 +88,7 @@ public class ClusteredNetworkSessionTest
     public void shouldHandleWriteFailures()
     {
         // Given
-        doThrow( new ClientException( "Neo.ClientError.General.ForbiddenOnFollower", "oh no!" ) ).
+        doThrow( new ClientException( "Neo.ClientError.Cluster.NotALeader", "oh no!" ) ).
                 when( connection ).run( anyString(), any( Map.class ), any( Collector.class ) );
         ClusteredNetworkSession session =
                 new ClusteredNetworkSession( connection, onError, mock( Logger.class ) );

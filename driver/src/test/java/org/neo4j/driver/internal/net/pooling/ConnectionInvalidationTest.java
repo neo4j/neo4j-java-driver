@@ -26,8 +26,10 @@ import java.util.HashMap;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Collector;
+import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Consumers;
 import org.neo4j.driver.v1.Config;
@@ -72,8 +74,11 @@ public class ConnectionInvalidationTest
 
         // When/Then
         BlockingQueue<PooledConnection> queue = mock( BlockingQueue.class );
+        PooledConnectionValidator validator =
+                new PooledConnectionValidator( pool( true ), poolSettings );
+
         PooledConnectionReleaseConsumer consumer =
-                new PooledConnectionReleaseConsumer( queue, new AtomicBoolean( false ), poolSettings );
+                new PooledConnectionReleaseConsumer( queue, new AtomicBoolean( false ), validator);
         consumer.accept( conn );
 
         verify( queue, never() ).add( conn );
@@ -90,11 +95,13 @@ public class ConnectionInvalidationTest
         PoolSettings poolSettings = PoolSettings.defaultSettings();
         when( clock.millis() ).thenReturn( 0L, poolSettings.idleTimeBeforeConnectionTest() - 1L );
         PooledConnection conn = new PooledConnection( delegate, Consumers.<PooledConnection>noOp(), clock );
+        PooledConnectionValidator validator =
+                new PooledConnectionValidator( pool( true ), poolSettings );
 
         // When/Then
         BlockingQueue<PooledConnection> queue = mock( BlockingQueue.class );
         PooledConnectionReleaseConsumer consumer =
-                new PooledConnectionReleaseConsumer( queue, new AtomicBoolean( false ), poolSettings );
+                new PooledConnectionReleaseConsumer( queue, new AtomicBoolean( false ),validator );
         consumer.accept( conn );
 
         verify( queue ).offer( conn );
@@ -107,11 +114,12 @@ public class ConnectionInvalidationTest
         Mockito.doThrow( new ClientException( "That didn't work" ) ).when( delegate ).reset();
         PoolSettings poolSettings = PoolSettings.defaultSettings();
         PooledConnection conn = new PooledConnection( delegate, Consumers.<PooledConnection>noOp(), clock );
-
+        PooledConnectionValidator validator =
+                new PooledConnectionValidator( pool( true ), poolSettings );
         // When/Then
         BlockingQueue<PooledConnection> queue = mock( BlockingQueue.class );
         PooledConnectionReleaseConsumer consumer =
-                new PooledConnectionReleaseConsumer( queue, new AtomicBoolean( false ), poolSettings );
+                new PooledConnectionReleaseConsumer( queue, new AtomicBoolean( false ), validator );
         consumer.accept( conn );
 
         verify( queue, never() ).add( conn );
@@ -143,25 +151,27 @@ public class ConnectionInvalidationTest
     private void assertUnrecoverable( Neo4jException exception )
     {
         doThrow( exception ).when( delegate )
-                .run( eq("assert unrecoverable"), anyMap(), any( Collector.class ) );
+                .run( eq( "assert unrecoverable" ), anyMap(), any( Collector.class ) );
 
         // When
         try
         {
-            conn.run( "assert unrecoverable", new HashMap<String,Value>( ), Collector.NO_OP );
+            conn.run( "assert unrecoverable", new HashMap<String,Value>(), Collector.NO_OP );
             fail( "Should've rethrown exception" );
         }
         catch ( Neo4jException e )
         {
             assertThat( e, equalTo( exception ) );
         }
+        PoolSettings poolSettings = PoolSettings.defaultSettings();
+        PooledConnectionValidator validator =
+                new PooledConnectionValidator( pool( true ), poolSettings );
 
         // Then
         assertTrue( conn.hasUnrecoverableErrors() );
-        PoolSettings poolSettings = PoolSettings.defaultSettings();
         BlockingQueue<PooledConnection> queue = mock( BlockingQueue.class );
         PooledConnectionReleaseConsumer consumer =
-                new PooledConnectionReleaseConsumer( queue, new AtomicBoolean( false ), poolSettings );
+                new PooledConnectionReleaseConsumer( queue, new AtomicBoolean( false ), validator );
         consumer.accept( conn );
 
         verify( queue, never() ).offer( conn );
@@ -170,12 +180,12 @@ public class ConnectionInvalidationTest
     @SuppressWarnings( "unchecked" )
     private void assertRecoverable( Neo4jException exception )
     {
-        doThrow( exception ).when( delegate ).run( eq("assert recoverable"), anyMap(), any( Collector.class ) );
+        doThrow( exception ).when( delegate ).run( eq( "assert recoverable" ), anyMap(), any( Collector.class ) );
 
         // When
         try
         {
-            conn.run( "assert recoverable", new HashMap<String,Value>( ), Collector.NO_OP );
+            conn.run( "assert recoverable", new HashMap<String,Value>(), Collector.NO_OP );
             fail( "Should've rethrown exception" );
         }
         catch ( Neo4jException e )
@@ -186,11 +196,20 @@ public class ConnectionInvalidationTest
         // Then
         assertFalse( conn.hasUnrecoverableErrors() );
         PoolSettings poolSettings = PoolSettings.defaultSettings();
+        PooledConnectionValidator validator =
+                new PooledConnectionValidator( pool( true ), poolSettings );
         BlockingQueue<PooledConnection> queue = mock( BlockingQueue.class );
         PooledConnectionReleaseConsumer consumer =
-                new PooledConnectionReleaseConsumer( queue, new AtomicBoolean( false ), poolSettings );
+                new PooledConnectionReleaseConsumer( queue, new AtomicBoolean( false ), validator );
         consumer.accept( conn );
 
         verify( queue ).offer( conn );
+    }
+
+    private ConnectionPool pool( boolean hasAddress )
+    {
+        ConnectionPool pool = mock( ConnectionPool.class );
+        when( pool.hasAddress( any( BoltServerAddress.class ) ) ).thenReturn( hasAddress );
+        return pool;
     }
 }

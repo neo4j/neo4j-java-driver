@@ -256,6 +256,6 @@ public class ClusteredStatementResult implements StatementResult
 
     private boolean isFailedToWrite( ClientException e )
     {
-        return e.code().equals( "Neo.ClientError.General.ForbiddenOnFollower" );
+        return e.code().equals( "Neo.ClientError.Cluster.NotALeader" );
     }
 }
