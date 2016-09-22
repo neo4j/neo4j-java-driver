@@ -34,6 +34,7 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.startsWith;
@@ -251,7 +252,7 @@ public class SessionIT
             }
             catch ( Neo4jException e )
             {
-                MatcherAssert.assertThat( e.getMessage(), startsWith( "The transaction has been terminated" ) );
+                assertThat( e.getMessage(), containsString( "The transaction has been terminated" ) );
             }
             catch ( Throwable e )
             {
