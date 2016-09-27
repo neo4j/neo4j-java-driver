@@ -286,7 +286,7 @@ public class ClusterDriver extends BaseDriver
     @Override
     public Session session( final AccessMode mode )
     {
-        return new ClusteredNetworkSession( acquireConnection( mode ),
+        return new ClusteredNetworkSession( mode, acquireConnection( mode ),
                 new ClusteredErrorHandler()
                 {
                     @Override

@@ -18,17 +18,11 @@
  */
 package org.neo4j.driver.internal;
 
-import java.util.Arrays;
-import java.util.Collection;
-
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.StatementResult;
-import org.neo4j.driver.v1.exceptions.ConnectionFailureException;
+import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 
 import static org.junit.Assert.fail;
@@ -37,33 +31,22 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import static org.neo4j.driver.v1.AccessMode.WRITE;
 
-@RunWith(Parameterized.class)
-public class ClusteredStatementResultTest
+public class ClusteredWriteStatementResultTest
 {
     private static final BoltServerAddress LOCALHOST = new BoltServerAddress( "localhost", 7687 );
     private StatementResult delegate = mock( StatementResult.class );
     private ClusteredErrorHandler onError = mock( ClusteredErrorHandler.class );
-    private final AccessMode accessMode;
-
-    @Parameterized.Parameters(name = "accessMode-{0}")
-    public static Collection<AccessMode> data()
-    {
-        return Arrays.asList( AccessMode.values() );
-    }
-
-    public ClusteredStatementResultTest( AccessMode accessMode )
-    {
-        this.accessMode = accessMode;
-    }
 
     @Test
-    public void shouldHandleConnectionFailureOnConsume()
+    public void shouldHandleWriteFailureOnConsume()
     {
         // Given
-        when( delegate.consume() ).thenThrow( new ConnectionFailureException( "oh no" ) );
+        when( delegate.consume() )
+                .thenThrow( new ClientException( "Neo.ClientError.Cluster.NotALeader", "oh no!" ) );
         ClusteredStatementResult result =
-                new ClusteredStatementResult( delegate, accessMode, LOCALHOST, onError );
+                new ClusteredStatementResult( delegate, WRITE, LOCALHOST, onError );
 
         // When
         try
@@ -77,17 +60,18 @@ public class ClusteredStatementResultTest
         }
 
         // Then
-        verify( onError ).onConnectionFailure( LOCALHOST );
+        verify( onError ).onWriteFailure( LOCALHOST );
         verifyNoMoreInteractions( onError );
     }
 
     @Test
-    public void shouldHandleConnectionFailureOnHasNext()
+    public void shouldHandleWriteFailureOnHasNext()
     {
         // Given
-        when( delegate.hasNext() ).thenThrow( new ConnectionFailureException( "oh no" ) );
+        when( delegate.hasNext() )
+                .thenThrow( new ClientException( "Neo.ClientError.Cluster.NotALeader", "oh no!" ) );
         ClusteredStatementResult result =
-                new ClusteredStatementResult( delegate, accessMode, LOCALHOST, onError );
+                new ClusteredStatementResult( delegate, WRITE, LOCALHOST, onError );
 
         // When
         try
@@ -101,17 +85,18 @@ public class ClusteredStatementResultTest
         }
 
         // Then
-        verify( onError ).onConnectionFailure( LOCALHOST );
+        verify( onError ).onWriteFailure( LOCALHOST );
         verifyNoMoreInteractions( onError );
     }
 
     @Test
-    public void shouldHandleConnectionFailureOnKeys()
+    public void shouldHandleWriteFailureOnKeys()
     {
         // Given
-        when( delegate.keys() ).thenThrow( new ConnectionFailureException( "oh no" ) );
+        when( delegate.keys() )
+                .thenThrow( new ClientException( "Neo.ClientError.Cluster.NotALeader", "oh no!" ) );
         ClusteredStatementResult result =
-                new ClusteredStatementResult( delegate, accessMode, LOCALHOST, onError );
+                new ClusteredStatementResult( delegate, WRITE, LOCALHOST, onError );
 
         // When
         try
@@ -125,17 +110,18 @@ public class ClusteredStatementResultTest
         }
 
         // Then
-        verify( onError ).onConnectionFailure( LOCALHOST );
+        verify( onError ).onWriteFailure( LOCALHOST );
         verifyNoMoreInteractions( onError );
     }
 
     @Test
-    public void shouldHandleConnectionFailureOnList()
+    public void shouldHandleWriteFailureOnList()
     {
         // Given
-        when( delegate.list() ).thenThrow( new ConnectionFailureException( "oh no" ) );
+        when( delegate.list() )
+                .thenThrow( new ClientException( "Neo.ClientError.Cluster.NotALeader", "oh no!" ) );
         ClusteredStatementResult result =
-                new ClusteredStatementResult( delegate, accessMode, LOCALHOST, onError );
+                new ClusteredStatementResult( delegate, WRITE, LOCALHOST, onError );
 
         // When
         try
@@ -149,17 +135,18 @@ public class ClusteredStatementResultTest
         }
 
         // Then
-        verify( onError ).onConnectionFailure( LOCALHOST );
+        verify( onError ).onWriteFailure( LOCALHOST );
         verifyNoMoreInteractions( onError );
     }
 
     @Test
-    public void shouldHandleConnectionFailureOnNext()
+    public void shouldHandleWriteFailureOnNext()
     {
         // Given
-        when( delegate.next() ).thenThrow( new ConnectionFailureException( "oh no" ) );
+        when( delegate.next() )
+                .thenThrow( new ClientException( "Neo.ClientError.Cluster.NotALeader", "oh no!" ) );
         ClusteredStatementResult result =
-                new ClusteredStatementResult( delegate, accessMode, LOCALHOST, onError );
+                new ClusteredStatementResult( delegate, WRITE, LOCALHOST, onError );
 
         // When
         try
@@ -173,17 +160,18 @@ public class ClusteredStatementResultTest
         }
 
         // Then
-        verify( onError ).onConnectionFailure( LOCALHOST );
+        verify( onError ).onWriteFailure( LOCALHOST );
         verifyNoMoreInteractions( onError );
     }
 
     @Test
-    public void shouldHandleConnectionFailureOnPeek()
+    public void shouldHandleWriteFailureOnPeek()
     {
         // Given
-        when( delegate.peek() ).thenThrow( new ConnectionFailureException( "oh no" ) );
+        when( delegate.peek() )
+                .thenThrow( new ClientException( "Neo.ClientError.Cluster.NotALeader", "oh no!" ) );
         ClusteredStatementResult result =
-                new ClusteredStatementResult( delegate, accessMode, LOCALHOST, onError );
+                new ClusteredStatementResult( delegate, WRITE, LOCALHOST, onError );
 
         // When
         try
@@ -197,17 +185,18 @@ public class ClusteredStatementResultTest
         }
 
         // Then
-        verify( onError ).onConnectionFailure( LOCALHOST );
+        verify( onError ).onWriteFailure( LOCALHOST );
         verifyNoMoreInteractions( onError );
     }
 
     @Test
-    public void shouldHandleConnectionFailureOnSingle()
+    public void shouldHandleWriteFailureOnSingle()
     {
         // Given
-        when( delegate.single() ).thenThrow( new ConnectionFailureException( "oh no" ) );
+        when( delegate.single() )
+                .thenThrow( new ClientException( "Neo.ClientError.Cluster.NotALeader", "oh no!" ) );
         ClusteredStatementResult result =
-                new ClusteredStatementResult( delegate, accessMode, LOCALHOST, onError );
+                new ClusteredStatementResult( delegate, WRITE, LOCALHOST, onError );
 
         // When
         try
@@ -221,7 +210,7 @@ public class ClusteredStatementResultTest
         }
 
         // Then
-        verify( onError ).onConnectionFailure( LOCALHOST );
+        verify( onError ).onWriteFailure( LOCALHOST );
         verifyNoMoreInteractions( onError );
     }
 }

@@ -21,21 +21,27 @@ package org.neo4j.driver.internal;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ConnectionFailureException;
+import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
+
+import static java.lang.String.format;
 
 public class ClusteredNetworkSession extends NetworkSession
 {
+    private final AccessMode mode;
     private final ClusteredErrorHandler onError;
 
-    ClusteredNetworkSession( Connection connection,
+    ClusteredNetworkSession( AccessMode mode, Connection connection,
             ClusteredErrorHandler onError, Logger logger )
     {
         super( connection, logger );
+        this.mode = mode;
         this.onError = onError;
     }
 
@@ -44,25 +50,15 @@ public class ClusteredNetworkSession extends NetworkSession
     {
         try
         {
-            return new ClusteredStatementResult( super.run( statement ), connection.address(), onError );
+            return new ClusteredStatementResult( super.run( statement ), mode, connection.address(), onError );
         }
         catch ( ConnectionFailureException e )
         {
-            onError.onConnectionFailure( connection.address() );
-            throw new SessionExpiredException( "Failed to perform write load to server", e );
+            throw sessionExpired( e, onError, connection.address() );
         }
         catch ( ClientException e )
         {
-            if ( e.code().equals( "Neo.ClientError.Cluster.NotALeader" ) )
-            {
-                onError.onWriteFailure( connection.address() );
-                throw new SessionExpiredException(
-                        String.format( "Server at %s no longer accepts writes", connection.address().toString() ) );
-            }
-            else
-            {
-                throw e;
-            }
+            throw filterFailureToWrite( e, mode, onError, connection.address() );
         }
     }
 
@@ -75,10 +71,44 @@ public class ClusteredNetworkSession extends NetworkSession
         }
         catch ( ConnectionFailureException e )
         {
-            BoltServerAddress address = connection.address();
-            onError.onConnectionFailure( address );
-            throw new SessionExpiredException(
-                    String.format( "Server at %s is no longer available", address.toString() ), e );
+            throw sessionExpired(e, onError, connection.address());
         }
+    }
+
+    static Neo4jException filterFailureToWrite( ClientException e, AccessMode mode, ClusteredErrorHandler onError,
+            BoltServerAddress address )
+    {
+        if ( isFailedToWrite( e ) )
+        {
+            // The server is unaware of the session mode, so we have to implement this logic in the driver.
+            // In the future, we might be able to move this logic to the server.
+            switch ( mode )
+            {
+                case READ:
+                    return new ClientException( "Write queries cannot be performed in READ access mode." );
+                case WRITE:
+                    onError.onWriteFailure( address );
+                    return new SessionExpiredException( format( "Server at %s no longer accepts writes", address ) );
+                default:
+                    throw new IllegalArgumentException( mode + " not supported." );
+            }
+        }
+        else
+        {
+            return e;
+        }
+    }
+
+    static SessionExpiredException sessionExpired( ConnectionFailureException e, ClusteredErrorHandler onError,
+                                                   BoltServerAddress address )
+    {
+        onError.onConnectionFailure( address );
+        return new SessionExpiredException( format( "Server at %s is no longer available", address.toString() ), e );
+    }
+
+    private static boolean isFailedToWrite( ClientException e )
+    {
+        return e.code().equals( "Neo.ClientError.Cluster.NotALeader" ) ||
+                e.code().equals( "Neo.ClientError.General.ForbiddenOnReadOnlyDatabase" );
     }
 }

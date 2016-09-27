@@ -26,6 +26,7 @@ import java.util.Map;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ConnectionFailureException;
@@ -66,7 +67,7 @@ public class ClusteredNetworkSessionTest
                 when( connection ).run( anyString(), any( Map.class ), any( Collector.class ) );
 
         ClusteredNetworkSession result =
-                new ClusteredNetworkSession( connection, onError, mock( Logger.class ) );
+                new ClusteredNetworkSession( AccessMode.WRITE, connection, onError, mock( Logger.class ) );
 
         // When
         try
@@ -85,13 +86,13 @@ public class ClusteredNetworkSessionTest
     }
 
     @Test
-    public void shouldHandleWriteFailures()
+    public void shouldHandleWriteFailuresInWriteAccessMode()
     {
         // Given
         doThrow( new ClientException( "Neo.ClientError.Cluster.NotALeader", "oh no!" ) ).
                 when( connection ).run( anyString(), any( Map.class ), any( Collector.class ) );
         ClusteredNetworkSession session =
-                new ClusteredNetworkSession( connection, onError, mock( Logger.class ) );
+                new ClusteredNetworkSession( AccessMode.WRITE, connection, onError, mock( Logger.class ) );
 
         // When
         try
@@ -110,6 +111,28 @@ public class ClusteredNetworkSessionTest
     }
 
     @Test
+    public void shouldHandleWriteFailuresInReadAccessMode()
+    {
+        // Given
+        doThrow( new ClientException( "Neo.ClientError.Cluster.NotALeader", "oh no!" ) ).
+                when( connection ).run( anyString(), any( Map.class ), any( Collector.class ) );
+        ClusteredNetworkSession session =
+                new ClusteredNetworkSession( AccessMode.READ, connection, onError, mock( Logger.class ) );
+
+        // When
+        try
+        {
+            session.run( "CREATE ()" );
+            fail();
+        }
+        catch ( ClientException e )
+        {
+            //ignore
+        }
+        verifyNoMoreInteractions( onError );
+    }
+
+    @Test
     public void shouldRethrowNonWriteFailures()
     {
         // Given
@@ -117,7 +140,7 @@ public class ClusteredNetworkSessionTest
         doThrow( toBeThrown ).
                 when( connection ).run( anyString(), any( Map.class ), any( Collector.class ) );
         ClusteredNetworkSession session =
-                new ClusteredNetworkSession( connection, onError, mock( Logger.class ) );
+                new ClusteredNetworkSession( AccessMode.WRITE, connection, onError, mock( Logger.class ) );
 
         // When
         try
@@ -142,7 +165,7 @@ public class ClusteredNetworkSessionTest
                 when( connection ).sync();
 
         ClusteredNetworkSession session =
-                new ClusteredNetworkSession( connection, onError, mock( Logger.class ) );
+                new ClusteredNetworkSession( AccessMode.WRITE, connection, onError, mock( Logger.class ) );
 
         // When
         try
