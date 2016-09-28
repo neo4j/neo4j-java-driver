@@ -21,24 +21,32 @@ package org.neo4j.driver.internal;
 import java.util.List;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ConnectionFailureException;
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
-import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.util.Function;
+
+import static java.lang.String.format;
+
+import static org.neo4j.driver.internal.ClusteredNetworkSession.filterFailureToWrite;
+import static org.neo4j.driver.internal.ClusteredNetworkSession.sessionExpired;
 
 public class ClusteredStatementResult implements StatementResult
 {
     private final StatementResult delegate;
+    private final AccessMode mode;
     private final BoltServerAddress address;
     private final ClusteredErrorHandler onError;
 
-    ClusteredStatementResult( StatementResult delegate, BoltServerAddress address, ClusteredErrorHandler onError )
+    ClusteredStatementResult( StatementResult delegate, AccessMode mode, BoltServerAddress address,
+            ClusteredErrorHandler onError )
     {
         this.delegate = delegate;
+        this.mode = mode;
         this.address = address;
         this.onError = onError;
     }
@@ -52,18 +60,11 @@ public class ClusteredStatementResult implements StatementResult
         }
         catch ( ConnectionFailureException e )
         {
-            throw sessionExpired( e );
+            throw sessionExpired( e, onError, address );
         }
         catch ( ClientException e )
         {
-            if ( isFailedToWrite( e ) )
-            {
-                throw failedWrite();
-            }
-            else
-            {
-                throw e;
-            }
+            throw filterFailureToWrite( e, mode, onError, address );
         }
     }
 
@@ -76,18 +77,11 @@ public class ClusteredStatementResult implements StatementResult
         }
         catch ( ConnectionFailureException e )
         {
-            throw sessionExpired( e );
+            throw sessionExpired( e, onError, address );
         }
         catch ( ClientException e )
         {
-            if ( isFailedToWrite( e ) )
-            {
-                throw failedWrite();
-            }
-            else
-            {
-                throw e;
-            }
+            throw filterFailureToWrite( e, mode, onError, address );
         }
     }
 
@@ -100,18 +94,11 @@ public class ClusteredStatementResult implements StatementResult
         }
         catch ( ConnectionFailureException e )
         {
-            throw sessionExpired( e );
+            throw sessionExpired( e, onError, address );
         }
         catch ( ClientException e )
         {
-            if ( isFailedToWrite( e ) )
-            {
-                throw failedWrite();
-            }
-            else
-            {
-                throw e;
-            }
+            throw filterFailureToWrite( e, mode, onError, address );
         }
     }
 
@@ -125,18 +112,11 @@ public class ClusteredStatementResult implements StatementResult
         }
         catch ( ConnectionFailureException e )
         {
-            throw sessionExpired( e );
+            throw sessionExpired( e, onError, address );
         }
         catch ( ClientException e )
         {
-            if ( isFailedToWrite( e ) )
-            {
-               throw failedWrite();
-            }
-            else
-            {
-                throw e;
-            }
+            throw filterFailureToWrite( e, mode, onError, address );
         }
     }
 
@@ -149,18 +129,11 @@ public class ClusteredStatementResult implements StatementResult
         }
         catch ( ConnectionFailureException e )
         {
-            throw sessionExpired( e );
+            throw sessionExpired( e, onError, address );
         }
         catch ( ClientException e )
         {
-            if ( isFailedToWrite( e ) )
-            {
-                throw failedWrite();
-            }
-            else
-            {
-                throw e;
-            }
+            throw filterFailureToWrite( e, mode, onError, address );
         }
     }
 
@@ -173,42 +146,28 @@ public class ClusteredStatementResult implements StatementResult
         }
         catch ( ConnectionFailureException e )
         {
-            throw sessionExpired( e );
+            throw sessionExpired( e, onError, address );
         }
         catch ( ClientException e )
         {
-            if ( isFailedToWrite( e ) )
-            {
-                throw failedWrite();
-            }
-            else
-            {
-                throw e;
-            }
+            throw filterFailureToWrite( e, mode, onError, address );
         }
     }
 
     @Override
-    public <T> List<T> list( Function<Record,T> mapFunction )
+    public <T> List<T> list( Function<Record, T> mapFunction )
     {
         try
         {
-            return delegate.list(mapFunction);
+            return delegate.list( mapFunction );
         }
         catch ( ConnectionFailureException e )
         {
-            throw sessionExpired( e );
+            throw sessionExpired( e, onError, address );
         }
         catch ( ClientException e )
         {
-            if ( isFailedToWrite( e ) )
-            {
-                throw failedWrite();
-            }
-            else
-            {
-                throw e;
-            }
+            throw filterFailureToWrite( e, mode, onError, address );
         }
     }
 
@@ -227,35 +186,12 @@ public class ClusteredStatementResult implements StatementResult
         }
         catch ( ConnectionFailureException e )
         {
-            throw sessionExpired( e );
+            throw sessionExpired( e, onError, address );
         }
         catch ( ClientException e )
         {
-            if ( isFailedToWrite( e ) )
-            {
-                throw failedWrite();
-            }
-            else
-            {
-                throw e;
-            }
+            throw filterFailureToWrite( e, mode, onError, address );
         }
     }
 
-    private SessionExpiredException sessionExpired( ConnectionFailureException e )
-    {
-        onError.onConnectionFailure( address );
-        return new SessionExpiredException( String.format( "Server at %s is no longer available", address.toString()), e);
-    }
-
-    private SessionExpiredException failedWrite()
-    {
-        onError.onWriteFailure( address );
-        return new SessionExpiredException( String.format( "Server at %s no longer accepts writes", address.toString()));
-    }
-
-    private boolean isFailedToWrite( ClientException e )
-    {
-        return e.code().equals( "Neo.ClientError.Cluster.NotALeader" );
-    }
 }
