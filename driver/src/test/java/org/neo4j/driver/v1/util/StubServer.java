@@ -20,19 +20,19 @@
 package org.neo4j.driver.v1.util;
 
 import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
 import static java.lang.Thread.sleep;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
+import static org.junit.Assert.fail;
 
 public class StubServer
 {
     // This may be thrown if the driver has not been closed properly
     public static class ForceKilled extends Exception {}
-
-    private static final int DEFAULT_PORT = 7687;
 
     private Process process = null;
 
@@ -46,14 +46,9 @@ public class StubServer
         sleep( 500 );  // might take a moment for the socket to start listening
     }
 
-    public static StubServer start( String script ) throws IOException, InterruptedException
+    public static StubServer start( String resource, int port ) throws IOException, InterruptedException
     {
-        return start( script, DEFAULT_PORT );
-    }
-
-    public static StubServer start( String script, int port ) throws IOException, InterruptedException
-    {
-        return new StubServer( script, port );
+        return new StubServer( resource(resource), port );
     }
 
     public int exitStatus() throws InterruptedException, ForceKilled
@@ -72,4 +67,13 @@ public class StubServer
         }
     }
 
+    private static String resource( String fileName )
+    {
+        URL resource = StubServer.class.getClassLoader().getResource( fileName );
+        if ( resource == null )
+        {
+            fail( fileName + " does not exists" );
+        }
+        return resource.getFile();
+    }
 }

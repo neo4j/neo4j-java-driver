@@ -25,7 +25,6 @@ import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -58,7 +57,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-@Ignore
 public class RoutingDriverStubTest
 {
     @Rule
@@ -70,7 +68,7 @@ public class RoutingDriverStubTest
     public void shouldDiscoverServers() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
-        StubServer server = StubServer.start( resource( "discover_servers.script" ), 9001 );
+        StubServer server = StubServer.start( "discover_servers.script", 9001 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
 
         // When
@@ -89,7 +87,7 @@ public class RoutingDriverStubTest
     public void shouldDiscoverNewServers() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
-        StubServer server = StubServer.start( resource( "discover_new_servers.script" ), 9001 );
+        StubServer server = StubServer.start( "discover_new_servers.script" , 9001 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         BoltServerAddress seed = address( 9001 );
 
@@ -110,7 +108,7 @@ public class RoutingDriverStubTest
     public void shouldHandleEmptyResponse() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
-        StubServer server = StubServer.start( resource( "handle_empty_response.script" ), 9001 );
+        StubServer server = StubServer.start( "handle_empty_response.script" , 9001 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         try ( RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config ) )
         {
@@ -127,10 +125,10 @@ public class RoutingDriverStubTest
     public void shouldHandleAcquireReadSession() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
-        StubServer server = StubServer.start( resource( "acquire_endpoints.script" ), 9001 );
+        StubServer server = StubServer.start( "acquire_endpoints.script", 9001 );
 
         //START a read server
-        StubServer readServer = StubServer.start( resource( "read_server.script" ), 9005 );
+        StubServer readServer = StubServer.start( "read_server.script" , 9005 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         try ( RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
               Session session = driver.session( AccessMode.READ ) )
@@ -156,11 +154,11 @@ public class RoutingDriverStubTest
     public void shouldRoundRobinReadServers() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
-        StubServer server = StubServer.start( resource( "acquire_endpoints.script" ), 9001 );
+        StubServer server = StubServer.start( "acquire_endpoints.script" , 9001 );
 
         //START two read servers
-        StubServer readServer1 = StubServer.start( resource( "read_server.script" ), 9005 );
-        StubServer readServer2 = StubServer.start( resource( "read_server.script" ), 9006 );
+        StubServer readServer1 = StubServer.start( "read_server.script", 9005 );
+        StubServer readServer2 = StubServer.start( "read_server.script" , 9006 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         try ( RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config ) )
         {
@@ -195,10 +193,10 @@ public class RoutingDriverStubTest
         exception.expectMessage( "Server at 127.0.0.1:9005 is no longer available" );
 
         // Given
-        StubServer server = StubServer.start( resource( "acquire_endpoints.script" ), 9001 );
+        StubServer server = StubServer.start( "acquire_endpoints.script" , 9001 );
 
         //START a read server
-        StubServer.start( resource( "dead_server.script" ), 9005 );
+        StubServer.start( "dead_server.script" , 9005 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         try ( RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
               Session session = driver.session( AccessMode.READ ) )
@@ -218,10 +216,10 @@ public class RoutingDriverStubTest
         //exception.expectMessage( "Server at 127.0.0.1:9006 is no longer available" );
 
         // Given
-        StubServer server = StubServer.start( resource( "acquire_endpoints.script" ), 9001 );
+        StubServer server = StubServer.start( "acquire_endpoints.script" , 9001 );
 
         //START a dead write servers
-        StubServer.start( resource( "dead_server.script" ), 9007 );
+        StubServer.start( "dead_server.script" , 9007 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         try ( RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
               Session session = driver.session( AccessMode.WRITE ) )
@@ -236,10 +234,10 @@ public class RoutingDriverStubTest
     public void shouldHandleAcquireWriteSession() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
-        StubServer server = StubServer.start( resource( "acquire_endpoints.script" ), 9001 );
+        StubServer server = StubServer.start( "acquire_endpoints.script" , 9001 );
 
         //START a write server
-        StubServer writeServer = StubServer.start( resource( "write_server.script" ), 9007 );
+        StubServer writeServer = StubServer.start( "write_server.script" , 9007 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         try ( RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
               Session session = driver.session( AccessMode.WRITE ) )
@@ -255,11 +253,11 @@ public class RoutingDriverStubTest
     public void shouldRoundRobinWriteSessions() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
-        StubServer server = StubServer.start( resource( "acquire_endpoints.script" ), 9001 );
+        StubServer server = StubServer.start( "acquire_endpoints.script", 9001 );
 
         //START a write server
-        StubServer writeServer1 = StubServer.start( resource( "write_server.script" ), 9007 );
-        StubServer writeServer2 = StubServer.start( resource( "write_server.script" ), 9008 );
+        StubServer writeServer1 = StubServer.start( "write_server.script", 9007 );
+        StubServer writeServer2 = StubServer.start( "write_server.script", 9008 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         try ( RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config ) )
         {
@@ -281,10 +279,10 @@ public class RoutingDriverStubTest
     public void shouldRememberEndpoints() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
-        StubServer server = StubServer.start( resource( "acquire_endpoints.script" ), 9001 );
+        StubServer server = StubServer.start( "acquire_endpoints.script", 9001 );
 
         //START a read server
-        StubServer readServer = StubServer.start( resource( "read_server.script" ), 9005 );
+        StubServer readServer = StubServer.start( "read_server.script", 9005 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         try ( RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
               Session session = driver.session( AccessMode.READ ) )
@@ -304,10 +302,10 @@ public class RoutingDriverStubTest
     public void shouldForgetEndpointsOnFailure() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
-        StubServer server = StubServer.start( resource( "acquire_endpoints.script" ), 9001 );
+        StubServer server = StubServer.start( "acquire_endpoints.script", 9001 );
 
         //START a read server
-        StubServer.start( resource( "dead_server.script" ), 9005 );
+        StubServer.start( "dead_server.script", 9005 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
         try
@@ -336,11 +334,11 @@ public class RoutingDriverStubTest
             throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
-        StubServer server = StubServer.start( resource( "rediscover.script" ), 9001 );
+        StubServer server = StubServer.start( "rediscover.script", 9001 );
 
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         //START a read server
-        StubServer read = StubServer.start( resource( "empty.script" ), 9005 );
+        StubServer read = StubServer.start( "empty.script", 9005 );
 
         //On creation we only find ourselves
         RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
@@ -365,11 +363,11 @@ public class RoutingDriverStubTest
     public void shouldOnlyGetServersOnce() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
-        StubServer server = StubServer.start( resource( "rediscover.script" ), 9001 );
+        StubServer server = StubServer.start( "rediscover.script", 9001 );
 
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         //START a read server
-        StubServer read = StubServer.start( resource( "empty.script" ), 9005 );
+        StubServer read = StubServer.start( "empty.script", 9005 );
 
         //On creation we only find ourselves
         final RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
@@ -410,7 +408,7 @@ public class RoutingDriverStubTest
         exception.expect( ServiceUnavailableException.class );
 
         // Given
-        StubServer.start( resource( "non_discovery_server.script" ), 9001 );
+        StubServer.start( "non_discovery_server.script", 9001 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
 
         // When
@@ -424,7 +422,7 @@ public class RoutingDriverStubTest
         exception.expect( ServiceUnavailableException.class );
 
         // Given
-        StubServer.start( resource( "failed_discovery.script" ), 9001 );
+        StubServer.start( "failed_discovery.script", 9001 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
 
         // When
@@ -436,10 +434,10 @@ public class RoutingDriverStubTest
             throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
-        StubServer server = StubServer.start( resource( "acquire_endpoints.script" ), 9001 );
+        StubServer server = StubServer.start( "acquire_endpoints.script", 9001 );
 
         //START a write server that doesn't accept writes
-        StubServer.start( resource( "not_able_to_write_server.script" ), 9007 );
+        StubServer.start( "not_able_to_write_server.script", 9007 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
         boolean failed = false;
@@ -468,10 +466,10 @@ public class RoutingDriverStubTest
     public void shouldRediscoverOnExpiry() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
-        StubServer server = StubServer.start( resource( "expire.script" ), 9001 );
+        StubServer server = StubServer.start( "expire.script", 9001 );
 
         //START a read server
-        StubServer readServer = StubServer.start( resource( "empty.script" ), 9005 );
+        StubServer readServer = StubServer.start( "empty.script", 9005 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
         assertThat(driver.routingServers(), contains(address( 9001 )));
@@ -494,12 +492,12 @@ public class RoutingDriverStubTest
     public void shouldNotPutBackPurgedConnection() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
-        StubServer server = StubServer.start( resource( "not_reuse_connection.script" ), 9001 );
+        StubServer server = StubServer.start( "not_reuse_connection.script", 9001 );
 
         //START servers
-        StubServer readServer = StubServer.start( resource( "empty.script" ), 9002 );
-        StubServer writeServer1 = StubServer.start( resource( "dead_server.script" ), 9003 );
-        StubServer writeServer2 = StubServer.start( resource( "empty.script" ), 9006 );
+        StubServer readServer = StubServer.start( "empty.script", 9002 );
+        StubServer writeServer1 = StubServer.start( "dead_server.script", 9003 );
+        StubServer writeServer2 = StubServer.start( "empty.script", 9006 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
 
         RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
@@ -546,16 +544,6 @@ public class RoutingDriverStubTest
         assertThat( readServer.exitStatus(), equalTo( 0 ) );
         assertThat( writeServer1.exitStatus(), equalTo( 0 ) );
         assertThat( writeServer2.exitStatus(), equalTo( 0 ) );
-    }
-
-    String resource( String fileName )
-    {
-        URL resource = RoutingDriverStubTest.class.getClassLoader().getResource( fileName );
-        if ( resource == null )
-        {
-            fail( fileName + " does not exists" );
-        }
-        return resource.getFile();
     }
 
     private BoltServerAddress address( int port )

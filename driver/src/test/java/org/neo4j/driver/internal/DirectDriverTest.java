@@ -19,7 +19,6 @@
 
 package org.neo4j.driver.internal;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -68,12 +67,12 @@ public class DirectDriverTest
 
     }
 
-    @Ignore
+    @Test
     public void shouldBeAbleRunCypher() throws StubServer.ForceKilled, InterruptedException, IOException
     {
         // Given
-        StubServer server = StubServer.start( "../driver/src/test/resources/return_x.script" );
-        URI uri = URI.create( "bolt://localhost:7687" );
+        StubServer server = StubServer.start( "return_x.script", 9001 );
+        URI uri = URI.create( "bolt://127.0.0.1:9001" );
         int x;
 
         // When
