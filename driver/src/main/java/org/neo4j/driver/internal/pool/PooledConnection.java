@@ -25,7 +25,11 @@ import org.neo4j.driver.internal.spi.StreamCollector;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Consumer;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
+
+import static java.lang.String.format;
+
 /**
  * The state of a pooledConnection from a pool point of view could be one of the following:
  * Created,
@@ -91,7 +95,7 @@ public class PooledConnection implements Connection
         {
             delegate.run( statement, parameters, collector );
         }
-        catch(RuntimeException e)
+        catch( RuntimeException e )
         {
             onDelegateException( e );
         }
@@ -104,7 +108,7 @@ public class PooledConnection implements Connection
         {
             delegate.discardAll();
         }
-        catch(RuntimeException e)
+        catch( RuntimeException e )
         {
             onDelegateException( e );
         }
@@ -117,7 +121,7 @@ public class PooledConnection implements Connection
         {
             delegate.pullAll( collector );
         }
-        catch(RuntimeException e)
+        catch( RuntimeException e )
         {
             onDelegateException( e );
         }
@@ -224,9 +228,18 @@ public class PooledConnection implements Connection
      */
     private void onDelegateException( RuntimeException e )
     {
-        if ( !isClientOrTransientError( e ) || isProtocolViolationError( e ) )
+        if ( isUnrecoverableErrorsOccurred( e ) )
         {
             unrecoverableErrorsOccurred = true;
+            if( isClusterError( e ) )
+            {
+                e = new ClientException( format(
+                        "Failed to run a statement on a 3.1+ Neo4j core-edge cluster server. %n" +
+                        "Please retry the statement if you have defined your own routing strategy to route driver messages to the cluster. " +
+                        "Note: 1.0 java driver does not support routing statements to a 3.1+ Neo4j core edge cluster. " +
+                        "Please upgrade to 1.1 driver and use `bolt+routing` scheme to route and run statements " +
+                        "directly to a 3.1+ core edge cluster." ), e );
+            }
         }
         else
         {
@@ -245,18 +258,27 @@ public class PooledConnection implements Connection
         this.onError = runnable;
     }
 
-    private boolean isProtocolViolationError(RuntimeException e )
+    private boolean isUnrecoverableErrorsOccurred( RuntimeException e )
     {
-        return e instanceof Neo4jException
-               && ((Neo4jException) e).neo4jErrorCode().startsWith( "Neo.ClientError.Request" );
+        return !isClientOrTransientError( e ) || isProtocolViolationError( e ) || isClusterError( e );
+    }
+
+    private boolean isProtocolViolationError( RuntimeException e )
+    {
+        return ( e instanceof Neo4jException ) &&
+                ( ( Neo4jException ) e ).neo4jErrorCode().startsWith( "Neo.ClientError.Request" );
     }
 
     private boolean isClientOrTransientError( RuntimeException e )
     {
         // Eg: DatabaseErrors and unknown (no status code or not neo4j exception) cause session to be discarded
-        return e instanceof Neo4jException
-               && (((Neo4jException) e).neo4jErrorCode().contains( "ClientError" )
-                   || ((Neo4jException) e).neo4jErrorCode().contains( "TransientError" ));
+        return ( e instanceof Neo4jException ) && ( ( Neo4jException ) e ).neo4jErrorCode().contains( "ClientError" )
+                || ( e instanceof Neo4jException ) && ( ( Neo4jException ) e ).neo4jErrorCode().contains( "TransientError" );
+    }
+
+    private boolean isClusterError( RuntimeException e )
+    {
+        return ( e instanceof Neo4jException ) && ( ( Neo4jException ) e ).neo4jErrorCode().contains( "Cluster" );
     }
 
     public long idleTime()

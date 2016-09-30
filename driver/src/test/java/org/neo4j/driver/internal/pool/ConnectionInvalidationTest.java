@@ -36,6 +36,7 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.exceptions.TransientException;
 
+import static java.lang.String.format;
 import static junit.framework.TestCase.assertFalse;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -125,6 +126,29 @@ public class ConnectionInvalidationTest
     }
 
     @Test
+    public void shouldInvalidateOnUnrecoverableClusterErrors() throws Throwable
+    {
+        // Given
+        String clientErrorMessage = format( "Failed to run a statement on a 3.1+ Neo4j core-edge cluster server. %n" +
+                        "Please retry the statement if you have defined your own routing strategy to route driver messages to the cluster. " +
+                        "Note: 1.0 java driver does not support routing statements to a 3.1+ Neo4j core edge cluster. " +
+                        "Please upgrade to 1.1 driver and use `bolt+routing` scheme to route and run statements " +
+                        "directly to a 3.1+ core edge cluster." );
+        ClientException serverException = new ClientException( "Neo.ClientError.Cluster.NotALeader", "Hello, world!" );
+        ClientException clientException = new ClientException( clientErrorMessage, serverException );
+
+        // When/Then
+        assertUnrecoverable( serverException, clientException );
+
+        // Given
+        serverException = new ClientException( "Neo.TransientError.Cluster.NoLeaderAvailable", "Hello, world" );
+        clientException = new ClientException( clientErrorMessage, serverException );
+
+        // When/Then
+        assertUnrecoverable( serverException, clientException );
+    }
+
+    @Test
     public void shouldNotInvalidateOnKnownRecoverableExceptions() throws Throwable
     {
         assertRecoverable( new ClientException( "Neo.ClientError.General.ReadOnly", "Hello, world!" ) );
@@ -138,8 +162,13 @@ public class ConnectionInvalidationTest
         assertUnrecoverable( new ClientException( "Neo.ClientError.Request.Invalid", "Hello, world!" ) );
     }
 
-    @SuppressWarnings( "unchecked" )
     private void assertUnrecoverable( Neo4jException exception )
+    {
+        assertUnrecoverable( exception, exception );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    private void assertUnrecoverable( Neo4jException exception, Neo4jException expectingException )
     {
         doThrow( exception ).when( delegate )
                 .run( eq("assert unrecoverable"), anyMap(), any( StreamCollector.class ) );
@@ -152,7 +181,8 @@ public class ConnectionInvalidationTest
         }
         catch ( Neo4jException e )
         {
-            assertThat( e, equalTo( exception ) );
+            assertThat( e.getMessage(), equalTo( expectingException.getMessage() ) );
+            assertThat( e.getCause(), equalTo( expectingException.getCause() ) );
         }
 
         // Then
