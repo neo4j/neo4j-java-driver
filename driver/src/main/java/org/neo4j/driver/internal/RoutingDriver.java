@@ -47,7 +47,7 @@ import org.neo4j.driver.v1.util.Function;
 
 import static java.lang.String.format;
 
-public class ClusterDriver extends BaseDriver
+public class RoutingDriver extends BaseDriver
 {
     private static final String GET_SERVERS = "dbms.cluster.routing.getServers";
     private static final long MAX_TTL = Long.MAX_VALUE / 1000L;
@@ -75,7 +75,7 @@ public class ClusterDriver extends BaseDriver
     private final ConcurrentRoundRobinSet<BoltServerAddress> writeServers = new ConcurrentRoundRobinSet<>( COMPARATOR );
     private final AtomicLong expires = new AtomicLong( 0L );
 
-    public ClusterDriver( BoltServerAddress seedAddress,
+    public RoutingDriver( BoltServerAddress seedAddress,
             ConnectionPool connections,
             SecurityPlan securityPlan,
             BiFunction<Connection,Logger,Session> sessionProvider,
