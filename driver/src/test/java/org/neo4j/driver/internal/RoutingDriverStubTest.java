@@ -532,7 +532,7 @@ public class RoutingDriverStubTest
 
         // now we close the read session and the connection should not be put
         // back to the pool
-        Connection connection = ((ClusteredNetworkSession) readSession).connection;
+        Connection connection = ((RoutingNetworkSession) readSession).connection;
         assertTrue( connection.isOpen() );
         readSession.close();
         assertFalse( connection.isOpen() );

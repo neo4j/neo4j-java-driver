@@ -286,7 +286,7 @@ public class RoutingDriver extends BaseDriver
     @Override
     public Session session( final AccessMode mode )
     {
-        return new ClusteredNetworkSession( mode, acquireConnection( mode ),
+        return new RoutingNetworkSession( mode, acquireConnection( mode ),
                 new ClusteredErrorHandler()
                 {
                     @Override

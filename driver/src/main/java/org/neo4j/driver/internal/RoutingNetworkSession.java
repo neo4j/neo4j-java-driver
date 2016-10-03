@@ -32,12 +32,12 @@ import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 
 import static java.lang.String.format;
 
-public class ClusteredNetworkSession extends NetworkSession
+public class RoutingNetworkSession extends NetworkSession
 {
     private final AccessMode mode;
     private final ClusteredErrorHandler onError;
 
-    ClusteredNetworkSession( AccessMode mode, Connection connection,
+    RoutingNetworkSession( AccessMode mode, Connection connection,
             ClusteredErrorHandler onError, Logger logger )
     {
         super( connection, logger );

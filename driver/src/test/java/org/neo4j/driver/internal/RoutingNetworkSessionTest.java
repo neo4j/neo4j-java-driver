@@ -44,7 +44,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
-public class ClusteredNetworkSessionTest
+public class RoutingNetworkSessionTest
 {
     private Connection connection;
     private ClusteredErrorHandler onError;
@@ -59,6 +59,7 @@ public class ClusteredNetworkSessionTest
         onError = mock( ClusteredErrorHandler.class );
     }
 
+    @SuppressWarnings( "unchecked" )
     @Test
     public void shouldHandleConnectionFailures()
     {
@@ -66,8 +67,8 @@ public class ClusteredNetworkSessionTest
         doThrow( new ConnectionFailureException( "oh no" ) ).
                 when( connection ).run( anyString(), any( Map.class ), any( Collector.class ) );
 
-        ClusteredNetworkSession result =
-                new ClusteredNetworkSession( AccessMode.WRITE, connection, onError, mock( Logger.class ) );
+        RoutingNetworkSession result =
+                new RoutingNetworkSession( AccessMode.WRITE, connection, onError, mock( Logger.class ) );
 
         // When
         try
@@ -85,14 +86,15 @@ public class ClusteredNetworkSessionTest
         verifyNoMoreInteractions( onError );
     }
 
+    @SuppressWarnings( "unchecked" )
     @Test
     public void shouldHandleWriteFailuresInWriteAccessMode()
     {
         // Given
         doThrow( new ClientException( "Neo.ClientError.Cluster.NotALeader", "oh no!" ) ).
                 when( connection ).run( anyString(), any( Map.class ), any( Collector.class ) );
-        ClusteredNetworkSession session =
-                new ClusteredNetworkSession( AccessMode.WRITE, connection, onError, mock( Logger.class ) );
+        RoutingNetworkSession session =
+                new RoutingNetworkSession( AccessMode.WRITE, connection, onError, mock( Logger.class ) );
 
         // When
         try
@@ -110,14 +112,15 @@ public class ClusteredNetworkSessionTest
         verifyNoMoreInteractions( onError );
     }
 
+    @SuppressWarnings( "unchecked" )
     @Test
     public void shouldHandleWriteFailuresInReadAccessMode()
     {
         // Given
         doThrow( new ClientException( "Neo.ClientError.Cluster.NotALeader", "oh no!" ) ).
                 when( connection ).run( anyString(), any( Map.class ), any( Collector.class ) );
-        ClusteredNetworkSession session =
-                new ClusteredNetworkSession( AccessMode.READ, connection, onError, mock( Logger.class ) );
+        RoutingNetworkSession session =
+                new RoutingNetworkSession( AccessMode.READ, connection, onError, mock( Logger.class ) );
 
         // When
         try
@@ -132,6 +135,7 @@ public class ClusteredNetworkSessionTest
         verifyNoMoreInteractions( onError );
     }
 
+    @SuppressWarnings( "unchecked" )
     @Test
     public void shouldRethrowNonWriteFailures()
     {
@@ -139,8 +143,8 @@ public class ClusteredNetworkSessionTest
         ClientException toBeThrown = new ClientException( "code", "oh no!" );
         doThrow( toBeThrown ).
                 when( connection ).run( anyString(), any( Map.class ), any( Collector.class ) );
-        ClusteredNetworkSession session =
-                new ClusteredNetworkSession( AccessMode.WRITE, connection, onError, mock( Logger.class ) );
+        RoutingNetworkSession session =
+                new RoutingNetworkSession( AccessMode.WRITE, connection, onError, mock( Logger.class ) );
 
         // When
         try
@@ -164,8 +168,8 @@ public class ClusteredNetworkSessionTest
         doThrow( new ConnectionFailureException( "oh no" ) ).
                 when( connection ).sync();
 
-        ClusteredNetworkSession session =
-                new ClusteredNetworkSession( AccessMode.WRITE, connection, onError, mock( Logger.class ) );
+        RoutingNetworkSession session =
+                new RoutingNetworkSession( AccessMode.WRITE, connection, onError, mock( Logger.class ) );
 
         // When
         try
