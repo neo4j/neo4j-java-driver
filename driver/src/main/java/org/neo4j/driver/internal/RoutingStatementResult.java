@@ -33,14 +33,14 @@ import org.neo4j.driver.v1.util.Function;
 import static org.neo4j.driver.internal.RoutingNetworkSession.filterFailureToWrite;
 import static org.neo4j.driver.internal.RoutingNetworkSession.sessionExpired;
 
-public class ClusteredStatementResult implements StatementResult
+public class RoutingStatementResult implements StatementResult
 {
     private final StatementResult delegate;
     private final AccessMode mode;
     private final BoltServerAddress address;
     private final RoutingErrorHandler onError;
 
-    ClusteredStatementResult( StatementResult delegate, AccessMode mode, BoltServerAddress address,
+    RoutingStatementResult( StatementResult delegate, AccessMode mode, BoltServerAddress address,
             RoutingErrorHandler onError )
     {
         this.delegate = delegate;

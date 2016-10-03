@@ -50,7 +50,7 @@ public class RoutingNetworkSession extends NetworkSession
     {
         try
         {
-            return new ClusteredStatementResult( super.run( statement ), mode, connection.address(), onError );
+            return new RoutingStatementResult( super.run( statement ), mode, connection.address(), onError );
         }
         catch ( ConnectionFailureException e )
         {
