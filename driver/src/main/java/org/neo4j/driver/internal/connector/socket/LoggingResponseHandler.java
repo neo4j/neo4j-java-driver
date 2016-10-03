@@ -43,70 +43,70 @@ public class LoggingResponseHandler extends SocketResponseHandler
     @Override
     public void handleInitMessage( String clientNameAndVersion, Map<String,Value> authToken )
     {
-        super.handleInitMessage( clientNameAndVersion, authToken );
         logger.debug( "S: [INIT \"%s\"]", clientNameAndVersion );
+        super.handleInitMessage( clientNameAndVersion, authToken );
     }
 
     @Override
     public void handleRunMessage( String statement, Map<String,Value> parameters )
     {
-        super.handleRunMessage( statement, parameters );
         logger.debug( "S: [RUN \"%s\" %s]", statement, parameters );
+        super.handleRunMessage( statement, parameters );
     }
 
     @Override
     public void handlePullAllMessage()
     {
-        super.handlePullAllMessage();
         logger.debug( DEFAULT_DEBUG_LOGGING_FORMAT, PULL_ALL );
+        super.handlePullAllMessage();
     }
 
     @Override
     public void handleDiscardAllMessage()
     {
-        super.handleDiscardAllMessage();
         logger.debug( DEFAULT_DEBUG_LOGGING_FORMAT, DISCARD_ALL );
+        super.handleDiscardAllMessage();
     }
 
     @Override
     public void handleResetMessage()
     {
-        super.handleResetMessage();
         logger.debug( DEFAULT_DEBUG_LOGGING_FORMAT, RESET );
+        super.handleResetMessage();
     }
 
     @Override
     public void handleAckFailureMessage()
     {
-        super.handleAckFailureMessage();
         logger.debug( DEFAULT_DEBUG_LOGGING_FORMAT, ACK_FAILURE );
+        super.handleAckFailureMessage();
     }
 
     @Override
     public void handleSuccessMessage( Map<String,Value> meta )
     {
-        super.handleSuccessMessage( meta );
         logger.debug( "S: [SUCCESS %s]", meta );
+        super.handleSuccessMessage( meta );
     }
 
     @Override
     public void handleRecordMessage( Value[] fields )
     {
-        super.handleRecordMessage( fields );
         logger.debug( "S: [RECORD %s]", Arrays.asList( fields ) );
+        super.handleRecordMessage( fields );
     }
 
     @Override
     public void handleFailureMessage( String code, String message )
     {
-        super.handleFailureMessage( code, message );
         logger.debug("S: [FAILURE %s \"%s\"]", code, message );
+        super.handleFailureMessage( code, message );
     }
 
     @Override
     public void handleIgnoredMessage()
     {
-        super.handleIgnoredMessage();
         logger.debug( DEFAULT_DEBUG_LOGGING_FORMAT, IGNORED );
+        super.handleIgnoredMessage();
     }
 }
