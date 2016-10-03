@@ -22,10 +22,10 @@ import java.io.IOException;
 import java.net.URI;
 import java.security.GeneralSecurityException;
 
-import org.neo4j.driver.internal.ClusterDriver;
 import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.DirectDriver;
 import org.neo4j.driver.internal.NetworkSession;
+import org.neo4j.driver.internal.RoutingDriver;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.net.pooling.PoolSettings;
 import org.neo4j.driver.internal.net.pooling.SocketConnectionPool;
@@ -190,7 +190,7 @@ public class GraphDatabase
         case "bolt":
             return new DirectDriver( address, connectionPool, securityPlan, config.logging() );
         case "bolt+routing":
-            return new ClusterDriver( address, connectionPool, securityPlan, SESSION_PROVIDER, Clock.SYSTEM, config.logging() );
+            return new RoutingDriver( address, connectionPool, securityPlan, SESSION_PROVIDER, Clock.SYSTEM, config.logging() );
         default:
             throw new ClientException( format( "Unsupported URI scheme: %s", scheme ) );
         }

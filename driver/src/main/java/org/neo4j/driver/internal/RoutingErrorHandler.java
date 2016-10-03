@@ -23,7 +23,7 @@ import org.neo4j.driver.internal.net.BoltServerAddress;
 /**
  * Interface used for tracking errors when connected to a cluster.
  */
-interface ClusteredErrorHandler
+interface RoutingErrorHandler
 {
     void onConnectionFailure( BoltServerAddress address );
 

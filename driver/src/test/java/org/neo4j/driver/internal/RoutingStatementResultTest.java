@@ -18,12 +18,12 @@
  */
 package org.neo4j.driver.internal;
 
-import java.util.Arrays;
-import java.util.Collection;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import java.util.Arrays;
+import java.util.Collection;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.v1.AccessMode;
@@ -39,11 +39,11 @@ import static org.mockito.Mockito.when;
 
 
 @RunWith(Parameterized.class)
-public class ClusteredStatementResultTest
+public class RoutingStatementResultTest
 {
     private static final BoltServerAddress LOCALHOST = new BoltServerAddress( "localhost", 7687 );
     private StatementResult delegate = mock( StatementResult.class );
-    private ClusteredErrorHandler onError = mock( ClusteredErrorHandler.class );
+    private RoutingErrorHandler onError = mock( RoutingErrorHandler.class );
     private final AccessMode accessMode;
 
     @Parameterized.Parameters(name = "accessMode-{0}")
@@ -52,7 +52,7 @@ public class ClusteredStatementResultTest
         return Arrays.asList( AccessMode.values() );
     }
 
-    public ClusteredStatementResultTest( AccessMode accessMode )
+    public RoutingStatementResultTest( AccessMode accessMode )
     {
         this.accessMode = accessMode;
     }
@@ -62,8 +62,8 @@ public class ClusteredStatementResultTest
     {
         // Given
         when( delegate.consume() ).thenThrow( new ConnectionFailureException( "oh no" ) );
-        ClusteredStatementResult result =
-                new ClusteredStatementResult( delegate, accessMode, LOCALHOST, onError );
+        RoutingStatementResult result =
+                new RoutingStatementResult( delegate, accessMode, LOCALHOST, onError );
 
         // When
         try
@@ -86,8 +86,8 @@ public class ClusteredStatementResultTest
     {
         // Given
         when( delegate.hasNext() ).thenThrow( new ConnectionFailureException( "oh no" ) );
-        ClusteredStatementResult result =
-                new ClusteredStatementResult( delegate, accessMode, LOCALHOST, onError );
+        RoutingStatementResult result =
+                new RoutingStatementResult( delegate, accessMode, LOCALHOST, onError );
 
         // When
         try
@@ -110,8 +110,8 @@ public class ClusteredStatementResultTest
     {
         // Given
         when( delegate.keys() ).thenThrow( new ConnectionFailureException( "oh no" ) );
-        ClusteredStatementResult result =
-                new ClusteredStatementResult( delegate, accessMode, LOCALHOST, onError );
+        RoutingStatementResult result =
+                new RoutingStatementResult( delegate, accessMode, LOCALHOST, onError );
 
         // When
         try
@@ -134,8 +134,8 @@ public class ClusteredStatementResultTest
     {
         // Given
         when( delegate.list() ).thenThrow( new ConnectionFailureException( "oh no" ) );
-        ClusteredStatementResult result =
-                new ClusteredStatementResult( delegate, accessMode, LOCALHOST, onError );
+        RoutingStatementResult result =
+                new RoutingStatementResult( delegate, accessMode, LOCALHOST, onError );
 
         // When
         try
@@ -158,8 +158,8 @@ public class ClusteredStatementResultTest
     {
         // Given
         when( delegate.next() ).thenThrow( new ConnectionFailureException( "oh no" ) );
-        ClusteredStatementResult result =
-                new ClusteredStatementResult( delegate, accessMode, LOCALHOST, onError );
+        RoutingStatementResult result =
+                new RoutingStatementResult( delegate, accessMode, LOCALHOST, onError );
 
         // When
         try
@@ -182,8 +182,8 @@ public class ClusteredStatementResultTest
     {
         // Given
         when( delegate.peek() ).thenThrow( new ConnectionFailureException( "oh no" ) );
-        ClusteredStatementResult result =
-                new ClusteredStatementResult( delegate, accessMode, LOCALHOST, onError );
+        RoutingStatementResult result =
+                new RoutingStatementResult( delegate, accessMode, LOCALHOST, onError );
 
         // When
         try
@@ -206,8 +206,8 @@ public class ClusteredStatementResultTest
     {
         // Given
         when( delegate.single() ).thenThrow( new ConnectionFailureException( "oh no" ) );
-        ClusteredStatementResult result =
-                new ClusteredStatementResult( delegate, accessMode, LOCALHOST, onError );
+        RoutingStatementResult result =
+                new RoutingStatementResult( delegate, accessMode, LOCALHOST, onError );
 
         // When
         try

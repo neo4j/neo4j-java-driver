@@ -25,8 +25,8 @@ import org.junit.Test;
 import java.io.IOException;
 import java.net.URI;
 
-import org.neo4j.driver.internal.ClusterDriver;
 import org.neo4j.driver.internal.DirectDriver;
+import org.neo4j.driver.internal.RoutingDriver;
 import org.neo4j.driver.v1.util.StubServer;
 
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -60,7 +60,7 @@ public class GraphDatabaseTest
         Driver driver = GraphDatabase.driver( uri );
 
         // Then
-        assertThat( driver, instanceOf( ClusterDriver.class ) );
+        assertThat( driver, instanceOf( RoutingDriver.class ) );
 
         // Finally
         driver.close();

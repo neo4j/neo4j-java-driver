@@ -30,20 +30,18 @@ import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.util.Function;
 
-import static java.lang.String.format;
+import static org.neo4j.driver.internal.RoutingNetworkSession.filterFailureToWrite;
+import static org.neo4j.driver.internal.RoutingNetworkSession.sessionExpired;
 
-import static org.neo4j.driver.internal.ClusteredNetworkSession.filterFailureToWrite;
-import static org.neo4j.driver.internal.ClusteredNetworkSession.sessionExpired;
-
-public class ClusteredStatementResult implements StatementResult
+public class RoutingStatementResult implements StatementResult
 {
     private final StatementResult delegate;
     private final AccessMode mode;
     private final BoltServerAddress address;
-    private final ClusteredErrorHandler onError;
+    private final RoutingErrorHandler onError;
 
-    ClusteredStatementResult( StatementResult delegate, AccessMode mode, BoltServerAddress address,
-            ClusteredErrorHandler onError )
+    RoutingStatementResult( StatementResult delegate, AccessMode mode, BoltServerAddress address,
+            RoutingErrorHandler onError )
     {
         this.delegate = delegate;
         this.mode = mode;

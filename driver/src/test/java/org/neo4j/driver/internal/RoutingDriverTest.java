@@ -59,7 +59,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.security.SecurityPlan.insecure;
 import static org.neo4j.driver.v1.Values.value;
 
-public class ClusterDriverTest
+public class RoutingDriverTest
 {
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -80,14 +80,14 @@ public class ClusterDriverTest
                         singletonList( "localhost:3333" ) ) );
 
         // When
-        ClusterDriver clusterDriver = forSession( session );
+        RoutingDriver routingDriver = forSession( session );
 
         // Then
-        assertThat( clusterDriver.routingServers(),
+        assertThat( routingDriver.routingServers(),
                 containsInAnyOrder( boltAddress( "localhost", 1111 )) );
-        assertThat( clusterDriver.readServers(),
+        assertThat( routingDriver.readServers(),
                 containsInAnyOrder( boltAddress( "localhost", 2222 ) ) );
-        assertThat( clusterDriver.writeServers(),
+        assertThat( routingDriver.writeServers(),
                 containsInAnyOrder( boltAddress( "localhost", 3333 ) ) );
 
     }
@@ -105,23 +105,23 @@ public class ClusterDriverTest
                                 singletonList( "localhost:2222" ),
                                 singletonList( "localhost:3333" ) ) );
 
-        ClusterDriver clusterDriver = forSession( session );
+        RoutingDriver routingDriver = forSession( session );
 
-        assertThat( clusterDriver.routingServers(),
+        assertThat( routingDriver.routingServers(),
                 containsInAnyOrder( boltAddress( "localhost", 1111 )) );
-        assertThat( clusterDriver.readServers(), Matchers.<BoltServerAddress>empty() );
-        assertThat( clusterDriver.writeServers(), Matchers.<BoltServerAddress>empty() );
+        assertThat( routingDriver.readServers(), Matchers.<BoltServerAddress>empty() );
+        assertThat( routingDriver.writeServers(), Matchers.<BoltServerAddress>empty() );
 
 
         // When
-        clusterDriver.session( AccessMode.READ );
+        routingDriver.session( AccessMode.READ );
 
         // Then
-        assertThat( clusterDriver.routingServers(),
+        assertThat( routingDriver.routingServers(),
                 containsInAnyOrder( boltAddress( "localhost", 1112 ) ));
-        assertThat( clusterDriver.readServers(),
+        assertThat( routingDriver.readServers(),
                 containsInAnyOrder( boltAddress( "localhost", 2222 ) ) );
-        assertThat( clusterDriver.writeServers(),
+        assertThat( routingDriver.writeServers(),
                 containsInAnyOrder( boltAddress( "localhost", 3333 ) ) );
     }
 
@@ -138,13 +138,13 @@ public class ClusterDriverTest
                 .thenReturn(
                         getServers( singletonList( "localhost:5555" ), NO_ADDRESSES, NO_ADDRESSES ) );
 
-        ClusterDriver clusterDriver = forSession( session );
+        RoutingDriver routingDriver = forSession( session );
 
         // When
-        clusterDriver.session( AccessMode.WRITE );
+        routingDriver.session( AccessMode.WRITE );
 
         // Then
-        assertThat( clusterDriver.routingServers(),
+        assertThat( routingDriver.routingServers(),
                 not( hasItem( boltAddress( "localhost", 5555 ) ) ) );
     }
 
@@ -177,17 +177,17 @@ public class ClusterDriverTest
                                 singletonList( "localhost:2222" ),
                                 singletonList( "localhost:3333" ) ) );
 
-        ClusterDriver clusterDriver = forSession( session );
+        RoutingDriver routingDriver = forSession( session );
 
-        assertThat( clusterDriver.routingServers(),
+        assertThat( routingDriver.routingServers(),
                 containsInAnyOrder( boltAddress( "localhost", 1111 )) );
 
 
         // When
-        clusterDriver.session( AccessMode.READ );
+        routingDriver.session( AccessMode.READ );
 
         // Then
-        assertThat( clusterDriver.routingServers(),
+        assertThat( routingDriver.routingServers(),
                 containsInAnyOrder( boltAddress( "localhost", 1112 ) ));
         verify( pool ).purge( boltAddress( "localhost", 1111 ) );
     }
@@ -207,15 +207,15 @@ public class ClusterDriverTest
                 .thenReturn(
                         getServers( singletonList( "localhost:5555" ), singletonList( "localhost:5555" ), singletonList( "localhost:5555" ) ) );
 
-        ClusterDriver clusterDriver = forSession( session, clock );
+        RoutingDriver routingDriver = forSession( session, clock );
 
         // When
-        clusterDriver.session( AccessMode.WRITE );
+        routingDriver.session( AccessMode.WRITE );
 
         // Then
-        assertThat( clusterDriver.routingServers(), containsInAnyOrder( boltAddress( "localhost", 5555 ) ) );
-        assertThat( clusterDriver.readServers(), containsInAnyOrder( boltAddress( "localhost", 5555 ) ) );
-        assertThat( clusterDriver.writeServers(), containsInAnyOrder( boltAddress( "localhost", 5555 ) ) );
+        assertThat( routingDriver.routingServers(), containsInAnyOrder( boltAddress( "localhost", 5555 ) ) );
+        assertThat( routingDriver.readServers(), containsInAnyOrder( boltAddress( "localhost", 5555 ) ) );
+        assertThat( routingDriver.writeServers(), containsInAnyOrder( boltAddress( "localhost", 5555 ) ) );
     }
 
     @Test
@@ -233,24 +233,24 @@ public class ClusterDriverTest
                 .thenReturn(
                         getServers( singletonList( "localhost:5555" ), singletonList( "localhost:5555" ), singletonList( "localhost:5555" ) ) );
 
-        ClusterDriver clusterDriver = forSession( session, clock );
+        RoutingDriver routingDriver = forSession( session, clock );
 
         // When
-        clusterDriver.session( AccessMode.WRITE );
+        routingDriver.session( AccessMode.WRITE );
 
         // Then
-        assertThat( clusterDriver.routingServers(), containsInAnyOrder( boltAddress( "localhost", 1111 ), boltAddress( "localhost", 1112 ), boltAddress( "localhost", 1113 ) ) );
-        assertThat( clusterDriver.readServers(), containsInAnyOrder( boltAddress( "localhost", 2222 ) ) );
-        assertThat( clusterDriver.writeServers(), containsInAnyOrder( boltAddress( "localhost", 3333 ) ) );
+        assertThat( routingDriver.routingServers(), containsInAnyOrder( boltAddress( "localhost", 1111 ), boltAddress( "localhost", 1112 ), boltAddress( "localhost", 1113 ) ) );
+        assertThat( routingDriver.readServers(), containsInAnyOrder( boltAddress( "localhost", 2222 ) ) );
+        assertThat( routingDriver.writeServers(), containsInAnyOrder( boltAddress( "localhost", 3333 ) ) );
     }
 
-    private ClusterDriver forSession( final Session session )
+    private RoutingDriver forSession( final Session session )
     {
         return forSession( session, Clock.SYSTEM );
     }
-    private ClusterDriver forSession( final Session session, Clock clock )
+    private RoutingDriver forSession( final Session session, Clock clock )
     {
-        return new ClusterDriver( SEED, pool, insecure(),
+        return new RoutingDriver( SEED, pool, insecure(),
                 new BiFunction<Connection,Logger,Session>()
                 {
                     @Override

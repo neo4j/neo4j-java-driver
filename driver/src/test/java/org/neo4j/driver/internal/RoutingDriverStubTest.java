@@ -59,7 +59,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 @Ignore
-public class ClusterDriverStubTest
+public class RoutingDriverStubTest
 {
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -74,7 +74,7 @@ public class ClusterDriverStubTest
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
 
         // When
-        try ( ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config ) )
+        try ( RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config ) )
         {
             // Then
             Set<BoltServerAddress> addresses = driver.routingServers();
@@ -94,7 +94,7 @@ public class ClusterDriverStubTest
         BoltServerAddress seed = address( 9001 );
 
         // When
-        try ( ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config ) )
+        try ( RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config ) )
         {
             // Then
             Set<BoltServerAddress> addresses = driver.routingServers();
@@ -112,7 +112,7 @@ public class ClusterDriverStubTest
         // Given
         StubServer server = StubServer.start( resource( "handle_empty_response.script" ), 9001 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
-        try ( ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config ) )
+        try ( RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config ) )
         {
             Set<BoltServerAddress> servers = driver.routingServers();
             assertThat( servers, hasSize( 0 ) );
@@ -132,7 +132,7 @@ public class ClusterDriverStubTest
         //START a read server
         StubServer readServer = StubServer.start( resource( "read_server.script" ), 9005 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
-        try ( ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config );
+        try ( RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
               Session session = driver.session( AccessMode.READ ) )
         {
             List<String> result = session.run( "MATCH (n) RETURN n.name" ).list( new Function<Record,String>()
@@ -162,7 +162,7 @@ public class ClusterDriverStubTest
         StubServer readServer1 = StubServer.start( resource( "read_server.script" ), 9005 );
         StubServer readServer2 = StubServer.start( resource( "read_server.script" ), 9006 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
-        try ( ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config ) )
+        try ( RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config ) )
         {
             // Run twice, one on each read server
             for ( int i = 0; i < 2; i++ )
@@ -200,7 +200,7 @@ public class ClusterDriverStubTest
         //START a read server
         StubServer.start( resource( "dead_server.script" ), 9005 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
-        try ( ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config );
+        try ( RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
               Session session = driver.session( AccessMode.READ ) )
         {
             session.run( "MATCH (n) RETURN n.name" );
@@ -223,7 +223,7 @@ public class ClusterDriverStubTest
         //START a dead write servers
         StubServer.start( resource( "dead_server.script" ), 9007 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
-        try ( ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config );
+        try ( RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
               Session session = driver.session( AccessMode.WRITE ) )
         {
             session.run( "MATCH (n) RETURN n.name" ).consume();
@@ -241,7 +241,7 @@ public class ClusterDriverStubTest
         //START a write server
         StubServer writeServer = StubServer.start( resource( "write_server.script" ), 9007 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
-        try ( ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config );
+        try ( RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
               Session session = driver.session( AccessMode.WRITE ) )
         {
             session.run( "CREATE (n {name:'Bob'})" );
@@ -261,7 +261,7 @@ public class ClusterDriverStubTest
         StubServer writeServer1 = StubServer.start( resource( "write_server.script" ), 9007 );
         StubServer writeServer2 = StubServer.start( resource( "write_server.script" ), 9008 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
-        try ( ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config ) )
+        try ( RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config ) )
         {
             for ( int i = 0; i < 2; i++ )
             {
@@ -286,7 +286,7 @@ public class ClusterDriverStubTest
         //START a read server
         StubServer readServer = StubServer.start( resource( "read_server.script" ), 9005 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
-        try ( ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config );
+        try ( RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
               Session session = driver.session( AccessMode.READ ) )
         {
             session.run( "MATCH (n) RETURN n.name" ).consume();
@@ -309,7 +309,7 @@ public class ClusterDriverStubTest
         //START a read server
         StubServer.start( resource( "dead_server.script" ), 9005 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
-        ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config );
+        RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
         try
         {
             Session session = driver.session( AccessMode.READ );
@@ -343,7 +343,7 @@ public class ClusterDriverStubTest
         StubServer read = StubServer.start( resource( "empty.script" ), 9005 );
 
         //On creation we only find ourselves
-        ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config );
+        RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
         assertThat( driver.routingServers(), containsInAnyOrder( address( 9001 ) ) );
         assertTrue( driver.connectionPool().hasAddress( address( 9001 ) ) );
 
@@ -372,7 +372,7 @@ public class ClusterDriverStubTest
         StubServer read = StubServer.start( resource( "empty.script" ), 9005 );
 
         //On creation we only find ourselves
-        final ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config );
+        final RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
         assertThat( driver.routingServers(), containsInAnyOrder( address( 9001 ) ) );
 
         ExecutorService runner = Executors.newFixedThreadPool( 10 );
@@ -441,7 +441,7 @@ public class ClusterDriverStubTest
         //START a write server that doesn't accept writes
         StubServer.start( resource( "not_able_to_write_server.script" ), 9007 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
-        ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config );
+        RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
         boolean failed = false;
         try ( Session session = driver.session( AccessMode.WRITE ) )
         {
@@ -473,7 +473,7 @@ public class ClusterDriverStubTest
         //START a read server
         StubServer readServer = StubServer.start( resource( "empty.script" ), 9005 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
-        ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config );
+        RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
         assertThat(driver.routingServers(), contains(address( 9001 )));
         assertThat(driver.readServers(), contains(address( 9002 )));
         assertThat(driver.writeServers(), contains(address( 9003 )));
@@ -502,7 +502,7 @@ public class ClusterDriverStubTest
         StubServer writeServer2 = StubServer.start( resource( "empty.script" ), 9006 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
 
-        ClusterDriver driver = (ClusterDriver) GraphDatabase.driver( uri, config );
+        RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
 
 
         //Open both a read and a write session
@@ -532,7 +532,7 @@ public class ClusterDriverStubTest
 
         // now we close the read session and the connection should not be put
         // back to the pool
-        Connection connection = ((ClusteredNetworkSession) readSession).connection;
+        Connection connection = ((RoutingNetworkSession) readSession).connection;
         assertTrue( connection.isOpen() );
         readSession.close();
         assertFalse( connection.isOpen() );
@@ -550,7 +550,7 @@ public class ClusterDriverStubTest
 
     String resource( String fileName )
     {
-        URL resource = ClusterDriverStubTest.class.getClassLoader().getResource( fileName );
+        URL resource = RoutingDriverStubTest.class.getClassLoader().getResource( fileName );
         if ( resource == null )
         {
             fail( fileName + " does not exists" );

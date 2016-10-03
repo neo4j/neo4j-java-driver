@@ -30,14 +30,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.driver.v1.AccessMode.WRITE;
 
-public class ClusteredWriteStatementResultTest
+public class RoutingWriteStatementResultTest
 {
     private static final BoltServerAddress LOCALHOST = new BoltServerAddress( "localhost", 7687 );
     private StatementResult delegate = mock( StatementResult.class );
-    private ClusteredErrorHandler onError = mock( ClusteredErrorHandler.class );
+    private RoutingErrorHandler onError = mock( RoutingErrorHandler.class );
 
     @Test
     public void shouldHandleWriteFailureOnConsume()
@@ -45,8 +44,8 @@ public class ClusteredWriteStatementResultTest
         // Given
         when( delegate.consume() )
                 .thenThrow( new ClientException( "Neo.ClientError.Cluster.NotALeader", "oh no!" ) );
-        ClusteredStatementResult result =
-                new ClusteredStatementResult( delegate, WRITE, LOCALHOST, onError );
+        RoutingStatementResult result =
+                new RoutingStatementResult( delegate, WRITE, LOCALHOST, onError );
 
         // When
         try
@@ -70,8 +69,8 @@ public class ClusteredWriteStatementResultTest
         // Given
         when( delegate.hasNext() )
                 .thenThrow( new ClientException( "Neo.ClientError.Cluster.NotALeader", "oh no!" ) );
-        ClusteredStatementResult result =
-                new ClusteredStatementResult( delegate, WRITE, LOCALHOST, onError );
+        RoutingStatementResult result =
+                new RoutingStatementResult( delegate, WRITE, LOCALHOST, onError );
 
         // When
         try
@@ -95,8 +94,8 @@ public class ClusteredWriteStatementResultTest
         // Given
         when( delegate.keys() )
                 .thenThrow( new ClientException( "Neo.ClientError.Cluster.NotALeader", "oh no!" ) );
-        ClusteredStatementResult result =
-                new ClusteredStatementResult( delegate, WRITE, LOCALHOST, onError );
+        RoutingStatementResult result =
+                new RoutingStatementResult( delegate, WRITE, LOCALHOST, onError );
 
         // When
         try
@@ -120,8 +119,8 @@ public class ClusteredWriteStatementResultTest
         // Given
         when( delegate.list() )
                 .thenThrow( new ClientException( "Neo.ClientError.Cluster.NotALeader", "oh no!" ) );
-        ClusteredStatementResult result =
-                new ClusteredStatementResult( delegate, WRITE, LOCALHOST, onError );
+        RoutingStatementResult result =
+                new RoutingStatementResult( delegate, WRITE, LOCALHOST, onError );
 
         // When
         try
@@ -145,8 +144,8 @@ public class ClusteredWriteStatementResultTest
         // Given
         when( delegate.next() )
                 .thenThrow( new ClientException( "Neo.ClientError.Cluster.NotALeader", "oh no!" ) );
-        ClusteredStatementResult result =
-                new ClusteredStatementResult( delegate, WRITE, LOCALHOST, onError );
+        RoutingStatementResult result =
+                new RoutingStatementResult( delegate, WRITE, LOCALHOST, onError );
 
         // When
         try
@@ -170,8 +169,8 @@ public class ClusteredWriteStatementResultTest
         // Given
         when( delegate.peek() )
                 .thenThrow( new ClientException( "Neo.ClientError.Cluster.NotALeader", "oh no!" ) );
-        ClusteredStatementResult result =
-                new ClusteredStatementResult( delegate, WRITE, LOCALHOST, onError );
+        RoutingStatementResult result =
+                new RoutingStatementResult( delegate, WRITE, LOCALHOST, onError );
 
         // When
         try
@@ -195,8 +194,8 @@ public class ClusteredWriteStatementResultTest
         // Given
         when( delegate.single() )
                 .thenThrow( new ClientException( "Neo.ClientError.Cluster.NotALeader", "oh no!" ) );
-        ClusteredStatementResult result =
-                new ClusteredStatementResult( delegate, WRITE, LOCALHOST, onError );
+        RoutingStatementResult result =
+                new RoutingStatementResult( delegate, WRITE, LOCALHOST, onError );
 
         // When
         try

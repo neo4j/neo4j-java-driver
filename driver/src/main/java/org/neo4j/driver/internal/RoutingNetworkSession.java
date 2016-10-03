@@ -32,13 +32,13 @@ import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 
 import static java.lang.String.format;
 
-public class ClusteredNetworkSession extends NetworkSession
+public class RoutingNetworkSession extends NetworkSession
 {
     private final AccessMode mode;
-    private final ClusteredErrorHandler onError;
+    private final RoutingErrorHandler onError;
 
-    ClusteredNetworkSession( AccessMode mode, Connection connection,
-            ClusteredErrorHandler onError, Logger logger )
+    RoutingNetworkSession( AccessMode mode, Connection connection,
+            RoutingErrorHandler onError, Logger logger )
     {
         super( connection, logger );
         this.mode = mode;
@@ -50,7 +50,7 @@ public class ClusteredNetworkSession extends NetworkSession
     {
         try
         {
-            return new ClusteredStatementResult( super.run( statement ), mode, connection.address(), onError );
+            return new RoutingStatementResult( super.run( statement ), mode, connection.address(), onError );
         }
         catch ( ConnectionFailureException e )
         {
@@ -75,7 +75,7 @@ public class ClusteredNetworkSession extends NetworkSession
         }
     }
 
-    static Neo4jException filterFailureToWrite( ClientException e, AccessMode mode, ClusteredErrorHandler onError,
+    static Neo4jException filterFailureToWrite( ClientException e, AccessMode mode, RoutingErrorHandler onError,
             BoltServerAddress address )
     {
         if ( isFailedToWrite( e ) )
@@ -99,7 +99,7 @@ public class ClusteredNetworkSession extends NetworkSession
         }
     }
 
-    static SessionExpiredException sessionExpired( ConnectionFailureException e, ClusteredErrorHandler onError,
+    static SessionExpiredException sessionExpired( ConnectionFailureException e, RoutingErrorHandler onError,
                                                    BoltServerAddress address )
     {
         onError.onConnectionFailure( address );
