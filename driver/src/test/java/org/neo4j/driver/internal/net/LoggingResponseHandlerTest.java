@@ -18,10 +18,12 @@
  */
 package org.neo4j.driver.internal.net;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.HashMap;
 
+import org.junit.rules.ExpectedException;
 import org.neo4j.driver.internal.logging.DevNullLogger;
 import org.neo4j.driver.internal.messaging.DiscardAllMessage;
 import org.neo4j.driver.internal.messaging.FailureMessage;
@@ -34,9 +36,13 @@ import org.neo4j.driver.internal.messaging.ResetMessage;
 import org.neo4j.driver.internal.messaging.RunMessage;
 import org.neo4j.driver.internal.messaging.SuccessMessage;
 import org.neo4j.driver.internal.spi.Collector;
+import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Value;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.Values.ofValue;
 
@@ -44,15 +50,19 @@ public class LoggingResponseHandlerTest
 {
 
     private String log;
-
-    private LoggingResponseHandler handler = new LoggingResponseHandler( new DevNullLogger()
+    private Logger debugLogger = new DevNullLogger()
     {
         @Override
         public void debug( String message, Object... params )
         {
             log = String.format( message, params );
         }
-    } );
+    };
+
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
+
+    private LoggingResponseHandler handler = new LoggingResponseHandler( debugLogger );
 
     @Test
     public void shouldLogInitMessage() throws Throwable
@@ -157,6 +167,27 @@ public class LoggingResponseHandlerTest
         // Then
         assertEquals( "S: IGNORED {}", log );
         assertEquals( format( new IgnoredMessage() ), log );
+    }
+
+    @Test
+    public void shouldLogMessageWhenHandleMessageThrowsError() throws Throwable
+    {
+        // Given
+        SocketResponseHandler handler = new LoggingResponseHandler( debugLogger )
+        {
+            @Override
+            public void handleIgnoredMessage() {
+                throw new RuntimeException( "This will not stop logging" );
+            }
+        };
+
+        // When
+        exception.expect( RuntimeException.class );
+        exception.expectMessage( "This will not stop logging" );
+        handler.handleIgnoredMessage();
+
+        // Then
+        assertEquals( "S: [IGNORED]", log );
     }
 
 
