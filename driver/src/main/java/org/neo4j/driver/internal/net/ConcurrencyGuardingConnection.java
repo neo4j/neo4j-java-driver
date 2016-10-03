@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
@@ -239,5 +240,11 @@ public class ConcurrencyGuardingConnection implements Connection
     public BoltServerAddress address()
     {
         return delegate.address();
+    }
+
+    @Override
+    public Logger logger()
+    {
+        return delegate.logger();
     }
 }

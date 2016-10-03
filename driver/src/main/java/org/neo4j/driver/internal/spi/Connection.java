@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.spi;
 import java.util.Map;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Value;
 
 /**
@@ -129,4 +130,9 @@ public interface Connection extends AutoCloseable
      * Returns the BoltServerAddress connected to
      */
     BoltServerAddress address();
+
+    /**
+     * Returns the logger of this connection
+     */
+    Logger logger();
 }

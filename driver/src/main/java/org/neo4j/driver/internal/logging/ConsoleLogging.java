@@ -93,7 +93,8 @@ public class ConsoleLogging implements Logging
         {
             StringBuilder builder = new StringBuilder( 1000 );
             builder.append( dateFormat.format( new Date( record.getMillis() ) ) );
-            builder.append("  ");
+            builder.append(" ");
+            builder.append("[").append(record.getLoggerName()).append("] ");
             // builder.append( "[" ).append( record.getSourceClassName() ).append( "." );
             // builder.append( record.getSourceMethodName() ).append( "] - " );
             // builder.append( "[" ).append( record.getLevel() ).append( "] - " );

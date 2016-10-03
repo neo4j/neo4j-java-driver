@@ -57,8 +57,6 @@ import org.neo4j.driver.v1.util.Resource;
  */
 public interface Session extends Resource, StatementRunner
 {
-    String LOG_NAME = "session";
-
     /**
      * Begin a new <em>explicit {@linkplain Transaction transaction}</em>. At
      * most one transaction may exist in a session at any point in time. To

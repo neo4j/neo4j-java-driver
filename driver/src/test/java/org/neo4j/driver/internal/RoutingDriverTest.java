@@ -251,10 +251,10 @@ public class RoutingDriverTest
     private RoutingDriver forSession( final Session session, Clock clock )
     {
         return new RoutingDriver( SEED, pool, insecure(),
-                new BiFunction<Connection,Logger,Session>()
+                new Function<Connection,Session>()
                 {
                     @Override
-                    public Session apply( Connection connection, Logger ignore )
+                    public Session apply( Connection connection )
                     {
                         return session;
                     }

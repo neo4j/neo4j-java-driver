@@ -23,6 +23,7 @@ import java.net.SocketTimeoutException;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.internal.messaging.InitMessage;
@@ -37,6 +38,7 @@ import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 
+import static java.lang.String.format;
 import static org.neo4j.driver.internal.messaging.AckFailureMessage.ACK_FAILURE;
 import static org.neo4j.driver.internal.messaging.DiscardAllMessage.DISCARD_ALL;
 import static org.neo4j.driver.internal.messaging.PullAllMessage.PULL_ALL;
@@ -52,9 +54,11 @@ public class SocketConnection implements Connection
 
     private final SocketClient socket;
 
+    private final Logger logger;
+
     public SocketConnection( BoltServerAddress address, SecurityPlan securityPlan, Logging logging )
     {
-        Logger logger = logging.getLog( String.valueOf( System.currentTimeMillis() ) );
+        this.logger = logging.getLog( format( "conn-%s", UUID.randomUUID().toString() ) );
 
         if( logger.isDebugEnabled() )
         {
@@ -272,5 +276,11 @@ public class SocketConnection implements Connection
     public BoltServerAddress address()
     {
         return this.socket.address();
+    }
+
+    @Override
+    public Logger logger()
+    {
+        return this.logger;
     }
 }

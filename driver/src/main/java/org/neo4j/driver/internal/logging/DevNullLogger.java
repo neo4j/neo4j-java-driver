@@ -22,6 +22,7 @@ import org.neo4j.driver.v1.Logger;
 
 public class DevNullLogger implements Logger
 {
+    public static final DevNullLogger DEV_NULL_LOGGER = new DevNullLogger();
 
     @Override
     public void error( String message, Throwable cause )

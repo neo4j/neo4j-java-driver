@@ -35,6 +35,7 @@ import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.util.BiFunction;
+import org.neo4j.driver.v1.util.Function;
 
 import static java.lang.String.format;
 import static org.neo4j.driver.internal.security.SecurityPlan.insecure;
@@ -49,13 +50,13 @@ import static org.neo4j.driver.v1.Config.EncryptionLevel.REQUIRED_NON_LOCAL;
 public class GraphDatabase
 {
 
-    private static final BiFunction<Connection,Logger,Session>
-            SESSION_PROVIDER = new BiFunction<Connection,Logger,Session>()
+    private static final Function<Connection,Session>
+            SESSION_PROVIDER = new Function<Connection,Session>()
     {
         @Override
-        public Session apply( Connection connection, Logger logger )
+        public Session apply( Connection connection )
         {
-            return new NetworkSession( connection, logger );
+            return new NetworkSession( connection );
         }
     };
 
