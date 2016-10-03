@@ -30,14 +30,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.driver.v1.AccessMode.WRITE;
 
 public class ClusteredWriteStatementResultTest
 {
     private static final BoltServerAddress LOCALHOST = new BoltServerAddress( "localhost", 7687 );
     private StatementResult delegate = mock( StatementResult.class );
-    private ClusteredErrorHandler onError = mock( ClusteredErrorHandler.class );
+    private RoutingErrorHandler onError = mock( RoutingErrorHandler.class );
 
     @Test
     public void shouldHandleWriteFailureOnConsume()

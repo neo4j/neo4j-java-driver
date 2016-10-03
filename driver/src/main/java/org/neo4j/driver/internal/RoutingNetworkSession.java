@@ -35,10 +35,10 @@ import static java.lang.String.format;
 public class RoutingNetworkSession extends NetworkSession
 {
     private final AccessMode mode;
-    private final ClusteredErrorHandler onError;
+    private final RoutingErrorHandler onError;
 
     RoutingNetworkSession( AccessMode mode, Connection connection,
-            ClusteredErrorHandler onError, Logger logger )
+            RoutingErrorHandler onError, Logger logger )
     {
         super( connection, logger );
         this.mode = mode;
@@ -75,7 +75,7 @@ public class RoutingNetworkSession extends NetworkSession
         }
     }
 
-    static Neo4jException filterFailureToWrite( ClientException e, AccessMode mode, ClusteredErrorHandler onError,
+    static Neo4jException filterFailureToWrite( ClientException e, AccessMode mode, RoutingErrorHandler onError,
             BoltServerAddress address )
     {
         if ( isFailedToWrite( e ) )
@@ -99,7 +99,7 @@ public class RoutingNetworkSession extends NetworkSession
         }
     }
 
-    static SessionExpiredException sessionExpired( ConnectionFailureException e, ClusteredErrorHandler onError,
+    static SessionExpiredException sessionExpired( ConnectionFailureException e, RoutingErrorHandler onError,
                                                    BoltServerAddress address )
     {
         onError.onConnectionFailure( address );

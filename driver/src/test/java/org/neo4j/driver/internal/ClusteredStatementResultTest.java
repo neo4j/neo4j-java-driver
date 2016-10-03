@@ -18,12 +18,12 @@
  */
 package org.neo4j.driver.internal;
 
-import java.util.Arrays;
-import java.util.Collection;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import java.util.Arrays;
+import java.util.Collection;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.v1.AccessMode;
@@ -43,7 +43,7 @@ public class ClusteredStatementResultTest
 {
     private static final BoltServerAddress LOCALHOST = new BoltServerAddress( "localhost", 7687 );
     private StatementResult delegate = mock( StatementResult.class );
-    private ClusteredErrorHandler onError = mock( ClusteredErrorHandler.class );
+    private RoutingErrorHandler onError = mock( RoutingErrorHandler.class );
     private final AccessMode accessMode;
 
     @Parameterized.Parameters(name = "accessMode-{0}")

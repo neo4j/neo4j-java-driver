@@ -287,7 +287,7 @@ public class RoutingDriver extends BaseDriver
     public Session session( final AccessMode mode )
     {
         return new RoutingNetworkSession( mode, acquireConnection( mode ),
-                new ClusteredErrorHandler()
+                new RoutingErrorHandler()
                 {
                     @Override
                     public void onConnectionFailure( BoltServerAddress address )

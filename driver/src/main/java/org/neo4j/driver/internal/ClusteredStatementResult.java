@@ -38,10 +38,10 @@ public class ClusteredStatementResult implements StatementResult
     private final StatementResult delegate;
     private final AccessMode mode;
     private final BoltServerAddress address;
-    private final ClusteredErrorHandler onError;
+    private final RoutingErrorHandler onError;
 
     ClusteredStatementResult( StatementResult delegate, AccessMode mode, BoltServerAddress address,
-            ClusteredErrorHandler onError )
+            RoutingErrorHandler onError )
     {
         this.delegate = delegate;
         this.mode = mode;

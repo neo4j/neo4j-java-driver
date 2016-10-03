@@ -47,7 +47,7 @@ import static org.mockito.Mockito.when;
 public class RoutingNetworkSessionTest
 {
     private Connection connection;
-    private ClusteredErrorHandler onError;
+    private RoutingErrorHandler onError;
     private static final BoltServerAddress LOCALHOST = new BoltServerAddress( "localhost", 7687 );
 
     @Before
@@ -56,7 +56,7 @@ public class RoutingNetworkSessionTest
         connection = mock( Connection.class );
         when( connection.address() ).thenReturn( LOCALHOST );
         when( connection.isOpen() ).thenReturn( true );
-        onError = mock( ClusteredErrorHandler.class );
+        onError = mock( RoutingErrorHandler.class );
     }
 
     @SuppressWarnings( "unchecked" )
