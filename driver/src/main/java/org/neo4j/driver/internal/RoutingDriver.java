@@ -66,6 +66,7 @@ public class RoutingDriver extends BaseDriver
         }
     };
     private static final int MIN_SERVERS = 1;
+    private static final int CONNECTION_RETRIES = 3;
     private final ConnectionPool connections;
     private final BiFunction<Connection,Logger,Session> sessionProvider;
     private final Clock clock;
@@ -110,7 +111,6 @@ public class RoutingDriver extends BaseDriver
         seen.addAll( routingServers );
         seen.addAll( readServers );
         seen.addAll( writeServers );
-        routingServers.clear();
         readServers.clear();
         writeServers.clear();
         return seen;
@@ -138,11 +138,11 @@ public class RoutingDriver extends BaseDriver
         {
             boolean success = false;
 
-            ConcurrentRoundRobinSet<BoltServerAddress> routers = new ConcurrentRoundRobinSet<>( routingServers );
+            final Set<BoltServerAddress> newRouters = new HashSet<>( );
             final Set<BoltServerAddress> seen = forgetAllServers();
-            while ( !routers.isEmpty() && !success )
+            while ( !routingServers.isEmpty() && !success )
             {
-                address = routers.hop();
+                address = routingServers.hop();
                 success = call( address, GET_SERVERS, new Consumer<Record>()
                 {
                     @Override
@@ -162,12 +162,19 @@ public class RoutingDriver extends BaseDriver
                                 writeServers.addAll( server.addresses() );
                                 break;
                             case "ROUTE":
-                                routingServers.addAll( server.addresses() );
+                                newRouters.addAll( server.addresses() );
                                 break;
                             }
                         }
                     }
                 } );
+                //We got trough but server gave us an empty list of routers
+                if (success && newRouters.isEmpty()) {
+                    success = false;
+                } else if (success) {
+                    routingServers.clear();
+                    routingServers.addAll( newRouters );
+                }
             }
             if ( !success )
             {
@@ -249,7 +256,7 @@ public class RoutingDriver extends BaseDriver
                 recorder.accept( records.next() );
             }
         }
-        catch ( ConnectionFailureException e )
+        catch ( Throwable e )
         {
             forget( address );
             return false;
@@ -306,18 +313,36 @@ public class RoutingDriver extends BaseDriver
 
     private Connection acquireConnection( AccessMode role )
     {
-        //Potentially rediscover servers if we are not happy with our current knowledge
-        checkServers();
-
+        ConcurrentRoundRobinSet<BoltServerAddress> servers;
         switch ( role )
         {
         case READ:
-            return connections.acquire( readServers.hop() );
+            servers = readServers;
+            break;
         case WRITE:
-            return connections.acquire( writeServers.hop() );
+            servers = writeServers;
+            break;
         default:
             throw new ClientException( role + " is not supported for creating new sessions" );
         }
+
+        //Potentially rediscover servers if we are not happy with our current knowledge
+        checkServers();
+        int numberOfServers = servers.size();
+        for ( int i = 0; i < numberOfServers; i++ )
+        {
+            BoltServerAddress address = servers.hop();
+            try
+            {
+                return connections.acquire( address );
+            }
+            catch ( ConnectionFailureException e )
+            {
+                forget( address );
+            }
+        }
+
+        throw new ConnectionFailureException( "Failed to connect to any servers" );
     }
 
     @Override

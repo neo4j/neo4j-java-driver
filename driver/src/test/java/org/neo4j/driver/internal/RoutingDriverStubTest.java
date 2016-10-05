@@ -42,6 +42,7 @@ import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.exceptions.ConnectionFailureException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 import org.neo4j.driver.v1.util.Function;
@@ -49,6 +50,7 @@ import org.neo4j.driver.v1.util.StubServer;
 
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -330,6 +332,37 @@ public class RoutingDriverStubTest
         // Finally
         assertThat( server.exitStatus(), equalTo( 0 ) );
     }
+
+    @Test
+    public void shouldForgetEndpointsOnFailedSessionAcquisition() throws IOException, InterruptedException, StubServer.ForceKilled
+    {
+        // Given
+        StubServer server = StubServer.start( resource( "acquire_endpoints.script" ), 9001 );
+
+        //no read servers
+
+        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+        RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
+        try
+        {
+            driver.session( AccessMode.READ );
+            fail();
+        }
+        catch ( ConnectionFailureException e )
+        {
+            //ignore
+        }
+
+        assertThat( driver.readServers(), empty() );
+        assertThat( driver.writeServers(), hasSize( 2 ) );
+        assertFalse( driver.connectionPool().hasAddress( address( 9005 ) ) );
+        assertFalse( driver.connectionPool().hasAddress( address( 9006 ) ) );
+        driver.close();
+
+        // Finally
+        assertThat( server.exitStatus(), equalTo( 0 ) );
+    }
+
 
     @Test
     public void shouldRediscoverIfNecessaryOnSessionAcquisition()
