@@ -33,7 +33,6 @@ import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.ConcurrentRoundRobinSet;
 import org.neo4j.driver.internal.util.Consumer;
 import org.neo4j.driver.v1.AccessMode;
-import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
@@ -42,7 +41,6 @@ import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ConnectionFailureException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.v1.util.BiFunction;
 import org.neo4j.driver.v1.util.Function;
 
 import static java.lang.String.format;
@@ -67,7 +65,7 @@ public class RoutingDriver extends BaseDriver
     };
     private static final int MIN_SERVERS = 1;
     private final ConnectionPool connections;
-    private final BiFunction<Connection,Logger,Session> sessionProvider;
+    private final Function<Connection,Session> sessionProvider;
     private final Clock clock;
     private final ConcurrentRoundRobinSet<BoltServerAddress> routingServers =
             new ConcurrentRoundRobinSet<>( COMPARATOR );
@@ -78,7 +76,7 @@ public class RoutingDriver extends BaseDriver
     public RoutingDriver( BoltServerAddress seedAddress,
             ConnectionPool connections,
             SecurityPlan securityPlan,
-            BiFunction<Connection,Logger,Session> sessionProvider,
+            Function<Connection,Session> sessionProvider,
             Clock clock,
             Logging logging )
     {
@@ -241,7 +239,7 @@ public class RoutingDriver extends BaseDriver
         try
         {
             acquire = connections.acquire( address );
-            session = sessionProvider.apply( acquire, log );
+            session = sessionProvider.apply( acquire );
 
             StatementResult records = session.run( format( "CALL %s", procedureName ) );
             while ( records.hasNext() )
@@ -300,8 +298,7 @@ public class RoutingDriver extends BaseDriver
                     {
                         writeServers.remove( address );
                     }
-                },
-                log );
+                });
     }
 
     private Connection acquireConnection( AccessMode role )

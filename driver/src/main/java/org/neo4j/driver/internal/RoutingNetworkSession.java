@@ -22,7 +22,6 @@ package org.neo4j.driver.internal;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.v1.AccessMode;
-import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.exceptions.ClientException;
@@ -38,9 +37,9 @@ public class RoutingNetworkSession extends NetworkSession
     private final RoutingErrorHandler onError;
 
     RoutingNetworkSession( AccessMode mode, Connection connection,
-            RoutingErrorHandler onError, Logger logger )
+            RoutingErrorHandler onError )
     {
-        super( connection, logger );
+        super( connection );
         this.mode = mode;
         this.onError = onError;
     }

@@ -19,8 +19,10 @@
 package org.neo4j.driver.internal;
 
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.driver.internal.logging.DevNullLogger;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.v1.Logger;
@@ -39,6 +41,7 @@ import static org.neo4j.driver.v1.Values.value;
 public class NetworkSession implements Session
 {
     protected Connection connection;
+    private final String sessionId;
     private final Logger logger;
 
     private String lastBookmark = null;
@@ -63,10 +66,20 @@ public class NetworkSession implements Session
     private ExplicitTransaction currentTransaction;
     private AtomicBoolean isOpen = new AtomicBoolean( true );
 
-    public NetworkSession( Connection connection, Logger logger )
+    public NetworkSession( Connection connection )
     {
         this.connection = connection;
-        this.logger = logger;
+
+        if( connection != null && connection.logger() != null )
+        {
+            this.logger = connection.logger();
+        }
+        else
+        {
+            this.logger = DevNullLogger.DEV_NULL_LOGGER;
+        }
+        sessionId = UUID.randomUUID().toString();
+        this.logger.debug( "~~ connection claimed by [session-%s]", sessionId );
     }
 
     @Override
@@ -149,6 +162,7 @@ public class NetworkSession implements Session
                     catch ( Throwable e )
                     {
                         // Best-effort
+                        logger.error( "Failed to close tx due to error: " + e.toString(), e );
                     }
                 }
             }
@@ -156,8 +170,14 @@ public class NetworkSession implements Session
             {
                 connection.sync();
             }
+            catch( Throwable t )
+            {
+                logger.error( "Failed to sync messages due to error: " + t.toString(), t );
+                throw t;
+            }
             finally
             {
+                logger.debug( "~~ connection released by [session-%s]", sessionId );
                 connection.close();
             }
         }

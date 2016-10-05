@@ -29,11 +29,12 @@ abstract class BaseDriver implements Driver
 {
     private final SecurityPlan securityPlan;
     protected final Logger log;
+    private final static String DRIVER_LOG_NAME = "Driver";
 
     BaseDriver( SecurityPlan securityPlan, Logging logging )
     {
         this.securityPlan = securityPlan;
-        this.log = logging.getLog( Session.LOG_NAME );
+        this.log = logging.getLog( DRIVER_LOG_NAME );
     }
 
     @Override

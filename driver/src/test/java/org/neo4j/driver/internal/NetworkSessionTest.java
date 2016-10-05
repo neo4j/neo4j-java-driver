@@ -42,14 +42,14 @@ public class NetworkSessionTest
     public ExpectedException exception = ExpectedException.none();
 
     private final Connection mock = mock( Connection.class );
-    private NetworkSession sess = new NetworkSession( mock, new DevNullLogger() );
+    private NetworkSession sess = new NetworkSession( mock );
 
     @Test
     public void shouldSendAllOnRun() throws Throwable
     {
         // Given
         when( mock.isOpen() ).thenReturn( true );
-        NetworkSession sess = new NetworkSession( mock, new DevNullLogger() );
+        NetworkSession sess = new NetworkSession( mock );
 
         // When
         sess.run( "whatever" );
@@ -144,7 +144,7 @@ public class NetworkSessionTest
     public void shouldGetExceptionIfTryingToCloseSessionMoreThanOnce() throws Throwable
     {
         // Given
-        NetworkSession sess = new NetworkSession( mock(Connection.class), mock(Logger.class) );
+        NetworkSession sess = new NetworkSession( mock(Connection.class) );
         try
         {
             sess.close();

@@ -68,7 +68,7 @@ public class RoutingNetworkSessionTest
                 when( connection ).run( anyString(), any( Map.class ), any( Collector.class ) );
 
         RoutingNetworkSession result =
-                new RoutingNetworkSession( AccessMode.WRITE, connection, onError, mock( Logger.class ) );
+                new RoutingNetworkSession( AccessMode.WRITE, connection, onError );
 
         // When
         try
@@ -94,7 +94,7 @@ public class RoutingNetworkSessionTest
         doThrow( new ClientException( "Neo.ClientError.Cluster.NotALeader", "oh no!" ) ).
                 when( connection ).run( anyString(), any( Map.class ), any( Collector.class ) );
         RoutingNetworkSession session =
-                new RoutingNetworkSession( AccessMode.WRITE, connection, onError, mock( Logger.class ) );
+                new RoutingNetworkSession( AccessMode.WRITE, connection, onError );
 
         // When
         try
@@ -120,7 +120,7 @@ public class RoutingNetworkSessionTest
         doThrow( new ClientException( "Neo.ClientError.Cluster.NotALeader", "oh no!" ) ).
                 when( connection ).run( anyString(), any( Map.class ), any( Collector.class ) );
         RoutingNetworkSession session =
-                new RoutingNetworkSession( AccessMode.READ, connection, onError, mock( Logger.class ) );
+                new RoutingNetworkSession( AccessMode.READ, connection, onError );
 
         // When
         try
@@ -144,7 +144,7 @@ public class RoutingNetworkSessionTest
         doThrow( toBeThrown ).
                 when( connection ).run( anyString(), any( Map.class ), any( Collector.class ) );
         RoutingNetworkSession session =
-                new RoutingNetworkSession( AccessMode.WRITE, connection, onError, mock( Logger.class ) );
+                new RoutingNetworkSession( AccessMode.WRITE, connection, onError );
 
         // When
         try
@@ -169,7 +169,7 @@ public class RoutingNetworkSessionTest
                 when( connection ).sync();
 
         RoutingNetworkSession session =
-                new RoutingNetworkSession( AccessMode.WRITE, connection, onError, mock( Logger.class ) );
+                new RoutingNetworkSession( AccessMode.WRITE, connection, onError );
 
         // When
         try
