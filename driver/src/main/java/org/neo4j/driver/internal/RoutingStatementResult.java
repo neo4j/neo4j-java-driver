@@ -192,4 +192,8 @@ public class RoutingStatementResult implements StatementResult
         }
     }
 
+    public BoltServerAddress address()
+    {
+        return address;
+    }
 }
