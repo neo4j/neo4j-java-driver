@@ -335,7 +335,7 @@ public class RoutingDriverStubTest
     public void shouldForgetEndpointsOnFailedSessionAcquisition() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
-        StubServer server = StubServer.start( resource( "acquire_endpoints.script" ), 9001 );
+        StubServer server = StubServer.start( "acquire_endpoints.script", 9001 );
 
         //no read servers
 
