@@ -53,8 +53,8 @@ public class GraphDatabaseTest
     public void boltPlusDiscoverySchemeShouldInstantiateClusterDriver() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
-        StubServer server = StubServer.start( "../driver/src/test/resources/discover_servers.script" );
-        URI uri = URI.create( "bolt+routing://localhost:7687" );
+        StubServer server = StubServer.start( "discover_servers.script", 9001 );
+        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
 
         // When
         Driver driver = GraphDatabase.driver( uri );

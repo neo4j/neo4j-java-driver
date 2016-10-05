@@ -41,7 +41,7 @@ public class DriverDocIT
     public void exampleUsage( DocSnippet snippet ) throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // given
-        StubServer server = StubServer.start( "../driver/src/test/resources/driver_snippet.script" );
+        StubServer server = StubServer.start( "driver_snippet.script", 7687 );
         snippet.addImport( List.class );
         snippet.addImport( LinkedList.class );
 
