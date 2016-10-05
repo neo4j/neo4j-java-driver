@@ -75,6 +75,11 @@ public class RoutingNetworkSession extends NetworkSession
         }
     }
 
+    public BoltServerAddress address()
+    {
+        return connection.address();
+    }
+
     static Neo4jException filterFailureToWrite( ClientException e, AccessMode mode, RoutingErrorHandler onError,
             BoltServerAddress address )
     {
