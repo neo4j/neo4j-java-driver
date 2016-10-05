@@ -106,21 +106,24 @@ public class RoutingDriverStubTest
         assertThat( server.exitStatus(), equalTo( 0 ) );
     }
 
-
     @Test
     public void shouldHandleEmptyResponse() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
         StubServer server = StubServer.start( "handle_empty_response.script" , 9001 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
-        try ( RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config ) )
+
+        // When
+        try
         {
-            Set<BoltServerAddress> servers = driver.routingServers();
-            assertThat( servers, hasSize( 0 ) );
-            assertFalse( driver.connectionPool().hasAddress( address( 9001 ) ) );
+            GraphDatabase.driver( uri, config );
+            fail();
+        } catch ( ServiceUnavailableException e )
+        {
+            //ignore
         }
 
-        // Finally
+        // Then
         assertThat( server.exitStatus(), equalTo( 0 ) );
     }
 

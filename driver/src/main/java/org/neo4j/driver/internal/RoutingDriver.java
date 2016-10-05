@@ -249,6 +249,12 @@ public class RoutingDriver extends BaseDriver
             session = sessionProvider.apply( acquire );
 
             StatementResult records = session.run( format( "CALL %s", procedureName ) );
+            //got a result but was empty
+            if (!records.hasNext()) {
+                forget( address );
+                return false;
+            }
+            //consume the results
             while ( records.hasNext() )
             {
                 recorder.accept( records.next() );
