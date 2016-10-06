@@ -115,7 +115,7 @@ public class SocketConnectionPool implements ConnectionPool
             conn = new PooledConnection( connect( address ), new
                     PooledConnectionReleaseConsumer( connections, stopped, new PooledConnectionValidator( this, poolSettings ) ), clock );
         }
-        conn.updateUsageTimestamp();
+        conn.setInUse();
         return conn;
     }
 
