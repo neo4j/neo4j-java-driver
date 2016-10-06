@@ -186,4 +186,29 @@ public class RoutingNetworkSessionTest
         verify( onError ).onConnectionFailure( LOCALHOST );
         verifyNoMoreInteractions( onError );
     }
+
+    @Test
+    public void shouldHandleWriteFailuresOnClose()
+    {
+        // Given
+        doThrow( new ClientException( "Neo.ClientError.Cluster.NotALeader", "oh no!" ) ).when( connection ).sync();
+
+        RoutingNetworkSession session =
+                new RoutingNetworkSession( AccessMode.WRITE, connection, onError );
+
+        // When
+        try
+        {
+            session.close();
+            fail();
+        }
+        catch ( SessionExpiredException e )
+        {
+            //ignore
+        }
+
+        // Then
+        verify( onError ).onWriteFailure( LOCALHOST );
+        verifyNoMoreInteractions( onError );
+    }
 }

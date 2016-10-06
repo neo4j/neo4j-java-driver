@@ -72,6 +72,10 @@ public class RoutingNetworkSession extends NetworkSession
         {
             throw sessionExpired(e, onError, connection.address());
         }
+        catch ( ClientException e )
+        {
+            throw filterFailureToWrite( e, mode, onError, connection.address() );
+        }
     }
 
     public BoltServerAddress address()
