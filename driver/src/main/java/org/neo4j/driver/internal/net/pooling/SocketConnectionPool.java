@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.internal.net.pooling;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -38,6 +40,8 @@ import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
+
+import static java.util.Collections.emptyList;
 
 /**
  * The pool is designed to buffer certain amount of free sessions into session pool. When closing a session, we first
@@ -115,7 +119,7 @@ public class SocketConnectionPool implements ConnectionPool
             conn = new PooledConnection( connect( address ), new
                     PooledConnectionReleaseConsumer( connections, stopped, new PooledConnectionValidator( this, poolSettings ) ), clock );
         }
-        conn.setInUse();
+        conn.updateTimestamp();
         return conn;
     }
 
@@ -182,6 +186,21 @@ public class SocketConnectionPool implements ConnectionPool
         }
 
         pools.clear();
+    }
+
+    //for testing
+    public List<PooledConnection> connectionsForAddress(BoltServerAddress address)
+    {
+        LinkedBlockingQueue<PooledConnection> pooledConnections =
+                (LinkedBlockingQueue<PooledConnection>) pools.get( address );
+        if (pooledConnections == null)
+        {
+            return emptyList();
+        }
+        else
+        {
+            return new ArrayList<>( pooledConnections );
+        }
     }
 
 }

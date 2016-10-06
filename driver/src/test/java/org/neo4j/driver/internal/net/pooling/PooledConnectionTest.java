@@ -120,39 +120,6 @@ public class PooledConnectionTest
         assertThat( flags[0], equalTo( false ) );
     }
 
-    @Test
-    public void shouldOnlyReturnOnceEventhougCloseIsBeingCalledMultipleTimes() throws Throwable
-    {
-        // Given
-        final BlockingQueue<PooledConnection> pool = new LinkedBlockingQueue<>(2);
-
-        final boolean[] flags = {false};
-
-        Connection conn = mock( Connection.class );
-        PooledConnectionReleaseConsumer releaseConsumer = new PooledConnectionReleaseConsumer( pool,
-                new AtomicBoolean( false ), VALID_CONNECTION );
-
-        PooledConnection pooledConnection = new PooledConnection( conn, releaseConsumer, Clock.SYSTEM )
-        {
-            @Override
-            public void dispose()
-            {
-                flags[0] = true;
-            }
-        };
-
-        // When
-        pooledConnection.close();
-        pooledConnection.close();
-        pooledConnection.close();
-        pooledConnection.close();
-        pooledConnection.close();
-
-        // Then
-        assertThat( pool, hasItem(pooledConnection) );
-        assertThat( pool.size(), equalTo( 1 ) );
-        assertThat( flags[0], equalTo( false ) );
-    }
 
     @Test
     public void shouldDisposeConnectionIfValidConnectionAndIdlePoolIsFull() throws Throwable

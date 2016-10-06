@@ -19,7 +19,6 @@
 package org.neo4j.driver.internal.net.pooling;
 
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Collector;
@@ -59,7 +58,6 @@ public class PooledConnection implements Connection
     private Runnable onError = null;
     private final Clock clock;
     private long lastUsed;
-    private final AtomicBoolean released = new AtomicBoolean( false );
 
     public PooledConnection( Connection delegate, Consumer<PooledConnection> release, Clock clock )
     {
@@ -69,9 +67,8 @@ public class PooledConnection implements Connection
         this.lastUsed = clock.millis();
     }
 
-    public void setInUse()
+    public void updateTimestamp()
     {
-        released.set(false);
         lastUsed = clock.millis();
     }
 
@@ -200,10 +197,7 @@ public class PooledConnection implements Connection
      */
     public void close()
     {
-        if ( released.compareAndSet( false, true ))
-        {
-            release.accept( this );
-        }
+        release.accept( this );
         // put the full logic of deciding whether to dispose the connection or to put it back to
         // the pool into the release object
     }
