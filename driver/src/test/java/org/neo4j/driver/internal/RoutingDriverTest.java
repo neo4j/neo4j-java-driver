@@ -289,12 +289,13 @@ public class RoutingDriverTest
             @Override
             public boolean hasNext()
             {
-                return counter++ < 1;
+                return counter < 1;
             }
 
             @Override
             public Record next()
             {
+                counter++;
                 return new InternalRecord( asList( "ttl", "servers" ),
                         new Value[]{
                                 value( ttl ),
