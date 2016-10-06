@@ -27,6 +27,7 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.ConnectionFailureException;
 
 import static junit.framework.Assert.fail;
 import static junit.framework.TestCase.assertNotNull;
@@ -121,7 +122,7 @@ public class NetworkSessionTest
         when( mock.isOpen() ).thenReturn( false );
 
         // Expect
-        exception.expect( ClientException.class );
+        exception.expect( ConnectionFailureException.class );
 
         // When
         sess.run( "whatever" );
@@ -134,7 +135,7 @@ public class NetworkSessionTest
         when( mock.isOpen() ).thenReturn( false );
 
         // Expect
-        exception.expect( ClientException.class );
+        exception.expect( ConnectionFailureException.class );
 
         // When
         sess.beginTransaction();
