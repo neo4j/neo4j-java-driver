@@ -262,6 +262,7 @@ public class RoutingDriver extends BaseDriver
         }
         catch ( Throwable e )
         {
+            log.error( e.getMessage(), e );
             forget( address );
             return false;
         }
