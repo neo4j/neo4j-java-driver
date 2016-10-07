@@ -35,6 +35,8 @@ import java.util.logging.Level;
 
 import org.neo4j.driver.internal.logging.ConsoleLogging;
 import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.net.pooling.PooledConnection;
+import org.neo4j.driver.internal.net.pooling.SocketConnectionPool;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Config;
@@ -80,6 +82,26 @@ public class RoutingDriverStubTest
             // Then
             Set<BoltServerAddress> addresses = driver.routingServers();
             assertThat( addresses, containsInAnyOrder( address(9001), address( 9002 ), address( 9003 ) ) );
+        }
+
+        // Finally
+        assertThat( server.exitStatus(), equalTo( 0 ) );
+    }
+
+    @Test
+    public void shouldOnlyPutConnectionInPoolOnce() throws IOException, InterruptedException, StubServer.ForceKilled
+    {
+        // Given
+        StubServer server = StubServer.start( "discover_servers.script", 9001 );
+        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+
+        // When
+        try ( RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config ) )
+        {
+            // Then
+            SocketConnectionPool pool = (SocketConnectionPool) driver.connectionPool();
+            List<PooledConnection> pooledConnections = pool.connectionsForAddress( address( 9001 ) );
+            assertThat(pooledConnections, hasSize( 1 ));
         }
 
         // Finally

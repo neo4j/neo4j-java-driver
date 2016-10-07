@@ -41,13 +41,6 @@ public interface Collector
             throw new ClientException(
                     "Invalid server response message `FAILURE` received for client message `ACK_FAILURE`.", error );
         }
-
-        @Override
-        public void doneIgnored()
-        {
-            throw new ClientException(
-                    "Invalid server response message `IGNORED` received for client message `ACK_FAILURE`." );
-        }
     };
 
     class InitCollector extends NoOperationCollector

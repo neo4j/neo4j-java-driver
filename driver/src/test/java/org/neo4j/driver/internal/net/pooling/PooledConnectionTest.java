@@ -120,6 +120,7 @@ public class PooledConnectionTest
         assertThat( flags[0], equalTo( false ) );
     }
 
+
     @Test
     public void shouldDisposeConnectionIfValidConnectionAndIdlePoolIsFull() throws Throwable
     {

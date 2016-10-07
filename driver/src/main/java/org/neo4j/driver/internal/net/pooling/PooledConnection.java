@@ -67,7 +67,7 @@ public class PooledConnection implements Connection
         this.lastUsed = clock.millis();
     }
 
-    public void updateUsageTimestamp()
+    public void updateTimestamp()
     {
         lastUsed = clock.millis();
     }

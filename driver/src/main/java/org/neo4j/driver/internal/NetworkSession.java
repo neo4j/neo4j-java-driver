@@ -34,6 +34,7 @@ import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.ConnectionFailureException;
 import org.neo4j.driver.v1.types.TypeSystem;
 
 import static org.neo4j.driver.v1.Values.value;
@@ -296,9 +297,9 @@ public class NetworkSession implements Session
     {
         if ( !connection.isOpen() )
         {
-            throw new ClientException( "The current session cannot be reused as the underlying connection with the " +
-                                       "server has been closed due to unrecoverable errors. " +
-                                       "Please close this session and retry your statement in another new session." );
+            throw new ConnectionFailureException( "The current session cannot be reused as the underlying connection with the " +
+                                                  "server has been closed due to unrecoverable errors. " +
+                                                  "Please close this session and retry your statement in another new session." );
         }
     }
 

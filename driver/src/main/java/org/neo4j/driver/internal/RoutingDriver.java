@@ -241,7 +241,7 @@ public class RoutingDriver extends BaseDriver
     //must be called from a synchronized method
     private boolean call( BoltServerAddress address, String procedureName, Consumer<Record> recorder )
     {
-        Connection acquire = null;
+        Connection acquire;
         Session session = null;
         try
         {
@@ -271,11 +271,6 @@ public class RoutingDriver extends BaseDriver
             {
                 session.close();
             }
-            if ( acquire != null )
-            {
-                acquire.close();
-            }
-
         }
         return true;
     }
