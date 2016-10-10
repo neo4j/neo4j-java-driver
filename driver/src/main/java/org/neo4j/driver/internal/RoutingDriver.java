@@ -63,8 +63,7 @@ public class RoutingDriver extends BaseDriver
             return compare;
         }
     };
-    private static final int MIN_SERVERS = 1;
-    private static final int CONNECTION_RETRIES = 3;
+    private static final int MIN_ROUTERS = 1;
     private final ConnectionPool connections;
     private final Function<Connection,Session> sessionProvider;
     private final Clock clock;
@@ -94,7 +93,7 @@ public class RoutingDriver extends BaseDriver
         synchronized ( routingServers )
         {
             if ( expires.get() < clock.millis() ||
-                 routingServers.size() < MIN_SERVERS ||
+                 routingServers.size() <= MIN_ROUTERS ||
                  readServers.isEmpty() ||
                  writeServers.isEmpty() )
             {
@@ -279,9 +278,18 @@ public class RoutingDriver extends BaseDriver
     private synchronized void forget( BoltServerAddress address )
     {
         connections.purge( address );
-        routingServers.remove( address );
-        readServers.remove( address );
-        writeServers.remove( address );
+        if ( routingServers.remove( address ) )
+        {
+            log.debug( "Removing %s from routers", address.toString() );
+        }
+        if (readServers.remove( address ) )
+        {
+            log.debug( "Removing %s from readers", address.toString() );
+        }
+        if (writeServers.remove( address ))
+        {
+            log.debug( "Removing %s from writers", address.toString() );
+        }
     }
 
     @Override
