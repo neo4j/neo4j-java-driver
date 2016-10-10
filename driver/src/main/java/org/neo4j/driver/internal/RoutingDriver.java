@@ -23,7 +23,6 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.security.SecurityPlan;
@@ -31,8 +30,8 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.ConcurrentRoundRobinSet;
-import org.neo4j.driver.internal.util.Consumer;
 import org.neo4j.driver.v1.AccessMode;
+import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
@@ -63,15 +62,11 @@ public class RoutingDriver extends BaseDriver
             return compare;
         }
     };
-    private static final int MIN_ROUTERS = 1;
     private final ConnectionPool connections;
     private final Function<Connection,Session> sessionProvider;
     private final Clock clock;
-    private final ConcurrentRoundRobinSet<BoltServerAddress> routingServers =
-            new ConcurrentRoundRobinSet<>( COMPARATOR );
-    private final ConcurrentRoundRobinSet<BoltServerAddress> readServers = new ConcurrentRoundRobinSet<>( COMPARATOR );
-    private final ConcurrentRoundRobinSet<BoltServerAddress> writeServers = new ConcurrentRoundRobinSet<>( COMPARATOR );
-    private final AtomicLong expires = new AtomicLong( 0L );
+    private ClusterView clusterView;
+
 
     public RoutingDriver( BoltServerAddress seedAddress,
             ConnectionPool connections,
@@ -81,36 +76,30 @@ public class RoutingDriver extends BaseDriver
             Logging logging )
     {
         super( securityPlan, logging );
-        routingServers.add( seedAddress );
         this.connections = connections;
         this.sessionProvider = sessionProvider;
         this.clock = clock;
+        this.clusterView = new ClusterView( 0L, clock, log );
+        this.clusterView.addRouter( seedAddress );
         checkServers();
     }
 
-    private void checkServers()
+    private synchronized void checkServers()
     {
-        synchronized ( routingServers )
+        if ( clusterView.isStale() )
         {
-            if ( expires.get() < clock.millis() ||
-                 routingServers.size() <= MIN_ROUTERS ||
-                 readServers.isEmpty() ||
-                 writeServers.isEmpty() )
-            {
-                getServers();
-            }
-        }
-    }
+            Set<BoltServerAddress> oldAddresses = clusterView.all();
+            ClusterView newView = newClusterView();
+            Set<BoltServerAddress> newAddresses = newView.all();
 
-    private Set<BoltServerAddress> forgetAllServers()
-    {
-        final Set<BoltServerAddress> seen = new HashSet<>();
-        seen.addAll( routingServers );
-        seen.addAll( readServers );
-        seen.addAll( writeServers );
-        readServers.clear();
-        writeServers.clear();
-        return seen;
+            oldAddresses.removeAll( newAddresses );
+            for ( BoltServerAddress boltServerAddress : oldAddresses )
+            {
+                connections.purge( boltServerAddress );
+            }
+
+            this.clusterView = newView;
+        }
     }
 
     private long calculateNewExpiry( Record record )
@@ -127,73 +116,63 @@ public class RoutingDriver extends BaseDriver
         }
     }
 
-    //must be called from a synchronized block
-    private void getServers()
+    private ClusterView newClusterView()
     {
         BoltServerAddress address = null;
-        try
+        for ( int i = 0; i < clusterView.numberOfRouters(); i++ )
         {
-            boolean success = false;
-
-            final Set<BoltServerAddress> newRouters = new HashSet<>( );
-            final Set<BoltServerAddress> seen = forgetAllServers();
-            while ( !routingServers.isEmpty() && !success )
+            address = clusterView.nextRouter();
+            ClusterView newClusterView;
+            try
             {
-                address = routingServers.hop();
-                success = call( address, GET_SERVERS, new Consumer<Record>()
+                newClusterView = call( address, GET_SERVERS, new Function<Record,ClusterView>()
+
                 {
                     @Override
-                    public void accept( Record record )
+                    public ClusterView apply( Record record )
                     {
-                        expires.set( calculateNewExpiry( record ) );
+                        long expire = calculateNewExpiry( record );
+                        ClusterView newClusterView = new ClusterView( expire, clock, log );
                         List<ServerInfo> servers = servers( record );
                         for ( ServerInfo server : servers )
                         {
-                            seen.removeAll( server.addresses() );
                             switch ( server.role() )
                             {
                             case "READ":
-                                readServers.addAll( server.addresses() );
+                                newClusterView.addReaders( server.addresses() );
                                 break;
                             case "WRITE":
-                                writeServers.addAll( server.addresses() );
+                                newClusterView.addWriters( server.addresses() );
                                 break;
                             case "ROUTE":
-                                newRouters.addAll( server.addresses() );
+                                newClusterView.addRouters( server.addresses() );
                                 break;
                             }
                         }
+                        return newClusterView;
                     }
                 } );
-                //We got trough but server gave us an empty list of routers
-                if (success && newRouters.isEmpty()) {
-                    success = false;
-                } else if (success) {
-                    routingServers.clear();
-                    routingServers.addAll( newRouters );
-                }
             }
-            if ( !success )
+            catch ( Throwable t )
             {
-                throw new ServiceUnavailableException( "Run out of servers" );
+                forget( address );
+                continue;
             }
 
-            //the server no longer think we should care about these
-            for ( BoltServerAddress remove : seen )
+            if ( newClusterView.numberOfRouters() != 0 )
             {
-                connections.purge( remove );
+                return newClusterView;
             }
         }
-        catch ( Exception ex )
-        {
-            //discovery failed, not much to do, stick with what we've got
-            //this may happen because server is running in standalone mode
-            this.close();
-            throw new ServiceUnavailableException(
-                    String.format( "Server %s couldn't perform discovery",
-                            address == null ? "`UNKNOWN`" : address.toString() ), ex );
 
-        }
+
+        //discovery failed, not much to do, stick with what we've got
+        //this may happen because server is running in standalone mode
+        this.close();
+        throw new ServiceUnavailableException(
+                String.format( "Server %s couldn't perform discovery",
+                        address == null ? "`UNKNOWN`" : address.toString() ) );
+
     }
 
     private static class ServerInfo
@@ -218,6 +197,117 @@ public class RoutingDriver extends BaseDriver
         }
     }
 
+    private static class ClusterView
+    {
+        private static final int MIN_ROUTERS = 1;
+
+        private final ConcurrentRoundRobinSet<BoltServerAddress> routingServers =
+                new ConcurrentRoundRobinSet<>( COMPARATOR );
+        private final ConcurrentRoundRobinSet<BoltServerAddress> readServers =
+                new ConcurrentRoundRobinSet<>( COMPARATOR );
+        private final ConcurrentRoundRobinSet<BoltServerAddress> writeServers =
+                new ConcurrentRoundRobinSet<>( COMPARATOR );
+        private final Clock clock;
+        private final long expires;
+        private final Logger log;
+
+        private ClusterView( long expires, Clock clock, Logger log )
+        {
+            this.expires = expires;
+            this.clock = clock;
+            this.log = log;
+        }
+
+        public void addRouter( BoltServerAddress router )
+        {
+            this.routingServers.add( router );
+        }
+
+        public boolean isStale()
+        {
+            return expires < clock.millis() ||
+                   routingServers.size() <= MIN_ROUTERS ||
+                   readServers.isEmpty() ||
+                   writeServers.isEmpty();
+        }
+
+        Set<BoltServerAddress> all()
+        {
+            HashSet<BoltServerAddress> all =
+                    new HashSet<>( routingServers.size() + readServers.size() + writeServers.size() );
+            all.addAll( routingServers );
+            all.addAll( readServers );
+            all.addAll( writeServers );
+            return all;
+        }
+
+        public int numberOfRouters()
+        {
+            return routingServers.size();
+        }
+
+        public BoltServerAddress nextRouter()
+        {
+            return routingServers.hop();
+        }
+
+        public BoltServerAddress nextReader()
+        {
+            return routingServers.hop();
+        }
+
+        public BoltServerAddress nextWriter()
+        {
+            return routingServers.hop();
+        }
+
+        public void addReaders( List<BoltServerAddress> addresses )
+        {
+            readServers.addAll( addresses );
+        }
+
+        public void addWriters( List<BoltServerAddress> addresses )
+        {
+            writeServers.addAll( addresses );
+        }
+
+        public void addRouters( List<BoltServerAddress> addresses )
+        {
+            routingServers.addAll( addresses );
+        }
+
+        public void remove( BoltServerAddress address )
+        {
+            if ( routingServers.remove( address ) )
+            {
+                log.debug( "Removing %s from routers", address.toString() );
+            }
+            if ( readServers.remove( address ) )
+            {
+                log.debug( "Removing %s from readers", address.toString() );
+            }
+            if ( writeServers.remove( address ) )
+            {
+                log.debug( "Removing %s from writers", address.toString() );
+            }
+        }
+
+        public boolean removeWriter( BoltServerAddress address )
+        {
+            return writeServers.remove( address );
+        }
+
+        public int numberOfReaders()
+        {
+            return readServers.size();
+        }
+
+        public int numberOfWriters()
+        {
+            return writeServers.size();
+        }
+    }
+
     private List<ServerInfo> servers( Record record )
     {
         return record.get( "servers" ).asList( new Function<Value,ServerInfo>()
@@ -238,7 +328,7 @@ public class RoutingDriver extends BaseDriver
     }
 
     //must be called from a synchronized method
-    private boolean call( BoltServerAddress address, String procedureName, Consumer<Record> recorder )
+    private <T> T call( BoltServerAddress address, String procedureName, Function<Record, T> recorder )
     {
         Connection acquire;
         Session session = null;
@@ -249,21 +339,13 @@ public class RoutingDriver extends BaseDriver
 
             StatementResult records = session.run( format( "CALL %s", procedureName ) );
             //got a result but was empty
-            if (!records.hasNext()) {
+            if ( !records.hasNext() )
+            {
                 forget( address );
-                return false;
+                throw new IllegalStateException("Server responded with empty result");
             }
             //consume the results
-            while ( records.hasNext() )
-            {
-                recorder.accept( records.next() );
-            }
-        }
-        catch ( Throwable e )
-        {
-            log.error( e.getMessage(), e );
-            forget( address );
-            return false;
+            return recorder.apply( records.single() );
         }
         finally
         {
@@ -272,24 +354,12 @@ public class RoutingDriver extends BaseDriver
                 session.close();
             }
         }
-        return true;
     }
 
     private synchronized void forget( BoltServerAddress address )
     {
         connections.purge( address );
-        if ( routingServers.remove( address ) )
-        {
-            log.debug( "Removing %s from routers", address.toString() );
-        }
-        if (readServers.remove( address ) )
-        {
-            log.debug( "Removing %s from readers", address.toString() );
-        }
-        if (writeServers.remove( address ))
-        {
-            log.debug( "Removing %s from writers", address.toString() );
-        }
+        clusterView.remove(address);
     }
 
     @Override
@@ -313,32 +383,33 @@ public class RoutingDriver extends BaseDriver
                     @Override
                     public void onWriteFailure( BoltServerAddress address )
                     {
-                        writeServers.remove( address );
+                        clusterView.removeWriter( address );
                     }
-                });
+                } );
     }
 
     private Connection acquireConnection( AccessMode role )
     {
-        ConcurrentRoundRobinSet<BoltServerAddress> servers;
+        //Potentially rediscover servers if we are not happy with our current knowledge
+        checkServers();
+
         switch ( role )
         {
         case READ:
-            servers = readServers;
-            break;
+            return acquireReadConnection();
         case WRITE:
-            servers = writeServers;
-            break;
+            return acquireWriteConnection();
         default:
             throw new ClientException( role + " is not supported for creating new sessions" );
         }
+    }
 
-        //Potentially rediscover servers if we are not happy with our current knowledge
-        checkServers();
-        int numberOfServers = servers.size();
+    private Connection acquireReadConnection()
+    {
+        int numberOfServers = clusterView.numberOfReaders();
         for ( int i = 0; i < numberOfServers; i++ )
         {
-            BoltServerAddress address = servers.hop();
+            BoltServerAddress address = clusterView.nextReader();
             try
             {
                 return connections.acquire( address );
@@ -349,7 +420,26 @@ public class RoutingDriver extends BaseDriver
             }
         }
 
-        throw new ConnectionFailureException( "Failed to connect to any servers" );
+        throw new ConnectionFailureException( "Failed to connect to any read server" );
+    }
+
+    private Connection acquireWriteConnection()
+    {
+        int numberOfServers = clusterView.numberOfWriters();
+        for ( int i = 0; i < numberOfServers; i++ )
+        {
+            BoltServerAddress address = clusterView.nextWriter();
+            try
+            {
+                return connections.acquire( address );
+            }
+            catch ( ConnectionFailureException e )
+            {
+                forget( address );
+            }
+        }
+
+        throw new ConnectionFailureException( "Failed to connect to any write server" );
     }
 
     @Override
@@ -366,25 +456,25 @@ public class RoutingDriver extends BaseDriver
     }
 
     //For testing
-    Set<BoltServerAddress> routingServers()
+    public Set<BoltServerAddress> routingServers()
     {
-        return Collections.unmodifiableSet( routingServers );
+        return Collections.unmodifiableSet( clusterView.routingServers );
     }
 
     //For testing
-    Set<BoltServerAddress> readServers()
+    public Set<BoltServerAddress> readServers()
     {
-        return Collections.unmodifiableSet( readServers );
+        return Collections.unmodifiableSet( clusterView.readServers );
     }
 
     //For testing
-    Set<BoltServerAddress> writeServers()
+    public Set<BoltServerAddress> writeServers()
     {
-        return Collections.unmodifiableSet( writeServers );
+        return Collections.unmodifiableSet( clusterView.writeServers );
     }
 
     //For testing
-    ConnectionPool connectionPool()
+    public ConnectionPool connectionPool()
     {
         return connections;
     }
