@@ -306,7 +306,7 @@ public class RoutingDriverTest
             @Override
             public Record single() throws NoSuchRecordException
             {
-                return null;
+                return next();
             }
 
             @Override
