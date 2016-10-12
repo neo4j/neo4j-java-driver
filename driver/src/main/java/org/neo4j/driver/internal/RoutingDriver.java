@@ -253,12 +253,12 @@ public class RoutingDriver extends BaseDriver
 
         public BoltServerAddress nextReader()
         {
-            return routingServers.hop();
+            return readServers.hop();
         }
 
         public BoltServerAddress nextWriter()
         {
-            return routingServers.hop();
+            return writeServers.hop();
         }
 
         public void addReaders( List<BoltServerAddress> addresses )
