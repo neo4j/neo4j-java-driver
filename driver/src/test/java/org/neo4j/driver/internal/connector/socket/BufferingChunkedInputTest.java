@@ -36,6 +36,7 @@ import org.neo4j.driver.v1.util.RecordingByteChannel;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
@@ -489,6 +490,28 @@ public class BufferingChunkedInputTest
                                  "instabilities, or due to restarts of the database." );
         // When
         input.readByte();
+    }
+
+
+    @Test
+    public void shouldKeepBufferCorrectWhenError() throws Throwable
+    {
+        // Given
+        ReadableByteChannel channel = mock( ReadableByteChannel.class );
+        when( channel.read( any( ByteBuffer.class ) ) ).thenReturn( -1 );
+        ByteBuffer buffer = ByteBuffer.allocate( 8 );
+        buffer.limit(0);
+
+        //Expect
+        exception.expect( ClientException.class );
+        exception.expectMessage( "Connection terminated while receiving data. This can happen due to network " +
+                                 "instabilities, or due to restarts of the database." );
+        // When
+        BufferingChunkedInput.readNextPacket( channel, buffer );
+        assertEquals( buffer.position(), 0 );
+        assertEquals( buffer.limit(), 0 );
+        assertEquals( buffer.capacity(), 8 );
+        assertFalse( channel.isOpen() );
     }
 
     private ReadableByteChannel fillPacket( int size, int value )

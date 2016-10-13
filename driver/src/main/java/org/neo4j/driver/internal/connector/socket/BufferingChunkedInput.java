@@ -398,7 +398,7 @@ public class BufferingChunkedInput implements PackInput
      * @param buffer The buffer to read into
      * @throws IOException
      */
-    private static void readNextPacket( ReadableByteChannel channel, ByteBuffer buffer ) throws IOException
+    static void readNextPacket( ReadableByteChannel channel, ByteBuffer buffer ) throws IOException
     {
         assert !buffer.hasRemaining();
 
