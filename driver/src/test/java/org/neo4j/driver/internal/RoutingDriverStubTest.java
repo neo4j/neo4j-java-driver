@@ -43,6 +43,7 @@ import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ConnectionFailureException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
@@ -522,6 +523,103 @@ public class RoutingDriverStubTest
     }
 
     @Test
+    public void shouldHandleLeaderSwitchWhenWritingWithoutConsuming()
+            throws IOException, InterruptedException, StubServer.ForceKilled
+    {
+        // Given
+        StubServer server = StubServer.start( "acquire_endpoints.script", 9001 );
+
+        //START a write server that doesn't accept writes
+        StubServer.start( "not_able_to_write_server.script", 9007 );
+        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+        RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
+        boolean failed = false;
+        try ( Session session = driver.session( AccessMode.WRITE ) )
+        {
+            assertThat( driver.writeServers(), hasItem(address( 9007 ) ) );
+            assertThat( driver.writeServers(), hasItem( address( 9008 ) ) );
+            session.run( "CREATE ()" );
+        }
+        catch ( SessionExpiredException e )
+        {
+            failed = true;
+            assertThat( e.getMessage(), equalTo( "Server at 127.0.0.1:9007 no longer accepts writes" ) );
+        }
+        assertTrue( failed );
+        assertThat( driver.writeServers(), not( hasItem( address( 9007 ) ) ) );
+        assertThat( driver.writeServers(), hasItem( address( 9008 ) ) );
+        assertTrue( driver.connectionPool().hasAddress( address( 9007 ) ) );
+
+        driver.close();
+        // Finally
+        assertThat( server.exitStatus(), equalTo( 0 ) );
+    }
+
+    @Ignore
+    public void shouldHandleLeaderSwitchWhenWritingInTransaction()
+            throws IOException, InterruptedException, StubServer.ForceKilled
+    {
+        // Given
+        StubServer server = StubServer.start( "acquire_endpoints.script", 9001 );
+
+        //START a write server that doesn't accept writes
+        StubServer.start( "not_able_to_write_server.script", 9007 );
+        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+        RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
+        boolean failed = false;
+        try ( Session session = driver.session( AccessMode.WRITE );
+              Transaction tx = session.beginTransaction() )
+        {
+            tx.run( "CREATE ()" ).consume();
+        }
+        catch ( SessionExpiredException e )
+        {
+            failed = true;
+            assertThat( e.getMessage(), equalTo( "Server at 127.0.0.1:9007 no longer accepts writes" ) );
+        }
+        assertTrue( failed );
+        assertThat( driver.writeServers(), not( hasItem( address( 9007 ) ) ) );
+        assertThat( driver.writeServers(), hasItem( address( 9008 ) ) );
+        assertTrue( driver.connectionPool().hasAddress( address( 9007 ) ) );
+
+        driver.close();
+        // Finally
+        assertThat( server.exitStatus(), equalTo( 0 ) );
+    }
+
+    @Ignore
+    public void shouldHandleLeaderSwitchWhenWritingInTransactionWithoutConsuming()
+            throws IOException, InterruptedException, StubServer.ForceKilled
+    {
+        // Given
+        StubServer server = StubServer.start( "acquire_endpoints.script", 9001 );
+
+        //START a write server that doesn't accept writes
+        StubServer.start( "not_able_to_write_server.script", 9007 );
+        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+        RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
+        boolean failed = false;
+        try ( Session session = driver.session( AccessMode.WRITE );
+              Transaction tx = session.beginTransaction() )
+        {
+            tx.run( "CREATE ()" );
+        }
+        catch ( SessionExpiredException e )
+        {
+            failed = true;
+            assertThat( e.getMessage(), equalTo( "Server at 127.0.0.1:9007 no longer accepts writes" ) );
+        }
+        assertTrue( failed );
+        assertThat( driver.writeServers(), not( hasItem( address( 9007 ) ) ) );
+        assertThat( driver.writeServers(), hasItem( address( 9008 ) ) );
+        assertTrue( driver.connectionPool().hasAddress( address( 9007 ) ) );
+
+        driver.close();
+        // Finally
+        assertThat( server.exitStatus(), equalTo( 0 ) );
+    }
+
+    @Test
     public void shouldRediscoverOnExpiry() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
@@ -589,7 +687,7 @@ public class RoutingDriverStubTest
 
         // now we close the read session and the connection should not be put
         // back to the pool
-        Connection connection = ((RoutingNetworkSession) readSession).connection;
+        Connection connection = ((NetworkSession) ((RoutingNetworkSession) readSession).delegate).connection;
         assertTrue( connection.isOpen() );
         readSession.close();
         assertFalse( connection.isOpen() );

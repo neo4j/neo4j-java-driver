@@ -2,6 +2,9 @@
 !: AUTO RESET
 !: AUTO RUN "RETURN 1 // JavaDriver poll to test connection" {}
 !: AUTO PULL_ALL
+!: AUTO RUN "ROLLBACK" {}
+!: AUTO RUN "BEGIN" {}
+!: AUTO PULL_ALL
 
 C: RUN "CREATE ()" {}
 C: PULL_ALL

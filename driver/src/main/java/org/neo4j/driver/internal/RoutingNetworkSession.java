@@ -19,29 +19,66 @@
 package org.neo4j.driver.internal;
 
 
+import java.util.Map;
+
 import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.v1.AccessMode;
+import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ConnectionFailureException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
+import org.neo4j.driver.v1.types.TypeSystem;
 
 import static java.lang.String.format;
+import static org.neo4j.driver.v1.Values.value;
 
-public class RoutingNetworkSession extends NetworkSession
+public class RoutingNetworkSession implements Session
 {
+    protected final Session delegate;
+    private final BoltServerAddress address;
     private final AccessMode mode;
     private final RoutingErrorHandler onError;
 
-    RoutingNetworkSession( AccessMode mode, Connection connection,
+    RoutingNetworkSession( Session delegate, AccessMode mode, BoltServerAddress address,
             RoutingErrorHandler onError )
     {
-        super( connection );
+        this.delegate = delegate;
         this.mode = mode;
+        this.address = address;
         this.onError = onError;
+    }
+
+    @Override
+    public StatementResult run( String statementText )
+    {
+        return run( statementText, Values.EmptyMap );
+    }
+
+    @Override
+    public StatementResult run( String statementText, Map<String,Object> statementParameters )
+    {
+        Value params = statementParameters == null ? Values.EmptyMap : value( statementParameters );
+        return run( statementText, params );
+    }
+
+    @Override
+    public StatementResult run( String statementTemplate, Record statementParameters )
+    {
+        Value params = statementParameters == null ? Values.EmptyMap : value( statementParameters.asMap() );
+        return run( statementTemplate, params );
+    }
+
+    @Override
+    public StatementResult run( String statementText, Value statementParameters )
+    {
+        return run( new Statement( statementText, statementParameters ) );
     }
 
     @Override
@@ -49,16 +86,52 @@ public class RoutingNetworkSession extends NetworkSession
     {
         try
         {
-            return new RoutingStatementResult( super.run( statement ), mode, connection.address(), onError );
+            return new RoutingStatementResult( delegate.run( statement ), mode, address, onError );
         }
         catch ( ConnectionFailureException e )
         {
-            throw sessionExpired( e, onError, connection.address() );
+            throw sessionExpired( e, onError, address );
         }
         catch ( ClientException e )
         {
-            throw filterFailureToWrite( e, mode, onError, connection.address() );
+            throw filterFailureToWrite( e, mode, onError, address );
         }
+    }
+
+    @Override
+    public TypeSystem typeSystem()
+    {
+        return delegate.typeSystem();
+    }
+
+    @Override
+    public Transaction beginTransaction()
+    {
+        return delegate.beginTransaction();
+    }
+
+    @Override
+    public Transaction beginTransaction( String bookmark )
+    {
+        return delegate.beginTransaction(bookmark);
+    }
+
+    @Override
+    public String lastBookmark()
+    {
+        return delegate.lastBookmark();
+    }
+
+    @Override
+    public void reset()
+    {
+        delegate.reset();
+    }
+
+    @Override
+    public boolean isOpen()
+    {
+        return delegate.isOpen();
     }
 
     @Override
@@ -66,21 +139,27 @@ public class RoutingNetworkSession extends NetworkSession
     {
         try
         {
-            super.close();
+            delegate.close();
         }
         catch ( ConnectionFailureException e )
         {
-            throw sessionExpired(e, onError, connection.address());
+            throw sessionExpired(e, onError, address);
         }
         catch ( ClientException e )
         {
-            throw filterFailureToWrite( e, mode, onError, connection.address() );
+            throw filterFailureToWrite( e, mode, onError, address );
         }
+    }
+
+    @Override
+    public String server()
+    {
+        return delegate.server();
     }
 
     public BoltServerAddress address()
     {
-        return connection.address();
+        return address;
     }
 
     static Neo4jException filterFailureToWrite( ClientException e, AccessMode mode, RoutingErrorHandler onError,

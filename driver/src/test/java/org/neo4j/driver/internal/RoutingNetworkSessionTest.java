@@ -27,7 +27,7 @@ import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.v1.AccessMode;
-import org.neo4j.driver.v1.Logger;
+import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ConnectionFailureException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
@@ -68,7 +68,8 @@ public class RoutingNetworkSessionTest
                 when( connection ).run( anyString(), any( Map.class ), any( Collector.class ) );
 
         RoutingNetworkSession result =
-                new RoutingNetworkSession( AccessMode.WRITE, connection, onError );
+                new RoutingNetworkSession( new NetworkSession( connection ), AccessMode.WRITE, connection.address(),
+                        onError );
 
         // When
         try
@@ -94,7 +95,8 @@ public class RoutingNetworkSessionTest
         doThrow( new ClientException( "Neo.ClientError.Cluster.NotALeader", "oh no!" ) ).
                 when( connection ).run( anyString(), any( Map.class ), any( Collector.class ) );
         RoutingNetworkSession session =
-                new RoutingNetworkSession( AccessMode.WRITE, connection, onError );
+                new RoutingNetworkSession( new NetworkSession(connection), AccessMode.WRITE, connection.address(),
+                        onError );
 
         // When
         try
@@ -120,7 +122,7 @@ public class RoutingNetworkSessionTest
         doThrow( new ClientException( "Neo.ClientError.Cluster.NotALeader", "oh no!" ) ).
                 when( connection ).run( anyString(), any( Map.class ), any( Collector.class ) );
         RoutingNetworkSession session =
-                new RoutingNetworkSession( AccessMode.READ, connection, onError );
+                new RoutingNetworkSession( new NetworkSession( connection ), AccessMode.READ, connection.address(), onError );
 
         // When
         try
@@ -144,7 +146,7 @@ public class RoutingNetworkSessionTest
         doThrow( toBeThrown ).
                 when( connection ).run( anyString(), any( Map.class ), any( Collector.class ) );
         RoutingNetworkSession session =
-                new RoutingNetworkSession( AccessMode.WRITE, connection, onError );
+                new RoutingNetworkSession( new NetworkSession( connection ), AccessMode.WRITE, connection.address(), onError );
 
         // When
         try
@@ -169,7 +171,8 @@ public class RoutingNetworkSessionTest
                 when( connection ).sync();
 
         RoutingNetworkSession session =
-                new RoutingNetworkSession( AccessMode.WRITE, connection, onError );
+                new RoutingNetworkSession( new NetworkSession( connection ),  AccessMode.WRITE, connection.address(),
+                        onError );
 
         // When
         try
@@ -194,7 +197,7 @@ public class RoutingNetworkSessionTest
         doThrow( new ClientException( "Neo.ClientError.Cluster.NotALeader", "oh no!" ) ).when( connection ).sync();
 
         RoutingNetworkSession session =
-                new RoutingNetworkSession( AccessMode.WRITE, connection, onError );
+                new RoutingNetworkSession( new NetworkSession( connection ), AccessMode.WRITE, connection.address(), onError );
 
         // When
         try
@@ -211,4 +214,69 @@ public class RoutingNetworkSessionTest
         verify( onError ).onWriteFailure( LOCALHOST );
         verifyNoMoreInteractions( onError );
     }
+
+    @Test
+    public void shouldDelegateLastBookmark()
+    {
+        // Given
+        Session inner = mock( Session.class );
+        RoutingNetworkSession session =
+                new RoutingNetworkSession( inner, AccessMode.WRITE, connection.address(), onError );
+
+
+        // When
+        session.lastBookmark();
+
+        // Then
+        verify( inner ).lastBookmark();
+    }
+
+    @Test
+    public void shouldDelegateReset()
+    {
+        // Given
+        Session inner = mock( Session.class );
+        RoutingNetworkSession session =
+                new RoutingNetworkSession( inner, AccessMode.WRITE, connection.address(), onError );
+
+
+        // When
+        session.reset();
+
+        // Then
+        verify( inner ).reset();
+    }
+
+    @Test
+    public void shouldDelegateIsOpen()
+    {
+        // Given
+        Session inner = mock( Session.class );
+        RoutingNetworkSession session =
+                new RoutingNetworkSession( inner, AccessMode.WRITE, connection.address(), onError );
+
+
+        // When
+        session.isOpen();
+
+        // Then
+        verify( inner ).isOpen();
+    }
+
+    @Test
+    public void shouldDelegateServer()
+    {
+        // Given
+        Session inner = mock( Session.class );
+        RoutingNetworkSession session =
+                new RoutingNetworkSession( inner, AccessMode.WRITE, connection.address(), onError );
+
+
+        // When
+        session.server();
+
+        // Then
+        verify( inner ).server();
+    }
+
 }

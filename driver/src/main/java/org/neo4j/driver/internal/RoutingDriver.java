@@ -242,7 +242,8 @@ public class RoutingDriver extends BaseDriver
     @Override
     public Session session( final AccessMode mode )
     {
-        return new RoutingNetworkSession( mode, acquireConnection( mode ),
+        Connection connection = acquireConnection( mode );
+        return new RoutingNetworkSession( new NetworkSession( connection ), mode, connection.address(),
                 new RoutingErrorHandler()
                 {
                     @Override
