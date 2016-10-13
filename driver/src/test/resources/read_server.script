@@ -2,6 +2,8 @@
 !: AUTO RESET
 !: AUTO RUN "RETURN 1 // JavaDriver poll to test connection" {}
 !: AUTO PULL_ALL
+!: AUTO RUN "ROLLBACK" {}
+!: AUTO RUN "BEGIN" {}
 
 C: RUN "MATCH (n) RETURN n.name" {}
    PULL_ALL

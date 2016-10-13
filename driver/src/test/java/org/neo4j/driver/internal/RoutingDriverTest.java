@@ -254,7 +254,7 @@ public class RoutingDriverTest
         final Session session = mock( Session.class );
         when( session.run( GET_SERVERS ) ).thenReturn(
                 getServers( asList( "localhost:1111", "localhost:1112" ),
-                        asList( "localhost:2222", "localhost:2223", "localhost:2223" ),
+                        asList( "localhost:2222", "localhost:2223", "localhost:2224" ),
                         singletonList( "localhost:3333" ) ) );
 
         // When
@@ -267,8 +267,8 @@ public class RoutingDriverTest
 
         // Then
         assertThat(read1.address(), equalTo(boltAddress( "localhost", 2222 )));
-        assertThat(read2.address(), equalTo(boltAddress( "localhost", 2222 )));
-        assertThat(read3.address(), equalTo(boltAddress( "localhost", 2222 )));
+        assertThat(read2.address(), equalTo(boltAddress( "localhost", 2223 )));
+        assertThat(read3.address(), equalTo(boltAddress( "localhost", 2224 )));
         assertThat(read4.address(), equalTo(boltAddress( "localhost", 2222 )));
 
     }
@@ -280,7 +280,7 @@ public class RoutingDriverTest
         final Session session = mock( Session.class );
         when( session.run( GET_SERVERS ) ).thenReturn(
                 getServers( asList( "localhost:1111", "localhost:1112" ),
-                        singletonList( "localhost:3333" ),  asList( "localhost:2222", "localhost:2223", "localhost:2223" ) ) );
+                        singletonList( "localhost:3333" ),  asList( "localhost:2222", "localhost:2223", "localhost:2224" ) ) );
 
         // When
         RoutingDriver routingDriver = forSession( session );
@@ -292,8 +292,8 @@ public class RoutingDriverTest
 
         // Then
         assertThat(write1.address(), equalTo(boltAddress( "localhost", 2222 )));
-        assertThat(write2.address(), equalTo(boltAddress( "localhost", 2222 )));
-        assertThat(write3.address(), equalTo(boltAddress( "localhost", 2222 )));
+        assertThat(write2.address(), equalTo(boltAddress( "localhost", 2223 )));
+        assertThat(write3.address(), equalTo(boltAddress( "localhost", 2224 )));
         assertThat(write4.address(), equalTo(boltAddress( "localhost", 2222 )));
 
     }
