@@ -18,9 +18,6 @@
  */
 package org.neo4j.driver.internal;
 
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -29,9 +26,7 @@ import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Clock;
-import org.neo4j.driver.internal.util.ConcurrentRoundRobinSet;
 import org.neo4j.driver.v1.AccessMode;
-import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
@@ -48,20 +43,7 @@ public class RoutingDriver extends BaseDriver
 {
     private static final String GET_SERVERS = "dbms.cluster.routing.getServers";
     private static final long MAX_TTL = Long.MAX_VALUE / 1000L;
-    private final static Comparator<BoltServerAddress> COMPARATOR = new Comparator<BoltServerAddress>()
-    {
-        @Override
-        public int compare( BoltServerAddress o1, BoltServerAddress o2 )
-        {
-            int compare = o1.host().compareTo( o2.host() );
-            if ( compare == 0 )
-            {
-                compare = Integer.compare( o1.port(), o2.port() );
-            }
 
-            return compare;
-        }
-    };
     private final ConnectionPool connections;
     private final Function<Connection,Session> sessionProvider;
     private final Clock clock;
@@ -194,117 +176,6 @@ public class RoutingDriver extends BaseDriver
         List<BoltServerAddress> addresses()
         {
             return addresses;
-        }
-    }
-
-    private static class ClusterView
-    {
-        private static final int MIN_ROUTERS = 1;
-
-        private final ConcurrentRoundRobinSet<BoltServerAddress> routingServers =
-                new ConcurrentRoundRobinSet<>( COMPARATOR );
-        private final ConcurrentRoundRobinSet<BoltServerAddress> readServers =
-                new ConcurrentRoundRobinSet<>( COMPARATOR );
-        private final ConcurrentRoundRobinSet<BoltServerAddress> writeServers =
-                new ConcurrentRoundRobinSet<>( COMPARATOR );
-        private final Clock clock;
-        private final long expires;
-        private final Logger log;
-
-        private ClusterView( long expires, Clock clock, Logger log )
-        {
-            this.expires = expires;
-            this.clock = clock;
-            this.log = log;
-        }
-
-        public void addRouter( BoltServerAddress router )
-        {
-            this.routingServers.add( router );
-        }
-
-        public boolean isStale()
-        {
-            return expires < clock.millis() ||
-                   routingServers.size() <= MIN_ROUTERS ||
-                   readServers.isEmpty() ||
-                   writeServers.isEmpty();
-        }
-
-        Set<BoltServerAddress> all()
-        {
-            HashSet<BoltServerAddress> all =
-                    new HashSet<>( routingServers.size() + readServers.size() + writeServers.size() );
-            all.addAll( routingServers );
-            all.addAll( readServers );
-            all.addAll( writeServers );
-            return all;
-        }
-
-        public int numberOfRouters()
-        {
-            return routingServers.size();
-        }
-
-        public BoltServerAddress nextRouter()
-        {
-            return routingServers.hop();
-        }
-
-        public BoltServerAddress nextReader()
-        {
-            return readServers.hop();
-        }
-
-        public BoltServerAddress nextWriter()
-        {
-            return writeServers.hop();
-        }
-
-        public void addReaders( List<BoltServerAddress> addresses )
-        {
-            readServers.addAll( addresses );
-        }
-
-        public void addWriters( List<BoltServerAddress> addresses )
-        {
-            writeServers.addAll( addresses );
-        }
-
-        public void addRouters( List<BoltServerAddress> addresses )
-        {
-            routingServers.addAll( addresses );
-        }
-
-        public void remove( BoltServerAddress address )
-        {
-            if ( routingServers.remove( address ) )
-            {
-                log.debug( "Removing %s from routers", address.toString() );
-            }
-            if ( readServers.remove( address ) )
-            {
-                log.debug( "Removing %s from readers", address.toString() );
-            }
-            if ( writeServers.remove( address ) )
-            {
-                log.debug( "Removing %s from writers", address.toString() );
-            }
-        }
-
-        public boolean removeWriter( BoltServerAddress address )
-        {
-            return writeServers.remove( address );
-        }
-
-        public int numberOfReaders()
-        {
-            return readServers.size();
-        }
-
-        public int numberOfWriters()
-        {
-            return writeServers.size();
         }
     }
 
@@ -458,19 +329,19 @@ public class RoutingDriver extends BaseDriver
     //For testing
     public Set<BoltServerAddress> routingServers()
     {
-        return Collections.unmodifiableSet( clusterView.routingServers );
+        return clusterView.routingServers();
     }
 
     //For testing
     public Set<BoltServerAddress> readServers()
     {
-        return Collections.unmodifiableSet( clusterView.readServers );
+        return  clusterView.readServers();
     }
 
     //For testing
     public Set<BoltServerAddress> writeServers()
     {
-        return Collections.unmodifiableSet( clusterView.writeServers );
+        return clusterView.writeServers( );
     }
 
     //For testing

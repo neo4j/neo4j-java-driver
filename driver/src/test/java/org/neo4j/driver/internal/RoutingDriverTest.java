@@ -22,6 +22,8 @@ import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -47,10 +49,12 @@ import org.neo4j.driver.v1.util.Function;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.core.IsNot.not;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -243,6 +247,57 @@ public class RoutingDriverTest
         assertThat( routingDriver.writeServers(), containsInAnyOrder( boltAddress( "localhost", 3333 ) ) );
     }
 
+    @Test
+    public void shouldRoundRobinAmongReadServers()
+    {
+        // Given
+        final Session session = mock( Session.class );
+        when( session.run( GET_SERVERS ) ).thenReturn(
+                getServers( asList( "localhost:1111", "localhost:1112" ),
+                        asList( "localhost:2222", "localhost:2223", "localhost:2223" ),
+                        singletonList( "localhost:3333" ) ) );
+
+        // When
+        RoutingDriver routingDriver = forSession( session );
+        RoutingNetworkSession read1 = (RoutingNetworkSession) routingDriver.session( AccessMode.READ );
+        RoutingNetworkSession read2 = (RoutingNetworkSession) routingDriver.session( AccessMode.READ );
+        RoutingNetworkSession read3 = (RoutingNetworkSession) routingDriver.session( AccessMode.READ );
+        RoutingNetworkSession read4 = (RoutingNetworkSession) routingDriver.session( AccessMode.READ );
+
+
+        // Then
+        assertThat(read1.address(), equalTo(boltAddress( "localhost", 2222 )));
+        assertThat(read2.address(), equalTo(boltAddress( "localhost", 2222 )));
+        assertThat(read3.address(), equalTo(boltAddress( "localhost", 2222 )));
+        assertThat(read4.address(), equalTo(boltAddress( "localhost", 2222 )));
+
+    }
+
+    @Test
+    public void shouldRoundRobinAmongWriteServers()
+    {
+        // Given
+        final Session session = mock( Session.class );
+        when( session.run( GET_SERVERS ) ).thenReturn(
+                getServers( asList( "localhost:1111", "localhost:1112" ),
+                        singletonList( "localhost:3333" ),  asList( "localhost:2222", "localhost:2223", "localhost:2223" ) ) );
+
+        // When
+        RoutingDriver routingDriver = forSession( session );
+        RoutingNetworkSession write1 = (RoutingNetworkSession) routingDriver.session( AccessMode.WRITE );
+        RoutingNetworkSession write2 = (RoutingNetworkSession) routingDriver.session( AccessMode.WRITE );
+        RoutingNetworkSession write3 = (RoutingNetworkSession) routingDriver.session( AccessMode.WRITE );
+        RoutingNetworkSession write4 = (RoutingNetworkSession) routingDriver.session( AccessMode.WRITE );
+
+
+        // Then
+        assertThat(write1.address(), equalTo(boltAddress( "localhost", 2222 )));
+        assertThat(write2.address(), equalTo(boltAddress( "localhost", 2222 )));
+        assertThat(write3.address(), equalTo(boltAddress( "localhost", 2222 )));
+        assertThat(write4.address(), equalTo(boltAddress( "localhost", 2222 )));
+
+    }
+
     private RoutingDriver forSession( final Session session )
     {
         return forSession( session, Clock.SYSTEM );
@@ -353,9 +408,22 @@ public class RoutingDriverTest
     private ConnectionPool pool()
     {
         ConnectionPool pool = mock( ConnectionPool.class );
-        Connection connection = mock( Connection.class );
-        when( connection.isOpen() ).thenReturn( true );
-        when( pool.acquire( SEED ) ).thenReturn( connection );
+
+
+        when( pool.acquire( any(BoltServerAddress.class) ) ).thenAnswer( new Answer<Connection>()
+        {
+            @Override
+            public Connection answer( InvocationOnMock invocationOnMock ) throws Throwable
+            {
+                BoltServerAddress address = (BoltServerAddress) invocationOnMock.getArguments()[0];
+                Connection connection = mock( Connection.class );
+                when( connection.isOpen() ).thenReturn( true );
+                when(connection.address()).thenReturn( address );
+
+                return connection;
+            }
+        } );
+
         return pool;
     }
 
