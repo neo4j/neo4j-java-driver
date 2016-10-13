@@ -372,7 +372,7 @@ public class RoutingDriverStubTest
             driver.session( AccessMode.READ );
             fail();
         }
-        catch ( ConnectionFailureException e )
+        catch ( SessionExpiredException e )
         {
             //ignore
         }

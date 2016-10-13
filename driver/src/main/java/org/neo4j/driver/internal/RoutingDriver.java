@@ -40,6 +40,7 @@ import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ConnectionFailureException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 import org.neo4j.driver.v1.util.Function;
 
 import static java.lang.String.format;
@@ -420,7 +421,7 @@ public class RoutingDriver extends BaseDriver
             }
         }
 
-        throw new ConnectionFailureException( "Failed to connect to any read server" );
+        throw new SessionExpiredException( "Failed to connect to any read server" );
     }
 
     private Connection acquireWriteConnection()
@@ -439,7 +440,7 @@ public class RoutingDriver extends BaseDriver
             }
         }
 
-        throw new ConnectionFailureException( "Failed to connect to any write server" );
+        throw new SessionExpiredException( "Failed to connect to any write server" );
     }
 
     @Override
