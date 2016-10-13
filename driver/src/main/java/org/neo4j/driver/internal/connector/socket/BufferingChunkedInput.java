@@ -408,11 +408,18 @@ public class BufferingChunkedInput implements PackInput
             int read = channel.read( buffer );
             if ( read == -1 )
             {
+                try
+                {
+                    channel.close();
+                }
+                catch ( IOException e )
+                {
+                    // best effort
+                }
                 throw new ClientException(
                         "Connection terminated while receiving data. This can happen due to network " +
                         "instabilities, or due to restarts of the database." );
             }
-            buffer.flip();
         }
         catch ( ClosedByInterruptException e )
         {
@@ -428,6 +435,10 @@ public class BufferingChunkedInput implements PackInput
             String message = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
             throw new ClientException(
                     "Unable to process request: " + message + " buffer: \n" + BytePrinter.hex( buffer ), e );
+        }
+        finally
+        {
+            buffer.flip();
         }
     }
 
