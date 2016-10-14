@@ -24,7 +24,6 @@ import java.util.Map;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
@@ -32,24 +31,23 @@ import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ConnectionFailureException;
-import org.neo4j.driver.v1.exceptions.Neo4jException;
-import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 import org.neo4j.driver.v1.types.TypeSystem;
 
-import static java.lang.String.format;
+import static org.neo4j.driver.internal.RoutingNetworkSession.filterFailureToWrite;
+import static org.neo4j.driver.internal.RoutingNetworkSession.sessionExpired;
 import static org.neo4j.driver.v1.Values.value;
 
 /**
- * A session that safely handles routing errors.
+ * A transaction that safely handles routing errors.
  */
-public class RoutingNetworkSession implements Session
+public class RoutingTransaction implements Transaction
 {
-    protected final Session delegate;
-    private final BoltServerAddress address;
+    protected final Transaction delegate;
     private final AccessMode mode;
+    private final BoltServerAddress address;
     private final RoutingErrorHandler onError;
 
-    RoutingNetworkSession( Session delegate, AccessMode mode, BoltServerAddress address,
+    RoutingTransaction( Transaction delegate, AccessMode mode, BoltServerAddress address,
             RoutingErrorHandler onError )
     {
         this.delegate = delegate;
@@ -107,28 +105,17 @@ public class RoutingNetworkSession implements Session
         return delegate.typeSystem();
     }
 
+
     @Override
-    public Transaction beginTransaction()
+    public void success()
     {
-        return new RoutingTransaction( delegate.beginTransaction(), mode, address, onError);
+        delegate.success();
     }
 
     @Override
-    public Transaction beginTransaction( String bookmark )
+    public void failure()
     {
-        return new RoutingTransaction( delegate.beginTransaction(bookmark), mode, address, onError);
-    }
-
-    @Override
-    public String lastBookmark()
-    {
-        return delegate.lastBookmark();
-    }
-
-    @Override
-    public void reset()
-    {
-        delegate.reset();
+        delegate.failure();
     }
 
     @Override
@@ -152,53 +139,5 @@ public class RoutingNetworkSession implements Session
         {
             throw filterFailureToWrite( e, mode, onError, address );
         }
-    }
-
-    @Override
-    public String server()
-    {
-        return delegate.server();
-    }
-
-    public BoltServerAddress address()
-    {
-        return address;
-    }
-
-    static Neo4jException filterFailureToWrite( ClientException e, AccessMode mode, RoutingErrorHandler onError,
-            BoltServerAddress address )
-    {
-        if ( isFailedToWrite( e ) )
-        {
-            // The server is unaware of the session mode, so we have to implement this logic in the driver.
-            // In the future, we might be able to move this logic to the server.
-            switch ( mode )
-            {
-                case READ:
-                    return new ClientException( "Write queries cannot be performed in READ access mode." );
-                case WRITE:
-                    onError.onWriteFailure( address );
-                    return new SessionExpiredException( format( "Server at %s no longer accepts writes", address ) );
-                default:
-                    throw new IllegalArgumentException( mode + " not supported." );
-            }
-        }
-        else
-        {
-            return e;
-        }
-    }
-
-    static SessionExpiredException sessionExpired( ConnectionFailureException e, RoutingErrorHandler onError,
-                                                   BoltServerAddress address )
-    {
-        onError.onConnectionFailure( address );
-        return new SessionExpiredException( format( "Server at %s is no longer available", address.toString() ), e );
-    }
-
-    private static boolean isFailedToWrite( ClientException e )
-    {
-        return e.code().equals( "Neo.ClientError.Cluster.NotALeader" ) ||
-                e.code().equals( "Neo.ClientError.General.ForbiddenOnReadOnlyDatabase" );
     }
 }

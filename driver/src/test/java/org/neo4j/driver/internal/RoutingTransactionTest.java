@@ -20,6 +20,8 @@ package org.neo4j.driver.internal;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import java.util.Map;
 
@@ -27,7 +29,7 @@ import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.v1.AccessMode;
-import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ConnectionFailureException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
@@ -37,6 +39,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -44,11 +47,32 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
-public class RoutingNetworkSessionTest
+public class RoutingTransactionTest
 {
+    private static final BoltServerAddress LOCALHOST = new BoltServerAddress( "localhost", 7687 );
     private Connection connection;
     private RoutingErrorHandler onError;
-    private static final BoltServerAddress LOCALHOST = new BoltServerAddress( "localhost", 7687 );
+    private Runnable cleanup;
+
+    private Answer<Void> throwingAnswer( final Throwable throwable )
+    {
+        return new Answer<Void>()
+        {
+            @Override
+            public Void answer( InvocationOnMock invocationOnMock ) throws Throwable
+            {
+                String statement = (String) invocationOnMock.getArguments()[0];
+                if ( statement.equals( "BEGIN" ) )
+                {
+                    return null;
+                }
+                else
+                {
+                    throw throwable;
+                }
+            }
+        };
+    }
 
     @Before
     public void setUp()
@@ -57,6 +81,7 @@ public class RoutingNetworkSessionTest
         when( connection.address() ).thenReturn( LOCALHOST );
         when( connection.isOpen() ).thenReturn( true );
         onError = mock( RoutingErrorHandler.class );
+        cleanup = mock( Runnable.class );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -64,17 +89,18 @@ public class RoutingNetworkSessionTest
     public void shouldHandleConnectionFailures()
     {
         // Given
-        doThrow( new ConnectionFailureException( "oh no" ) ).
-                when( connection ).run( anyString(), any( Map.class ), any( Collector.class ) );
 
-        RoutingNetworkSession result =
-                new RoutingNetworkSession( new NetworkSession( connection ), AccessMode.WRITE, connection.address(),
+        doAnswer( throwingAnswer( new ConnectionFailureException( "oh no" ) ) )
+                .when( connection ).run( anyString(), any( Map.class ), any( Collector.class ) );
+
+        RoutingTransaction tx =
+                new RoutingTransaction( new ExplicitTransaction( connection, cleanup ), AccessMode.READ, LOCALHOST,
                         onError );
 
         // When
         try
         {
-            result.run( "CREATE ()" );
+            tx.run( "CREATE ()" );
             fail();
         }
         catch ( SessionExpiredException e )
@@ -92,16 +118,17 @@ public class RoutingNetworkSessionTest
     public void shouldHandleWriteFailuresInWriteAccessMode()
     {
         // Given
-        doThrow( new ClientException( "Neo.ClientError.Cluster.NotALeader", "oh no!" ) ).
-                when( connection ).run( anyString(), any( Map.class ), any( Collector.class ) );
-        RoutingNetworkSession session =
-                new RoutingNetworkSession( new NetworkSession(connection), AccessMode.WRITE, connection.address(),
-                        onError );
+        doAnswer( throwingAnswer( new ClientException( "Neo.ClientError.Cluster.NotALeader", "oh no!" ) ) )
+                .when( connection ).run( anyString(), any( Map.class ), any( Collector.class ) );
+
+        RoutingTransaction tx =
+                new RoutingTransaction( new ExplicitTransaction( connection, cleanup ), AccessMode.WRITE,
+                        connection.address(), onError );
 
         // When
         try
         {
-            session.run( "CREATE ()" );
+            tx.run( "CREATE ()" );
             fail();
         }
         catch ( SessionExpiredException e )
@@ -119,15 +146,16 @@ public class RoutingNetworkSessionTest
     public void shouldHandleWriteFailuresInReadAccessMode()
     {
         // Given
-        doThrow( new ClientException( "Neo.ClientError.Cluster.NotALeader", "oh no!" ) ).
-                when( connection ).run( anyString(), any( Map.class ), any( Collector.class ) );
-        RoutingNetworkSession session =
-                new RoutingNetworkSession( new NetworkSession( connection ), AccessMode.READ, connection.address(), onError );
+        doAnswer( throwingAnswer( new ClientException( "Neo.ClientError.Cluster.NotALeader", "oh no!" ) ) )
+                .when( connection ).run( anyString(), any( Map.class ), any( Collector.class ) );
+        RoutingTransaction tx =
+                new RoutingTransaction( new ExplicitTransaction( connection, cleanup ), AccessMode.READ,
+                        connection.address(), onError );
 
         // When
         try
         {
-            session.run( "CREATE ()" );
+            tx.run( "CREATE ()" );
             fail();
         }
         catch ( ClientException e )
@@ -143,15 +171,16 @@ public class RoutingNetworkSessionTest
     {
         // Given
         ClientException toBeThrown = new ClientException( "code", "oh no!" );
-        doThrow( toBeThrown ).
-                when( connection ).run( anyString(), any( Map.class ), any( Collector.class ) );
-        RoutingNetworkSession session =
-                new RoutingNetworkSession( new NetworkSession( connection ), AccessMode.WRITE, connection.address(), onError );
+        doAnswer( throwingAnswer( toBeThrown ) )
+                .when( connection ).run( anyString(), any( Map.class ), any( Collector.class ) );
+        RoutingTransaction tx =
+                new RoutingTransaction( new ExplicitTransaction( connection, cleanup ), AccessMode.WRITE,
+                        connection.address(), onError );
 
         // When
         try
         {
-            session.run( "CREATE ()" );
+            tx.run( "CREATE ()" );
             fail();
         }
         catch ( ClientException e )
@@ -160,7 +189,7 @@ public class RoutingNetworkSessionTest
         }
 
         // Then
-        verifyZeroInteractions(  onError );
+        verifyZeroInteractions( onError );
     }
 
     @Test
@@ -170,14 +199,14 @@ public class RoutingNetworkSessionTest
         doThrow( new ConnectionFailureException( "oh no" ) ).
                 when( connection ).sync();
 
-        RoutingNetworkSession session =
-                new RoutingNetworkSession( new NetworkSession( connection ),  AccessMode.WRITE, connection.address(),
-                        onError );
+        RoutingTransaction tx =
+                new RoutingTransaction( new ExplicitTransaction( connection, cleanup ), AccessMode.WRITE,
+                        connection.address(), onError );
 
         // When
         try
         {
-            session.close();
+            tx.close();
             fail();
         }
         catch ( SessionExpiredException e )
@@ -196,13 +225,14 @@ public class RoutingNetworkSessionTest
         // Given
         doThrow( new ClientException( "Neo.ClientError.Cluster.NotALeader", "oh no!" ) ).when( connection ).sync();
 
-        RoutingNetworkSession session =
-                new RoutingNetworkSession( new NetworkSession( connection ), AccessMode.WRITE, connection.address(), onError );
+        RoutingTransaction tx =
+                new RoutingTransaction( new ExplicitTransaction( connection, cleanup ), AccessMode.WRITE,
+                        connection.address(), onError );
 
         // When
         try
         {
-            session.close();
+            tx.close();
             fail();
         }
         catch ( SessionExpiredException e )
@@ -215,68 +245,68 @@ public class RoutingNetworkSessionTest
         verifyNoMoreInteractions( onError );
     }
 
+
     @Test
-    public void shouldDelegateLastBookmark()
+    public void shouldDelegateSuccess()
     {
         // Given
-        Session inner = mock( Session.class );
-        RoutingNetworkSession session =
-                new RoutingNetworkSession( inner, AccessMode.WRITE, connection.address(), onError );
-
+        Transaction inner = mock( Transaction.class );
+        RoutingTransaction tx =
+                new RoutingTransaction(inner, AccessMode.WRITE,
+                        connection.address(), onError );
 
         // When
-        session.lastBookmark();
+        tx.success();
 
         // Then
-        verify( inner ).lastBookmark();
+        verify( inner ).success();
     }
 
     @Test
-    public void shouldDelegateReset()
+    public void shouldDelegateFailure()
     {
         // Given
-        Session inner = mock( Session.class );
-        RoutingNetworkSession session =
-                new RoutingNetworkSession( inner, AccessMode.WRITE, connection.address(), onError );
-
+        Transaction inner = mock( Transaction.class );
+        RoutingTransaction tx =
+                new RoutingTransaction(inner, AccessMode.WRITE,
+                        connection.address(), onError );
 
         // When
-        session.reset();
+        tx.failure();
 
         // Then
-        verify( inner ).reset();
+        verify( inner ).failure();
     }
 
     @Test
     public void shouldDelegateIsOpen()
     {
         // Given
-        Session inner = mock( Session.class );
-        RoutingNetworkSession session =
-                new RoutingNetworkSession( inner, AccessMode.WRITE, connection.address(), onError );
-
+        Transaction inner = mock( Transaction.class );
+        RoutingTransaction tx =
+                new RoutingTransaction(inner, AccessMode.WRITE,
+                        connection.address(), onError );
 
         // When
-        session.isOpen();
+        tx.isOpen();
 
         // Then
         verify( inner ).isOpen();
     }
 
     @Test
-    public void shouldDelegateServer()
+    public void shouldDelegateTypesystem()
     {
         // Given
-        Session inner = mock( Session.class );
-        RoutingNetworkSession session =
-                new RoutingNetworkSession( inner, AccessMode.WRITE, connection.address(), onError );
-
+        Transaction inner = mock( Transaction.class );
+        RoutingTransaction tx =
+                new RoutingTransaction(inner, AccessMode.WRITE,
+                        connection.address(), onError );
 
         // When
-        session.server();
+        tx.typeSystem();
 
         // Then
-        verify( inner ).server();
+        verify( inner ).typeSystem();
     }
-
 }

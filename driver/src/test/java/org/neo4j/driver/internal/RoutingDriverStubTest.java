@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal;
 
+import gherkin.lexer.Tr;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -43,6 +44,7 @@ import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ConnectionFailureException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
@@ -81,7 +83,7 @@ public class RoutingDriverStubTest
         {
             // Then
             Set<BoltServerAddress> addresses = driver.routingServers();
-            assertThat( addresses, containsInAnyOrder( address(9001), address( 9002 ), address( 9003 ) ) );
+            assertThat( addresses, containsInAnyOrder( address( 9001 ), address( 9002 ), address( 9003 ) ) );
         }
 
         // Finally
@@ -101,7 +103,7 @@ public class RoutingDriverStubTest
             // Then
             SocketConnectionPool pool = (SocketConnectionPool) driver.connectionPool();
             List<PooledConnection> pooledConnections = pool.connectionsForAddress( address( 9001 ) );
-            assertThat(pooledConnections, hasSize( 1 ));
+            assertThat( pooledConnections, hasSize( 1 ) );
         }
 
         // Finally
@@ -112,7 +114,7 @@ public class RoutingDriverStubTest
     public void shouldDiscoverNewServers() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
-        StubServer server = StubServer.start( "discover_new_servers.script" , 9001 );
+        StubServer server = StubServer.start( "discover_new_servers.script", 9001 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         BoltServerAddress seed = address( 9001 );
 
@@ -121,7 +123,7 @@ public class RoutingDriverStubTest
         {
             // Then
             Set<BoltServerAddress> addresses = driver.routingServers();
-            assertThat( addresses, containsInAnyOrder( address(9002), address( 9003 ), address( 9004 ) ) );
+            assertThat( addresses, containsInAnyOrder( address( 9002 ), address( 9003 ), address( 9004 ) ) );
         }
 
         // Finally
@@ -132,7 +134,7 @@ public class RoutingDriverStubTest
     public void shouldHandleEmptyResponse() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
-        StubServer server = StubServer.start( "handle_empty_response.script" , 9001 );
+        StubServer server = StubServer.start( "handle_empty_response.script", 9001 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
 
         // When
@@ -140,7 +142,8 @@ public class RoutingDriverStubTest
         {
             GraphDatabase.driver( uri, config );
             fail();
-        } catch ( ServiceUnavailableException e )
+        }
+        catch ( ServiceUnavailableException e )
         {
             //ignore
         }
@@ -156,7 +159,7 @@ public class RoutingDriverStubTest
         StubServer server = StubServer.start( "acquire_endpoints.script", 9001 );
 
         //START a read server
-        StubServer readServer = StubServer.start( "read_server.script" , 9005 );
+        StubServer readServer = StubServer.start( "read_server.script", 9005 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         try ( RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
               Session session = driver.session( AccessMode.READ ) )
@@ -179,14 +182,45 @@ public class RoutingDriverStubTest
     }
 
     @Test
+    public void shouldHandleAcquireReadSessionPlusTransaction()
+            throws IOException, InterruptedException, StubServer.ForceKilled
+    {
+        // Given
+        StubServer server = StubServer.start( "acquire_endpoints.script", 9001 );
+
+        //START a read server
+        StubServer readServer = StubServer.start( "read_server.script", 9005 );
+        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+        try ( RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
+              Session session = driver.session( AccessMode.READ );
+              Transaction tx = session.beginTransaction() )
+        {
+            List<String> result = tx.run( "MATCH (n) RETURN n.name" ).list( new Function<Record,String>()
+            {
+                @Override
+                public String apply( Record record )
+                {
+                    return record.get( "n.name" ).asString();
+                }
+            } );
+
+            assertThat( result, equalTo( Arrays.asList( "Bob", "Alice", "Tina" ) ) );
+
+        }
+        // Finally
+        assertThat( server.exitStatus(), equalTo( 0 ) );
+        assertThat( readServer.exitStatus(), equalTo( 0 ) );
+    }
+
+    @Test
     public void shouldRoundRobinReadServers() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
-        StubServer server = StubServer.start( "acquire_endpoints.script" , 9001 );
+        StubServer server = StubServer.start( "acquire_endpoints.script", 9001 );
 
         //START two read servers
         StubServer readServer1 = StubServer.start( "read_server.script", 9005 );
-        StubServer readServer2 = StubServer.start( "read_server.script" , 9006 );
+        StubServer readServer2 = StubServer.start( "read_server.script", 9006 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         try ( RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config ) )
         {
@@ -213,6 +247,42 @@ public class RoutingDriverStubTest
     }
 
     @Test
+    public void shouldRoundRobinReadServersWhenUsingTransaction()
+            throws IOException, InterruptedException, StubServer.ForceKilled
+    {
+        // Given
+        StubServer server = StubServer.start( "acquire_endpoints.script", 9001 );
+
+        //START two read servers
+        StubServer readServer1 = StubServer.start( "read_server.script", 9005 );
+        StubServer readServer2 = StubServer.start( "read_server.script", 9006 );
+        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+        try ( RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config ) )
+        {
+            // Run twice, one on each read server
+            for ( int i = 0; i < 2; i++ )
+            {
+                try ( Session session = driver.session( AccessMode.READ );
+                      Transaction tx = session.beginTransaction() )
+                {
+                    assertThat( tx.run( "MATCH (n) RETURN n.name" ).list( new Function<Record,String>()
+                    {
+                        @Override
+                        public String apply( Record record )
+                        {
+                            return record.get( "n.name" ).asString();
+                        }
+                    } ), equalTo( Arrays.asList( "Bob", "Alice", "Tina" ) ) );
+                }
+            }
+        }
+        // Finally
+        assertThat( server.exitStatus(), equalTo( 0 ) );
+        assertThat( readServer1.exitStatus(), equalTo( 0 ) );
+        assertThat( readServer2.exitStatus(), equalTo( 0 ) );
+    }
+
+    @Test
     public void shouldThrowSessionExpiredIfReadServerDisappears()
             throws IOException, InterruptedException, StubServer.ForceKilled
     {
@@ -221,15 +291,40 @@ public class RoutingDriverStubTest
         exception.expectMessage( "Server at 127.0.0.1:9005 is no longer available" );
 
         // Given
-        StubServer server = StubServer.start( "acquire_endpoints.script" , 9001 );
+        StubServer server = StubServer.start( "acquire_endpoints.script", 9001 );
 
         //START a read server
-        StubServer.start( "dead_server.script" , 9005 );
+        StubServer.start( "dead_server.script", 9005 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         try ( RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
               Session session = driver.session( AccessMode.READ ) )
         {
             session.run( "MATCH (n) RETURN n.name" );
+        }
+        // Finally
+        assertThat( server.exitStatus(), equalTo( 0 ) );
+    }
+
+    @Test
+    public void shouldThrowSessionExpiredIfReadServerDisappearsWhenUsingTransaction()
+            throws IOException, InterruptedException, StubServer.ForceKilled
+    {
+        //Expect
+        exception.expect( SessionExpiredException.class );
+        exception.expectMessage( "Server at 127.0.0.1:9005 is no longer available" );
+
+        // Given
+        StubServer server = StubServer.start( "acquire_endpoints.script", 9001 );
+
+        //START a read server
+        StubServer.start( "dead_server.script", 9005 );
+        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+        try ( RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
+              Session session = driver.session( AccessMode.READ );
+              Transaction tx = session.beginTransaction() )
+        {
+            tx.run( "MATCH (n) RETURN n.name" );
+            tx.success();
         }
         // Finally
         assertThat( server.exitStatus(), equalTo( 0 ) );
@@ -244,10 +339,10 @@ public class RoutingDriverStubTest
         //exception.expectMessage( "Server at 127.0.0.1:9006 is no longer available" );
 
         // Given
-        StubServer server = StubServer.start( "acquire_endpoints.script" , 9001 );
+        StubServer server = StubServer.start( "acquire_endpoints.script", 9001 );
 
         //START a dead write servers
-        StubServer.start( "dead_server.script" , 9007 );
+        StubServer.start( "dead_server.script", 9007 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         try ( RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
               Session session = driver.session( AccessMode.WRITE ) )
@@ -259,18 +354,66 @@ public class RoutingDriverStubTest
     }
 
     @Test
+    public void shouldThrowSessionExpiredIfWriteServerDisappearsWhenUsingTransaction()
+            throws IOException, InterruptedException, StubServer.ForceKilled
+    {
+        //Expect
+        exception.expect( SessionExpiredException.class );
+        //exception.expectMessage( "Server at 127.0.0.1:9006 is no longer available" );
+
+        // Given
+        StubServer server = StubServer.start( "acquire_endpoints.script", 9001 );
+
+        //START a dead write servers
+        StubServer.start( "dead_server.script", 9007 );
+        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+        try ( RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
+              Session session = driver.session( AccessMode.WRITE );
+              Transaction tx = session.beginTransaction() )
+        {
+            tx.run( "MATCH (n) RETURN n.name" ).consume();
+            tx.success();
+        }
+        // Finally
+        assertThat( server.exitStatus(), equalTo( 0 ) );
+    }
+
+
+    @Test
     public void shouldHandleAcquireWriteSession() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
-        StubServer server = StubServer.start( "acquire_endpoints.script" , 9001 );
+        StubServer server = StubServer.start( "acquire_endpoints.script", 9001 );
 
         //START a write server
-        StubServer writeServer = StubServer.start( "write_server.script" , 9007 );
+        StubServer writeServer = StubServer.start( "write_server.script", 9007 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         try ( RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
               Session session = driver.session( AccessMode.WRITE ) )
         {
             session.run( "CREATE (n {name:'Bob'})" );
+        }
+        // Finally
+        assertThat( server.exitStatus(), equalTo( 0 ) );
+        assertThat( writeServer.exitStatus(), equalTo( 0 ) );
+    }
+
+    @Test
+    public void shouldHandleAcquireWriteSessionAndTransaction()
+            throws IOException, InterruptedException, StubServer.ForceKilled
+    {
+        // Given
+        StubServer server = StubServer.start( "acquire_endpoints.script", 9001 );
+
+        //START a write server
+        StubServer writeServer = StubServer.start( "write_server.script", 9007 );
+        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+        try ( RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
+              Session session = driver.session( AccessMode.WRITE );
+              Transaction tx = session.beginTransaction() )
+        {
+            tx.run( "CREATE (n {name:'Bob'})" );
+            tx.success();
         }
         // Finally
         assertThat( server.exitStatus(), equalTo( 0 ) );
@@ -304,6 +447,34 @@ public class RoutingDriverStubTest
     }
 
     @Test
+    public void shouldRoundRobinWriteSessionsInTransaction() throws IOException, InterruptedException, StubServer.ForceKilled
+    {
+        // Given
+        StubServer server = StubServer.start( "acquire_endpoints.script", 9001 );
+
+        //START a write server
+        StubServer writeServer1 = StubServer.start( "write_server.script", 9007 );
+        StubServer writeServer2 = StubServer.start( "write_server.script", 9008 );
+        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+        try ( RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config ) )
+        {
+            for ( int i = 0; i < 2; i++ )
+            {
+                try ( Session session = driver.session();
+                      Transaction tx = session.beginTransaction())
+                {
+                    tx.run( "CREATE (n {name:'Bob'})" );
+                    tx.success();
+                }
+            }
+        }
+        // Finally
+        assertThat( server.exitStatus(), equalTo( 0 ) );
+        assertThat( writeServer1.exitStatus(), equalTo( 0 ) );
+        assertThat( writeServer2.exitStatus(), equalTo( 0 ) );
+    }
+
+    @Test
     public void shouldRememberEndpoints() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
@@ -319,7 +490,8 @@ public class RoutingDriverStubTest
 
             assertThat( driver.readServers(), containsInAnyOrder( address( 9005 ), address( 9006 ) ) );
             assertThat( driver.writeServers(), containsInAnyOrder( address( 9007 ), address( 9008 ) ) );
-            assertThat( driver.routingServers(), containsInAnyOrder( address( 9001 ), address( 9002 ), address( 9003 ) ) );
+            assertThat( driver.routingServers(),
+                    containsInAnyOrder( address( 9001 ), address( 9002 ), address( 9003 ) ) );
         }
         // Finally
         assertThat( server.exitStatus(), equalTo( 0 ) );
@@ -358,7 +530,8 @@ public class RoutingDriverStubTest
     }
 
     @Test
-    public void shouldForgetEndpointsOnFailedSessionAcquisition() throws IOException, InterruptedException, StubServer.ForceKilled
+    public void shouldForgetEndpointsOnFailedSessionAcquisition()
+            throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
         StubServer server = StubServer.start( "acquire_endpoints.script", 9001 );
@@ -406,8 +579,8 @@ public class RoutingDriverStubTest
 
         //since we have no write nor read servers we must rediscover
         Session session = driver.session( AccessMode.READ );
-        assertThat( driver.routingServers(), containsInAnyOrder(address( 9002 ),
-               address( 9003 ), address( 9004 ) ) );
+        assertThat( driver.routingServers(), containsInAnyOrder( address( 9002 ),
+                address( 9003 ), address( 9004 ) ) );
         //server told os to forget 9001
         assertFalse( driver.connectionPool().hasAddress( address( 9001 ) ) );
         session.close();
@@ -502,9 +675,106 @@ public class RoutingDriverStubTest
         boolean failed = false;
         try ( Session session = driver.session( AccessMode.WRITE ) )
         {
-            assertThat( driver.writeServers(), hasItem(address( 9007 ) ) );
+            assertThat( driver.writeServers(), hasItem( address( 9007 ) ) );
             assertThat( driver.writeServers(), hasItem( address( 9008 ) ) );
             session.run( "CREATE ()" ).consume();
+        }
+        catch ( SessionExpiredException e )
+        {
+            failed = true;
+            assertThat( e.getMessage(), equalTo( "Server at 127.0.0.1:9007 no longer accepts writes" ) );
+        }
+        assertTrue( failed );
+        assertThat( driver.writeServers(), not( hasItem( address( 9007 ) ) ) );
+        assertThat( driver.writeServers(), hasItem( address( 9008 ) ) );
+        assertTrue( driver.connectionPool().hasAddress( address( 9007 ) ) );
+
+        driver.close();
+        // Finally
+        assertThat( server.exitStatus(), equalTo( 0 ) );
+    }
+
+    @Test
+    public void shouldHandleLeaderSwitchWhenWritingWithoutConsuming()
+            throws IOException, InterruptedException, StubServer.ForceKilled
+    {
+        // Given
+        StubServer server = StubServer.start( "acquire_endpoints.script", 9001 );
+
+        //START a write server that doesn't accept writes
+        StubServer.start( "not_able_to_write_server.script", 9007 );
+        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+        RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
+        boolean failed = false;
+        try ( Session session = driver.session( AccessMode.WRITE ) )
+        {
+            assertThat( driver.writeServers(), hasItem( address( 9007 ) ) );
+            assertThat( driver.writeServers(), hasItem( address( 9008 ) ) );
+            session.run( "CREATE ()" );
+        }
+        catch ( SessionExpiredException e )
+        {
+            failed = true;
+            assertThat( e.getMessage(), equalTo( "Server at 127.0.0.1:9007 no longer accepts writes" ) );
+        }
+        assertTrue( failed );
+        assertThat( driver.writeServers(), not( hasItem( address( 9007 ) ) ) );
+        assertThat( driver.writeServers(), hasItem( address( 9008 ) ) );
+        assertTrue( driver.connectionPool().hasAddress( address( 9007 ) ) );
+
+        driver.close();
+        // Finally
+        assertThat( server.exitStatus(), equalTo( 0 ) );
+    }
+
+    @Test
+    public void shouldHandleLeaderSwitchWhenWritingInTransaction()
+            throws IOException, InterruptedException, StubServer.ForceKilled
+    {
+        // Given
+        StubServer server = StubServer.start( "acquire_endpoints.script", 9001 );
+
+        //START a write server that doesn't accept writes
+        StubServer.start( "not_able_to_write_server.script", 9007 );
+        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+        RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
+        boolean failed = false;
+        try ( Session session = driver.session( AccessMode.WRITE );
+              Transaction tx = session.beginTransaction() )
+        {
+            tx.run( "CREATE ()" ).consume();
+        }
+        catch ( SessionExpiredException e )
+        {
+            failed = true;
+            assertThat( e.getMessage(), equalTo( "Server at 127.0.0.1:9007 no longer accepts writes" ) );
+        }
+        assertTrue( failed );
+        assertThat( driver.writeServers(), not( hasItem( address( 9007 ) ) ) );
+        assertThat( driver.writeServers(), hasItem( address( 9008 ) ) );
+        assertTrue( driver.connectionPool().hasAddress( address( 9007 ) ) );
+
+        driver.close();
+        // Finally
+        assertThat( server.exitStatus(), equalTo( 0 ) );
+    }
+
+    @Test
+    public void shouldHandleLeaderSwitchWhenWritingInTransactionWithoutConsuming()
+            throws IOException, InterruptedException, StubServer.ForceKilled
+    {
+        // Given
+        StubServer server = StubServer.start( "acquire_endpoints.script", 9001 );
+
+        //START a write server that doesn't accept writes
+        StubServer.start( "not_able_to_write_server.script", 9007 );
+        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+        RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
+        boolean failed = false;
+        try ( Session session = driver.session( AccessMode.WRITE );
+              Transaction tx = session.beginTransaction() )
+        {
+            tx.run( "CREATE ()" );
         }
         catch ( SessionExpiredException e )
         {
@@ -531,15 +801,15 @@ public class RoutingDriverStubTest
         StubServer readServer = StubServer.start( "empty.script", 9005 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
-        assertThat(driver.routingServers(), contains(address( 9001 )));
-        assertThat(driver.readServers(), contains(address( 9002 )));
-        assertThat(driver.writeServers(), contains(address( 9003 )));
+        assertThat( driver.routingServers(), contains( address( 9001 ) ) );
+        assertThat( driver.readServers(), contains( address( 9002 ) ) );
+        assertThat( driver.writeServers(), contains( address( 9003 ) ) );
 
         //On acquisition we should update our view
         Session session = driver.session( AccessMode.READ );
-        assertThat(driver.routingServers(), contains(address( 9004 )));
-        assertThat(driver.readServers(), contains(address( 9005 )));
-        assertThat(driver.writeServers(), contains(address( 9006 )));
+        assertThat( driver.routingServers(), contains( address( 9004 ) ) );
+        assertThat( driver.readServers(), contains( address( 9005 ) ) );
+        assertThat( driver.writeServers(), contains( address( 9006 ) ) );
         session.close();
         driver.close();
         // Finally
@@ -572,28 +842,28 @@ public class RoutingDriverStubTest
             writeSession.close();
             fail();
         }
-        catch (SessionExpiredException e)
+        catch ( SessionExpiredException e )
         {
             //ignore
         }
         //We now lost all write servers
-        assertThat(driver.writeServers(), hasSize( 0 ));
+        assertThat( driver.writeServers(), hasSize( 0 ) );
 
         //reacquiring will trow out the current read server at 9002
         writeSession = driver.session( AccessMode.WRITE );
 
-        assertThat(driver.routingServers(), contains(address( 9004 )));
-        assertThat(driver.readServers(), contains(address( 9005 )));
-        assertThat(driver.writeServers(), contains(address( 9006 )));
-        assertFalse(driver.connectionPool().hasAddress(address( 9002 ) ));
+        assertThat( driver.routingServers(), contains( address( 9004 ) ) );
+        assertThat( driver.readServers(), contains( address( 9005 ) ) );
+        assertThat( driver.writeServers(), contains( address( 9006 ) ) );
+        assertFalse( driver.connectionPool().hasAddress( address( 9002 ) ) );
 
         // now we close the read session and the connection should not be put
         // back to the pool
-        Connection connection = ((RoutingNetworkSession) readSession).connection;
+        Connection connection = ((NetworkSession) ((RoutingNetworkSession) readSession).delegate).connection;
         assertTrue( connection.isOpen() );
         readSession.close();
         assertFalse( connection.isOpen() );
-        assertFalse(driver.connectionPool().hasAddress(address( 9002 ) ));
+        assertFalse( driver.connectionPool().hasAddress( address( 9002 ) ) );
         writeSession.close();
 
         driver.close();
