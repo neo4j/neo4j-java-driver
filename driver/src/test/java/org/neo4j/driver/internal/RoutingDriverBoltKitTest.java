@@ -18,7 +18,6 @@
  */
 package org.neo4j.driver.internal;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -64,8 +63,7 @@ import static org.junit.Assert.fail;
 
 import static org.neo4j.driver.v1.RetryLogic.TRY_UP_TO_3_TIMES_WITH_5_SECOND_PAUSE;
 
-@Ignore
-public class RoutingDriverStubTest
+public class RoutingDriverBoltKitTest
 {
     @Rule
     public ExpectedException exception = ExpectedException.none();
