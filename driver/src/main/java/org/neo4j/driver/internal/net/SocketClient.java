@@ -76,6 +76,14 @@ public class SocketClient
         {
             if (channel.read( buf ) < 0)
             {
+                try
+                {
+                    channel.close();
+                }
+                catch ( IOException e )
+                {
+                    // best effort
+                }
                 String bufStr = BytePrinter.hex( buf ).trim();
                 throw new ConnectionFailureException( format(
                         "Connection terminated while receiving data. This can happen due to network " +
@@ -91,6 +99,14 @@ public class SocketClient
         {
             if (channel.write( buf ) < 0)
             {
+                try
+                {
+                    channel.close();
+                }
+                catch ( IOException e )
+                {
+                    // best effort
+                }
                 String bufStr = BytePrinter.hex( buf ).trim();
                 throw new ConnectionFailureException( format(
                         "Connection terminated while sending data. This can happen due to network " +

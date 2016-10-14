@@ -150,38 +150,47 @@ public class NetworkSession implements Session
         {
             throw new ClientException( "This session has already been closed." );
         }
-        else
+
+        if ( !connection.isOpen() )
         {
-            synchronized ( this )
+            // the socket connection is already closed due to some error, cannot send more data
+            closeConnection();
+            return;
+        }
+
+        synchronized ( this )
+        {
+            if ( currentTransaction != null )
             {
-                if ( currentTransaction != null )
+                try
                 {
-                    try
-                    {
-                        currentTransaction.close();
-                    }
-                    catch ( Throwable e )
-                    {
-                        // Best-effort
-                        logger.error( "Failed to close tx due to error: " + e.toString(), e );
-                    }
+                    currentTransaction.close();
+                }
+                catch ( Throwable e )
+                {
+                    // Best-effort
+                    logger.warn( "WARNING: Failed to close tx due to error: " + e.toString() );
                 }
             }
-            try
-            {
-                connection.sync();
-            }
-            catch( Throwable t )
-            {
-                logger.error( "Failed to sync messages due to error: " + t.toString(), t );
-                throw t;
-            }
-            finally
-            {
-                logger.debug( "~~ connection released by [session-%s]", sessionId );
-                connection.close();
-            }
         }
+        try
+        {
+            connection.sync();
+        }
+        catch ( Throwable t )
+        {
+            throw t;
+        }
+        finally
+        {
+            closeConnection();
+        }
+    }
+
+    private void closeConnection()
+    {
+        logger.debug( "~~ connection released by [session-%s]", sessionId );
+        connection.close();
     }
 
     @Override
