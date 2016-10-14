@@ -108,32 +108,38 @@ public class InternalSession implements Session
     public void close()
     {
         // Use atomic operation to protect from closing the connection twice (putting back to the pool twice).
-        if( !isOpen.compareAndSet( true, false ) )
+        if ( !isOpen.compareAndSet( true, false ) )
         {
             throw new ClientException( "This session has already been closed." );
         }
-        else
+
+        if( !connection.isOpen() )
         {
-            if ( currentTransaction != null )
-            {
-                try
-                {
-                    currentTransaction.close();
-                }
-                catch ( Throwable e )
-                {
-                    // Best-effort
-                }
-            }
+            // the socket connection is already closed due to some error, cannot send more data
+            connection.close();
+            return;
+        }
+
+        if ( currentTransaction != null )
+        {
             try
             {
-                connection.sync();
+                currentTransaction.close();
             }
-            finally
+            catch ( Throwable e )
             {
-                connection.close();
+                // Best-effort
             }
         }
+        try
+        {
+            connection.sync();
+        }
+        finally
+        {
+            connection.close();
+        }
+
     }
 
     @Override
