@@ -18,8 +18,6 @@
  */
 package org.neo4j.driver.internal;
 
-import gherkin.lexer.Tr;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -45,7 +43,6 @@ import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Transaction;
-import org.neo4j.driver.v1.exceptions.ConnectionFailureException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 import org.neo4j.driver.v1.util.Function;
@@ -63,8 +60,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-@Ignore
-public class RoutingDriverStubTest
+public class RoutingDriverBoltKitTest
 {
     @Rule
     public ExpectedException exception = ExpectedException.none();
