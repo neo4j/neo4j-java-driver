@@ -139,7 +139,7 @@ public class NetworkSession implements Session
     @Override
     public boolean isOpen()
     {
-        return isOpen.get();
+        return isOpen.get() && connection.isOpen();
     }
 
     @Override
@@ -176,10 +176,6 @@ public class NetworkSession implements Session
         try
         {
             connection.sync();
-        }
-        catch ( Throwable t )
-        {
-            throw t;
         }
         finally
         {
@@ -314,7 +310,7 @@ public class NetworkSession implements Session
 
     private void ensureSessionIsOpen()
     {
-        if ( !isOpen() )
+        if ( !isOpen.get() )
         {
             throw new ClientException(
                     "No more interaction with this session is allowed " +
