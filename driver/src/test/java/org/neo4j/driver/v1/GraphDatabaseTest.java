@@ -19,12 +19,17 @@
 
 package org.neo4j.driver.v1;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.net.URI;
 
 import org.neo4j.driver.internal.DirectDriver;
+import org.neo4j.driver.internal.RoutingDriver;
+import org.neo4j.driver.v1.util.StubServer;
 
+import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertThat;
 
@@ -43,4 +48,23 @@ public class GraphDatabaseTest
         assertThat( driver, instanceOf( DirectDriver.class ) );
 
     }
+
+    @Ignore
+    public void boltPlusDiscoverySchemeShouldInstantiateClusterDriver() throws IOException, InterruptedException, StubServer.ForceKilled
+    {
+        // Given
+        StubServer server = StubServer.start( "discover_servers.script", 9001 );
+        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+
+        // When
+        Driver driver = GraphDatabase.driver( uri );
+
+        // Then
+        assertThat( driver, instanceOf( RoutingDriver.class ) );
+
+        // Finally
+        driver.close();
+        assertThat( server.exitStatus(), equalTo( 0 ) );
+    }
+
 }

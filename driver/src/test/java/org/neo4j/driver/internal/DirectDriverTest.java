@@ -19,15 +19,22 @@
 
 package org.neo4j.driver.internal;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.net.URI;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
+import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.util.StubServer;
 
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.driver.v1.Values.parameters;
 
 public class DirectDriverTest
 {
@@ -60,4 +67,30 @@ public class DirectDriverTest
         assertThat( driverAddress, equalTo( address ));
 
     }
+
+    @Ignore
+    public void shouldBeAbleRunCypher() throws StubServer.ForceKilled, InterruptedException, IOException
+    {
+        // Given
+        StubServer server = StubServer.start( "return_x.script", 9001 );
+        URI uri = URI.create( "bolt://127.0.0.1:9001" );
+        int x;
+
+        // When
+        try ( Driver driver = GraphDatabase.driver( uri ) )
+        {
+            try ( Session session = driver.session() )
+            {
+                Record record = session.run( "RETURN {x}", parameters( "x", 1 ) ).single();
+                x = record.get( 0 ).asInt();
+            }
+        }
+
+        // Then
+        assertThat( x, equalTo( 1 ) );
+
+        // Finally
+        assertThat( server.exitStatus(), equalTo( 0 ) );
+    }
+
 }
