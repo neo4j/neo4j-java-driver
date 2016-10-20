@@ -4,7 +4,6 @@
 !: AUTO PULL_ALL
 !: AUTO RUN "ROLLBACK" {}
 !: AUTO RUN "BEGIN" {}
-!: AUTO RUN "COMMIT" {}
 
 C: RUN "CREATE (n {name:'Bob'})" {}
    PULL_ALL

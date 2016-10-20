@@ -20,9 +20,7 @@
 package org.neo4j.driver.v1.util;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,7 +39,7 @@ public class StubServer
     private StubServer( String script, int port ) throws IOException, InterruptedException
     {
         List<String> command = new ArrayList<>();
-        command.addAll( singletonList( "boltstub" ) );
+        command.addAll( singletonList( "/usr/local/bin/boltstub" ) );
         command.addAll( asList( Integer.toString( port ), script ) );
         ProcessBuilder server = new ProcessBuilder().inheritIO().command( command );
         process = server.start();
@@ -76,14 +74,6 @@ public class StubServer
         {
             fail( fileName + " does not exists" );
         }
-        try
-        {
-            return Paths.get( resource.toURI() ).toFile().getCanonicalPath();
-        }
-        catch ( Throwable e )
-        {
-            fail( e.toString() );
-            throw new RuntimeException( e );
-        }
+        return resource.getFile();
     }
 }
