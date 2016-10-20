@@ -176,7 +176,8 @@ public class TLSSocketChannel implements ByteChannel
          */
         if ( channel.read( cipherIn ) < 0 )
         {
-            throw new ClientException( "Failed to establish SSL socket connection." );
+            throw new ClientException( "SSL Connection terminated while receiving data. " +
+                    "This can happen due to network instabilities, or due to restarts of the database." );
         }
         cipherIn.flip();
 
