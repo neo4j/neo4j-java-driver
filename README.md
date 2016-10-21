@@ -21,7 +21,7 @@ available.
 
 Connect to a Neo4j 3.0.0+ database:
 
-    Driver driver = GraphDatabase.driver( "bolt://localhost", AuthTokens.basic( "neo4j", "neo4j" ) );
+    Driver driver = GraphDatabase.driver( "bolt://localhost:7687", AuthTokens.basic( "neo4j", "neo4j" ) );
     
     try ( Session session = driver.session() )
     {

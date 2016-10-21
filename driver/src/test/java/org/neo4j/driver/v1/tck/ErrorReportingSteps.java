@@ -186,7 +186,7 @@ public class ErrorReportingSteps
     @And( "^I get a session from the driver and close the driver$" )
     public void iGetASessionFromTheDriver() throws Throwable
     {
-        try ( Driver driver = GraphDatabase.driver( "bolt://localhost" ) )
+        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:7687" ) )
         {
             transactionRunner = new TransactionRunner( driver.session() );
         }
@@ -228,7 +228,7 @@ public class ErrorReportingSteps
     @Given( "^I have a driver with fixed pool size of (\\d+)$" )
     public void iHaveADriverWithFixedPoolSizeOf( int poolSize ) throws Throwable
     {
-        smallDriver = GraphDatabase.driver( "bolt://localhost", Config.build().withMaxSessions( poolSize ).toConfig() );
+        smallDriver = GraphDatabase.driver( "bolt://localhost:7687", Config.build().withMaxSessions( poolSize ).toConfig() );
     }
 
     @And( "^I try to get a session$" )
