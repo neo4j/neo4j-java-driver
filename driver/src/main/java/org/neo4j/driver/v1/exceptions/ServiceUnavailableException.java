@@ -22,7 +22,7 @@ package org.neo4j.driver.v1.exceptions;
  * An <em>ServiceUnavailableException</em> indicates that the driver cannot communicate with the cluster.
  * @since 1.1
  */
-public class ServiceUnavailableException extends Neo4jException
+public class ServiceUnavailableException extends ConnectionFailureException
 {
     public ServiceUnavailableException( String message )
     {

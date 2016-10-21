@@ -33,7 +33,7 @@ import java.util.List;
 import org.neo4j.driver.internal.logging.DevNullLogger;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.exceptions.ConnectionFailureException;
+import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -101,7 +101,7 @@ public class SocketClientTest
         SocketClient client = dummyClient();
 
         //Expect
-        exception.expect( ConnectionFailureException.class );
+        exception.expect( ServiceUnavailableException.class );
         exception.expectMessage( "Expected 4 bytes, received none" );
 
         // When
@@ -139,7 +139,7 @@ public class SocketClientTest
         SocketClient client = dummyClient();
 
         //Expect
-        exception.expect( ConnectionFailureException.class );
+        exception.expect( ServiceUnavailableException.class );
         exception.expectMessage( "Expected 4 bytes, wrote 00" );
 
         // When

@@ -31,7 +31,7 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.Arrays;
 
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.exceptions.ConnectionFailureException;
+import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.util.RecordingByteChannel;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -486,7 +486,7 @@ public class BufferingChunkedInputTest
         BufferingChunkedInput input = new BufferingChunkedInput( channel );
 
         //Expect
-        exception.expect( ConnectionFailureException.class );
+        exception.expect( ServiceUnavailableException.class );
         exception.expectMessage( "Connection terminated while receiving data. This can happen due to network " +
                                  "instabilities, or due to restarts of the database." );
         // When
@@ -504,7 +504,7 @@ public class BufferingChunkedInputTest
         buffer.limit(0);
 
         //Expect
-        exception.expect( ConnectionFailureException.class );
+        exception.expect( ServiceUnavailableException.class );
         exception.expectMessage( "Connection terminated while receiving data. This can happen due to network " +
                                  "instabilities, or due to restarts of the database." );
         // When

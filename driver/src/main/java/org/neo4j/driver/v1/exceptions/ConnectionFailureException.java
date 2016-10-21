@@ -22,7 +22,9 @@ package org.neo4j.driver.v1.exceptions;
  * A <em>ConnectionFailureException</em> indicates that there is a problem within the underlying connection, probably
  * been terminated.
  * @since 1.1
+ * @deprecated  As of release 1.1, replaced by {@link ServiceUnavailableException}
  */
+@Deprecated
 public class ConnectionFailureException extends Neo4jException
 {
     public ConnectionFailureException( String message )

@@ -31,7 +31,7 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.exceptions.ConnectionFailureException;
+import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -90,7 +90,7 @@ public class RoutingTransactionTest
     {
         // Given
 
-        doAnswer( throwingAnswer( new ConnectionFailureException( "oh no" ) ) )
+        doAnswer( throwingAnswer( new ServiceUnavailableException( "oh no" ) ) )
                 .when( connection ).run( anyString(), any( Map.class ), any( Collector.class ) );
 
         RoutingTransaction tx =
@@ -196,7 +196,7 @@ public class RoutingTransactionTest
     public void shouldHandleConnectionFailuresOnClose()
     {
         // Given
-        doThrow( new ConnectionFailureException( "oh no" ) ).
+        doThrow( new ServiceUnavailableException( "oh no" ) ).
                 when( connection ).sync();
 
         RoutingTransaction tx =

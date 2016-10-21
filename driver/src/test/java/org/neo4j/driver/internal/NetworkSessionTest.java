@@ -22,12 +22,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import org.neo4j.driver.internal.logging.DevNullLogger;
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.exceptions.ConnectionFailureException;
+import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
 import static junit.framework.Assert.fail;
 import static junit.framework.TestCase.assertNotNull;
@@ -122,7 +120,7 @@ public class NetworkSessionTest
         when( mock.isOpen() ).thenReturn( false );
 
         // Expect
-        exception.expect( ConnectionFailureException.class );
+        exception.expect( ServiceUnavailableException.class );
 
         // When
         sess.run( "whatever" );
@@ -135,7 +133,7 @@ public class NetworkSessionTest
         when( mock.isOpen() ).thenReturn( false );
 
         // Expect
-        exception.expect( ConnectionFailureException.class );
+        exception.expect( ServiceUnavailableException.class );
 
         // When
         sess.beginTransaction();
