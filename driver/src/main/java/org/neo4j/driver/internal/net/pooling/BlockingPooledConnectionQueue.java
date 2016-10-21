@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.internal.util.Supplier;
 
@@ -36,6 +37,8 @@ public class BlockingPooledConnectionQueue
 {
     /** The backing queue, keeps track of connections currently in queue */
     private final BlockingQueue<PooledConnection> queue;
+
+    private final AtomicBoolean isTerminating = new AtomicBoolean( false );
 
     /** Keeps track of acquired connections */
     private final Set<PooledConnection> acquiredConnections =
@@ -54,12 +57,43 @@ public class BlockingPooledConnectionQueue
      */
     public boolean offer( PooledConnection pooledConnection )
     {
+        acquiredConnections.remove( pooledConnection );
         boolean offer = queue.offer( pooledConnection );
-        if ( offer )
-        {
-            acquiredConnections.remove( pooledConnection );
+        // not added back to the queue, dispose of the connection
+        if (!offer) {
+            pooledConnection.dispose();
+        }
+        if (isTerminating.get()) {
+            PooledConnection poll = queue.poll();
+            if (poll != null)
+            {
+                poll.dispose();
+            }
         }
         return offer;
+    }
+
+    /**
+     * Acquire connection or create a new one if the queue is empty
+     * @param supplier used to create a new connection if queue is empty
+     * @return a PooledConnection instance
+     */
+    public PooledConnection acquire( Supplier<PooledConnection> supplier )
+    {
+
+        PooledConnection poll = queue.poll();
+        if ( poll == null )
+        {
+            poll = supplier.get();
+        }
+        acquiredConnections.add( poll );
+
+        if (isTerminating.get()) {
+            acquiredConnections.remove( poll );
+            poll.dispose();
+            throw new IllegalStateException( "Pool has been closed, cannot acquire new values." );
+        }
+        return poll;
     }
 
     public List<PooledConnection> toList()
@@ -88,34 +122,21 @@ public class BlockingPooledConnectionQueue
      */
     public void terminate()
     {
-        while ( !queue.isEmpty() )
+        if (isTerminating.compareAndSet( false, true ))
         {
-            PooledConnection conn = queue.poll();
-            if ( conn != null )
+            while ( !queue.isEmpty() )
             {
-                //close the underlying connection without adding it back to the queue
-                conn.dispose();
+                PooledConnection conn = queue.poll();
+                if ( conn != null )
+                {
+                    //close the underlying connection without adding it back to the queue
+                    conn.dispose();
+                }
+            }
+            for ( PooledConnection pooledConnection : acquiredConnections )
+            {
+                pooledConnection.dispose();
             }
         }
-        for ( PooledConnection pooledConnection : acquiredConnections )
-        {
-            pooledConnection.dispose();
-        }
-    }
-
-    /**
-     * Acquire connection or create a new one if the queue is empty
-     * @param supplier used to create a new connection if queue is empty
-     * @return a PooledConnection instance
-     */
-    public PooledConnection acquire( Supplier<PooledConnection> supplier )
-    {
-        PooledConnection poll = queue.poll();
-        if ( poll == null )
-        {
-            poll = supplier.get();
-        }
-        acquiredConnections.add( poll );
-        return poll;
     }
 }

@@ -68,8 +68,7 @@ public class PooledConnectionTest
         final boolean[] flags = {false};
 
         Connection conn = mock( Connection.class );
-        PooledConnectionReleaseConsumer releaseConsumer = new PooledConnectionReleaseConsumer( pool,
-                new AtomicBoolean( false ), INVALID_CONNECTION );
+        PooledConnectionReleaseConsumer releaseConsumer = new PooledConnectionReleaseConsumer( pool, INVALID_CONNECTION );
 
 
         PooledConnection pooledConnection = new PooledConnection( conn, releaseConsumer, Clock.SYSTEM )
@@ -99,8 +98,7 @@ public class PooledConnectionTest
         final boolean[] flags = {false};
 
         Connection conn = mock( Connection.class );
-        PooledConnectionReleaseConsumer releaseConsumer = new PooledConnectionReleaseConsumer( pool,
-                new AtomicBoolean( false ), VALID_CONNECTION );
+        PooledConnectionReleaseConsumer releaseConsumer = new PooledConnectionReleaseConsumer( pool, VALID_CONNECTION );
 
                 PooledConnection pooledConnection = new PooledConnection( conn, releaseConsumer, Clock.SYSTEM )
         {
@@ -131,8 +129,7 @@ public class PooledConnectionTest
         final boolean[] flags = {false};
 
         Connection conn = mock( Connection.class );
-        PooledConnectionReleaseConsumer releaseConsumer = new PooledConnectionReleaseConsumer( pool,
-                new AtomicBoolean( false ), VALID_CONNECTION);
+        PooledConnectionReleaseConsumer releaseConsumer = new PooledConnectionReleaseConsumer( pool, VALID_CONNECTION);
 
         PooledConnection pooledConnection = new PooledConnection( conn, releaseConsumer, Clock.SYSTEM );
         PooledConnection shouldBeClosedConnection = new PooledConnection( conn, releaseConsumer, Clock.SYSTEM )
@@ -164,13 +161,12 @@ public class PooledConnectionTest
         // session.close() -> well, close the connection directly without putting back to the pool
 
         // Given
-        final BlockingPooledConnectionQueue
-                pool = new BlockingPooledConnectionQueue(1);
+        final BlockingPooledConnectionQueue pool = new BlockingPooledConnectionQueue(1);
+        pool.terminate();
         final boolean[] flags = {false};
 
         Connection conn = mock( Connection.class );
-        PooledConnectionReleaseConsumer releaseConsumer = new PooledConnectionReleaseConsumer( pool,
-                new AtomicBoolean( true ), VALID_CONNECTION);
+        PooledConnectionReleaseConsumer releaseConsumer = new PooledConnectionReleaseConsumer( pool, VALID_CONNECTION);
 
         PooledConnection pooledConnection = new PooledConnection( conn, releaseConsumer, Clock.SYSTEM )
         {
@@ -193,25 +189,14 @@ public class PooledConnectionTest
     public void shouldDisposeConnectionIfPoolStoppedAfterPuttingConnectionBackToPool() throws Throwable
     {
         // Given
-        final AtomicBoolean stopped = new AtomicBoolean( false );
         final BlockingPooledConnectionQueue
-                pool = new BlockingPooledConnectionQueue(1){
-            public boolean offer(PooledConnection conn)
-            {
-                stopped.set( true );
-                // some clean work to close all connection in pool
-                boolean offer = super.offer( conn );
-                assertThat ( this.size(), equalTo( 1 ) );
-                // we successfully put the connection back to the pool
-                return offer;
-            }
-        };
+                pool = new BlockingPooledConnectionQueue(1);
+        pool.terminate();
         final boolean[] flags = {false};
 
         Connection conn = mock( Connection.class );
 
-        PooledConnectionReleaseConsumer releaseConsumer = new PooledConnectionReleaseConsumer( pool,
-                stopped , VALID_CONNECTION);
+        PooledConnectionReleaseConsumer releaseConsumer = new PooledConnectionReleaseConsumer( pool, VALID_CONNECTION);
 
         PooledConnection pooledConnection = new PooledConnection( conn, releaseConsumer, Clock.SYSTEM )
         {

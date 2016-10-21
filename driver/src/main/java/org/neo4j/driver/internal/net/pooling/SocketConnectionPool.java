@@ -69,7 +69,6 @@ public class SocketConnectionPool implements ConnectionPool
     private final Logging logging;
 
     /** Shutdown flag */
-    private final AtomicBoolean stopped = new AtomicBoolean( false );
 
     public SocketConnectionPool( ConnectionSettings connectionSettings, SecurityPlan securityPlan,
             PoolSettings poolSettings, Logging logging )
@@ -108,10 +107,6 @@ public class SocketConnectionPool implements ConnectionPool
     @Override
     public Connection acquire( final BoltServerAddress address )
     {
-        if ( stopped.get() )
-        {
-            throw new IllegalStateException( "Pool has been closed, cannot acquire new values." );
-        }
         final BlockingPooledConnectionQueue connections = pool( address );
         Supplier<PooledConnection> supplier = new Supplier<PooledConnection>()
         {
@@ -119,7 +114,7 @@ public class SocketConnectionPool implements ConnectionPool
             public PooledConnection get()
             {
                 return new PooledConnection( connect( address ), new
-                        PooledConnectionReleaseConsumer( connections, stopped,
+                        PooledConnectionReleaseConsumer( connections,
                         new PooledConnectionValidator( SocketConnectionPool.this, poolSettings ) ), clock );
 
             }
@@ -166,12 +161,6 @@ public class SocketConnectionPool implements ConnectionPool
     @Override
     public void close()
     {
-        if ( !stopped.compareAndSet( false, true ) )
-        {
-            // already closed or some other thread already started close
-            return;
-        }
-
         for ( BlockingPooledConnectionQueue pool : pools.values() )
         {
             pool.terminate();

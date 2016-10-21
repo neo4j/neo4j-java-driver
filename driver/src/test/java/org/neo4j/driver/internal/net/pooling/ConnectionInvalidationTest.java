@@ -78,7 +78,7 @@ public class ConnectionInvalidationTest
                 new PooledConnectionValidator( pool( true ), poolSettings );
 
         PooledConnectionReleaseConsumer consumer =
-                new PooledConnectionReleaseConsumer( queue, new AtomicBoolean( false ), validator);
+                new PooledConnectionReleaseConsumer( queue, validator);
         consumer.accept( conn );
 
         verify( queue, never() ).offer( conn );
@@ -102,7 +102,7 @@ public class ConnectionInvalidationTest
         BlockingPooledConnectionQueue
                 queue = mock( BlockingPooledConnectionQueue.class );
         PooledConnectionReleaseConsumer consumer =
-                new PooledConnectionReleaseConsumer( queue, new AtomicBoolean( false ),validator );
+                new PooledConnectionReleaseConsumer( queue,validator );
         consumer.accept( conn );
 
         verify( queue ).offer( conn );
@@ -121,7 +121,7 @@ public class ConnectionInvalidationTest
         BlockingPooledConnectionQueue
                 queue = mock( BlockingPooledConnectionQueue.class );
         PooledConnectionReleaseConsumer consumer =
-                new PooledConnectionReleaseConsumer( queue, new AtomicBoolean( false ), validator );
+                new PooledConnectionReleaseConsumer( queue, validator );
         consumer.accept( conn );
 
         verify( queue, never() ).offer( conn );
@@ -174,7 +174,7 @@ public class ConnectionInvalidationTest
         BlockingPooledConnectionQueue
                 queue = mock( BlockingPooledConnectionQueue.class );
         PooledConnectionReleaseConsumer consumer =
-                new PooledConnectionReleaseConsumer( queue, new AtomicBoolean( false ), validator );
+                new PooledConnectionReleaseConsumer( queue, validator );
         consumer.accept( conn );
 
         verify( queue, never() ).offer( conn );
@@ -204,7 +204,7 @@ public class ConnectionInvalidationTest
         BlockingPooledConnectionQueue
                 queue = mock( BlockingPooledConnectionQueue.class );
         PooledConnectionReleaseConsumer consumer =
-                new PooledConnectionReleaseConsumer( queue, new AtomicBoolean( false ), validator );
+                new PooledConnectionReleaseConsumer( queue, validator );
         consumer.accept( conn );
 
         verify( queue ).offer( conn );
