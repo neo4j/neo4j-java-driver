@@ -30,7 +30,7 @@ import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.exceptions.ConnectionFailureException;
+import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.types.TypeSystem;
 
 import static org.neo4j.driver.internal.RoutingNetworkSession.filterFailureToWrite;
@@ -89,7 +89,7 @@ public class RoutingTransaction implements Transaction
         {
             return new RoutingStatementResult( delegate.run( statement ), mode, address, onError );
         }
-        catch ( ConnectionFailureException e )
+        catch ( ServiceUnavailableException e )
         {
             throw sessionExpired( e, onError, address );
         }
@@ -131,7 +131,7 @@ public class RoutingTransaction implements Transaction
         {
             delegate.close();
         }
-        catch ( ConnectionFailureException e )
+        catch ( ServiceUnavailableException e )
         {
             throw sessionExpired(e, onError, address);
         }

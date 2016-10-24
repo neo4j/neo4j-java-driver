@@ -31,8 +31,8 @@ import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.exceptions.ConnectionFailureException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
+import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 import org.neo4j.driver.v1.types.TypeSystem;
 
@@ -91,7 +91,7 @@ public class RoutingNetworkSession implements Session
         {
             return new RoutingStatementResult( delegate.run( statement ), mode, address, onError );
         }
-        catch ( ConnectionFailureException e )
+        catch ( ServiceUnavailableException e )
         {
             throw sessionExpired( e, onError, address );
         }
@@ -144,7 +144,7 @@ public class RoutingNetworkSession implements Session
         {
             delegate.close();
         }
-        catch ( ConnectionFailureException e )
+        catch ( ServiceUnavailableException e )
         {
             throw sessionExpired(e, onError, address);
         }
@@ -189,7 +189,7 @@ public class RoutingNetworkSession implements Session
         }
     }
 
-    static SessionExpiredException sessionExpired( ConnectionFailureException e, RoutingErrorHandler onError,
+    static SessionExpiredException sessionExpired( ServiceUnavailableException e, RoutingErrorHandler onError,
                                                    BoltServerAddress address )
     {
         onError.onConnectionFailure( address );

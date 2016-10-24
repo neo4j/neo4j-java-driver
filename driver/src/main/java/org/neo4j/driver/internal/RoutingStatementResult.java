@@ -25,7 +25,7 @@ import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.exceptions.ConnectionFailureException;
+import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.util.Function;
@@ -56,7 +56,7 @@ public class RoutingStatementResult implements StatementResult
         {
             return delegate.keys();
         }
-        catch ( ConnectionFailureException e )
+        catch ( ServiceUnavailableException e )
         {
             throw sessionExpired( e, onError, address );
         }
@@ -73,7 +73,7 @@ public class RoutingStatementResult implements StatementResult
         {
             return delegate.hasNext();
         }
-        catch ( ConnectionFailureException e )
+        catch ( ServiceUnavailableException e )
         {
             throw sessionExpired( e, onError, address );
         }
@@ -90,7 +90,7 @@ public class RoutingStatementResult implements StatementResult
         {
             return delegate.next();
         }
-        catch ( ConnectionFailureException e )
+        catch ( ServiceUnavailableException e )
         {
             throw sessionExpired( e, onError, address );
         }
@@ -108,7 +108,7 @@ public class RoutingStatementResult implements StatementResult
         {
             return delegate.single();
         }
-        catch ( ConnectionFailureException e )
+        catch ( ServiceUnavailableException e )
         {
             throw sessionExpired( e, onError, address );
         }
@@ -125,7 +125,7 @@ public class RoutingStatementResult implements StatementResult
         {
             return delegate.peek();
         }
-        catch ( ConnectionFailureException e )
+        catch ( ServiceUnavailableException e )
         {
             throw sessionExpired( e, onError, address );
         }
@@ -142,7 +142,7 @@ public class RoutingStatementResult implements StatementResult
         {
             return delegate.list();
         }
-        catch ( ConnectionFailureException e )
+        catch ( ServiceUnavailableException e )
         {
             throw sessionExpired( e, onError, address );
         }
@@ -159,7 +159,7 @@ public class RoutingStatementResult implements StatementResult
         {
             return delegate.list( mapFunction );
         }
-        catch ( ConnectionFailureException e )
+        catch ( ServiceUnavailableException e )
         {
             throw sessionExpired( e, onError, address );
         }
@@ -182,7 +182,7 @@ public class RoutingStatementResult implements StatementResult
         {
             return delegate.consume();
         }
-        catch ( ConnectionFailureException e )
+        catch ( ServiceUnavailableException e )
         {
             throw sessionExpired( e, onError, address );
         }

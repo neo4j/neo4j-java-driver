@@ -27,7 +27,7 @@ import java.nio.channels.ReadableByteChannel;
 import org.neo4j.driver.internal.packstream.PackInput;
 import org.neo4j.driver.internal.util.BytePrinter;
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.exceptions.ConnectionFailureException;
+import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
 import static java.lang.Math.min;
 
@@ -417,14 +417,14 @@ public class BufferingChunkedInput implements PackInput
                 {
                     // best effort
                 }
-                throw new ConnectionFailureException(
+                throw new ServiceUnavailableException(
                         "Connection terminated while receiving data. This can happen due to network " +
                         "instabilities, or due to restarts of the database." );
             }
         }
         catch ( ClosedByInterruptException e )
         {
-            throw new ConnectionFailureException(
+            throw new ServiceUnavailableException(
                     "Connection to the database was lost because someone called `interrupt()` on the driver " +
                     "thread waiting for a reply. " +
                     "This normally happens because the JVM is shutting down, but it can also happen because your " +
@@ -434,7 +434,7 @@ public class BufferingChunkedInput implements PackInput
         catch ( IOException e )
         {
             String message = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
-            throw new ConnectionFailureException(
+            throw new ServiceUnavailableException(
                     "Unable to process request: " + message + " buffer: \n" + BytePrinter.hex( buffer ), e );
         }
         finally

@@ -28,7 +28,7 @@ import java.util.Collection;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.StatementResult;
-import org.neo4j.driver.v1.exceptions.ConnectionFailureException;
+import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 
 import static org.junit.Assert.fail;
@@ -61,7 +61,7 @@ public class RoutingStatementResultTest
     public void shouldHandleConnectionFailureOnConsume()
     {
         // Given
-        when( delegate.consume() ).thenThrow( new ConnectionFailureException( "oh no" ) );
+        when( delegate.consume() ).thenThrow( new ServiceUnavailableException( "oh no" ) );
         RoutingStatementResult result =
                 new RoutingStatementResult( delegate, accessMode, LOCALHOST, onError );
 
@@ -85,7 +85,7 @@ public class RoutingStatementResultTest
     public void shouldHandleConnectionFailureOnHasNext()
     {
         // Given
-        when( delegate.hasNext() ).thenThrow( new ConnectionFailureException( "oh no" ) );
+        when( delegate.hasNext() ).thenThrow( new ServiceUnavailableException( "oh no" ) );
         RoutingStatementResult result =
                 new RoutingStatementResult( delegate, accessMode, LOCALHOST, onError );
 
@@ -109,7 +109,7 @@ public class RoutingStatementResultTest
     public void shouldHandleConnectionFailureOnKeys()
     {
         // Given
-        when( delegate.keys() ).thenThrow( new ConnectionFailureException( "oh no" ) );
+        when( delegate.keys() ).thenThrow( new ServiceUnavailableException( "oh no" ) );
         RoutingStatementResult result =
                 new RoutingStatementResult( delegate, accessMode, LOCALHOST, onError );
 
@@ -133,7 +133,7 @@ public class RoutingStatementResultTest
     public void shouldHandleConnectionFailureOnList()
     {
         // Given
-        when( delegate.list() ).thenThrow( new ConnectionFailureException( "oh no" ) );
+        when( delegate.list() ).thenThrow( new ServiceUnavailableException( "oh no" ) );
         RoutingStatementResult result =
                 new RoutingStatementResult( delegate, accessMode, LOCALHOST, onError );
 
@@ -157,7 +157,7 @@ public class RoutingStatementResultTest
     public void shouldHandleConnectionFailureOnNext()
     {
         // Given
-        when( delegate.next() ).thenThrow( new ConnectionFailureException( "oh no" ) );
+        when( delegate.next() ).thenThrow( new ServiceUnavailableException( "oh no" ) );
         RoutingStatementResult result =
                 new RoutingStatementResult( delegate, accessMode, LOCALHOST, onError );
 
@@ -181,7 +181,7 @@ public class RoutingStatementResultTest
     public void shouldHandleConnectionFailureOnPeek()
     {
         // Given
-        when( delegate.peek() ).thenThrow( new ConnectionFailureException( "oh no" ) );
+        when( delegate.peek() ).thenThrow( new ServiceUnavailableException( "oh no" ) );
         RoutingStatementResult result =
                 new RoutingStatementResult( delegate, accessMode, LOCALHOST, onError );
 
@@ -205,7 +205,7 @@ public class RoutingStatementResultTest
     public void shouldHandleConnectionFailureOnSingle()
     {
         // Given
-        when( delegate.single() ).thenThrow( new ConnectionFailureException( "oh no" ) );
+        when( delegate.single() ).thenThrow( new ServiceUnavailableException( "oh no" ) );
         RoutingStatementResult result =
                 new RoutingStatementResult( delegate, accessMode, LOCALHOST, onError );
 

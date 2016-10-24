@@ -31,7 +31,7 @@ import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.exceptions.ConnectionFailureException;
+import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -115,7 +115,7 @@ public class ErrorIT
     public void shouldExplainConnectionError() throws Throwable
     {
         // Expect
-        exception.expect( ConnectionFailureException.class );
+        exception.expect( ServiceUnavailableException.class );
         exception.expectMessage( "Unable to connect to localhost:7777, ensure the database is running " +
                                  "and that there is a working network connection to it." );
 

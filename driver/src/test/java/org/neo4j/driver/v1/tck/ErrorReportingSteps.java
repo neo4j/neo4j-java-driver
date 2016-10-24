@@ -35,7 +35,7 @@ import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.exceptions.ConnectionFailureException;
+import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
 import static junit.framework.Assert.assertNull;
 import static junit.framework.TestCase.assertNotNull;
@@ -178,7 +178,7 @@ public class ErrorReportingSteps
     {
         assertNotNull( exception );
         //TODO tck needs update, connection failures should not be client exceptions
-        assertTrue( exception instanceof ConnectionFailureException ||
+        assertTrue( exception instanceof ServiceUnavailableException ||
                     exception instanceof ClientException );
         assertThat( exception.getMessage(), startsWith( data.get( 1 ) ) );
     }

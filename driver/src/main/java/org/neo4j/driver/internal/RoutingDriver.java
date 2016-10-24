@@ -33,7 +33,6 @@ import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.exceptions.ConnectionFailureException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 import org.neo4j.driver.v1.util.Function;
@@ -287,7 +286,7 @@ public class RoutingDriver extends BaseDriver
             {
                 return connections.acquire( address );
             }
-            catch ( ConnectionFailureException e )
+            catch ( ServiceUnavailableException e )
             {
                 forget( address );
             }
@@ -306,7 +305,7 @@ public class RoutingDriver extends BaseDriver
             {
                 return connections.acquire( address );
             }
-            catch ( ConnectionFailureException e )
+            catch ( ServiceUnavailableException e )
             {
                 forget( address );
             }
