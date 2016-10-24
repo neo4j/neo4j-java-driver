@@ -23,7 +23,6 @@ import org.mockito.Mockito;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
@@ -73,15 +72,16 @@ public class ConnectionInvalidationTest
         PooledConnection conn = new PooledConnection( delegate, Consumers.<PooledConnection>noOp(), clock );
 
         // When/Then
-        BlockingQueue<PooledConnection> queue = mock( BlockingQueue.class );
+        BlockingPooledConnectionQueue
+                queue = mock( BlockingPooledConnectionQueue.class );
         PooledConnectionValidator validator =
                 new PooledConnectionValidator( pool( true ), poolSettings );
 
         PooledConnectionReleaseConsumer consumer =
-                new PooledConnectionReleaseConsumer( queue, new AtomicBoolean( false ), validator);
+                new PooledConnectionReleaseConsumer( queue, validator);
         consumer.accept( conn );
 
-        verify( queue, never() ).add( conn );
+        verify( queue, never() ).offer( conn );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -99,9 +99,10 @@ public class ConnectionInvalidationTest
                 new PooledConnectionValidator( pool( true ), poolSettings );
 
         // When/Then
-        BlockingQueue<PooledConnection> queue = mock( BlockingQueue.class );
+        BlockingPooledConnectionQueue
+                queue = mock( BlockingPooledConnectionQueue.class );
         PooledConnectionReleaseConsumer consumer =
-                new PooledConnectionReleaseConsumer( queue, new AtomicBoolean( false ),validator );
+                new PooledConnectionReleaseConsumer( queue,validator );
         consumer.accept( conn );
 
         verify( queue ).offer( conn );
@@ -117,12 +118,13 @@ public class ConnectionInvalidationTest
         PooledConnectionValidator validator =
                 new PooledConnectionValidator( pool( true ), poolSettings );
         // When/Then
-        BlockingQueue<PooledConnection> queue = mock( BlockingQueue.class );
+        BlockingPooledConnectionQueue
+                queue = mock( BlockingPooledConnectionQueue.class );
         PooledConnectionReleaseConsumer consumer =
-                new PooledConnectionReleaseConsumer( queue, new AtomicBoolean( false ), validator );
+                new PooledConnectionReleaseConsumer( queue, validator );
         consumer.accept( conn );
 
-        verify( queue, never() ).add( conn );
+        verify( queue, never() ).offer( conn );
     }
 
     @Test
@@ -169,9 +171,10 @@ public class ConnectionInvalidationTest
 
         // Then
         assertTrue( conn.hasUnrecoverableErrors() );
-        BlockingQueue<PooledConnection> queue = mock( BlockingQueue.class );
+        BlockingPooledConnectionQueue
+                queue = mock( BlockingPooledConnectionQueue.class );
         PooledConnectionReleaseConsumer consumer =
-                new PooledConnectionReleaseConsumer( queue, new AtomicBoolean( false ), validator );
+                new PooledConnectionReleaseConsumer( queue, validator );
         consumer.accept( conn );
 
         verify( queue, never() ).offer( conn );
@@ -198,9 +201,10 @@ public class ConnectionInvalidationTest
         PoolSettings poolSettings = PoolSettings.defaultSettings();
         PooledConnectionValidator validator =
                 new PooledConnectionValidator( pool( true ), poolSettings );
-        BlockingQueue<PooledConnection> queue = mock( BlockingQueue.class );
+        BlockingPooledConnectionQueue
+                queue = mock( BlockingPooledConnectionQueue.class );
         PooledConnectionReleaseConsumer consumer =
-                new PooledConnectionReleaseConsumer( queue, new AtomicBoolean( false ), validator );
+                new PooledConnectionReleaseConsumer( queue, validator );
         consumer.accept( conn );
 
         verify( queue ).offer( conn );

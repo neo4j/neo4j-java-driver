@@ -18,7 +18,6 @@
  */
 package org.neo4j.driver.internal.net.pooling;
 
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.internal.util.Consumer;
@@ -30,49 +29,22 @@ import org.neo4j.driver.v1.util.Function;
  */
 class PooledConnectionReleaseConsumer implements Consumer<PooledConnection>
 {
-    private final BlockingQueue<PooledConnection> connections;
-    private final AtomicBoolean driverStopped;
+    private final BlockingPooledConnectionQueue connections;
     private final Function<PooledConnection, Boolean> validConnection;
 
-    PooledConnectionReleaseConsumer( BlockingQueue<PooledConnection> connections, AtomicBoolean driverStopped,
+    PooledConnectionReleaseConsumer( BlockingPooledConnectionQueue connections,
             Function<PooledConnection, Boolean> validConnection)
     {
         this.connections = connections;
-        this.driverStopped = driverStopped;
         this.validConnection = validConnection;
     }
 
     @Override
     public void accept( PooledConnection pooledConnection )
     {
-        if( driverStopped.get() )
+        if ( validConnection.apply( pooledConnection ) )
         {
-            // if the driver already closed, then no need to try to return to pool, just directly close this connection
-            pooledConnection.dispose();
-        }
-        else if ( validConnection.apply( pooledConnection ) )
-        {
-            boolean released = connections.offer( pooledConnection );
-            if( !released )
-            {
-                // if the connection could be put back to the pool, then we let the pool to manage it.
-                // Otherwise, we close the connection directly here.
-                pooledConnection.dispose();
-            }
-            else if ( driverStopped.get() )
-            {
-                // If our adding the pooledConnection to the queue was racing with the closing of the driver,
-                // then the loop where the driver is closing all available connections might not observe our newly
-                // added connection. Thus, we must attempt to remove a connection and dispose it. It doesn't matter
-                // which connection we get back, because other threads might be in the same situation as ours. It only
-                // matters that we added *a* connection that might not be observed by the loop, and that we dispose of
-                // *a* connection in response.
-                PooledConnection conn = connections.poll();
-                if ( conn != null )
-                {
-                    conn.dispose();
-                }
-            }
+            connections.offer( pooledConnection );
         }
         else
         {

@@ -23,13 +23,16 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import org.neo4j.driver.internal.logging.ConsoleLogging;
-import org.neo4j.driver.v1.*;
+import org.neo4j.driver.v1.AuthToken;
+import org.neo4j.driver.v1.AuthTokens;
+import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.GraphDatabase;
+import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.util.TestNeo4j;
-
-import java.util.logging.Level;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -192,7 +195,7 @@ public class SessionIT
 
             tx.run("CALL test.driver.longRunningStatement({seconds})",
                     parameters( "seconds", 10 ) );
-            Thread.sleep( 1* 1000 );
+            Thread.sleep( 1000 );
             session.reset();
 
             exception.expect( ClientException.class );
@@ -215,7 +218,7 @@ public class SessionIT
         Session session = driver.session();
         session.run( "CALL test.driver.longRunningStatement({seconds})",
                 parameters( "seconds", 10 ) );
-        Thread.sleep( 1 * 1000 );
+        Thread.sleep( 1000 );
         session.reset();
 
         exception.expect( ClientException.class );
@@ -239,7 +242,7 @@ public class SessionIT
 
             StatementResult procedureResult = tx.run("CALL test.driver.longRunningStatement({seconds})",
                     parameters( "seconds", 10 ) );
-            Thread.sleep( 1* 1000 );
+            Thread.sleep( 1000 );
             session.reset();
 
             try
@@ -355,5 +358,19 @@ public class SessionIT
                 assertThat( e.getMessage(), startsWith( "Cannot run more statements in this transaction" ) );
             }
         }
+    }
+
+    @Test
+    public void shouldCloseSessionWhenDriverIsClosed() throws Throwable
+    {
+        // Given
+        Driver driver = GraphDatabase.driver( neo4j.uri() );
+        Session session = driver.session();
+
+        // When
+        driver.close();
+
+        // Then
+        assertFalse( session.isOpen() );
     }
 }
