@@ -86,7 +86,7 @@ public class ExamplesIT
     {
         StdIOCapture stdIO = new StdIOCapture();
         try ( AutoCloseable captured = stdIO.capture();
-                Driver driver = GraphDatabase.driver( "bolt://localhost" );
+                Driver driver = GraphDatabase.driver( "bolt://localhost:7687" );
                 Session session = driver.session() )
         {
             Examples.statement( session );
@@ -101,7 +101,7 @@ public class ExamplesIT
     {
         StdIOCapture stdIO = new StdIOCapture();
         try ( AutoCloseable captured = stdIO.capture();
-                Driver driver = GraphDatabase.driver( "bolt://localhost" );
+                Driver driver = GraphDatabase.driver( "bolt://localhost:7687" );
                 Session session = driver.session() )
         {
             Examples.statementWithoutParameters( session );
@@ -116,7 +116,7 @@ public class ExamplesIT
     {
         StdIOCapture stdIO = new StdIOCapture();
         try ( AutoCloseable captured = stdIO.capture();
-                Driver driver = GraphDatabase.driver( "bolt://localhost" );
+                Driver driver = GraphDatabase.driver( "bolt://localhost:7687" );
                 Session session = driver.session() )
         {
             session.run( "MATCH (n) DETACH DELETE n" );
@@ -134,7 +134,7 @@ public class ExamplesIT
     {
         StdIOCapture stdIO = new StdIOCapture();
         try ( AutoCloseable captured = stdIO.capture();
-              Driver driver = GraphDatabase.driver( "bolt://localhost" );
+              Driver driver = GraphDatabase.driver( "bolt://localhost:7687" );
               Session session = driver.session() )
         {
             session.run( "MATCH (n) DETACH DELETE n" );
@@ -152,7 +152,7 @@ public class ExamplesIT
     {
         StdIOCapture stdIO = new StdIOCapture();
         try ( AutoCloseable captured = stdIO.capture();
-                Driver driver = GraphDatabase.driver( "bolt://localhost" );
+                Driver driver = GraphDatabase.driver( "bolt://localhost:7687" );
                 Session session = driver.session() )
         {
             session.run( "MATCH (n) DETACH DELETE n" );
@@ -172,7 +172,7 @@ public class ExamplesIT
     {
         StdIOCapture stdIO = new StdIOCapture();
         try ( AutoCloseable captured = stdIO.capture();
-                Driver driver = GraphDatabase.driver( "bolt://localhost" ) )
+                Driver driver = GraphDatabase.driver( "bolt://localhost:7687" ) )
         {
             try ( Session setup = driver.session() )
             {
@@ -192,7 +192,7 @@ public class ExamplesIT
     {
         StdIOCapture stdIO = new StdIOCapture();
         try ( AutoCloseable captured = stdIO.capture();
-              Driver driver = GraphDatabase.driver( "bolt://localhost" );
+              Driver driver = GraphDatabase.driver( "bolt://localhost:7687" );
               Session session = driver.session() )
         {
             exception.expect(RuntimeException.class);
@@ -203,7 +203,7 @@ public class ExamplesIT
     @Test
     public void transactionCommit() throws Throwable
     {
-        try ( Driver driver = GraphDatabase.driver( "bolt://localhost" );
+        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:7687" );
                 Session session = driver.session() )
         {
             session.run( "MATCH (n) DETACH DELETE n" );
@@ -218,7 +218,7 @@ public class ExamplesIT
     @Test
     public void transactionRollback() throws Throwable
     {
-        try ( Driver driver = GraphDatabase.driver( "bolt://localhost" );
+        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:7687" );
                 Session session = driver.session() )
         {
             session.run( "MATCH (n) DETACH DELETE n" );
@@ -236,7 +236,7 @@ public class ExamplesIT
     {
         StdIOCapture stdIO = new StdIOCapture();
         try ( AutoCloseable captured = stdIO.capture();
-                Driver driver = GraphDatabase.driver( "bolt://localhost" );
+                Driver driver = GraphDatabase.driver( "bolt://localhost:7687" );
                 Session session = driver.session() )
         {
             Examples.resultSummary( session );
@@ -253,7 +253,7 @@ public class ExamplesIT
     {
         StdIOCapture stdIO = new StdIOCapture();
         try ( AutoCloseable captured = stdIO.capture();
-                Driver driver = GraphDatabase.driver( "bolt://localhost" );
+                Driver driver = GraphDatabase.driver( "bolt://localhost:7687" );
                 Session session = driver.session() )
         {
             Examples.notifications( session );

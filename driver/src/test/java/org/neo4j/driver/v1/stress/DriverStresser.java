@@ -58,7 +58,7 @@ public class DriverStresser
     {
         server = Neo4jRunner.getOrCreateGlobalRunner();
         server.ensureRunning( Neo4jSettings.TEST_SETTINGS );
-        driver = GraphDatabase.driver( "bolt://localhost" );
+        driver = GraphDatabase.driver( "bolt://localhost:7687" );
     }
 
     static class Worker

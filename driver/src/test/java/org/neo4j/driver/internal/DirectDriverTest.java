@@ -42,7 +42,7 @@ public class DirectDriverTest
     public void shouldUseDefaultPortIfMissing()
     {
         // Given
-        URI uri = URI.create( "bolt://localhost" );
+        URI uri = URI.create( "bolt://localhost:7687" );
 
         // When
         DirectDriver driver = (DirectDriver) GraphDatabase.driver( uri );
