@@ -19,8 +19,10 @@
 package org.neo4j.driver.v1;
 
 import java.io.File;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
+import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.logging.JULogging;
 import org.neo4j.driver.internal.net.pooling.PoolSettings;
 import org.neo4j.driver.v1.util.Immutable;
@@ -60,6 +62,8 @@ public class Config
     private final TrustStrategy trustStrategy;
 
     private final int minServersInCluster;
+    private final int maxRoutingFailures;
+    private final long routingRetryDelayMillis;
 
     private Config( ConfigBuilder builder)
     {
@@ -71,6 +75,8 @@ public class Config
         this.encryptionLevel = builder.encryptionLevel;
         this.trustStrategy = builder.trustStrategy;
         this.minServersInCluster = builder.minServersInCluster;
+        this.maxRoutingFailures = builder.maxRoutingFailures;
+        this.routingRetryDelayMillis = builder.routingRetryDelayMillis;
     }
 
     /**
@@ -144,6 +150,11 @@ public class Config
         return Config.build().toConfig();
     }
 
+    RoutingSettings routingSettings()
+    {
+        return new RoutingSettings( maxRoutingFailures, routingRetryDelayMillis );
+    }
+
     /**
      * Used to build new config instances
      */
@@ -156,6 +167,8 @@ public class Config
         private TrustStrategy trustStrategy = trustOnFirstUse(
                 new File( getProperty( "user.home" ), ".neo4j" + File.separator + "known_hosts" ) );
         public int minServersInCluster = 3;
+        private int maxRoutingFailures = 10;
+        private long routingRetryDelayMillis = 5_000;
 
         private ConfigBuilder() {}
 
@@ -256,6 +269,51 @@ public class Config
         public ConfigBuilder withTrustStrategy( TrustStrategy trustStrategy )
         {
             this.trustStrategy = trustStrategy;
+            return this;
+        }
+
+        /**
+         * Specify how many times the client should attempt to reconnect to the routing servers before declaring the
+         * cluster unavailable.
+         * <p>
+         * The routing servers are tried in order. If connecting any of them fails, they are all retried after
+         * {@linkplain #withRoutingRetryDelay a delay}. This process of retrying all servers is then repeated for the
+         * number of times specified here before considering the cluster unavailable.
+         *
+         * @param routingRetryLimit
+         *         the number of times to retry each server in the list of routing servers
+         * @return this builder
+         */
+        public ConfigBuilder withRoutingRetryLimit( int routingRetryLimit )
+        {
+            this.maxRoutingFailures = routingRetryLimit;
+            return this;
+        }
+
+        /**
+         * Specify how long to wait before retrying to connect to a routing server.
+         * <p>
+         * When connecting to all routing servers fail, connecting will be retried after the delay specified here.
+         * The delay is measured from when the first attempt to connect was made, so that the delay time specifies a
+         * retry interval.
+         * <p>
+         * For each {@linkplain #withRoutingRetryLimit retry attempt} the delay time will be doubled. The time
+         * specified here is the base time, i.e. the time to wait before the first retry. If that attempt (on all
+         * servers) also fails, the delay before the next retry will be double the time specified here, and the next
+         * attempt after that will be double that, et.c. So if, for example, the delay specified here is
+         * {@code 5 SECONDS}, then after attempting to connect to each server fails reconnecting will be attempted
+         * 5 seconds after the first connection attempt to the first server. If that attempt also fails to connect to
+         * all servers, the next attempt will start 10 seconds after the second attempt started.
+         *
+         * @param delay
+         *         the amount of time between attempts to reconnect to the same server
+         * @param unit
+         *         the unit in which the duration is given
+         * @return this builder
+         */
+        public ConfigBuilder withRoutingRetryDelay( long delay, TimeUnit unit )
+        {
+            this.routingRetryDelayMillis = unit.toMillis( delay );
             return this;
         }
 

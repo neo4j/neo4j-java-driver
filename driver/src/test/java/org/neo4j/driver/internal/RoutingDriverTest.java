@@ -18,47 +18,41 @@
  */
 package org.neo4j.driver.internal;
 
-import org.hamcrest.Matchers;
+import java.util.Collections;
+import java.util.Map;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.mockito.internal.stubbing.answers.ThrowsException;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
+import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
-import org.neo4j.driver.internal.util.Clock;
+import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.v1.AccessMode;
-import org.neo4j.driver.v1.Logger;
+import org.neo4j.driver.v1.EventLogger;
 import org.neo4j.driver.v1.Logging;
-import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.Session;
-import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.v1.summary.ResultSummary;
-import org.neo4j.driver.v1.util.Function;
 
 import static java.util.Arrays.asList;
-import static java.util.Collections.singletonList;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.hasItem;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.core.IsNot.not;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.driver.internal.cluster.ClusterCompositionProviderTest.serverInfo;
+import static org.neo4j.driver.internal.cluster.ClusterCompositionProviderTest.withKeys;
+import static org.neo4j.driver.internal.cluster.ClusterCompositionProviderTest.withServerList;
 import static org.neo4j.driver.internal.security.SecurityPlan.insecure;
 import static org.neo4j.driver.v1.Values.value;
 
@@ -66,253 +60,271 @@ public class RoutingDriverTest
 {
     @Rule
     public ExpectedException exception = ExpectedException.none();
-
     private static final BoltServerAddress SEED = new BoltServerAddress( "localhost", 7687 );
     private static final String GET_SERVERS = "CALL dbms.cluster.routing.getServers";
-    private static final List<String> NO_ADDRESSES = Collections.emptyList();
-    private final ConnectionPool pool = pool();
+    private final EventHandler events = new EventHandler();
+    private final FakeClock clock = new FakeClock( events, true );
+    private final Logging logging = EventLogger.provider( events, EventLogger.Level.TRACE );
 
     @Test
     public void shouldDoRoutingOnInitialization()
     {
         // Given
-        final Session session = mock( Session.class );
-        when( session.run( GET_SERVERS ) ).thenReturn(
-                getServers( singletonList( "localhost:1111" ),
-                        singletonList( "localhost:2222" ),
-                        singletonList( "localhost:3333" ) ) );
+        ConnectionPool pool = poolWithServers(
+                10,
+                serverInfo( "ROUTE", "localhost:1111" ),
+                serverInfo( "READ", "localhost:2222" ),
+                serverInfo( "WRITE", "localhost:3333" ) );
 
         // When
-        RoutingDriver routingDriver = forSession( session );
+        driverWithPool( pool );
 
         // Then
-        assertThat( routingDriver.routingServers(),
-                containsInAnyOrder( boltAddress( "localhost", 1111 )) );
-        assertThat( routingDriver.readServers(),
-                containsInAnyOrder( boltAddress( "localhost", 2222 ) ) );
-        assertThat( routingDriver.writeServers(),
-                containsInAnyOrder( boltAddress( "localhost", 3333 ) ) );
-
+        verify( pool ).acquire( SEED );
     }
 
     @Test
     public void shouldDoReRoutingOnSessionAcquisitionIfNecessary()
     {
         // Given
-        final Session session = mock( Session.class );
-        when( session.run( GET_SERVERS ) )
-                .thenReturn(
-                        getServers( singletonList( "localhost:1111" ), NO_ADDRESSES, NO_ADDRESSES ) )
-                .thenReturn(
-                        getServers( singletonList( "localhost:1112" ),
-                                singletonList( "localhost:2222" ),
-                                singletonList( "localhost:3333" ) ) );
-
-        RoutingDriver routingDriver = forSession( session );
-
-        assertThat( routingDriver.routingServers(),
-                containsInAnyOrder( boltAddress( "localhost", 1111 )) );
-        assertThat( routingDriver.readServers(), Matchers.<BoltServerAddress>empty() );
-        assertThat( routingDriver.writeServers(), Matchers.<BoltServerAddress>empty() );
-
+        RoutingDriver routingDriver = driverWithPool( pool(
+                withServers( 10, serverInfo( "ROUTE", "localhost:1111" ),
+                        serverInfo( "READ" ),
+                        serverInfo( "WRITE", "localhost:5555" ) ),
+                withServers( 10, serverInfo( "ROUTE", "localhost:1112" ),
+                        serverInfo( "READ", "localhost:2222" ),
+                        serverInfo( "WRITE", "localhost:3333" ) ) ) );
 
         // When
-        routingDriver.session( AccessMode.READ );
+        RoutingNetworkSession writing = (RoutingNetworkSession) routingDriver.session( AccessMode.WRITE );
 
         // Then
-        assertThat( routingDriver.routingServers(),
-                containsInAnyOrder( boltAddress( "localhost", 1112 ) ));
-        assertThat( routingDriver.readServers(),
-                containsInAnyOrder( boltAddress( "localhost", 2222 ) ) );
-        assertThat( routingDriver.writeServers(),
-                containsInAnyOrder( boltAddress( "localhost", 3333 ) ) );
+        assertEquals( boltAddress( "localhost", 3333 ), writing.address() );
     }
 
     @Test
     public void shouldNotDoReRoutingOnSessionAcquisitionIfNotNecessary()
     {
         // Given
-        final Session session = mock( Session.class );
-        when( session.run( GET_SERVERS ) )
-                .thenReturn(
-                        getServers( asList( "localhost:1111", "localhost:1112", "localhost:1113" ),
-                                singletonList( "localhost:2222" ),
-                                singletonList( "localhost:3333" ) ) )
-                .thenReturn(
-                        getServers( singletonList( "localhost:5555" ), NO_ADDRESSES, NO_ADDRESSES ) );
-
-        RoutingDriver routingDriver = forSession( session );
+        RoutingDriver routingDriver = driverWithPool( pool(
+                withServers( 10, serverInfo( "ROUTE", "localhost:1111", "localhost:1112", "localhost:1113" ),
+                        serverInfo( "READ", "localhost:2222" ),
+                        serverInfo( "WRITE", "localhost:3333" ) ),
+                withServers( 10, serverInfo( "ROUTE", "localhost:5555" ),
+                        serverInfo( "READ", "localhost:5555" ),
+                        serverInfo( "WRITE", "localhost:5555" ) ) ) );
 
         // When
-        routingDriver.session( AccessMode.WRITE );
+        RoutingNetworkSession writing = (RoutingNetworkSession) routingDriver.session( AccessMode.WRITE );
+        RoutingNetworkSession reading = (RoutingNetworkSession) routingDriver.session( AccessMode.READ );
 
         // Then
-        assertThat( routingDriver.routingServers(),
-                not( hasItem( boltAddress( "localhost", 5555 ) ) ) );
+        assertEquals( boltAddress( "localhost", 3333 ), writing.address() );
+        assertEquals( boltAddress( "localhost", 2222 ), reading.address() );
     }
 
     @Test
     public void shouldFailIfNoRouting()
     {
         // Given
-        final Session session = mock( Session.class );
-        when( session.run( GET_SERVERS ) )
-                .thenThrow(
-                        new ClientException( "Neo.ClientError.Procedure.ProcedureNotFound", "Procedure not found" ) );
-
-        // Expect
-        exception.expect( ServiceUnavailableException.class );
+        ConnectionPool pool = pool( new ThrowsException( new ClientException(
+                "Neo.ClientError.Procedure.ProcedureNotFound", "Procedure not found" ) ) );
 
         // When
-        forSession( session );
+        try
+        {
+            driverWithPool( pool );
+        }
+        // Then
+        catch ( ServiceUnavailableException e )
+        {
+            assertEquals( "Could not perform discovery. No routing servers available.", e.getMessage() );
+        }
+    }
+
+    @Test
+    public void shouldFailIfNoRoutersProvided()
+    {
+        // Given
+        ConnectionPool pool = poolWithServers(
+                10,
+                serverInfo( "ROUTE" ),
+                serverInfo( "READ", "localhost:1111" ),
+                serverInfo( "WRITE", "localhost:1111" ) );
+
+        // When
+        try
+        {
+            driverWithPool( pool );
+        }
+        // Then
+        catch ( ServiceUnavailableException e )
+        {
+            assertEquals( "Could not perform discovery. No routing servers available.", e.getMessage() );
+        }
+    }
+
+    @Test
+    public void shouldFailIfNoWritersProvided()
+    {
+        // Given
+        ConnectionPool pool = poolWithServers(
+                10,
+                serverInfo( "ROUTE", "localhost:1111" ),
+                serverInfo( "READ", "localhost:1111" ),
+                serverInfo( "WRITE" ) );
+
+        // When
+        try
+        {
+            driverWithPool( pool );
+        }
+        // Then
+        catch ( ServiceUnavailableException e )
+        {
+            assertEquals( "Could not perform discovery. No routing servers available.", e.getMessage() );
+        }
     }
 
     @Test
     public void shouldForgetAboutServersOnRerouting()
     {
         // Given
-        final Session session = mock( Session.class );
-        when( session.run( GET_SERVERS ) )
-                .thenReturn(
-                        getServers( singletonList( "localhost:1111" ), NO_ADDRESSES, NO_ADDRESSES ) )
-                .thenReturn(
-                        getServers( singletonList( "localhost:1112" ),
-                                singletonList( "localhost:2222" ),
-                                singletonList( "localhost:3333" ) ) );
+        ConnectionPool pool = pool(
+                withServers( 10, serverInfo( "ROUTE", "localhost:1111" ),
+                        serverInfo( "READ" ),
+                        serverInfo( "WRITE", "localhost:5555" ) ),
+                withServers( 10, serverInfo( "ROUTE", "localhost:1112" ),
+                        serverInfo( "READ", "localhost:2222" ),
+                        serverInfo( "WRITE", "localhost:3333" ) ) );
 
-        RoutingDriver routingDriver = forSession( session );
-
-        assertThat( routingDriver.routingServers(),
-                containsInAnyOrder( boltAddress( "localhost", 1111 )) );
-
+        RoutingDriver routingDriver = driverWithPool( pool );
 
         // When
-        routingDriver.session( AccessMode.READ );
+        RoutingNetworkSession write1 = (RoutingNetworkSession) routingDriver.session( AccessMode.WRITE );
+        RoutingNetworkSession write2 = (RoutingNetworkSession) routingDriver.session( AccessMode.WRITE );
 
         // Then
-        assertThat( routingDriver.routingServers(),
-                containsInAnyOrder( boltAddress( "localhost", 1112 ) ));
-        verify( pool ).purge( boltAddress( "localhost", 1111 ) );
+        assertEquals( boltAddress( "localhost", 3333 ), write1.address() );
+        assertEquals( boltAddress( "localhost", 3333 ), write2.address() );
     }
 
     @Test
     public void shouldRediscoverOnTimeout()
     {
         // Given
-        final Session session = mock( Session.class );
-        Clock clock = mock( Clock.class );
-        when(clock.millis()).thenReturn( 0L, 11000L, 22000L );
-        when( session.run( GET_SERVERS ) )
-                .thenReturn(
-                        getServers( asList( "localhost:1111", "localhost:1112", "localhost:1113" ),
-                                singletonList( "localhost:2222" ),
-                                singletonList( "localhost:3333" ), 10L/*seconds*/ ) )
-                .thenReturn(
-                        getServers( singletonList( "localhost:5555" ), singletonList( "localhost:5555" ), singletonList( "localhost:5555" ) ) );
+        RoutingDriver routingDriver = driverWithPool( pool(
+                withServers( 10, serverInfo( "ROUTE", "localhost:1111", "localhost:1112", "localhost:1113" ),
+                        serverInfo( "READ", "localhost:2222" ),
+                        serverInfo( "WRITE", "localhost:3333" ) ),
+                withServers( 60, serverInfo( "ROUTE", "localhost:5555", "localhost:6666" ),
+                        serverInfo( "READ", "localhost:7777" ),
+                        serverInfo( "WRITE", "localhost:8888" ) ) ) );
 
-        RoutingDriver routingDriver = forSession( session, clock );
+        clock.progress( 11_000 );
 
         // When
-        routingDriver.session( AccessMode.WRITE );
+        RoutingNetworkSession writing = (RoutingNetworkSession) routingDriver.session( AccessMode.WRITE );
+        RoutingNetworkSession reading = (RoutingNetworkSession) routingDriver.session( AccessMode.READ );
 
         // Then
-        assertThat( routingDriver.routingServers(), containsInAnyOrder( boltAddress( "localhost", 5555 ) ) );
-        assertThat( routingDriver.readServers(), containsInAnyOrder( boltAddress( "localhost", 5555 ) ) );
-        assertThat( routingDriver.writeServers(), containsInAnyOrder( boltAddress( "localhost", 5555 ) ) );
+        assertEquals( boltAddress( "localhost", 8888 ), writing.address() );
+        assertEquals( boltAddress( "localhost", 7777 ), reading.address() );
     }
 
     @Test
-    public void shouldNotRediscoverWheNoTimeout()
+    public void shouldNotRediscoverWhenNoTimeout()
     {
         // Given
-        final Session session = mock( Session.class );
-        Clock clock = mock( Clock.class );
-        when(clock.millis()).thenReturn( 0L, 9900L, 18800L );
-        when( session.run( GET_SERVERS ) )
-                .thenReturn(
-                        getServers( asList( "localhost:1111", "localhost:1112", "localhost:1113" ),
-                                singletonList( "localhost:2222" ),
-                                singletonList( "localhost:3333" ), 10L/*seconds*/ ) )
-                .thenReturn(
-                        getServers( singletonList( "localhost:5555" ), singletonList( "localhost:5555" ), singletonList( "localhost:5555" ) ) );
-
-        RoutingDriver routingDriver = forSession( session, clock );
+        RoutingDriver routingDriver = driverWithPool( pool(
+                withServers( 10, serverInfo( "ROUTE", "localhost:1111", "localhost:1112", "localhost:1113" ),
+                        serverInfo( "READ", "localhost:2222" ),
+                        serverInfo( "WRITE", "localhost:3333" ) ),
+                withServers( 10, serverInfo( "ROUTE", "localhost:5555" ),
+                        serverInfo( "READ", "localhost:5555" ),
+                        serverInfo( "WRITE", "localhost:5555" ) ) ) );
+        clock.progress( 9900 );
 
         // When
-        routingDriver.session( AccessMode.WRITE );
+        RoutingNetworkSession writer = (RoutingNetworkSession) routingDriver.session( AccessMode.WRITE );
+        RoutingNetworkSession reader = (RoutingNetworkSession) routingDriver.session( AccessMode.READ );
 
         // Then
-        assertThat( routingDriver.routingServers(), containsInAnyOrder( boltAddress( "localhost", 1111 ), boltAddress( "localhost", 1112 ), boltAddress( "localhost", 1113 ) ) );
-        assertThat( routingDriver.readServers(), containsInAnyOrder( boltAddress( "localhost", 2222 ) ) );
-        assertThat( routingDriver.writeServers(), containsInAnyOrder( boltAddress( "localhost", 3333 ) ) );
+        assertEquals( boltAddress( "localhost", 2222 ), reader.address() );
+        assertEquals( boltAddress( "localhost", 3333 ), writer.address() );
     }
 
     @Test
     public void shouldRoundRobinAmongReadServers()
     {
         // Given
-        final Session session = mock( Session.class );
-        when( session.run( GET_SERVERS ) ).thenReturn(
-                getServers( asList( "localhost:1111", "localhost:1112" ),
-                        asList( "localhost:2222", "localhost:2223", "localhost:2224" ),
-                        singletonList( "localhost:3333" ) ) );
+        RoutingDriver routingDriver = driverWithServers( 60, serverInfo( "ROUTE", "localhost:1111", "localhost:1112" ),
+                serverInfo( "READ", "localhost:2222", "localhost:2223", "localhost:2224" ),
+                serverInfo( "WRITE", "localhost:3333" ) );
 
         // When
-        RoutingDriver routingDriver = forSession( session );
         RoutingNetworkSession read1 = (RoutingNetworkSession) routingDriver.session( AccessMode.READ );
         RoutingNetworkSession read2 = (RoutingNetworkSession) routingDriver.session( AccessMode.READ );
         RoutingNetworkSession read3 = (RoutingNetworkSession) routingDriver.session( AccessMode.READ );
         RoutingNetworkSession read4 = (RoutingNetworkSession) routingDriver.session( AccessMode.READ );
-
+        RoutingNetworkSession read5 = (RoutingNetworkSession) routingDriver.session( AccessMode.READ );
+        RoutingNetworkSession read6 = (RoutingNetworkSession) routingDriver.session( AccessMode.READ );
 
         // Then
-        assertThat(read1.address(), equalTo(boltAddress( "localhost", 2222 )));
-        assertThat(read2.address(), equalTo(boltAddress( "localhost", 2223 )));
-        assertThat(read3.address(), equalTo(boltAddress( "localhost", 2224 )));
-        assertThat(read4.address(), equalTo(boltAddress( "localhost", 2222 )));
-
+        assertEquals( read1.address(), read4.address() );
+        assertEquals( read2.address(), read5.address() );
+        assertEquals( read3.address(), read6.address() );
+        assertNotEquals( read1.address(), read2.address() );
+        assertNotEquals( read2.address(), read3.address() );
+        assertNotEquals( read3.address(), read1.address() );
     }
 
     @Test
     public void shouldRoundRobinAmongWriteServers()
     {
         // Given
-        final Session session = mock( Session.class );
-        when( session.run( GET_SERVERS ) ).thenReturn(
-                getServers( asList( "localhost:1111", "localhost:1112" ),
-                        singletonList( "localhost:3333" ),  asList( "localhost:2222", "localhost:2223", "localhost:2224" ) ) );
+        RoutingDriver routingDriver = driverWithServers( 60, serverInfo( "ROUTE", "localhost:1111", "localhost:1112" ),
+                serverInfo( "READ", "localhost:3333" ),
+                serverInfo( "WRITE", "localhost:2222", "localhost:2223", "localhost:2224" ) );
 
         // When
-        RoutingDriver routingDriver = forSession( session );
         RoutingNetworkSession write1 = (RoutingNetworkSession) routingDriver.session( AccessMode.WRITE );
         RoutingNetworkSession write2 = (RoutingNetworkSession) routingDriver.session( AccessMode.WRITE );
         RoutingNetworkSession write3 = (RoutingNetworkSession) routingDriver.session( AccessMode.WRITE );
         RoutingNetworkSession write4 = (RoutingNetworkSession) routingDriver.session( AccessMode.WRITE );
-
+        RoutingNetworkSession write5 = (RoutingNetworkSession) routingDriver.session( AccessMode.WRITE );
+        RoutingNetworkSession write6 = (RoutingNetworkSession) routingDriver.session( AccessMode.WRITE );
 
         // Then
-        assertThat(write1.address(), equalTo(boltAddress( "localhost", 2222 )));
-        assertThat(write2.address(), equalTo(boltAddress( "localhost", 2223 )));
-        assertThat(write3.address(), equalTo(boltAddress( "localhost", 2224 )));
-        assertThat(write4.address(), equalTo(boltAddress( "localhost", 2222 )));
-
+        assertEquals( write1.address(), write4.address() );
+        assertEquals( write2.address(), write5.address() );
+        assertEquals( write3.address(), write6.address() );
+        assertNotEquals( write1.address(), write2.address() );
+        assertNotEquals( write2.address(), write3.address() );
+        assertNotEquals( write3.address(), write1.address() );
     }
 
-    private RoutingDriver forSession( final Session session )
+    @SafeVarargs
+    private final RoutingDriver driverWithServers( long ttl, Map<String,Object>... serverInfo )
     {
-        return forSession( session, Clock.SYSTEM );
+        return driverWithPool( poolWithServers( ttl, serverInfo ) );
     }
-    private RoutingDriver forSession( final Session session, Clock clock )
+
+    private RoutingDriver driverWithPool( ConnectionPool pool )
     {
-        return new RoutingDriver( SEED, pool, insecure(),
-                new Function<Connection,Session>()
-                {
-                    @Override
-                    public Session apply( Connection connection )
-                    {
-                        return session;
-                    }
-                }, clock, logging() );
+        return new RoutingDriver( new RoutingSettings( 10, 5_000 ), SEED, pool, insecure(), clock, logging );
+    }
+
+    @SafeVarargs
+    private final ConnectionPool poolWithServers( long ttl, Map<String,Object>... serverInfo )
+    {
+        return pool( withServers( ttl, serverInfo ) );
+    }
+
+    @SafeVarargs
+    private static Answer withServers( long ttl, Map<String,Object>... serverInfo )
+    {
+        return withServerList( new Value[] {value( ttl ), value( asList( serverInfo ) )} );
     }
 
     private BoltServerAddress boltAddress( String host, int port )
@@ -320,117 +332,37 @@ public class RoutingDriverTest
         return new BoltServerAddress( host, port );
     }
 
-
-    StatementResult getServers( final List<String> routers, final List<String> readers,
-            final List<String> writers )
-    {
-        return getServers( routers,readers, writers, Long.MAX_VALUE );
-    }
-
-    StatementResult getServers( final List<String> routers, final List<String> readers,
-            final List<String> writers, final long ttl )
-    {
-        return new StatementResult()
-        {
-            private int counter = 0;
-
-            @Override
-            public List<String> keys()
-            {
-                return asList( "ttl", "servers" );
-            }
-
-            @Override
-            public boolean hasNext()
-            {
-                return counter < 1;
-            }
-
-            @Override
-            public Record next()
-            {
-                counter++;
-                return new InternalRecord( asList( "ttl", "servers" ),
-                        new Value[]{
-                                value( ttl ),
-                                value( asList( serverInfo( "ROUTE", routers ), serverInfo( "WRITE", writers ),
-                                        serverInfo( "READ", readers ) ) )
-                        } );
-            }
-
-            @Override
-            public Record single() throws NoSuchRecordException
-            {
-                return next();
-            }
-
-            @Override
-            public Record peek()
-            {
-                return null;
-            }
-
-            @Override
-            public List<Record> list()
-            {
-                return null;
-            }
-
-            @Override
-            public <T> List<T> list( Function<Record,T> mapFunction )
-            {
-                return null;
-            }
-
-            @Override
-            public ResultSummary consume()
-            {
-                return null;
-            }
-
-            @Override
-            public void remove()
-            {
-                throw new UnsupportedOperationException();
-            }
-        };
-    }
-
-    private Map<String,Object> serverInfo( String role, List<String> addresses )
-    {
-        Map<String,Object> map = new HashMap<>();
-        map.put( "role", role );
-        map.put( "addresses", addresses );
-
-        return map;
-    }
-
-    private ConnectionPool pool()
+    private ConnectionPool pool( final Answer toGetServers, final Answer... furtherGetServers )
     {
         ConnectionPool pool = mock( ConnectionPool.class );
 
-
-        when( pool.acquire( any(BoltServerAddress.class) ) ).thenAnswer( new Answer<Connection>()
+        when( pool.acquire( any( BoltServerAddress.class ) ) ).thenAnswer( new Answer<Connection>()
         {
+            int answer;
+
             @Override
             public Connection answer( InvocationOnMock invocationOnMock ) throws Throwable
             {
-                BoltServerAddress address = (BoltServerAddress) invocationOnMock.getArguments()[0];
+                BoltServerAddress address = invocationOnMock.getArgumentAt( 0, BoltServerAddress.class );
                 Connection connection = mock( Connection.class );
                 when( connection.isOpen() ).thenReturn( true );
-                when(connection.address()).thenReturn( address );
+                when( connection.address() ).thenReturn( address );
+                doAnswer( withKeys( "ttl", "servers" ) ).when( connection ).run(
+                        eq( GET_SERVERS ),
+                        eq( Collections.<String,Value>emptyMap() ),
+                        any( Collector.class ) );
+                if ( answer > furtherGetServers.length )
+                {
+                    answer = furtherGetServers.length;
+                }
+                int offset = answer++;
+                doAnswer( offset == 0 ? toGetServers : furtherGetServers[offset - 1] )
+                        .when( connection ).pullAll( any( Collector.class ) );
 
                 return connection;
             }
         } );
 
         return pool;
-    }
-
-    private Logging logging()
-    {
-        Logging mock = mock( Logging.class );
-        when( mock.getLog( anyString() ) ).thenReturn( mock( Logger.class ) );
-        return mock;
     }
 }

@@ -16,16 +16,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal;
+package org.neo4j.driver.internal.cluster;
 
-import org.neo4j.driver.internal.net.BoltServerAddress;
-
-/**
- * Interface used for tracking errors when connected to a cluster.
- */
-public interface RoutingErrorHandler
+public class RoutingSettings
 {
-    void onConnectionFailure( BoltServerAddress address );
+    final int maxRoutingFailures;
+    final long retryTimeoutDelay;
 
-    void onWriteFailure( BoltServerAddress address );
+    public RoutingSettings( int maxRoutingFailures, long retryTimeoutDelay )
+    {
+        this.maxRoutingFailures = maxRoutingFailures;
+        this.retryTimeoutDelay = retryTimeoutDelay;
+    }
 }

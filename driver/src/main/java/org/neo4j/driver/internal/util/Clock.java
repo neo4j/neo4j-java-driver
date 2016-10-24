@@ -26,12 +26,20 @@ public interface Clock
     /** Current time, in milliseconds. */
     long millis();
 
+    void sleep( long millis ) throws InterruptedException;
+
     Clock SYSTEM = new Clock()
     {
         @Override
         public long millis()
         {
             return System.currentTimeMillis();
+        }
+
+        @Override
+        public void sleep( long millis ) throws InterruptedException
+        {
+            Thread.sleep( millis );
         }
     };
 }

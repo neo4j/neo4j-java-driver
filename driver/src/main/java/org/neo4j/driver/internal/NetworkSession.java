@@ -113,6 +113,11 @@ public class NetworkSession implements Session
     public StatementResult run( Statement statement )
     {
         ensureConnectionIsValidBeforeRunningSession();
+        return run( connection, statement );
+    }
+
+    public static StatementResult run( Connection connection, Statement statement )
+    {
         InternalStatementResult cursor = new InternalStatementResult( connection, null, statement );
         connection.run( statement.text(), statement.parameters().asMap( Values.ofValue() ),
                 cursor.runResponseCollector() );
