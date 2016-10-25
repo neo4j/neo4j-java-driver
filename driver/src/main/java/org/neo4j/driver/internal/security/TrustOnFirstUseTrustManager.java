@@ -28,11 +28,12 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.HashMap;
+import java.util.Map;
 import javax.net.ssl.X509TrustManager;
 
-import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.internal.util.BytePrinter;
+import org.neo4j.driver.v1.Logger;
 
 import static java.lang.String.format;
 import static org.neo4j.driver.internal.util.CertificateTool.X509CertToString;
@@ -50,21 +51,27 @@ public class TrustOnFirstUseTrustManager implements X509TrustManager
      * Then when we try to connect to a known server again, we will authenticate the server by checking if it provides
      * the same certificate as the one saved in this file.
      */
-    private final File knownHosts;
+    private final File knownHostsFile;
 
-    /** The server ip:port (in digits) of the server that we are currently connected to */
-    private final String serverId;
+    /** The map of server ip:port (in digits) and its known certificate we've registered */
+    private final Map<String, String> knownHosts;
     private final Logger logger;
+    private final String serverId;
 
-    /** The known certificate we've registered for this server */
-    private String fingerprint;
-
-    TrustOnFirstUseTrustManager( BoltServerAddress address, File knownHosts, Logger logger ) throws IOException
+    TrustOnFirstUseTrustManager( String serverId, File knownHosts, Map<String,String> preLoadedKnownHosts, Logger logger )
+            throws IOException
     {
         this.logger = logger;
-        this.serverId = address.toString();
-        this.knownHosts = knownHosts;
-        load();
+        this.knownHostsFile = knownHosts;
+        this.knownHosts = preLoadedKnownHosts;
+        this.serverId = serverId;
+    }
+
+    public static Map<String, String> createKnownHostsMap( File knownHostsFile ) throws IOException
+    {
+        Map<String, String> knownHosts = new HashMap<>();
+        load( knownHostsFile, knownHosts );
+        return knownHosts;
     }
 
     /**
@@ -72,27 +79,27 @@ public class TrustOnFirstUseTrustManager implements X509TrustManager
      *
      * @throws IOException
      */
-    private void load() throws IOException
+    private static synchronized void load( File knownHostsFile, Map<String, String> knownHosts ) throws IOException
     {
-        if ( !knownHosts.exists() )
+        if ( !knownHostsFile.exists() )
         {
             return;
         }
 
-        assertKnownHostFileReadable();
+        assertKnownHostFileReadable( knownHostsFile );
 
-        BufferedReader reader = new BufferedReader( new FileReader( knownHosts ) );
+        BufferedReader reader = new BufferedReader( new FileReader( knownHostsFile ) );
         String line;
         while ( (line = reader.readLine()) != null )
         {
             if ( (!line.trim().startsWith( "#" )) )
             {
                 String[] strings = line.split( " " );
-                if ( strings[0].trim().equals( serverId ) )
+                if(strings.length == 2)
                 {
-                    // load the certificate
-                    fingerprint = strings[1].trim();
-                    return;
+                    // we need to load all serverId and finger prints from the file as we do not know which one is
+                    // our current connection.
+                    knownHosts.put( strings[0], strings[1] );
                 }
             }
         }
@@ -100,45 +107,45 @@ public class TrustOnFirstUseTrustManager implements X509TrustManager
     }
 
     /**
-     * Save a new (server_ip, cert) pair into knownHosts file
+     * Save a new (server_ip, cert) pair into knownHostsFile file
      *
      * @param fingerprint the SHA-512 fingerprint of the host certificate
      */
-    private void saveTrustedHost( String fingerprint ) throws IOException
+    private synchronized void saveTrustedHost( String serverId, String fingerprint ) throws IOException
     {
-        this.fingerprint = fingerprint;
 
+        knownHosts.put( serverId, fingerprint );
         logger.warn( "Adding %s as known and trusted certificate for %s.", fingerprint, serverId );
         createKnownCertFileIfNotExists();
 
         assertKnownHostFileWritable();
-        BufferedWriter writer = new BufferedWriter( new FileWriter( knownHosts, true ) );
-        writer.write( serverId + " " + this.fingerprint );
+        BufferedWriter writer = new BufferedWriter( new FileWriter( knownHostsFile, true ) );
+        writer.write( serverId + " " + fingerprint );
         writer.newLine();
         writer.close();
     }
 
 
-    private void assertKnownHostFileReadable() throws IOException
+    private static void assertKnownHostFileReadable( File knownHostsFile ) throws IOException
     {
-        if( !knownHosts.canRead() )
+        if( !knownHostsFile.canRead() )
         {
             throw new IOException( format(
                     "Failed to load certificates from file %s as you have no read permissions to it.\n" +
                     "Try configuring the Neo4j driver to use a file system location you do have read permissions to.",
-                    knownHosts.getAbsolutePath()
+                    knownHostsFile.getAbsolutePath()
             ) );
         }
     }
 
     private void assertKnownHostFileWritable() throws IOException
     {
-        if( !knownHosts.canWrite() )
+        if( !knownHostsFile.canWrite() )
         {
             throw new IOException( format(
                     "Failed to write certificates to file %s as you have no write permissions to it.\n" +
                     "Try configuring the Neo4j driver to use a file system location you do have write permissions to.",
-                    knownHosts.getAbsolutePath()
+                    knownHostsFile.getAbsolutePath()
             ) );
         }
     }
@@ -161,24 +168,25 @@ public class TrustOnFirstUseTrustManager implements X509TrustManager
         X509Certificate certificate = chain[0];
 
         String cert = fingerprint( certificate );
+        String fingerprint = this.knownHosts.get( serverId );
 
-        if ( this.fingerprint == null )
+        if ( fingerprint == null )
         {
             try
             {
-                saveTrustedHost( cert );
+                saveTrustedHost( serverId, cert );
             }
             catch ( IOException e )
             {
                 throw new CertificateException( format(
                         "Failed to save the server ID and the certificate received from the server to file %s.\n" +
                         "Server ID: %s\nReceived cert:\n%s",
-                        knownHosts.getAbsolutePath(), serverId, X509CertToString( cert ) ), e );
+                        knownHostsFile.getAbsolutePath(), serverId, X509CertToString( cert ) ), e );
             }
         }
         else
         {
-            if ( !this.fingerprint.equals( cert ) )
+            if ( !fingerprint.equals( cert ) )
             {
                 throw new CertificateException( format(
                         "Unable to connect to neo4j at `%s`, because the certificate the server uses has changed. " +
@@ -187,8 +195,8 @@ public class TrustOnFirstUseTrustManager implements X509TrustManager
                         "`%s` " +
                         "in the file `%s`.\n" +
                         "The old certificate saved in file is:\n%sThe New certificate received is:\n%s",
-                        serverId, serverId, knownHosts.getAbsolutePath(),
-                        X509CertToString( this.fingerprint ), X509CertToString( cert ) ) );
+                        serverId, serverId, knownHostsFile.getAbsolutePath(),
+                        X509CertToString( fingerprint ), X509CertToString( cert ) ) );
             }
         }
     }
@@ -213,34 +221,38 @@ public class TrustOnFirstUseTrustManager implements X509TrustManager
 
     private File createKnownCertFileIfNotExists() throws IOException
     {
-        if ( !knownHosts.exists() )
+        if ( !knownHostsFile.exists() )
         {
-            File parentDir = knownHosts.getParentFile();
+            File parentDir = knownHostsFile.getParentFile();
             try
             {
                 if ( parentDir != null && !parentDir.exists() )
                 {
                     if ( !parentDir.mkdirs() )
                     {
-                        throw new IOException( "Failed to create directories for the known hosts file in " + knownHosts.getAbsolutePath() +
+                        throw new IOException( "Failed to create directories for the known hosts file in " + knownHostsFile
+
+                                .getAbsolutePath() +
                                                ". This is usually because you do not have write permissions to the directory. " +
                                                "Try configuring the Neo4j driver to use a file system location you do have write permissions to." );
                     }
                 }
-                if ( !knownHosts.createNewFile() )
+                if ( !knownHostsFile.createNewFile() )
                 {
-                    throw new IOException( "Failed to create a known hosts file at " + knownHosts.getAbsolutePath() +
+                    throw new IOException( "Failed to create a known hosts file at " + knownHostsFile
+                            .getAbsolutePath() +
                                            ". This is usually because you do not have write permissions to the directory. " +
                                            "Try configuring the Neo4j driver to use a file system location you do have write permissions to." );
                 }
             }
             catch( SecurityException e )
             {
-                throw new IOException( "Failed to create known host file and/or parent directories at " + knownHosts.getAbsolutePath() +
+                throw new IOException( "Failed to create known host file and/or parent directories at " + knownHostsFile
+                        .getAbsolutePath() +
                                        ". This is usually because you do not have write permission to the directory. " +
                                        "Try configuring the Neo4j driver to use a file location you have write permissions to." );
             }
-            BufferedWriter writer = new BufferedWriter( new FileWriter( knownHosts ) );
+            BufferedWriter writer = new BufferedWriter( new FileWriter( knownHostsFile ) );
             writer.write( "# This file contains trusted certificates for Neo4j servers, it's created by Neo4j drivers." );
             writer.newLine();
             writer.write( "# You can configure the location of this file in `org.neo4j.driver.Config`" );
@@ -248,7 +260,7 @@ public class TrustOnFirstUseTrustManager implements X509TrustManager
             writer.close();
         }
 
-        return knownHosts;
+        return knownHostsFile;
     }
 
     /**

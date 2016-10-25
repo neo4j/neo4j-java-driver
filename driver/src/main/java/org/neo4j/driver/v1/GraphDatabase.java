@@ -34,7 +34,6 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.util.BiFunction;
 import org.neo4j.driver.v1.util.Function;
 
 import static java.lang.String.format;
@@ -222,8 +221,7 @@ public class GraphDatabase
             case TRUST_CUSTOM_CA_SIGNED_CERTIFICATES:
                 return SecurityPlan.forSignedCertificates( config.trustStrategy().certFile() );
             case TRUST_ON_FIRST_USE:
-                return SecurityPlan.forTrustOnFirstUse( config.trustStrategy().certFile(),
-                        address, logger );
+                return SecurityPlan.forTrustOnFirstUse( config.trustStrategy().certFile() );
             default:
                 throw new ClientException(
                         "Unknown TLS authentication strategy: " + config.trustStrategy().strategy().name() );

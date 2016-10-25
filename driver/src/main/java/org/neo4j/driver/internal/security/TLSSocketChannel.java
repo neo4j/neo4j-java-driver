@@ -22,18 +22,18 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
 import java.security.GeneralSecurityException;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 import javax.net.ssl.SSLEngineResult.Status;
+import javax.net.ssl.TrustManager;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.internal.util.BytePrinter;
-import org.neo4j.driver.internal.util.BytePrinter;
-import org.neo4j.driver.v1.Config.TrustStrategy;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
@@ -70,7 +70,7 @@ public class TLSSocketChannel implements ByteChannel
     public TLSSocketChannel( BoltServerAddress address, SecurityPlan securityPlan, ByteChannel channel, Logger logger )
             throws GeneralSecurityException, IOException
     {
-        this( channel, logger, createSSLEngine( address, securityPlan.sslContext() ) );
+        this( channel, logger, createSSLEngine( address, securityPlan, logger ) );
     }
 
     public TLSSocketChannel( ByteChannel channel, Logger logger, SSLEngine sslEngine ) throws GeneralSecurityException, IOException
@@ -356,10 +356,23 @@ public class TLSSocketChannel implements ByteChannel
     /**
      * Create SSLEngine with the SSLContext just created.
      * @param address the host to connect to
-     * @param sslContext the current ssl context
+     * @param securityPlan the security plan which holds the current ssl context
+     * @param logger the logger
      */
-    private static SSLEngine createSSLEngine( BoltServerAddress address, SSLContext sslContext )
+    private static SSLEngine createSSLEngine( BoltServerAddress address, SecurityPlan securityPlan, Logger logger )
+            throws IOException, KeyManagementException, NoSuchAlgorithmException
     {
+        SSLContext sslContext = securityPlan.sslContext();
+        if( securityPlan instanceof SecurityPlan.TrustOnFirstUseSecurityPlan )
+        {
+            // It require a new sslContext for each connection
+            sslContext = SSLContext.getInstance( "TLS" );
+            SecurityPlan.TrustOnFirstUseSecurityPlan plan = (SecurityPlan.TrustOnFirstUseSecurityPlan) securityPlan;
+            sslContext.init( new KeyManager[0], new TrustManager[]{
+                    new TrustOnFirstUseTrustManager( address.toString(), plan.knownHostFile(), plan.trustOnFirstUseMap(), logger )},
+                    null );
+        }
+
         SSLEngine sslEngine = sslContext.createSSLEngine( address.host(), address.port() );
         sslEngine.setUseClientMode( true );
         return sslEngine;
