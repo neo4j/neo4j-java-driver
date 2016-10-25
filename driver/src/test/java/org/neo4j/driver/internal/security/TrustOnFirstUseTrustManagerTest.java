@@ -29,9 +29,8 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Scanner;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.v1.Logger;
@@ -91,7 +90,7 @@ public class TrustOnFirstUseTrustManagerTest
         // Given
         BoltServerAddress knownServerAddress = new BoltServerAddress( knownServerIp, knownServerPort );
         Logger logger = mock(Logger.class);
-        Map<String,String> knownHostsMap = TrustOnFirstUseTrustManager.createKnownHostsMap( knownCertsFile );
+        ConcurrentHashMap<String,String> knownHostsMap = TrustOnFirstUseTrustManager.createKnownHostsMap( knownCertsFile );
         TrustOnFirstUseTrustManager manager =
                 new TrustOnFirstUseTrustManager( knownServerAddress.toString(), knownCertsFile, knownHostsMap, logger );
 
@@ -119,7 +118,7 @@ public class TrustOnFirstUseTrustManagerTest
         int newPort = 200;
         BoltServerAddress address = new BoltServerAddress( knownServerIp, newPort );
         Logger logger = mock(Logger.class);
-        Map<String,String> knownHostsMap = TrustOnFirstUseTrustManager.createKnownHostsMap( knownCertsFile );
+        ConcurrentHashMap<String,String> knownHostsMap = TrustOnFirstUseTrustManager.createKnownHostsMap( knownCertsFile );
         TrustOnFirstUseTrustManager manager =
                 new TrustOnFirstUseTrustManager( address.toString(), knownCertsFile, knownHostsMap, logger );
 
@@ -192,7 +191,7 @@ public class TrustOnFirstUseTrustManagerTest
         {
             TrustOnFirstUseTrustManager manager =
                     new TrustOnFirstUseTrustManager( new BoltServerAddress( knownServerIp, knownServerPort ).toString(),
-                            knownHostFile, new HashMap<String, String>(), mock( Logger.class ) );
+                            knownHostFile, new ConcurrentHashMap<String, String>(), mock( Logger.class ) );
             manager.checkServerTrusted( new X509Certificate[]{ knownCertificate}, null );
             fail( "Should have failed in write to certs" );
         }

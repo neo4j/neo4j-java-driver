@@ -28,8 +28,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.net.ssl.X509TrustManager;
 
 import org.neo4j.driver.internal.util.BytePrinter;
@@ -54,11 +54,11 @@ public class TrustOnFirstUseTrustManager implements X509TrustManager
     private final File knownHostsFile;
 
     /** The map of server ip:port (in digits) and its known certificate we've registered */
-    private final Map<String, String> knownHosts;
+    private final ConcurrentHashMap<String, String> knownHosts;
     private final Logger logger;
     private final String serverId;
 
-    TrustOnFirstUseTrustManager( String serverId, File knownHosts, Map<String,String> preLoadedKnownHosts, Logger logger )
+    TrustOnFirstUseTrustManager( String serverId, File knownHosts, ConcurrentHashMap<String,String> preLoadedKnownHosts, Logger logger )
             throws IOException
     {
         this.logger = logger;
@@ -67,9 +67,9 @@ public class TrustOnFirstUseTrustManager implements X509TrustManager
         this.serverId = serverId;
     }
 
-    public static Map<String, String> createKnownHostsMap( File knownHostsFile ) throws IOException
+    public static ConcurrentHashMap<String, String> createKnownHostsMap( File knownHostsFile ) throws IOException
     {
-        Map<String, String> knownHosts = new HashMap<>();
+        ConcurrentHashMap<String, String> knownHosts = new ConcurrentHashMap<>();
         load( knownHostsFile, knownHosts );
         return knownHosts;
     }

@@ -27,6 +27,7 @@ import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
@@ -68,24 +69,23 @@ public class SecurityPlan
     public static SecurityPlan forTrustOnFirstUse( File knownHosts )
             throws IOException, KeyManagementException, NoSuchAlgorithmException
     {
-        Map<String,String> preLoadKnownHostsMap = TrustOnFirstUseTrustManager.createKnownHostsMap( knownHosts );
+        ConcurrentHashMap<String,String> preLoadKnownHostsMap = TrustOnFirstUseTrustManager.createKnownHostsMap( knownHosts );
         return new TrustOnFirstUseSecurityPlan( knownHosts, preLoadKnownHostsMap );
     }
 
     public static class TrustOnFirstUseSecurityPlan extends SecurityPlan
     {
-        private final Map<String, String> trustOnFirstUseMap;
+        private final ConcurrentHashMap<String, String> trustOnFirstUseMap;
         private final File knownHostsFile;
 
-        private TrustOnFirstUseSecurityPlan( File knownHostsFile, Map<String, String>
-                trustOnFirstUseMap )
+        private TrustOnFirstUseSecurityPlan( File knownHostsFile, ConcurrentHashMap<String, String> trustOnFirstUseMap )
         {
             super( true, null );
             this.trustOnFirstUseMap = trustOnFirstUseMap;
             this.knownHostsFile = knownHostsFile;
         }
 
-        public Map<String, String> trustOnFirstUseMap()
+        public ConcurrentHashMap<String, String> trustOnFirstUseMap()
         {
             return this.trustOnFirstUseMap;
         }
