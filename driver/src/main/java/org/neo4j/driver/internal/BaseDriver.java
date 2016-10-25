@@ -20,10 +20,19 @@
 package org.neo4j.driver.internal;
 
 import org.neo4j.driver.internal.security.SecurityPlan;
+import org.neo4j.driver.internal.util.Consumer;
+import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
+import org.neo4j.driver.v1.RetryLogic;
 import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.v1.exceptions.NotCommittedException;
+import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.v1.exceptions.SessionExpiredException;
+
+import static java.lang.String.format;
 
 abstract class BaseDriver implements Driver
 {
@@ -41,6 +50,42 @@ abstract class BaseDriver implements Driver
     public boolean isEncrypted()
     {
         return securityPlan.requiresEncryption();
+    }
+
+    public void transact( RetryLogic logic, AccessMode mode, Consumer<Transaction> work )
+            throws NotCommittedException, ServiceUnavailableException
+    {
+        int remaining = logic.attempts();
+        while ( remaining > 0 )
+        {
+            try ( Session session = session( mode ) )
+            {
+                Transaction tx = session.beginTransaction();
+                try {
+                    work.accept( tx );
+                    tx.success();
+                    return;
+                }
+                catch ( SessionExpiredException e )
+                {
+                    tx.failure();
+                    remaining -= 1;
+                }
+                finally
+                {
+                    tx.close();
+                }
+            }
+            try
+            {
+                Thread.sleep( logic.pause() );
+            }
+            catch ( InterruptedException e )
+            {
+                throw new NotCommittedException( format( "Interrupted after %d attempts", logic.attempts() - remaining ) );
+            }
+        }
+        throw new NotCommittedException( format( "Unable to commit transaction after %d attempts", logic.attempts() ) );
     }
 
 }

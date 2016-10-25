@@ -18,7 +18,6 @@
  */
 package org.neo4j.driver.internal;
 
-import gherkin.lexer.Tr;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -39,8 +38,10 @@ import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.net.pooling.PooledConnection;
 import org.neo4j.driver.internal.net.pooling.SocketConnectionPool;
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.util.Consumer;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Config;
+import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
@@ -61,6 +62,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import static org.neo4j.driver.v1.RetryLogic.TRY_UP_TO_3_TIMES_WITH_10_SECOND_PAUSE;
 
 @Ignore
 public class RoutingDriverStubTest
@@ -377,6 +380,30 @@ public class RoutingDriverStubTest
         assertThat( server.exitStatus(), equalTo( 0 ) );
     }
 
+    @Test
+    public void shouldReplayWhenSessionExpired()
+            throws IOException, InterruptedException, StubServer.ForceKilled
+    {
+        // Given
+        StubServer server = StubServer.start( "transact_get_servers.script", 9001 );
+
+        // When
+        StubServer.start( "dead_server.script", 9021 );
+        StubServer.start( "live_server.script", 9022 );
+        try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9001", config ) )
+        {
+            driver.transact( TRY_UP_TO_3_TIMES_WITH_10_SECOND_PAUSE, AccessMode.READ, new Consumer<Transaction>()
+            {
+                public void accept( Transaction tx )
+                {
+                    tx.run( "MATCH (n) RETURN n.name" ).consume();
+                    tx.success();
+                }
+            } );
+        }
+        // Finally
+        assertThat( server.exitStatus(), equalTo( 0 ) );
+    }
 
     @Test
     public void shouldHandleAcquireWriteSession() throws IOException, InterruptedException, StubServer.ForceKilled

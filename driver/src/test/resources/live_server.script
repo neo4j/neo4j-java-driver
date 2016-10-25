@@ -1,0 +1,11 @@
+!: AUTO INIT
+!: AUTO RESET
+!: AUTO RUN "RETURN 1 // JavaDriver poll to test connection" {}
+!: AUTO PULL_ALL
+
+C: RUN "MATCH (n) RETURN n.name" {}
+C: PULL_ALL
+S: SUCCESS {"fields": ["n.name"]}
+   RECORD ["Alice"]
+   RECORD ["Bob"]
+   SUCCESS {}

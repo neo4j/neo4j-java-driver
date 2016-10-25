@@ -24,6 +24,9 @@ import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.v1.exceptions.SessionExpiredException;
+import org.neo4j.driver.v1.util.Function;
 
 import static java.lang.String.format;
 

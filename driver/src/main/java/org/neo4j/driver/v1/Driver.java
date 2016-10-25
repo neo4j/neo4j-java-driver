@@ -21,6 +21,10 @@ package org.neo4j.driver.v1;
 
 import java.net.URI;
 
+import org.neo4j.driver.internal.util.Consumer;
+import org.neo4j.driver.v1.exceptions.NotCommittedException;
+import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
+
 /**
  * A Neo4j database driver, through which you can create {@link Session sessions} to run statements against the database.
  * <p>
@@ -87,6 +91,9 @@ public interface Driver extends AutoCloseable
     Session session();
 
     Session session(AccessMode mode);
+
+    void transact( RetryLogic logic, AccessMode mode, Consumer<Transaction> work )
+            throws NotCommittedException, ServiceUnavailableException;
 
     /**
      * Close all the resources assigned to this driver
