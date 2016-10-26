@@ -20,7 +20,6 @@
 package org.neo4j.driver.internal;
 
 import org.neo4j.driver.internal.security.SecurityPlan;
-import org.neo4j.driver.internal.util.Consumer;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Logger;
@@ -31,8 +30,11 @@ import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.NotCommittedException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
+import org.neo4j.driver.v1.util.Function;
 
 import static java.lang.String.format;
+
+import static org.neo4j.driver.v1.RetryLogic.TRY_UP_TO_3_TIMES_WITH_10_SECOND_PAUSE;
 
 abstract class BaseDriver implements Driver
 {
@@ -52,7 +54,7 @@ abstract class BaseDriver implements Driver
         return securityPlan.requiresEncryption();
     }
 
-    public void transact( RetryLogic logic, AccessMode mode, Consumer<Transaction> work )
+    public <T> T transact( RetryLogic logic, AccessMode mode, Function<Transaction, T> work )
             throws NotCommittedException, ServiceUnavailableException
     {
         int remaining = logic.attempts();
@@ -62,9 +64,9 @@ abstract class BaseDriver implements Driver
             {
                 Transaction tx = session.beginTransaction();
                 try {
-                    work.accept( tx );
+                    T result = work.apply( tx );
                     tx.success();
-                    return;
+                    return result;
                 }
                 catch ( SessionExpiredException e )
                 {
@@ -88,4 +90,15 @@ abstract class BaseDriver implements Driver
         throw new NotCommittedException( format( "Unable to commit transaction after %d attempts", logic.attempts() ) );
     }
 
+    @Override
+    public <T> T read( Function<Transaction, T> work ) throws NotCommittedException, ServiceUnavailableException
+    {
+        return transact( TRY_UP_TO_3_TIMES_WITH_10_SECOND_PAUSE, AccessMode.READ, work );
+    }
+
+    @Override
+    public <T> T write( Function<Transaction, T> work ) throws NotCommittedException, ServiceUnavailableException
+    {
+        return transact( TRY_UP_TO_3_TIMES_WITH_10_SECOND_PAUSE, AccessMode.WRITE, work );
+    }
 }
