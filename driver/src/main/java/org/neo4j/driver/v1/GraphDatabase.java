@@ -34,7 +34,6 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.util.BiFunction;
 import org.neo4j.driver.v1.util.Function;
 
 import static java.lang.String.format;
@@ -191,7 +190,13 @@ public class GraphDatabase
         case "bolt":
             return new DirectDriver( address, connectionPool, securityPlan, config.logging() );
         case "bolt+routing":
-            return new RoutingDriver( address, connectionPool, securityPlan, SESSION_PROVIDER, Clock.SYSTEM, config.logging() );
+            return new RoutingDriver(
+                    config.routingSettings(),
+                    address,
+                    connectionPool,
+                    securityPlan,
+                    Clock.SYSTEM,
+                    config.logging() );
         default:
             throw new ClientException( format( "Unsupported URI scheme: %s", scheme ) );
         }
