@@ -64,6 +64,7 @@ abstract class BaseDriver implements Driver
         {
             try ( Session session = session( mode ) )
             {
+                boolean failed = false;
                 Transaction tx = session.beginTransaction();
                 try {
                     T result = work.apply( tx );
@@ -72,12 +73,29 @@ abstract class BaseDriver implements Driver
                 }
                 catch ( SessionExpiredException e )
                 {
+                    failed = true;
                     tx.failure();
                     remaining -= 1;
                 }
                 finally
                 {
-                    tx.close();
+                    if ( failed )
+                    {
+                        try
+                        {
+                            tx.close();
+                        }
+                        catch ( Exception ex )
+                        {
+                            // ignore errors if we've already failed as
+                            // we already know this connection is problematic
+                        }
+                    }
+
+                    else
+                    {
+                        tx.close();
+                    }
                 }
             }
             try

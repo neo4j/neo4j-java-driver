@@ -380,29 +380,62 @@ public class RoutingDriverStubTest
     }
 
     @Test
-    public void shouldReplayWhenSessionExpired()
+    public void shouldReplayTransactionWithTransact()
             throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
-        StubServer server = StubServer.start( "transact_get_servers.script", 9001 );
+        StubServer.start( "transact_get_servers.script", 9001 );
+        StubServer.start( "transact_get_servers.script", 9002 );
 
         // When
         StubServer.start( "transact_dead_server.script", 9021 );
         StubServer.start( "transact_live_server.script", 9022 );
+        List<Record> records;
         try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9001", config ) )
         {
-            driver.transact( TRY_UP_TO_3_TIMES_WITH_5_SECOND_PAUSE, AccessMode.READ, new Function<Transaction, Void>()
+            records = driver.transact(
+                    TRY_UP_TO_3_TIMES_WITH_5_SECOND_PAUSE,
+                    AccessMode.READ,
+                    new Function<Transaction, List<Record>>()
             {
-                public Void apply( Transaction tx )
+                public List<Record> apply( Transaction tx )
                 {
-                    tx.run( "MATCH (n) RETURN n.name" ).consume();
-                    tx.success();
-                    return null;
+                    return tx.run( "MATCH (n) RETURN n.name AS name" ).list();
                 }
             } );
         }
         // Finally
-        assertThat( server.exitStatus(), equalTo( 0 ) );
+        assertThat( records.size(), equalTo( 2 ) );
+        assertThat( records.get( 0 ).get( "name" ).asString(), equalTo( "Alice" ) );
+        assertThat( records.get( 1 ).get( "name" ).asString(), equalTo( "Bob" ) );
+    }
+
+    @Test
+    public void shouldReplayTransactionWithRead()
+            throws IOException, InterruptedException, StubServer.ForceKilled
+    {
+        // Given
+        StubServer.start( "transact_get_servers.script", 9001 );
+        StubServer.start( "transact_get_servers.script", 9002 );
+
+        // When
+        StubServer.start( "transact_dead_server.script", 9021 );
+        StubServer.start( "transact_live_server.script", 9022 );
+        List<Record> records;
+        try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9001", config ) )
+        {
+            records = driver.read( new Function<Transaction, List<Record>>()
+            {
+                public List<Record> apply( Transaction tx )
+                {
+                    return tx.run( "MATCH (n) RETURN n.name AS name" ).list();
+                }
+            } );
+        }
+        // Finally
+        assertThat( records.size(), equalTo( 2 ) );
+        assertThat( records.get( 0 ).get( "name" ).asString(), equalTo( "Alice" ) );
+        assertThat( records.get( 1 ).get( "name" ).asString(), equalTo( "Bob" ) );
     }
 
     @Test
