@@ -34,16 +34,18 @@ import org.neo4j.driver.v1.util.Function;
 
 import static java.lang.String.format;
 
-import static org.neo4j.driver.v1.RetryLogic.TRY_UP_TO_3_TIMES_WITH_10_SECOND_PAUSE;
+import static org.neo4j.driver.v1.RetryLogic.TRY_UP_TO_3_TIMES_WITH_5_SECOND_PAUSE;
 
 abstract class BaseDriver implements Driver
 {
+    private final DriverContract contract;
     private final SecurityPlan securityPlan;
     protected final Logger log;
     private final static String DRIVER_LOG_NAME = "Driver";
 
-    BaseDriver( SecurityPlan securityPlan, Logging logging )
+    BaseDriver( DriverContract contract, SecurityPlan securityPlan, Logging logging )
     {
+        this.contract = contract;
         this.securityPlan = securityPlan;
         this.log = logging.getLog( DRIVER_LOG_NAME );
     }
@@ -93,12 +95,12 @@ abstract class BaseDriver implements Driver
     @Override
     public <T> T read( Function<Transaction, T> work ) throws NotCommittedException, ServiceUnavailableException
     {
-        return transact( TRY_UP_TO_3_TIMES_WITH_10_SECOND_PAUSE, AccessMode.READ, work );
+        return transact( contract.retryLogic(), AccessMode.READ, work );
     }
 
     @Override
     public <T> T write( Function<Transaction, T> work ) throws NotCommittedException, ServiceUnavailableException
     {
-        return transact( TRY_UP_TO_3_TIMES_WITH_10_SECOND_PAUSE, AccessMode.WRITE, work );
+        return transact( contract.retryLogic(), AccessMode.WRITE, work );
     }
 }

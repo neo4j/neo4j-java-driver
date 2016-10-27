@@ -32,15 +32,19 @@ import static java.lang.String.format;
 
 public class DirectDriver extends BaseDriver
 {
-    protected final ConnectionPool connections;
     private final BoltServerAddress address;
+    protected final ConnectionPool connections;
 
-    public DirectDriver( BoltServerAddress address, ConnectionPool connections, SecurityPlan securityPlan,
+    public DirectDriver(
+            BoltServerAddress address,
+            DriverContract contract,
+            ConnectionPool connections,
+            SecurityPlan securityPlan,
             Logging logging )
     {
-        super( securityPlan, logging );
-        this.connections = connections;
+        super( contract, securityPlan, logging );
         this.address = address;
+        this.connections = connections;
     }
 
     @Override
