@@ -20,6 +20,9 @@ package org.neo4j.driver.v1.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.net.StandardSocketOptions;
 import java.net.URI;
 import java.nio.channels.SocketChannel;
@@ -47,9 +50,10 @@ public class Neo4jRunner
     public static final BoltServerAddress DEFAULT_ADDRESS = BoltServerAddress.from( DEFAULT_URI );
     private Driver driver;
     private Neo4jSettings currentSettings = Neo4jSettings.DEFAULT_SETTINGS;
+    private BoltServerAddress currentConnector = currentSettings.boltConnectorAddress();
 
-    public static final String NEO4J_HOME = new File("../target/neo4j/neo4jhome").getAbsolutePath();
-    private static final String NEORUN_PATH = new File("../neokit/neorun.py").getAbsolutePath();
+    public static final String NEO4J_HOME = new File( "../target/neo4j/neo4jhome" ).getAbsolutePath();
+    private static final String NEORUN_PATH = new File( "../neokit/neorun.py" ).getAbsolutePath();
     private static final String NEO4J_CONF = new File( NEO4J_HOME, "conf/neo4j.conf" ).getAbsolutePath();
 
     /** Global runner controlling a single server, used to avoid having to restart the server between tests */
@@ -75,10 +79,10 @@ public class Neo4jRunner
         }
     }
 
-    public void ensureRunning(Neo4jSettings neo4jSettings) throws IOException, InterruptedException
+    public void ensureRunning( Neo4jSettings neo4jSettings ) throws IOException, InterruptedException
     {
         ServerStatus status = serverStatus();
-        switch( status )
+        switch ( status )
         {
         case OFFLINE:
             updateServerSettings( neo4jSettings );
@@ -101,27 +105,28 @@ public class Neo4jRunner
         deleteDefaultKnownCertFileIfExists();
 
         int processStatus = runCommand( "python", NEORUN_PATH, "--start=" + NEO4J_HOME );
-        if (processStatus != 0) // not success
+        if ( processStatus != 0 ) // not success
         {
             throw new IOException( "Failed to start neo4j server." );
         }
-        driver = GraphDatabase.driver( DEFAULT_URI /* default encryption REQUIRED_NON_LOCAL */ );
+        currentConnector = currentSettings.boltConnectorAddress();
+        driver = GraphDatabase.driver( "bolt://" + currentConnector.toString() /* default encryption REQUIRED_NON_LOCAL */ );
     }
 
     public synchronized void stopNeo4j() throws IOException
     {
-        if(serverStatus() == ServerStatus.OFFLINE)
+        if ( serverStatus() == ServerStatus.OFFLINE )
         {
             return;
         }
-        if(driver != null)
+        if ( driver != null )
         {
             driver.close();
             driver = null;
         }
 
         int processStatus = runCommand( "python", NEORUN_PATH, "--stop=" + NEO4J_HOME );
-        if( processStatus != 0 )
+        if ( processStatus != 0 )
         {
             throw new IOException( "Failed to stop neo4j server." );
         }
@@ -135,6 +140,7 @@ public class Neo4jRunner
 
     /**
      * Restart the server with default testing server configuration
+     *
      * @throws IOException
      */
     public void restartNeo4j() throws IOException
@@ -144,18 +150,19 @@ public class Neo4jRunner
 
     /**
      * Will only restart the server if any configuration changes happens
+     *
      * @param neo4jSettings
      * @throws IOException
      */
-    public void restartNeo4j(Neo4jSettings neo4jSettings) throws IOException
+    public void restartNeo4j( Neo4jSettings neo4jSettings ) throws IOException
     {
-        if( updateServerSettings( neo4jSettings ) ) // needs to update server setting files
+        if ( updateServerSettings( neo4jSettings ) ) // needs to update server setting files
         {
             forceToRestart();
         }
     }
 
-    @SuppressWarnings("LoopStatementThatDoesntLoop")
+    @SuppressWarnings( "LoopStatementThatDoesntLoop" )
     private int runCommand( String... cmd ) throws IOException
     {
         ProcessBuilder pb = new ProcessBuilder().inheritIO();
@@ -167,13 +174,13 @@ public class Neo4jRunner
                 // version to use for the driver tests.
                 env.containsKey( "NEO4J_JAVA" ) ? env.get( "NEO4J_JAVA" ) :
                 System.getProperties().getProperty( "java.home" ) );
-        if( NEORUN_START_ARGS != null )
+        if ( NEORUN_START_ARGS != null )
         {
             // overwrite the env var in the sub process if the system property is specified
             pb.environment().put( "NEORUN_START_ARGS", NEORUN_START_ARGS );
         }
         Process process = pb.command( cmd ).start();
-        while (true)
+        while ( true )
         {
             try
             {
@@ -188,21 +195,22 @@ public class Neo4jRunner
 
     private enum ServerStatus
     {
-        ONLINE, OFFLINE
-
+        ONLINE,
+        OFFLINE
     }
 
     private ServerStatus serverStatus()
     {
+
         try
         {
             SocketChannel soChannel = SocketChannel.open();
             soChannel.setOption( StandardSocketOptions.SO_REUSEADDR, true );
-            soChannel.connect( DEFAULT_ADDRESS.toSocketAddress() );
+            soChannel.connect( currentConnector.toSocketAddress() );
             soChannel.close();
             return ServerStatus.ONLINE;
         }
-        catch ( IOException e )
+        catch ( IOException e1 )
         {
             return ServerStatus.OFFLINE;
         }
@@ -228,7 +236,7 @@ public class Neo4jRunner
      */
     private void updateServerSettingsFile()
     {
-        Map<String, String> propertiesMap = currentSettings.propertiesMap();
+        Map<String,String> propertiesMap = currentSettings.propertiesMap();
 
         if ( propertiesMap.isEmpty() )
         {
@@ -239,7 +247,7 @@ public class Neo4jRunner
         try
         {
             debug( "Changing server properties file (for next start): " + oldFile.getCanonicalPath() );
-            for ( Map.Entry<String, String> property : propertiesMap.entrySet() )
+            for ( Map.Entry<String,String> property : propertiesMap.entrySet() )
             {
                 String name = property.getKey();
                 Object value = property.getValue();
@@ -261,17 +269,17 @@ public class Neo4jRunner
             @Override
             public void run()
             {
-            try
-            {
-                debug("Starting shutdown hook");
-                stopNeo4j();
-                updateServerSettings( Neo4jSettings.TEST_SETTINGS );
-                debug("Finished shutdown hook");
-            }
-            catch ( Exception e )
-            {
-                e.printStackTrace();
-            }
+                try
+                {
+                    debug( "Starting shutdown hook" );
+                    stopNeo4j();
+                    updateServerSettings( Neo4jSettings.TEST_SETTINGS );
+                    debug( "Finished shutdown hook" );
+                }
+                catch ( Exception e )
+                {
+                    e.printStackTrace();
+                }
             }
         } ) );
     }

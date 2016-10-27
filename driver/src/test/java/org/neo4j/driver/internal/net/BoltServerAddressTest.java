@@ -20,16 +20,23 @@
 package org.neo4j.driver.internal.net;
 
 import org.junit.Test;
-import org.neo4j.driver.internal.net.BoltServerAddress;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
 
 public class BoltServerAddressTest
 {
     @Test
     public void variantsOfLocalHostShouldResolveAsLocal() throws Exception
     {
+        assertThat( new BoltServerAddress( "::1", 7687 ).isLocal(), equalTo( true ) );
+        assertThat( new BoltServerAddress( "0:0:0:0:0:0:0:1", 7687 ).isLocal(), equalTo( true ) );
+        assertThat( new BoltServerAddress( "0::1", 7687 ).isLocal(), equalTo( true ) );
+        assertThat( new BoltServerAddress( "0:0:0::1", 7687 ).isLocal(), equalTo( true ) );
+        assertThat( new BoltServerAddress( "0000::0001", 7687 ).isLocal(), equalTo( true ) );
+        assertThat( new BoltServerAddress( "0000:0:0000::0001", 7687 ).isLocal(), equalTo( true ) );
+        assertThat( new BoltServerAddress( "0000:0:0000::1", 7687 ).isLocal(), equalTo( true ) );
+        assertThat( new BoltServerAddress( "0000:0000:0000:0000:0000:0000:0000:0001", 7687 ).isLocal(), equalTo( true ) );
         assertThat( new BoltServerAddress( "localhost", 7687 ).isLocal(), equalTo( true ) );
         assertThat( new BoltServerAddress( "LocalHost", 7687 ).isLocal(), equalTo( true ) );
         assertThat( new BoltServerAddress( "LOCALHOST", 7687 ).isLocal(), equalTo( true ) );
@@ -48,6 +55,15 @@ public class BoltServerAddressTest
     public void portShouldUseDefaultIfNotSupplied()
     {
         assertThat( new BoltServerAddress( "localhost" ).port(), equalTo( BoltServerAddress.DEFAULT_PORT ) );
+    }
+
+    @Test
+    public void shouldHandleIPv6String()
+    {
+        BoltServerAddress address = new BoltServerAddress( "[2001:0db8:0000:0000:0000:ff00:0042:8329]:1234" );
+
+        assertThat(address.host(), equalTo( "[2001:0db8:0000:0000:0000:ff00:0042:8329]" ));
+        assertThat(address.port(), equalTo( 1234));
     }
 
 }

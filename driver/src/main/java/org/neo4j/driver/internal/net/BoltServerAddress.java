@@ -35,7 +35,7 @@ public class BoltServerAddress
     public static final int DEFAULT_PORT = 7687;
     public static final BoltServerAddress LOCAL_DEFAULT = new BoltServerAddress( "localhost", DEFAULT_PORT );
     private static final Pattern LOCALHOST =
-            Pattern.compile( "^(localhost|127(\\.\\d+){3})$", Pattern.CASE_INSENSITIVE );
+            Pattern.compile( "^localhost$|^127(\\.\\d+){3}$|^(?:0*\\:)*?:?0*1$", Pattern.CASE_INSENSITIVE );
 
 
     public static BoltServerAddress from( URI uri )
@@ -61,7 +61,7 @@ public class BoltServerAddress
 
     public BoltServerAddress( String host )
     {
-        int colon = host.indexOf( ':' );
+        int colon = host.lastIndexOf( ':' );
         if ( colon >= 0 )
         {
             this.port = Integer.parseInt( host.substring( colon + 1 ) );

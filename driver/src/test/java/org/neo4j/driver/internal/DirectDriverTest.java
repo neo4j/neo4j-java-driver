@@ -68,6 +68,34 @@ public class DirectDriverTest
 
     }
 
+    @Test
+    public void shouldConnectWithIPv6WithExplicitPort()
+    {
+        // Given
+        URI uri = URI.create( "bolt://[::1]:7688" );
+
+        // When
+        DirectDriver driver = (DirectDriver) GraphDatabase.driver( uri );
+
+        // Then
+        BoltServerAddress address = driver.server();
+        assertThat( address.port(), equalTo(7688 ) );
+    }
+
+    @Test
+    public void shouldConnectWithIPv6WithImplicitPort()
+    {
+        // Given
+        URI uri = URI.create( "bolt://[::1]" );
+
+        // When
+        DirectDriver driver = (DirectDriver) GraphDatabase.driver( uri );
+
+        // Then
+        BoltServerAddress address = driver.server();
+        assertThat( address.port(), equalTo( BoltServerAddress.DEFAULT_PORT ) );
+    }
+
     @Ignore
     public void shouldBeAbleRunCypher() throws StubServer.ForceKilled, InterruptedException, IOException
     {

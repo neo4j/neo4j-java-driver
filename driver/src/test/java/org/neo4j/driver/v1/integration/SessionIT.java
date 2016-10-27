@@ -32,6 +32,7 @@ import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
+import org.neo4j.driver.v1.util.Neo4jSettings;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -100,6 +101,18 @@ public class SessionIT
 
             // Then
             assertFalse( session.isOpen() );
+        }
+    }
+
+    @Test
+    public void shouldConnectWithIpv6() throws Throwable
+    {
+        neo4j.restart( Neo4jSettings.TEST_SETTINGS.updateWith( Neo4jSettings.BOLT_CONNECTOR, "[::1]:7687" ) );
+        // Given
+        try ( Driver driver = GraphDatabase.driver("bolt://[::1]");
+              Session session = driver.session())
+            {
+            assertThat( session.run( "RETURN 11" ).single().get( 0 ).asLong(), equalTo(11L));
         }
     }
 
