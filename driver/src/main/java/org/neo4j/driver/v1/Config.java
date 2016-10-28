@@ -61,8 +61,7 @@ public class Config
     /** Strategy for how to trust encryption certificate */
     private final TrustStrategy trustStrategy;
 
-    private final int minServersInCluster;
-    private final int maxRoutingFailures;
+    private final int routingFailureLimit;
     private final long routingRetryDelayMillis;
 
     private Config( ConfigBuilder builder)
@@ -74,8 +73,7 @@ public class Config
 
         this.encryptionLevel = builder.encryptionLevel;
         this.trustStrategy = builder.trustStrategy;
-        this.minServersInCluster = builder.minServersInCluster;
-        this.maxRoutingFailures = builder.maxRoutingFailures;
+        this.routingFailureLimit = builder.routingFailureLimit;
         this.routingRetryDelayMillis = builder.routingRetryDelayMillis;
     }
 
@@ -152,7 +150,7 @@ public class Config
 
     RoutingSettings routingSettings()
     {
-        return new RoutingSettings( maxRoutingFailures, routingRetryDelayMillis );
+        return new RoutingSettings( routingFailureLimit, routingRetryDelayMillis );
     }
 
     /**
@@ -166,8 +164,7 @@ public class Config
         private EncryptionLevel encryptionLevel = EncryptionLevel.REQUIRED_NON_LOCAL;
         private TrustStrategy trustStrategy = trustOnFirstUse(
                 new File( getProperty( "user.home" ), ".neo4j" + File.separator + "known_hosts" ) );
-        public int minServersInCluster = 3;
-        private int maxRoutingFailures = 10;
+        private int routingFailureLimit = 1;
         private long routingRetryDelayMillis = 5_000;
 
         private ConfigBuilder() {}
@@ -279,14 +276,25 @@ public class Config
          * The routing servers are tried in order. If connecting any of them fails, they are all retried after
          * {@linkplain #withRoutingRetryDelay a delay}. This process of retrying all servers is then repeated for the
          * number of times specified here before considering the cluster unavailable.
+         * <p>
+         * The default value of this parameter is {@code 1}, which means that the the driver will not re-attempt to
+         * connect to the cluster when connecting has failed to each individual server in the list of routers. This
+         * default value is sensible under this assumption that if the attempt to connect fails for all servers, then
+         * the entire cluster is down, or the client is disconnected from the network, and retrying to connect will
+         * not bring it back up, in which case it is better to report the failure sooner.
          *
-         * @param routingRetryLimit
+         * @param routingFailureLimit
          *         the number of times to retry each server in the list of routing servers
          * @return this builder
          */
-        public ConfigBuilder withRoutingRetryLimit( int routingRetryLimit )
+        public ConfigBuilder withRoutingFailureLimit( int routingFailureLimit )
         {
-            this.maxRoutingFailures = routingRetryLimit;
+            if ( routingFailureLimit < 1 )
+            {
+                throw new IllegalArgumentException(
+                        "The failure limit may not be smaller than 1, but was: " + routingFailureLimit );
+            }
+            this.routingFailureLimit = routingFailureLimit;
             return this;
         }
 
@@ -297,13 +305,15 @@ public class Config
          * The delay is measured from when the first attempt to connect was made, so that the delay time specifies a
          * retry interval.
          * <p>
-         * For each {@linkplain #withRoutingRetryLimit retry attempt} the delay time will be doubled. The time
+         * For each {@linkplain #withRoutingFailureLimit retry attempt} the delay time will be doubled. The time
          * specified here is the base time, i.e. the time to wait before the first retry. If that attempt (on all
          * servers) also fails, the delay before the next retry will be double the time specified here, and the next
          * attempt after that will be double that, et.c. So if, for example, the delay specified here is
          * {@code 5 SECONDS}, then after attempting to connect to each server fails reconnecting will be attempted
          * 5 seconds after the first connection attempt to the first server. If that attempt also fails to connect to
          * all servers, the next attempt will start 10 seconds after the second attempt started.
+         * <p>
+         * The default value of this parameter is {@code 5 SECONDS}.
          *
          * @param delay
          *         the amount of time between attempts to reconnect to the same server
@@ -313,7 +323,13 @@ public class Config
          */
         public ConfigBuilder withRoutingRetryDelay( long delay, TimeUnit unit )
         {
-            this.routingRetryDelayMillis = unit.toMillis( delay );
+            long routingRetryDelayMillis = unit.toMillis( delay );
+            if ( routingRetryDelayMillis < 0 )
+            {
+                throw new IllegalArgumentException( String.format(
+                        "The retry delay may not be smaller than 0, but was %d %s.", delay, unit ) );
+            }
+            this.routingRetryDelayMillis = routingRetryDelayMillis;
             return this;
         }
 
