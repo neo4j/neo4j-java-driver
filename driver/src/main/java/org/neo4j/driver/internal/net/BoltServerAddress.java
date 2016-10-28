@@ -16,7 +16,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.neo4j.driver.internal.net;
 
 import java.net.InetAddress;
@@ -24,6 +23,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
+import java.util.regex.Pattern;
 
 import static java.lang.String.format;
 
@@ -34,6 +34,9 @@ public class BoltServerAddress
 {
     public static final int DEFAULT_PORT = 7687;
     public static final BoltServerAddress LOCAL_DEFAULT = new BoltServerAddress( "localhost", DEFAULT_PORT );
+    private static final Pattern LOCALHOST =
+            Pattern.compile( "^localhost$|^127(\\.\\d+){3}$|^(?:0*\\:)*?:?0*1$", Pattern.CASE_INSENSITIVE );
+
 
     public static BoltServerAddress from( URI uri )
     {
@@ -58,7 +61,7 @@ public class BoltServerAddress
 
     public BoltServerAddress( String host )
     {
-        int colon = host.indexOf( ':' );
+        int colon = host.lastIndexOf( ':' );
         if ( colon >= 0 )
         {
             this.port = Integer.parseInt( host.substring( colon + 1 ) );
@@ -100,7 +103,7 @@ public class BoltServerAddress
 
     public SocketAddress toSocketAddress()
     {
-        if (socketAddress == null)
+        if ( socketAddress == null )
         {
             socketAddress = new InetSocketAddress( host, port );
         }
@@ -138,21 +141,12 @@ public class BoltServerAddress
 
     /**
      * Determine whether or not this address refers to the local machine. This
-     * will generally be true for "localhost" or "127.x.x.x".
+     * will be true for "localhost" or "127.x.x.x".
      *
      * @return true if local, false otherwise
      */
     public boolean isLocal()
     {
-        try
-        {
-            // confirmed to work as desired with both "localhost" and "127.x.x.x"
-            return InetAddress.getByName( host ).isLoopbackAddress();
-        }
-        catch ( UnknownHostException e )
-        {
-            // if it's unknown, it's not local so we can safely return false
-            return false;
-        }
+        return LOCALHOST.matcher( host ).matches();
     }
 }

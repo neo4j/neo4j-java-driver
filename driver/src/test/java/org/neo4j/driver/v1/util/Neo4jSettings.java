@@ -19,11 +19,14 @@
 package org.neo4j.driver.v1.util;
 
 import java.io.File;
+import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
+import org.neo4j.driver.internal.net.BoltServerAddress;
 
 import static org.neo4j.driver.internal.util.Iterables.map;
 
@@ -33,6 +36,7 @@ public class Neo4jSettings
     public static final String DATA_DIR = "dbms.directories.data";
     public static final String CERT_DIR = "dbms.directories.certificates";
     public static final String IMPORT_DIR = "dbms.directories.import";
+    public static final String BOLT_CONNECTOR = "dbms.connector.bolt.address";
 
     private static final String DEFAULT_IMPORT_DIR = "import";
     private static final String DEFAULT_CERT_DIR = "certificates";
@@ -52,12 +56,27 @@ public class Neo4jSettings
             CERT_DIR, DEFAULT_CERT_DIR,
             DATA_DIR, DEFAULT_DATA_DIR,
             IMPORT_DIR, DEFAULT_IMPORT_DIR,
-            AUTH_ENABLED, "false" ), Collections.<String>emptySet() );
+            AUTH_ENABLED, "false",
+            BOLT_CONNECTOR, Neo4jRunner.DEFAULT_ADDRESS.toString()
+    ), Collections.<String>emptySet() );
 
     private Neo4jSettings( Map<String, String> settings, Set<String> excludes )
     {
         this.settings = settings;
         this.excludes = excludes;
+    }
+
+    public BoltServerAddress boltConnectorAddress()
+    {
+        String s = settings.get( BOLT_CONNECTOR );
+        if (s == null)
+        {
+            return Neo4jRunner.DEFAULT_ADDRESS;
+        }
+        else
+        {
+            return BoltServerAddress.from( URI.create( "bolt://" + s ));
+        }
     }
 
     public Map<String, String> propertiesMap()
