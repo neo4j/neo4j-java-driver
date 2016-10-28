@@ -41,12 +41,13 @@ public class RoutingDriver extends BaseDriver
     public RoutingDriver(
             RoutingSettings settings,
             BoltServerAddress seedAddress,
+            DriverContract contract,
             ConnectionPool connections,
             SecurityPlan securityPlan,
             Clock clock,
             Logging logging )
     {
-        super( securityPlan, logging );
+        super( contract, securityPlan, logging );
         this.loadBalancer = new LoadBalancer( settings, clock, log, connections, seedAddress );
     }
 

@@ -18,7 +18,6 @@
  */
 package org.neo4j.driver.internal;
 
-import gherkin.lexer.Tr;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -41,6 +40,7 @@ import org.neo4j.driver.internal.net.pooling.SocketConnectionPool;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Config;
+import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
@@ -61,6 +61,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import static org.neo4j.driver.v1.RetryLogic.TRY_UP_TO_3_TIMES_WITH_5_SECOND_PAUSE;
 
 @Ignore
 public class RoutingDriverStubTest
@@ -377,6 +379,64 @@ public class RoutingDriverStubTest
         assertThat( server.exitStatus(), equalTo( 0 ) );
     }
 
+    @Test
+    public void shouldReplayTransactionWithTransact()
+            throws IOException, InterruptedException, StubServer.ForceKilled
+    {
+        // Given
+        StubServer.start( "transact_get_servers.script", 9001 );
+        StubServer.start( "transact_get_servers.script", 9002 );
+
+        // When
+        StubServer.start( "transact_dead_server.script", 9021 );
+        StubServer.start( "transact_live_server.script", 9022 );
+        List<Record> records;
+        try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9001", config ) )
+        {
+            records = driver.transact(
+                    TRY_UP_TO_3_TIMES_WITH_5_SECOND_PAUSE,
+                    AccessMode.READ,
+                    new Function<Transaction, List<Record>>()
+            {
+                public List<Record> apply( Transaction tx )
+                {
+                    return tx.run( "MATCH (n) RETURN n.name AS name" ).list();
+                }
+            } );
+        }
+        // Finally
+        assertThat( records.size(), equalTo( 2 ) );
+        assertThat( records.get( 0 ).get( "name" ).asString(), equalTo( "Alice" ) );
+        assertThat( records.get( 1 ).get( "name" ).asString(), equalTo( "Bob" ) );
+    }
+
+    @Test
+    public void shouldReplayTransactionWithRead()
+            throws IOException, InterruptedException, StubServer.ForceKilled
+    {
+        // Given
+        StubServer.start( "transact_get_servers.script", 9001 );
+        StubServer.start( "transact_get_servers.script", 9002 );
+
+        // When
+        StubServer.start( "transact_dead_server.script", 9021 );
+        StubServer.start( "transact_live_server.script", 9022 );
+        List<Record> records;
+        try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9001", config ) )
+        {
+            records = driver.read( new Function<Transaction, List<Record>>()
+            {
+                public List<Record> apply( Transaction tx )
+                {
+                    return tx.run( "MATCH (n) RETURN n.name AS name" ).list();
+                }
+            } );
+        }
+        // Finally
+        assertThat( records.size(), equalTo( 2 ) );
+        assertThat( records.get( 0 ).get( "name" ).asString(), equalTo( "Alice" ) );
+        assertThat( records.get( 1 ).get( "name" ).asString(), equalTo( "Bob" ) );
+    }
 
     @Test
     public void shouldHandleAcquireWriteSession() throws IOException, InterruptedException, StubServer.ForceKilled

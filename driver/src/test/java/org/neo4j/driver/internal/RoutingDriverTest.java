@@ -37,6 +37,7 @@ import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.EventLogger;
 import org.neo4j.driver.v1.Logging;
+import org.neo4j.driver.v1.RetryLogic;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
@@ -62,6 +63,7 @@ public class RoutingDriverTest
     public ExpectedException exception = ExpectedException.none();
     private static final BoltServerAddress SEED = new BoltServerAddress( "localhost", 7687 );
     private static final String GET_SERVERS = "CALL dbms.cluster.routing.getServers";
+    private static final DriverContract contract = new DriverContract( RetryLogic.DEFAULT_RETRY_LOGIC );
     private final EventHandler events = new EventHandler();
     private final FakeClock clock = new FakeClock( events, true );
     private final Logging logging = EventLogger.provider( events, EventLogger.Level.TRACE );
@@ -312,7 +314,7 @@ public class RoutingDriverTest
 
     private RoutingDriver driverWithPool( ConnectionPool pool )
     {
-        return new RoutingDriver( new RoutingSettings( 10, 5_000 ), SEED, pool, insecure(), clock, logging );
+        return new RoutingDriver( new RoutingSettings( 10, 5_000 ), SEED, contract, pool, insecure(), clock, logging );
     }
 
     @SafeVarargs
