@@ -18,8 +18,6 @@
  */
 package org.neo4j.driver.internal;
 
-import java.util.Set;
-
 import org.neo4j.driver.internal.cluster.LoadBalancer;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.net.BoltServerAddress;
@@ -88,29 +86,5 @@ public class RoutingDriver extends BaseDriver
         {
             log.error( format( "~~ [ERROR] %s", ex.getMessage() ), ex );
         }
-    }
-
-    Set<BoltServerAddress> routingServers()
-    {
-        // TODO: the tests that use this should be testing for effect instead
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    Set<BoltServerAddress> readServers()
-    {
-        // TODO: the tests that use this should be testing for effect instead
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    Set<BoltServerAddress> writeServers()
-    {
-        // TODO: the tests that use this should be testing for effect instead
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    ConnectionPool connectionPool()
-    {
-        // TODO: the tests that use this should be testing for effect instead, perhaps by injecting a pool delegate
-        throw new UnsupportedOperationException( "not implemented" );
     }
 }

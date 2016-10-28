@@ -9,3 +9,4 @@ S: FAILURE {"code": "Neo.ClientError.General.Unknown", "message": "wut!"}
 S: IGNORED
 C: ACK_FAILURE
 S: SUCCESS {}
+S: <EXIT>
