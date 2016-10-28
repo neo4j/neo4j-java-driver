@@ -1,4 +1,0 @@
-!: AUTO INIT
-!: AUTO RESET
-!: AUTO RUN "RETURN 1 // JavaDriver poll to test connection" {}
-!: AUTO PULL_ALL
