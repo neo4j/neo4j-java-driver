@@ -16,24 +16,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.neo4j.driver.v1;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * Encapsulates details of retry logic for operations that can be retried after failure.
  */
 public class RetryLogic
 {
-    public static final RetryLogic TRY_UP_TO_3_TIMES_WITH_5_SECOND_PAUSE = new RetryLogic( 3, 5_000 );
+    public static final RetryLogic TRY_UP_TO_3_TIMES_WITH_5_SECOND_PAUSE = new RetryLogic( 3, 5, TimeUnit.SECONDS );
     public static final RetryLogic DEFAULT_RETRY_LOGIC = TRY_UP_TO_3_TIMES_WITH_5_SECOND_PAUSE;
 
     private final int attempts;
-    private final int pause;
+    private final long pauseMillis;
 
-    public RetryLogic( int attempts, int pause )
+    public RetryLogic( int attempts, long pause, TimeUnit pauseUnit )
     {
         this.attempts = attempts;
-        this.pause = pause;
+        this.pauseMillis = pauseUnit.toMillis( pause );
     }
 
     public int attempts()
@@ -41,8 +42,8 @@ public class RetryLogic
         return attempts;
     }
 
-    public int pause()
+    public long pauseMillis()
     {
-        return pause;
+        return pauseMillis;
     }
 }

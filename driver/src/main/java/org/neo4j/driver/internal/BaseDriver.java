@@ -34,8 +34,6 @@ import org.neo4j.driver.v1.util.Function;
 
 import static java.lang.String.format;
 
-import static org.neo4j.driver.v1.RetryLogic.TRY_UP_TO_3_TIMES_WITH_5_SECOND_PAUSE;
-
 abstract class BaseDriver implements Driver
 {
     private final DriverContract contract;
@@ -91,7 +89,6 @@ abstract class BaseDriver implements Driver
                             // we already know this connection is problematic
                         }
                     }
-
                     else
                     {
                         tx.close();
@@ -100,7 +97,7 @@ abstract class BaseDriver implements Driver
             }
             try
             {
-                Thread.sleep( logic.pause() );
+                Thread.sleep( logic.pauseMillis() );
             }
             catch ( InterruptedException e )
             {
