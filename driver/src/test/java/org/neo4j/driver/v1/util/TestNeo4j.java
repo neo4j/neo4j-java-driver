@@ -34,6 +34,7 @@ import org.neo4j.driver.v1.Session;
 
 public class TestNeo4j implements TestRule
 {
+    public static final String TEST_RESOURCE_FOLDER_PATH = "src/test/resources";
     private final Neo4jSettings settings;
     private Neo4jRunner runner;
 
@@ -129,7 +130,7 @@ public class TestNeo4j implements TestRule
         File procedureJar = new File( Neo4jRunner.NEO4J_HOME, "plugins/" + jarName );
         if( !procedureJar.exists() )
         {
-            FileTools.copyFile( new File( "src/test/resources", jarName ), procedureJar );
+            FileTools.copyFile( new File( TEST_RESOURCE_FOLDER_PATH, jarName ), procedureJar );
             runner.forceToRestart(); // needs to force to restart as no configuration changed
         }
     }

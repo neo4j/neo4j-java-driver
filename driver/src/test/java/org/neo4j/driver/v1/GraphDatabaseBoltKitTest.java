@@ -19,6 +19,8 @@
 
 package org.neo4j.driver.v1;
 
+import org.junit.Test;
+
 import java.io.IOException;
 import java.net.URI;
 
@@ -31,6 +33,7 @@ import static org.junit.Assert.assertThat;
 
 public class GraphDatabaseBoltKitTest
 {
+    @Test
     public void boltPlusDiscoverySchemeShouldInstantiateClusterDriver() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
