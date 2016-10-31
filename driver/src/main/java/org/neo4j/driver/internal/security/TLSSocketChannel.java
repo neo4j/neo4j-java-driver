@@ -21,9 +21,6 @@ package org.neo4j.driver.internal.security;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
-import java.security.GeneralSecurityException;
-import javax.net.ssl.KeyManager;
-import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
@@ -32,9 +29,6 @@ import javax.net.ssl.SSLEngineResult.Status;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.internal.util.BytePrinter;
-import org.neo4j.driver.internal.util.BytePrinter;
-import org.neo4j.driver.v1.Config.TrustStrategy;
-import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.FINISHED;
@@ -67,32 +61,23 @@ public class TLSSocketChannel implements ByteChannel
 
     private static final ByteBuffer DUMMY_BUFFER = ByteBuffer.allocate( 0 );
 
-    public TLSSocketChannel( BoltServerAddress address, SecurityPlan securityPlan, ByteChannel channel, Logger logger )
-            throws GeneralSecurityException, IOException
+    public static TLSSocketChannel create( BoltServerAddress address, SecurityPlan securityPlan, ByteChannel channel, Logger logger )
+            throws IOException
     {
-        this( channel, logger, createSSLEngine( address, securityPlan.sslContext() ) );
+        SSLEngine sslEngine = securityPlan.sslContext().createSSLEngine( address.host(), address.port() );
+        sslEngine.setUseClientMode( true );
+        return new TLSSocketChannel( channel, logger, sslEngine );
     }
 
-    public TLSSocketChannel( ByteChannel channel, Logger logger, SSLEngine sslEngine ) throws GeneralSecurityException, IOException
-    {
-        this(channel, logger, sslEngine,
-             ByteBuffer.allocate( sslEngine.getSession().getApplicationBufferSize() ),
-             ByteBuffer.allocate( sslEngine.getSession().getPacketBufferSize() ),
-             ByteBuffer.allocate( sslEngine.getSession().getApplicationBufferSize() ),
-             ByteBuffer.allocate( sslEngine.getSession().getPacketBufferSize() ) );
-    }
-
-    TLSSocketChannel( ByteChannel channel, Logger logger, SSLEngine sslEngine,
-                      ByteBuffer plainIn, ByteBuffer cipherIn, ByteBuffer plainOut, ByteBuffer cipherOut )
-            throws GeneralSecurityException, IOException
+    public TLSSocketChannel( ByteChannel channel, Logger logger, SSLEngine sslEngine ) throws IOException
     {
         this.logger = logger;
         this.channel = channel;
         this.sslEngine = sslEngine;
-        this.plainIn = plainIn;
-        this.cipherIn = cipherIn;
-        this.plainOut = plainOut;
-        this.cipherOut = cipherOut;
+        this.plainIn = ByteBuffer.allocate( sslEngine.getSession().getApplicationBufferSize() );
+        this.cipherIn = ByteBuffer.allocate( sslEngine.getSession().getPacketBufferSize() );
+        this.plainOut = ByteBuffer.allocate( sslEngine.getSession().getApplicationBufferSize() );
+        this.cipherOut = ByteBuffer.allocate( sslEngine.getSession().getPacketBufferSize() );
         runHandshake();
     }
 
@@ -351,18 +336,6 @@ public class TLSSocketChannel implements ByteChannel
         from.position( from.position() + maxTransfer );
 
         return maxTransfer;
-    }
-
-    /**
-     * Create SSLEngine with the SSLContext just created.
-     * @param address the host to connect to
-     * @param sslContext the current ssl context
-     */
-    private static SSLEngine createSSLEngine( BoltServerAddress address, SSLContext sslContext )
-    {
-        SSLEngine sslEngine = sslContext.createSSLEngine( address.host(), address.port() );
-        sslEngine.setUseClientMode( true );
-        return sslEngine;
     }
 
     @Override

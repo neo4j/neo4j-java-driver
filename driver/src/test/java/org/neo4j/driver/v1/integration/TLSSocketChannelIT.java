@@ -118,9 +118,7 @@ public class TLSSocketChannelIT
 
             // When
             SecurityPlan securityPlan = SecurityPlan.forSignedCertificates( rootCert );
-            TLSSocketChannel sslChannel =
-                    new TLSSocketChannel( address, securityPlan, channel, logger
-                    );
+            TLSSocketChannel sslChannel = TLSSocketChannel.create( address, securityPlan, channel, logger );
             sslChannel.close();
 
             // Then
@@ -152,7 +150,7 @@ public class TLSSocketChannelIT
             try
             {
                 TLSSocketChannel sslChannel =
-                        new TLSSocketChannel(address, securityPlan, channel, logger);
+                        TLSSocketChannel.create(address, securityPlan, channel, logger);
                 sslChannel.close();
             }
             catch ( SSLHandshakeException e )
@@ -188,7 +186,7 @@ public class TLSSocketChannelIT
         TLSSocketChannel sslChannel = null;
         try
         {
-            sslChannel = new TLSSocketChannel( address, securityPlan, channel, mock( Logger.class ) );
+            sslChannel = TLSSocketChannel.create( address, securityPlan, channel, mock( Logger.class ) );
             sslChannel.close();
         }
         catch ( SSLHandshakeException e )
@@ -241,7 +239,7 @@ public class TLSSocketChannelIT
         TLSSocketChannel sslChannel = null;
         try
         {
-            sslChannel = new TLSSocketChannel( neo4j.address(), securityPlan, channel, mock( Logger.class ) );
+            sslChannel = TLSSocketChannel.create( neo4j.address(), securityPlan, channel, mock( Logger.class ) );
             sslChannel.close();
         }
         catch ( SSLHandshakeException e )
@@ -270,7 +268,7 @@ public class TLSSocketChannelIT
         // When
         URI url = URI.create( "localhost:7687" );
         SecurityPlan securityPlan = SecurityPlan.forSignedCertificates( Neo4jSettings.DEFAULT_TLS_CERT_FILE );
-        TLSSocketChannel sslChannel = new TLSSocketChannel( address, securityPlan, channel, logger );
+        TLSSocketChannel sslChannel = TLSSocketChannel.create( address, securityPlan, channel, logger );
         sslChannel.close();
 
         // Then
@@ -335,7 +333,7 @@ public class TLSSocketChannelIT
 
         SecurityPlan securityPlan = SecurityPlan.forTrustOnFirstUse( knownCerts, address, new DevNullLogger() );
         TLSSocketChannel sslChannel =
-                new TLSSocketChannel( address, securityPlan, channel, logger );
+                TLSSocketChannel.create( address, securityPlan, channel, logger );
         sslChannel.close();
 
         // Then
