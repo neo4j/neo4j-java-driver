@@ -30,11 +30,13 @@ import java.io.PrintWriter;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Scanner;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.v1.Logger;
 
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -88,8 +90,9 @@ public class TrustOnFirstUseTrustManagerTest
         // Given
         BoltServerAddress knownServerAddress = new BoltServerAddress( knownServerIp, knownServerPort );
         Logger logger = mock(Logger.class);
+        ConcurrentHashMap<String,String> knownHostsMap = TrustOnFirstUseTrustManager.createKnownHostsMap( knownCertsFile );
         TrustOnFirstUseTrustManager manager =
-                new TrustOnFirstUseTrustManager( knownServerAddress, knownCertsFile, logger );
+                new TrustOnFirstUseTrustManager( knownServerAddress.toString(), knownCertsFile, knownHostsMap, logger );
 
         X509Certificate wrongCertificate = mock( X509Certificate.class );
         when( wrongCertificate.getEncoded() ).thenReturn( "fake certificate".getBytes() );
@@ -115,7 +118,9 @@ public class TrustOnFirstUseTrustManagerTest
         int newPort = 200;
         BoltServerAddress address = new BoltServerAddress( knownServerIp, newPort );
         Logger logger = mock(Logger.class);
-        TrustOnFirstUseTrustManager manager = new TrustOnFirstUseTrustManager( address, knownCertsFile, logger );
+        ConcurrentHashMap<String,String> knownHostsMap = TrustOnFirstUseTrustManager.createKnownHostsMap( knownCertsFile );
+        TrustOnFirstUseTrustManager manager =
+                new TrustOnFirstUseTrustManager( address.toString(), knownCertsFile, knownHostsMap, logger );
 
         String fingerprint = fingerprint( knownCertificate );
 
@@ -125,6 +130,7 @@ public class TrustOnFirstUseTrustManagerTest
         // Then no exception should've been thrown, and we should've logged that we now trust this certificate
         verify(logger).warn( "Adding %s as known and trusted certificate for %s.", fingerprint, "1.2.3.4:200" );
 
+        assertThat(knownHostsMap.get( address.toString() ), equalTo( fingerprint ) );
         // And the file should contain the right info
         Scanner reader = new Scanner( knownCertsFile );
 
@@ -159,7 +165,7 @@ public class TrustOnFirstUseTrustManagerTest
         // When & Then
         try
         {
-            new TrustOnFirstUseTrustManager( new BoltServerAddress( knownServerIp, knownServerPort ), knownHostFile, null );
+            TrustOnFirstUseTrustManager.createKnownHostsMap( knownHostFile );
             fail( "Should have failed in load certs" );
         }
         catch( IOException e )
@@ -177,14 +183,15 @@ public class TrustOnFirstUseTrustManagerTest
     {
         // Given
         File knownHostFile = mock( File.class );
-        when( knownHostFile.exists() ).thenReturn( false /*skip reading*/, true );
+        when( knownHostFile.exists() ).thenReturn( true );
         when( knownHostFile.canWrite() ).thenReturn( false );
 
         // When & Then
         try
         {
             TrustOnFirstUseTrustManager manager =
-                    new TrustOnFirstUseTrustManager( new BoltServerAddress( knownServerIp, knownServerPort ), knownHostFile, mock( Logger.class ) );
+                    new TrustOnFirstUseTrustManager( new BoltServerAddress( knownServerIp, knownServerPort ).toString(),
+                            knownHostFile, new ConcurrentHashMap<String, String>(), mock( Logger.class ) );
             manager.checkServerTrusted( new X509Certificate[]{ knownCertificate}, null );
             fail( "Should have failed in write to certs" );
         }

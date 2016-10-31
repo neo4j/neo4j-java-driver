@@ -19,13 +19,6 @@
 
 package org.neo4j.driver.internal.security;
 
-import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.v1.*;
-
-import javax.net.ssl.KeyManager;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.TrustManagerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -33,6 +26,11 @@ import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
 
 import static org.neo4j.driver.internal.util.CertificateTool.loadX509Cert;
 
@@ -68,13 +66,34 @@ public class SecurityPlan
     }
 
 
-    public static SecurityPlan forTrustOnFirstUse( File knownHosts, BoltServerAddress address, Logger logger )
+    public static SecurityPlan forTrustOnFirstUse( File knownHosts )
             throws IOException, KeyManagementException, NoSuchAlgorithmException
     {
-        SSLContext sslContext = SSLContext.getInstance( "TLS" );
-        sslContext.init( new KeyManager[0], new TrustManager[]{new TrustOnFirstUseTrustManager( address, knownHosts, logger )}, null );
+        ConcurrentHashMap<String,String> preLoadKnownHostsMap = TrustOnFirstUseTrustManager.createKnownHostsMap( knownHosts );
+        return new TrustOnFirstUseSecurityPlan( knownHosts, preLoadKnownHostsMap );
+    }
 
-        return new SecurityPlan( true, sslContext);
+    public static class TrustOnFirstUseSecurityPlan extends SecurityPlan
+    {
+        private final ConcurrentHashMap<String, String> trustOnFirstUseMap;
+        private final File knownHostsFile;
+
+        private TrustOnFirstUseSecurityPlan( File knownHostsFile, ConcurrentHashMap<String, String> trustOnFirstUseMap )
+        {
+            super( true, null );
+            this.trustOnFirstUseMap = trustOnFirstUseMap;
+            this.knownHostsFile = knownHostsFile;
+        }
+
+        public ConcurrentHashMap<String, String> trustOnFirstUseMap()
+        {
+            return this.trustOnFirstUseMap;
+        }
+
+        public File knownHostFile()
+        {
+            return this.knownHostsFile;
+        }
     }
 
     public static SecurityPlan insecure()
@@ -85,7 +104,7 @@ public class SecurityPlan
     private final boolean requiresEncryption;
     private final SSLContext sslContext;
 
-    private SecurityPlan( boolean requiresEncryption, SSLContext sslContext)
+    private SecurityPlan( boolean requiresEncryption, SSLContext sslContext )
     {
         this.requiresEncryption = requiresEncryption;
         this.sslContext = sslContext;

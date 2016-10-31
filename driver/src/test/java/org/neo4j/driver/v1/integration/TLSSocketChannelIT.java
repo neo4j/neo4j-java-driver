@@ -34,13 +34,17 @@ import java.nio.channels.SocketChannel;
 import java.security.cert.X509Certificate;
 import javax.net.ssl.SSLHandshakeException;
 
-import org.neo4j.driver.internal.logging.DevNullLogger;
+import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.security.TLSSocketChannel;
-import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.v1.*;
 import org.neo4j.driver.internal.util.CertificateTool;
-
+import org.neo4j.driver.v1.Config;
+import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.GraphDatabase;
+import org.neo4j.driver.v1.Logger;
+import org.neo4j.driver.v1.Logging;
+import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.util.CertificateToolTest;
 import org.neo4j.driver.v1.util.Neo4jRunner;
 import org.neo4j.driver.v1.util.Neo4jSettings;
@@ -184,7 +188,7 @@ public class TLSSocketChannelIT
         createFakeServerCertPairInKnownCerts( address, knownCerts );
 
         // When & Then
-        SecurityPlan securityPlan = SecurityPlan.forTrustOnFirstUse( knownCerts, address, new DevNullLogger() );
+        SecurityPlan securityPlan = SecurityPlan.forTrustOnFirstUse( knownCerts );
         TLSSocketChannel sslChannel = null;
         try
         {
@@ -333,7 +337,7 @@ public class TLSSocketChannelIT
 
         // When
 
-        SecurityPlan securityPlan = SecurityPlan.forTrustOnFirstUse( knownCerts, address, new DevNullLogger() );
+        SecurityPlan securityPlan = SecurityPlan.forTrustOnFirstUse( knownCerts );
         TLSSocketChannel sslChannel =
                 new TLSSocketChannel( address, securityPlan, channel, logger );
         sslChannel.close();

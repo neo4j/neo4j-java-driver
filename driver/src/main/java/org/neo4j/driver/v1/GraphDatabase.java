@@ -232,8 +232,7 @@ public class GraphDatabase
             case TRUST_CUSTOM_CA_SIGNED_CERTIFICATES:
                 return SecurityPlan.forSignedCertificates( config.trustStrategy().certFile() );
             case TRUST_ON_FIRST_USE:
-                return SecurityPlan.forTrustOnFirstUse( config.trustStrategy().certFile(),
-                        address, logger );
+                return SecurityPlan.forTrustOnFirstUse( config.trustStrategy().certFile() );
             default:
                 throw new ClientException(
                         "Unknown TLS authentication strategy: " + config.trustStrategy().strategy().name() );
