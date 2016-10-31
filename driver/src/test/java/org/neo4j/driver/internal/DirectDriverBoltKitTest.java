@@ -19,6 +19,8 @@
 
 package org.neo4j.driver.internal;
 
+import org.junit.Test;
+
 import java.io.IOException;
 import java.net.URI;
 
@@ -34,6 +36,7 @@ import static org.neo4j.driver.v1.Values.parameters;
 
 public class DirectDriverBoltKitTest
 {
+    @Test
     public void shouldBeAbleRunCypher() throws StubServer.ForceKilled, InterruptedException, IOException
     {
         // Given
