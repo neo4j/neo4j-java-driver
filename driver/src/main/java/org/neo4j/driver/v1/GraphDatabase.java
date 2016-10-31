@@ -223,19 +223,26 @@ public class GraphDatabase
             Logger logger = config.logging().getLog( "session" );
             switch ( config.trustStrategy().strategy() )
             {
+
+            // DEPRECATED CASES //
+            case TRUST_ON_FIRST_USE:
+                logger.warn(
+                        "Option `TRUST_ON_FIRST_USE` has been deprecated and will be removed in a future " +
+                        "version of the driver. Please switch to use `TRUST_ALL_CERTIFICATES` instead." );
+                return SecurityPlan.forTrustOnFirstUse( config.trustStrategy().certFile(), address, logger );
             case TRUST_SIGNED_CERTIFICATES:
                 logger.warn(
                         "Option `TRUST_SIGNED_CERTIFICATE` has been deprecated and will be removed in a future " +
-                        "version " +
-                        "of the driver. Please switch to use `TRUST_CUSTOM_CA_SIGNED_CERTIFICATES` instead." );
-                //intentional fallthrough
+                        "version of the driver. Please switch to use `TRUST_CUSTOM_CA_SIGNED_CERTIFICATES` instead." );
+                // intentional fallthrough
+            // END OF DEPRECATED CASES //
+
+            case TRUST_ALL_CERTIFICATES:
+                return SecurityPlan.forAllCertificates();
             case TRUST_CUSTOM_CA_SIGNED_CERTIFICATES:
                 return SecurityPlan.forSignedCertificates( config.trustStrategy().certFile() );
             case TRUST_SYSTEM_CA_SIGNED_CERTIFICATES:
                 return SecurityPlan.forSystemCertificates();
-            case TRUST_ON_FIRST_USE:
-                return SecurityPlan.forTrustOnFirstUse( config.trustStrategy().certFile(),
-                        address, logger );
             default:
                 throw new ClientException(
                         "Unknown TLS authentication strategy: " + config.trustStrategy().strategy().name() );

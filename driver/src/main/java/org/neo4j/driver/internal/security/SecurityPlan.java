@@ -41,6 +41,14 @@ import static org.neo4j.driver.internal.util.CertificateTool.loadX509Cert;
  */
 public class SecurityPlan
 {
+    public static SecurityPlan forAllCertificates() throws GeneralSecurityException, IOException
+    {
+        SSLContext sslContext = SSLContext.getInstance( "TLS" );
+        sslContext.init( new KeyManager[0], new TrustManager[]{new TrustAllTrustManager()}, null );
+
+        return new SecurityPlan( true, sslContext );
+    }
+
     public static SecurityPlan forSignedCertificates( File certFile )
             throws GeneralSecurityException, IOException
     {
@@ -67,14 +75,14 @@ public class SecurityPlan
         return new SecurityPlan( true, SSLContext.getDefault() );
     }
 
-
+    @Deprecated
     public static SecurityPlan forTrustOnFirstUse( File knownHosts, BoltServerAddress address, Logger logger )
             throws IOException, KeyManagementException, NoSuchAlgorithmException
     {
         SSLContext sslContext = SSLContext.getInstance( "TLS" );
         sslContext.init( new KeyManager[0], new TrustManager[]{new TrustOnFirstUseTrustManager( address, knownHosts, logger )}, null );
 
-        return new SecurityPlan( true, sslContext);
+        return new SecurityPlan( true, sslContext );
     }
 
     public static SecurityPlan insecure()
