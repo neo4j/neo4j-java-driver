@@ -231,6 +231,8 @@ public class GraphDatabase
                 //intentional fallthrough
             case TRUST_CUSTOM_CA_SIGNED_CERTIFICATES:
                 return SecurityPlan.forSignedCertificates( config.trustStrategy().certFile() );
+            case TRUST_SYSTEM_CA_SIGNED_CERTIFICATES:
+                return SecurityPlan.forSystemCertificates();
             case TRUST_ON_FIRST_USE:
                 return SecurityPlan.forTrustOnFirstUse( config.trustStrategy().certFile(),
                         address, logger );

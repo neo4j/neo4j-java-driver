@@ -59,7 +59,7 @@ public class SecurityPlan
         SSLContext sslContext = SSLContext.getInstance( "TLS" );
         sslContext.init( new KeyManager[0], trustManagerFactory.getTrustManagers(), null );
 
-        return new SecurityPlan( true, sslContext);
+        return new SecurityPlan( true, sslContext );
     }
 
     public static SecurityPlan forSystemCertificates() throws NoSuchAlgorithmException, KeyStoreException
