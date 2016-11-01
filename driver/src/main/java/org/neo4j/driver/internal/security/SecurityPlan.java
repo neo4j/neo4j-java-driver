@@ -46,7 +46,7 @@ public class SecurityPlan
         SSLContext sslContext = SSLContext.getInstance( "TLS" );
         sslContext.init( new KeyManager[0], new TrustManager[]{new TrustAllTrustManager()}, null );
 
-        return new SecurityPlan( true, sslContext );
+        return new SecurityPlan( true, sslContext, true );
     }
 
     public static SecurityPlan forSignedCertificates( File certFile )
@@ -67,12 +67,12 @@ public class SecurityPlan
         SSLContext sslContext = SSLContext.getInstance( "TLS" );
         sslContext.init( new KeyManager[0], trustManagerFactory.getTrustManagers(), null );
 
-        return new SecurityPlan( true, sslContext );
+        return new SecurityPlan( true, sslContext, true );
     }
 
     public static SecurityPlan forSystemCertificates() throws NoSuchAlgorithmException, KeyStoreException
     {
-        return new SecurityPlan( true, SSLContext.getDefault() );
+        return new SecurityPlan( true, SSLContext.getDefault(), true );
     }
 
     @Deprecated
@@ -82,21 +82,23 @@ public class SecurityPlan
         SSLContext sslContext = SSLContext.getInstance( "TLS" );
         sslContext.init( new KeyManager[0], new TrustManager[]{new TrustOnFirstUseTrustManager( address, knownHosts, logger )}, null );
 
-        return new SecurityPlan( true, sslContext );
+        return new SecurityPlan( true, sslContext, false );
     }
 
     public static SecurityPlan insecure()
     {
-        return new SecurityPlan( false, null );
+        return new SecurityPlan( false, null, true );
     }
 
     private final boolean requiresEncryption;
     private final SSLContext sslContext;
+    private final boolean routingCompatible;
 
-    private SecurityPlan( boolean requiresEncryption, SSLContext sslContext)
+    private SecurityPlan( boolean requiresEncryption, SSLContext sslContext, boolean routingCompatible )
     {
         this.requiresEncryption = requiresEncryption;
         this.sslContext = sslContext;
+        this.routingCompatible = routingCompatible;
     }
 
     public boolean requiresEncryption()
@@ -104,7 +106,14 @@ public class SecurityPlan
         return requiresEncryption;
     }
 
+    public boolean isRoutingCompatible()
+    {
+        return routingCompatible;
+    }
 
-    public SSLContext sslContext() {return sslContext;}
+    public SSLContext sslContext()
+    {
+        return sslContext;
+    }
 
 }
