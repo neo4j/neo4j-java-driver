@@ -24,6 +24,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.driver.v1.Config;
+
 import static java.lang.Thread.sleep;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
@@ -31,6 +33,9 @@ import static org.junit.Assert.fail;
 
 public class StubServer
 {
+    public static final Config INSECURE_CONFIG = Config.build()
+            .withEncryptionLevel( Config.EncryptionLevel.NONE ).toConfig();
+
     // This may be thrown if the driver has not been closed properly
     public static class ForceKilled extends Exception {}
 
