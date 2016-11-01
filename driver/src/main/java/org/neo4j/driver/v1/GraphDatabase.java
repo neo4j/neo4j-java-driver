@@ -235,12 +235,12 @@ public class GraphDatabase
                 // intentional fallthrough
             // END OF DEPRECATED CASES //
 
-            case TRUST_ALL_CERTIFICATES:
-                return SecurityPlan.forAllCertificates();
             case TRUST_CUSTOM_CA_SIGNED_CERTIFICATES:
                 return SecurityPlan.forCustomCASignedCertificates( config.trustStrategy().certFile() );
             case TRUST_SYSTEM_CA_SIGNED_CERTIFICATES:
                 return SecurityPlan.forSystemCASignedCertificates();
+            case TRUST_ALL_CERTIFICATES:
+                return SecurityPlan.forAllCertificates();
             default:
                 throw new ClientException(
                         "Unknown TLS authentication strategy: " + config.trustStrategy().strategy().name() );
