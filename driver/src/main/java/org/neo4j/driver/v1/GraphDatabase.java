@@ -40,7 +40,6 @@ import org.neo4j.driver.v1.util.Function;
 import static java.lang.String.format;
 import static org.neo4j.driver.internal.security.SecurityPlan.insecure;
 import static org.neo4j.driver.v1.Config.EncryptionLevel.REQUIRED;
-import static org.neo4j.driver.v1.Config.EncryptionLevel.REQUIRED_NON_LOCAL;
 
 /**
  * Creates {@link Driver drivers}, optionally letting you {@link #driver(URI, Config)} to configure them.
@@ -215,8 +214,7 @@ public class GraphDatabase
             throws GeneralSecurityException, IOException
     {
         Config.EncryptionLevel encryptionLevel = config.encryptionLevel();
-        boolean requiresEncryption = encryptionLevel.equals( REQUIRED ) ||
-                                     (encryptionLevel.equals( REQUIRED_NON_LOCAL ) && !address.isLocal());
+        boolean requiresEncryption = encryptionLevel.equals( REQUIRED );
 
         if ( requiresEncryption )
         {
@@ -240,9 +238,9 @@ public class GraphDatabase
             case TRUST_ALL_CERTIFICATES:
                 return SecurityPlan.forAllCertificates();
             case TRUST_CUSTOM_CA_SIGNED_CERTIFICATES:
-                return SecurityPlan.forSignedCertificates( config.trustStrategy().certFile() );
+                return SecurityPlan.forCustomCASignedCertificates( config.trustStrategy().certFile() );
             case TRUST_SYSTEM_CA_SIGNED_CERTIFICATES:
-                return SecurityPlan.forSystemCertificates();
+                return SecurityPlan.forSystemCASignedCertificates();
             default:
                 throw new ClientException(
                         "Unknown TLS authentication strategy: " + config.trustStrategy().strategy().name() );

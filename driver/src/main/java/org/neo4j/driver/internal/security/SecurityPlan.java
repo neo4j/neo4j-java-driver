@@ -49,7 +49,7 @@ public class SecurityPlan
         return new SecurityPlan( true, sslContext, true );
     }
 
-    public static SecurityPlan forSignedCertificates( File certFile )
+    public static SecurityPlan forCustomCASignedCertificates( File certFile )
             throws GeneralSecurityException, IOException
     {
         // A certificate file is specified so we will load the certificates in the file
@@ -70,7 +70,7 @@ public class SecurityPlan
         return new SecurityPlan( true, sslContext, true );
     }
 
-    public static SecurityPlan forSystemCertificates() throws NoSuchAlgorithmException, KeyStoreException
+    public static SecurityPlan forSystemCASignedCertificates() throws NoSuchAlgorithmException, KeyStoreException
     {
         return new SecurityPlan( true, SSLContext.getDefault(), true );
     }

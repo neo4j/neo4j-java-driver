@@ -117,7 +117,7 @@ public class TLSSocketChannelIT
             channel.connect( address.toSocketAddress() );
 
             // When
-            SecurityPlan securityPlan = SecurityPlan.forSignedCertificates( rootCert );
+            SecurityPlan securityPlan = SecurityPlan.forCustomCASignedCertificates( rootCert );
             TLSSocketChannel sslChannel = TLSSocketChannel.create( address, securityPlan, channel, logger );
             sslChannel.close();
 
@@ -144,7 +144,7 @@ public class TLSSocketChannelIT
             Logger logger = mock( Logger.class );
             SocketChannel channel = SocketChannel.open();
             channel.connect( new InetSocketAddress( "localhost", 7687 ) );
-            SecurityPlan securityPlan = SecurityPlan.forSystemCertificates();
+            SecurityPlan securityPlan = SecurityPlan.forSystemCASignedCertificates();
 
             // When
             try
@@ -235,7 +235,7 @@ public class TLSSocketChannelIT
         CertificateTool.saveX509Cert( aRandomCert, trustedCertFile );
 
         // When & Then
-        SecurityPlan securityPlan = SecurityPlan.forSignedCertificates( trustedCertFile );
+        SecurityPlan securityPlan = SecurityPlan.forCustomCASignedCertificates( trustedCertFile );
         TLSSocketChannel sslChannel = null;
         try
         {
@@ -267,7 +267,7 @@ public class TLSSocketChannelIT
 
         // When
         URI url = URI.create( "localhost:7687" );
-        SecurityPlan securityPlan = SecurityPlan.forSignedCertificates( Neo4jSettings.DEFAULT_TLS_CERT_FILE );
+        SecurityPlan securityPlan = SecurityPlan.forCustomCASignedCertificates( Neo4jSettings.DEFAULT_TLS_CERT_FILE );
         TLSSocketChannel sslChannel = TLSSocketChannel.create( address, securityPlan, channel, logger );
         sslChannel.close();
 

@@ -27,7 +27,6 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.driver.v1.Config.EncryptionLevel.NONE;
 import static org.neo4j.driver.v1.Config.EncryptionLevel.REQUIRED;
-import static org.neo4j.driver.v1.Config.EncryptionLevel.REQUIRED_NON_LOCAL;
 
 public class EncryptionIT
 {
@@ -42,29 +41,6 @@ public class EncryptionIT
 
         // Then
         assertThat( driver.isEncrypted(), equalTo( false ) );
-
-        // When
-        Session session = driver.session();
-        StatementResult result = session.run( "RETURN 1" );
-
-        // Then
-        Record record = result.next();
-        int value = record.get( 0 ).asInt();
-        assertThat( value, equalTo( 1 ) );
-
-        // Finally
-        session.close();
-        driver.close();
-    }
-
-    @Test
-    public void shouldOperateWithRequiredNonLocalEncryption() throws Exception
-    {
-        // Given
-        Driver driver = GraphDatabase.driver( neo4j.uri(), Config.build().withEncryptionLevel( REQUIRED_NON_LOCAL ).toConfig() );
-
-        // Then
-        assertThat( driver.isEncrypted(), equalTo( !neo4j.address().isLocal() ) );
 
         // When
         Session session = driver.session();

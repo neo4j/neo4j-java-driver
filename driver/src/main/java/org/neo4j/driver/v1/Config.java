@@ -167,7 +167,7 @@ public class Config
         private Logging logging = new JULogging( Level.INFO );
         private int maxIdleConnectionPoolSize = PoolSettings.DEFAULT_MAX_IDLE_CONNECTION_POOL_SIZE;
         private long idleTimeBeforeConnectionTest = PoolSettings.DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST;
-        private EncryptionLevel encryptionLevel = EncryptionLevel.REQUIRED_NON_LOCAL;
+        private EncryptionLevel encryptionLevel = EncryptionLevel.REQUIRED;
         private TrustStrategy trustStrategy = trustAllCertificates();
         private RetryLogic retryLogic = RetryLogic.DEFAULT_RETRY_LOGIC;
         private int routingFailureLimit = 1;
@@ -368,10 +368,6 @@ public class Config
     {
         /** With this level, the driver will only connect to the server if it can do it without encryption. */
         NONE,
-
-        /** With this level, the driver will only connect to the server without encryption if local but with
-         * encryption otherwise. */
-        REQUIRED_NON_LOCAL,
 
         /** With this level, the driver will only connect to the server it if can do it with encryption. */
         REQUIRED
