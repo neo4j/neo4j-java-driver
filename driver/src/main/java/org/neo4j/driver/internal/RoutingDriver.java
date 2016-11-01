@@ -26,6 +26,7 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.AccessMode;
+import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.exceptions.ClientException;
@@ -34,6 +35,16 @@ import static java.lang.String.format;
 
 public class RoutingDriver extends BaseDriver
 {
+    // Verify that a security plan is compatible with this driver, throwing an exception if not
+    private static SecurityPlan verifiedSecurityPlan( SecurityPlan securityPlan )
+    {
+        if ( !securityPlan.isRoutingCompatible() )
+        {
+            throw new IllegalArgumentException( "The chosen security plan is not compatible with a routing driver" );
+        }
+        return securityPlan;
+    }
+
     private final LoadBalancer loadBalancer;
 
     public RoutingDriver(
@@ -45,7 +56,7 @@ public class RoutingDriver extends BaseDriver
             Clock clock,
             Logging logging )
     {
-        super( contract, securityPlan, logging );
+        super( contract, verifiedSecurityPlan( securityPlan ), logging );
         this.loadBalancer = new LoadBalancer( settings, clock, log, connections, seedAddress );
     }
 

@@ -40,7 +40,6 @@ import org.neo4j.driver.v1.util.Function;
 import static java.lang.String.format;
 import static org.neo4j.driver.internal.security.SecurityPlan.insecure;
 import static org.neo4j.driver.v1.Config.EncryptionLevel.REQUIRED;
-import static org.neo4j.driver.v1.Config.EncryptionLevel.REQUIRED_NON_LOCAL;
 
 /**
  * Creates {@link Driver drivers}, optionally letting you {@link #driver(URI, Config)} to configure them.
@@ -215,25 +214,33 @@ public class GraphDatabase
             throws GeneralSecurityException, IOException
     {
         Config.EncryptionLevel encryptionLevel = config.encryptionLevel();
-        boolean requiresEncryption = encryptionLevel.equals( REQUIRED ) ||
-                                     (encryptionLevel.equals( REQUIRED_NON_LOCAL ) && !address.isLocal());
+        boolean requiresEncryption = encryptionLevel.equals( REQUIRED );
 
         if ( requiresEncryption )
         {
             Logger logger = config.logging().getLog( "session" );
             switch ( config.trustStrategy().strategy() )
             {
+
+            // DEPRECATED CASES //
+            case TRUST_ON_FIRST_USE:
+                logger.warn(
+                        "Option `TRUST_ON_FIRST_USE` has been deprecated and will be removed in a future " +
+                        "version of the driver. Please switch to use `TRUST_ALL_CERTIFICATES` instead." );
+                return SecurityPlan.forTrustOnFirstUse( config.trustStrategy().certFile(), address, logger );
             case TRUST_SIGNED_CERTIFICATES:
                 logger.warn(
                         "Option `TRUST_SIGNED_CERTIFICATE` has been deprecated and will be removed in a future " +
-                        "version " +
-                        "of the driver. Please switch to use `TRUST_CUSTOM_CA_SIGNED_CERTIFICATES` instead." );
-                //intentional fallthrough
+                        "version of the driver. Please switch to use `TRUST_CUSTOM_CA_SIGNED_CERTIFICATES` instead." );
+                // intentional fallthrough
+            // END OF DEPRECATED CASES //
+
             case TRUST_CUSTOM_CA_SIGNED_CERTIFICATES:
-                return SecurityPlan.forSignedCertificates( config.trustStrategy().certFile() );
-            case TRUST_ON_FIRST_USE:
-                return SecurityPlan.forTrustOnFirstUse( config.trustStrategy().certFile(),
-                        address, logger );
+                return SecurityPlan.forCustomCASignedCertificates( config.trustStrategy().certFile() );
+            case TRUST_SYSTEM_CA_SIGNED_CERTIFICATES:
+                return SecurityPlan.forSystemCASignedCertificates();
+            case TRUST_ALL_CERTIFICATES:
+                return SecurityPlan.forAllCertificates();
             default:
                 throw new ClientException(
                         "Unknown TLS authentication strategy: " + config.trustStrategy().strategy().name() );

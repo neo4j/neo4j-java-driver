@@ -52,7 +52,9 @@ public class RoutingDriverBoltKitTest
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
-    private static final Config config = Config.build().withLogging( new ConsoleLogging( Level.INFO ) ).toConfig();
+    private static final Config config = Config.build()
+            .withEncryptionLevel( Config.EncryptionLevel.NONE )
+            .withLogging( new ConsoleLogging( Level.INFO ) ).toConfig();
 
     @Test
     public void shouldHandleAcquireReadSession() throws IOException, InterruptedException, StubServer.ForceKilled

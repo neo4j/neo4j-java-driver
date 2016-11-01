@@ -117,10 +117,8 @@ public class TLSSocketChannelIT
             channel.connect( address.toSocketAddress() );
 
             // When
-            SecurityPlan securityPlan = SecurityPlan.forSignedCertificates( rootCert );
-            TLSSocketChannel sslChannel =
-                    new TLSSocketChannel( address, securityPlan, channel, logger
-                    );
+            SecurityPlan securityPlan = SecurityPlan.forCustomCASignedCertificates( rootCert );
+            TLSSocketChannel sslChannel = TLSSocketChannel.create( address, securityPlan, channel, logger );
             sslChannel.close();
 
             // Then
@@ -146,13 +144,13 @@ public class TLSSocketChannelIT
             Logger logger = mock( Logger.class );
             SocketChannel channel = SocketChannel.open();
             channel.connect( new InetSocketAddress( "localhost", 7687 ) );
-            SecurityPlan securityPlan = SecurityPlan.forSystemCertificates();
+            SecurityPlan securityPlan = SecurityPlan.forSystemCASignedCertificates();
 
             // When
             try
             {
                 TLSSocketChannel sslChannel =
-                        new TLSSocketChannel(address, securityPlan, channel, logger);
+                        TLSSocketChannel.create(address, securityPlan, channel, logger);
                 sslChannel.close();
             }
             catch ( SSLHandshakeException e )
@@ -188,7 +186,7 @@ public class TLSSocketChannelIT
         TLSSocketChannel sslChannel = null;
         try
         {
-            sslChannel = new TLSSocketChannel( address, securityPlan, channel, mock( Logger.class ) );
+            sslChannel = TLSSocketChannel.create( address, securityPlan, channel, mock( Logger.class ) );
             sslChannel.close();
         }
         catch ( SSLHandshakeException e )
@@ -237,11 +235,11 @@ public class TLSSocketChannelIT
         CertificateTool.saveX509Cert( aRandomCert, trustedCertFile );
 
         // When & Then
-        SecurityPlan securityPlan = SecurityPlan.forSignedCertificates( trustedCertFile );
+        SecurityPlan securityPlan = SecurityPlan.forCustomCASignedCertificates( trustedCertFile );
         TLSSocketChannel sslChannel = null;
         try
         {
-            sslChannel = new TLSSocketChannel( neo4j.address(), securityPlan, channel, mock( Logger.class ) );
+            sslChannel = TLSSocketChannel.create( neo4j.address(), securityPlan, channel, mock( Logger.class ) );
             sslChannel.close();
         }
         catch ( SSLHandshakeException e )
@@ -269,8 +267,8 @@ public class TLSSocketChannelIT
 
         // When
         URI url = URI.create( "localhost:7687" );
-        SecurityPlan securityPlan = SecurityPlan.forSignedCertificates( Neo4jSettings.DEFAULT_TLS_CERT_FILE );
-        TLSSocketChannel sslChannel = new TLSSocketChannel( address, securityPlan, channel, logger );
+        SecurityPlan securityPlan = SecurityPlan.forCustomCASignedCertificates( Neo4jSettings.DEFAULT_TLS_CERT_FILE );
+        TLSSocketChannel sslChannel = TLSSocketChannel.create( address, securityPlan, channel, logger );
         sslChannel.close();
 
         // Then
@@ -335,7 +333,7 @@ public class TLSSocketChannelIT
 
         SecurityPlan securityPlan = SecurityPlan.forTrustOnFirstUse( knownCerts, address, new DevNullLogger() );
         TLSSocketChannel sslChannel =
-                new TLSSocketChannel( address, securityPlan, channel, logger );
+                TLSSocketChannel.create( address, securityPlan, channel, logger );
         sslChannel.close();
 
         // Then

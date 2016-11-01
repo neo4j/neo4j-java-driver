@@ -31,6 +31,8 @@ import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertThat;
 
+import static org.neo4j.driver.v1.util.StubServer.INSECURE_CONFIG;
+
 public class GraphDatabaseBoltKitTest
 {
     @Test
@@ -41,7 +43,7 @@ public class GraphDatabaseBoltKitTest
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
 
         // When
-        Driver driver = GraphDatabase.driver( uri );
+        Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG );
 
         // Then
         assertThat( driver, instanceOf( RoutingDriver.class ) );

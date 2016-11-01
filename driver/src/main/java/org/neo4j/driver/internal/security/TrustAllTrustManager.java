@@ -17,26 +17,26 @@
  * limitations under the License.
  */
 
-package org.neo4j.driver.internal.net;
+package org.neo4j.driver.internal.security;
 
-import org.junit.Test;
-import org.neo4j.driver.internal.net.BoltServerAddress;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+import javax.net.ssl.X509TrustManager;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.*;
-
-public class BoltServerAddressTest
+public class TrustAllTrustManager implements X509TrustManager
 {
-    @Test
-    public void defaultPortShouldBe7687()
+    public void checkClientTrusted( X509Certificate[] chain, String authType ) throws CertificateException
     {
-        assertThat( BoltServerAddress.DEFAULT_PORT, equalTo( 7687 ) );
+        throw new CertificateException( "All client connections to this client are forbidden." );
     }
 
-    @Test
-    public void portShouldUseDefaultIfNotSupplied()
+    public void checkServerTrusted( X509Certificate[] chain, String authType ) throws CertificateException
     {
-        assertThat( new BoltServerAddress( "localhost" ).port(), equalTo( BoltServerAddress.DEFAULT_PORT ) );
+        // all fine, pass through
     }
 
+    public X509Certificate[] getAcceptedIssuers()
+    {
+        return new X509Certificate[0];
+    }
 }

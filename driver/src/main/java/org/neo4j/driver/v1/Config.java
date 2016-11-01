@@ -27,8 +27,7 @@ import org.neo4j.driver.internal.logging.JULogging;
 import org.neo4j.driver.internal.net.pooling.PoolSettings;
 import org.neo4j.driver.v1.util.Immutable;
 
-import static java.lang.System.getProperty;
-import static org.neo4j.driver.v1.Config.TrustStrategy.trustOnFirstUse;
+import static org.neo4j.driver.v1.Config.TrustStrategy.trustAllCertificates;
 
 /**
  * A configuration class to config driver properties.
@@ -168,9 +167,8 @@ public class Config
         private Logging logging = new JULogging( Level.INFO );
         private int maxIdleConnectionPoolSize = PoolSettings.DEFAULT_MAX_IDLE_CONNECTION_POOL_SIZE;
         private long idleTimeBeforeConnectionTest = PoolSettings.DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST;
-        private EncryptionLevel encryptionLevel = EncryptionLevel.REQUIRED_NON_LOCAL;
-        private TrustStrategy trustStrategy = trustOnFirstUse(
-                new File( getProperty( "user.home" ), ".neo4j" + File.separator + "known_hosts" ) );
+        private EncryptionLevel encryptionLevel = EncryptionLevel.REQUIRED;
+        private TrustStrategy trustStrategy = trustAllCertificates();
         private RetryLogic retryLogic = RetryLogic.DEFAULT_RETRY_LOGIC;
         private int routingFailureLimit = 1;
         private long routingRetryDelayMillis = 5_000;
@@ -371,10 +369,6 @@ public class Config
         /** With this level, the driver will only connect to the server if it can do it without encryption. */
         NONE,
 
-        /** With this level, the driver will only connect to the server without encryption if local but with
-         * encryption otherwise. */
-        REQUIRED_NON_LOCAL,
-
         /** With this level, the driver will only connect to the server it if can do it with encryption. */
         REQUIRED
     }
@@ -386,10 +380,16 @@ public class Config
     {
         public enum Strategy
         {
+            @Deprecated
             TRUST_ON_FIRST_USE,
+
             @Deprecated
             TRUST_SIGNED_CERTIFICATES,
+
+            TRUST_ALL_CERTIFICATES,
+
             TRUST_CUSTOM_CA_SIGNED_CERTIFICATES,
+
             TRUST_SYSTEM_CA_SIGNED_CERTIFICATES
         }
 
@@ -445,9 +445,24 @@ public class Config
             return new TrustStrategy( Strategy.TRUST_CUSTOM_CA_SIGNED_CERTIFICATES, certFile );
         }
 
+        /**
+         *
+         * @return
+         */
         public static TrustStrategy trustSystemCertificates()
         {
             return new TrustStrategy( Strategy.TRUST_SYSTEM_CA_SIGNED_CERTIFICATES );
+        }
+
+        /**
+         *
+         * @return
+         *
+         * @since 1.1
+         */
+        public static TrustStrategy trustAllCertificates()
+        {
+            return new TrustStrategy( Strategy.TRUST_ALL_CERTIFICATES );
         }
 
         /**
@@ -463,7 +478,10 @@ public class Config
          *
          * @param knownHostsFile a file where known certificates are stored.
          * @return an authentication config
+         *
+         * @deprecated in 1.1 in favour of {@link #trustAllCertificates()}
          */
+        @Deprecated
         public static TrustStrategy trustOnFirstUse( File knownHostsFile )
         {
             return new TrustStrategy( Strategy.TRUST_ON_FIRST_USE, knownHostsFile );

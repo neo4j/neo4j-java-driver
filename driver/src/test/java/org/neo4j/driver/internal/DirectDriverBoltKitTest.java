@@ -24,6 +24,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.net.URI;
 
+import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Record;
@@ -33,6 +34,7 @@ import org.neo4j.driver.v1.util.StubServer;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.driver.v1.Values.parameters;
+import static org.neo4j.driver.v1.util.StubServer.INSECURE_CONFIG;
 
 public class DirectDriverBoltKitTest
 {
@@ -45,7 +47,7 @@ public class DirectDriverBoltKitTest
         int x;
 
         // When
-        try ( Driver driver = GraphDatabase.driver( uri ) )
+        try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG ) )
         {
             try ( Session session = driver.session() )
             {

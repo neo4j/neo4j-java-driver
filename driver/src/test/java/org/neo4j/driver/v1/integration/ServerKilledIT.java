@@ -21,6 +21,7 @@ package org.neo4j.driver.v1.integration;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
@@ -43,7 +44,8 @@ public class ServerKilledIT
     public void shouldRecoverFromServerRestart() throws Throwable
     {
         // Given
-        try ( Driver driver = GraphDatabase.driver( Neo4jRunner.DEFAULT_URI ) )
+        try ( Driver driver = GraphDatabase.driver( Neo4jRunner.DEFAULT_URI,
+                Config.build().withEncryptionLevel( Config.EncryptionLevel.NONE ).toConfig() ) )
         {
             Session s1 = driver.session();
             Session s2 = driver.session();

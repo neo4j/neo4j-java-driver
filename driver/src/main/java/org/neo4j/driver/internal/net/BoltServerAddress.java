@@ -136,23 +136,4 @@ public class BoltServerAddress
         return port;
     }
 
-    /**
-     * Determine whether or not this address refers to the local machine. This
-     * will generally be true for "localhost" or "127.x.x.x".
-     *
-     * @return true if local, false otherwise
-     */
-    public boolean isLocal()
-    {
-        try
-        {
-            // confirmed to work as desired with both "localhost" and "127.x.x.x"
-            return InetAddress.getByName( host ).isLoopbackAddress();
-        }
-        catch ( UnknownHostException e )
-        {
-            // if it's unknown, it's not local so we can safely return false
-            return false;
-        }
-    }
 }

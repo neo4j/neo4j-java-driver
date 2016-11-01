@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal;
 
+import java.io.File;
 import java.util.Collections;
 import java.util.Map;
 
@@ -35,7 +36,10 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.v1.AccessMode;
+import org.neo4j.driver.v1.Config;
+import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.EventLogger;
+import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.RetryLogic;
 import org.neo4j.driver.v1.Value;
@@ -43,8 +47,11 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
 import static java.util.Arrays.asList;
+
+import static junit.framework.TestCase.fail;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -304,6 +311,26 @@ public class RoutingDriverTest
         assertNotEquals( write1.address(), write2.address() );
         assertNotEquals( write2.address(), write3.address() );
         assertNotEquals( write3.address(), write1.address() );
+    }
+
+    @Test
+    public void testTrustOnFirstUseNotCompatibleWithRoutingDriver()
+    {
+        // Given
+        final Config tofuConfig = Config.build()
+                .withEncryptionLevel( Config.EncryptionLevel.REQUIRED )
+                .withTrustStrategy( Config.TrustStrategy.trustOnFirstUse( new File( "foo" ) ) ).toConfig();
+
+        try
+        {
+            // When
+            GraphDatabase.driver( "bolt+routing://127.0.0.1:7687", tofuConfig );
+            fail();
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // Then we should end up here
+        }
     }
 
     @SafeVarargs

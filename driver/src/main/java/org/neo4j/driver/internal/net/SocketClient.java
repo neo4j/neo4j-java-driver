@@ -294,7 +294,7 @@ public class SocketClient
 
             if (securityPlan.requiresEncryption())
             {
-                channel = new TLSSocketChannel( address, securityPlan, soChannel, logger );
+                channel = TLSSocketChannel.create( address, securityPlan, soChannel, logger );
             }
             else
             {
