@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.logging.Level;
 
 import org.neo4j.driver.internal.logging.ConsoleLogging;
-import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
@@ -580,10 +579,5 @@ public class RoutingDriverBoltKitTest
         driver.close();
         // Finally
         assertThat( server.exitStatus(), equalTo( 0 ) );
-    }
-
-    private BoltServerAddress address( int port )
-    {
-        return new BoltServerAddress( "127.0.0.1", port );
     }
 }
