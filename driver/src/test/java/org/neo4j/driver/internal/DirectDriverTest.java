@@ -24,10 +24,16 @@ import org.junit.Test;
 import java.net.URI;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
+import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.util.StubServer;
 
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.driver.v1.Values.parameters;
+import static org.neo4j.driver.v1.util.StubServer.INSECURE_CONFIG;
 
 public class DirectDriverTest
 {
@@ -59,5 +65,30 @@ public class DirectDriverTest
         BoltServerAddress driverAddress = driver.server();
         assertThat( driverAddress, equalTo( address ));
 
+    }
+
+    @Test
+    public void shouldBeAbleRunCypher() throws Exception
+    {
+        // Given
+        StubServer server = StubServer.start( "return_x.script", 9001 );
+        URI uri = URI.create( "bolt://127.0.0.1:9001" );
+        int x;
+
+        // When
+        try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG ) )
+        {
+            try ( Session session = driver.session() )
+            {
+                Record record = session.run( "RETURN {x}", parameters( "x", 1 ) ).single();
+                x = record.get( 0 ).asInt();
+            }
+        }
+
+        // Then
+        assertThat( x, equalTo( 1 ) );
+
+        // Finally
+        assertThat( server.exitStatus(), equalTo( 0 ) );
     }
 }

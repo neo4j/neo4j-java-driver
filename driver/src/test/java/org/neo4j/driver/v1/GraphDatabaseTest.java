@@ -24,9 +24,13 @@ import org.junit.Test;
 import java.net.URI;
 
 import org.neo4j.driver.internal.DirectDriver;
+import org.neo4j.driver.internal.RoutingDriver;
+import org.neo4j.driver.v1.util.StubServer;
 
+import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.driver.v1.util.StubServer.INSECURE_CONFIG;
 
 public class GraphDatabaseTest
 {
@@ -42,5 +46,23 @@ public class GraphDatabaseTest
         // Then
         assertThat( driver, instanceOf( DirectDriver.class ) );
 
+    }
+
+    @Test
+    public void boltPlusDiscoverySchemeShouldInstantiateClusterDriver() throws Exception
+    {
+        // Given
+        StubServer server = StubServer.start( "discover_servers.script", 9001 );
+        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+
+        // When
+        Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG );
+
+        // Then
+        assertThat( driver, instanceOf( RoutingDriver.class ) );
+
+        // Finally
+        driver.close();
+        assertThat( server.exitStatus(), equalTo( 0 ) );
     }
 }

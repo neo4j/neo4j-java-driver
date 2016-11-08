@@ -30,6 +30,7 @@ import static java.lang.Thread.sleep;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 public class StubServer
 {
@@ -39,12 +40,14 @@ public class StubServer
     // This may be thrown if the driver has not been closed properly
     public static class ForceKilled extends Exception {}
 
+    private static final String BOLT_STUB_COMMAND = "boltstub";
+
     private Process process = null;
 
     private StubServer( String script, int port ) throws IOException, InterruptedException
     {
         List<String> command = new ArrayList<>();
-        command.addAll( singletonList( "boltstub" ) );
+        command.addAll( singletonList( BOLT_STUB_COMMAND ) );
         command.addAll( asList( Integer.toString( port ), script ) );
         ProcessBuilder server = new ProcessBuilder().inheritIO().command( command );
         process = server.start();
@@ -53,6 +56,7 @@ public class StubServer
 
     public static StubServer start( String resource, int port ) throws IOException, InterruptedException
     {
+        assumeTrue( boltKitAvailable() );
         return new StubServer( resource(resource), port );
     }
 
@@ -80,5 +84,21 @@ public class StubServer
             fail( fileName + " does not exists" );
         }
         return resource.getAbsolutePath();
+    }
+
+    private static boolean boltKitAvailable()
+    {
+        try
+        {
+            // run 'help' command to see if boltstub is available
+            Process process = new ProcessBuilder( BOLT_STUB_COMMAND, "-h" ).start();
+            int exitCode = process.waitFor();
+            return exitCode == 0;
+        }
+        catch ( IOException | InterruptedException e )
+        {
+            // unable to run boltstub command, thus it is unavailable
+            return false;
+        }
     }
 }
