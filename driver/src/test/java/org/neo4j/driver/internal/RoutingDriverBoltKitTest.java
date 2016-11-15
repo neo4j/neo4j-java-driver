@@ -31,7 +31,6 @@ import java.util.logging.Level;
 import org.neo4j.driver.internal.logging.ConsoleLogging;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Config;
-import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
@@ -44,7 +43,6 @@ import org.neo4j.driver.v1.util.StubServer;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.driver.v1.RetryLogic.TRY_UP_TO_3_TIMES_WITH_5_SECOND_PAUSE;
 
 public class RoutingDriverBoltKitTest
 {
@@ -279,69 +277,6 @@ public class RoutingDriverBoltKitTest
         }
         // Finally
         assertThat( server.exitStatus(), equalTo( 0 ) );
-    }
-
-    @Test
-    public void shouldReplayTransactionWithTransact()
-            throws IOException, InterruptedException, StubServer.ForceKilled
-    {
-        // Given
-        StubServer routeServer = StubServer.start( "acquire_endpoints.script", 9001 );
-
-        // When
-        StubServer.start( "transact_dead_server.script", 9005 );
-        StubServer readServer = StubServer.start( "transact_live_server.script", 9006 );
-        List<Record> records;
-        try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9001", config ) )
-        {
-            records = driver.transact(
-                    TRY_UP_TO_3_TIMES_WITH_5_SECOND_PAUSE,
-                    AccessMode.READ,
-                    new Function<Transaction, List<Record>>()
-            {
-                public List<Record> apply( Transaction tx )
-                {
-                    return tx.run( "MATCH (n) RETURN n.name AS name" ).list();
-                }
-            } );
-        }
-        // Finally
-        assertThat( records.size(), equalTo( 2 ) );
-        assertThat( records.get( 0 ).get( "name" ).asString(), equalTo( "Alice" ) );
-        assertThat( records.get( 1 ).get( "name" ).asString(), equalTo( "Bob" ) );
-
-        assertThat( readServer.exitStatus(), equalTo( 0 ) );
-        assertThat( routeServer.exitStatus(), equalTo( 0 ) );
-    }
-
-    @Test
-    public void shouldReplayTransactionWithRead()
-            throws IOException, InterruptedException, StubServer.ForceKilled
-    {
-        // Given
-        StubServer routeServer = StubServer.start( "acquire_endpoints.script", 9001 );
-
-        // When
-        StubServer.start( "transact_dead_server.script", 9005 );
-        StubServer readServer = StubServer.start( "transact_live_server.script", 9006 );
-        List<Record> records;
-        try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9001", config ) )
-        {
-            records = driver.read( new Function<Transaction, List<Record>>()
-            {
-                public List<Record> apply( Transaction tx )
-                {
-                    return tx.run( "MATCH (n) RETURN n.name AS name" ).list();
-                }
-            } );
-        }
-        // Finally
-        assertThat( records.size(), equalTo( 2 ) );
-        assertThat( records.get( 0 ).get( "name" ).asString(), equalTo( "Alice" ) );
-        assertThat( records.get( 1 ).get( "name" ).asString(), equalTo( "Bob" ) );
-
-        assertThat( routeServer.exitStatus(), equalTo( 0 ) );
-        assertThat( readServer.exitStatus(), equalTo( 0 ) );
     }
 
     @Test

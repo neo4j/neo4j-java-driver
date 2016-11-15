@@ -20,30 +20,18 @@
 package org.neo4j.driver.internal;
 
 import org.neo4j.driver.internal.security.SecurityPlan;
-import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
-import org.neo4j.driver.v1.RetryLogic;
-import org.neo4j.driver.v1.Session;
-import org.neo4j.driver.v1.Transaction;
-import org.neo4j.driver.v1.exceptions.NotCommittedException;
-import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.v1.exceptions.SessionExpiredException;
-import org.neo4j.driver.v1.util.Function;
-
-import static java.lang.String.format;
 
 abstract class BaseDriver implements Driver
 {
-    private final DriverContract contract;
     private final SecurityPlan securityPlan;
     protected final Logger log;
     private final static String DRIVER_LOG_NAME = "Driver";
 
-    BaseDriver( DriverContract contract, SecurityPlan securityPlan, Logging logging )
+    BaseDriver( SecurityPlan securityPlan, Logging logging )
     {
-        this.contract = contract;
         this.securityPlan = securityPlan;
         this.log = logging.getLog( DRIVER_LOG_NAME );
     }
@@ -52,70 +40,5 @@ abstract class BaseDriver implements Driver
     public boolean isEncrypted()
     {
         return securityPlan.requiresEncryption();
-    }
-
-    public <T> T transact( RetryLogic logic, AccessMode mode, Function<Transaction, T> work )
-            throws NotCommittedException, ServiceUnavailableException
-    {
-        int remaining = logic.attempts();
-        while ( remaining > 0 )
-        {
-            try ( Session session = session( mode ) )
-            {
-                boolean failed = false;
-                Transaction tx = session.beginTransaction();
-                try {
-                    T result = work.apply( tx );
-                    tx.success();
-                    return result;
-                }
-                catch ( SessionExpiredException e )
-                {
-                    failed = true;
-                    tx.failure();
-                    remaining -= 1;
-                }
-                finally
-                {
-                    if ( failed )
-                    {
-                        try
-                        {
-                            tx.close();
-                        }
-                        catch ( Exception ex )
-                        {
-                            // ignore errors if we've already failed as
-                            // we already know this connection is problematic
-                        }
-                    }
-                    else
-                    {
-                        tx.close();
-                    }
-                }
-            }
-            try
-            {
-                Thread.sleep( logic.pauseMillis() );
-            }
-            catch ( InterruptedException e )
-            {
-                throw new NotCommittedException( format( "Interrupted after %d attempts", logic.attempts() - remaining ) );
-            }
-        }
-        throw new NotCommittedException( format( "Unable to commit transaction after %d attempts", logic.attempts() ) );
-    }
-
-    @Override
-    public <T> T read( Function<Transaction, T> work ) throws NotCommittedException, ServiceUnavailableException
-    {
-        return transact( contract.retryLogic(), AccessMode.READ, work );
-    }
-
-    @Override
-    public <T> T write( Function<Transaction, T> work ) throws NotCommittedException, ServiceUnavailableException
-    {
-        return transact( contract.retryLogic(), AccessMode.WRITE, work );
     }
 }

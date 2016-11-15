@@ -26,7 +26,6 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.AccessMode;
-import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.exceptions.ClientException;
@@ -50,13 +49,12 @@ public class RoutingDriver extends BaseDriver
     public RoutingDriver(
             RoutingSettings settings,
             BoltServerAddress seedAddress,
-            DriverContract contract,
             ConnectionPool connections,
             SecurityPlan securityPlan,
             Clock clock,
             Logging logging )
     {
-        super( contract, verifiedSecurityPlan( securityPlan ), logging );
+        super( verifiedSecurityPlan( securityPlan ), logging );
         this.loadBalancer = new LoadBalancer( settings, clock, log, connections, seedAddress );
     }
 

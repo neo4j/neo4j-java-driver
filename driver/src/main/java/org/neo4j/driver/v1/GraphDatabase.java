@@ -24,7 +24,6 @@ import java.security.GeneralSecurityException;
 
 import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.DirectDriver;
-import org.neo4j.driver.internal.DriverContract;
 import org.neo4j.driver.internal.NetworkSession;
 import org.neo4j.driver.internal.RoutingDriver;
 import org.neo4j.driver.internal.net.BoltServerAddress;
@@ -177,9 +176,6 @@ public class GraphDatabase
             throw new ClientException( "Unable to establish SSL parameters", ex );
         }
 
-        // Construct driver contract
-        DriverContract driverContract = new DriverContract( config.retryLogic() );
-
         // Establish pool settings
         PoolSettings poolSettings = new PoolSettings(
                 config.maxIdleConnectionPoolSize(),
@@ -191,12 +187,11 @@ public class GraphDatabase
         switch ( scheme.toLowerCase() )
         {
         case "bolt":
-            return new DirectDriver( address, driverContract, connectionPool, securityPlan, config.logging() );
+            return new DirectDriver( address, connectionPool, securityPlan, config.logging() );
         case "bolt+routing":
             return new RoutingDriver(
                     config.routingSettings(),
                     address,
-                    driverContract,
                     connectionPool,
                     securityPlan,
                     Clock.SYSTEM,
