@@ -43,7 +43,7 @@ class PooledConnectionValidator implements Function<PooledConnection,Boolean>
     {
         // once the pooledConn has marked to have unrecoverable errors, there is no way to remove the error
         // and we should close the conn without bothering to reset the conn at all
-        return pool.hasAddress( pooledConnection.address() ) &&
+        return pool.hasAddress( pooledConnection.boltServerAddress() ) &&
                !pooledConnection.hasUnrecoverableErrors() &&
                reset( pooledConnection ) &&
                (pooledConnection.idleTime() <= poolSettings.idleTimeBeforeConnectionTest() ||

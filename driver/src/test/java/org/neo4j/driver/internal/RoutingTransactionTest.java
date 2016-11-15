@@ -78,7 +78,7 @@ public class RoutingTransactionTest
     public void setUp()
     {
         connection = mock( Connection.class );
-        when( connection.address() ).thenReturn( LOCALHOST );
+        when( connection.boltServerAddress() ).thenReturn( LOCALHOST );
         when( connection.isOpen() ).thenReturn( true );
         onError = mock( RoutingErrorHandler.class );
         cleanup = mock( Runnable.class );
@@ -123,7 +123,7 @@ public class RoutingTransactionTest
 
         RoutingTransaction tx =
                 new RoutingTransaction( new ExplicitTransaction( connection, cleanup ), AccessMode.WRITE,
-                        connection.address(), onError );
+                        connection.boltServerAddress(), onError );
 
         // When
         try
@@ -150,7 +150,7 @@ public class RoutingTransactionTest
                 .when( connection ).run( anyString(), any( Map.class ), any( Collector.class ) );
         RoutingTransaction tx =
                 new RoutingTransaction( new ExplicitTransaction( connection, cleanup ), AccessMode.READ,
-                        connection.address(), onError );
+                        connection.boltServerAddress(), onError );
 
         // When
         try
@@ -175,7 +175,7 @@ public class RoutingTransactionTest
                 .when( connection ).run( anyString(), any( Map.class ), any( Collector.class ) );
         RoutingTransaction tx =
                 new RoutingTransaction( new ExplicitTransaction( connection, cleanup ), AccessMode.WRITE,
-                        connection.address(), onError );
+                        connection.boltServerAddress(), onError );
 
         // When
         try
@@ -201,7 +201,7 @@ public class RoutingTransactionTest
 
         RoutingTransaction tx =
                 new RoutingTransaction( new ExplicitTransaction( connection, cleanup ), AccessMode.WRITE,
-                        connection.address(), onError );
+                        connection.boltServerAddress(), onError );
 
         // When
         try
@@ -227,7 +227,7 @@ public class RoutingTransactionTest
 
         RoutingTransaction tx =
                 new RoutingTransaction( new ExplicitTransaction( connection, cleanup ), AccessMode.WRITE,
-                        connection.address(), onError );
+                        connection.boltServerAddress(), onError );
 
         // When
         try
@@ -253,7 +253,7 @@ public class RoutingTransactionTest
         Transaction inner = mock( Transaction.class );
         RoutingTransaction tx =
                 new RoutingTransaction(inner, AccessMode.WRITE,
-                        connection.address(), onError );
+                        connection.boltServerAddress(), onError );
 
         // When
         tx.success();
@@ -269,7 +269,7 @@ public class RoutingTransactionTest
         Transaction inner = mock( Transaction.class );
         RoutingTransaction tx =
                 new RoutingTransaction(inner, AccessMode.WRITE,
-                        connection.address(), onError );
+                        connection.boltServerAddress(), onError );
 
         // When
         tx.failure();
@@ -285,7 +285,7 @@ public class RoutingTransactionTest
         Transaction inner = mock( Transaction.class );
         RoutingTransaction tx =
                 new RoutingTransaction(inner, AccessMode.WRITE,
-                        connection.address(), onError );
+                        connection.boltServerAddress(), onError );
 
         // When
         tx.isOpen();
@@ -301,7 +301,7 @@ public class RoutingTransactionTest
         Transaction inner = mock( Transaction.class );
         RoutingTransaction tx =
                 new RoutingTransaction(inner, AccessMode.WRITE,
-                        connection.address(), onError );
+                        connection.boltServerAddress(), onError );
 
         // When
         tx.typeSystem();

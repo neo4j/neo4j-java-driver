@@ -20,10 +20,15 @@ package org.neo4j.driver.internal;
 
 import org.junit.Test;
 
+import java.net.URI;
+
+import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.summary.InternalServerInfo;
 import org.neo4j.driver.internal.summary.InternalSummaryCounters;
 import org.neo4j.driver.internal.summary.SummaryBuilder;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.Statement;
+import org.neo4j.driver.v1.summary.ServerInfo;
 import org.neo4j.driver.v1.summary.SummaryCounters;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -38,7 +43,7 @@ public class InternalBuilderTest
     public void shouldReturnEmptyStatisticsIfNotProvided() throws Throwable
     {
         // Given
-        SummaryBuilder builder = new SummaryBuilder( mock( Statement.class ) );
+        SummaryBuilder builder = new SummaryBuilder( mock( Statement.class ), mock( ServerInfo.class ) );
 
         // When
         ResultSummary summary = builder.build();
@@ -53,7 +58,7 @@ public class InternalBuilderTest
     public void shouldReturnNullIfNoPlanProfileProvided() throws Throwable
     {
         // Given
-        SummaryBuilder builder = new SummaryBuilder( mock( Statement.class ) );
+        SummaryBuilder builder = new SummaryBuilder( mock( Statement.class ), mock( ServerInfo.class ) );
 
         // When
         ResultSummary summary = builder.build();
@@ -70,12 +75,30 @@ public class InternalBuilderTest
     public void shouldReturnNullIfNoStatementTypeProvided() throws Throwable
     {
         // Given
-        SummaryBuilder builder = new SummaryBuilder( mock( Statement.class ) );
+        SummaryBuilder builder = new SummaryBuilder( mock( Statement.class ), mock( ServerInfo.class ) );
 
         // When
         ResultSummary summary = builder.build();
 
         // Then
         assertNull( summary.statementType() );
+    }
+
+
+    @Test
+    public void shouldObtainStatementAndServerInfoFromSummaryBuilder() throws Throwable
+    {
+        // Given
+        SummaryBuilder builder = new SummaryBuilder( new Statement( "This is a test statement"), new
+                InternalServerInfo( BoltServerAddress.from( URI.create( "http://neo4j.com" ) ),
+                "super-awesome" ) );
+
+        // When
+        ResultSummary summary = builder.build();
+
+        // Then
+        assertThat( summary.statement().text(), equalTo( "This is a test statement" ) );
+        assertThat( summary.server().address(), equalTo( "neo4j.com:7687" ) );
+        assertThat( summary.server().version(), equalTo( "super-awesome" ) );
     }
 }

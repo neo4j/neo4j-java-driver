@@ -37,7 +37,6 @@ import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Config;
-import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.EventLogger;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Logging;
@@ -375,7 +374,7 @@ public class RoutingDriverTest
                 BoltServerAddress address = invocationOnMock.getArgumentAt( 0, BoltServerAddress.class );
                 Connection connection = mock( Connection.class );
                 when( connection.isOpen() ).thenReturn( true );
-                when( connection.address() ).thenReturn( address );
+                when( connection.boltServerAddress() ).thenReturn( address );
                 doAnswer( withKeys( "ttl", "servers" ) ).when( connection ).run(
                         eq( GET_SERVERS ),
                         eq( Collections.<String,Value>emptyMap() ),

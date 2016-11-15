@@ -85,7 +85,7 @@ public class SummaryIT
         ResultSummary summary = session.run( "UNWIND range(1,1000) AS n RETURN n AS number" ).consume();
 
         // Then
-        if ( version( session.server() ).greaterThanOrEqual( v3_1_0 ) )
+        if ( version( summary.server().version() ).greaterThanOrEqual( v3_1_0 ) )
         {
             assertThat( summary.resultAvailableAfter( TimeUnit.MILLISECONDS ), greaterThan( 0L ) );
             assertThat( summary.resultConsumedAfter( TimeUnit.MILLISECONDS ), greaterThan( 0L ) );
@@ -173,5 +173,33 @@ public class SummaryIT
         assertThat( notifications.size(), equalTo( 1 ) );
         assertThat( notifications.get( 0 ).toString(), containsString("CartesianProduct") );
 
+    }
+
+
+    @Test
+    public void shouldBeAbleToAccessSummaryAfterFailure() throws Throwable
+    {
+        // Given
+        StatementResult res1 = session.run( "INVALID" );
+        ResultSummary summary;
+
+        // When
+        try
+        {
+            res1.consume();
+        }
+        catch ( Exception e )
+        {
+            //ignore
+        }
+        finally
+        {
+            summary = res1.consume();
+        }
+
+        // Then
+        assertThat( summary, notNullValue() );
+        assertThat( summary.server().address(), equalTo( "localhost:7687" ) );
+        assertThat( summary.counters().nodesCreated(), equalTo( 0 ) );
     }
 }

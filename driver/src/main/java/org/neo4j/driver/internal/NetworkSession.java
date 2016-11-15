@@ -195,12 +195,6 @@ public class NetworkSession implements Session
     }
 
     @Override
-    public String server()
-    {
-        return connection.server();
-    }
-
-    @Override
     public Transaction beginTransaction()
     {
         return beginTransaction( null );

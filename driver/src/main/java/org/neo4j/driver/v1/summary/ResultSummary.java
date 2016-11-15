@@ -107,4 +107,10 @@ public interface ResultSummary
      * @return The time it took for the server to consume the result in the provided time unit.
      */
     long resultConsumedAfter( TimeUnit unit );
+
+    /**
+     * The basic information of the server where the result is obtained from
+     * @return basic information of the server where the result is obtain from
+     */
+    ServerInfo server();
 }

@@ -415,15 +415,15 @@ public class LoadBalancerTest
         Connection a = acquire.apply( routing );
         Connection b = acquire.apply( routing );
         Connection c = acquire.apply( routing );
-        assertNotEquals( a.address(), b.address() );
-        assertNotEquals( b.address(), c.address() );
-        assertNotEquals( c.address(), a.address() );
-        assertEquals( a.address(), acquire.apply( routing ).address() );
-        assertEquals( b.address(), acquire.apply( routing ).address() );
-        assertEquals( c.address(), acquire.apply( routing ).address() );
-        assertEquals( a.address(), acquire.apply( routing ).address() );
-        assertEquals( b.address(), acquire.apply( routing ).address() );
-        assertEquals( c.address(), acquire.apply( routing ).address() );
+        assertNotEquals( a.boltServerAddress(), b.boltServerAddress() );
+        assertNotEquals( b.boltServerAddress(), c.boltServerAddress() );
+        assertNotEquals( c.boltServerAddress(), a.boltServerAddress() );
+        assertEquals( a.boltServerAddress(), acquire.apply( routing ).boltServerAddress() );
+        assertEquals( b.boltServerAddress(), acquire.apply( routing ).boltServerAddress() );
+        assertEquals( c.boltServerAddress(), acquire.apply( routing ).boltServerAddress() );
+        assertEquals( a.boltServerAddress(), acquire.apply( routing ).boltServerAddress() );
+        assertEquals( b.boltServerAddress(), acquire.apply( routing ).boltServerAddress() );
+        assertEquals( c.boltServerAddress(), acquire.apply( routing ).boltServerAddress() );
 
         // then
         MatcherFactory<StubConnectionPool.Event> acquireConnections =
@@ -488,13 +488,13 @@ public class LoadBalancerTest
         Connection ra = routing.acquireReadConnection();
         Connection rb = routing.acquireReadConnection();
         Connection w = routing.acquireWriteConnection();
-        assertNotEquals( ra.address(), rb.address() );
-        assertEquals( ra.address(), routing.acquireReadConnection().address() );
-        assertEquals( rb.address(), routing.acquireReadConnection().address() );
-        assertEquals( w.address(), routing.acquireWriteConnection().address() );
-        assertEquals( ra.address(), routing.acquireReadConnection().address() );
-        assertEquals( rb.address(), routing.acquireReadConnection().address() );
-        assertEquals( w.address(), routing.acquireWriteConnection().address() );
+        assertNotEquals( ra.boltServerAddress(), rb.boltServerAddress() );
+        assertEquals( ra.boltServerAddress(), routing.acquireReadConnection().boltServerAddress() );
+        assertEquals( rb.boltServerAddress(), routing.acquireReadConnection().boltServerAddress() );
+        assertEquals( w.boltServerAddress(), routing.acquireWriteConnection().boltServerAddress() );
+        assertEquals( ra.boltServerAddress(), routing.acquireReadConnection().boltServerAddress() );
+        assertEquals( rb.boltServerAddress(), routing.acquireReadConnection().boltServerAddress() );
+        assertEquals( w.boltServerAddress(), routing.acquireWriteConnection().boltServerAddress() );
 
         // then
         events.assertNone( acquire( "bad", 1337 ) );
@@ -569,7 +569,7 @@ public class LoadBalancerTest
         Connection connection = routing.acquireWriteConnection();
 
         // then
-        assertEquals( new BoltServerAddress( "two", 1337 ), connection.address() );
+        assertEquals( new BoltServerAddress( "two", 1337 ), connection.boltServerAddress() );
         events.printEvents( System.out );
     }
 

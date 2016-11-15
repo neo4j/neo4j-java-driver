@@ -28,6 +28,8 @@ import org.neo4j.driver.internal.util.Consumer;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
+import org.neo4j.driver.v1.summary.ServerInfo;
+
 /**
  * The state of a pooledConnection from a pool point of view could be one of the following:
  * Created,
@@ -233,15 +235,15 @@ public class PooledConnection implements Connection
     }
 
     @Override
-    public String server()
+    public ServerInfo server()
     {
         return delegate.server();
     }
 
     @Override
-    public BoltServerAddress address()
+    public BoltServerAddress boltServerAddress()
     {
-        return delegate.address();
+        return delegate.boltServerAddress();
     }
 
     @Override
@@ -257,7 +259,7 @@ public class PooledConnection implements Connection
 
     /**
      * If something goes wrong with the delegate, we want to figure out if this "wrong" is something that means
-     * the connection is screwed (and thus should be evicted from the pool), or if it's something that we can
+     * the connection cannot be reused (and thus should be evicted from the pool), or if it's something that we can
      * safely recover from.
      * @param e the exception the delegate threw
      */

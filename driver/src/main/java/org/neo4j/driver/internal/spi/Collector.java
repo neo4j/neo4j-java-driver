@@ -54,7 +54,7 @@ public interface Collector
         }
 
         @Override
-        public void server( String server )
+        public void serverVersion( String server )
         {
             this.server = server;
         }
@@ -160,7 +160,7 @@ public interface Collector
         public void resultConsumedAfter( long l ) {}
 
         @Override
-        public void server( String server ){}
+        public void serverVersion( String server ){}
     }
 
     // TODO: This should be modified to simply have head/record/tail methods
@@ -193,6 +193,6 @@ public interface Collector
 
     void resultConsumedAfter( long l );
 
-    void server( String server );
+    void serverVersion( String server );
 }
 

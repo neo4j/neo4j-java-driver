@@ -26,6 +26,7 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.summary.ServerInfo;
 
 /**
  * This class ensures there can only ever be one thread using a connection at
@@ -231,15 +232,15 @@ public class ConcurrencyGuardingConnection implements Connection
     }
 
     @Override
-    public String server()
+    public ServerInfo server()
     {
         return delegate.server();
     }
 
     @Override
-    public BoltServerAddress address()
+    public BoltServerAddress boltServerAddress()
     {
-        return delegate.address();
+        return delegate.boltServerAddress();
     }
 
     @Override

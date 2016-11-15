@@ -25,7 +25,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import org.neo4j.driver.v1.Transaction;
-import org.neo4j.driver.v1.util.ServerVersion;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -33,8 +32,8 @@ import static org.hamcrest.core.StringStartsWith.startsWith;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assume.assumeTrue;
-
 import static org.neo4j.driver.v1.util.ServerVersion.v3_1_0;
+import static org.neo4j.driver.v1.util.ServerVersion.version;
 
 public class BookmarkIT
 {
@@ -46,8 +45,9 @@ public class BookmarkIT
     @Before
     public void assumeBookmarkSupport()
     {
-        System.out.println( session.server() );
-        assumeTrue( ServerVersion.version( session.server() ).greaterThanOrEqual( v3_1_0 ) );
+        String version = session.run( "RETURN 1" ).consume().server().version();
+        System.out.println( version );
+        assumeTrue( version( version ).greaterThanOrEqual( v3_1_0 ) );
     }
 
     @Test
