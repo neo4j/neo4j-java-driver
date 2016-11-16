@@ -23,8 +23,8 @@ import org.neo4j.driver.v1.summary.ServerInfo;
 
 public class InternalServerInfo implements ServerInfo
 {
-    private BoltServerAddress address;
-    private String version;
+    private final BoltServerAddress address;
+    private final String version;
 
     public InternalServerInfo(BoltServerAddress address, String version)
     {

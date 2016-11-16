@@ -46,7 +46,6 @@ public class BookmarkIT
     public void assumeBookmarkSupport()
     {
         String version = session.run( "RETURN 1" ).consume().server().version();
-        System.out.println( version );
         assumeTrue( version( version ).greaterThanOrEqual( v3_1_0 ) );
     }
 

@@ -33,6 +33,7 @@ public interface ServerInfo
 
     /**
      * Returns a string telling which version of the server the query was executed.
+     * Supported since neo4j 3.1.
      * @return The server version of <code>null</code> if not available.
      */
     String version();

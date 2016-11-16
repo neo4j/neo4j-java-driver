@@ -45,7 +45,7 @@ public interface Collector
 
     class InitCollector extends NoOperationCollector
     {
-        private String server;
+        private String serverVersion;
         @Override
         public void doneIgnored()
         {
@@ -54,14 +54,14 @@ public interface Collector
         }
 
         @Override
-        public void serverVersion( String server )
+        public void serverVersion( String serverVersion )
         {
-            this.server = server;
+            this.serverVersion = serverVersion;
         }
 
-        public String server()
+        public String serverVersion()
         {
-            return server;
+            return serverVersion;
         }
     }
 

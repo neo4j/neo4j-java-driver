@@ -62,16 +62,7 @@ public class SocketConnection implements Connection
     {
         this.logger = logging.getLog( format( "conn-%s", UUID.randomUUID().toString() ) );
         this.socket = new SocketClient( address, securityPlan, logger );
-
-        if( logger.isDebugEnabled() )
-        {
-            this.responseHandler = new LoggingResponseHandler( logger );
-        }
-        else
-        {
-            this.responseHandler = new SocketResponseHandler();
-        }
-
+        this.responseHandler = createResponseHandler( logger );
         this.socket.start();
     }
 
@@ -80,17 +71,20 @@ public class SocketConnection implements Connection
     {
         this.socket = socket;
         this.logger = logger;
+        this.responseHandler = createResponseHandler( logger );
+        this.socket.start();
+    }
 
+    private SocketResponseHandler createResponseHandler( Logger logger )
+    {
         if( logger.isDebugEnabled() )
         {
-            this.responseHandler = new LoggingResponseHandler( logger );
+            return new LoggingResponseHandler( logger );
         }
         else
         {
-            this.responseHandler = new SocketResponseHandler();
+            return new SocketResponseHandler();
         }
-
-        this.socket.start();
     }
 
     @Override
@@ -99,7 +93,7 @@ public class SocketConnection implements Connection
         Collector.InitCollector initCollector = new Collector.InitCollector();
         queueMessage( new InitMessage( clientName, authToken ), initCollector );
         sync();
-        this.serverInfo = new InternalServerInfo( socket.address(), initCollector.server() );
+        this.serverInfo = new InternalServerInfo( socket.address(), initCollector.serverVersion() );
     }
 
     @Override
