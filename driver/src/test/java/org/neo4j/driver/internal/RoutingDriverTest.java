@@ -18,16 +18,16 @@
  */
 package org.neo4j.driver.internal;
 
-import java.io.File;
-import java.util.Collections;
-import java.util.Map;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.internal.stubbing.answers.ThrowsException;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
+import java.io.File;
+import java.util.Collections;
+import java.util.Map;
 
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.net.BoltServerAddress;
@@ -40,17 +40,14 @@ import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.EventLogger;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Logging;
-import org.neo4j.driver.v1.RetryLogic;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
 import static java.util.Arrays.asList;
-
 import static junit.framework.TestCase.fail;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -69,7 +66,6 @@ public class RoutingDriverTest
     public ExpectedException exception = ExpectedException.none();
     private static final BoltServerAddress SEED = new BoltServerAddress( "localhost", 7687 );
     private static final String GET_SERVERS = "CALL dbms.cluster.routing.getServers";
-    private static final DriverContract contract = new DriverContract( RetryLogic.DEFAULT_RETRY_LOGIC );
     private final EventHandler events = new EventHandler();
     private final FakeClock clock = new FakeClock( events, true );
     private final Logging logging = EventLogger.provider( events, EventLogger.Level.TRACE );
@@ -340,7 +336,7 @@ public class RoutingDriverTest
 
     private RoutingDriver driverWithPool( ConnectionPool pool )
     {
-        return new RoutingDriver( new RoutingSettings( 10, 5_000 ), SEED, contract, pool, insecure(), clock, logging );
+        return new RoutingDriver( new RoutingSettings( 10, 5_000 ), SEED, pool, insecure(), clock, logging );
     }
 
     @SafeVarargs

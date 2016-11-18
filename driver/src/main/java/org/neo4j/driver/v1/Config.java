@@ -60,9 +60,6 @@ public class Config
     /** Strategy for how to trust encryption certificate */
     private final TrustStrategy trustStrategy;
 
-    /** Policy for retrying failed operations */
-    private final RetryLogic retryLogic;
-
     private final int routingFailureLimit;
     private final long routingRetryDelayMillis;
 
@@ -77,8 +74,6 @@ public class Config
         this.trustStrategy = builder.trustStrategy;
         this.routingFailureLimit = builder.routingFailureLimit;
         this.routingRetryDelayMillis = builder.routingRetryDelayMillis;
-
-        this.retryLogic = builder.retryLogic;
     }
 
     /**
@@ -135,8 +130,6 @@ public class Config
         return trustStrategy;
     }
 
-    public RetryLogic retryLogic() { return  retryLogic; }
-
     /**
      * Return a {@link ConfigBuilder} instance
      * @return a {@link ConfigBuilder} instance
@@ -169,7 +162,6 @@ public class Config
         private long idleTimeBeforeConnectionTest = PoolSettings.DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST;
         private EncryptionLevel encryptionLevel = EncryptionLevel.REQUIRED;
         private TrustStrategy trustStrategy = trustAllCertificates();
-        private RetryLogic retryLogic = RetryLogic.DEFAULT_RETRY_LOGIC;
         private int routingFailureLimit = 1;
         private long routingRetryDelayMillis = 5_000;
 
@@ -336,18 +328,6 @@ public class Config
                         "The retry delay may not be smaller than 0, but was %d %s.", delay, unit ) );
             }
             this.routingRetryDelayMillis = routingRetryDelayMillis;
-            return this;
-        }
-
-        /**
-         * Specify policy for retrying operations that fail but can be automatically reattempted.
-         *
-         * @param retryLogic
-         * @return
-         */
-        public ConfigBuilder withRetryLogic( RetryLogic retryLogic )
-        {
-            this.retryLogic = retryLogic;
             return this;
         }
 
