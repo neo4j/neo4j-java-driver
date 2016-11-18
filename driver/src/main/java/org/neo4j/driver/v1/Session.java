@@ -104,10 +104,4 @@ public interface Session extends Resource, StatementRunner
      */
     @Override
     void close();
-
-    /**
-     * Returns a string telling which version of the server the session is connected to.
-     * @return The server version of <code>null</code> if not available.
-     */
-    String server();
 }

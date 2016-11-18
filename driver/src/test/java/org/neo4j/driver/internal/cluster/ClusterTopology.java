@@ -18,16 +18,16 @@
  */
 package org.neo4j.driver.internal.cluster;
 
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-import org.hamcrest.TypeSafeMatcher;
 
 import org.neo4j.driver.internal.Event;
 import org.neo4j.driver.internal.EventHandler;
@@ -140,7 +140,7 @@ class ClusterTopology implements ClusterComposition.Provider
     @Override
     public ClusterComposition getClusterComposition( Connection connection )
     {
-        BoltServerAddress router = connection.address();
+        BoltServerAddress router = connection.boltServerAddress();
         View view = views.get( router );
         ClusterComposition result = view == null ? null : view.composition( clock.millis() );
         events.clusterComposition( router, result );

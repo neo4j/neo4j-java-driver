@@ -32,11 +32,13 @@ import org.neo4j.driver.internal.messaging.RunMessage;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.summary.InternalServerInfo;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
+import org.neo4j.driver.v1.summary.ServerInfo;
 
 import static java.lang.String.format;
 import static org.neo4j.driver.internal.messaging.AckFailureMessage.ACK_FAILURE;
@@ -50,7 +52,7 @@ public class SocketConnection implements Connection
     private final SocketResponseHandler responseHandler;
     private AtomicBoolean isInterrupted = new AtomicBoolean( false );
     private AtomicBoolean isAckFailureMuted = new AtomicBoolean( false );
-    private final Collector.InitCollector initCollector = new Collector.InitCollector();
+    private InternalServerInfo serverInfo;
 
     private final SocketClient socket;
 
@@ -59,25 +61,39 @@ public class SocketConnection implements Connection
     public SocketConnection( BoltServerAddress address, SecurityPlan securityPlan, Logging logging )
     {
         this.logger = logging.getLog( format( "conn-%s", UUID.randomUUID().toString() ) );
+        this.socket = new SocketClient( address, securityPlan, logger );
+        this.responseHandler = createResponseHandler( logger );
+        this.socket.start();
+    }
 
+    // for mocked socket testing
+    SocketConnection( SocketClient socket, Logger logger )
+    {
+        this.socket = socket;
+        this.logger = logger;
+        this.responseHandler = createResponseHandler( logger );
+        this.socket.start();
+    }
+
+    private SocketResponseHandler createResponseHandler( Logger logger )
+    {
         if( logger.isDebugEnabled() )
         {
-            this.responseHandler = new LoggingResponseHandler( logger );
+            return new LoggingResponseHandler( logger );
         }
         else
         {
-            this.responseHandler = new SocketResponseHandler();
+            return new SocketResponseHandler();
         }
-
-        this.socket = new SocketClient( address, securityPlan, logger );
-        socket.start();
     }
 
     @Override
     public void init( String clientName, Map<String,Value> authToken )
     {
+        Collector.InitCollector initCollector = new Collector.InitCollector();
         queueMessage( new InitMessage( clientName, authToken ), initCollector );
         sync();
+        this.serverInfo = new InternalServerInfo( socket.address(), initCollector.serverVersion() );
     }
 
     @Override
@@ -267,15 +283,15 @@ public class SocketConnection implements Connection
     }
 
     @Override
-    public String server()
+    public ServerInfo server()
     {
-        return initCollector.server(  );
+        return this.serverInfo;
     }
 
     @Override
-    public BoltServerAddress address()
+    public BoltServerAddress boltServerAddress()
     {
-        return this.socket.address();
+        return this.serverInfo.boltServerAddress();
     }
 
     @Override

@@ -84,24 +84,24 @@ public class SocketResponseHandler implements MessageHandler
     public void handleSuccessMessage( Map<String,Value> meta )
     {
         Collector collector = collectors.remove();
-        collectServer( collector, meta.get( "server" ));
+        collectServerVersion( collector, meta.get( "server" ) );
         collectFields( collector, meta.get( "fields" ) );
         collectType( collector, meta.get( "type" ) );
         collectStatistics( collector, meta.get( "stats" ) );
         collectPlan( collector, meta.get( "plan" ) );
         collectProfile( collector, meta.get( "profile" ) );
         collectNotifications( collector, meta.get( "notifications" ) );
-        collectResultAvailableAfter( collector, meta.get("result_available_after"));
-        collectResultConsumedAfter( collector, meta.get("result_consumed_after"));
+        collectResultAvailableAfter( collector, meta.get("result_available_after") );
+        collectResultConsumedAfter( collector, meta.get("result_consumed_after") );
         collectBookmark( collector, meta.get( "bookmark" ) );
         collector.doneSuccess();
     }
 
-    private void collectServer( Collector collector, Value server )
+    private void collectServerVersion( Collector collector, Value serverVersion )
     {
-        if (server != null)
+        if ( serverVersion != null )
         {
-            collector.server( server.asString() );
+            collector.serverVersion( serverVersion.asString() );
         }
     }
 

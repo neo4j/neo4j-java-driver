@@ -154,12 +154,6 @@ public class RoutingNetworkSession implements Session
         }
     }
 
-    @Override
-    public String server()
-    {
-        return delegate.server();
-    }
-
     public BoltServerAddress address()
     {
         return address;

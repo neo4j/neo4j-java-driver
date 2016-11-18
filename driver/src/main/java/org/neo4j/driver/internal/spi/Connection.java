@@ -23,6 +23,7 @@ import java.util.Map;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.summary.ServerInfo;
 
 /**
  * A connection is an abstraction provided by an underlying transport implementation,
@@ -121,15 +122,15 @@ public interface Connection extends AutoCloseable
     boolean isAckFailureMuted();
 
     /**
-     * Returns the version of the server connected to.
-     * @return The version of the server connected to.
+     * Returns the basic information of the server connected to.
+     * @return The basic information of the server connected to.
      */
-    String server();
+    ServerInfo server();
 
     /**
      * Returns the BoltServerAddress connected to
      */
-    BoltServerAddress address();
+    BoltServerAddress boltServerAddress();
 
     /**
      * Returns the logger of this connection

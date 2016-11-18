@@ -95,12 +95,6 @@ public class TestNeo4jSession extends TestNeo4j implements Session
     }
 
     @Override
-    public String server()
-    {
-        return realSession.server();
-    }
-
-    @Override
     public Transaction beginTransaction()
     {
         return realSession.beginTransaction();

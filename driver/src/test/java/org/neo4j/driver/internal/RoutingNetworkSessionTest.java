@@ -54,7 +54,7 @@ public class RoutingNetworkSessionTest
     public void setUp()
     {
         connection = mock( Connection.class );
-        when( connection.address() ).thenReturn( LOCALHOST );
+        when( connection.boltServerAddress() ).thenReturn( LOCALHOST );
         when( connection.isOpen() ).thenReturn( true );
         onError = mock( RoutingErrorHandler.class );
     }
@@ -68,7 +68,7 @@ public class RoutingNetworkSessionTest
                 when( connection ).run( anyString(), any( Map.class ), any( Collector.class ) );
 
         RoutingNetworkSession result =
-                new RoutingNetworkSession( new NetworkSession( connection ), AccessMode.WRITE, connection.address(),
+                new RoutingNetworkSession( new NetworkSession( connection ), AccessMode.WRITE, connection.boltServerAddress(),
                         onError );
 
         // When
@@ -95,7 +95,7 @@ public class RoutingNetworkSessionTest
         doThrow( new ClientException( "Neo.ClientError.Cluster.NotALeader", "oh no!" ) ).
                 when( connection ).run( anyString(), any( Map.class ), any( Collector.class ) );
         RoutingNetworkSession session =
-                new RoutingNetworkSession( new NetworkSession(connection), AccessMode.WRITE, connection.address(),
+                new RoutingNetworkSession( new NetworkSession(connection), AccessMode.WRITE, connection.boltServerAddress(),
                         onError );
 
         // When
@@ -122,7 +122,7 @@ public class RoutingNetworkSessionTest
         doThrow( new ClientException( "Neo.ClientError.Cluster.NotALeader", "oh no!" ) ).
                 when( connection ).run( anyString(), any( Map.class ), any( Collector.class ) );
         RoutingNetworkSession session =
-                new RoutingNetworkSession( new NetworkSession( connection ), AccessMode.READ, connection.address(), onError );
+                new RoutingNetworkSession( new NetworkSession( connection ), AccessMode.READ, connection.boltServerAddress(), onError );
 
         // When
         try
@@ -146,7 +146,7 @@ public class RoutingNetworkSessionTest
         doThrow( toBeThrown ).
                 when( connection ).run( anyString(), any( Map.class ), any( Collector.class ) );
         RoutingNetworkSession session =
-                new RoutingNetworkSession( new NetworkSession( connection ), AccessMode.WRITE, connection.address(), onError );
+                new RoutingNetworkSession( new NetworkSession( connection ), AccessMode.WRITE, connection.boltServerAddress(), onError );
 
         // When
         try
@@ -171,7 +171,7 @@ public class RoutingNetworkSessionTest
                 when( connection ).sync();
 
         RoutingNetworkSession session =
-                new RoutingNetworkSession( new NetworkSession( connection ),  AccessMode.WRITE, connection.address(),
+                new RoutingNetworkSession( new NetworkSession( connection ),  AccessMode.WRITE, connection.boltServerAddress(),
                         onError );
 
         // When
@@ -197,7 +197,7 @@ public class RoutingNetworkSessionTest
         doThrow( new ClientException( "Neo.ClientError.Cluster.NotALeader", "oh no!" ) ).when( connection ).sync();
 
         RoutingNetworkSession session =
-                new RoutingNetworkSession( new NetworkSession( connection ), AccessMode.WRITE, connection.address(), onError );
+                new RoutingNetworkSession( new NetworkSession( connection ), AccessMode.WRITE, connection.boltServerAddress(), onError );
 
         // When
         try
@@ -221,7 +221,7 @@ public class RoutingNetworkSessionTest
         // Given
         Session inner = mock( Session.class );
         RoutingNetworkSession session =
-                new RoutingNetworkSession( inner, AccessMode.WRITE, connection.address(), onError );
+                new RoutingNetworkSession( inner, AccessMode.WRITE, connection.boltServerAddress(), onError );
 
 
         // When
@@ -237,7 +237,7 @@ public class RoutingNetworkSessionTest
         // Given
         Session inner = mock( Session.class );
         RoutingNetworkSession session =
-                new RoutingNetworkSession( inner, AccessMode.WRITE, connection.address(), onError );
+                new RoutingNetworkSession( inner, AccessMode.WRITE, connection.boltServerAddress(), onError );
 
 
         // When
@@ -253,7 +253,7 @@ public class RoutingNetworkSessionTest
         // Given
         Session inner = mock( Session.class );
         RoutingNetworkSession session =
-                new RoutingNetworkSession( inner, AccessMode.WRITE, connection.address(), onError );
+                new RoutingNetworkSession( inner, AccessMode.WRITE, connection.boltServerAddress(), onError );
 
 
         // When
@@ -262,21 +262,4 @@ public class RoutingNetworkSessionTest
         // Then
         verify( inner ).isOpen();
     }
-
-    @Test
-    public void shouldDelegateServer()
-    {
-        // Given
-        Session inner = mock( Session.class );
-        RoutingNetworkSession session =
-                new RoutingNetworkSession( inner, AccessMode.WRITE, connection.address(), onError );
-
-
-        // When
-        session.server();
-
-        // Then
-        verify( inner ).server();
-    }
-
 }

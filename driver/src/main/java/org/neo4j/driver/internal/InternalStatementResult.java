@@ -24,8 +24,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 
-import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.Collector;
+import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.summary.SummaryBuilder;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
@@ -37,6 +37,7 @@ import org.neo4j.driver.v1.summary.Notification;
 import org.neo4j.driver.v1.summary.Plan;
 import org.neo4j.driver.v1.summary.ProfiledPlan;
 import org.neo4j.driver.v1.summary.ResultSummary;
+import org.neo4j.driver.v1.summary.ServerInfo;
 import org.neo4j.driver.v1.summary.StatementType;
 import org.neo4j.driver.v1.summary.SummaryCounters;
 import org.neo4j.driver.v1.util.Function;
@@ -61,7 +62,7 @@ public class InternalStatementResult implements StatementResult
     {
         this.connection = connection;
         this.runResponseCollector = newRunResponseCollector();
-        this.pullAllResponseCollector = newStreamResponseCollector( transaction, statement );
+        this.pullAllResponseCollector = newStreamResponseCollector( transaction, statement, connection.server() );
     }
 
     private Collector newRunResponseCollector()
@@ -91,9 +92,10 @@ public class InternalStatementResult implements StatementResult
         };
     }
 
-    private Collector newStreamResponseCollector( final ExplicitTransaction transaction, final Statement statement )
+    private Collector newStreamResponseCollector( final ExplicitTransaction transaction, final Statement statement,
+            final ServerInfo serverInfo )
     {
-        final SummaryBuilder summaryBuilder = new SummaryBuilder( statement );
+        final SummaryBuilder summaryBuilder = new SummaryBuilder( statement, serverInfo );
 
         return new Collector.NoOperationCollector()
         {

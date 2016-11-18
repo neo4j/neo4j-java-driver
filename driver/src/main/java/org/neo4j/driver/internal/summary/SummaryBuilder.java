@@ -31,12 +31,14 @@ import org.neo4j.driver.v1.summary.Notification;
 import org.neo4j.driver.v1.summary.Plan;
 import org.neo4j.driver.v1.summary.ProfiledPlan;
 import org.neo4j.driver.v1.summary.ResultSummary;
+import org.neo4j.driver.v1.summary.ServerInfo;
 import org.neo4j.driver.v1.summary.StatementType;
 import org.neo4j.driver.v1.summary.SummaryCounters;
 
 public class SummaryBuilder implements Collector
 {
     private final Statement statement;
+    private final ServerInfo serverInfo;
 
     private StatementType type = null;
     private SummaryCounters statistics = null;
@@ -46,9 +48,10 @@ public class SummaryBuilder implements Collector
     private long resultAvailableAfter = -1L;
     private long resultConsumedAfter = -1L;
 
-    public SummaryBuilder( Statement statement )
+    public SummaryBuilder( Statement statement, ServerInfo serverInfo )
     {
         this.statement = statement;
+        this.serverInfo = serverInfo;
     }
 
     @Override
@@ -170,9 +173,10 @@ public class SummaryBuilder implements Collector
     }
 
     @Override
-    public void server( String server )
+    public void serverVersion( String server )
     {
         // intentionally empty
+        // collected in initCollector
     }
 
     public ResultSummary build()
@@ -237,6 +241,12 @@ public class SummaryBuilder implements Collector
             public long resultConsumedAfter( TimeUnit timeUnit )
             {
                 return timeUnit.convert( resultConsumedAfter, TimeUnit.MILLISECONDS );
+            }
+
+            @Override
+            public ServerInfo server()
+            {
+                return serverInfo;
             }
         };
     }

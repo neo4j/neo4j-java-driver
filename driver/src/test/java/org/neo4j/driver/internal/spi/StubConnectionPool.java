@@ -236,7 +236,7 @@ public class StubConnectionPool implements ConnectionPool
         }
 
         @Override
-        public BoltServerAddress address()
+        public BoltServerAddress boltServerAddress()
         {
             return address;
         }
