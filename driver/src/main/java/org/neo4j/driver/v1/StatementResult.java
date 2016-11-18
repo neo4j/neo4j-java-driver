@@ -142,4 +142,17 @@ public interface StatementResult extends Iterator<Record>
      * @return a summary for the whole query result
      */
     ResultSummary consume();
+
+    /**
+     * Return the result summary.
+     *
+     * If the records in the result is not fully consumed, then calling this method will force to pull all remaining
+     * records into buffer to yield the summary.
+     *
+     * If you want to obtain the summary but discard the records, use
+     * {@link StatementResult#consume()} instead.
+     *
+     * @return a summary for the whole query result.
+     */
+    ResultSummary summary();
 }

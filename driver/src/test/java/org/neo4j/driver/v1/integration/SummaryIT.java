@@ -174,32 +174,4 @@ public class SummaryIT
         assertThat( notifications.get( 0 ).toString(), containsString("CartesianProduct") );
 
     }
-
-
-    @Test
-    public void shouldBeAbleToAccessSummaryAfterFailure() throws Throwable
-    {
-        // Given
-        StatementResult res1 = session.run( "INVALID" );
-        ResultSummary summary;
-
-        // When
-        try
-        {
-            res1.consume();
-        }
-        catch ( Exception e )
-        {
-            //ignore
-        }
-        finally
-        {
-            summary = res1.consume();
-        }
-
-        // Then
-        assertThat( summary, notNullValue() );
-        assertThat( summary.server().address(), equalTo( "localhost:7687" ) );
-        assertThat( summary.counters().nodesCreated(), equalTo( 0 ) );
-    }
 }

@@ -192,6 +192,23 @@ public class RoutingStatementResult implements StatementResult
         }
     }
 
+    @Override
+    public ResultSummary summary()
+    {
+        try
+        {
+            return delegate.summary();
+        }
+        catch ( ServiceUnavailableException e )
+        {
+            throw sessionExpired( e, onError, address );
+        }
+        catch ( ClientException e )
+        {
+            throw filterFailureToWrite( e, mode, onError, address );
+        }
+    }
+
     public BoltServerAddress address()
     {
         return address;
