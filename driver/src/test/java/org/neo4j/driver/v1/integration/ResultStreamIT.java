@@ -23,10 +23,14 @@ import org.junit.Test;
 
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.driver.v1.Values.parameters;
 
@@ -119,5 +123,68 @@ public class ResultStreamIT
         // Then
         assertTrue( res2.hasNext() );
         assertEquals( res2.next().get("1").asLong(), 1L );
+    }
+
+    @Test
+    public void shouldBeAbleToAccessSummaryAfterFailure() throws Throwable
+    {
+        // Given
+        StatementResult res1 = session.run( "INVALID" );
+        ResultSummary summary;
+
+        // When
+        try
+        {
+            res1.consume();
+        }
+        catch ( Exception e )
+        {
+            //ignore
+        }
+        finally
+        {
+            summary = res1.summary();
+        }
+
+        // Then
+        assertThat( summary, notNullValue() );
+        assertThat( summary.server().address(), equalTo( "localhost:7687" ) );
+        assertThat( summary.counters().nodesCreated(), equalTo( 0 ) );
+    }
+
+
+    @Test
+    public void shouldBufferRecordsAfterSummary() throws Throwable
+    {
+        // Given
+        StatementResult result = session.run("UNWIND [1,2] AS a RETURN a");
+
+        // When
+        ResultSummary summary = result.summary();
+
+        // Then
+        assertThat( summary, notNullValue() );
+        assertThat( summary.server().address(), equalTo( "localhost:7687" ) );
+        assertThat( summary.counters().nodesCreated(), equalTo( 0 ) );
+
+        assertThat( result.next().get( "a" ).asInt(), equalTo( 1 ) );
+        assertThat( result.next().get( "a" ).asInt(), equalTo( 2 ) );
+    }
+
+    @Test
+    public void shouldDiscardRecordsAfterConsume() throws Throwable
+    {
+        // Given
+        StatementResult result = session.run("UNWIND [1,2] AS a RETURN a");
+
+        // When
+        ResultSummary summary = result.consume();
+
+        // Then
+        assertThat( summary, notNullValue() );
+        assertThat( summary.server().address(), equalTo( "localhost:7687" ) );
+        assertThat( summary.counters().nodesCreated(), equalTo( 0 ) );
+
+        assertThat( result.hasNext(), equalTo( false ) );
     }
 }
