@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.v1.integration;
 
+import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -38,6 +39,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class TransactionIT
 {
@@ -302,5 +304,61 @@ public class TransactionIT
         StatementResult result = session.run( "MATCH (n) RETURN count(n)" );
         long nodes = result.single().get( "count(n)" ).asLong();
         assertThat( nodes, equalTo( 1L ) );
+    }
+
+    @Test
+    public void shouldRollBackTxIfErrorWithoutConsume() throws Throwable
+    {
+        // Given
+        int failingPos = 0;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            StatementResult result = tx.run( "invalid" ); // send run, pull_all
+            tx.success();
+            failingPos = 1; // fail to send?
+        } // When send run_commit, and pull_all
+
+        // Then error and should also send ack_fail, roll_back and pull_all
+        catch ( ClientException e )
+        {
+            failingPos = 2; // fail in tx.close in sync?
+            try ( Transaction tx = session.beginTransaction() )
+            {
+                StatementResult cursor = tx.run( "RETURN 1" );
+                int val = cursor.single().get( "1" ).asInt();
+
+
+                assertThat( val, equalTo( 1 ) );
+            }
+        }
+        assertThat( failingPos, equalTo( 2 ) );
+    }
+
+    @Test
+    public void shouldRollBackTxIfErrorWithConsume() throws Throwable
+    {
+
+        // Given
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            StatementResult result = tx.run( "invalid" );
+            tx.success();
+
+            // When
+            result.consume(); // run, pull_all
+            fail( "Should fail tx due to syntax error" );
+        } // ack_fail, roll_back, pull_all
+        // Then
+        catch ( ClientException e )
+        {
+            try ( Transaction tx = session.beginTransaction() )
+            {
+                StatementResult cursor = tx.run( "RETURN 1" );
+                int val = cursor.single().get( "1" ).asInt();
+
+                Assert.assertThat( val, equalTo( 1 ) );
+            }
+        }
+
     }
 }

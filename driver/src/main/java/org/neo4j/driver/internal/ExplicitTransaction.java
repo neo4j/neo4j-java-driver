@@ -122,17 +122,30 @@ class ExplicitTransaction implements Transaction
             {
                 if ( state == State.MARKED_SUCCESS )
                 {
-                    conn.run( "COMMIT", Collections.<String, Value>emptyMap(), Collector.NO_OP );
-                    conn.pullAll( new BookmarkCollector( this ) );
-                    conn.sync();
-                    state = State.SUCCEEDED;
+                    try
+                    {
+                        conn.run( "COMMIT", Collections.<String,Value>emptyMap(), Collector.NO_OP );
+                        conn.pullAll( new BookmarkCollector( this ) );
+                        conn.sync();
+                        state = State.SUCCEEDED;
+                    }
+                    catch( Throwable e )
+                    {
+                        // failed to commit
+                        try
+                        {
+                            rollbackTx();
+                        }
+                        catch( Throwable ignored )
+                        {
+                            // best effort.
+                        }
+                        throw e;
+                    }
                 }
                 else if ( state == State.MARKED_FAILED || state == State.ACTIVE )
                 {
-                    conn.run( "ROLLBACK", Collections.<String, Value>emptyMap(), Collector.NO_OP );
-                    conn.pullAll( new BookmarkCollector( this ) );
-                    conn.sync();
-                    state = State.ROLLED_BACK;
+                    rollbackTx();
                 }
             }
         }
@@ -140,6 +153,14 @@ class ExplicitTransaction implements Transaction
         {
             cleanup.run();
         }
+    }
+
+    private void rollbackTx()
+    {
+        conn.run( "ROLLBACK", Collections.<String, Value>emptyMap(), Collector.NO_OP );
+        conn.pullAll( new BookmarkCollector( this ) );
+        conn.sync();
+        state = State.ROLLED_BACK;
     }
 
     @Override

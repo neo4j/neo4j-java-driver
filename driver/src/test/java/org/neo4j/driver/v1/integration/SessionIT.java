@@ -361,6 +361,28 @@ public class SessionIT
     }
 
     @Test
+    public void shouldAllowMoreTxAfterSessionResetInTx()
+    {
+        // Given
+        try( Driver driver =  GraphDatabase.driver( neo4j.uri() );
+             Session session = driver.session() )
+        {
+            try( Transaction tx = session.beginTransaction() )
+            {
+                // When reset the state of this session
+                session.reset();
+            }
+
+            // Then can run more Tx
+            try( Transaction tx = session.beginTransaction() )
+            {
+                tx.run("Return 2");
+                tx.success();
+            }
+        }
+    }
+
+    @Test
     public void shouldCloseSessionWhenDriverIsClosed() throws Throwable
     {
         // Given
