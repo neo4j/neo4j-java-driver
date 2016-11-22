@@ -310,28 +310,27 @@ public class TransactionIT
     public void shouldRollBackTxIfErrorWithoutConsume() throws Throwable
     {
         // Given
-        int failingPos = 0;
-        try ( Transaction tx = session.beginTransaction() )
+        Transaction tx = session.beginTransaction();
+        tx.run( "invalid" ); // send run, pull_all
+        tx.success();
+        try
         {
-            StatementResult result = tx.run( "invalid" ); // send run, pull_all
-            tx.success();
-            failingPos = 1; // fail to send?
+            tx.close();
+            fail("should fail tx in tx.close()");
         } // When send run_commit, and pull_all
 
         // Then error and should also send ack_fail, roll_back and pull_all
         catch ( ClientException e )
         {
-            failingPos = 2; // fail in tx.close in sync?
-            try ( Transaction tx = session.beginTransaction() )
+            try ( Transaction anotherTx = session.beginTransaction() )
             {
-                StatementResult cursor = tx.run( "RETURN 1" );
+                StatementResult cursor = anotherTx.run( "RETURN 1" );
                 int val = cursor.single().get( "1" ).asInt();
 
 
                 assertThat( val, equalTo( 1 ) );
             }
         }
-        assertThat( failingPos, equalTo( 2 ) );
     }
 
     @Test
