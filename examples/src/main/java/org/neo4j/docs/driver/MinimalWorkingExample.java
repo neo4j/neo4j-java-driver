@@ -57,7 +57,7 @@ public class MinimalWorkingExample
                 while ( result.hasNext() )
                 {
                     Record record = result.next();
-                    System.out.println( record.get( "title" ).asString() + " " + record.get( "name" ).asString() );
+                    System.out.println( String.format( "%s %s", record.get( "title" ).asString(), record.get( "name" ).asString() ) );
                 }
             }
 
