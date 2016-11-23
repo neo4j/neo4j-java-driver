@@ -44,14 +44,14 @@ public class MinimalWorkingExample
 
             try ( Transaction tx = session.beginTransaction() )
             {
-                tx.run( "CREATE (a:Person {name: $name, title: $title})",
+                tx.run( "CREATE (a:Person {name: {name}, title: {title}})",
                         parameters( "name", "Arthur", "title", "King" ) );
                 tx.success();
             }
 
             try ( Transaction tx = session.beginTransaction() )
             {
-                StatementResult result = tx.run( "MATCH (a:Person) WHERE a.name = $name " +
+                StatementResult result = tx.run( "MATCH (a:Person) WHERE a.name = {name} " +
                                                  "RETURN a.name AS name, a.title AS title",
                                                  parameters( "name", "Arthur" ) );
                 while ( result.hasNext() )
