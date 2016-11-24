@@ -1,15 +1,15 @@
 /**
  * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
- *
+ * <p>
  * This file is part of Neo4j.
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -87,11 +87,10 @@ final class SharedCluster
                         "Expected to have 'http_uri bolt_uri path' in line '" + line + "'" );
             }
 
-            URI httpUri = URI.create( clusterMemberSplit[0] );
             URI boltUri = URI.create( clusterMemberSplit[1] );
             Path path = Paths.get( clusterMemberSplit[1] );
 
-            result.add( new ClusterMember( boltUri, httpUri, path ) );
+            result.add( new ClusterMember( boltUri, path ) );
         }
 
         if ( result.isEmpty() )

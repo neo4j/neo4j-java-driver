@@ -1,15 +1,15 @@
 /**
  * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
- *
+ * <p>
  * This file is part of Neo4j.
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -56,7 +56,7 @@ public class Cluster
     {
         this.path = Objects.requireNonNull( path );
         this.password = password;
-        this.members = createMembers( password, members );
+        this.members = waitForMembers( password, members );
     }
 
     Cluster withMembers( Set<ClusterMember> newMembers )
@@ -91,20 +91,19 @@ public class Cluster
                "}";
     }
 
-    private static Set<ClusterMember> createMembers( String password, Set<ClusterMember> givenMembers )
+    private static Set<ClusterMember> waitForMembers( String password, Set<ClusterMember> members )
     {
-        if ( givenMembers.isEmpty() )
+        if ( members.isEmpty() )
         {
-            return givenMembers;
+            return members;
         }
 
-        Set<ClusterMember> expectedMembers = new HashSet<>( givenMembers );
-        Set<ClusterMember> actualMembers = new HashSet<>();
+        Set<ClusterMember> offlineMembers = new HashSet<>( members );
 
-        try ( Driver driver = createDriver( password, givenMembers ) )
+        try ( Driver driver = createDriver( password, members ) )
         {
             // todo: add some timeout
-            while ( !expectedMembers.isEmpty() )
+            while ( !offlineMembers.isEmpty() )
             {
                 try ( Session session = driver.session( AccessMode.READ ) )
                 {
@@ -113,21 +112,17 @@ public class Cluster
                     {
                         URI boltUri = extractBoltUri( record );
 
-                        ClusterMember member = findByBoltUri( boltUri, expectedMembers );
+                        ClusterMember member = findByBoltUri( boltUri, offlineMembers );
                         if ( member != null )
                         {
-                            ClusterMemberRole role = extractRole( record );
-                            ClusterMember actualMember = member.withRole( role );
-                            actualMembers.add( actualMember );
-                            expectedMembers.remove( member );
+                            offlineMembers.remove( member );
                         }
                     }
                 }
             }
         }
 
-
-        return actualMembers;
+        return members;
     }
 
     private ClusterMember findLeader()

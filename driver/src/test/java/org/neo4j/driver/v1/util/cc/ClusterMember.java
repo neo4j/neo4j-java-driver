@@ -1,15 +1,15 @@
 /**
  * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
- *
+ * <p>
  * This file is part of Neo4j.
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,26 +26,12 @@ import static java.util.Objects.requireNonNull;
 public class ClusterMember
 {
     private final URI boltUri;
-    private final URI httpUri;
     private final Path path;
-    private final ClusterMemberRole role;
 
-    public ClusterMember( URI boltUri, URI httpUri, Path path )
-    {
-        this( boltUri, httpUri, path, ClusterMemberRole.UNKNOWN );
-    }
-
-    public ClusterMember( URI boltUri, URI httpUri, Path path, ClusterMemberRole role )
+    public ClusterMember( URI boltUri, Path path )
     {
         this.boltUri = requireNonNull( boltUri );
-        this.httpUri = requireNonNull( httpUri );
         this.path = requireNonNull( path );
-        this.role = requireNonNull( role );
-    }
-
-    public ClusterMember withRole( ClusterMemberRole role )
-    {
-        return new ClusterMember( boltUri, httpUri, path, role );
     }
 
     public URI getBoltUri()
@@ -58,19 +44,9 @@ public class ClusterMember
         return URI.create( boltUri.toString().replace( "bolt://", "bolt+routing://" ) );
     }
 
-    public URI getHttpUri()
-    {
-        return httpUri;
-    }
-
     public Path getPath()
     {
         return path;
-    }
-
-    public ClusterMemberRole getRole()
-    {
-        return role;
     }
 
     @Override
@@ -78,9 +54,7 @@ public class ClusterMember
     {
         return "ClusterMember{" +
                "boltUri=" + boltUri +
-               ", httpUri=" + httpUri +
                ", path=" + path +
-               ", role=" + role +
                "}";
     }
 }
