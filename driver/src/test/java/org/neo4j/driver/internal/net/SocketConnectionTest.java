@@ -28,6 +28,7 @@ import java.util.Iterator;
 
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.SuccessMessage;
+import org.neo4j.driver.internal.summary.InternalServerInfo;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.summary.ServerInfo;
@@ -48,7 +49,7 @@ public class SocketConnectionTest
     {
         // Given
         SocketClient socket = mock( SocketClient.class );
-        SocketConnection conn = new SocketConnection( socket, mock( Logger.class ) );
+        SocketConnection conn = new SocketConnection( socket, mock( InternalServerInfo.class ), mock( Logger.class ) );
 
         when( socket.address() ).thenReturn( BoltServerAddress.from( URI.create( "http://neo4j.com:9000" ) ) );
 
