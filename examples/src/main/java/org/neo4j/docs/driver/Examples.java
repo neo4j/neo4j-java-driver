@@ -61,36 +61,47 @@ public class Examples
 
     public static void statement( Session session ) throws Exception
     {
-        // tag::statement[]
-        StatementResult result =
-                session.run( "CREATE (person:Person {name: {name}})", Values.parameters( "name", "Arthur" ) );
-        // end::statement[]
-        int theOnesCreated = result.consume().counters().nodesCreated();
-        System.out.println( "There were " + theOnesCreated + " the ones created." );
+        try ( Transaction transaction = session.beginTransaction() )
+        {
+            // tag::statement[]
+            StatementResult result =
+                    transaction.run( "CREATE (person:Person {name: {name}})", Values.parameters( "name", "Arthur" ) );
+            transaction.success();
+            // end::statement[]
+            int theOnesCreated = result.consume().counters().nodesCreated();
+            System.out.println( "There were " + theOnesCreated + " the ones created." );
+        }
     }
 
     public static void statementWithoutParameters( Session session ) throws Exception
     {
-        // tag::statement-without-parameters[]
-        StatementResult result = session.run( "CREATE (p:Person {name: 'Arthur'})" );
-        // end::statement-without-parameters[]
-        int theOnesCreated = result.consume().counters().nodesCreated();
-        System.out.println( "There were " + theOnesCreated + " the ones created." );
+        try ( Transaction transaction = session.beginTransaction() )
+        {
+            // tag::statement-without-parameters[]
+            StatementResult result = transaction.run( "CREATE (p:Person { name: 'Arthur' })" );
+            transaction.success();
+            // end::statement-without-parameters[]
+            int theOnesCreated = result.consume().counters().nodesCreated();
+            System.out.println( "There were " + theOnesCreated + " the ones created." );
+        }
     }
 
     public static void resultTraversal( Session session ) throws Exception
     {
         // tag::result-traversal[]
         String searchTerm = "Sword";
-        StatementResult result =
-                session.run( "MATCH (weapon:Weapon) WHERE weapon.name CONTAINS {term} RETURN weapon.name",
-                        Values.parameters( "term", searchTerm ) );
-
-        System.out.println( "List of weapons called " + searchTerm + ":" );
-        while ( result.hasNext() )
+        try ( Transaction tx = session.beginTransaction() )
         {
-            Record record = result.next();
-            System.out.println( record.get( "weapon.name" ).asString() );
+            StatementResult result =
+                    tx.run( "MATCH (weapon:Weapon) WHERE weapon.name CONTAINS {term} RETURN weapon.name",
+                            Values.parameters( "term", searchTerm ) );
+
+            System.out.println( "List of weapons called " + searchTerm + ":" );
+            while ( result.hasNext() )
+            {
+                Record record = result.next();
+                System.out.println( record.get( "weapon.name" ).asString() );
+            }
         }
         // end::result-traversal[]
     }
@@ -99,20 +110,26 @@ public class Examples
     {
         // tag::access-record[]
         String searchTerm = "Arthur";
-        StatementResult result = session.run( "MATCH (weapon:Weapon) WHERE weapon.owner CONTAINS {term} " +
-                                              "RETURN weapon.name, weapon.material, weapon.size",
-                Values.parameters( "term", searchTerm ) );
 
-        System.out.println( "List of weapons owned by " + searchTerm + ":" );
-        while ( result.hasNext() )
+        try ( Transaction tx = session.beginTransaction() )
         {
-            Record record = result.next();
-            List<String> sword = new ArrayList<>();
-            for ( String key : record.keys() )
+            StatementResult result = tx.run(
+                    "MATCH (weapon:Weapon) WHERE weapon.owner CONTAINS {term} RETURN weapon.name, weapon.material, " +
+                    "weapon.size",
+
+                    Values.parameters( "term", searchTerm ) );
+
+            System.out.println( "List of weapons owned by " + searchTerm + ":" );
+            while ( result.hasNext() )
             {
-                sword.add( key + ": " + record.get( key ) );
+                Record record = result.next();
+                List<String> sword = new ArrayList<>();
+                for ( String key : record.keys() )
+                {
+                    sword.add( key + ": " + record.get( key ) );
+                }
+                System.out.println( sword );
             }
-            System.out.println( sword );
         }
         // end::access-record[]
     }
@@ -120,16 +137,23 @@ public class Examples
     public static void retainResultsForNestedQuerying( Session session ) throws Exception
     {
         // tag::nested-statements[]
-        StatementResult result = session.run(
-                "MATCH (knight:Person:Knight) WHERE knight.castle = {castle} RETURN id(knight) AS knight_id",
-                Values.parameters( "castle", "Camelot" ) );
-
-        for ( Record record : result.list() )
+        try ( Transaction transaction = session.beginTransaction() )
         {
-            session.run( "MATCH (knight) WHERE id(knight) = {id} " +
-                         "MATCH (king:Person) WHERE king.name = {king} " +
-                         "CREATE (knight)-[:DEFENDS]->(king)",
-                    Values.parameters( "id", record.get( "knight_id" ), "king", "Arthur" ) );
+            StatementResult result = transaction.run(
+                    "MATCH (knight:Person:Knight) WHERE knight.castle = {castle} RETURN id(knight) AS knight_id",
+                    Values.parameters( "castle", "Camelot" ) );
+
+            for ( Record record : result.list() )
+            {
+                try ( Transaction tx = session.beginTransaction() )
+                {
+                    tx.run( "MATCH (knight) WHERE id(knight) = {id} " +
+                            "MATCH (king:Person) WHERE king.name = {king} " +
+                            "CREATE (knight)-[:DEFENDS]->(king)",
+                            Values.parameters( "id", record.get( "knight_id" ), "king", "Arthur" ) );
+                    tx.success();
+                }
+            }
         }
         // end::nested-statements[]
     }
@@ -140,11 +164,15 @@ public class Examples
         List<Record> records;
         try ( Session session = driver.session() )
         {
-            StatementResult result = session.run(
-                    "MATCH (knight:Person:Knight) WHERE knight.castle = {castle} RETURN knight.name AS name",
-                    Values.parameters( "castle", "Camelot" ) );
 
-            records = result.list();
+            try ( Transaction tx = session.beginTransaction() )
+            {
+                StatementResult result = tx.run(
+                        "MATCH (knight:Person:Knight) WHERE knight.castle = {castle} RETURN knight.name AS name",
+                        Values.parameters( "castle", "Camelot" ) );
+
+                records = result.list();
+            }
         }
 
         for ( Record record : records )
@@ -159,7 +187,10 @@ public class Examples
         // tag::handle-cypher-error[]
         try
         {
-            session.run( "This will cause a syntax error" ).consume();
+            try ( Transaction tx = session.beginTransaction() )
+            {
+                tx.run( "This will cause a syntax error" ).consume();
+            }
         }
         catch ( ClientException e )
         {
@@ -195,24 +226,30 @@ public class Examples
     public static void resultSummary( Session session ) throws Exception
     {
         // tag::result-summary-query-profile[]
-        StatementResult result = session.run( "PROFILE MATCH (p:Person {name: {name}}) RETURN id(p)",
-                Values.parameters( "name", "Arthur" ) );
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            StatementResult result = tx.run( "PROFILE MATCH (p:Person { name: {name} }) RETURN id(p)",
+                    Values.parameters( "name", "Arthur" ) );
 
-        ResultSummary summary = result.consume();
+            ResultSummary summary = result.consume();
 
-        System.out.println( summary.statementType() );
-        System.out.println( summary.profile() );
+            System.out.println( summary.statementType() );
+            System.out.println( summary.profile() );
+        }
         // end::result-summary-query-profile[]
     }
 
     public static void notifications( Session session ) throws Exception
     {
         // tag::result-summary-notifications[]
-        ResultSummary summary = session.run( "EXPLAIN MATCH (king), (queen) RETURN king, queen" ).consume();
-
-        for ( Notification notification : summary.notifications() )
+        try ( Transaction tx = session.beginTransaction() )
         {
-            System.out.println( notification );
+            ResultSummary summary = tx.run( "EXPLAIN MATCH (king), (queen) RETURN king, queen" ).consume();
+
+            for ( Notification notification : summary.notifications() )
+            {
+                System.out.println( notification );
+            }
         }
         // end::result-summary-notifications[]
     }
@@ -230,10 +267,12 @@ public class Examples
     public static Driver trustOnFirstUse() throws Exception
     {
         // tag::tls-trust-on-first-use[]
-        Driver driver = GraphDatabase.driver( "bolt://localhost:7687", AuthTokens.basic( "neo4j", "neo4j" ), Config.build()
-                .withEncryptionLevel( Config.EncryptionLevel.REQUIRED )
-                .withTrustStrategy( Config.TrustStrategy.trustOnFirstUse( new File( "/path/to/neo4j_known_hosts" ) ) )
-                .toConfig() );
+        Driver driver =
+                GraphDatabase.driver( "bolt://localhost:7687", AuthTokens.basic( "neo4j", "neo4j" ), Config.build()
+                        .withEncryptionLevel( Config.EncryptionLevel.REQUIRED )
+                        .withTrustStrategy(
+                                Config.TrustStrategy.trustOnFirstUse( new File( "/path/to/neo4j_known_hosts" ) ) )
+                        .toConfig() );
         // end::tls-trust-on-first-use[]
 
         return driver;
@@ -242,10 +281,12 @@ public class Examples
     public static Driver trustSignedCertificates() throws Exception
     {
         // tag::tls-signed[]
-        Driver driver = GraphDatabase.driver( "bolt://localhost:7687", AuthTokens.basic( "neo4j", "neo4j" ), Config.build()
-                .withEncryptionLevel( Config.EncryptionLevel.REQUIRED )
-                .withTrustStrategy( Config.TrustStrategy.trustCustomCertificateSignedBy( new File( "/path/to/ca-certificate.pem" ) ) )
-                .toConfig() );
+        Driver driver =
+                GraphDatabase.driver( "bolt://localhost:7687", AuthTokens.basic( "neo4j", "neo4j" ), Config.build()
+                        .withEncryptionLevel( Config.EncryptionLevel.REQUIRED )
+                        .withTrustStrategy( Config.TrustStrategy
+                                .trustCustomCertificateSignedBy( new File( "/path/to/ca-certificate.pem" ) ) )
+                        .toConfig() );
         // end::tls-signed[]
 
         return driver;
