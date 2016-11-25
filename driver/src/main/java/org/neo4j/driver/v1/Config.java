@@ -51,9 +51,6 @@ public class Config
 
     private final int maxIdleConnectionPoolSize;
 
-    /** Connections that have been idle longer than this threshold will have a ping test performed on them. */
-    private final long idleTimeBeforeConnectionTest;
-
     /** Level of encryption we need to adhere to */
     private final EncryptionLevel encryptionLevel;
 
@@ -68,7 +65,6 @@ public class Config
         this.logging = builder.logging;
 
         this.maxIdleConnectionPoolSize = builder.maxIdleConnectionPoolSize;
-        this.idleTimeBeforeConnectionTest = builder.idleTimeBeforeConnectionTest;
 
         this.encryptionLevel = builder.encryptionLevel;
         this.trustStrategy = builder.trustStrategy;
@@ -107,11 +103,15 @@ public class Config
     /**
      * Pooled connections that have been unused for longer than this timeout will be tested before they are
      * used again, to ensure they are still live.
+     *
      * @return idle time in milliseconds
+     * @deprecated pooled sessions are automatically checked for validity before being returned to the pool. This
+     * method will always return <code>-1</code> and will be possibly removed in future.
      */
+    @Deprecated
     public long idleTimeBeforeConnectionTest()
     {
-        return idleTimeBeforeConnectionTest;
+        return -1;
     }
 
     /**
@@ -159,7 +159,6 @@ public class Config
     {
         private Logging logging = new JULogging( Level.INFO );
         private int maxIdleConnectionPoolSize = PoolSettings.DEFAULT_MAX_IDLE_CONNECTION_POOL_SIZE;
-        private long idleTimeBeforeConnectionTest = PoolSettings.DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST;
         private EncryptionLevel encryptionLevel = EncryptionLevel.REQUIRED;
         private TrustStrategy trustStrategy = trustAllCertificates();
         private int routingFailureLimit = 1;
@@ -229,10 +228,12 @@ public class Config
          *
          * @param timeout minimum idle time in milliseconds
          * @return this builder
+         * @deprecated pooled sessions are automatically checked for validity before being returned to the pool.
+         * This setting will be ignored and possibly removed in future.
          */
+        @Deprecated
         public ConfigBuilder withSessionLivenessCheckTimeout( long timeout )
         {
-            this.idleTimeBeforeConnectionTest = timeout;
             return this;
         }
 

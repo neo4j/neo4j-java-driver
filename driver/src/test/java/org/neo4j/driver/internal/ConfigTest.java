@@ -26,9 +26,7 @@ import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.util.FileTools;
 
 import static java.lang.System.getProperty;
-import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 
 public class ConfigTest
 {
@@ -79,13 +77,13 @@ public class ConfigTest
     }
 
     @Test
-    public void shouldConfigureMinIdleTime() throws Throwable
+    public void shouldIgnoreLivenessCheckTimeoutSetting() throws Throwable
     {
         // when
         Config config = Config.build().withSessionLivenessCheckTimeout( 1337 ).toConfig();
 
         // then
-        assertThat( config.idleTimeBeforeConnectionTest(), equalTo( 1337L ) );
+        assertEquals( -1, config.idleTimeBeforeConnectionTest() );
     }
 
     public static void deleteDefaultKnownCertFileIfExists()
