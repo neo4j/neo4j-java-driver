@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.driver.internal.util.Consumer;
@@ -69,10 +70,22 @@ public class Cluster
         return path;
     }
 
+    public void cleanUp()
+    {
+        leaderTx( new Consumer<Session>()
+        {
+            @Override
+            public void accept( Session session )
+            {
+                session.run( "MATCH (n) DETACH DELETE n" ).consume();
+            }
+        } );
+    }
+
     public ClusterMember leaderTx( Consumer<Session> tx )
     {
         // todo: handle leader switches
-        ClusterMember leader = findLeader();
+        ClusterMember leader = leader();
         try ( Driver driver = createDriver( leader.getBoltUri(), password );
               Session session = driver.session() )
         {
@@ -82,6 +95,48 @@ public class Cluster
         return leader;
     }
 
+    public ClusterMember leader()
+    {
+        Set<ClusterMember> leaders = membersWithRole( ClusterMemberRole.LEADER );
+        if ( leaders.size() != 1 )
+        {
+            throw new IllegalStateException( "Single leader expected. " + leaders );
+        }
+        return leaders.iterator().next();
+    }
+
+    public ClusterMember anyFollower()
+    {
+        return randomOf( followers() );
+    }
+
+    public Set<ClusterMember> followers()
+    {
+        return membersWithRole( ClusterMemberRole.FOLLOWER );
+    }
+
+    public ClusterMember anyReadReplica()
+    {
+        return randomOf( readReplicas() );
+    }
+
+    public Set<ClusterMember> readReplicas()
+    {
+        return membersWithRole( ClusterMemberRole.READ_REPLICA );
+    }
+
+    private static Driver createDriver( String password, Set<ClusterMember> members )
+    {
+        if ( members.isEmpty() )
+        {
+            throw new IllegalArgumentException( "No members, can't create driver" );
+        }
+
+        ClusterMember firstMember = members.iterator().next();
+        URI boltUri = firstMember.getBoltUri();
+        return createDriver( boltUri, password );
+    }
+
     @Override
     public String toString()
     {
@@ -89,6 +144,37 @@ public class Cluster
                "path=" + path +
                ", members=" + members +
                "}";
+    }
+
+    private Set<ClusterMember> membersWithRole( ClusterMemberRole role )
+    {
+        Set<ClusterMember> membersWithRole = new HashSet<>();
+
+        try ( Driver driver = createDriver( password, members );
+              Session session = driver.session( AccessMode.READ ) )
+        {
+            StatementResult result = session.run( "call dbms.cluster.overview()" );
+            for ( Record record : result.list() )
+            {
+                if ( role == extractRole( record ) )
+                {
+                    URI boltUri = extractBoltUri( record );
+                    ClusterMember member = findByBoltUri( boltUri, members );
+                    if ( member == null )
+                    {
+                        throw new IllegalStateException( "Unknown cluster member: '" + boltUri + "'\n" + this );
+                    }
+                    membersWithRole.add( member );
+                }
+            }
+        }
+
+        if ( membersWithRole.isEmpty() )
+        {
+            throw new IllegalStateException( "No cluster members with role '" + role + "' found.\n" + this );
+        }
+
+        return membersWithRole;
     }
 
     private static Set<ClusterMember> waitForMembers( String password, Set<ClusterMember> members )
@@ -123,42 +209,6 @@ public class Cluster
         }
 
         return members;
-    }
-
-    private ClusterMember findLeader()
-    {
-        try ( Driver driver = createDriver( password, members );
-              Session session = driver.session( AccessMode.READ ) )
-        {
-            StatementResult result = session.run( "call dbms.cluster.overview()" );
-            for ( Record record : result.list() )
-            {
-                ClusterMemberRole role = extractRole( record );
-                if ( role == ClusterMemberRole.LEADER )
-                {
-                    URI boltUri = extractBoltUri( record );
-                    ClusterMember leader = findByBoltUri( boltUri, members );
-                    if ( leader == null )
-                    {
-                        throw new IllegalStateException( "Unknown leader: '" + boltUri + "'\n" + this );
-                    }
-                    return leader;
-                }
-            }
-        }
-        throw new IllegalStateException( "Unable to find leader.\n" + this );
-    }
-
-    private static Driver createDriver( String password, Set<ClusterMember> members )
-    {
-        if ( members.isEmpty() )
-        {
-            throw new IllegalArgumentException( "No members, can't create driver" );
-        }
-
-        ClusterMember firstMember = members.iterator().next();
-        URI boltUri = firstMember.getBoltUri();
-        return createDriver( boltUri, password );
     }
 
     private static Driver createDriver( URI boltUri, String password )
@@ -200,5 +250,20 @@ public class Cluster
                 .withMaxIdleSessions( 1 )
                 .withSessionLivenessCheckTimeout( TimeUnit.HOURS.toMillis( 1 ) )
                 .toConfig();
+    }
+
+    private static ClusterMember randomOf( Set<ClusterMember> members )
+    {
+        int randomIndex = ThreadLocalRandom.current().nextInt( members.size() );
+        int currentIndex = 0;
+        for ( ClusterMember member : members )
+        {
+            if ( currentIndex == randomIndex )
+            {
+                return member;
+            }
+            currentIndex++;
+        }
+        throw new AssertionError();
     }
 }
