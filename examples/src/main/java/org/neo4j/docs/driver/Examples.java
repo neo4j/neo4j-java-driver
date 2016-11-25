@@ -41,7 +41,7 @@ public class Examples
     public static Driver constructDriver() throws Exception
     {
         // tag::construct-driver[]
-        Driver driver = GraphDatabase.driver( "bolt://myserver:7687", AuthTokens.basic("neo4j", "neo4j") );
+        Driver driver = GraphDatabase.driver( "bolt://localhost:7687", AuthTokens.basic("neo4j", "neo4j") );
         // end::construct-driver[]
 
         return driver;
@@ -51,7 +51,7 @@ public class Examples
     {
         // tag::configuration[]
         Driver driver = GraphDatabase.driver(
-                "bolt://myserver:7687",
+                "bolt://localhost:7687",
                 AuthTokens.basic("neo4j", "neo4j"),
                 Config.build().withMaxSessions( 10 ).toConfig() );
         // end::configuration[]
@@ -215,7 +215,7 @@ public class Examples
     public static Driver requireEncryption() throws Exception
     {
         // tag::tls-require-encryption[]
-        Driver driver = GraphDatabase.driver( "bolt://myserver:7687", AuthTokens.basic("neo4j", "neo4j"),
+        Driver driver = GraphDatabase.driver( "bolt://localhost:7687", AuthTokens.basic("neo4j", "neo4j"),
                 Config.build().withEncryptionLevel( Config.EncryptionLevel.REQUIRED ).toConfig() );
         // end::tls-require-encryption[]
 
@@ -225,7 +225,7 @@ public class Examples
     public static Driver trustOnFirstUse() throws Exception
     {
         // tag::tls-trust-on-first-use[]
-        Driver driver = GraphDatabase.driver( "bolt://myserver:7687", AuthTokens.basic("neo4j", "neo4j"), Config.build()
+        Driver driver = GraphDatabase.driver( "bolt://localhost:7687", AuthTokens.basic("neo4j", "neo4j"), Config.build()
                 .withEncryptionLevel( Config.EncryptionLevel.REQUIRED )
                 .withTrustStrategy( Config.TrustStrategy.trustOnFirstUse( new File( "/path/to/neo4j_known_hosts" ) ) )
                 .toConfig() );
@@ -237,7 +237,7 @@ public class Examples
     public static Driver trustSignedCertificates() throws Exception
     {
         // tag::tls-signed[]
-        Driver driver = GraphDatabase.driver( "bolt://myserver:7687", AuthTokens.basic("neo4j", "neo4j"), Config.build()
+        Driver driver = GraphDatabase.driver( "bolt://localhost:7687", AuthTokens.basic("neo4j", "neo4j"), Config.build()
                 .withEncryptionLevel( Config.EncryptionLevel.REQUIRED )
                 .withTrustStrategy( Config.TrustStrategy.trustCustomCertificateSignedBy( new File( "/path/to/ca-certificate.pem") ) )
                 .toConfig() );
@@ -249,7 +249,7 @@ public class Examples
     public static Driver connectWithAuthDisabled() throws Exception
     {
         // tag::connect-with-auth-disabled[]
-        Driver driver = GraphDatabase.driver( "bolt://myserver:7687",
+        Driver driver = GraphDatabase.driver( "bolt://localhost:7687",
                 Config.build().withEncryptionLevel( Config.EncryptionLevel.REQUIRED ).toConfig() );
         // end::connect-with-auth-disabled[]
 
