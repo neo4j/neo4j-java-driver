@@ -59,16 +59,11 @@ public class RoutingDriver extends BaseDriver
     }
 
     @Override
-    public Session session()
-    {
-        return session( AccessMode.WRITE );
-    }
-
-    @Override
-    public Session session( final AccessMode mode )
+    protected Session newSessionWithMode( AccessMode mode )
     {
         Connection connection = acquireConnection( mode );
-        return new RoutingNetworkSession( new NetworkSession( connection ), mode, connection.boltServerAddress(), loadBalancer );
+        NetworkSession networkSession = new NetworkSession( connection );
+        return new RoutingNetworkSession( networkSession, mode, connection.boltServerAddress(), loadBalancer );
     }
 
     private Connection acquireConnection( AccessMode role )
@@ -85,7 +80,7 @@ public class RoutingDriver extends BaseDriver
     }
 
     @Override
-    public void close()
+    protected void closeResources()
     {
         try
         {

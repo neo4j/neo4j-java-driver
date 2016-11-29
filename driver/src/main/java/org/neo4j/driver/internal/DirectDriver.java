@@ -44,19 +44,13 @@ public class DirectDriver extends BaseDriver
     }
 
     @Override
-    public Session session()
+    protected Session newSessionWithMode( AccessMode mode )
     {
         return new NetworkSession( connections.acquire( address ) );
     }
 
     @Override
-    public Session session( AccessMode ignore )
-    {
-        return session();
-    }
-
-    @Override
-    public void close()
+    protected void closeResources()
     {
         try
         {
