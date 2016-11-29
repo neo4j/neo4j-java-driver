@@ -137,22 +137,22 @@ public class Examples
     public static void retainResultsForNestedQuerying( Session session ) throws Exception
     {
         // tag::nested-statements[]
+        StatementResult result = null;
         try ( Transaction transaction = session.beginTransaction() )
         {
-            StatementResult result = transaction.run(
+            result = transaction.run(
                     "MATCH (knight:Person:Knight) WHERE knight.castle = {castle} RETURN id(knight) AS knight_id",
                     Values.parameters( "castle", "Camelot" ) );
-
-            for ( Record record : result.list() )
+        }
+        for ( Record record : result.list() )
+        {
+            try ( Transaction tx = session.beginTransaction() )
             {
-                try ( Transaction tx = session.beginTransaction() )
-                {
-                    tx.run( "MATCH (knight) WHERE id(knight) = {id} " +
-                            "MATCH (king:Person) WHERE king.name = {king} " +
-                            "CREATE (knight)-[:DEFENDS]->(king)",
-                            Values.parameters( "id", record.get( "knight_id" ), "king", "Arthur" ) );
-                    tx.success();
-                }
+                tx.run( "MATCH (knight) WHERE id(knight) = {id} " +
+                        "MATCH (king:Person) WHERE king.name = {king} " +
+                        "CREATE (knight)-[:DEFENDS]->(king)",
+                        Values.parameters( "id", record.get( "knight_id" ), "king", "Arthur" ) );
+                tx.success();
             }
         }
         // end::nested-statements[]
