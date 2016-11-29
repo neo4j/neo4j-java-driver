@@ -41,7 +41,7 @@ public class Examples
     public static Driver constructDriver() throws Exception
     {
         // tag::construct-driver[]
-        Driver driver = GraphDatabase.driver( "bolt://localhost:7687", AuthTokens.basic("neo4j", "neo4j") );
+        Driver driver = GraphDatabase.driver( "bolt://localhost:7687", AuthTokens.basic( "neo4j", "neo4j" ) );
         // end::construct-driver[]
 
         return driver;
@@ -52,7 +52,7 @@ public class Examples
         // tag::configuration[]
         Driver driver = GraphDatabase.driver(
                 "bolt://localhost:7687",
-                AuthTokens.basic("neo4j", "neo4j"),
+                AuthTokens.basic( "neo4j", "neo4j" ),
                 Config.build().withMaxSessions( 10 ).toConfig() );
         // end::configuration[]
 
@@ -72,7 +72,7 @@ public class Examples
     public static void statementWithoutParameters( Session session ) throws Exception
     {
         // tag::statement-without-parameters[]
-        StatementResult result = session.run( "CREATE (p:Person { name: 'Arthur' })" );
+        StatementResult result = session.run( "CREATE (p:Person {name: 'Arthur'})" );
         // end::statement-without-parameters[]
         int theOnesCreated = result.consume().counters().nodesCreated();
         System.out.println( "There were " + theOnesCreated + " the ones created." );
@@ -82,14 +82,15 @@ public class Examples
     {
         // tag::result-traversal[]
         String searchTerm = "Sword";
-        StatementResult result = session.run( "MATCH (weapon:Weapon) WHERE weapon.name CONTAINS {term} RETURN weapon.name",
-                Values.parameters( "term", searchTerm ) );
+        StatementResult result =
+                session.run( "MATCH (weapon:Weapon) WHERE weapon.name CONTAINS {term} RETURN weapon.name",
+                        Values.parameters( "term", searchTerm ) );
 
-        System.out.println("List of weapons called " + searchTerm + ":");
+        System.out.println( "List of weapons called " + searchTerm + ":" );
         while ( result.hasNext() )
         {
             Record record = result.next();
-            System.out.println(record.get("weapon.name").asString());
+            System.out.println( record.get( "weapon.name" ).asString() );
         }
         // end::result-traversal[]
     }
@@ -98,19 +99,20 @@ public class Examples
     {
         // tag::access-record[]
         String searchTerm = "Arthur";
-        StatementResult result = session.run( "MATCH (weapon:Weapon) WHERE weapon.owner CONTAINS {term} RETURN weapon.name, weapon.material, weapon.size",
+        StatementResult result = session.run( "MATCH (weapon:Weapon) WHERE weapon.owner CONTAINS {term} " +
+                                              "RETURN weapon.name, weapon.material, weapon.size",
                 Values.parameters( "term", searchTerm ) );
 
-        System.out.println("List of weapons owned by " + searchTerm + ":");
+        System.out.println( "List of weapons owned by " + searchTerm + ":" );
         while ( result.hasNext() )
         {
             Record record = result.next();
             List<String> sword = new ArrayList<>();
             for ( String key : record.keys() )
             {
-                sword.add( key + ": " + record.get(key) );
+                sword.add( key + ": " + record.get( key ) );
             }
-            System.out.println(sword);
+            System.out.println( sword );
         }
         // end::access-record[]
     }
@@ -118,14 +120,15 @@ public class Examples
     public static void retainResultsForNestedQuerying( Session session ) throws Exception
     {
         // tag::nested-statements[]
-        StatementResult result = session.run( "MATCH (knight:Person:Knight) WHERE knight.castle = {castle} RETURN id(knight) AS knight_id",
+        StatementResult result = session.run(
+                "MATCH (knight:Person:Knight) WHERE knight.castle = {castle} RETURN id(knight) AS knight_id",
                 Values.parameters( "castle", "Camelot" ) );
 
         for ( Record record : result.list() )
         {
             session.run( "MATCH (knight) WHERE id(knight) = {id} " +
-                    "MATCH (king:Person) WHERE king.name = {king} " +
-                    "CREATE (knight)-[:DEFENDS]->(king)",
+                         "MATCH (king:Person) WHERE king.name = {king} " +
+                         "CREATE (knight)-[:DEFENDS]->(king)",
                     Values.parameters( "id", record.get( "knight_id" ), "king", "Arthur" ) );
         }
         // end::nested-statements[]
@@ -160,7 +163,7 @@ public class Examples
         }
         catch ( ClientException e )
         {
-            throw new RuntimeException("Something really bad has happened!");
+            throw new RuntimeException( "Something really bad has happened!" );
         }
         // end::handle-cypher-error[]
     }
@@ -170,7 +173,8 @@ public class Examples
         // tag::transaction-commit[]
         try ( Transaction tx = session.beginTransaction() )
         {
-            tx.run( "CREATE (:Person {name: 'Guinevere'})" );
+            tx.run( "CREATE (:Person {name: {name}})",
+                    Values.parameters( "name", "Guinevere" ) );
             tx.success();
         }
         // end::transaction-commit[]
@@ -181,7 +185,8 @@ public class Examples
         // tag::transaction-rollback[]
         try ( Transaction tx = session.beginTransaction() )
         {
-            tx.run( "CREATE (:Person {name: 'Merlin'})" );
+            tx.run( "CREATE (:Person {name: {name}})",
+                    Values.parameters( "name", "Merlin" ) );
             tx.failure();
         }
         // end::transaction-rollback[]
@@ -190,7 +195,7 @@ public class Examples
     public static void resultSummary( Session session ) throws Exception
     {
         // tag::result-summary-query-profile[]
-        StatementResult result = session.run( "PROFILE MATCH (p:Person { name: {name} }) RETURN id(p)",
+        StatementResult result = session.run( "PROFILE MATCH (p:Person {name: {name}}) RETURN id(p)",
                 Values.parameters( "name", "Arthur" ) );
 
         ResultSummary summary = result.consume();
@@ -215,7 +220,7 @@ public class Examples
     public static Driver requireEncryption() throws Exception
     {
         // tag::tls-require-encryption[]
-        Driver driver = GraphDatabase.driver( "bolt://localhost:7687", AuthTokens.basic("neo4j", "neo4j"),
+        Driver driver = GraphDatabase.driver( "bolt://localhost:7687", AuthTokens.basic( "neo4j", "neo4j" ),
                 Config.build().withEncryptionLevel( Config.EncryptionLevel.REQUIRED ).toConfig() );
         // end::tls-require-encryption[]
 
@@ -225,7 +230,7 @@ public class Examples
     public static Driver trustOnFirstUse() throws Exception
     {
         // tag::tls-trust-on-first-use[]
-        Driver driver = GraphDatabase.driver( "bolt://localhost:7687", AuthTokens.basic("neo4j", "neo4j"), Config.build()
+        Driver driver = GraphDatabase.driver( "bolt://localhost:7687", AuthTokens.basic( "neo4j", "neo4j" ), Config.build()
                 .withEncryptionLevel( Config.EncryptionLevel.REQUIRED )
                 .withTrustStrategy( Config.TrustStrategy.trustOnFirstUse( new File( "/path/to/neo4j_known_hosts" ) ) )
                 .toConfig() );
@@ -237,9 +242,9 @@ public class Examples
     public static Driver trustSignedCertificates() throws Exception
     {
         // tag::tls-signed[]
-        Driver driver = GraphDatabase.driver( "bolt://localhost:7687", AuthTokens.basic("neo4j", "neo4j"), Config.build()
+        Driver driver = GraphDatabase.driver( "bolt://localhost:7687", AuthTokens.basic( "neo4j", "neo4j" ), Config.build()
                 .withEncryptionLevel( Config.EncryptionLevel.REQUIRED )
-                .withTrustStrategy( Config.TrustStrategy.trustCustomCertificateSignedBy( new File( "/path/to/ca-certificate.pem") ) )
+                .withTrustStrategy( Config.TrustStrategy.trustCustomCertificateSignedBy( new File( "/path/to/ca-certificate.pem" ) ) )
                 .toConfig() );
         // end::tls-signed[]
 
