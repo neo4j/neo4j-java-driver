@@ -50,8 +50,8 @@ public class SocketConnection implements Connection
 {
     private final Queue<Message> pendingMessages = new LinkedList<>();
     private final SocketResponseHandler responseHandler;
-    private AtomicBoolean isInterrupted = new AtomicBoolean( false );
-    private AtomicBoolean isAckFailureMuted = new AtomicBoolean( false );
+    private final AtomicBoolean isInterrupted = new AtomicBoolean( false );
+    private final AtomicBoolean isAckFailureMuted = new AtomicBoolean( false );
     private InternalServerInfo serverInfo;
 
     private final SocketClient socket;
@@ -66,10 +66,19 @@ public class SocketConnection implements Connection
         this.socket.start();
     }
 
-    // for mocked socket testing
-    SocketConnection( SocketClient socket, Logger logger )
+    /**
+     * Create new connection backed by the given socket.
+     * <p>
+     * <b>Note:</b> this constructor should be used <b>only</b> for testing.
+     *
+     * @param socket the socket to use for network interactions.
+     * @param serverInfo the info about server this connection points to.
+     * @param logger the logger.
+     */
+    public SocketConnection( SocketClient socket, InternalServerInfo serverInfo, Logger logger )
     {
         this.socket = socket;
+        this.serverInfo = serverInfo;
         this.logger = logger;
         this.responseHandler = createResponseHandler( logger );
         this.socket.start();

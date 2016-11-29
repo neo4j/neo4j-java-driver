@@ -21,7 +21,6 @@ package org.neo4j.driver.internal.net.pooling;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.net.BoltServerAddress;
@@ -113,10 +112,11 @@ public class SocketConnectionPool implements ConnectionPool
             @Override
             public PooledConnection get()
             {
-                return new PooledConnection( connect( address ), new
-                        PooledConnectionReleaseConsumer( connections,
-                        new PooledConnectionValidator( SocketConnectionPool.this, poolSettings ) ), clock );
-
+                PooledConnectionValidator connectionValidator =
+                        new PooledConnectionValidator( SocketConnectionPool.this );
+                PooledConnectionReleaseConsumer releaseConsumer =
+                        new PooledConnectionReleaseConsumer( connections, connectionValidator );
+                return new PooledConnection( connect( address ), releaseConsumer, clock );
             }
         };
         PooledConnection conn = connections.acquire( supplier );

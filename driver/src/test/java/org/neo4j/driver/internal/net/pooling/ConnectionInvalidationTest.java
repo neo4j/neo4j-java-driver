@@ -23,7 +23,6 @@ import org.mockito.Mockito;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Collector;
@@ -31,7 +30,6 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Consumers;
-import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
@@ -51,52 +49,25 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.driver.internal.net.BoltServerAddress.LOCAL_DEFAULT;
 
 public class ConnectionInvalidationTest
 {
     private final Connection delegate = mock( Connection.class );
-    Clock clock = mock( Clock.class );
+    private final Clock clock = mock( Clock.class );
 
     private final PooledConnection conn =
             new PooledConnection( delegate, Consumers.<PooledConnection>noOp(), Clock.SYSTEM );
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldInvalidateConnectionThatIsOld() throws Throwable
+    public void shouldNotInvalidateConnectionThatIsUnableToRun() throws Throwable
     {
         // Given a connection that's broken
         Mockito.doThrow( new ClientException( "That didn't work" ) )
                 .when( delegate ).run( anyString(), anyMap(), any( Collector.class ) );
-        PoolSettings poolSettings = PoolSettings.defaultSettings();
-        when( clock.millis() ).thenReturn( 0L, poolSettings.idleTimeBeforeConnectionTest() + 1L );
         PooledConnection conn = new PooledConnection( delegate, Consumers.<PooledConnection>noOp(), clock );
-
-        // When/Then
-        BlockingPooledConnectionQueue
-                queue = mock( BlockingPooledConnectionQueue.class );
-        PooledConnectionValidator validator =
-                new PooledConnectionValidator( pool( true ), poolSettings );
-
-        PooledConnectionReleaseConsumer consumer =
-                new PooledConnectionReleaseConsumer( queue, validator);
-        consumer.accept( conn );
-
-        verify( queue, never() ).offer( conn );
-    }
-
-    @SuppressWarnings( "unchecked" )
-    @Test
-    public void shouldNotInvalidateConnectionThatIsNotOld() throws Throwable
-    {
-        // Given a connection that's broken
-        Mockito.doThrow( new ClientException( "That didn't work" ) )
-                .when( delegate ).run( anyString(), anyMap(), any( Collector.class ) );
-        Config config = Config.defaultConfig();
-        PoolSettings poolSettings = PoolSettings.defaultSettings();
-        when( clock.millis() ).thenReturn( 0L, poolSettings.idleTimeBeforeConnectionTest() - 1L );
-        PooledConnection conn = new PooledConnection( delegate, Consumers.<PooledConnection>noOp(), clock );
-        PooledConnectionValidator validator =
-                new PooledConnectionValidator( pool( true ), poolSettings );
+        PooledConnectionValidator validator = new PooledConnectionValidator( pool( true ) );
 
         // When/Then
         BlockingPooledConnectionQueue
@@ -109,14 +80,26 @@ public class ConnectionInvalidationTest
     }
 
     @Test
+    public void shouldInvalidateConnectionWithUnknownAddress()
+    {
+        when( delegate.boltServerAddress() ).thenReturn( LOCAL_DEFAULT );
+
+        BlockingPooledConnectionQueue queue = mock( BlockingPooledConnectionQueue.class );
+        PooledConnectionValidator validator = new PooledConnectionValidator( pool( false ) );
+
+        PooledConnectionReleaseConsumer consumer = new PooledConnectionReleaseConsumer( queue, validator );
+        consumer.accept( conn );
+
+        verify( queue, never() ).offer( conn );
+    }
+
+    @Test
     public void shouldInvalidConnectionIfFailedToReset() throws Throwable
     {
         // Given a connection that's broken
         Mockito.doThrow( new ClientException( "That didn't work" ) ).when( delegate ).reset();
-        PoolSettings poolSettings = PoolSettings.defaultSettings();
         PooledConnection conn = new PooledConnection( delegate, Consumers.<PooledConnection>noOp(), clock );
-        PooledConnectionValidator validator =
-                new PooledConnectionValidator( pool( true ), poolSettings );
+        PooledConnectionValidator validator = new PooledConnectionValidator( pool( true ) );
         // When/Then
         BlockingPooledConnectionQueue
                 queue = mock( BlockingPooledConnectionQueue.class );
@@ -165,9 +148,7 @@ public class ConnectionInvalidationTest
         {
             assertThat( e, equalTo( exception ) );
         }
-        PoolSettings poolSettings = PoolSettings.defaultSettings();
-        PooledConnectionValidator validator =
-                new PooledConnectionValidator( pool( true ), poolSettings );
+        PooledConnectionValidator validator = new PooledConnectionValidator( pool( true ) );
 
         // Then
         assertTrue( conn.hasUnrecoverableErrors() );
@@ -198,9 +179,7 @@ public class ConnectionInvalidationTest
 
         // Then
         assertFalse( conn.hasUnrecoverableErrors() );
-        PoolSettings poolSettings = PoolSettings.defaultSettings();
-        PooledConnectionValidator validator =
-                new PooledConnectionValidator( pool( true ), poolSettings );
+        PooledConnectionValidator validator = new PooledConnectionValidator( pool( true ) );
         BlockingPooledConnectionQueue
                 queue = mock( BlockingPooledConnectionQueue.class );
         PooledConnectionReleaseConsumer consumer =

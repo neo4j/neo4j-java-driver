@@ -177,9 +177,7 @@ public class GraphDatabase
         }
 
         // Establish pool settings
-        PoolSettings poolSettings = new PoolSettings(
-                config.maxIdleConnectionPoolSize(),
-                config.idleTimeBeforeConnectionTest() );
+        PoolSettings poolSettings = new PoolSettings( config.maxIdleConnectionPoolSize() );
 
         // And finally, construct the driver proper
         ConnectionPool connectionPool =

@@ -18,24 +18,16 @@
  */
 package org.neo4j.driver.internal.net.pooling;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.spi.ConnectionPool;
-import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.util.Function;
 
 class PooledConnectionValidator implements Function<PooledConnection,Boolean>
 {
     private final ConnectionPool pool;
-    private final PoolSettings poolSettings;
-    private static final Map<String,Value> NO_PARAMETERS = new HashMap<>();
 
-    PooledConnectionValidator( ConnectionPool pool, PoolSettings poolSettings )
+    PooledConnectionValidator( ConnectionPool pool )
     {
         this.pool = pool;
-        this.poolSettings = poolSettings;
     }
 
     @Override
@@ -45,9 +37,7 @@ class PooledConnectionValidator implements Function<PooledConnection,Boolean>
         // and we should close the conn without bothering to reset the conn at all
         return pool.hasAddress( pooledConnection.boltServerAddress() ) &&
                !pooledConnection.hasUnrecoverableErrors() &&
-               reset( pooledConnection ) &&
-               (pooledConnection.idleTime() <= poolSettings.idleTimeBeforeConnectionTest() ||
-                ping( pooledConnection ));
+               reset( pooledConnection );
     }
 
     /**
@@ -57,26 +47,11 @@ class PooledConnectionValidator implements Function<PooledConnection,Boolean>
      * @param conn the PooledConnection
      * @return true if the connection is reset successfully without any error, otherwise false.
      */
-    private boolean reset( PooledConnection conn )
+    private static boolean reset( PooledConnection conn )
     {
         try
         {
             conn.reset();
-            conn.sync();
-            return true;
-        }
-        catch ( Throwable e )
-        {
-            return false;
-        }
-    }
-
-    private boolean ping( PooledConnection conn )
-    {
-        try
-        {
-            conn.run( "RETURN 1 // JavaDriver poll to test connection", NO_PARAMETERS, Collector.NO_OP );
-            conn.pullAll( Collector.NO_OP );
             conn.sync();
             return true;
         }
