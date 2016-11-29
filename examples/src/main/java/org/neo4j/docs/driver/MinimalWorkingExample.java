@@ -28,7 +28,7 @@ public class MinimalWorkingExample
     public static void minimalWorkingExample() throws Exception
     {
         // tag::minimal-example[]
-        Driver driver = GraphDatabase.driver( "bolt://localhost:7687", AuthTokens.basic( "neo4j", "neo4j" ) );
+        Driver driver = GraphDatabase.driver( "bolt+routing://mycluster:7687", AuthTokens.basic( "neo4j", "neo4j" ) );
         Session session = driver.session();
 
         session.run( "CREATE (a:Person {name:'Arthur', title:'King'})" );
