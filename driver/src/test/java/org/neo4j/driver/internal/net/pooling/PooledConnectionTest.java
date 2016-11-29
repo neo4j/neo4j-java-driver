@@ -20,21 +20,22 @@ package org.neo4j.driver.internal.net.pooling;
 
 import org.junit.Test;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Clock;
+import org.neo4j.driver.internal.util.Supplier;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.util.Function;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class PooledConnectionTest
 {
@@ -149,6 +150,56 @@ public class PooledConnectionTest
         assertTrue( pool.contains(pooledConnection) );
         assertThat( pool.size(), equalTo( 1 ) );
         assertThat( flags[0], equalTo( true ) );
+    }
+
+    @Test
+    @SuppressWarnings( "unchecked" )
+    public void shouldDisposeAcquiredConnectionsWhenPoolIsClosed()
+    {
+        PooledConnection connection = mock( PooledConnection.class );
+
+        BlockingPooledConnectionQueue pool = new BlockingPooledConnectionQueue( 5 );
+
+        Supplier<PooledConnection> pooledConnectionFactory = mock( Supplier.class );
+        when( pooledConnectionFactory.get() ).thenReturn( connection );
+
+        PooledConnection acquiredConnection = pool.acquire( pooledConnectionFactory );
+        assertSame( acquiredConnection, connection );
+
+        pool.terminate();
+        verify( connection ).dispose();
+    }
+
+    @Test
+    @SuppressWarnings( "unchecked" )
+    public void shouldDisposeAcquiredAndIdleConnectionsWhenPoolIsClosed()
+    {
+        PooledConnection connection1 = mock( PooledConnection.class );
+        PooledConnection connection2 = mock( PooledConnection.class );
+        PooledConnection connection3 = mock( PooledConnection.class );
+
+        BlockingPooledConnectionQueue pool = new BlockingPooledConnectionQueue( 5 );
+
+        Supplier<PooledConnection> pooledConnectionFactory = mock( Supplier.class );
+        when( pooledConnectionFactory.get() )
+                .thenReturn( connection1 )
+                .thenReturn( connection2 )
+                .thenReturn( connection3 );
+
+        PooledConnection acquiredConnection1 = pool.acquire( pooledConnectionFactory );
+        PooledConnection acquiredConnection2 = pool.acquire( pooledConnectionFactory );
+        PooledConnection acquiredConnection3 = pool.acquire( pooledConnectionFactory );
+        assertSame( acquiredConnection1, connection1 );
+        assertSame( acquiredConnection2, connection2 );
+        assertSame( acquiredConnection3, connection3 );
+
+        pool.offer( acquiredConnection2 );
+
+        pool.terminate();
+
+        verify( connection1 ).dispose();
+        verify( connection2 ).dispose();
+        verify( connection3 ).dispose();
     }
 
     @Test
