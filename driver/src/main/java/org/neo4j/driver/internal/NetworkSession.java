@@ -67,7 +67,7 @@ public class NetworkSession implements Session
     private ExplicitTransaction currentTransaction;
     private AtomicBoolean isOpen = new AtomicBoolean( true );
 
-    public NetworkSession( Connection connection )
+    NetworkSession( Connection connection )
     {
         this.connection = connection;
 
@@ -126,6 +126,7 @@ public class NetworkSession implements Session
         return cursor;
     }
 
+    @Override
     public synchronized void reset()
     {
         ensureSessionIsOpen();
@@ -253,18 +254,6 @@ public class NetworkSession implements Session
         ensureNoUnrecoverableError();
         ensureNoOpenTransactionBeforeOpeningTransaction();
         ensureConnectionIsOpen();
-    }
-
-    @Override
-    protected void finalize() throws Throwable
-    {
-        if ( isOpen.compareAndSet( true, false ) )
-        {
-            logger.error( "Neo4j Session object leaked, please ensure that your application calls the `close` " +
-                          "method on Sessions before disposing of the objects.", null );
-            connection.close();
-        }
-        super.finalize();
     }
 
     private void ensureNoUnrecoverableError()

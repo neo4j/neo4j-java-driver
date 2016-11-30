@@ -121,14 +121,14 @@ public class DriverFactoryTest
 
         @Override
         DirectDriver createDirectDriver( BoltServerAddress address, ConnectionPool connectionPool, Config config,
-                SecurityPlan securityPlan )
+                SecurityPlan securityPlan, SessionFactory sessionFactory )
         {
             throw new UnsupportedOperationException( "Can't create direct driver" );
         }
 
         @Override
         RoutingDriver createRoutingDriver( BoltServerAddress address, ConnectionPool connectionPool, Config config,
-                RoutingSettings routingSettings, SecurityPlan securityPlan )
+                RoutingSettings routingSettings, SecurityPlan securityPlan, SessionFactory sessionFactory )
         {
             throw new UnsupportedOperationException( "Can't create routing driver" );
         }

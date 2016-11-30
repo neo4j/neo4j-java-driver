@@ -36,9 +36,10 @@ public class DirectDriver extends BaseDriver
             BoltServerAddress address,
             ConnectionPool connections,
             SecurityPlan securityPlan,
+            SessionFactory sessionFactory,
             Logging logging )
     {
-        super( securityPlan, logging );
+        super( securityPlan, sessionFactory, logging );
         this.address = address;
         this.connections = connections;
     }
@@ -46,7 +47,7 @@ public class DirectDriver extends BaseDriver
     @Override
     protected Session newSessionWithMode( AccessMode mode )
     {
-        return new NetworkSession( connections.acquire( address ) );
+        return sessionFactory.newInstance( connections.acquire( address ) );
     }
 
     @Override

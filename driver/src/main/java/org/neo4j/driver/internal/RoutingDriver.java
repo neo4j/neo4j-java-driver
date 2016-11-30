@@ -51,10 +51,11 @@ public class RoutingDriver extends BaseDriver
             BoltServerAddress seedAddress,
             ConnectionPool connections,
             SecurityPlan securityPlan,
+            SessionFactory sessionFactory,
             Clock clock,
             Logging logging )
     {
-        super( verifiedSecurityPlan( securityPlan ), logging );
+        super( verifiedSecurityPlan( securityPlan ), sessionFactory, logging );
         this.loadBalancer = new LoadBalancer( settings, clock, log, connections, seedAddress );
     }
 
@@ -62,7 +63,7 @@ public class RoutingDriver extends BaseDriver
     protected Session newSessionWithMode( AccessMode mode )
     {
         Connection connection = acquireConnection( mode );
-        NetworkSession networkSession = new NetworkSession( connection );
+        Session networkSession = sessionFactory.newInstance( connection );
         return new RoutingNetworkSession( networkSession, mode, connection.boltServerAddress(), loadBalancer );
     }
 

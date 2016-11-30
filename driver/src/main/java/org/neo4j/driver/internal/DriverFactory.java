@@ -49,10 +49,13 @@ public class DriverFactory
         BoltServerAddress address = BoltServerAddress.from( uri );
         SecurityPlan securityPlan = createSecurityPlan( address, config );
         ConnectionPool connectionPool = createConnectionPool( authToken, securityPlan, config );
+        SessionFactory sessionFactory = createSessionFactory( config );
 
         try
         {
-            return createDriver( address, uri.getScheme(), connectionPool, config, routingSettings, securityPlan );
+            return createDriver( address, uri.getScheme(), connectionPool, config, routingSettings, securityPlan,
+                    sessionFactory
+            );
         }
         catch ( Throwable driverError )
         {
@@ -70,14 +73,16 @@ public class DriverFactory
     }
 
     private Driver createDriver( BoltServerAddress address, String scheme, ConnectionPool connectionPool,
-            Config config, RoutingSettings routingSettings, SecurityPlan securityPlan )
+            Config config, RoutingSettings routingSettings, SecurityPlan securityPlan,
+            SessionFactory sessionFactory )
     {
         switch ( scheme.toLowerCase() )
         {
         case "bolt":
-            return createDirectDriver( address, connectionPool, config, securityPlan );
+            return createDirectDriver( address, connectionPool, config, securityPlan, sessionFactory );
         case "bolt+routing":
-            return createRoutingDriver( address, connectionPool, config, routingSettings, securityPlan );
+            return createRoutingDriver( address, connectionPool, config, routingSettings, securityPlan,
+                    sessionFactory );
         default:
             throw new ClientException( format( "Unsupported URI scheme: %s", scheme ) );
         }
@@ -89,9 +94,9 @@ public class DriverFactory
      * <b>This method is package-private only for testing</b>
      */
     DirectDriver createDirectDriver( BoltServerAddress address, ConnectionPool connectionPool, Config config,
-            SecurityPlan securityPlan )
+            SecurityPlan securityPlan, SessionFactory sessionFactory )
     {
-        return new DirectDriver( address, connectionPool, securityPlan, config.logging() );
+        return new DirectDriver( address, connectionPool, securityPlan, sessionFactory, config.logging() );
     }
 
     /**
@@ -99,11 +104,11 @@ public class DriverFactory
      * <p>
      * <b>This method is package-private only for testing</b>
      */
-    RoutingDriver createRoutingDriver( BoltServerAddress address, ConnectionPool connectionPool,
-            Config config, RoutingSettings routingSettings, SecurityPlan securityPlan )
+    RoutingDriver createRoutingDriver( BoltServerAddress address, ConnectionPool connectionPool, Config config,
+            RoutingSettings routingSettings, SecurityPlan securityPlan, SessionFactory sessionFactory )
     {
-        return new RoutingDriver( routingSettings, address, connectionPool, securityPlan, Clock.SYSTEM,
-                config.logging() );
+        return new RoutingDriver( routingSettings, address, connectionPool, securityPlan, sessionFactory,
+                Clock.SYSTEM, config.logging() );
     }
 
     /**
@@ -120,6 +125,15 @@ public class DriverFactory
         Connector connector = new SocketConnector( connectionSettings, securityPlan, config.logging() );
 
         return new SocketConnectionPool( poolSettings, connector, Clock.SYSTEM, config.logging() );
+    }
+
+    private static SessionFactory createSessionFactory( Config config )
+    {
+        if ( LeakLoggingNetworkSessionFactory.leakLoggingEnabled() )
+        {
+            return new LeakLoggingNetworkSessionFactory( config.logging() );
+        }
+        return new NetworkSessionFactory();
     }
 
     private static SecurityPlan createSecurityPlan( BoltServerAddress address, Config config )
