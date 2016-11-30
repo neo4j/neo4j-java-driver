@@ -6,7 +6,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <build.revision></build.revision>
-    <bundle.name>${project.groupId}</bundle.name>
+    <bundle.name>${project.groupId}.${project.artifactId}</bundle.name>
     <maven.build.timestamp.format>'v'yyyyMMdd-HHmm</maven.build.timestamp.format>
   </properties>
 
