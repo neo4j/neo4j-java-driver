@@ -21,12 +21,17 @@ package org.neo4j.driver.internal.cluster;
 import java.util.HashSet;
 
 import org.neo4j.driver.internal.RoutingErrorHandler;
+import org.neo4j.driver.internal.exceptions.BoltProtocolException;
+import org.neo4j.driver.internal.exceptions.ConnectionException;
+import org.neo4j.driver.internal.exceptions.FailedToUpdateRoutingException;
+import org.neo4j.driver.internal.exceptions.InvalidOperationException;
+import org.neo4j.driver.internal.exceptions.ServerNeo4jException;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
+import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.Logger;
-import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
 import static java.util.Arrays.asList;
 
@@ -49,7 +54,7 @@ public final class LoadBalancer implements RoutingErrorHandler, AutoCloseable
             Clock clock,
             Logger log,
             ConnectionPool connections,
-            BoltServerAddress... routingAddresses ) throws ServiceUnavailableException
+            BoltServerAddress... routingAddresses ) throws FailedToUpdateRoutingException
     {
         this( settings, clock, log, connections, new ClusterComposition.Provider.Default( clock, log ),
                 routingAddresses );
@@ -61,7 +66,7 @@ public final class LoadBalancer implements RoutingErrorHandler, AutoCloseable
             Logger log,
             ConnectionPool connections,
             ClusterComposition.Provider provider,
-            BoltServerAddress... routingAddresses ) throws ServiceUnavailableException
+            BoltServerAddress... routingAddresses ) throws FailedToUpdateRoutingException
     {
         this.clock = clock;
         this.log = log;
@@ -77,12 +82,16 @@ public final class LoadBalancer implements RoutingErrorHandler, AutoCloseable
         ensureRouting();
     }
 
-    public Connection acquireReadConnection() throws ServiceUnavailableException
+    public PooledConnection acquireReadConnection()
+            throws BoltProtocolException, InvalidOperationException, ServerNeo4jException,
+            FailedToUpdateRoutingException
     {
         return acquireConnection( readers );
     }
 
-    public Connection acquireWriteConnection() throws ServiceUnavailableException
+    public PooledConnection acquireWriteConnection()
+            throws BoltProtocolException, InvalidOperationException, ServerNeo4jException,
+            FailedToUpdateRoutingException
     {
         return acquireConnection( writers );
     }
@@ -105,7 +114,9 @@ public final class LoadBalancer implements RoutingErrorHandler, AutoCloseable
         connections.close();
     }
 
-    private Connection acquireConnection( RoundRobinAddressSet servers ) throws ServiceUnavailableException
+    private PooledConnection acquireConnection( RoundRobinAddressSet servers )
+            throws InvalidOperationException, ServerNeo4jException, BoltProtocolException,
+            FailedToUpdateRoutingException
     {
         for ( ; ; )
         {
@@ -117,10 +128,10 @@ public final class LoadBalancer implements RoutingErrorHandler, AutoCloseable
                 {
                     return connections.acquire( address );
                 }
-                catch ( ServiceUnavailableException e )
+                catch ( ConnectionException e )
                 {
                     log.error( String.format( "Failed to refresh routing information using routing address %s",
-                            address ), e );
+                            address ), e.publicException() );
 
                     forget( address );
                 }
@@ -129,7 +140,7 @@ public final class LoadBalancer implements RoutingErrorHandler, AutoCloseable
         }
     }
 
-    private synchronized void ensureRouting() throws ServiceUnavailableException
+    private synchronized void ensureRouting() throws FailedToUpdateRoutingException
     {
         if ( stale() )
         {
@@ -145,9 +156,10 @@ public final class LoadBalancer implements RoutingErrorHandler, AutoCloseable
                 writers.update( cluster.writers(), removed );
                 routers.update( cluster.routers(), removed );
                 // purge connections to removed addresses
+                // TODO an error should be caught here to ensure all sets are closed even if there is some error
                 for ( BoltServerAddress address : removed )
                 {
-                    connections.purge( address );
+                    purgeConnectionsFromConnectionPool( address );
                 }
 
                 log.info( "Refreshed routing information. Ttl %s, routers %s, writers %s, readers %s",
@@ -155,17 +167,17 @@ public final class LoadBalancer implements RoutingErrorHandler, AutoCloseable
             }
             catch ( InterruptedException e )
             {
-                throw new ServiceUnavailableException( "Thread was interrupted while establishing connection.", e );
+                throw new FailedToUpdateRoutingException( "Thread was interrupted while establishing connection.", e );
             }
         }
     }
 
-    private ClusterComposition lookupRoutingTable() throws InterruptedException, ServiceUnavailableException
+    private ClusterComposition lookupRoutingTable() throws InterruptedException, FailedToUpdateRoutingException
     {
         int size = routers.size(), failures = 0;
         if ( size == 0 )
         {
-            throw new ServiceUnavailableException( NO_ROUTERS_AVAILABLE );
+            throw new FailedToUpdateRoutingException( NO_ROUTERS_AVAILABLE );
         }
         for ( long start = clock.millis(), delay = 0; ; delay = Math.max( settings.retryTimeoutDelay, delay * 2 ) )
         {
@@ -180,7 +192,7 @@ public final class LoadBalancer implements RoutingErrorHandler, AutoCloseable
                 BoltServerAddress address = routers.next();
                 if ( address == null )
                 {
-                    throw new ServiceUnavailableException( NO_ROUTERS_AVAILABLE );
+                    throw new FailedToUpdateRoutingException( NO_ROUTERS_AVAILABLE );
                 }
                 ClusterComposition cluster;
                 try ( Connection connection = connections.acquire( address ) )
@@ -201,7 +213,7 @@ public final class LoadBalancer implements RoutingErrorHandler, AutoCloseable
                     routers.remove( address );
                     if ( --size == 0 )
                     {
-                        throw new ServiceUnavailableException( NO_ROUTERS_AVAILABLE );
+                        throw new FailedToUpdateRoutingException( NO_ROUTERS_AVAILABLE );
                     }
                 }
                 else
@@ -211,7 +223,7 @@ public final class LoadBalancer implements RoutingErrorHandler, AutoCloseable
             }
             if ( ++failures >= settings.maxRoutingFailures )
             {
-                throw new ServiceUnavailableException( NO_ROUTERS_AVAILABLE );
+                throw new FailedToUpdateRoutingException( NO_ROUTERS_AVAILABLE );
             }
         }
     }
@@ -225,7 +237,20 @@ public final class LoadBalancer implements RoutingErrorHandler, AutoCloseable
         readers.remove( address );
         writers.remove( address );
         // drop all current connections to the address
-        connections.purge( address );
+        purgeConnectionsFromConnectionPool( address );
+    }
+
+    private void purgeConnectionsFromConnectionPool( BoltServerAddress address )
+    {
+        try
+        {
+            connections.purge( address );
+        }
+        catch ( InvalidOperationException e )
+        {
+            log.error( String.format( "Failed to remove connections with address %s from connection pool.",
+                    address ), e.publicException() );
+        }
     }
 
     private boolean stale()

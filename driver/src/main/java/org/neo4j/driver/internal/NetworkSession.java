@@ -22,8 +22,11 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.driver.internal.exceptions.InternalException;
+import org.neo4j.driver.internal.exceptions.InvalidOperationException;
 import org.neo4j.driver.internal.logging.DevNullLogger;
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Record;
@@ -33,15 +36,13 @@ import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
-import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.types.TypeSystem;
 
 import static org.neo4j.driver.v1.Values.value;
 
 public class NetworkSession implements Session
 {
-    protected Connection connection;
+    protected PooledConnection connection;
     private final String sessionId;
     private final Logger logger;
 
@@ -67,7 +68,7 @@ public class NetworkSession implements Session
     private ExplicitTransaction currentTransaction;
     private AtomicBoolean isOpen = new AtomicBoolean( true );
 
-    public NetworkSession( Connection connection )
+    public NetworkSession( PooledConnection connection )
     {
         this.connection = connection;
 
@@ -119,10 +120,17 @@ public class NetworkSession implements Session
     public static StatementResult run( Connection connection, Statement statement )
     {
         InternalStatementResult cursor = new InternalStatementResult( connection, null, statement );
-        connection.run( statement.text(), statement.parameters().asMap( Values.ofValue() ),
-                cursor.runResponseCollector() );
-        connection.pullAll( cursor.pullAllResponseCollector() );
-        connection.flush();
+        try
+        {
+            connection.run( statement.text(), statement.parameters().asMap( Values.ofValue() ),
+                    cursor.runResponseCollector() );
+            connection.pullAll( cursor.pullAllResponseCollector() );
+            connection.flush();
+        }
+        catch ( InternalException e )
+        {
+            throw e.publicException();
+        }
         return cursor;
     }
 
@@ -138,7 +146,14 @@ public class NetworkSession implements Session
             lastBookmark = currentTransaction.bookmark();
             currentTransaction = null;
         }
-        connection.resetAsync();
+        try
+        {
+            connection.resetAsync();
+        }
+        catch ( InternalException e )
+        {
+            throw e.publicException();
+        }
     }
 
     @Override
@@ -153,7 +168,7 @@ public class NetworkSession implements Session
         // Use atomic operation to protect from closing the connection twice (putting back to the pool twice).
         if ( !isOpen.compareAndSet( true, false ) )
         {
-            throw new ClientException( "This session has already been closed." );
+            throw new InvalidOperationException( "This session has already been closed." ).publicException();
         }
 
         if ( !connection.isOpen() )
@@ -182,6 +197,10 @@ public class NetworkSession implements Session
         {
             connection.sync();
         }
+        catch ( InternalException e )
+        {
+            throw e.publicException();
+        }
         finally
         {
             closeConnection();
@@ -191,7 +210,14 @@ public class NetworkSession implements Session
     private void closeConnection()
     {
         logger.debug( "~~ connection released by [session-%s]", sessionId );
-        connection.close();
+        try
+        {
+            connection.close();
+        }
+        catch ( InvalidOperationException e )
+        {
+            throw e.publicException();
+        }
     }
 
     @Override
@@ -271,9 +297,11 @@ public class NetworkSession implements Session
     {
         if ( connection.hasUnrecoverableErrors() )
         {
-            throw new ClientException( "Cannot run more statements in the current session as an unrecoverable error " +
-                                       "has happened. Please close the current session and re-run your statement in a" +
-                                       " new session." );
+            throw new InvalidOperationException(
+                    "Cannot run more statements in the current session as an unrecoverable error " +
+                    "has happened. Please close the current session and re-run your statement in a" +
+                    " new session." )
+                    .publicException();
         }
     }
 
@@ -282,8 +310,10 @@ public class NetworkSession implements Session
     {
         if ( currentTransaction != null )
         {
-            throw new ClientException( "Statements cannot be run directly on a session with an open transaction;" +
-                                       " either run from within the transaction or use a different session." );
+            throw new InvalidOperationException(
+                    "Statements cannot be run directly on a session with an open transaction;" +
+                    " either run from within the transaction or use a different session." )
+                    .publicException();
         }
     }
 
@@ -292,8 +322,10 @@ public class NetworkSession implements Session
     {
         if ( currentTransaction != null )
         {
-            throw new ClientException( "You cannot begin a transaction on a session with an open transaction;" +
-                                       " either run from within the transaction or use a different session." );
+            throw new InvalidOperationException(
+                    "You cannot begin a transaction on a session with an open transaction;" +
+                    " either run from within the transaction or use a different session." )
+                    .publicException();
         }
     }
 
@@ -301,9 +333,11 @@ public class NetworkSession implements Session
     {
         if ( !connection.isOpen() )
         {
-            throw new ServiceUnavailableException( "The current session cannot be reused as the underlying connection with the " +
-                                                   "server has been closed due to unrecoverable errors. " +
-                                                   "Please close this session and retry your statement in another new session." );
+            throw new InvalidOperationException(
+                    "The current session cannot be reused as the underlying connection with the " +
+                    "server has been closed due to unrecoverable errors. " +
+                    "Please close this session and retry your statement in another new session." )
+                    .publicException();
         }
     }
 
@@ -311,12 +345,13 @@ public class NetworkSession implements Session
     {
         if ( !isOpen.get() )
         {
-            throw new ClientException(
+            throw new InvalidOperationException(
                     "No more interaction with this session is allowed " +
                     "as the current session is already closed or marked as closed. " +
                     "You get this error either because you have a bad reference to a session that has already be " +
                     "closed " +
-                    "or you are trying to reuse a session that you have called `reset` on it." );
+                    "or you are trying to reuse a session that you have called `reset` on it." )
+                    .publicException();
         }
     }
 }

@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.driver.internal.exceptions.BoltProtocolException;
 import org.neo4j.driver.internal.net.ChunkedInput;
 import org.neo4j.driver.internal.messaging.ResetMessage;
 import org.neo4j.driver.internal.messaging.AckFailureMessage;
@@ -171,7 +172,7 @@ public class DumpMessage
     }
 
     public static List<Message> unpack( List<Message> outcome, MessageFormat.Reader reader )
-            throws IOException
+            throws IOException, BoltProtocolException
     {
         do
         {

@@ -30,6 +30,8 @@ import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.driver.internal.EventHandler;
+import org.neo4j.driver.internal.exceptions.BoltProtocolException;
+import org.neo4j.driver.internal.exceptions.InvalidOperationException;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.spi.Connection;
@@ -153,17 +155,17 @@ public class ClusterCompositionProviderTest
                 .getClusterComposition( connection );
     }
 
-    private void keys( final String... keys )
+    private void keys( final String... keys ) throws InvalidOperationException, BoltProtocolException
     {
         onGetServers( doAnswer( withKeys( keys ) ) );
     }
 
-    private void values( final Value[]... records )
+    private void values( final Value[]... records ) throws InvalidOperationException, BoltProtocolException
     {
         onPullAll( doAnswer( withServerList( records ) ) );
     }
 
-    private void onGetServers( Stubber stubber )
+    private void onGetServers( Stubber stubber ) throws InvalidOperationException, BoltProtocolException
     {
         stubber.when( connection ).run(
                 eq( ClusterComposition.Provider.GET_SERVERS ),
@@ -171,7 +173,7 @@ public class ClusterCompositionProviderTest
                 any( Collector.class ) );
     }
 
-    private void onPullAll( Stubber stubber )
+    private void onPullAll( Stubber stubber ) throws InvalidOperationException, BoltProtocolException
     {
         stubber.when( connection ).pullAll( any( Collector.class ) );
     }

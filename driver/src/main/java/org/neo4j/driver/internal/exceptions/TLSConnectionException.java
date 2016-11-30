@@ -16,21 +16,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.messaging;
+package org.neo4j.driver.internal.exceptions;
 
-import java.io.IOException;
-
-import org.neo4j.driver.internal.exceptions.BoltProtocolException;
+import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.Neo4jException;
 
 /**
- * Base class for all protocol messages.
+ * Any error that related to failing establish tls connections with the server
  */
-public interface Message
+public class TLSConnectionException extends InternalException
 {
-    /**
-     * @throws IOException failed to read/write to the socket
-     * @throws BoltProtocolException if the handler failed to handle this message
-     */
-    void dispatch( MessageHandler handler ) throws IOException, BoltProtocolException;
+    public TLSConnectionException( String msg )
+    {
+        super( msg );
+    }
 
+    public TLSConnectionException( String msg, Throwable cause )
+    {
+        super( msg, cause );
+    }
+
+    @Override
+    public Neo4jException publicException()
+    {
+        return new ClientException( this.getMessage(), this.getCause() );
+    }
 }

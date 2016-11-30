@@ -19,16 +19,17 @@
 package org.neo4j.driver.internal;
 
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+
+import org.neo4j.driver.internal.exceptions.InternalException;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.v1.Record;
@@ -39,7 +40,6 @@ import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
 import org.neo4j.driver.v1.util.Pair;
 
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.junit.Assert.assertFalse;
@@ -50,7 +50,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-
 import static org.neo4j.driver.v1.Records.column;
 import static org.neo4j.driver.v1.Values.ofString;
 import static org.neo4j.driver.v1.Values.value;
@@ -404,15 +403,22 @@ public class InternalStatementResultTest
         }
         inboundMessages.add( streamTailMessage( cursor ) );
 
-        doAnswer( new Answer()
+        try
         {
-            @Override
-            public Object answer( InvocationOnMock invocationOnMock ) throws Throwable
+            doAnswer( new Answer()
             {
-                inboundMessages.poll().run();
-                return null;
-            }
-        }).when( connection ).receiveOne();
+                @Override
+                public Object answer( InvocationOnMock invocationOnMock ) throws Throwable
+                {
+                    inboundMessages.poll().run();
+                    return null;
+                }
+            }).when( connection ).receiveOne();
+        }
+        catch ( InternalException e )
+        {
+            throw e.publicException();
+        }
 
         return cursor;
     }

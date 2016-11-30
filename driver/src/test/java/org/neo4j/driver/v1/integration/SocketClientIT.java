@@ -28,6 +28,7 @@ import java.security.GeneralSecurityException;
 import java.util.LinkedList;
 import java.util.Queue;
 
+import org.neo4j.driver.internal.exceptions.ServerNeo4jException;
 import org.neo4j.driver.internal.net.SocketClient;
 import org.neo4j.driver.internal.net.SocketResponseHandler;
 import org.neo4j.driver.internal.logging.DevNullLogger;
@@ -63,7 +64,7 @@ public class SocketClientIT
     }
 
     @After
-    public void tearDown()
+    public void tearDown() throws IOException
     {
         if( client != null )
         {
@@ -83,7 +84,7 @@ public class SocketClientIT
         when( handler.protocolViolationErrorOccurred() ).thenReturn( true );
         when( handler.collectorsWaiting() ).thenReturn( 2, 1, 0 );
         when( handler.serverFailure() ).thenReturn(
-                new ClientException( "Neo.ClientError.Request.InvalidFormat", "Hello, world!" ) );
+                new ServerNeo4jException( "Neo.ClientError.Request.InvalidFormat", "Hello, world!" ) );
 
         // When & Then
         client.start();

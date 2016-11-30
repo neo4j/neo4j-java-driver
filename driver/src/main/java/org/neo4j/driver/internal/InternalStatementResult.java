@@ -24,6 +24,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 
+import org.neo4j.driver.internal.exceptions.InternalException;
+import org.neo4j.driver.internal.exceptions.InvalidOperationException;
 import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.summary.SummaryBuilder;
@@ -31,7 +33,6 @@ import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
 import org.neo4j.driver.v1.summary.Notification;
 import org.neo4j.driver.v1.summary.Plan;
@@ -287,7 +288,7 @@ public class InternalStatementResult implements StatementResult
         {
             do
             {
-                connection.receiveOne();
+                receiveOne();
                 recordBuffer.clear();
             }
             while ( !done );
@@ -301,7 +302,7 @@ public class InternalStatementResult implements StatementResult
     {
         while( !done )
         {
-            connection.receiveOne();
+            receiveOne();
         }
 
         return summary;
@@ -310,7 +311,7 @@ public class InternalStatementResult implements StatementResult
     @Override
     public void remove()
     {
-        throw new ClientException( "Removing records from a result is not supported." );
+        throw new InvalidOperationException( "Removing records from a result is not supported." ).publicException();
     }
 
     private boolean tryFetchNext()
@@ -321,9 +322,21 @@ public class InternalStatementResult implements StatementResult
             {
                 return false;
             }
-            connection.receiveOne();
+            receiveOne();
         }
 
         return true;
+    }
+
+    private void receiveOne()
+    {
+        try
+        {
+            connection.receiveOne();
+        }
+        catch ( InternalException e )
+        {
+            throw e.publicException();
+        }
     }
 }

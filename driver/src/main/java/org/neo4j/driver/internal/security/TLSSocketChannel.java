@@ -26,6 +26,7 @@ import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 import javax.net.ssl.SSLEngineResult.Status;
 
+import org.neo4j.driver.internal.exceptions.TLSConnectionException;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.internal.util.BytePrinter;
@@ -62,11 +63,19 @@ public class TLSSocketChannel implements ByteChannel
     private static final ByteBuffer DUMMY_BUFFER = ByteBuffer.allocate( 0 );
 
     public static TLSSocketChannel create( BoltServerAddress address, SecurityPlan securityPlan, ByteChannel channel, Logger logger )
-            throws IOException
+            throws TLSConnectionException
+
     {
         SSLEngine sslEngine = securityPlan.sslContext().createSSLEngine( address.host(), address.port() );
         sslEngine.setUseClientMode( true );
-        return new TLSSocketChannel( channel, logger, sslEngine );
+        try
+        {
+            return new TLSSocketChannel( channel, logger, sslEngine );
+        }
+        catch ( IOException e )
+        {
+            throw new TLSConnectionException( "Unable to establish TLS socket connection with server: " + e.getMessage(), e );
+        }
     }
 
     public TLSSocketChannel( ByteChannel channel, Logger logger, SSLEngine sslEngine ) throws IOException

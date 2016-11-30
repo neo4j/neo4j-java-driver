@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal;
 
+import org.neo4j.driver.internal.exceptions.InternalException;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.ConnectionPool;
@@ -46,7 +47,14 @@ public class DirectDriver extends BaseDriver
     @Override
     protected Session newSessionWithMode( AccessMode mode )
     {
-        return new NetworkSession( connections.acquire( address ) );
+        try
+        {
+            return new NetworkSession( connections.acquire( address ) );
+        }
+        catch ( InternalException e )
+        {
+            throw e.publicException();
+        }
     }
 
     @Override

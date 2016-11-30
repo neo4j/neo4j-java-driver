@@ -31,6 +31,7 @@ import java.util.Map;
 import org.neo4j.driver.internal.InternalNode;
 import org.neo4j.driver.internal.InternalPath;
 import org.neo4j.driver.internal.InternalRelationship;
+import org.neo4j.driver.internal.exceptions.BoltProtocolException;
 import org.neo4j.driver.internal.net.BufferingChunkedInput;
 import org.neo4j.driver.internal.net.ChunkedOutput;
 import org.neo4j.driver.internal.packstream.PackInput;
@@ -45,7 +46,6 @@ import org.neo4j.driver.internal.value.NodeValue;
 import org.neo4j.driver.internal.value.PathValue;
 import org.neo4j.driver.internal.value.RelationshipValue;
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.types.Entity;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.types.Path;
@@ -114,7 +114,8 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         }
 
         @Override
-        public void handleInitMessage( String clientNameAndVersion, Map<String,Value> authToken ) throws IOException
+        public void handleInitMessage( String clientNameAndVersion, Map<String,Value> authToken )
+                throws IOException, BoltProtocolException
         {
             packer.packStructHeader( 1, MSG_INIT );
             packer.pack( clientNameAndVersion );
@@ -123,7 +124,8 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         }
 
         @Override
-        public void handleRunMessage( String statement, Map<String,Value> parameters ) throws IOException
+        public void handleRunMessage( String statement, Map<String,Value> parameters )
+                throws IOException, BoltProtocolException
         {
             packer.packStructHeader( 2, MSG_RUN );
             packer.pack( statement );
@@ -160,7 +162,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         }
 
         @Override
-        public void handleSuccessMessage( Map<String,Value> meta ) throws IOException
+        public void handleSuccessMessage( Map<String,Value> meta ) throws IOException, BoltProtocolException
         {
             packer.packStructHeader( 1, MSG_SUCCESS );
             packRawMap( meta );
@@ -168,7 +170,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         }
 
         @Override
-        public void handleRecordMessage( Value[] fields ) throws IOException
+        public void handleRecordMessage( Value[] fields ) throws IOException, BoltProtocolException
         {
             packer.packStructHeader( 1, MSG_RECORD );
             packer.packListHeader( fields.length );
@@ -180,7 +182,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         }
 
         @Override
-        public void handleFailureMessage( String code, String message ) throws IOException
+        public void handleFailureMessage( String code, String message ) throws IOException, BoltProtocolException
         {
             packer.packStructHeader( 1, MSG_FAILURE );
             packer.packMapHeader( 2 );
@@ -200,7 +202,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             onMessageComplete.run();
         }
 
-        private void packRawMap( Map<String,Value> map ) throws IOException
+        private void packRawMap( Map<String,Value> map ) throws IOException, BoltProtocolException
         {
             if ( map == null || map.size() == 0 )
             {
@@ -215,7 +217,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             }
         }
 
-        private void packValue( Value value ) throws IOException
+        private void packValue( Value value ) throws IOException, BoltProtocolException
         {
             switch ( ( (InternalValue) value ).typeConstructor() )
             {
@@ -327,7 +329,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                     break;
 
                 default:
-                    throw new IOException( "Unknown type: " + value );
+                    throw new BoltProtocolException( "Unknown type: " + value );
             }
         }
 
@@ -339,7 +341,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         }
 
         @Override
-        public Writer write( Message msg ) throws IOException
+        public Writer write( Message msg ) throws IOException, BoltProtocolException
         {
             msg.dispatch( this );
             return this;
@@ -352,7 +354,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             return this;
         }
 
-        private void packNode( Node node ) throws IOException
+        private void packNode( Node node ) throws IOException, BoltProtocolException
         {
             packer.packStructHeader( NODE_FIELDS, NODE );
             packer.pack( node.id() );
@@ -367,7 +369,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             packProperties( node );
         }
 
-        private void packProperties( Entity entity ) throws IOException
+        private void packProperties( Entity entity ) throws IOException, BoltProtocolException
         {
             Iterable<String> keys = entity.keys();
             packer.packMapHeader( entity.size() );
@@ -400,7 +402,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
          * Parse a single message into the given consumer.
          */
         @Override
-        public void read( MessageHandler handler ) throws IOException
+        public void read( MessageHandler handler ) throws IOException, BoltProtocolException
         {
             unpacker.unpackStructHeader();
             int type = unpacker.unpackStructSignature();
@@ -434,7 +436,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                 unpackResetMessage( handler );
                 break;
             default:
-                throw new IOException( "Unknown message type: " + type );
+                throw new BoltProtocolException( "Unknown message type: " + type );
             }
         }
 
@@ -444,19 +446,19 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             onMessageComplete.run();
         }
 
-        private void unpackInitMessage( MessageHandler handler ) throws IOException
+        private void unpackInitMessage( MessageHandler handler ) throws IOException, BoltProtocolException
         {
             handler.handleInitMessage( unpacker.unpackString(), unpackMap() );
             onMessageComplete.run();
         }
 
-        private void unpackIgnoredMessage( MessageHandler output ) throws IOException
+        private void unpackIgnoredMessage( MessageHandler output ) throws IOException, BoltProtocolException
         {
             output.handleIgnoredMessage();
             onMessageComplete.run();
         }
 
-        private void unpackFailureMessage( MessageHandler output ) throws IOException
+        private void unpackFailureMessage( MessageHandler output ) throws IOException, BoltProtocolException
         {
             Map<String,Value> params = unpackMap();
             String code = params.get( "code" ).asString();
@@ -465,7 +467,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             onMessageComplete.run();
         }
 
-        private void unpackRunMessage( MessageHandler output ) throws IOException
+        private void unpackRunMessage( MessageHandler output ) throws IOException, BoltProtocolException
         {
             String statement = unpacker.unpackString();
             Map<String,Value> params = unpackMap();
@@ -485,14 +487,14 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             onMessageComplete.run();
         }
 
-        private void unpackSuccessMessage( MessageHandler output ) throws IOException
+        private void unpackSuccessMessage( MessageHandler output ) throws IOException, BoltProtocolException
         {
             Map<String,Value> map = unpackMap();
             output.handleSuccessMessage( map );
             onMessageComplete.run();
         }
 
-        private void unpackRecordMessage(MessageHandler output) throws IOException
+        private void unpackRecordMessage(MessageHandler output) throws IOException, BoltProtocolException
         {
             int fieldCount = (int) unpacker.unpackListHeader();
             Value[] fields = new Value[fieldCount];
@@ -504,7 +506,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             onMessageComplete.run();
         }
 
-        private Value unpackValue() throws IOException
+        private Value unpackValue() throws IOException, BoltProtocolException
         {
             PackType type = unpacker.peekNextType();
             switch ( type )
@@ -553,10 +555,10 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                 }
             }
             }
-            throw new IOException( "Unknown value type: " + type );
+            throw new BoltProtocolException( "Unknown value type: " + type );
         }
 
-        private Value unpackRelationship() throws IOException
+        private Value unpackRelationship() throws IOException, BoltProtocolException
         {
             long urn = unpacker.unpackLong();
             long startUrn = unpacker.unpackLong();
@@ -568,7 +570,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             return new RelationshipValue( adapted );
         }
 
-        private InternalNode unpackNode() throws IOException
+        private InternalNode unpackNode() throws IOException, BoltProtocolException
         {
             long urn = unpacker.unpackLong();
 
@@ -589,7 +591,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             return new InternalNode( urn, labels, props );
         }
 
-        private Value unpackPath() throws IOException
+        private Value unpackPath() throws IOException, BoltProtocolException
         {
             // List of unique nodes
             Node[] uniqNodes = new Node[(int) unpacker.unpackListHeader()];
@@ -648,26 +650,28 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         }
 
         private void ensureCorrectStructSize( String structName, int expected, long actual )
+                throws BoltProtocolException
         {
             if ( expected != actual )
             {
-                throw new ClientException( String.format(
+                throw new BoltProtocolException( String.format(
                         "Invalid message received, serialized %s structures should have %d fields, "
                                 + "received %s structure has %d fields.", structName, expected, structName, actual ) );
             }
         }
 
         private void ensureCorrectStructSignature( String structName, byte expected, byte actual )
+                throws BoltProtocolException
         {
             if ( expected != actual )
             {
-                throw new ClientException( String.format(
+                throw new BoltProtocolException( String.format(
                         "Invalid message received, expected a `%s`, signature 0x%s. Recieved signature was 0x%s.",
                         structName, Integer.toHexString( expected ), Integer.toHexString( actual ) ) );
             }
         }
 
-        private Map<String,Value> unpackMap() throws IOException
+        private Map<String,Value> unpackMap() throws IOException, BoltProtocolException
         {
             int size = (int) unpacker.unpackMapHeader();
             if ( size == 0 )
@@ -683,14 +687,4 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             return map;
         }
     }
-
-    public static class NoOpRunnable implements Runnable
-    {
-        @Override
-        public void run()
-        {
-            // no-op
-        }
-    }
-
 }

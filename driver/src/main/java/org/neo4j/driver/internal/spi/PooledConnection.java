@@ -16,8 +16,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.util;
+package org.neo4j.driver.internal.spi;
 
-public interface Supplier<T> {
-    T get();
+import org.neo4j.driver.internal.exceptions.InvalidOperationException;
+
+public interface PooledConnection extends Connection
+{
+    /**
+     * If there are any errors that occur on this connection, invoke the given
+     * runnable. This is used in the driver to clean up resources associated with
+     * the connection, like an open transaction.
+     *
+     * @param runnable To be run on error.
+     */
+    void onError( Runnable runnable );
+
+    boolean hasUnrecoverableErrors();
+
+    void dispose() throws InvalidOperationException;
 }

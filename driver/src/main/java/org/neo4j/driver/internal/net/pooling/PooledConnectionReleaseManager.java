@@ -18,31 +18,30 @@
  */
 package org.neo4j.driver.internal.net.pooling;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.neo4j.driver.internal.util.Consumer;
+import org.neo4j.driver.internal.exceptions.InvalidOperationException;
+import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.v1.util.Function;
 
 /**
- * The responsibility of the PooledConnectionReleaseConsumer is to release valid connections
+ * The responsibility of the {@link PooledConnectionReleaseManager} is to release valid connections
  * back to the connections queue.
  */
-class PooledConnectionReleaseConsumer implements Consumer<PooledConnection>
+public class PooledConnectionReleaseManager implements PooledConnectionReleaser
 {
     private final BlockingPooledConnectionQueue connections;
-    private final Function<PooledConnection, Boolean> validConnection;
+    private final Function<PooledConnection, Boolean> connectionValidator;
 
-    PooledConnectionReleaseConsumer( BlockingPooledConnectionQueue connections,
-            Function<PooledConnection, Boolean> validConnection)
+    protected PooledConnectionReleaseManager( BlockingPooledConnectionQueue conns,
+            Function<PooledConnection,Boolean> validator )
     {
-        this.connections = connections;
-        this.validConnection = validConnection;
+        this.connections = conns;
+        this.connectionValidator = validator;
     }
 
     @Override
-    public void accept( PooledConnection pooledConnection )
+    public void accept( PooledConnection pooledConnection ) throws InvalidOperationException
     {
-        if ( validConnection.apply( pooledConnection ) )
+        if ( connectionValidator.apply( pooledConnection ) )
         {
             connections.offer( pooledConnection );
         }

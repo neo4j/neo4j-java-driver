@@ -18,6 +18,10 @@
  */
 package org.neo4j.driver.internal.spi;
 
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -25,15 +29,12 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-import org.hamcrest.TypeSafeMatcher;
-
 import org.neo4j.driver.internal.EventHandler;
+import org.neo4j.driver.internal.exceptions.InvalidOperationException;
 import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.internal.net.pooling.PooledConnection;
+import org.neo4j.driver.internal.net.pooling.PooledConnectionReleaseManager;
+import org.neo4j.driver.internal.net.pooling.PooledSocketConnection;
 import org.neo4j.driver.internal.util.Clock;
-import org.neo4j.driver.internal.util.Consumer;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.util.Function;
 
@@ -164,14 +165,14 @@ public class StubConnectionPool implements ConnectionPool
     }
 
     @Override
-    public Connection acquire( BoltServerAddress address )
+    public PooledConnection acquire( BoltServerAddress address )
     {
         if ( hosts.replace( address, State.CONNECTED ) == null )
         {
             events.connectionFailure( address );
             throw new ServiceUnavailableException( "Host unavailable: " + address );
         }
-        Connection connection = new StubConnection( address, factory.apply( address ), events, clock );
+        PooledConnection connection = new StubConnection( address, factory.apply( address ), events, clock );
         events.acquire( address, connection );
         return connection;
     }
@@ -204,7 +205,7 @@ public class StubConnectionPool implements ConnectionPool
         hosts.clear();
     }
 
-    private static class StubConnection extends PooledConnection
+    private static class StubConnection extends PooledSocketConnection
     {
         private final BoltServerAddress address;
 
@@ -214,10 +215,10 @@ public class StubConnectionPool implements ConnectionPool
                 final EventSink events,
                 Clock clock )
         {
-            super( delegate, new Consumer<PooledConnection>()
+            super( delegate, new PooledConnectionReleaseManager( null, null )
             {
                 @Override
-                public void accept( PooledConnection self )
+                public void accept( PooledConnection self ) throws InvalidOperationException
                 {
                     events.release( address, self );
                     if ( delegate != null )
@@ -225,7 +226,7 @@ public class StubConnectionPool implements ConnectionPool
                         delegate.close();
                     }
                 }
-            }, clock );
+            } );
             this.address = address;
         }
 

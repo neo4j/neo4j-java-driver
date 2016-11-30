@@ -21,14 +21,15 @@ package org.neo4j.driver.internal.messaging;
 import java.io.IOException;
 import java.util.Map;
 
+import org.neo4j.driver.internal.exceptions.BoltProtocolException;
 import org.neo4j.driver.v1.Value;
 
 public interface MessageHandler
 {
     // Requests
-    void handleInitMessage( String clientNameAndVersion, Map<String,Value> authToken ) throws IOException;
+    void handleInitMessage( String clientNameAndVersion, Map<String,Value> authToken ) throws IOException, BoltProtocolException;
 
-    void handleRunMessage( String statement, Map<String,Value> parameters ) throws IOException;
+    void handleRunMessage( String statement, Map<String,Value> parameters ) throws IOException, BoltProtocolException;
 
     void handlePullAllMessage() throws IOException;
 
@@ -39,12 +40,12 @@ public interface MessageHandler
     void handleAckFailureMessage() throws IOException;
 
     // Responses
-    void handleSuccessMessage( Map<String,Value> meta ) throws IOException;
+    void handleSuccessMessage( Map<String,Value> meta ) throws IOException, BoltProtocolException;
 
-    void handleRecordMessage( Value[] fields ) throws IOException;
+    void handleRecordMessage( Value[] fields ) throws IOException, BoltProtocolException;
 
-    void handleFailureMessage( String code, String message ) throws IOException;
+    void handleFailureMessage( String code, String message ) throws IOException, BoltProtocolException;
 
-    void handleIgnoredMessage() throws IOException;
+    void handleIgnoredMessage() throws IOException, BoltProtocolException;
 
 }

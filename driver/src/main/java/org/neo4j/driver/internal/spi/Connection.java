@@ -20,7 +20,11 @@ package org.neo4j.driver.internal.spi;
 
 import java.util.Map;
 
+import org.neo4j.driver.internal.exceptions.BoltProtocolException;
+import org.neo4j.driver.internal.exceptions.ServerNeo4jException;
+import org.neo4j.driver.internal.exceptions.InvalidOperationException;
 import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.exceptions.ConnectionException;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.summary.ServerInfo;
@@ -28,6 +32,8 @@ import org.neo4j.driver.v1.summary.ServerInfo;
 /**
  * A connection is an abstraction provided by an underlying transport implementation,
  * it is the medium that a session is conducted over.
+ *
+ * All methods that might talk with the socket connection might throw {@link ConnectionException}.
  */
 public interface Connection extends AutoCloseable
 {
@@ -36,32 +42,34 @@ public interface Connection extends AutoCloseable
      * @param clientName should be the driver name and version: "java-driver/1.1.0"
      * @param authToken a map value
      */
-    void init( String clientName, Map<String,Value> authToken );
+    void init( String clientName, Map<String,Value> authToken )
+            throws ConnectionException, ServerNeo4jException, InvalidOperationException, BoltProtocolException;
 
     /**
      * Queue up a run action. The collector will value called with metadata about the stream that will become available
      * for retrieval.
      * @param parameters a map value of parameters
      */
-    void run( String statement, Map<String,Value> parameters, Collector collector );
+    void run( String statement, Map<String,Value> parameters, Collector collector )
+            throws InvalidOperationException, BoltProtocolException;
 
     /**
      * Queue a discard all action, consuming any items left in the current stream.This will
      * close the stream once its completed, allowing another {@link #run(String, java.util.Map, Collector) run}
      */
-    void discardAll( Collector collector );
+    void discardAll( Collector collector ) throws InvalidOperationException, BoltProtocolException;
 
     /**
      * Queue a pull-all action, output will be handed to the collector once the pull starts. This will
      * close the stream once its completed, allowing another {@link #run(String, java.util.Map, Collector) run}
      */
-    void pullAll( Collector collector );
+    void pullAll( Collector collector ) throws InvalidOperationException, BoltProtocolException;
 
     /**
      * Queue a reset action, throw {@link org.neo4j.driver.v1.exceptions.ClientException} if an ignored message is received. This will
      * close the stream once its completed, allowing another {@link #run(String, java.util.Map, Collector) run}
      */
-    void reset();
+    void reset() throws InvalidOperationException, BoltProtocolException;
 
     /**
      * Queue a ack_failure action, valid output could only be success. Throw {@link org.neo4j.driver.v1.exceptions.ClientException} if
@@ -73,20 +81,27 @@ public interface Connection extends AutoCloseable
     /**
      * Ensure all outstanding actions are carried out on the server.
      */
-    void sync();
+    void sync() throws ConnectionException, ServerNeo4jException, InvalidOperationException, BoltProtocolException;
 
     /**
      * Send all pending messages to the server and return the number of messages sent.
+     * @throws ConnectionException if failed to send the message via socket
+     * @throws InvalidOperationException if the current session is interrupted by reset while there are some
+     * errors left unconsumed due to reset before running more statements.
+     * @throws BoltProtocolException if failed to encode the message into a bolt message
      */
-    void flush();
+    void flush() throws ConnectionException, InvalidOperationException, BoltProtocolException;
 
     /**
      * Receive the next message available.
+     * @throws ConnectionException if failed to read from the socket
+     * @throws ServerNeo4jException if receive a failure from server
+     * @throws BoltProtocolException if failed to decode the bolt message from binary
      */
-    void receiveOne();
+    void receiveOne() throws ConnectionException, ServerNeo4jException, BoltProtocolException;
 
     @Override
-    void close();
+    void close() throws InvalidOperationException;
 
     /**
      * Test if the underlying socket connection with the server is still open.
@@ -99,27 +114,9 @@ public interface Connection extends AutoCloseable
     boolean isOpen();
 
     /**
-     * If there are any errors that occur on this connection, invoke the given
-     * runnable. This is used in the driver to clean up resources associated with
-     * the connection, like an open transaction.
-     *
-     * @param runnable To be run on error.
-     */
-    void onError( Runnable runnable );
-
-
-    boolean hasUnrecoverableErrors();
-
-    /**
      * Asynchronously sending reset to the socket output channel.
      */
-    void resetAsync();
-
-    /**
-     * Return true if ack_failure message is temporarily muted as the failure message will be acked using reset instead
-     * @return true if no ack_failre message should be sent when ackable failures are received.
-     */
-    boolean isAckFailureMuted();
+    void resetAsync() throws ConnectionException, InvalidOperationException, BoltProtocolException;
 
     /**
      * Returns the basic information of the server connected to.

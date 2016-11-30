@@ -16,43 +16,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.messaging;
-
-import java.io.IOException;
+package org.neo4j.driver.internal.net.pooling;
 
 import org.neo4j.driver.internal.exceptions.BoltProtocolException;
+import org.neo4j.driver.internal.exceptions.ConnectionException;
+import org.neo4j.driver.internal.exceptions.InvalidOperationException;
+import org.neo4j.driver.internal.exceptions.ServerNeo4jException;
+import org.neo4j.driver.internal.spi.PooledConnection;
 
-/**
- * IGNORED response message
- * <p>
- * Sent by the server to signal that an operation has been ignored.
- * Terminates response sequence.
- */
-public class IgnoredMessage implements Message
+public interface PooledConnectionFactory
 {
-    public static final IgnoredMessage IGNORED = new IgnoredMessage();
-
-    @Override
-    public void dispatch( MessageHandler handler ) throws IOException, BoltProtocolException
-    {
-        handler.handleIgnoredMessage();
-    }
-
-    @Override
-    public String toString()
-    {
-        return "IGNORED {}";
-    }
-
-    @Override
-    public boolean equals( Object obj )
-    {
-        return obj != null && obj.getClass() == getClass();
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return 1;
-    }
+    PooledConnection newInstance()
+            throws ConnectionException, InvalidOperationException, ServerNeo4jException, BoltProtocolException;
 }

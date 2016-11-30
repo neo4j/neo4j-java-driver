@@ -27,8 +27,8 @@ import org.mockito.stubbing.Answer;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.driver.internal.exceptions.InternalException;
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.util.Function;
 
 import static java.util.Arrays.asList;
@@ -66,7 +66,7 @@ public class ConcurrencyGuardingConnectionTest
     {
         // Given
         final AtomicReference<Connection> conn = new AtomicReference<>();
-        final AtomicReference<ClientException> exception = new AtomicReference<>();
+        final AtomicReference<Throwable> exception = new AtomicReference<>();
 
         Connection delegate = mock( Connection.class, new Answer()
         {
@@ -78,7 +78,7 @@ public class ConcurrencyGuardingConnectionTest
                     operation.apply( conn.get() );
                     fail("Expected this call to fail, because it is calling a method on the connector while 'inside' " +
                          "a connector call already.");
-                } catch(ClientException e)
+                } catch( Throwable e )
                 {
                     exception.set( e );
                 }
@@ -100,7 +100,7 @@ public class ConcurrencyGuardingConnectionTest
     }
 
     @Test
-    public void shouldAllowConcurrentClose()
+    public void shouldAllowConcurrentClose() throws Throwable
     {
         // Given
         final AtomicReference<Connection> connection = new AtomicReference<>();
@@ -130,7 +130,14 @@ public class ConcurrencyGuardingConnectionTest
         @Override
         public Void apply( Connection connection )
         {
-            connection.init(null, null);
+            try
+            {
+                connection.init(null, null);
+            }
+            catch ( InternalException e )
+            {
+                throw e.publicException();
+            }
             return null;
         }
     };
@@ -140,7 +147,15 @@ public class ConcurrencyGuardingConnectionTest
         @Override
         public Void apply( Connection connection )
         {
-            connection.run(null, null, null);
+
+            try
+            {
+                connection.run( null, null, null );
+            }
+            catch ( InternalException e )
+            {
+                throw e.publicException();
+            }
             return null;
         }
     };
@@ -150,7 +165,14 @@ public class ConcurrencyGuardingConnectionTest
         @Override
         public Void apply( Connection connection )
         {
-            connection.discardAll(null);
+            try
+            {
+                connection.discardAll( null );
+            }
+            catch ( InternalException e )
+            {
+                throw e.publicException();
+            }
             return null;
         }
     };
@@ -160,7 +182,14 @@ public class ConcurrencyGuardingConnectionTest
         @Override
         public Void apply( Connection connection )
         {
-            connection.pullAll(null);
+            try
+            {
+                connection.pullAll( null );
+            }
+            catch ( InternalException e )
+            {
+                throw e.publicException();
+            }
             return null;
         }
     };
@@ -170,7 +199,14 @@ public class ConcurrencyGuardingConnectionTest
         @Override
         public Void apply( Connection connection )
         {
-            connection.reset();
+            try
+            {
+                connection.reset();
+            }
+            catch ( InternalException e )
+            {
+                throw e.publicException();
+            }
             return null;
         }
     };
@@ -190,7 +226,14 @@ public class ConcurrencyGuardingConnectionTest
         @Override
         public Void apply( Connection connection )
         {
-            connection.receiveOne();
+            try
+            {
+                connection.receiveOne();
+            }
+            catch ( InternalException e )
+            {
+                throw e.publicException();
+            }
             return null;
         }
     };
@@ -200,7 +243,14 @@ public class ConcurrencyGuardingConnectionTest
         @Override
         public Void apply( Connection connection )
         {
-            connection.sync();
+            try
+            {
+                connection.sync();
+            }
+            catch ( InternalException e )
+            {
+                throw e.publicException();
+            }
             return null;
         }
     };
@@ -210,7 +260,14 @@ public class ConcurrencyGuardingConnectionTest
         @Override
         public Void apply( Connection connection )
         {
-            connection.flush();
+            try
+            {
+                connection.flush();
+            }
+            catch ( InternalException e )
+            {
+                throw e.publicException();
+            }
             return null;
         }
     };

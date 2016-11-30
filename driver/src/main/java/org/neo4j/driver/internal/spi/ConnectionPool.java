@@ -18,6 +18,10 @@
  */
 package org.neo4j.driver.internal.spi;
 
+import org.neo4j.driver.internal.exceptions.BoltProtocolException;
+import org.neo4j.driver.internal.exceptions.ConnectionException;
+import org.neo4j.driver.internal.exceptions.InvalidOperationException;
+import org.neo4j.driver.internal.exceptions.ServerNeo4jException;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 
 public interface ConnectionPool extends AutoCloseable
@@ -27,14 +31,23 @@ public interface ConnectionPool extends AutoCloseable
      * be used, otherwise a new connection will be created.
      *
      * @param address The address to acquire
+     * @throws ConnectionException if failed to connect to server with the provided address due to network errors.
+     * @throws InvalidOperationException if a user misuses the driver such as providing a wrong bolt port or
+     * trying to obtain a connection after the pool is already closed.
+     * When this exception is thrown, {@link ConnectionPool} ensures that no connection will be added into the pool
+     * and will try with best-effort to close any resource that should not have been opened.
+     * @throws ServerNeo4jException if failed to run a statement on the server.
+     * @throws BoltProtocolException if failed to encode/decode bolt messages
      */
-    Connection acquire( BoltServerAddress address );
+    PooledConnection acquire( BoltServerAddress address )
+            throws ConnectionException, InvalidOperationException, ServerNeo4jException, BoltProtocolException;
 
     /**
      * Removes all connections to a given address from the pool.
      * @param address The address to remove.
+     * @throws InvalidOperationException if failed to close the connections in the connection pool properly
      */
-    void purge( BoltServerAddress address );
+    void purge( BoltServerAddress address ) throws InvalidOperationException;
 
     boolean hasAddress( BoltServerAddress address );
 }

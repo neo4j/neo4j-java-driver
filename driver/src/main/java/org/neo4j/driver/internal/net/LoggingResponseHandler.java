@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.net;
 import java.util.Arrays;
 import java.util.Map;
 
+import org.neo4j.driver.internal.exceptions.BoltProtocolException;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Value;
 
@@ -97,14 +98,14 @@ public class LoggingResponseHandler extends SocketResponseHandler
     }
 
     @Override
-    public void handleFailureMessage( String code, String message )
+    public void handleFailureMessage( String code, String message ) throws BoltProtocolException
     {
         logger.debug("S: FAILURE %s \"%s\"", code, message );
         super.handleFailureMessage( code, message );
     }
 
     @Override
-    public void handleIgnoredMessage()
+    public void handleIgnoredMessage() throws BoltProtocolException
     {
         logger.debug( DEFAULT_DEBUG_LOGGING_FORMAT, IGNORED );
         super.handleIgnoredMessage();

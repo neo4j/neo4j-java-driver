@@ -22,11 +22,13 @@ import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 
+import org.neo4j.driver.internal.exceptions.BoltProtocolException;
+
 public interface MessageFormat
 {
     interface Writer
     {
-        Writer write( Message msg ) throws IOException;
+        Writer write( Message msg ) throws IOException, BoltProtocolException;
 
         Writer flush() throws IOException;
 
@@ -40,7 +42,7 @@ public interface MessageFormat
          */
         boolean hasNext() throws IOException;
 
-        void read( MessageHandler handler ) throws IOException;
+        void read( MessageHandler handler ) throws IOException, BoltProtocolException;
 
     }
 

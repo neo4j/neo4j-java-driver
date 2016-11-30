@@ -18,17 +18,19 @@
  */
 package org.neo4j.driver.internal.net.pooling;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.driver.internal.exceptions.BoltProtocolException;
+import org.neo4j.driver.internal.exceptions.ConnectionException;
+import org.neo4j.driver.internal.exceptions.InvalidOperationException;
+import org.neo4j.driver.internal.exceptions.ServerNeo4jException;
 import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.internal.util.Supplier;
+import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 
@@ -60,17 +62,22 @@ public class BlockingPooledConnectionQueue
      * @param pooledConnection the connection to put back to the queue
      * @return <code>true</code> if connections was accepted otherwise <code>false</code>
      */
-    public boolean offer( PooledConnection pooledConnection )
+    public boolean offer( PooledConnection pooledConnection ) throws InvalidOperationException
     {
         acquiredConnections.remove( pooledConnection );
         boolean offer = queue.offer( pooledConnection );
         // not added back to the queue, dispose of the connection
-        if (!offer) {
+        if ( !offer )
+        {
             pooledConnection.dispose();
         }
-        if (isTerminating.get()) {
+
+        // If pool already closed, then this ensures that the newly created connection will be disposed.
+        // It does not need to be the one that we added back, any of it would work.
+        if ( isTerminating.get() )
+        {
             PooledConnection connection = queue.poll();
-            if (connection != null)
+            if ( connection != null )
             {
                 connection.dispose();
             }
@@ -80,30 +87,26 @@ public class BlockingPooledConnectionQueue
 
     /**
      * Acquire connection or create a new one if the queue is empty
-     * @param supplier used to create a new connection if queue is empty
+     * @param pooledConnectionFactory used to create a new connection if queue is empty
      * @return a PooledConnection instance
      */
-    public PooledConnection acquire( Supplier<PooledConnection> supplier )
+    public PooledConnection acquire( PooledConnectionFactory pooledConnectionFactory )
+            throws ConnectionException, InvalidOperationException, ServerNeo4jException, BoltProtocolException
     {
 
         PooledConnection connection = queue.poll();
         if ( connection == null )
         {
-            connection = supplier.get();
+            connection = pooledConnectionFactory.newInstance();
         }
         acquiredConnections.add( connection );
 
-        if (isTerminating.get()) {
+        if ( isTerminating.get() ) {
             acquiredConnections.remove( connection );
             connection.dispose();
-            throw new IllegalStateException( "Pool has been closed, cannot acquire new values." );
+            throw new InvalidOperationException( "Pool has been closed, cannot acquire new values." );
         }
         return connection;
-    }
-
-    public List<PooledConnection> toList()
-    {
-        return new ArrayList<>( queue );
     }
 
     public boolean isEmpty()
@@ -127,7 +130,7 @@ public class BlockingPooledConnectionQueue
      * <p>
      * This method does not throw runtime exceptions. All connection close failures are only logged.
      */
-    public void terminate()
+    public void terminate() throws InvalidOperationException
     {
         if ( isTerminating.compareAndSet( false, true ) )
         {
