@@ -23,7 +23,6 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -38,11 +37,13 @@ import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 
+import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.v1.Config.TrustStrategy.trustAllCertificates;
 
 public class Cluster
 {
     private static final String ADMIN_USER = "neo4j";
+    private static final int STARTUP_TIMEOUT_SECONDS = 60;
 
     private final Path path;
     private final String password;
@@ -53,15 +54,16 @@ public class Cluster
         this( path, password, Collections.<ClusterMember>emptySet() );
     }
 
-    public Cluster( Path path, String password, Set<ClusterMember> members )
+    private Cluster( Path path, String password, Set<ClusterMember> members )
     {
-        this.path = Objects.requireNonNull( path );
+        this.path = path;
         this.password = password;
-        this.members = waitForMembers( password, members );
+        this.members = members;
     }
 
-    Cluster withMembers( Set<ClusterMember> newMembers )
+    Cluster withMembers( Set<ClusterMember> newMembers ) throws ClusterUnavailableException
     {
+        waitForMembers( newMembers, password );
         return new Cluster( path, password, newMembers );
     }
 
@@ -84,7 +86,6 @@ public class Cluster
 
     public ClusterMember leaderTx( Consumer<Session> tx )
     {
-        // todo: handle leader switches
         ClusterMember leader = leader();
         try ( Driver driver = createDriver( leader.getBoltUri(), password );
               Session session = driver.session() )
@@ -125,18 +126,6 @@ public class Cluster
         return membersWithRole( ClusterMemberRole.READ_REPLICA );
     }
 
-    private static Driver createDriver( String password, Set<ClusterMember> members )
-    {
-        if ( members.isEmpty() )
-        {
-            throw new IllegalArgumentException( "No members, can't create driver" );
-        }
-
-        ClusterMember firstMember = members.iterator().next();
-        URI boltUri = firstMember.getBoltUri();
-        return createDriver( boltUri, password );
-    }
-
     @Override
     public String toString()
     {
@@ -150,7 +139,7 @@ public class Cluster
     {
         Set<ClusterMember> membersWithRole = new HashSet<>();
 
-        try ( Driver driver = createDriver( password, members );
+        try ( Driver driver = createDriver( members, password );
               Session session = driver.session( AccessMode.READ ) )
         {
             StatementResult result = session.run( "call dbms.cluster.overview()" );
@@ -177,20 +166,23 @@ public class Cluster
         return membersWithRole;
     }
 
-    private static Set<ClusterMember> waitForMembers( String password, Set<ClusterMember> members )
+    private static Set<ClusterMember> waitForMembers( Set<ClusterMember> members, String password )
+            throws ClusterUnavailableException
     {
         if ( members.isEmpty() )
         {
-            return members;
+            throw new IllegalArgumentException( "No members to wait for" );
         }
 
         Set<ClusterMember> offlineMembers = new HashSet<>( members );
+        long deadline = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis( STARTUP_TIMEOUT_SECONDS );
 
-        try ( Driver driver = createDriver( password, members ) )
+        try ( Driver driver = createDriver( members, password ) )
         {
-            // todo: add some timeout
             while ( !offlineMembers.isEmpty() )
             {
+                assertDeadlineNotReached( deadline );
+
                 try ( Session session = driver.session( AccessMode.READ ) )
                 {
                     StatementResult result = session.run( "call dbms.cluster.overview()" );
@@ -211,9 +203,53 @@ public class Cluster
         return members;
     }
 
+    private static Driver createDriver( Set<ClusterMember> members, String password )
+    {
+        if ( members.isEmpty() )
+        {
+            throw new IllegalArgumentException( "No members, can't create driver" );
+        }
+
+        for ( ClusterMember member : members )
+        {
+            Driver driver = createDriver( member.getBoltUri(), password );
+            try ( Session session = driver.session( AccessMode.READ ) )
+            {
+                if ( isCoreMember( session ) )
+                {
+                    return driver;
+                }
+            }
+            catch ( Exception e )
+            {
+                driver.close();
+                throw e;
+            }
+        }
+
+        throw new IllegalStateException( "No core members found among: " + members );
+    }
+
     private static Driver createDriver( URI boltUri, String password )
     {
         return GraphDatabase.driver( boltUri, AuthTokens.basic( ADMIN_USER, password ), driverConfig() );
+    }
+
+    private static boolean isCoreMember( Session session )
+    {
+        Record record = single( session.run( "call dbms.cluster.role" ).list() );
+        String roleName = record.get( "role" ).asString();
+        ClusterMemberRole role = ClusterMemberRole.valueOf( roleName.toUpperCase() );
+        return role != ClusterMemberRole.READ_REPLICA;
+    }
+
+    private static void assertDeadlineNotReached( long deadline ) throws ClusterUnavailableException
+    {
+        if ( System.currentTimeMillis() > deadline )
+        {
+            throw new ClusterUnavailableException(
+                    "Cluster did not become available in " + STARTUP_TIMEOUT_SECONDS + " seconds" );
+        }
     }
 
     private static URI extractBoltUri( Record record )

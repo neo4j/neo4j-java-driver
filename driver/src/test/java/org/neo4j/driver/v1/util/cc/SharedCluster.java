@@ -52,12 +52,21 @@ final class SharedCluster
         clusterInstance = new Cluster( path, password );
     }
 
-    static void start()
+    static void start() throws ClusterUnavailableException
     {
         assertClusterExists();
         String output = ClusterControl.startCluster( clusterInstance.getPath() );
         Set<ClusterMember> members = parseStartCommandOutput( output );
-        clusterInstance = clusterInstance.withMembers( members );
+
+        try
+        {
+            clusterInstance = clusterInstance.withMembers( members );
+        }
+        catch ( ClusterUnavailableException e )
+        {
+            kill();
+            throw e;
+        }
     }
 
     static void stop()
