@@ -25,6 +25,8 @@ import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.util.Arrays;
 
+import org.neo4j.driver.v1.util.ProcessEnvConfigurator;
+
 import static java.lang.System.lineSeparator;
 
 final class ClusterControl
@@ -75,6 +77,7 @@ final class ClusterControl
         try
         {
             ProcessBuilder processBuilder = new ProcessBuilder().command( command );
+            ProcessEnvConfigurator.configure( processBuilder );
             return executeAndGetStdOut( processBuilder );
         }
         catch ( IOException e )
