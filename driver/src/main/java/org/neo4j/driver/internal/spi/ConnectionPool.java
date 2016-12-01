@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -16,7 +16,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.neo4j.driver.internal.spi;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
