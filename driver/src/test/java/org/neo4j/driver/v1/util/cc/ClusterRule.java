@@ -38,6 +38,7 @@ public class ClusterRule extends ExternalResource
 {
     private static final Path CLUSTER_DIR = Paths.get( "target", "test-cluster" ).toAbsolutePath();
     private static final String PASSWORD = "test";
+    private static final int INITIAL_PORT = 20_000;
 
     public Cluster getCluster()
     {
@@ -60,7 +61,7 @@ public class ClusterRule extends ExternalResource
             {
                 delete( CLUSTER_DIR );
                 // todo: get version from env
-                SharedCluster.install( "3.1.0-M13-beta3", 3, 2, PASSWORD, CLUSTER_DIR );
+                SharedCluster.install( "3.1.0-M13-beta3", 3, 2, PASSWORD, INITIAL_PORT, CLUSTER_DIR );
                 SharedCluster.start();
             }
             finally

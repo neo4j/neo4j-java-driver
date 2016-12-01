@@ -37,7 +37,7 @@ final class ClusterControl
     {
         try
         {
-            executeCommand( "neoctrl-cluster", "-h" );
+            executeCommand( "neoctrl-cluster", "--help" );
             return true;
         }
         catch ( ClusterControlException e )
@@ -46,11 +46,12 @@ final class ClusterControl
         }
     }
 
-    static void installCluster( String neo4jVersion, int cores, int readReplicas, String password, Path path )
+    static void installCluster( String neo4jVersion, int cores, int readReplicas, String password, int port,
+            Path path )
     {
         executeCommand( "neoctrl-cluster", "install",
-                "-c", String.valueOf( cores ), "-r", String.valueOf( readReplicas ),
-                "-p", password,
+                "--cores", String.valueOf( cores ), "--read-replicas", String.valueOf( readReplicas ),
+                "--password", password, "--initial-port", String.valueOf( port ),
                 neo4jVersion, path.toString() );
     }
 
@@ -66,7 +67,7 @@ final class ClusterControl
 
     static void killCluster( Path path )
     {
-        executeCommand( "neoctrl-cluster", "stop", "-k", path.toString() );
+        executeCommand( "neoctrl-cluster", "stop", "--kill", path.toString() );
     }
 
     private static String executeCommand( String... command )
