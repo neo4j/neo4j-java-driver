@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal;
 
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.v1.AccessMode;
@@ -34,8 +34,7 @@ abstract class BaseDriver implements Driver
     private final SecurityPlan securityPlan;
     protected final Logger log;
 
-    private final ReentrantReadWriteLock closedLock = new ReentrantReadWriteLock();
-    private boolean closed;
+    private AtomicBoolean closed = new AtomicBoolean( false );
 
     BaseDriver( SecurityPlan securityPlan, Logging logging )
     {
@@ -46,16 +45,8 @@ abstract class BaseDriver implements Driver
     @Override
     public final boolean isEncrypted()
     {
-        closedLock.readLock().lock();
-        try
-        {
-            assertOpen();
-            return securityPlan.requiresEncryption();
-        }
-        finally
-        {
-            closedLock.readLock().unlock();
-        }
+        assertOpen();
+        return securityPlan.requiresEncryption();
     }
 
     @Override
@@ -67,33 +58,26 @@ abstract class BaseDriver implements Driver
     @Override
     public final Session session( AccessMode mode )
     {
-        closedLock.readLock().lock();
-        try
+        assertOpen();
+        Session session = newSessionWithMode( mode );
+        if( closed.get() )
         {
-            assertOpen();
-            return newSessionWithMode( mode );
+            // the driver is already closed and we either 1. obtain this session from the old session pool
+            // or 2. we obtain this session from a new session pool
+            // For 1. this closeResources will take no effect as everything is already closed.
+            // For 2. this closeResources will close the new connection pool just created to ensure no resource leak.
+            closeResources();
+            throw driverCloseException();
         }
-        finally
-        {
-            closedLock.readLock().unlock();
-        }
+        return session;
     }
 
     @Override
     public final void close()
     {
-        closedLock.writeLock().lock();
-        try
+        if ( closed.compareAndSet(false, true) )
         {
-            if ( !closed )
-            {
-                closeResources();
-            }
-        }
-        finally
-        {
-            closed = true;
-            closedLock.writeLock().unlock();
+            closeResources();
         }
     }
 
@@ -103,9 +87,14 @@ abstract class BaseDriver implements Driver
 
     private void assertOpen()
     {
-        if ( closed )
+        if ( closed.get() )
         {
-            throw new IllegalStateException( "This driver instance has already been closed" );
+            throw driverCloseException();
         }
+    }
+
+    private IllegalStateException driverCloseException()
+    {
+        return new IllegalStateException( "This driver instance has already been closed" );
     }
 }
