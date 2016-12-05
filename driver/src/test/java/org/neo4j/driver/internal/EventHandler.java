@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.internal;
 
+import org.hamcrest.Matcher;
+
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.lang.reflect.Constructor;
@@ -31,8 +33,6 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-
-import org.hamcrest.Matcher;
 
 import org.neo4j.driver.internal.util.MatcherFactory;
 import org.neo4j.driver.v1.EventLogger;
@@ -110,7 +110,7 @@ public final class EventHandler
     {
         synchronized ( events )
         {
-            assertThat( events, (Matcher) count( matcher, count ) );
+            assertThat( "Unexpected count " + count, events, (Matcher) count( matcher, count ) );
         }
     }
 

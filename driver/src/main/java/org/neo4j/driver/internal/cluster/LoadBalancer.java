@@ -199,7 +199,7 @@ public final class LoadBalancer implements RoutingErrorHandler, AutoCloseable
                     return cluster;
                 }
             }
-            if ( ++failures > settings.maxRoutingFailures )
+            if ( ++failures >= settings.maxRoutingFailures )
             {
                 throw new ServiceUnavailableException( NO_ROUTERS_AVAILABLE );
             }

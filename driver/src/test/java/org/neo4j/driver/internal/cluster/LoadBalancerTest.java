@@ -18,15 +18,15 @@
  */
 package org.neo4j.driver.internal.cluster;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.hamcrest.Matcher;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import org.neo4j.driver.internal.EventHandler;
 import org.neo4j.driver.internal.net.BoltServerAddress;
@@ -40,9 +40,11 @@ import org.neo4j.driver.v1.util.Function;
 
 import static org.hamcrest.Matchers.any;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.driver.internal.cluster.ClusterTopology.Role.READ;
 import static org.neo4j.driver.internal.cluster.ClusterTopology.Role.ROUTE;
@@ -91,8 +93,14 @@ public class LoadBalancerTest
 
     private LoadBalancer seedLoadBalancer( String host, int port ) throws Exception
     {
+        RoutingSettings defaultSettings = new RoutingSettings( MAX_ROUTING_FAILURES, RETRY_TIMEOUT_DELAY );
+        return seedLoadBalancer( host, port, defaultSettings );
+    }
+
+    private LoadBalancer seedLoadBalancer( String host, int port, RoutingSettings settings ) throws Exception
+    {
         return new LoadBalancer(
-                new RoutingSettings( MAX_ROUTING_FAILURES, RETRY_TIMEOUT_DELAY ),
+                settings,
                 clock,
                 log,
                 connections,
@@ -352,6 +360,38 @@ public class LoadBalancerTest
     }
 
     @Test
+    public void shouldTryConfiguredMaxRoutingFailures() throws Exception
+    {
+        // given
+        int port = 1337;
+        int maxRoutingFailures = 7;
+        RoutingSettings settings = new RoutingSettings( maxRoutingFailures, 10 );
+
+        coreClusterOn( 20, "one", port, "two" );
+        connections.up( "one", port );
+
+        LoadBalancer routing = seedLoadBalancer( "one", port, settings );
+
+        // when
+        connections.down( "one", port );
+        clock.progress( 25_000 ); // will cause TTL timeout
+
+        try
+        {
+            routing.acquireWriteConnection();
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( ServiceUnavailableException.class ) );
+        }
+
+        // then
+        events.assertCount( connectionFailure( "one", port ), equalTo( maxRoutingFailures ) );
+        events.assertCount( connectionFailure( "two", port ), equalTo( maxRoutingFailures ) );
+    }
+
+    @Test
     public void shouldFailIfEnoughConnectionAttemptsFail() throws Exception
     {
         // when
@@ -570,7 +610,6 @@ public class LoadBalancerTest
 
         // then
         assertEquals( new BoltServerAddress( "two", 1337 ), connection.boltServerAddress() );
-        events.printEvents( System.out );
     }
 
     private void coreClusterOn( int ttlSeconds, String leader, int port, String... others )
