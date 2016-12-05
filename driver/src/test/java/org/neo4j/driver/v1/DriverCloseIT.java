@@ -154,7 +154,10 @@ public class DriverCloseIT
         @After
         public void tearDown() throws Exception
         {
-            router.exitStatus();
+            if ( router != null )
+            {
+                router.exitStatus();
+            }
         }
 
         @Override
