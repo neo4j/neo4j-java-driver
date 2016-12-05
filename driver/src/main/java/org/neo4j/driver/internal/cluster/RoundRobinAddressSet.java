@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal.cluster;
 
+import java.util.Arrays;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -126,6 +127,12 @@ class RoundRobinAddressSet
                 }
             }
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        return "RoundRobinAddressSet=" + Arrays.toString( addresses );
     }
 
     /** breaking encapsulation in order to perform white-box testing of boundary case */
