@@ -187,9 +187,6 @@ public class RoutingDriverBoltKitTest
     public void shouldThrowSessionExpiredIfReadServerDisappears()
             throws IOException, InterruptedException, StubServer.ForceKilled
     {
-        //Expect
-        exception.expect( SessionExpiredException.class );
-        exception.expectMessage( "Server at 127.0.0.1:9005 is no longer available" );
 
         // Given
         StubServer server = StubServer.start( "acquire_endpoints.script", 9001 );
@@ -197,29 +194,37 @@ public class RoutingDriverBoltKitTest
         //START a read server
         StubServer.start( "dead_server.script", 9005 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+
+        //Expect
+        exception.expect( SessionExpiredException.class );
+        exception.expectMessage( "Server at 127.0.0.1:9005 is no longer available" );
+
         try ( RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
               Session session = driver.session( AccessMode.READ ) )
         {
             session.run( "MATCH (n) RETURN n.name" );
         }
-        // Finally
-        assertThat( server.exitStatus(), equalTo( 0 ) );
+        finally
+        {
+            assertThat( server.exitStatus(), equalTo( 0 ) );
+        }
     }
 
     @Test
     public void shouldThrowSessionExpiredIfReadServerDisappearsWhenUsingTransaction()
             throws IOException, InterruptedException, StubServer.ForceKilled
     {
-        //Expect
-        exception.expect( SessionExpiredException.class );
-        exception.expectMessage( "Server at 127.0.0.1:9005 is no longer available" );
-
         // Given
         StubServer server = StubServer.start( "acquire_endpoints.script", 9001 );
 
         //START a read server
         StubServer.start( "dead_server.script", 9005 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+
+        //Expect
+        exception.expect( SessionExpiredException.class );
+        exception.expectMessage( "Server at 127.0.0.1:9005 is no longer available" );
+
         try ( RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
               Session session = driver.session( AccessMode.READ );
               Transaction tx = session.beginTransaction() )
@@ -227,47 +232,52 @@ public class RoutingDriverBoltKitTest
             tx.run( "MATCH (n) RETURN n.name" );
             tx.success();
         }
-        // Finally
-        assertThat( server.exitStatus(), equalTo( 0 ) );
+        finally
+        {
+            assertThat( server.exitStatus(), equalTo( 0 ) );
+        }
     }
 
     @Test
     public void shouldThrowSessionExpiredIfWriteServerDisappears()
             throws IOException, InterruptedException, StubServer.ForceKilled
     {
-        //Expect
-        exception.expect( SessionExpiredException.class );
-        //exception.expectMessage( "Server at 127.0.0.1:9006 is no longer available" );
-
         // Given
         StubServer server = StubServer.start( "acquire_endpoints.script", 9001 );
 
         //START a dead write servers
         StubServer.start( "dead_server.script", 9007 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+
+        //Expect
+        exception.expect( SessionExpiredException.class );
+        //exception.expectMessage( "Server at 127.0.0.1:9006 is no longer available" );
+
         try ( RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
               Session session = driver.session( AccessMode.WRITE ) )
         {
             session.run( "MATCH (n) RETURN n.name" ).consume();
         }
-        // Finally
-        assertThat( server.exitStatus(), equalTo( 0 ) );
+        finally
+        {
+            assertThat( server.exitStatus(), equalTo( 0 ) );
+        }
     }
 
     @Test
     public void shouldThrowSessionExpiredIfWriteServerDisappearsWhenUsingTransaction()
             throws IOException, InterruptedException, StubServer.ForceKilled
     {
-        //Expect
-        exception.expect( SessionExpiredException.class );
-        //exception.expectMessage( "Server at 127.0.0.1:9006 is no longer available" );
-
         // Given
         StubServer server = StubServer.start( "acquire_endpoints.script", 9001 );
 
         //START a dead write servers
         StubServer.start( "dead_server.script", 9007 );
+
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+        //Expect
+        exception.expect( SessionExpiredException.class );
+
         try ( RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
               Session session = driver.session( AccessMode.WRITE );
               Transaction tx = session.beginTransaction() )
@@ -275,8 +285,10 @@ public class RoutingDriverBoltKitTest
             tx.run( "MATCH (n) RETURN n.name" ).consume();
             tx.success();
         }
-        // Finally
-        assertThat( server.exitStatus(), equalTo( 0 ) );
+        finally
+        {
+            assertThat( server.exitStatus(), equalTo( 0 ) );
+        }
     }
 
     @Test
@@ -377,12 +389,12 @@ public class RoutingDriverBoltKitTest
     @Test
     public void shouldFailOnNonDiscoverableServer() throws IOException, InterruptedException, StubServer.ForceKilled
     {
-        //Expect
-        exception.expect( ServiceUnavailableException.class );
-
         // Given
         StubServer.start( "non_discovery_server.script", 9001 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+
+        //Expect
+        exception.expect( ServiceUnavailableException.class );
 
         // When
         GraphDatabase.driver( uri, config );
@@ -391,12 +403,12 @@ public class RoutingDriverBoltKitTest
     @Test
     public void shouldFailRandomFailureInGetServers() throws IOException, InterruptedException, StubServer.ForceKilled
     {
-        //Expect
-        exception.expect( ServiceUnavailableException.class );
-
         // Given
         StubServer.start( "failed_discovery.script", 9001 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+
+        //Expect
+        exception.expect( ServiceUnavailableException.class );
 
         // When
         GraphDatabase.driver( uri, config );
