@@ -51,7 +51,8 @@ public final class LoadBalancer implements RoutingErrorHandler, AutoCloseable
             ConnectionPool connections,
             BoltServerAddress... routingAddresses ) throws ServiceUnavailableException
     {
-        this( settings, clock, log, connections, new ClusterComposition.Provider.Default( clock ), routingAddresses );
+        this( settings, clock, log, connections, new ClusterComposition.Provider.Default( clock, log ),
+                routingAddresses );
     }
 
     LoadBalancer(
@@ -118,6 +119,9 @@ public final class LoadBalancer implements RoutingErrorHandler, AutoCloseable
                 }
                 catch ( ServiceUnavailableException e )
                 {
+                    log.error( String.format( "Failed to refresh routing information using routing address %s",
+                            address ), e );
+
                     forget( address );
                 }
             }
@@ -129,6 +133,8 @@ public final class LoadBalancer implements RoutingErrorHandler, AutoCloseable
     {
         if ( stale() )
         {
+            log.info( "Routing information is stale. Ttl %s, currentTime %s, routers %s, writers %s, readers %s",
+                    expirationTimeout, clock.millis(), routers, writers, readers );
             try
             {
                 // get a new routing table
@@ -143,6 +149,9 @@ public final class LoadBalancer implements RoutingErrorHandler, AutoCloseable
                 {
                     connections.purge( address );
                 }
+
+                log.info( "Refreshed routing information. Ttl %s, routers %s, writers %s, readers %s",
+                        expirationTimeout, routers, writers, readers );
             }
             catch ( InterruptedException e )
             {
@@ -177,6 +186,7 @@ public final class LoadBalancer implements RoutingErrorHandler, AutoCloseable
                 try ( Connection connection = connections.acquire( address ) )
                 {
                     cluster = provider.getClusterComposition( connection );
+                    log.info( "Got cluster composition %s", cluster );
                 }
                 catch ( Exception e )
                 {

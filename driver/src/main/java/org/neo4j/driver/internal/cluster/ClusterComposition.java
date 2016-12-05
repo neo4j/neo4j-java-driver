@@ -19,12 +19,14 @@
 package org.neo4j.driver.internal.cluster;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.neo4j.driver.internal.NetworkSession;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Clock;
+import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementResult;
@@ -45,29 +47,29 @@ final class ClusterComposition
         {
             private static final Statement GET_SERVER = new Statement( Provider.GET_SERVERS );
             private final Clock clock;
+            private final Logger log;
 
-            Default( Clock clock )
+            Default( Clock clock, Logger log )
             {
                 this.clock = clock;
+                this.log = log;
             }
 
             @Override
             public ClusterComposition getClusterComposition( Connection connection ) throws ServiceUnavailableException
             {
                 StatementResult cursor = getServers( connection );
+                List<Record> records = cursor.list();
+                log.info( "Got getServers response: %s", records );
                 long now = clock.millis();
                 try
                 {
-                    if ( !cursor.hasNext() )
+                    if ( records.size() != 1 )
                     {
-                        return null; // server returned too few rows, this is a contract violation, treat as incapable
+                        // server returned too few or too many rows, this is a contract violation, treat as incapable
+                        return null;
                     }
-                    Record record = cursor.next();
-                    if ( cursor.hasNext() )
-                    {
-                        return null; // server returned too many rows, this is a contract violation, treat as incapable
-                    }
-                    return read( record, now );
+                    return read( records.get( 0 ), now );
                 }
                 finally
                 {

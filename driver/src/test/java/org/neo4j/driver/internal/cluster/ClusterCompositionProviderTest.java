@@ -18,22 +18,23 @@
  */
 package org.neo4j.driver.internal.cluster;
 
+import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+import org.mockito.stubbing.Stubber;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-import org.mockito.stubbing.Stubber;
-
 import org.neo4j.driver.internal.EventHandler;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.FakeClock;
+import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
@@ -148,7 +149,8 @@ public class ClusterCompositionProviderTest
 
     private ClusterComposition getClusterComposition()
     {
-        return new ClusterComposition.Provider.Default( clock ).getClusterComposition( connection );
+        return new ClusterComposition.Provider.Default( clock, mock( Logger.class ) )
+                .getClusterComposition( connection );
     }
 
     private void keys( final String... keys )
