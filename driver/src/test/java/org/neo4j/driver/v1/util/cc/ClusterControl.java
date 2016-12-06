@@ -35,7 +35,7 @@ final class ClusterControl
     {
     }
 
-    static boolean boltKitAvailable()
+    static boolean boltKitClusterAvailable()
     {
         try
         {

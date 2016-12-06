@@ -25,6 +25,9 @@ import static java.util.Objects.requireNonNull;
 
 public class ClusterMember
 {
+    private static final String SIMPLE_SCHEME = "bolt://";
+    private static final String ROUTING_SCHEME = "bolt+routing://";
+
     private final URI boltUri;
     private final Path path;
 
@@ -41,7 +44,7 @@ public class ClusterMember
 
     public URI getRoutingUri()
     {
-        return URI.create( boltUri.toString().replace( "bolt://", "bolt+routing://" ) );
+        return URI.create( boltUri.toString().replace( SIMPLE_SCHEME, ROUTING_SCHEME ) );
     }
 
     public Path getPath()

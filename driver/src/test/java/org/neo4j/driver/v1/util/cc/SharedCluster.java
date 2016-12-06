@@ -40,6 +40,12 @@ final class SharedCluster
         return clusterInstance;
     }
 
+    static void remove()
+    {
+        assertClusterExists();
+        clusterInstance = null;
+    }
+
     static boolean exists()
     {
         return clusterInstance != null;

@@ -31,7 +31,6 @@ import java.nio.file.attribute.BasicFileAttributes;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.AuthTokens;
 
-import static java.lang.System.err;
 import static org.junit.Assume.assumeTrue;
 
 public class ClusterRule extends ExternalResource
@@ -39,6 +38,12 @@ public class ClusterRule extends ExternalResource
     private static final Path CLUSTER_DIR = Paths.get( "target", "test-cluster" ).toAbsolutePath();
     private static final String PASSWORD = "test";
     private static final int INITIAL_PORT = 20_000;
+
+    // todo: neo4j version should come from environment variables
+    private static final String NEO4J_VERSION = "3.1.0-RC1";
+    // todo: should be possible to configure (dynamically add/remove) cores and read replicas
+    private static final int CORE_COUNT = 3;
+    private static final int READ_REPLICA_COUNT = 2;
 
     public Cluster getCluster()
     {
@@ -53,16 +58,33 @@ public class ClusterRule extends ExternalResource
     @Override
     protected void before() throws Throwable
     {
-        assumeTrue( "BoltKit unavailable", ClusterControl.boltKitAvailable() );
+        assumeTrue( "BoltKit cluster support unavailable", ClusterControl.boltKitClusterAvailable() );
 
         if ( !SharedCluster.exists() )
         {
+            deleteClusterDir();
+
+            SharedCluster.install( NEO4J_VERSION, CORE_COUNT, READ_REPLICA_COUNT, PASSWORD, INITIAL_PORT, CLUSTER_DIR );
+
             try
             {
-                delete( CLUSTER_DIR );
-                // todo: get version from env
-                SharedCluster.install( "3.1.0-M13-beta3", 3, 2, PASSWORD, INITIAL_PORT, CLUSTER_DIR );
                 SharedCluster.start();
+            }
+            catch ( Throwable startError )
+            {
+                try
+                {
+                    SharedCluster.kill();
+                }
+                catch ( Throwable killError )
+                {
+                    startError.addSuppressed( killError );
+                }
+                finally
+                {
+                    SharedCluster.remove();
+                }
+                throw startError;
             }
             finally
             {
@@ -74,7 +96,7 @@ public class ClusterRule extends ExternalResource
     @Override
     protected void after()
     {
-        getCluster().cleanUp();
+        getCluster().deleteData();
     }
 
     private static void addShutdownHookToStopCluster()
@@ -87,15 +109,19 @@ public class ClusterRule extends ExternalResource
                 try
                 {
                     SharedCluster.kill();
-                    delete( CLUSTER_DIR );
                 }
                 catch ( Throwable t )
                 {
-                    err.println( "Cluster stopping shutdown hook failed" );
+                    System.err.println( "Cluster stopping shutdown hook failed" );
                     t.printStackTrace();
                 }
             }
         } );
+    }
+
+    private static void deleteClusterDir()
+    {
+        delete( CLUSTER_DIR );
     }
 
     private static void delete( final Path path )

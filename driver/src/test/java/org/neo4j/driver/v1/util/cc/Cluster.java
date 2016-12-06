@@ -72,7 +72,7 @@ public class Cluster
         return path;
     }
 
-    public void cleanUp()
+    public void deleteData()
     {
         leaderTx( new Consumer<Session>()
         {
@@ -142,8 +142,8 @@ public class Cluster
         try ( Driver driver = createDriver( members, password );
               Session session = driver.session( AccessMode.READ ) )
         {
-            StatementResult result = session.run( "call dbms.cluster.overview()" );
-            for ( Record record : result.list() )
+            List<Record> records = findClusterOverview( session );
+            for ( Record record : records )
             {
                 if ( role == extractRole( record ) )
                 {
@@ -185,8 +185,8 @@ public class Cluster
 
                 try ( Session session = driver.session( AccessMode.READ ) )
                 {
-                    StatementResult result = session.run( "call dbms.cluster.overview()" );
-                    for ( Record record : result.list() )
+                    List<Record> records = findClusterOverview( session );
+                    for ( Record record : records )
                     {
                         URI boltUri = extractBoltUri( record );
 
@@ -230,16 +230,16 @@ public class Cluster
         throw new IllegalStateException( "No core members found among: " + members );
     }
 
-    private static Driver createDriver( URI boltUri, String password )
+    private static List<Record> findClusterOverview( Session session )
     {
-        return GraphDatabase.driver( boltUri, AuthTokens.basic( ADMIN_USER, password ), driverConfig() );
+        StatementResult result = session.run( "call dbms.cluster.overview" );
+        return result.list();
     }
 
     private static boolean isCoreMember( Session session )
     {
         Record record = single( session.run( "call dbms.cluster.role" ).list() );
-        String roleName = record.get( "role" ).asString();
-        ClusterMemberRole role = ClusterMemberRole.valueOf( roleName.toUpperCase() );
+        ClusterMemberRole role = extractRole( record );
         return role != ClusterMemberRole.READ_REPLICA;
     }
 
@@ -275,6 +275,11 @@ public class Cluster
             }
         }
         return null;
+    }
+
+    private static Driver createDriver( URI boltUri, String password )
+    {
+        return GraphDatabase.driver( boltUri, AuthTokens.basic( ADMIN_USER, password ), driverConfig() );
     }
 
     private static Config driverConfig()
