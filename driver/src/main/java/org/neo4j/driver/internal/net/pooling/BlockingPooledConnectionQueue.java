@@ -27,7 +27,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.util.Supplier;
+import org.neo4j.driver.v1.Logger;
+import org.neo4j.driver.v1.Logging;
 
 /**
  * A blocking queue that also keeps track of connections that are acquired in order
@@ -37,6 +40,7 @@ public class BlockingPooledConnectionQueue
 {
     /** The backing queue, keeps track of connections currently in queue */
     private final BlockingQueue<PooledConnection> queue;
+    private final Logger logger;
 
     private final AtomicBoolean isTerminating = new AtomicBoolean( false );
 
@@ -44,9 +48,10 @@ public class BlockingPooledConnectionQueue
     private final Set<PooledConnection> acquiredConnections =
             Collections.newSetFromMap(new ConcurrentHashMap<PooledConnection, Boolean>());
 
-    public BlockingPooledConnectionQueue( int capacity )
+    public BlockingPooledConnectionQueue( BoltServerAddress address, int capacity, Logging logging )
     {
         this.queue = new LinkedBlockingQueue<>( capacity );
+        this.logger = createLogger( address, logging );
     }
 
     /**
@@ -64,10 +69,10 @@ public class BlockingPooledConnectionQueue
             pooledConnection.dispose();
         }
         if (isTerminating.get()) {
-            PooledConnection poll = queue.poll();
-            if (poll != null)
+            PooledConnection connection = queue.poll();
+            if (connection != null)
             {
-                poll.dispose();
+                connection.dispose();
             }
         }
         return offer;
@@ -81,19 +86,19 @@ public class BlockingPooledConnectionQueue
     public PooledConnection acquire( Supplier<PooledConnection> supplier )
     {
 
-        PooledConnection poll = queue.poll();
-        if ( poll == null )
+        PooledConnection connection = queue.poll();
+        if ( connection == null )
         {
-            poll = supplier.get();
+            connection = supplier.get();
         }
-        acquiredConnections.add( poll );
+        acquiredConnections.add( connection );
 
         if (isTerminating.get()) {
-            acquiredConnections.remove( poll );
-            poll.dispose();
+            acquiredConnections.remove( connection );
+            connection.dispose();
             throw new IllegalStateException( "Pool has been closed, cannot acquire new values." );
         }
-        return poll;
+        return connection;
     }
 
     public List<PooledConnection> toList()
@@ -119,24 +124,43 @@ public class BlockingPooledConnectionQueue
     /**
      * Terminates all connections, both those that are currently in the queue as well
      * as those that have been acquired.
+     * <p>
+     * This method does not throw runtime exceptions. All connection close failures are only logged.
      */
     public void terminate()
     {
-        if (isTerminating.compareAndSet( false, true ))
+        if ( isTerminating.compareAndSet( false, true ) )
         {
             while ( !queue.isEmpty() )
             {
-                PooledConnection conn = queue.poll();
-                if ( conn != null )
-                {
-                    //close the underlying connection without adding it back to the queue
-                    conn.dispose();
-                }
+                PooledConnection idleConnection = queue.poll();
+                disposeSafely( idleConnection );
             }
-            for ( PooledConnection pooledConnection : acquiredConnections )
+            for ( PooledConnection acquiredConnection : acquiredConnections )
             {
-                pooledConnection.dispose();
+                disposeSafely( acquiredConnection );
             }
         }
+    }
+
+    private void disposeSafely( PooledConnection connection )
+    {
+        try
+        {
+            if ( connection != null )
+            {
+                // close the underlying connection without adding it back to the queue
+                connection.dispose();
+            }
+        }
+        catch ( Throwable disposeError )
+        {
+            logger.error( "Error disposing connection", disposeError );
+        }
+    }
+
+    private static Logger createLogger( BoltServerAddress address, Logging logging )
+    {
+        return logging.getLog( "connectionQueue[" + address + "]" );
     }
 }

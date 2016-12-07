@@ -129,7 +129,7 @@ public class SocketConnectionPool implements ConnectionPool
         BlockingPooledConnectionQueue pool = pools.get( address );
         if ( pool == null )
         {
-            pool = new BlockingPooledConnectionQueue( poolSettings.maxIdleConnectionPoolSize() );
+            pool = new BlockingPooledConnectionQueue( address, poolSettings.maxIdleConnectionPoolSize(), logging );
 
             if ( pools.putIfAbsent( address, pool ) != null )
             {
