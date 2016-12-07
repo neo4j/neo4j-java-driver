@@ -174,15 +174,9 @@ public class ConcurrencyGuardingConnection implements Connection
     @Override
     public void close()
     {
-        try
-        {
-            markAsInUse();
-            delegate.close();
-        }
-        finally
-        {
-            markAsAvailable();
-        }
+        // It is fine to call close concurrently with this connection being used somewhere else.
+        // This could happen when driver is closed while there still exist sessions that do some work.
+        delegate.close();
     }
 
     @Override
