@@ -27,11 +27,13 @@ import org.neo4j.driver.internal.DirectDriver;
 import org.neo4j.driver.internal.NetworkSession;
 import org.neo4j.driver.internal.RoutingDriver;
 import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.net.SocketConnector;
 import org.neo4j.driver.internal.net.pooling.PoolSettings;
 import org.neo4j.driver.internal.net.pooling.SocketConnectionPool;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
+import org.neo4j.driver.internal.spi.Connector;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.util.Function;
@@ -155,10 +157,6 @@ public class GraphDatabase
         String scheme = uri.getScheme();
         BoltServerAddress address = BoltServerAddress.from( uri );
 
-        // Collate session parameters
-        ConnectionSettings connectionSettings =
-                new ConnectionSettings( authToken == null ? AuthTokens.none() : authToken );
-
         // Make sure we have some configuration to play with
         if ( config == null )
         {
@@ -176,12 +174,8 @@ public class GraphDatabase
             throw new ClientException( "Unable to establish SSL parameters", ex );
         }
 
-        // Establish pool settings
-        PoolSettings poolSettings = new PoolSettings( config.maxIdleConnectionPoolSize() );
+        ConnectionPool connectionPool = createConnectionPool( authToken, securityPlan, config );
 
-        // And finally, construct the driver proper
-        ConnectionPool connectionPool =
-                new SocketConnectionPool( connectionSettings, securityPlan, poolSettings, config.logging() );
         switch ( scheme.toLowerCase() )
         {
         case "bolt":
@@ -197,6 +191,18 @@ public class GraphDatabase
         default:
             throw new ClientException( format( "Unsupported URI scheme: %s", scheme ) );
         }
+    }
+
+    private static ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan,
+            Config config )
+    {
+        authToken = authToken == null ? AuthTokens.none() : authToken;
+
+        ConnectionSettings connectionSettings = new ConnectionSettings( authToken );
+        PoolSettings poolSettings = new PoolSettings( config.maxIdleConnectionPoolSize() );
+        Connector connector = new SocketConnector( connectionSettings, securityPlan, config.logging() );
+
+        return new SocketConnectionPool( poolSettings, connector, Clock.SYSTEM, config.logging() );
     }
 
     /*
