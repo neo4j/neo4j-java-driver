@@ -53,7 +53,16 @@ public class SocketConnector implements Connector
         // to ensure concurrent access leads causes application errors
         connection = new ConcurrencyGuardingConnection( connection );
 
-        connection.init( connectionSettings.userAgent(), tokenAsMap( connectionSettings.authToken() ) );
+        try
+        {
+            connection.init( connectionSettings.userAgent(), tokenAsMap( connectionSettings.authToken() ) );
+        }
+        catch ( Throwable initError )
+        {
+            connection.close();
+            throw initError;
+        }
+
         return connection;
     }
 

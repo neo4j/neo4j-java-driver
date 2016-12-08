@@ -34,16 +34,18 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.RETURNS_MOCKS;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.net.BoltServerAddress.LOCAL_DEFAULT;
-import static org.neo4j.driver.internal.security.SecurityPlan.insecure;
 
 public class SocketConnectorTest
 {
@@ -51,7 +53,7 @@ public class SocketConnectorTest
     public void connectCreatesConnection()
     {
         ConnectionSettings settings = new ConnectionSettings( basicAuthToken() );
-        SocketConnector connector = new TestSocketConnector( settings, insecure(), loggingMock() );
+        SocketConnector connector = new RecordingSocketConnector( settings );
 
         Connection connection = connector.connect( LOCAL_DEFAULT );
 
@@ -64,7 +66,7 @@ public class SocketConnectorTest
     {
         String userAgent = "agentSmith";
         ConnectionSettings settings = new ConnectionSettings( basicAuthToken(), userAgent );
-        TestSocketConnector connector = new TestSocketConnector( settings, insecure(), loggingMock() );
+        RecordingSocketConnector connector = new RecordingSocketConnector( settings );
 
         connector.connect( LOCAL_DEFAULT );
 
@@ -77,7 +79,7 @@ public class SocketConnectorTest
     public void connectThrowsForUnknownAuthToken()
     {
         ConnectionSettings settings = new ConnectionSettings( mock( AuthToken.class ) );
-        TestSocketConnector connector = new TestSocketConnector( settings, insecure(), loggingMock() );
+        RecordingSocketConnector connector = new RecordingSocketConnector( settings );
 
         try
         {
@@ -90,6 +92,29 @@ public class SocketConnectorTest
         }
     }
 
+    @Test
+    @SuppressWarnings( "unchecked" )
+    public void connectClosesOpenedConnectionIfInitThrows()
+    {
+        Connection connection = mock( Connection.class );
+        RuntimeException initError = new RuntimeException( "Init error" );
+        doThrow( initError ).when( connection ).init( anyString(), any( Map.class ) );
+
+        StubSocketConnector connector = new StubSocketConnector( connection );
+
+        try
+        {
+            connector.connect( LOCAL_DEFAULT );
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertSame( initError, e );
+        }
+
+        verify( connection ).close();
+    }
+
     private static Logging loggingMock()
     {
         return mock( Logging.class, RETURNS_MOCKS );
@@ -100,13 +125,13 @@ public class SocketConnectorTest
         return AuthTokens.basic( "neo4j", "neo4j" );
     }
 
-    private static class TestSocketConnector extends SocketConnector
+    private static class RecordingSocketConnector extends SocketConnector
     {
         final List<Connection> createConnections = new CopyOnWriteArrayList<>();
 
-        TestSocketConnector( ConnectionSettings settings, SecurityPlan securityPlan, Logging logging )
+        RecordingSocketConnector( ConnectionSettings settings )
         {
-            super( settings, securityPlan, logging );
+            super( settings, SecurityPlan.insecure(), loggingMock() );
         }
 
         @Override
@@ -115,6 +140,23 @@ public class SocketConnectorTest
             Connection connection = mock( Connection.class );
             when( connection.boltServerAddress() ).thenReturn( address );
             createConnections.add( connection );
+            return connection;
+        }
+    }
+
+    private static class StubSocketConnector extends SocketConnector
+    {
+        final Connection connection;
+
+        StubSocketConnector( Connection connection )
+        {
+            super( new ConnectionSettings( basicAuthToken() ), SecurityPlan.insecure(), loggingMock() );
+            this.connection = connection;
+        }
+
+        @Override
+        Connection createConnection( BoltServerAddress address, SecurityPlan securityPlan, Logging logging )
+        {
             return connection;
         }
     }
