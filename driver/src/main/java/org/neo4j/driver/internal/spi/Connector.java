@@ -18,9 +18,14 @@
  */
 package org.neo4j.driver.internal.spi;
 
+import org.neo4j.driver.internal.exceptions.BoltProtocolException;
+import org.neo4j.driver.internal.exceptions.ConnectionException;
+import org.neo4j.driver.internal.exceptions.InvalidOperationException;
+import org.neo4j.driver.internal.exceptions.ServerNeo4jException;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 
 public interface Connector
 {
-    Connection connect( BoltServerAddress address );
+    Connection connect( BoltServerAddress address )
+            throws InvalidOperationException, ConnectionException, BoltProtocolException, ServerNeo4jException;
 }

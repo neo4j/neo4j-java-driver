@@ -23,7 +23,6 @@ import org.junit.Test;
 
 import org.neo4j.driver.internal.exceptions.InvalidOperationException;
 import org.neo4j.driver.internal.spi.PooledConnection;
-import org.neo4j.driver.internal.util.Supplier;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 

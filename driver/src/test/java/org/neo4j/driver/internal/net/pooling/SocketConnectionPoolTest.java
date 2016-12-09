@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.Connector;
+import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.v1.Logging;
 
 import static java.util.Collections.newSetFromMap;
@@ -53,7 +54,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.net.BoltServerAddress.DEFAULT_PORT;
 import static org.neo4j.driver.internal.net.BoltServerAddress.LOCAL_DEFAULT;
-import static org.neo4j.driver.internal.util.Clock.SYSTEM;
 
 public class SocketConnectionPoolTest
 {
@@ -62,7 +62,7 @@ public class SocketConnectionPoolTest
     private static final BoltServerAddress ADDRESS_3 = new BoltServerAddress( "localhost", DEFAULT_PORT + 4242 );
 
     @Test
-    public void acquireCreatesNewConnectionWhenPoolIsEmpty()
+    public void acquireCreatesNewConnectionWhenPoolIsEmpty() throws Throwable
     {
         Connector connector = newMockConnector();
         SocketConnectionPool pool = newPool( connector );
@@ -74,7 +74,7 @@ public class SocketConnectionPoolTest
     }
 
     @Test
-    public void acquireUsesExistingConnectionIfPresent()
+    public void acquireUsesExistingConnectionIfPresent() throws Throwable
     {
         Connection connection = newConnectionMock( ADDRESS_1 );
         Connector connector = newMockConnector( connection );
@@ -92,7 +92,7 @@ public class SocketConnectionPoolTest
     }
 
     @Test
-    public void purgeDoesNothingForNonExistingAddress()
+    public void purgeDoesNothingForNonExistingAddress() throws Throwable
     {
         Connection connection = newConnectionMock( ADDRESS_1 );
         SocketConnectionPool pool = newPool( newMockConnector( connection ) );
@@ -105,7 +105,7 @@ public class SocketConnectionPoolTest
     }
 
     @Test
-    public void purgeRemovesAddress()
+    public void purgeRemovesAddress() throws Throwable
     {
         Connection connection = newConnectionMock( ADDRESS_1 );
         SocketConnectionPool pool = newPool( newMockConnector( connection ) );
@@ -118,7 +118,7 @@ public class SocketConnectionPoolTest
     }
 
     @Test
-    public void purgeTerminatesPoolCorrespondingToTheAddress()
+    public void purgeTerminatesPoolCorrespondingToTheAddress() throws Throwable
     {
         Connection connection1 = newConnectionMock( ADDRESS_1 );
         Connection connection2 = newConnectionMock( ADDRESS_1 );
@@ -141,7 +141,7 @@ public class SocketConnectionPoolTest
     }
 
     @Test
-    public void hasAddressReturnsFalseWhenPoolIsEmpty()
+    public void hasAddressReturnsFalseWhenPoolIsEmpty() throws Throwable
     {
         SocketConnectionPool pool = newPool( newMockConnector() );
 
@@ -150,7 +150,7 @@ public class SocketConnectionPoolTest
     }
 
     @Test
-    public void hasAddressReturnsFalseForUnknownAddress()
+    public void hasAddressReturnsFalseForUnknownAddress() throws Throwable
     {
         SocketConnectionPool pool = newPool( newMockConnector() );
 
@@ -160,7 +160,7 @@ public class SocketConnectionPoolTest
     }
 
     @Test
-    public void hasAddressReturnsTrueForKnownAddress()
+    public void hasAddressReturnsTrueForKnownAddress() throws Throwable
     {
         SocketConnectionPool pool = newPool( newMockConnector() );
 
@@ -170,7 +170,7 @@ public class SocketConnectionPoolTest
     }
 
     @Test
-    public void closeTerminatesAllPools()
+    public void closeTerminatesAllPools() throws Throwable
     {
         Connection connection1 = newConnectionMock( ADDRESS_1 );
         Connection connection2 = newConnectionMock( ADDRESS_1 );
@@ -198,7 +198,7 @@ public class SocketConnectionPoolTest
     }
 
     @Test
-    public void closeRemovesAllPools()
+    public void closeRemovesAllPools() throws Throwable
     {
         Connection connection1 = newConnectionMock( ADDRESS_1 );
         Connection connection2 = newConnectionMock( ADDRESS_2 );
@@ -224,7 +224,7 @@ public class SocketConnectionPoolTest
     }
 
     @Test
-    public void closeWithConcurrentAcquisitionsEmptiesThePool() throws InterruptedException
+    public void closeWithConcurrentAcquisitionsEmptiesThePool() throws Throwable
     {
         Connector connector = mock( Connector.class );
         Set<Connection> createdConnections = newSetFromMap( new ConcurrentHashMap<Connection,Boolean>() );
@@ -303,24 +303,24 @@ public class SocketConnectionPoolTest
         };
     }
 
-    private static Connector newMockConnector()
+    private static Connector newMockConnector() throws Throwable
     {
         Connection connection = mock( Connection.class );
         return newMockConnector( connection );
     }
 
-    private static Connector newMockConnector( Connection connection, Connection... otherConnections )
+    private static Connector newMockConnector( Connection connection, Connection... otherConnections ) throws Throwable
     {
         Connector connector = mock( Connector.class );
         when( connector.connect( any( BoltServerAddress.class ) ) ).thenReturn( connection, otherConnections );
         return connector;
     }
 
-    private static SocketConnectionPool newPool( Connector connector )
+    private static SocketConnectionPool newPool( Connector connector ) throws Throwable
     {
         PoolSettings poolSettings = new PoolSettings( 42 );
         Logging logging = mock( Logging.class, RETURNS_MOCKS );
-        return new SocketConnectionPool( poolSettings, connector, SYSTEM, logging );
+        return new SocketConnectionPool( poolSettings, connector, logging );
     }
 
     private static Connection newConnectionMock( BoltServerAddress address )

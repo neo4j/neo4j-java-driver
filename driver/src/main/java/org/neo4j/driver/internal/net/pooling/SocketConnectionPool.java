@@ -77,9 +77,9 @@ public class SocketConnectionPool implements ConnectionPool
             public PooledConnection newInstance()
                     throws ConnectionException, ServerNeo4jException, InvalidOperationException, BoltProtocolException
             {
-                PooledConnectionReleaser releaseManager =
+                PooledConnectionReleaser releaser =
                         new SocketConnectionPoolPooledConnectionReleaseManager( connections );
-                return new PooledSocketConnection( connector.connect( address ), releaseManager );
+                return new PooledSocketConnection( connector.connect( address ), releaser );
             }
         };
         PooledConnection conn = connections.acquire( pooledConnectionFactory );
@@ -152,11 +152,19 @@ public class SocketConnectionPool implements ConnectionPool
         return pool;
     }
 
-    private class SocketConnectionPoolPooledConnectionReleaseManager extends PooledConnectionReleaseManager
+    private class SocketConnectionPoolPooledConnectionReleaseManager implements PooledConnectionReleaser
     {
+        private final PooledConnectionReleaser releaser;
         SocketConnectionPoolPooledConnectionReleaseManager( BlockingPooledConnectionQueue connections )
         {
-            super( connections, new PooledConnectionValidator( SocketConnectionPool.this ) );
+            releaser = new PooledConnectionReleaseManager( connections,
+                    new PooledConnectionValidator( SocketConnectionPool.this ) );
+        }
+
+        @Override
+        public void accept( PooledConnection pooledConnection ) throws InvalidOperationException
+        {
+            releaser.accept( pooledConnection );
         }
     }
 }

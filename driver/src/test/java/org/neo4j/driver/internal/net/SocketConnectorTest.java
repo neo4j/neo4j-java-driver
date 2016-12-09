@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.neo4j.driver.internal.ConnectionSettings;
+import org.neo4j.driver.internal.exceptions.ServerNeo4jException;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.v1.AuthToken;
@@ -50,7 +51,7 @@ import static org.neo4j.driver.internal.net.BoltServerAddress.LOCAL_DEFAULT;
 public class SocketConnectorTest
 {
     @Test
-    public void connectCreatesConnection()
+    public void connectCreatesConnection() throws Throwable
     {
         ConnectionSettings settings = new ConnectionSettings( basicAuthToken() );
         SocketConnector connector = new RecordingSocketConnector( settings );
@@ -62,7 +63,7 @@ public class SocketConnectorTest
 
     @Test
     @SuppressWarnings( "unchecked" )
-    public void connectSendsInit()
+    public void connectSendsInit() throws Throwable
     {
         String userAgent = "agentSmith";
         ConnectionSettings settings = new ConnectionSettings( basicAuthToken(), userAgent );
@@ -94,10 +95,10 @@ public class SocketConnectorTest
 
     @Test
     @SuppressWarnings( "unchecked" )
-    public void connectClosesOpenedConnectionIfInitThrows()
+    public void connectClosesOpenedConnectionIfInitThrows() throws Throwable
     {
         Connection connection = mock( Connection.class );
-        RuntimeException initError = new RuntimeException( "Init error" );
+        ServerNeo4jException initError = new ServerNeo4jException( new ClientException( "Init error" ) );
         doThrow( initError ).when( connection ).init( anyString(), any( Map.class ) );
 
         StubSocketConnector connector = new StubSocketConnector( connection );
