@@ -159,14 +159,7 @@ public class Neo4jRunner
     private int runCommand( String... cmd ) throws IOException
     {
         ProcessBuilder pb = new ProcessBuilder().inheritIO();
-        Map<String,String> env = System.getenv();
-        pb.environment().put( "JAVA_HOME",
-                // This driver is built to work with multiple java versions.
-                // Neo4j, however, works with a specific version of Java. This allows
-                // specifying which Java version to use for Neo4j separately from which
-                // version to use for the driver tests.
-                env.containsKey( "NEO4J_JAVA" ) ? env.get( "NEO4J_JAVA" ) :
-                System.getProperties().getProperty( "java.home" ) );
+        ProcessEnvConfigurator.configure( pb );
         if( NEORUN_START_ARGS != null )
         {
             // overwrite the env var in the sub process if the system property is specified

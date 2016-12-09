@@ -52,6 +52,21 @@ public class Iterables
         return list;
     }
 
+    public static <T> T single( Iterable<T> it )
+    {
+        Iterator<T> iterator = it.iterator();
+        if ( !iterator.hasNext() )
+        {
+            throw new IllegalArgumentException( "Given iterable is empty" );
+        }
+        T result = iterator.next();
+        if ( iterator.hasNext() )
+        {
+            throw new IllegalArgumentException( "Given iterable contains more than one element: " + it );
+        }
+        return result;
+    }
+
     public static Map<String, String> map( String ... alternatingKeyValue )
     {
         Map<String, String> out = new HashMap<>();
