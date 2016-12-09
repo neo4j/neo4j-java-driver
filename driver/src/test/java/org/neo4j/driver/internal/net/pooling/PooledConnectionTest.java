@@ -23,6 +23,7 @@ import org.junit.Test;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Supplier;
+import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.util.Function;
 
@@ -31,11 +32,13 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.driver.internal.net.BoltServerAddress.LOCAL_DEFAULT;
 
 public class PooledConnectionTest
 {
@@ -63,8 +66,7 @@ public class PooledConnectionTest
     public void shouldDisposeConnectionIfNotValidConnection() throws Throwable
     {
         // Given
-        final BlockingPooledConnectionQueue
-                pool = new BlockingPooledConnectionQueue(1);
+        final BlockingPooledConnectionQueue pool = newConnectionQueue(1);
 
         final boolean[] flags = {false};
 
@@ -93,8 +95,7 @@ public class PooledConnectionTest
     public void shouldReturnToThePoolIfIsValidConnectionAndIdlePoolIsNotFull() throws Throwable
     {
         // Given
-        final BlockingPooledConnectionQueue
-                pool = new BlockingPooledConnectionQueue(1);
+        final BlockingPooledConnectionQueue pool = newConnectionQueue(1);
 
         final boolean[] flags = {false};
 
@@ -124,8 +125,7 @@ public class PooledConnectionTest
     public void shouldDisposeConnectionIfValidConnectionAndIdlePoolIsFull() throws Throwable
     {
         // Given
-        final BlockingPooledConnectionQueue
-                pool = new BlockingPooledConnectionQueue(1);
+        final BlockingPooledConnectionQueue pool = newConnectionQueue(1);
 
         final boolean[] flags = {false};
 
@@ -158,7 +158,7 @@ public class PooledConnectionTest
     {
         PooledConnection connection = mock( PooledConnection.class );
 
-        BlockingPooledConnectionQueue pool = new BlockingPooledConnectionQueue( 5 );
+        BlockingPooledConnectionQueue pool = newConnectionQueue( 5 );
 
         Supplier<PooledConnection> pooledConnectionFactory = mock( Supplier.class );
         when( pooledConnectionFactory.get() ).thenReturn( connection );
@@ -178,7 +178,7 @@ public class PooledConnectionTest
         PooledConnection connection2 = mock( PooledConnection.class );
         PooledConnection connection3 = mock( PooledConnection.class );
 
-        BlockingPooledConnectionQueue pool = new BlockingPooledConnectionQueue( 5 );
+        BlockingPooledConnectionQueue pool = newConnectionQueue( 5 );
 
         Supplier<PooledConnection> pooledConnectionFactory = mock( Supplier.class );
         when( pooledConnectionFactory.get() )
@@ -212,7 +212,7 @@ public class PooledConnectionTest
         // session.close() -> well, close the connection directly without putting back to the pool
 
         // Given
-        final BlockingPooledConnectionQueue pool = new BlockingPooledConnectionQueue(1);
+        final BlockingPooledConnectionQueue pool = newConnectionQueue(1);
         pool.terminate();
         final boolean[] flags = {false};
 
@@ -240,8 +240,7 @@ public class PooledConnectionTest
     public void shouldDisposeConnectionIfPoolStoppedAfterPuttingConnectionBackToPool() throws Throwable
     {
         // Given
-        final BlockingPooledConnectionQueue
-                pool = new BlockingPooledConnectionQueue(1);
+        final BlockingPooledConnectionQueue pool = newConnectionQueue(1);
         pool.terminate();
         final boolean[] flags = {false};
 
@@ -361,5 +360,10 @@ public class PooledConnectionTest
 
         verify( conn, times( 1 ) ).ackFailure();
         assertThat( pooledConnection.hasUnrecoverableErrors(), equalTo( true ) );
+    }
+
+    private static BlockingPooledConnectionQueue newConnectionQueue( int capacity )
+    {
+        return new BlockingPooledConnectionQueue( LOCAL_DEFAULT, capacity, mock( Logging.class, RETURNS_MOCKS ) );
     }
 }

@@ -28,14 +28,16 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.util.Function;
 
 import static java.util.Arrays.asList;
 import static junit.framework.TestCase.fail;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 @RunWith( Parameterized.class )
 public class ConcurrencyGuardingConnectionTest
@@ -44,17 +46,19 @@ public class ConcurrencyGuardingConnectionTest
     public Function<Connection, Void> operation;
 
     @Parameterized.Parameters
-    public static List<Object[]> params()
+    public static List<Function<Connection,Void>> params()
     {
         return asList(
-                new Object[]{INIT},
-                new Object[]{RUN},
-                new Object[]{PULL_ALL},
-                new Object[]{DISCARD_ALL},
-                new Object[]{CLOSE},
-                new Object[]{RECIEVE_ONE},
-                new Object[]{FLUSH},
-                new Object[]{SYNC});
+                INIT,
+                RUN,
+                PULL_ALL,
+                DISCARD_ALL,
+                RECIEVE_ONE,
+                FLUSH,
+                SYNC,
+                RESET,
+                ACK_FAILURE
+        );
     }
 
     @Test
@@ -93,6 +97,32 @@ public class ConcurrencyGuardingConnectionTest
                 "which is not supported. If you want to use multiple threads, you should ensure " +
                 "that each session is used by only one thread at a time. One way to " +
                 "do that is to give each thread its own dedicated session.") );
+    }
+
+    @Test
+    public void shouldAllowConcurrentClose()
+    {
+        // Given
+        final AtomicReference<Connection> connection = new AtomicReference<>();
+
+        Connection delegate = mock( Connection.class, new Answer<Void>()
+        {
+            @Override
+            public Void answer( InvocationOnMock invocation ) throws Throwable
+            {
+                connection.get().close();
+                return null;
+            }
+        } );
+        doNothing().when( delegate ).close();
+
+        connection.set( new ConcurrencyGuardingConnection( delegate ) );
+
+        // When
+        operation.apply( connection.get() );
+
+        // Then
+        verify( delegate ).close();
     }
 
     public static final Function<Connection,Void> INIT = new Function<Connection,Void>()
@@ -135,22 +165,32 @@ public class ConcurrencyGuardingConnectionTest
         }
     };
 
+    public static final Function<Connection,Void> RESET = new Function<Connection,Void>()
+    {
+        @Override
+        public Void apply( Connection connection )
+        {
+            connection.reset();
+            return null;
+        }
+    };
+
+    public static final Function<Connection,Void> ACK_FAILURE = new Function<Connection,Void>()
+    {
+        @Override
+        public Void apply( Connection connection )
+        {
+            connection.ackFailure();
+            return null;
+        }
+    };
+
     public static final Function<Connection,Void> RECIEVE_ONE = new Function<Connection,Void>()
     {
         @Override
         public Void apply( Connection connection )
         {
             connection.receiveOne();
-            return null;
-        }
-    };
-
-    public static final Function<Connection,Void> CLOSE = new Function<Connection,Void>()
-    {
-        @Override
-        public Void apply( Connection connection )
-        {
-            connection.close();
             return null;
         }
     };

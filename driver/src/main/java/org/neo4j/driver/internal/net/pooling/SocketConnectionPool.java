@@ -18,27 +18,16 @@
  */
 package org.neo4j.driver.internal.net.pooling;
 
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.internal.net.ConcurrencyGuardingConnection;
-import org.neo4j.driver.internal.net.SocketConnection;
-import org.neo4j.driver.internal.security.InternalAuthToken;
-import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
+import org.neo4j.driver.internal.spi.Connector;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Supplier;
-import org.neo4j.driver.v1.AuthToken;
-import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Logging;
-import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.exceptions.ClientException;
-
-import static java.util.Collections.emptyList;
 
 /**
  * The pool is designed to buffer certain amount of free sessions into session pool. When closing a session, we first
@@ -60,52 +49,26 @@ public class SocketConnectionPool implements ConnectionPool
     private final ConcurrentHashMap<BoltServerAddress,BlockingPooledConnectionQueue> pools =
             new ConcurrentHashMap<>();
 
-    private final Clock clock = Clock.SYSTEM;
+    private final AtomicBoolean closed = new AtomicBoolean();
 
-    private final ConnectionSettings connectionSettings;
-    private final SecurityPlan securityPlan;
     private final PoolSettings poolSettings;
+    private final Connector connector;
+    private final Clock clock;
     private final Logging logging;
 
-    /** Shutdown flag */
-
-    public SocketConnectionPool( ConnectionSettings connectionSettings, SecurityPlan securityPlan,
-            PoolSettings poolSettings, Logging logging )
+    public SocketConnectionPool( PoolSettings poolSettings, Connector connector, Clock clock, Logging logging )
     {
-        this.connectionSettings = connectionSettings;
-        this.securityPlan = securityPlan;
         this.poolSettings = poolSettings;
+        this.connector = connector;
+        this.clock = clock;
         this.logging = logging;
-    }
-
-    private Connection connect( BoltServerAddress address ) throws ClientException
-    {
-        Connection conn = new SocketConnection( address, securityPlan, logging );
-
-        // Because SocketConnection is not thread safe, wrap it in this guard
-        // to ensure concurrent access leads causes application errors
-        conn = new ConcurrencyGuardingConnection( conn );
-        conn.init( connectionSettings.userAgent(), tokenAsMap( connectionSettings.authToken() ) );
-        return conn;
-    }
-
-    private static Map<String,Value> tokenAsMap( AuthToken token )
-    {
-        if ( token instanceof InternalAuthToken )
-        {
-            return ((InternalAuthToken) token).toMap();
-        }
-        else
-        {
-            throw new ClientException(
-                    "Unknown authentication token, `" + token + "`. Please use one of the supported " +
-                    "tokens from `" + AuthTokens.class.getSimpleName() + "`." );
-        }
     }
 
     @Override
     public Connection acquire( final BoltServerAddress address )
     {
+        assertNotClosed();
+
         final BlockingPooledConnectionQueue connections = pool( address );
         Supplier<PooledConnection> supplier = new Supplier<PooledConnection>()
         {
@@ -116,10 +79,17 @@ public class SocketConnectionPool implements ConnectionPool
                         new PooledConnectionValidator( SocketConnectionPool.this );
                 PooledConnectionReleaseConsumer releaseConsumer =
                         new PooledConnectionReleaseConsumer( connections, connectionValidator );
-                return new PooledConnection( connect( address ), releaseConsumer, clock );
+                return new PooledConnection( connector.connect( address ), releaseConsumer, clock );
             }
         };
         PooledConnection conn = connections.acquire( supplier );
+
+        if ( closed.get() )
+        {
+            connections.terminate();
+            throw poolClosedException();
+        }
+
         conn.updateTimestamp();
         return conn;
     }
@@ -129,7 +99,7 @@ public class SocketConnectionPool implements ConnectionPool
         BlockingPooledConnectionQueue pool = pools.get( address );
         if ( pool == null )
         {
-            pool = new BlockingPooledConnectionQueue( poolSettings.maxIdleConnectionPoolSize() );
+            pool = new BlockingPooledConnectionQueue( address, poolSettings.maxIdleConnectionPoolSize(), logging );
 
             if ( pools.putIfAbsent( address, pool ) != null )
             {
@@ -144,12 +114,10 @@ public class SocketConnectionPool implements ConnectionPool
     public void purge( BoltServerAddress address )
     {
         BlockingPooledConnectionQueue connections = pools.remove( address );
-        if ( connections == null )
+        if ( connections != null )
         {
-            return;
+            connections.terminate();
         }
-
-        connections.terminate();
     }
 
     @Override
@@ -161,28 +129,27 @@ public class SocketConnectionPool implements ConnectionPool
     @Override
     public void close()
     {
-        for ( BlockingPooledConnectionQueue pool : pools.values() )
+        if ( closed.compareAndSet( false, true ) )
         {
-            pool.terminate();
-        }
+            for ( BlockingPooledConnectionQueue pool : pools.values() )
+            {
+                pool.terminate();
+            }
 
-        pools.clear();
+            pools.clear();
+        }
     }
 
-
-    //for testing
-    public List<PooledConnection> connectionsForAddress( BoltServerAddress address )
+    private void assertNotClosed()
     {
-        BlockingPooledConnectionQueue pooledConnections = pools.get( address );
-        if ( pooledConnections == null )
+        if ( closed.get() )
         {
-            return emptyList();
-        }
-        else
-        {
-            return pooledConnections.toList();
+            throw poolClosedException();
         }
     }
 
-
+    private static RuntimeException poolClosedException()
+    {
+        return new IllegalStateException( "Pool closed" );
+    }
 }
