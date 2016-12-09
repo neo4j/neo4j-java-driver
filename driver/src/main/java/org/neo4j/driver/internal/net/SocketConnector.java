@@ -21,6 +21,10 @@ package org.neo4j.driver.internal.net;
 import java.util.Map;
 
 import org.neo4j.driver.internal.ConnectionSettings;
+import org.neo4j.driver.internal.exceptions.BoltProtocolException;
+import org.neo4j.driver.internal.exceptions.ConnectionException;
+import org.neo4j.driver.internal.exceptions.InvalidOperationException;
+import org.neo4j.driver.internal.exceptions.ServerNeo4jException;
 import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.Connection;
@@ -46,6 +50,7 @@ public class SocketConnector implements Connector
 
     @Override
     public final Connection connect( BoltServerAddress address )
+            throws InvalidOperationException, ConnectionException, BoltProtocolException, ServerNeo4jException
     {
         Connection connection = createConnection( address, securityPlan, logging );
 
@@ -57,10 +62,10 @@ public class SocketConnector implements Connector
         {
             connection.init( connectionSettings.userAgent(), tokenAsMap( connectionSettings.authToken() ) );
         }
-        catch ( Throwable initError )
+        catch ( BoltProtocolException | ConnectionException | ServerNeo4jException | InvalidOperationException e )
         {
             connection.close();
-            throw initError;
+            throw e;
         }
 
         return connection;
@@ -72,6 +77,7 @@ public class SocketConnector implements Connector
      * <b>This method is package-private only for testing</b>
      */
     Connection createConnection( BoltServerAddress address, SecurityPlan securityPlan, Logging logging )
+            throws ConnectionException, InvalidOperationException
     {
         return new SocketConnection( address, securityPlan, logging );
     }

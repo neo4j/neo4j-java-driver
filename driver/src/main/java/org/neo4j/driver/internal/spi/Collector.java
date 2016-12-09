@@ -20,9 +20,9 @@ package org.neo4j.driver.internal.spi;
 
 import java.util.List;
 
+import org.neo4j.driver.internal.exceptions.BoltProtocolException;
+import org.neo4j.driver.internal.exceptions.ServerNeo4jException;
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.summary.Notification;
 import org.neo4j.driver.v1.summary.Plan;
 import org.neo4j.driver.v1.summary.ProfiledPlan;
@@ -36,9 +36,9 @@ public interface Collector
     Collector ACK_FAILURE = new NoOperationCollector()
     {
         @Override
-        public void doneFailure( Neo4jException error )
+        public void doneFailure( ServerNeo4jException error ) throws BoltProtocolException
         {
-            throw new ClientException(
+            throw new BoltProtocolException(
                     "Invalid server response message `FAILURE` received for client message `ACK_FAILURE`.", error );
         }
     };
@@ -47,9 +47,9 @@ public interface Collector
     {
         private String serverVersion;
         @Override
-        public void doneIgnored()
+        public void doneIgnored() throws BoltProtocolException
         {
-            throw new ClientException(
+            throw new BoltProtocolException(
                     "Invalid server response message `IGNORED` received for client message `INIT`." );
         }
 
@@ -82,16 +82,16 @@ public interface Collector
         }
 
         @Override
-        public void doneFailure( Neo4jException error )
+        public void doneFailure( ServerNeo4jException error ) throws BoltProtocolException
         {
-            throw new ClientException(
+            throw new BoltProtocolException(
                     "Invalid server response message `FAILURE` received for client message `RESET`.", error );
         }
 
         @Override
-        public void doneIgnored()
+        public void doneIgnored() throws BoltProtocolException
         {
-            throw new ClientException(
+            throw new BoltProtocolException(
                     "Invalid server response message `IGNORED` received for client message `RESET`." );
         }
 
@@ -142,13 +142,13 @@ public interface Collector
         }
 
         @Override
-        public void doneFailure( Neo4jException error )
+        public void doneFailure( ServerNeo4jException error ) throws BoltProtocolException
         {
             done();
         }
 
         @Override
-        public void doneIgnored()
+        public void doneIgnored() throws BoltProtocolException
         {
             done();
         }
@@ -185,9 +185,9 @@ public interface Collector
 
     void doneSuccess();
 
-    void doneFailure( Neo4jException error );
+    void doneFailure( ServerNeo4jException error ) throws BoltProtocolException;
 
-    void doneIgnored();
+    void doneIgnored() throws BoltProtocolException;
 
     void resultAvailableAfter( long l );
 

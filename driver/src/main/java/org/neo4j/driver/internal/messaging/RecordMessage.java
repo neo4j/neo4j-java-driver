@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.messaging;
 import java.io.IOException;
 import java.util.Arrays;
 
+import org.neo4j.driver.internal.exceptions.BoltProtocolException;
 import org.neo4j.driver.v1.Value;
 
 public class RecordMessage implements Message
@@ -33,7 +34,7 @@ public class RecordMessage implements Message
     }
 
     @Override
-    public void dispatch( MessageHandler handler ) throws IOException
+    public void dispatch( MessageHandler handler ) throws IOException, BoltProtocolException
     {
         handler.handleRecordMessage( fields );
     }

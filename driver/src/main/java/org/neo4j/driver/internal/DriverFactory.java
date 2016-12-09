@@ -119,7 +119,7 @@ public class DriverFactory
         PoolSettings poolSettings = new PoolSettings( config.maxIdleConnectionPoolSize() );
         Connector connector = new SocketConnector( connectionSettings, securityPlan, config.logging() );
 
-        return new SocketConnectionPool( poolSettings, connector, Clock.SYSTEM, config.logging() );
+        return new SocketConnectionPool( poolSettings, connector, config.logging() );
     }
 
     private static SecurityPlan createSecurityPlan( BoltServerAddress address, Config config )

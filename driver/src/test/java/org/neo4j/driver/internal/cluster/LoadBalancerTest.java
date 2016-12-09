@@ -29,6 +29,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.driver.internal.EventHandler;
+import org.neo4j.driver.internal.exceptions.BoltProtocolException;
+import org.neo4j.driver.internal.exceptions.FailedToUpdateRoutingException;
+import org.neo4j.driver.internal.exceptions.InvalidOperationException;
+import org.neo4j.driver.internal.exceptions.ServerNeo4jException;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.StubConnectionPool;
@@ -36,7 +40,6 @@ import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.internal.util.MatcherFactory;
 import org.neo4j.driver.v1.EventLogger;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.v1.util.Function;
 
 import static org.hamcrest.Matchers.any;
 import static org.hamcrest.Matchers.equalTo;
@@ -407,10 +410,19 @@ public class LoadBalancerTest
         }
     }
 
-    private static final Function<LoadBalancer,Connection> READ_SERVERS = new Function<LoadBalancer,Connection>()
+    private abstract static class ConnectionFactory
+    {
+        public abstract Connection apply( LoadBalancer routing )
+                throws BoltProtocolException, InvalidOperationException, ServerNeo4jException,
+                FailedToUpdateRoutingException;
+    }
+
+    private static final ConnectionFactory READ_SERVERS = new ConnectionFactory()
     {
         @Override
         public Connection apply( LoadBalancer routing )
+                throws BoltProtocolException, InvalidOperationException, ServerNeo4jException,
+                FailedToUpdateRoutingException
         {
             return routing.acquireReadConnection();
         }
@@ -422,10 +434,12 @@ public class LoadBalancerTest
         shouldRoundRobinAmong( READ_SERVERS );
     }
 
-    private static final Function<LoadBalancer,Connection> WRITE_SERVERS = new Function<LoadBalancer,Connection>()
+    private static final ConnectionFactory WRITE_SERVERS = new ConnectionFactory()
     {
         @Override
         public Connection apply( LoadBalancer routing )
+                throws BoltProtocolException, InvalidOperationException, ServerNeo4jException,
+                FailedToUpdateRoutingException
         {
             return routing.acquireWriteConnection();
         }
@@ -437,7 +451,7 @@ public class LoadBalancerTest
         shouldRoundRobinAmong( WRITE_SERVERS );
     }
 
-    private void shouldRoundRobinAmong( Function<LoadBalancer,Connection> acquire ) throws Exception
+    private void shouldRoundRobinAmong( ConnectionFactory acquire ) throws Exception
     {
         // given
         for ( String host : new String[] {"one", "two", "tre"} )

@@ -79,7 +79,7 @@ public class FragmentedMessageDeliveryTest
         }
     }
 
-    private void testPermutation( byte[] unfragmented, int... sizes ) throws IOException
+    private void testPermutation( byte[] unfragmented, int... sizes ) throws Throwable
     {
         int pos = 0;
         ByteBuffer[] fragments = new ByteBuffer[sizes.length];
@@ -91,7 +91,7 @@ public class FragmentedMessageDeliveryTest
         testPermutation( unfragmented, fragments );
     }
 
-    private void testPermutation( byte[] unfragmented, ByteBuffer[] fragments ) throws IOException
+    private void testPermutation( byte[] unfragmented, ByteBuffer[] fragments ) throws Throwable
     {
 
         // When data arrives split up according to the current permutation
@@ -145,7 +145,7 @@ public class FragmentedMessageDeliveryTest
         };
     }
 
-    private byte[] serialize( Message... msgs ) throws IOException
+    private byte[] serialize( Message... msgs ) throws Throwable
     {
 
             final ByteArrayOutputStream out = new ByteArrayOutputStream( 128 );

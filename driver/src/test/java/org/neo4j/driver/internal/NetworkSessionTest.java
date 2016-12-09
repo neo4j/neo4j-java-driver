@@ -22,7 +22,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
@@ -40,7 +40,7 @@ public class NetworkSessionTest
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
-    private final Connection mock = mock( Connection.class );
+    private final PooledConnection mock = mock( PooledConnection.class );
     private NetworkSession sess = new NetworkSession( mock );
 
     @Test
@@ -143,7 +143,7 @@ public class NetworkSessionTest
     public void shouldGetExceptionIfTryingToCloseSessionMoreThanOnce() throws Throwable
     {
         // Given
-        NetworkSession sess = new NetworkSession( mock(Connection.class) );
+        NetworkSession sess = new NetworkSession( mock(PooledConnection.class) );
         try
         {
             sess.close();

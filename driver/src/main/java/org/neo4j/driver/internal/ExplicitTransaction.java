@@ -21,8 +21,13 @@ package org.neo4j.driver.internal;
 import java.util.Collections;
 import java.util.Map;
 
-import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.exceptions.BoltProtocolException;
+import org.neo4j.driver.internal.exceptions.ConnectionException;
+import org.neo4j.driver.internal.exceptions.InternalException;
+import org.neo4j.driver.internal.exceptions.InvalidOperationException;
+import org.neo4j.driver.internal.exceptions.ServerNeo4jException;
 import org.neo4j.driver.internal.spi.Collector;
+import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
@@ -30,13 +35,10 @@ import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
-import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.types.TypeSystem;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
-
 import static org.neo4j.driver.v1.Values.ofValue;
 import static org.neo4j.driver.v1.Values.value;
 
@@ -91,8 +93,16 @@ class ExplicitTransaction implements Transaction
         {
             parameters = singletonMap( "bookmark", value( bookmark ) );
         }
-        conn.run( "BEGIN", parameters, Collector.NO_OP );
-        conn.pullAll( Collector.NO_OP );
+
+        try
+        {
+            conn.run( "BEGIN", parameters, Collector.NO_OP );
+            conn.pullAll( Collector.NO_OP );
+        }
+        catch ( InvalidOperationException | BoltProtocolException e )
+        {
+            e.publicException();
+        }
     }
 
     @Override
@@ -129,7 +139,7 @@ class ExplicitTransaction implements Transaction
                         conn.sync();
                         state = State.SUCCEEDED;
                     }
-                    catch( Throwable e )
+                    catch( InternalException e )
                     {
                         // failed to commit
                         try
@@ -140,12 +150,19 @@ class ExplicitTransaction implements Transaction
                         {
                             // best effort.
                         }
-                        throw e;
+                        throw e.publicException();
                     }
                 }
                 else if ( state == State.MARKED_FAILED || state == State.ACTIVE )
                 {
-                    rollbackTx();
+                    try
+                    {
+                        rollbackTx();
+                    }
+                    catch ( InternalException e )
+                    {
+                        throw e.publicException();
+                    }
                 }
             }
         }
@@ -156,6 +173,7 @@ class ExplicitTransaction implements Transaction
     }
 
     private void rollbackTx()
+            throws ConnectionException, InvalidOperationException, ServerNeo4jException, BoltProtocolException
     {
         conn.run( "ROLLBACK", Collections.<String, Value>emptyMap(), Collector.NO_OP );
         conn.pullAll( new BookmarkCollector( this ) );
@@ -205,12 +223,12 @@ class ExplicitTransaction implements Transaction
             conn.flush();
             return cursor;
         }
-        catch ( Neo4jException e )
+        catch ( InternalException e )
         {
             // Failed to send messages to the server probably due to IOException in the socket.
             // So we should stop sending more messages in this transaction
             state = State.FAILED;
-            throw e;
+            throw e.publicException();
         }
     }
 
@@ -224,11 +242,11 @@ class ExplicitTransaction implements Transaction
     {
         if ( state == State.FAILED || state == State.MARKED_FAILED || state == State.ROLLED_BACK )
         {
-            throw new ClientException(
+            throw new InvalidOperationException(
                 "Cannot run more statements in this transaction, because previous statements in the " +
                 "transaction has failed and the transaction has been rolled back. Please start a new" +
                 " transaction to run another statement."
-            );
+            ).publicException();
         }
     }
 

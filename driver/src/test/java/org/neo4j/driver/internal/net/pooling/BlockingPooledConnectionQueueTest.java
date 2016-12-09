@@ -21,18 +21,17 @@ package org.neo4j.driver.internal.net.pooling;
 
 import org.junit.Test;
 
-import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.util.Consumer;
-import org.neo4j.driver.internal.util.Supplier;
+import org.neo4j.driver.internal.exceptions.InvalidOperationException;
+import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 
+import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.RETURNS_MOCKS;
@@ -42,54 +41,55 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.net.BoltServerAddress.LOCAL_DEFAULT;
-import static org.neo4j.driver.internal.util.Clock.SYSTEM;
 
 public class BlockingPooledConnectionQueueTest
 {
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldCreateNewConnectionWhenEmpty()
+    public void shouldCreateNewConnectionWhenEmpty() throws Throwable
     {
         // Given
-        PooledConnection connection = mock( PooledConnection.class );
-        Supplier<PooledConnection> supplier = mock( Supplier.class );
-        when( supplier.get() ).thenReturn( connection );
+        PooledConnection connection = mock( PooledSocketConnection.class );
+        PooledConnectionFactory supplier = mock( PooledConnectionFactory.class );
+        when( supplier.newInstance() ).thenReturn( connection );
         BlockingPooledConnectionQueue queue = newConnectionQueue( 10 );
 
         // When
         queue.acquire( supplier );
 
         // Then
-        verify( supplier ).get();
+        verify( supplier ).newInstance();
     }
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldNotCreateNewConnectionWhenNotEmpty()
+    public void shouldNotCreateNewConnectionWhenNotEmpty() throws Throwable
     {
         // Given
-        PooledConnection connection = mock( PooledConnection.class );
-        Supplier<PooledConnection> supplier = mock( Supplier.class );
-        when( supplier.get() ).thenReturn( connection );
+        PooledConnection connection = mock( PooledSocketConnection.class );
+        PooledConnectionFactory supplier = mock( PooledConnectionFactory.class );
+        when( supplier.newInstance() ).thenReturn( connection );
         BlockingPooledConnectionQueue queue = newConnectionQueue( 1 );
+
         queue.offer( connection );
 
         // When
         queue.acquire( supplier );
 
         // Then
-        verify( supplier, never() ).get();
+        verify( supplier, never() ).newInstance();
     }
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldTerminateAllSeenConnections()
+    public void shouldTerminateAllSeenConnections() throws Throwable
     {
         // Given
-        PooledConnection connection1 = mock( PooledConnection.class );
-        PooledConnection connection2 = mock( PooledConnection.class );
-        Supplier<PooledConnection> supplier = mock( Supplier.class );
-        when( supplier.get() ).thenReturn( connection1 );
+
+        PooledSocketConnection connection1 = mock( PooledSocketConnection.class );
+        PooledSocketConnection connection2 = mock( PooledSocketConnection.class );
+        PooledConnectionFactory supplier = mock( PooledConnectionFactory.class );
+        when( supplier.newInstance() ).thenReturn( connection1 );
         BlockingPooledConnectionQueue queue = newConnectionQueue( 2 );
         queue.offer( connection1 );
         queue.offer( connection2 );
@@ -106,11 +106,12 @@ public class BlockingPooledConnectionQueueTest
     }
 
     @Test
-    public void shouldNotAcceptWhenFull()
+    public void shouldNotAcceptWhenFull() throws Throwable
     {
         // Given
-        PooledConnection connection1 = mock( PooledConnection.class );
-        PooledConnection connection2 = mock( PooledConnection.class );
+
+        PooledSocketConnection connection1 = mock( PooledSocketConnection.class );
+        PooledSocketConnection connection2 = mock( PooledSocketConnection.class );
         BlockingPooledConnectionQueue queue = newConnectionQueue( 1 );
 
         // Then
@@ -119,7 +120,7 @@ public class BlockingPooledConnectionQueueTest
     }
 
     @Test
-    public void shouldDisposeAllConnectionsWhenOneOfThemFailsToDispose()
+    public void shouldDisposeAllConnectionsWhenOneOfThemFailsToDispose() throws Throwable
     {
         BlockingPooledConnectionQueue queue = newConnectionQueue( 5 );
 
@@ -127,7 +128,7 @@ public class BlockingPooledConnectionQueueTest
         PooledConnection connection2 = mock( PooledConnection.class );
         PooledConnection connection3 = mock( PooledConnection.class );
 
-        RuntimeException disposeError = new RuntimeException( "Failed to stop socket" );
+        InvalidOperationException disposeError = new InvalidOperationException( "Failed to stop socket" );
         doThrow( disposeError ).when( connection2 ).dispose();
 
         queue.offer( connection1 );
@@ -143,25 +144,25 @@ public class BlockingPooledConnectionQueueTest
 
     @Test
     @SuppressWarnings( "unchecked" )
-    public void shouldTryToCloseAllUnderlyingConnections()
+    public void shouldTryToCloseAllUnderlyingConnections() throws Throwable
     {
         BlockingPooledConnectionQueue queue = newConnectionQueue( 5 );
 
-        Connection connection1 = mock( Connection.class );
-        Connection connection2 = mock( Connection.class );
-        Connection connection3 = mock( Connection.class );
+        PooledConnection connection1 = mock( PooledConnection.class );
+        PooledConnection connection2 = mock( PooledConnection.class );
+        PooledConnection connection3 = mock( PooledConnection.class );
 
-        RuntimeException closeError1 = new RuntimeException( "Failed to close 1" );
-        RuntimeException closeError2 = new RuntimeException( "Failed to close 2" );
-        RuntimeException closeError3 = new RuntimeException( "Failed to close 3" );
+        InvalidOperationException closeError1 = new InvalidOperationException( "Failed to close 1" );
+        InvalidOperationException closeError2 = new InvalidOperationException( "Failed to close 2" );
+        InvalidOperationException closeError3 = new InvalidOperationException( "Failed to close 3" );
 
         doThrow( closeError1 ).when( connection1 ).close();
         doThrow( closeError2 ).when( connection2 ).close();
         doThrow( closeError3 ).when( connection3 ).close();
 
-        PooledConnection pooledConnection1 = new PooledConnection( connection1, mock( Consumer.class ), SYSTEM );
-        PooledConnection pooledConnection2 = new PooledConnection( connection2, mock( Consumer.class ), SYSTEM );
-        PooledConnection pooledConnection3 = new PooledConnection( connection3, mock( Consumer.class ), SYSTEM );
+        PooledConnection pooledConnection1 = new PooledSocketConnection( connection1, mock( PooledConnectionReleaseManager.class ) );
+        PooledConnection pooledConnection2 = new PooledSocketConnection( connection2, mock( PooledConnectionReleaseManager.class ) );
+        PooledConnection pooledConnection3 = new PooledSocketConnection( connection3, mock( PooledConnectionReleaseManager.class ) );
 
         queue.offer( pooledConnection1 );
         queue.offer( pooledConnection2 );
@@ -176,7 +177,7 @@ public class BlockingPooledConnectionQueueTest
 
     @Test
     @SuppressWarnings( "unchecked" )
-    public void shouldLogWhenConnectionDisposeFails()
+    public void shouldLogWhenConnectionDisposeFails() throws Throwable
     {
         Logging logging = mock( Logging.class );
         Logger logger = mock( Logger.class );
@@ -184,10 +185,11 @@ public class BlockingPooledConnectionQueueTest
 
         BlockingPooledConnectionQueue queue = newConnectionQueue( 5, logging );
 
-        Connection connection = mock( Connection.class );
-        RuntimeException closeError = new RuntimeException( "Fail" );
+        PooledConnection connection = mock( PooledConnection.class );
+        InvalidOperationException closeError = new InvalidOperationException( "Fail" );
         doThrow( closeError ).when( connection ).close();
-        PooledConnection pooledConnection = new PooledConnection( connection, mock( Consumer.class ), SYSTEM );
+        PooledConnection pooledConnection = new PooledSocketConnection( connection, mock(
+                PooledConnectionReleaseManager.class ) );
         queue.offer( pooledConnection );
 
         queue.terminate();
@@ -196,7 +198,7 @@ public class BlockingPooledConnectionQueueTest
     }
 
     @Test
-    public void shouldHaveZeroSizeAfterTermination()
+    public void shouldHaveZeroSizeAfterTermination() throws Throwable
     {
         BlockingPooledConnectionQueue queue = newConnectionQueue( 5 );
 
@@ -211,7 +213,7 @@ public class BlockingPooledConnectionQueueTest
 
     @Test
     @SuppressWarnings( "unchecked" )
-    public void shouldTerminateBothAcquiredAndIdleConnections()
+    public void shouldTerminateBothAcquiredAndIdleConnections() throws Throwable
     {
         BlockingPooledConnectionQueue queue = newConnectionQueue( 5 );
 
@@ -225,8 +227,8 @@ public class BlockingPooledConnectionQueueTest
         queue.offer( connection3 );
         queue.offer( connection4 );
 
-        PooledConnection acquiredConnection1 = queue.acquire( mock( Supplier.class ) );
-        PooledConnection acquiredConnection2 = queue.acquire( mock( Supplier.class ) );
+        PooledConnection acquiredConnection1 = queue.acquire( mock( PooledConnectionFactory.class ) );
+        PooledConnection acquiredConnection2 = queue.acquire( mock( PooledConnectionFactory.class ) );
         assertSame( connection1, acquiredConnection1 );
         assertSame( connection2, acquiredConnection2 );
 

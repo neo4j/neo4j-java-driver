@@ -20,6 +20,8 @@ package org.neo4j.driver.internal.messaging;
 
 import java.io.IOException;
 
+import org.neo4j.driver.internal.exceptions.BoltProtocolException;
+
 import static java.lang.String.format;
 
 /**
@@ -41,7 +43,7 @@ public class FailureMessage implements Message
     }
 
     @Override
-    public void dispatch( MessageHandler handler ) throws IOException
+    public void dispatch( MessageHandler handler ) throws IOException, BoltProtocolException
     {
         handler.handleFailureMessage( code, message );
     }

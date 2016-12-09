@@ -22,7 +22,6 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 
-import java.io.IOException;
 import java.util.Queue;
 
 import org.neo4j.driver.internal.messaging.Message;
@@ -31,9 +30,8 @@ import org.neo4j.driver.internal.net.SocketClient;
 import org.neo4j.driver.internal.net.SocketConnection;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
+import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.summary.InternalServerInfo;
-import org.neo4j.driver.internal.util.Clock;
-import org.neo4j.driver.internal.util.Consumers;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -49,7 +47,7 @@ import static org.neo4j.driver.internal.net.BoltServerAddress.LOCAL_DEFAULT;
 public class PooledConnectionValidatorTest
 {
     @Test
-    public void resetAndSyncValidConnection()
+    public void resetAndSyncValidConnection() throws Throwable
     {
         Connection connection = mock( Connection.class );
         PooledConnection pooledConnection = newPooledConnection( connection );
@@ -65,7 +63,7 @@ public class PooledConnectionValidatorTest
     }
 
     @Test
-    public void sendsSingleResetMessageForValidConnection() throws IOException
+    public void sendsSingleResetMessageForValidConnection() throws Throwable
     {
         SocketClient socket = mock( SocketClient.class );
         InternalServerInfo serverInfo = new InternalServerInfo( LOCAL_DEFAULT, "v1" );
@@ -87,7 +85,7 @@ public class PooledConnectionValidatorTest
 
     private static PooledConnection newPooledConnection( Connection connection )
     {
-        return new PooledConnection( connection, Consumers.<PooledConnection>noOp(), Clock.SYSTEM );
+        return new PooledSocketConnection( connection, null );
     }
 
     private static PooledConnectionValidator newValidatorWithMockedPool()

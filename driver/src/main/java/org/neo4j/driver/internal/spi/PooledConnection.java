@@ -18,14 +18,20 @@
  */
 package org.neo4j.driver.internal.spi;
 
-import org.neo4j.driver.internal.exceptions.BoltProtocolException;
-import org.neo4j.driver.internal.exceptions.ConnectionException;
 import org.neo4j.driver.internal.exceptions.InvalidOperationException;
-import org.neo4j.driver.internal.exceptions.ServerNeo4jException;
-import org.neo4j.driver.internal.net.BoltServerAddress;
 
-public interface Connector
+public interface PooledConnection extends Connection
 {
-    Connection connect( BoltServerAddress address )
-            throws InvalidOperationException, ConnectionException, BoltProtocolException, ServerNeo4jException;
+    /**
+     * If there are any errors that occur on this connection, invoke the given
+     * runnable. This is used in the driver to clean up resources associated with
+     * the connection, like an open transaction.
+     *
+     * @param runnable To be run on error.
+     */
+    void onError( Runnable runnable );
+
+    boolean hasUnrecoverableErrors();
+
+    void dispose() throws InvalidOperationException;
 }

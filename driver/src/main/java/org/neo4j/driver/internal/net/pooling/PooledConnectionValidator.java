@@ -19,9 +19,10 @@
 package org.neo4j.driver.internal.net.pooling;
 
 import org.neo4j.driver.internal.spi.ConnectionPool;
+import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.v1.util.Function;
 
-class PooledConnectionValidator implements Function<PooledConnection,Boolean>
+class PooledConnectionValidator implements Function<PooledConnection, Boolean>
 {
     private final ConnectionPool pool;
 

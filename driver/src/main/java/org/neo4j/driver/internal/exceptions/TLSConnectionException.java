@@ -16,16 +16,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.spi;
+package org.neo4j.driver.internal.exceptions;
 
-import org.neo4j.driver.internal.exceptions.BoltProtocolException;
-import org.neo4j.driver.internal.exceptions.ConnectionException;
-import org.neo4j.driver.internal.exceptions.InvalidOperationException;
-import org.neo4j.driver.internal.exceptions.ServerNeo4jException;
-import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.Neo4jException;
 
-public interface Connector
+/**
+ * Any error that related to failing establish tls connections with the server
+ */
+public class TLSConnectionException extends InternalException
 {
-    Connection connect( BoltServerAddress address )
-            throws InvalidOperationException, ConnectionException, BoltProtocolException, ServerNeo4jException;
+    public TLSConnectionException( String msg )
+    {
+        super( msg );
+    }
+
+    public TLSConnectionException( String msg, Throwable cause )
+    {
+        super( msg, cause );
+    }
+
+    @Override
+    public Neo4jException publicException()
+    {
+        return new ClientException( this.getMessage(), this.getCause() );
+    }
 }

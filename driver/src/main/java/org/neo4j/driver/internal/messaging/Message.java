@@ -20,11 +20,17 @@ package org.neo4j.driver.internal.messaging;
 
 import java.io.IOException;
 
+import org.neo4j.driver.internal.exceptions.BoltProtocolException;
+
 /**
  * Base class for all protocol messages.
  */
 public interface Message
 {
-    void dispatch( MessageHandler handler ) throws IOException;
+    /**
+     * @throws IOException failed to read/write to the socket
+     * @throws BoltProtocolException if the handler failed to handle this message
+     */
+    void dispatch( MessageHandler handler ) throws IOException, BoltProtocolException;
 
 }

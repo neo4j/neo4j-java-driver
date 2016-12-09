@@ -86,7 +86,7 @@ public class RoutingTransactionTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldHandleConnectionFailures()
+    public void shouldHandleConnectionFailures() throws Throwable
     {
         // Given
 
@@ -115,7 +115,7 @@ public class RoutingTransactionTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldHandleWriteFailuresInWriteAccessMode()
+    public void shouldHandleWriteFailuresInWriteAccessMode() throws Throwable
     {
         // Given
         doAnswer( throwingAnswer( new ClientException( "Neo.ClientError.Cluster.NotALeader", "oh no!" ) ) )
@@ -143,7 +143,7 @@ public class RoutingTransactionTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldHandleWriteFailuresInReadAccessMode()
+    public void shouldHandleWriteFailuresInReadAccessMode() throws Throwable
     {
         // Given
         doAnswer( throwingAnswer( new ClientException( "Neo.ClientError.Cluster.NotALeader", "oh no!" ) ) )
@@ -167,7 +167,7 @@ public class RoutingTransactionTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldRethrowNonWriteFailures()
+    public void shouldRethrowNonWriteFailures() throws Throwable
     {
         // Given
         ClientException toBeThrown = new ClientException( "code", "oh no!" );
@@ -193,7 +193,7 @@ public class RoutingTransactionTest
     }
 
     @Test
-    public void shouldHandleConnectionFailuresOnClose()
+    public void shouldHandleConnectionFailuresOnClose() throws Throwable
     {
         // Given
         doThrow( new ServiceUnavailableException( "oh no" ) ).
@@ -220,7 +220,7 @@ public class RoutingTransactionTest
     }
 
     @Test
-    public void shouldHandleWriteFailuresOnClose()
+    public void shouldHandleWriteFailuresOnClose() throws Throwable
     {
         // Given
         doThrow( new ClientException( "Neo.ClientError.Cluster.NotALeader", "oh no!" ) ).when( connection ).sync();

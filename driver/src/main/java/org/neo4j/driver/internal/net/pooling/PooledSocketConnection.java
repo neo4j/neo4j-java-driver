@@ -20,14 +20,17 @@ package org.neo4j.driver.internal.net.pooling;
 
 import java.util.Map;
 
+import org.neo4j.driver.internal.exceptions.BoltProtocolException;
+import org.neo4j.driver.internal.exceptions.ConnectionException;
+import org.neo4j.driver.internal.exceptions.InternalException;
+import org.neo4j.driver.internal.exceptions.InvalidOperationException;
+import org.neo4j.driver.internal.exceptions.ServerNeo4jException;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.util.Clock;
-import org.neo4j.driver.internal.util.Consumer;
+import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.summary.ServerInfo;
 
 /**
@@ -50,91 +53,111 @@ import org.neo4j.driver.v1.summary.ServerInfo;
  *                              |           pool.close          |
  *                              ---------------------------------
  */
-public class PooledConnection implements Connection
+public class PooledSocketConnection implements PooledConnection
 {
     /** The real connection who will do all the real jobs */
     private final Connection delegate;
-    private final Consumer<PooledConnection> release;
+    private final PooledConnectionReleaser release;
 
     private boolean unrecoverableErrorsOccurred = false;
     private Runnable onError = null;
-    private final Clock clock;
-    private long lastUsed;
 
-    public PooledConnection( Connection delegate, Consumer<PooledConnection> release, Clock clock )
+    public PooledSocketConnection( Connection delegate, PooledConnectionReleaser release )
     {
         this.delegate = delegate;
         this.release = release;
-        this.clock = clock;
-        this.lastUsed = clock.millis();
-    }
-
-    public void updateTimestamp()
-    {
-        lastUsed = clock.millis();
     }
 
     @Override
     public void init( String clientName, Map<String,Value> authToken )
+            throws ConnectionException, ServerNeo4jException, InvalidOperationException, BoltProtocolException
     {
         try
         {
             delegate.init( clientName, authToken );
         }
-        catch( RuntimeException e )
+        catch( ConnectionException e )
+        {
+            onDelegateException( e );
+        }
+        catch( ServerNeo4jException e )
+        {
+            onDelegateException( e );
+        }
+        catch( InvalidOperationException e )
+        {
+            onDelegateException( e );
+        }
+        catch( BoltProtocolException e )
         {
             onDelegateException( e );
         }
     }
 
     @Override
-    public void run( String statement, Map<String,Value> parameters,
-            Collector collector )
+    public void run( String statement, Map<String,Value> parameters, Collector collector )
+            throws InvalidOperationException, BoltProtocolException
     {
         try
         {
             delegate.run( statement, parameters, collector );
         }
-        catch(RuntimeException e)
+        catch( InvalidOperationException e )
+        {
+            onDelegateException( e );
+        }
+        catch( BoltProtocolException e )
         {
             onDelegateException( e );
         }
     }
 
     @Override
-    public void discardAll( Collector collector )
+    public void discardAll( Collector collector ) throws InvalidOperationException, BoltProtocolException
     {
         try
         {
             delegate.discardAll( collector );
         }
-        catch ( RuntimeException e )
+        catch ( InvalidOperationException e )
+        {
+            onDelegateException( e );
+        }
+        catch ( BoltProtocolException e )
         {
             onDelegateException( e );
         }
     }
 
     @Override
-    public void pullAll( Collector collector )
+    public void pullAll( Collector collector ) throws InvalidOperationException, BoltProtocolException
     {
         try
         {
             delegate.pullAll( collector );
         }
-        catch ( RuntimeException e )
+        catch ( InvalidOperationException e )
+        {
+            onDelegateException( e );
+        }
+        catch ( BoltProtocolException e )
         {
             onDelegateException( e );
         }
     }
 
     @Override
-    public void reset()
+    public void reset() throws InvalidOperationException, BoltProtocolException
     {
         try
         {
             delegate.reset();
         }
-        catch ( RuntimeException e )
+        catch ( InvalidOperationException e )
+        {
+            onDelegateException( e );
+        }
+        catch ( BoltProtocolException e )
         {
             onDelegateException( e );
         }
@@ -143,50 +166,72 @@ public class PooledConnection implements Connection
     @Override
     public void ackFailure()
     {
-        try
-        {
-            delegate.ackFailure();
-        }
-        catch ( RuntimeException e )
-        {
-            onDelegateException( e );
-        }
+        delegate.ackFailure();
     }
 
     @Override
     public void sync()
+            throws ConnectionException, ServerNeo4jException, InvalidOperationException, BoltProtocolException
     {
         try
         {
             delegate.sync();
         }
-        catch ( RuntimeException e )
+        catch ( ConnectionException e )
+        {
+            onDelegateException( e );
+        }
+        catch ( ServerNeo4jException e )
+        {
+            onDelegateException( e );
+        }
+        catch ( InvalidOperationException e )
+        {
+            onDelegateException( e );
+        }
+        catch ( BoltProtocolException e )
         {
             onDelegateException( e );
         }
     }
 
     @Override
-    public void flush()
+    public void flush() throws ConnectionException, InvalidOperationException, BoltProtocolException
     {
         try
         {
             delegate.flush();
         }
-        catch ( RuntimeException e )
+        catch ( ConnectionException e )
+        {
+            onDelegateException( e );
+        }
+        catch ( InvalidOperationException e )
+        {
+            onDelegateException( e );
+        }
+        catch ( BoltProtocolException e )
         {
             onDelegateException( e );
         }
     }
 
     @Override
-    public void receiveOne()
+    public void receiveOne() throws ConnectionException, ServerNeo4jException, BoltProtocolException
     {
         try
         {
             delegate.receiveOne();
         }
-        catch ( RuntimeException e )
+        catch ( ConnectionException e )
+        {
+            onDelegateException( e );
+        }
+        catch ( ServerNeo4jException e )
+        {
+            onDelegateException( e );
+        }
+        catch ( BoltProtocolException e )
         {
             onDelegateException( e );
         }
@@ -197,7 +242,7 @@ public class PooledConnection implements Connection
      * Make sure only close the connection once on each session to avoid releasing the connection twice, a.k.a.
      * adding back the connection twice into the pool.
      */
-    public void close()
+    public void close() throws InvalidOperationException
     {
         release.accept( this );
         // put the full logic of deciding whether to dispose the connection or to put it back to
@@ -216,22 +261,24 @@ public class PooledConnection implements Connection
     }
 
     @Override
-    public void resetAsync()
+    public void resetAsync() throws ConnectionException, InvalidOperationException, BoltProtocolException
     {
         try
         {
             delegate.resetAsync();
         }
-        catch( RuntimeException e )
+        catch ( ConnectionException e )
         {
             onDelegateException( e );
         }
-    }
-
-    @Override
-    public boolean isAckFailureMuted()
-    {
-        return delegate.isAckFailureMuted();
+        catch ( InvalidOperationException e )
+        {
+            onDelegateException( e );
+        }
+        catch ( BoltProtocolException e )
+        {
+            onDelegateException( e );
+        }
     }
 
     @Override
@@ -252,24 +299,27 @@ public class PooledConnection implements Connection
         return delegate.logger();
     }
 
-    public void dispose()
+    @Override
+    public void dispose() throws InvalidOperationException
     {
         delegate.close();
     }
 
     /**
-     * If something goes wrong with the delegate, we want to figure out if this "wrong" is something that means
+     * * If something goes wrong with the delegate, we want to figure out if this "wrong" is something that means
      * the connection cannot be reused (and thus should be evicted from the pool), or if it's something that we can
      * safely recover from.
      * @param e the exception the delegate threw
+     * @param <T> the type of the exception that is going to rethrow
+     * @throws T the type of the exception that is going to rethrow
      */
-    private void onDelegateException( RuntimeException e )
+    private <T extends InternalException> void onDelegateException( T e ) throws T
     {
-        if ( !isClientOrTransientError( e ) || isProtocolViolationError( e ) )
+        if( e.isUnrecoverableError() )
         {
             unrecoverableErrorsOccurred = true;
         }
-        else if( !isAckFailureMuted() )
+        else
         {
             ackFailure();
         }
@@ -284,24 +334,5 @@ public class PooledConnection implements Connection
     public void onError( Runnable runnable )
     {
         this.onError = runnable;
-    }
-
-    private boolean isProtocolViolationError(RuntimeException e )
-    {
-        return e instanceof Neo4jException
-               && ((Neo4jException) e).code().startsWith( "Neo.ClientError.Request" );
-    }
-
-    private boolean isClientOrTransientError( RuntimeException e )
-    {
-        // Eg: DatabaseErrors and unknown (no status code or not neo4j exception) cause session to be discarded
-        return e instanceof Neo4jException
-               && (((Neo4jException) e).code().contains( "ClientError" )
-                   || ((Neo4jException) e).code().contains( "TransientError" ));
-    }
-
-    public long idleTime()
-    {
-        return clock.millis() - lastUsed;
     }
 }

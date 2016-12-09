@@ -72,7 +72,7 @@ public class SocketClientTest
     }
 
     @Test
-    public void shouldReadAllBytes() throws IOException
+    public void shouldReadAllBytes() throws Throwable
     {
         // Given
         ByteBuffer buffer = ByteBuffer.allocate( 4 );
@@ -92,7 +92,7 @@ public class SocketClientTest
     }
 
     @Test
-    public void shouldFailIfConnectionFailsWhileReading() throws IOException
+    public void shouldFailIfConnectionFailsWhileReading() throws Throwable
     {
         // Given
         ByteBuffer buffer = ByteBuffer.allocate( 4 );
@@ -110,7 +110,7 @@ public class SocketClientTest
     }
 
     @Test
-    public void shouldWriteAllBytes() throws IOException
+    public void shouldWriteAllBytes() throws Throwable
     {
         // Given
         ByteBuffer buffer = ByteBuffer.wrap(  new byte[]{0, 1, 2, 3});
@@ -129,7 +129,7 @@ public class SocketClientTest
     }
 
     @Test
-    public void shouldFailIfConnectionFailsWhileWriting() throws IOException
+    public void shouldFailIfConnectionFailsWhileWriting() throws Throwable
     {
         // Given
         ByteBuffer buffer = ByteBuffer.allocate( 4 );

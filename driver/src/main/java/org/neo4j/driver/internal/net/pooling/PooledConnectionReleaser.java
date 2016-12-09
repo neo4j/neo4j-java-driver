@@ -16,8 +16,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.util;
+package org.neo4j.driver.internal.net.pooling;
 
-public interface Supplier<T> {
-    T get();
+import org.neo4j.driver.internal.exceptions.InvalidOperationException;
+import org.neo4j.driver.internal.spi.PooledConnection;
+
+/**
+ * The responsibility of the {@link PooledConnectionReleaser} is to release valid connections
+ * back to the connections queue.
+ */
+public interface PooledConnectionReleaser
+{
+    void accept( PooledConnection pooledConnection ) throws InvalidOperationException;
 }

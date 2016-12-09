@@ -16,16 +16,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.spi;
+package org.neo4j.driver.internal.net.pooling;
 
 import org.neo4j.driver.internal.exceptions.BoltProtocolException;
 import org.neo4j.driver.internal.exceptions.ConnectionException;
 import org.neo4j.driver.internal.exceptions.InvalidOperationException;
 import org.neo4j.driver.internal.exceptions.ServerNeo4jException;
-import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.spi.PooledConnection;
 
-public interface Connector
+public interface PooledConnectionFactory
 {
-    Connection connect( BoltServerAddress address )
-            throws InvalidOperationException, ConnectionException, BoltProtocolException, ServerNeo4jException;
+    PooledConnection newInstance()
+            throws ConnectionException, InvalidOperationException, ServerNeo4jException, BoltProtocolException;
 }

@@ -23,11 +23,10 @@ import org.junit.Test;
 
 import java.util.Map;
 
+import org.neo4j.driver.internal.exceptions.BoltProtocolException;
+import org.neo4j.driver.internal.exceptions.InvalidOperationException;
 import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.internal.spi.Collector;
-import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.v1.AccessMode;
-import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
@@ -42,21 +41,18 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
 
 public class RoutingNetworkSessionTest
 {
-    private Connection connection;
-    private RoutingErrorHandler onError;
+    private RoutingErrorHandler mockedOnError;
+    private NetworkSession mockedSession;
     private static final BoltServerAddress LOCALHOST = new BoltServerAddress( "localhost", 7687 );
 
     @Before
     public void setUp()
     {
-        connection = mock( Connection.class );
-        when( connection.boltServerAddress() ).thenReturn( LOCALHOST );
-        when( connection.isOpen() ).thenReturn( true );
-        onError = mock( RoutingErrorHandler.class );
+        mockedSession = mock( NetworkSession.class );
+        mockedOnError = mock( RoutingErrorHandler.class );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -65,11 +61,10 @@ public class RoutingNetworkSessionTest
     {
         // Given
         doThrow( new ServiceUnavailableException( "oh no" ) ).
-                when( connection ).run( anyString(), any( Map.class ), any( Collector.class ) );
+                when( mockedSession ).run( anyString(), any( Map.class ) );
 
-        RoutingNetworkSession result =
-                new RoutingNetworkSession( new NetworkSession( connection ), AccessMode.WRITE, connection.boltServerAddress(),
-                        onError );
+        RoutingNetworkSession result = new RoutingNetworkSession( mockedSession, AccessMode.WRITE, LOCALHOST,
+                mockedOnError );
 
         // When
         try
@@ -83,20 +78,19 @@ public class RoutingNetworkSessionTest
         }
 
         // Then
-        verify( onError ).onConnectionFailure( LOCALHOST );
-        verifyNoMoreInteractions( onError );
+        verify( mockedOnError ).onConnectionFailure( LOCALHOST );
+        verifyNoMoreInteractions( mockedOnError );
     }
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldHandleWriteFailuresInWriteAccessMode()
+    public void shouldHandleWriteFailuresInWriteAccessMode() throws InvalidOperationException, BoltProtocolException
     {
         // Given
         doThrow( new ClientException( "Neo.ClientError.Cluster.NotALeader", "oh no!" ) ).
-                when( connection ).run( anyString(), any( Map.class ), any( Collector.class ) );
-        RoutingNetworkSession session =
-                new RoutingNetworkSession( new NetworkSession(connection), AccessMode.WRITE, connection.boltServerAddress(),
-                        onError );
+                when( mockedSession ).run( anyString(), any( Map.class ) );
+        RoutingNetworkSession session = new RoutingNetworkSession( mockedSession, AccessMode.WRITE, LOCALHOST,
+                mockedOnError );
 
         // When
         try
@@ -110,8 +104,8 @@ public class RoutingNetworkSessionTest
         }
 
         // Then
-        verify( onError ).onWriteFailure( LOCALHOST );
-        verifyNoMoreInteractions( onError );
+        verify( mockedOnError ).onWriteFailure( LOCALHOST );
+        verifyNoMoreInteractions( mockedOnError );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -120,9 +114,9 @@ public class RoutingNetworkSessionTest
     {
         // Given
         doThrow( new ClientException( "Neo.ClientError.Cluster.NotALeader", "oh no!" ) ).
-                when( connection ).run( anyString(), any( Map.class ), any( Collector.class ) );
-        RoutingNetworkSession session =
-                new RoutingNetworkSession( new NetworkSession( connection ), AccessMode.READ, connection.boltServerAddress(), onError );
+                when( mockedSession ).run( anyString(), any( Map.class ) );
+        RoutingNetworkSession session = new RoutingNetworkSession( mockedSession, AccessMode.READ, LOCALHOST,
+                mockedOnError );
 
         // When
         try
@@ -134,7 +128,7 @@ public class RoutingNetworkSessionTest
         {
             //ignore
         }
-        verifyNoMoreInteractions( onError );
+        verifyNoMoreInteractions( mockedOnError );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -144,9 +138,9 @@ public class RoutingNetworkSessionTest
         // Given
         ClientException toBeThrown = new ClientException( "code", "oh no!" );
         doThrow( toBeThrown ).
-                when( connection ).run( anyString(), any( Map.class ), any( Collector.class ) );
-        RoutingNetworkSession session =
-                new RoutingNetworkSession( new NetworkSession( connection ), AccessMode.WRITE, connection.boltServerAddress(), onError );
+                when( mockedSession ).run( anyString(), any( Map.class ) );
+        RoutingNetworkSession session = new RoutingNetworkSession( mockedSession, AccessMode.WRITE, LOCALHOST,
+                mockedOnError );
 
         // When
         try
@@ -160,7 +154,7 @@ public class RoutingNetworkSessionTest
         }
 
         // Then
-        verifyZeroInteractions(  onError );
+        verifyZeroInteractions( mockedOnError );
     }
 
     @Test
@@ -168,11 +162,10 @@ public class RoutingNetworkSessionTest
     {
         // Given
         doThrow( new ServiceUnavailableException( "oh no" ) ).
-                when( connection ).sync();
+                when( mockedSession ).close();
 
-        RoutingNetworkSession session =
-                new RoutingNetworkSession( new NetworkSession( connection ),  AccessMode.WRITE, connection.boltServerAddress(),
-                        onError );
+        RoutingNetworkSession session = new RoutingNetworkSession( mockedSession,  AccessMode.WRITE, LOCALHOST,
+                mockedOnError );
 
         // When
         try
@@ -186,18 +179,17 @@ public class RoutingNetworkSessionTest
         }
 
         // Then
-        verify( onError ).onConnectionFailure( LOCALHOST );
-        verifyNoMoreInteractions( onError );
+        verify( mockedOnError ).onConnectionFailure( LOCALHOST );
+        verifyNoMoreInteractions( mockedOnError );
     }
 
     @Test
     public void shouldHandleWriteFailuresOnClose()
     {
         // Given
-        doThrow( new ClientException( "Neo.ClientError.Cluster.NotALeader", "oh no!" ) ).when( connection ).sync();
-
-        RoutingNetworkSession session =
-                new RoutingNetworkSession( new NetworkSession( connection ), AccessMode.WRITE, connection.boltServerAddress(), onError );
+        doThrow( new ClientException( "Neo.ClientError.Cluster.NotALeader", "oh no!" ) ).when( mockedSession ).close();
+        RoutingNetworkSession session = new RoutingNetworkSession( mockedSession, AccessMode.WRITE, LOCALHOST,
+                mockedOnError );
 
         // When
         try
@@ -211,55 +203,49 @@ public class RoutingNetworkSessionTest
         }
 
         // Then
-        verify( onError ).onWriteFailure( LOCALHOST );
-        verifyNoMoreInteractions( onError );
+        verify( mockedOnError ).onWriteFailure( LOCALHOST );
+        verifyNoMoreInteractions( mockedOnError );
     }
 
     @Test
     public void shouldDelegateLastBookmark()
     {
         // Given
-        Session inner = mock( Session.class );
-        RoutingNetworkSession session =
-                new RoutingNetworkSession( inner, AccessMode.WRITE, connection.boltServerAddress(), onError );
-
+        RoutingNetworkSession session = new RoutingNetworkSession( mockedSession, AccessMode.WRITE, LOCALHOST,
+                mockedOnError );
 
         // When
         session.lastBookmark();
 
         // Then
-        verify( inner ).lastBookmark();
+        verify( mockedSession ).lastBookmark();
     }
 
     @Test
     public void shouldDelegateReset()
     {
         // Given
-        Session inner = mock( Session.class );
-        RoutingNetworkSession session =
-                new RoutingNetworkSession( inner, AccessMode.WRITE, connection.boltServerAddress(), onError );
-
+        RoutingNetworkSession session = new RoutingNetworkSession( mockedSession, AccessMode.WRITE, LOCALHOST,
+                mockedOnError );
 
         // When
         session.reset();
 
         // Then
-        verify( inner ).reset();
+        verify( mockedSession ).reset();
     }
 
     @Test
     public void shouldDelegateIsOpen()
     {
         // Given
-        Session inner = mock( Session.class );
-        RoutingNetworkSession session =
-                new RoutingNetworkSession( inner, AccessMode.WRITE, connection.boltServerAddress(), onError );
-
+        RoutingNetworkSession session = new RoutingNetworkSession( mockedSession, AccessMode.WRITE, LOCALHOST,
+                mockedOnError );
 
         // When
         session.isOpen();
 
         // Then
-        verify( inner ).isOpen();
+        verify( mockedSession ).isOpen();
     }
 }

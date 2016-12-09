@@ -30,6 +30,10 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.neo4j.driver.internal.cluster.RoutingSettings;
+import org.neo4j.driver.internal.exceptions.BoltProtocolException;
+import org.neo4j.driver.internal.exceptions.ConnectionException;
+import org.neo4j.driver.internal.exceptions.InvalidOperationException;
+import org.neo4j.driver.internal.exceptions.ServerNeo4jException;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.spi.Connection;
@@ -71,7 +75,7 @@ public class RoutingDriverTest
     private final Logging logging = EventLogger.provider( events, EventLogger.Level.TRACE );
 
     @Test
-    public void shouldDoRoutingOnInitialization()
+    public void shouldDoRoutingOnInitialization() throws Throwable
     {
         // Given
         ConnectionPool pool = poolWithServers(
@@ -88,7 +92,7 @@ public class RoutingDriverTest
     }
 
     @Test
-    public void shouldDoReRoutingOnSessionAcquisitionIfNecessary()
+    public void shouldDoReRoutingOnSessionAcquisitionIfNecessary() throws Throwable
     {
         // Given
         RoutingDriver routingDriver = driverWithPool( pool(
@@ -107,7 +111,7 @@ public class RoutingDriverTest
     }
 
     @Test
-    public void shouldNotDoReRoutingOnSessionAcquisitionIfNotNecessary()
+    public void shouldNotDoReRoutingOnSessionAcquisitionIfNotNecessary() throws Throwable
     {
         // Given
         RoutingDriver routingDriver = driverWithPool( pool(
@@ -128,7 +132,7 @@ public class RoutingDriverTest
     }
 
     @Test
-    public void shouldFailIfNoRouting()
+    public void shouldFailIfNoRouting() throws Throwable
     {
         // Given
         ConnectionPool pool = pool( new ThrowsException( new ClientException(
@@ -147,7 +151,7 @@ public class RoutingDriverTest
     }
 
     @Test
-    public void shouldFailIfNoRoutersProvided()
+    public void shouldFailIfNoRoutersProvided() throws Throwable
     {
         // Given
         ConnectionPool pool = poolWithServers(
@@ -169,7 +173,7 @@ public class RoutingDriverTest
     }
 
     @Test
-    public void shouldFailIfNoWritersProvided()
+    public void shouldFailIfNoWritersProvided() throws Throwable
     {
         // Given
         ConnectionPool pool = poolWithServers(
@@ -191,7 +195,7 @@ public class RoutingDriverTest
     }
 
     @Test
-    public void shouldForgetAboutServersOnRerouting()
+    public void shouldForgetAboutServersOnRerouting() throws Throwable
     {
         // Given
         ConnectionPool pool = pool(
@@ -214,7 +218,7 @@ public class RoutingDriverTest
     }
 
     @Test
-    public void shouldRediscoverOnTimeout()
+    public void shouldRediscoverOnTimeout() throws Throwable
     {
         // Given
         RoutingDriver routingDriver = driverWithPool( pool(
@@ -237,7 +241,7 @@ public class RoutingDriverTest
     }
 
     @Test
-    public void shouldNotRediscoverWhenNoTimeout()
+    public void shouldNotRediscoverWhenNoTimeout() throws Throwable
     {
         // Given
         RoutingDriver routingDriver = driverWithPool( pool(
@@ -259,7 +263,7 @@ public class RoutingDriverTest
     }
 
     @Test
-    public void shouldRoundRobinAmongReadServers()
+    public void shouldRoundRobinAmongReadServers() throws Throwable
     {
         // Given
         RoutingDriver routingDriver = driverWithServers( 60, serverInfo( "ROUTE", "localhost:1111", "localhost:1112" ),
@@ -284,7 +288,7 @@ public class RoutingDriverTest
     }
 
     @Test
-    public void shouldRoundRobinAmongWriteServers()
+    public void shouldRoundRobinAmongWriteServers() throws Throwable
     {
         // Given
         RoutingDriver routingDriver = driverWithServers( 60, serverInfo( "ROUTE", "localhost:1111", "localhost:1112" ),
@@ -330,6 +334,7 @@ public class RoutingDriverTest
 
     @SafeVarargs
     private final RoutingDriver driverWithServers( long ttl, Map<String,Object>... serverInfo )
+            throws ConnectionException, BoltProtocolException, InvalidOperationException, ServerNeo4jException
     {
         return driverWithPool( poolWithServers( ttl, serverInfo ) );
     }
@@ -341,6 +346,7 @@ public class RoutingDriverTest
 
     @SafeVarargs
     private final ConnectionPool poolWithServers( long ttl, Map<String,Object>... serverInfo )
+            throws ConnectionException, BoltProtocolException, InvalidOperationException, ServerNeo4jException
     {
         return pool( withServers( ttl, serverInfo ) );
     }
@@ -357,6 +363,7 @@ public class RoutingDriverTest
     }
 
     private ConnectionPool pool( final Answer toGetServers, final Answer... furtherGetServers )
+            throws ConnectionException, BoltProtocolException, InvalidOperationException, ServerNeo4jException
     {
         ConnectionPool pool = mock( ConnectionPool.class );
 

@@ -21,6 +21,10 @@ package org.neo4j.driver.internal.net;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.driver.internal.exceptions.BoltProtocolException;
+import org.neo4j.driver.internal.exceptions.ConnectionException;
+import org.neo4j.driver.internal.exceptions.ServerNeo4jException;
+import org.neo4j.driver.internal.exceptions.InvalidOperationException;
 import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.v1.Logger;
@@ -46,6 +50,7 @@ public class ConcurrencyGuardingConnection implements Connection
 
     @Override
     public void init( String clientName, Map<String,Value> authToken )
+            throws ConnectionException, ServerNeo4jException, InvalidOperationException, BoltProtocolException
     {
         try
         {
@@ -60,7 +65,7 @@ public class ConcurrencyGuardingConnection implements Connection
 
     @Override
     public void run( String statement, Map<String,Value> parameters,
-            Collector collector )
+            Collector collector ) throws InvalidOperationException, BoltProtocolException
     {
         try
         {
@@ -74,7 +79,7 @@ public class ConcurrencyGuardingConnection implements Connection
     }
 
     @Override
-    public void discardAll( Collector collector )
+    public void discardAll( Collector collector ) throws InvalidOperationException, BoltProtocolException
     {
         try
         {
@@ -88,7 +93,7 @@ public class ConcurrencyGuardingConnection implements Connection
     }
 
     @Override
-    public void pullAll( Collector collector )
+    public void pullAll( Collector collector ) throws InvalidOperationException, BoltProtocolException
     {
         try
         {
@@ -102,7 +107,7 @@ public class ConcurrencyGuardingConnection implements Connection
     }
 
     @Override
-    public void reset()
+    public void reset() throws InvalidOperationException, BoltProtocolException
     {
         try
         {
@@ -131,6 +136,7 @@ public class ConcurrencyGuardingConnection implements Connection
 
     @Override
     public void sync()
+            throws ConnectionException, ServerNeo4jException, InvalidOperationException, BoltProtocolException
     {
         try
         {
@@ -144,7 +150,7 @@ public class ConcurrencyGuardingConnection implements Connection
     }
 
     @Override
-    public void flush()
+    public void flush() throws ConnectionException, InvalidOperationException, BoltProtocolException
     {
         try
         {
@@ -158,7 +164,7 @@ public class ConcurrencyGuardingConnection implements Connection
     }
 
     @Override
-    public void receiveOne()
+    public void receiveOne() throws ConnectionException, ServerNeo4jException, BoltProtocolException
     {
         try
         {
@@ -172,7 +178,7 @@ public class ConcurrencyGuardingConnection implements Connection
     }
 
     @Override
-    public void close()
+    public void close() throws InvalidOperationException
     {
         // It is fine to call close concurrently with this connection being used somewhere else.
         // This could happen when driver is closed while there still exist sessions that do some work.
@@ -186,27 +192,9 @@ public class ConcurrencyGuardingConnection implements Connection
     }
 
     @Override
-    public void onError( Runnable runnable )
-    {
-        delegate.onError( runnable );
-    }
-
-    @Override
-    public boolean hasUnrecoverableErrors()
-    {
-        return delegate.hasUnrecoverableErrors();
-    }
-
-    @Override
-    public void resetAsync()
+    public void resetAsync() throws ConnectionException, InvalidOperationException, BoltProtocolException
     {
         delegate.resetAsync();
-    }
-
-    @Override
-    public boolean isAckFailureMuted()
-    {
-        return delegate.isAckFailureMuted();
     }
 
     private void markAsAvailable()

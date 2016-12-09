@@ -20,15 +20,17 @@ package org.neo4j.driver.internal;
 
 import org.neo4j.driver.internal.cluster.LoadBalancer;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
+import org.neo4j.driver.internal.exceptions.FailedToUpdateRoutingException;
+import org.neo4j.driver.internal.exceptions.InternalException;
+import org.neo4j.driver.internal.exceptions.InvalidOperationException;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.security.SecurityPlan;
-import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
+import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Session;
-import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static java.lang.String.format;
 
@@ -44,7 +46,7 @@ public class RoutingDriver extends BaseDriver
         return securityPlan;
     }
 
-    private final LoadBalancer loadBalancer;
+    private LoadBalancer loadBalancer;
 
     public RoutingDriver(
             RoutingSettings settings,
@@ -55,27 +57,41 @@ public class RoutingDriver extends BaseDriver
             Logging logging )
     {
         super( verifiedSecurityPlan( securityPlan ), logging );
-        this.loadBalancer = new LoadBalancer( settings, clock, log, connections, seedAddress );
+        try
+        {
+            this.loadBalancer = new LoadBalancer( settings, clock, log, connections, seedAddress );
+        }
+        catch ( FailedToUpdateRoutingException e )
+        {
+            e.publicException();
+        }
     }
 
     @Override
     protected Session newSessionWithMode( AccessMode mode )
     {
-        Connection connection = acquireConnection( mode );
+        PooledConnection connection = acquireConnection( mode );
         NetworkSession networkSession = new NetworkSession( connection );
         return new RoutingNetworkSession( networkSession, mode, connection.boltServerAddress(), loadBalancer );
     }
 
-    private Connection acquireConnection( AccessMode role )
+    private PooledConnection acquireConnection( AccessMode role )
     {
-        switch ( role )
+        try
         {
-        case READ:
-            return loadBalancer.acquireReadConnection();
-        case WRITE:
-            return loadBalancer.acquireWriteConnection();
-        default:
-            throw new ClientException( role + " is not supported for creating new sessions" );
+            switch ( role )
+            {
+            case READ:
+                return loadBalancer.acquireReadConnection();
+            case WRITE:
+                return loadBalancer.acquireWriteConnection();
+            default:
+                throw new InvalidOperationException( role + " is not supported for creating new sessions" );
+            }
+        }
+        catch ( InternalException e )
+        {
+            throw e.publicException();
         }
     }
 

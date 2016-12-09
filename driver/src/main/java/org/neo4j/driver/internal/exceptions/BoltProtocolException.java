@@ -16,43 +16,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.messaging;
+package org.neo4j.driver.internal.exceptions;
 
-import java.io.IOException;
-
-import org.neo4j.driver.internal.exceptions.BoltProtocolException;
+import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.Neo4jException;
 
 /**
- * IGNORED response message
- * <p>
- * Sent by the server to signal that an operation has been ignored.
- * Terminates response sequence.
+ * Any error that related to some unexpected use of Bolt protocol, including failed to encode/decode between bolt
+ * message and binary, unexpected message replied etc.
  */
-public class IgnoredMessage implements Message
+public class BoltProtocolException extends InternalException
 {
-    public static final IgnoredMessage IGNORED = new IgnoredMessage();
-
-    @Override
-    public void dispatch( MessageHandler handler ) throws IOException, BoltProtocolException
+    public BoltProtocolException( String msg )
     {
-        handler.handleIgnoredMessage();
+        super( msg );
+    }
+
+    public BoltProtocolException( String msg, Throwable error )
+    {
+        super( msg, error );
+    }
+
+    public BoltProtocolException( String msg, InternalException error )
+    {
+        super( msg, error.publicException() );
     }
 
     @Override
-    public String toString()
+    public Neo4jException publicException()
     {
-        return "IGNORED {}";
-    }
-
-    @Override
-    public boolean equals( Object obj )
-    {
-        return obj != null && obj.getClass() == getClass();
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return 1;
+        return new ClientException( getMessage(), getCause() );
     }
 }

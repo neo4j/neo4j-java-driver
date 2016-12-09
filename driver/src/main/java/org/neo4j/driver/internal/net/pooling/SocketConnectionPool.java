@@ -18,15 +18,18 @@
  */
 package org.neo4j.driver.internal.net.pooling;
 
+
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.driver.internal.exceptions.BoltProtocolException;
+import org.neo4j.driver.internal.exceptions.ConnectionException;
+import org.neo4j.driver.internal.exceptions.InvalidOperationException;
+import org.neo4j.driver.internal.exceptions.ServerNeo4jException;
 import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.Connector;
-import org.neo4j.driver.internal.util.Clock;
-import org.neo4j.driver.internal.util.Supplier;
+import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.v1.Logging;
 
 /**
@@ -46,43 +49,40 @@ public class SocketConnectionPool implements ConnectionPool
     /**
      * Pools, organized by server address.
      */
-    private final ConcurrentHashMap<BoltServerAddress,BlockingPooledConnectionQueue> pools =
-            new ConcurrentHashMap<>();
 
     private final AtomicBoolean closed = new AtomicBoolean();
+    private final ConcurrentHashMap<BoltServerAddress,BlockingPooledConnectionQueue> pools = new ConcurrentHashMap<>();
 
     private final PoolSettings poolSettings;
     private final Connector connector;
-    private final Clock clock;
     private final Logging logging;
 
-    public SocketConnectionPool( PoolSettings poolSettings, Connector connector, Clock clock, Logging logging )
+    public SocketConnectionPool( PoolSettings poolSettings, Connector connector, Logging logging )
     {
         this.poolSettings = poolSettings;
         this.connector = connector;
-        this.clock = clock;
         this.logging = logging;
     }
 
     @Override
-    public Connection acquire( final BoltServerAddress address )
+    public PooledConnection acquire( final BoltServerAddress address )
+            throws ConnectionException, InvalidOperationException, ServerNeo4jException, BoltProtocolException
     {
         assertNotClosed();
 
         final BlockingPooledConnectionQueue connections = pool( address );
-        Supplier<PooledConnection> supplier = new Supplier<PooledConnection>()
+        PooledConnectionFactory pooledConnectionFactory = new PooledConnectionFactory()
         {
             @Override
-            public PooledConnection get()
+            public PooledConnection newInstance()
+                    throws ConnectionException, ServerNeo4jException, InvalidOperationException, BoltProtocolException
             {
-                PooledConnectionValidator connectionValidator =
-                        new PooledConnectionValidator( SocketConnectionPool.this );
-                PooledConnectionReleaseConsumer releaseConsumer =
-                        new PooledConnectionReleaseConsumer( connections, connectionValidator );
-                return new PooledConnection( connector.connect( address ), releaseConsumer, clock );
+                PooledConnectionReleaser releaser =
+                        new SocketConnectionPoolPooledConnectionReleaseManager( connections );
+                return new PooledSocketConnection( connector.connect( address ), releaser );
             }
         };
-        PooledConnection conn = connections.acquire( supplier );
+        PooledConnection conn = connections.acquire( pooledConnectionFactory );
 
         if ( closed.get() )
         {
@@ -90,8 +90,50 @@ public class SocketConnectionPool implements ConnectionPool
             throw poolClosedException();
         }
 
-        conn.updateTimestamp();
         return conn;
+    }
+
+    @Override
+    public void purge( BoltServerAddress address ) throws InvalidOperationException
+    {
+        BlockingPooledConnectionQueue connections = pools.remove( address );
+        if ( connections != null )
+        {
+            connections.terminate();
+        }
+    }
+
+    @Override
+    public boolean hasAddress( BoltServerAddress address )
+    {
+        return pools.containsKey( address );
+    }
+
+    @Override
+    public void close() throws InvalidOperationException
+    {
+        if ( closed.compareAndSet( false, true ) )
+        {
+            for ( BlockingPooledConnectionQueue pool : pools.values() )
+            {
+                pool.terminate();
+            }
+
+            pools.clear();
+        }
+    }
+
+    private void assertNotClosed() throws InvalidOperationException
+    {
+        if ( closed.get() )
+        {
+            throw poolClosedException();
+        }
+    }
+
+    private static InvalidOperationException poolClosedException()
+    {
+        return new InvalidOperationException( "Pool closed" );
     }
 
     private BlockingPooledConnectionQueue pool( BoltServerAddress address )
@@ -110,46 +152,19 @@ public class SocketConnectionPool implements ConnectionPool
         return pool;
     }
 
-    @Override
-    public void purge( BoltServerAddress address )
+    private class SocketConnectionPoolPooledConnectionReleaseManager implements PooledConnectionReleaser
     {
-        BlockingPooledConnectionQueue connections = pools.remove( address );
-        if ( connections != null )
+        private final PooledConnectionReleaser releaser;
+        SocketConnectionPoolPooledConnectionReleaseManager( BlockingPooledConnectionQueue connections )
         {
-            connections.terminate();
+            releaser = new PooledConnectionReleaseManager( connections,
+                    new PooledConnectionValidator( SocketConnectionPool.this ) );
         }
-    }
 
-    @Override
-    public boolean hasAddress( BoltServerAddress address )
-    {
-        return pools.containsKey( address );
-    }
-
-    @Override
-    public void close()
-    {
-        if ( closed.compareAndSet( false, true ) )
+        @Override
+        public void accept( PooledConnection pooledConnection ) throws InvalidOperationException
         {
-            for ( BlockingPooledConnectionQueue pool : pools.values() )
-            {
-                pool.terminate();
-            }
-
-            pools.clear();
+            releaser.accept( pooledConnection );
         }
-    }
-
-    private void assertNotClosed()
-    {
-        if ( closed.get() )
-        {
-            throw poolClosedException();
-        }
-    }
-
-    private static RuntimeException poolClosedException()
-    {
-        return new IllegalStateException( "Pool closed" );
     }
 }
