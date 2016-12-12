@@ -100,6 +100,28 @@ public class DriverFactoryTest
         verify( connectionPool ).close();
     }
 
+    @Test
+    public void usesStandardSessionFactoryWhenNothingConfigured()
+    {
+        Config config = Config.defaultConfig();
+        SessionFactoryCapturingDriverFactory factory = new SessionFactoryCapturingDriverFactory();
+
+        factory.newInstance( uri, dummyAuthToken(), dummyRoutingSettings(), config );
+
+        assertThat( factory.capturedSessionFactory, instanceOf( NetworkSessionFactory.class ) );
+    }
+
+    @Test
+    public void usesLeakLoggingSessionFactoryWhenConfigured()
+    {
+        Config config = Config.build().withLeakedSessionsLogging().toConfig();
+        SessionFactoryCapturingDriverFactory factory = new SessionFactoryCapturingDriverFactory();
+
+        factory.newInstance( uri, dummyAuthToken(), dummyRoutingSettings(), config );
+
+        assertThat( factory.capturedSessionFactory, instanceOf( LeakLoggingNetworkSessionFactory.class ) );
+    }
+
     private static AuthToken dummyAuthToken()
     {
         return AuthTokens.basic( "neo4j", "neo4j" );
@@ -137,6 +159,27 @@ public class DriverFactoryTest
         ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Config config )
         {
             return connectionPool;
+        }
+    }
+
+    private static class SessionFactoryCapturingDriverFactory extends DriverFactory
+    {
+        SessionFactory capturedSessionFactory;
+
+        @Override
+        DirectDriver createDirectDriver( BoltServerAddress address, ConnectionPool connectionPool, Config config,
+                SecurityPlan securityPlan, SessionFactory sessionFactory )
+        {
+            capturedSessionFactory = sessionFactory;
+            return null;
+        }
+
+        @Override
+        RoutingDriver createRoutingDriver( BoltServerAddress address, ConnectionPool connectionPool, Config config,
+                RoutingSettings routingSettings, SecurityPlan securityPlan, SessionFactory sessionFactory )
+        {
+            capturedSessionFactory = sessionFactory;
+            return null;
         }
     }
 }

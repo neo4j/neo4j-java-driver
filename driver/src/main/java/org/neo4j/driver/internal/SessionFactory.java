@@ -21,7 +21,7 @@ package org.neo4j.driver.internal;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.v1.Session;
 
-public interface SessionFactory
+interface SessionFactory
 {
     Session newInstance( Connection connection );
 }

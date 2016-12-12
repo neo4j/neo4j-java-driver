@@ -129,7 +129,7 @@ public class DriverFactory
 
     private static SessionFactory createSessionFactory( Config config )
     {
-        if ( LeakLoggingNetworkSessionFactory.leakLoggingEnabled() )
+        if ( config.logLeakedSessions() )
         {
             return new LeakLoggingNetworkSessionFactory( config.logging() );
         }

@@ -23,22 +23,15 @@ import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Session;
 
-public class LeakLoggingNetworkSessionFactory implements SessionFactory
+class LeakLoggingNetworkSessionFactory implements SessionFactory
 {
-    private static final String SYSTEM_PROPERTY_NAME = "org.neo4j.driver.logSessionLeaks";
     private static final String LOGGER_NAME = "sessionLeak";
 
     private final Logger logger;
 
-    public LeakLoggingNetworkSessionFactory( Logging logging )
+    LeakLoggingNetworkSessionFactory( Logging logging )
     {
         this.logger = logging.getLog( LOGGER_NAME );
-    }
-
-    public static boolean leakLoggingEnabled()
-    {
-        String value = System.getProperty( SYSTEM_PROPERTY_NAME );
-        return Boolean.parseBoolean( value );
     }
 
     @Override
