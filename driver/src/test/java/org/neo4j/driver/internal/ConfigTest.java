@@ -27,6 +27,8 @@ import org.neo4j.driver.v1.util.FileTools;
 
 import static java.lang.System.getProperty;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class ConfigTest
 {
@@ -84,6 +86,16 @@ public class ConfigTest
 
         // then
         assertEquals( -1, config.idleTimeBeforeConnectionTest() );
+    }
+
+    @Test
+    public void shouldTurnOnLeakedSessionsLogging()
+    {
+        // leaked sessions logging is turned off by default
+        assertFalse( Config.build().toConfig().logLeakedSessions() );
+
+        // it can be turned on using config
+        assertTrue( Config.build().withLeakedSessionsLogging().toConfig().logLeakedSessions() );
     }
 
     public static void deleteDefaultKnownCertFileIfExists()

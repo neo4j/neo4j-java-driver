@@ -26,6 +26,7 @@ import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.logging.JULogging;
 import org.neo4j.driver.internal.net.pooling.PoolSettings;
 import org.neo4j.driver.v1.util.Immutable;
+import org.neo4j.driver.v1.util.Resource;
 
 import static org.neo4j.driver.v1.Config.TrustStrategy.trustAllCertificates;
 
@@ -48,6 +49,7 @@ public class Config
 {
     /** User defined logging */
     private final Logging logging;
+    private final boolean logLeakedSessions;
 
     private final int maxIdleConnectionPoolSize;
 
@@ -63,6 +65,7 @@ public class Config
     private Config( ConfigBuilder builder)
     {
         this.logging = builder.logging;
+        this.logLeakedSessions = builder.logLeakedSessions;
 
         this.maxIdleConnectionPoolSize = builder.maxIdleConnectionPoolSize;
 
@@ -79,6 +82,16 @@ public class Config
     public Logging logging()
     {
         return logging;
+    }
+
+    /**
+     * Check if leaked sessions logging is enabled.
+     *
+     * @return {@code true} if enabled, {@code false} otherwise.
+     */
+    public boolean logLeakedSessions()
+    {
+        return logLeakedSessions;
     }
 
     /**
@@ -158,6 +171,7 @@ public class Config
     public static class ConfigBuilder
     {
         private Logging logging = new JULogging( Level.INFO );
+        private boolean logLeakedSessions;
         private int maxIdleConnectionPoolSize = PoolSettings.DEFAULT_MAX_IDLE_CONNECTION_POOL_SIZE;
         private EncryptionLevel encryptionLevel = EncryptionLevel.REQUIRED;
         private TrustStrategy trustStrategy = trustAllCertificates();
@@ -175,6 +189,27 @@ public class Config
         public ConfigBuilder withLogging( Logging logging )
         {
             this.logging = logging;
+            return this;
+        }
+
+        /**
+         * Enable logging of leaked sessions.
+         * <p>
+         * Each {@link Session session} is associated with a network connection and thus is a
+         * {@link Resource resource} that needs to be explicitly closed. Unclosed sessions will result in socket
+         * leaks and could cause {@link OutOfMemoryError}s.
+         * <p>
+         * Session is considered to be leaked when it is finalized via {@link Object#finalize()} while not being
+         * closed. This option turns on logging of such sessions and stacktraces of where they were created.
+         * <p>
+         * <b>Note:</b> this option should mostly be used in testing environments for session leak investigations.
+         * Enabling it will add object finalization overhead.
+         *
+         * @return this builder
+         */
+        public ConfigBuilder withLeakedSessionsLogging()
+        {
+            this.logLeakedSessions = true;
             return this;
         }
 

@@ -32,13 +32,15 @@ abstract class BaseDriver implements Driver
     private final static String DRIVER_LOG_NAME = "Driver";
 
     private final SecurityPlan securityPlan;
+    protected final SessionFactory sessionFactory;
     protected final Logger log;
 
     private AtomicBoolean closed = new AtomicBoolean( false );
 
-    BaseDriver( SecurityPlan securityPlan, Logging logging )
+    BaseDriver( SecurityPlan securityPlan, SessionFactory sessionFactory, Logging logging )
     {
         this.securityPlan = securityPlan;
+        this.sessionFactory = sessionFactory;
         this.log = logging.getLog( DRIVER_LOG_NAME );
     }
 

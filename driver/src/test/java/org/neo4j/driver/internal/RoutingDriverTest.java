@@ -336,7 +336,8 @@ public class RoutingDriverTest
 
     private RoutingDriver driverWithPool( ConnectionPool pool )
     {
-        return new RoutingDriver( new RoutingSettings( 10, 5_000 ), SEED, pool, insecure(), clock, logging );
+        RoutingSettings settings = new RoutingSettings( 10, 5_000 );
+        return new RoutingDriver( settings, SEED, pool, insecure(), new NetworkSessionFactory(), clock, logging );
     }
 
     @SafeVarargs
