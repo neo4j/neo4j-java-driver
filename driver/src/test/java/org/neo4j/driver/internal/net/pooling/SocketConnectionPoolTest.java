@@ -265,7 +265,8 @@ public class SocketConnectionPoolTest
 
         for ( int i = 0; i < port.intValue(); i++ )
         {
-            assertFalse( pool.hasAddress( new BoltServerAddress( "localhost", i ) ) );
+            boolean hasAddress = pool.hasAddress( new BoltServerAddress( "localhost", i ) );
+            assertFalse( "Pool still has connection queues" + pool, hasAddress );
         }
         for ( Connection connection : createdConnections )
         {
