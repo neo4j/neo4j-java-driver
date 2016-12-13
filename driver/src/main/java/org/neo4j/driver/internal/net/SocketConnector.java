@@ -47,7 +47,8 @@ public class SocketConnector implements Connector
     @Override
     public final Connection connect( BoltServerAddress address )
     {
-        Connection connection = createConnection( address, securityPlan, logging );
+        Connection connection = createConnection( address, securityPlan, connectionSettings.timeoutMillis(),
+                logging );
 
         // Because SocketConnection is not thread safe, wrap it in this guard
         // to ensure concurrent access leads causes application errors
@@ -71,9 +72,10 @@ public class SocketConnector implements Connector
      * <p>
      * <b>This method is package-private only for testing</b>
      */
-    Connection createConnection( BoltServerAddress address, SecurityPlan securityPlan, Logging logging )
+    Connection createConnection( BoltServerAddress address, SecurityPlan securityPlan, int timeoutMillis,
+            Logging logging )
     {
-        return new SocketConnection( address, securityPlan, logging );
+        return new SocketConnection( address, securityPlan, timeoutMillis, logging );
     }
 
     private static Map<String,Value> tokenAsMap( AuthToken token )

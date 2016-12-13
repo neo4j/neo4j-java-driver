@@ -58,10 +58,10 @@ public class SocketConnection implements Connection
 
     private final Logger logger;
 
-    public SocketConnection( BoltServerAddress address, SecurityPlan securityPlan, Logging logging )
+    public SocketConnection( BoltServerAddress address, SecurityPlan securityPlan, int timeoutMillis, Logging logging )
     {
         this.logger = logging.getLog( format( "conn-%s", UUID.randomUUID().toString() ) );
-        this.socket = new SocketClient( address, securityPlan, logger );
+        this.socket = new SocketClient( address, securityPlan, timeoutMillis, logger );
         this.responseHandler = createResponseHandler( logger );
         this.socket.start();
     }

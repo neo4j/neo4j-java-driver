@@ -39,9 +39,12 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.driver.internal.net.BoltServerAddress.LOCAL_DEFAULT;
 
 public class SocketClientTest
 {
+    private static final int CONNECTION_TIMEOUT = 42;
+
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
@@ -56,7 +59,7 @@ public class SocketClientTest
         BoltServerAddress address = new BoltServerAddress( "localhost", server.getLocalPort() );
 
         SecurityPlan securityPlan = SecurityPlan.insecure();
-        SocketClient client = new SocketClient( address, securityPlan, new DevNullLogger() );
+        SocketClient client = new SocketClient( address, securityPlan, CONNECTION_TIMEOUT, new DevNullLogger() );
 
         // Expect
         exception.expect( ClientException.class );
@@ -68,7 +71,7 @@ public class SocketClientTest
 
     private SocketClient dummyClient()
     {
-        return new SocketClient( BoltServerAddress.LOCAL_DEFAULT, SecurityPlan.insecure(), new DevNullLogger() );
+        return new SocketClient( LOCAL_DEFAULT, SecurityPlan.insecure(), CONNECTION_TIMEOUT, new DevNullLogger() );
     }
 
     @Test

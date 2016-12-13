@@ -61,6 +61,7 @@ public class Config
 
     private final int routingFailureLimit;
     private final long routingRetryDelayMillis;
+    private final int connectionTimeoutMillis;
 
     private Config( ConfigBuilder builder)
     {
@@ -73,6 +74,7 @@ public class Config
         this.trustStrategy = builder.trustStrategy;
         this.routingFailureLimit = builder.routingFailureLimit;
         this.routingRetryDelayMillis = builder.routingRetryDelayMillis;
+        this.connectionTimeoutMillis = builder.connectionTimeoutMillis;
     }
 
     /**
@@ -128,6 +130,14 @@ public class Config
     }
 
     /**
+     * @return the configured connection timeout value in milliseconds.
+     */
+    public int connectionTimeoutMillis()
+    {
+        return connectionTimeoutMillis;
+    }
+
+    /**
      * @return the level of encryption required for all connections.
      */
     public EncryptionLevel encryptionLevel()
@@ -176,7 +186,8 @@ public class Config
         private EncryptionLevel encryptionLevel = EncryptionLevel.REQUIRED;
         private TrustStrategy trustStrategy = trustAllCertificates();
         private int routingFailureLimit = 1;
-        private long routingRetryDelayMillis = 5_000;
+        private long routingRetryDelayMillis = TimeUnit.SECONDS.toMillis( 5 );
+        private int connectionTimeoutMillis = (int) TimeUnit.SECONDS.toMillis( 30 );
 
         private ConfigBuilder() {}
 
@@ -364,6 +375,40 @@ public class Config
                         "The retry delay may not be smaller than 0, but was %d %s.", delay, unit ) );
             }
             this.routingRetryDelayMillis = routingRetryDelayMillis;
+            return this;
+        }
+
+        /**
+         * Specify socket connection timeout.
+         * <p>
+         * A timeout of zero is treated as an infinite timeout and will be bound by the timeout configured on the
+         * operating system level. The connection will block until established or an error occurs.
+         * <p>
+         * Timeout value should be greater or equal to zero and represent a valid {@code int} value when converted to
+         * {@link TimeUnit#MILLISECONDS milliseconds}.
+         *
+         * @param value the timeout duration
+         * @param unit the unit in which duration is given
+         * @return this builder
+         * @throws IllegalArgumentException when given value is negative or does not fit in {@code int} when
+         * converted to milliseconds.
+         */
+        public ConfigBuilder withConnectionTimeout( long value, TimeUnit unit )
+        {
+            long connectionTimeoutMillis = unit.toMillis( value );
+            if ( connectionTimeoutMillis < 0 )
+            {
+                throw new IllegalArgumentException( String.format(
+                        "The connection timeout may not be smaller than 0, but was %d %s.", value, unit ) );
+            }
+            int connectionTimeoutMillisInt = (int) connectionTimeoutMillis;
+            if ( connectionTimeoutMillisInt != connectionTimeoutMillis )
+            {
+                throw new IllegalArgumentException( String.format(
+                        "The connection timeout must represent int value when converted to milliseconds %d.",
+                        connectionTimeoutMillis ) );
+            }
+            this.connectionTimeoutMillis = connectionTimeoutMillisInt;
             return this;
         }
 

@@ -21,14 +21,18 @@ package org.neo4j.driver.internal;
 import org.junit.Test;
 
 import java.io.File;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.util.FileTools;
 
 import static java.lang.System.getProperty;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class ConfigTest
 {
@@ -96,6 +100,59 @@ public class ConfigTest
 
         // it can be turned on using config
         assertTrue( Config.build().withLeakedSessionsLogging().toConfig().logLeakedSessions() );
+    }
+
+    @Test
+    public void shouldHaveDefaultConnectionTimeout()
+    {
+        Config defaultConfig = Config.defaultConfig();
+        assertEquals( TimeUnit.SECONDS.toMillis( 30 ), defaultConfig.connectionTimeoutMillis() );
+    }
+
+    @Test
+    public void shouldRespectConfiguredConnectionTimeout()
+    {
+        Config config = Config.build().withConnectionTimeout( 42, TimeUnit.HOURS ).toConfig();
+        assertEquals( TimeUnit.HOURS.toMillis( 42 ), config.connectionTimeoutMillis() );
+    }
+
+    @Test
+    public void shouldAllowConnectionTimeoutOfZero()
+    {
+        Config config = Config.build().withConnectionTimeout( 0, TimeUnit.SECONDS ).toConfig();
+        assertEquals( 0, config.connectionTimeoutMillis() );
+    }
+
+    @Test
+    public void shouldThrowForNegativeConnectionTimeout()
+    {
+        Config.ConfigBuilder builder = Config.build();
+
+        try
+        {
+            builder.withConnectionTimeout( -42, TimeUnit.SECONDS );
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( IllegalArgumentException.class ) );
+        }
+    }
+
+    @Test
+    public void shouldThrowForTooLargeConnectionTimeout()
+    {
+        Config.ConfigBuilder builder = Config.build();
+
+        try
+        {
+            builder.withConnectionTimeout( Long.MAX_VALUE - 42, TimeUnit.SECONDS );
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( IllegalArgumentException.class ) );
+        }
     }
 
     public static void deleteDefaultKnownCertFileIfExists()
