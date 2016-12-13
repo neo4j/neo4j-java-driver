@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.v1.stress;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -28,6 +30,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
@@ -36,6 +39,7 @@ import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static java.util.Arrays.asList;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.driver.v1.GraphDatabase.driver;
 
 public class SessionPoolingStressIT
@@ -44,29 +48,67 @@ public class SessionPoolingStressIT
     public TestNeo4j neo4j = new TestNeo4j();
 
     private static final int N_THREADS = 50;
-    private final ExecutorService executor = Executors.newFixedThreadPool( N_THREADS );
-    private static final List<String> QUERIES = asList( "RETURN 1295 + 42", "UNWIND range(1,10000) AS x CREATE (n {prop:x}) DELETE n " );
     private static final int MAX_TIME = 10000;
-    private final AtomicBoolean hasFailed = new AtomicBoolean( false );
 
-    @Test
-    public void shouldWorkFine() throws InterruptedException
+    private static final List<String> QUERIES = asList(
+            "RETURN 1295 + 42", "UNWIND range(1,10000) AS x CREATE (n {prop:x}) DELETE n " );
+
+    private Driver driver;
+    private ExecutorService executor;
+
+    @Before
+    public void setUp() throws Exception
     {
-        Driver driver = driver( neo4j.uri(),
-                Config.build()
-                        .withEncryptionLevel( Config.EncryptionLevel.NONE )
-                        .withMaxSessions( N_THREADS ).toConfig() );
-
-        doWork( driver );
-        executor.awaitTermination( MAX_TIME + (int)(MAX_TIME * 0.2), TimeUnit.MILLISECONDS );
-        driver.close();
+        executor = Executors.newFixedThreadPool( N_THREADS );
     }
 
-    private void doWork( final Driver driver )
+    @After
+    public void tearDown() throws Exception
+    {
+        if ( executor != null )
+        {
+            executor.shutdownNow();
+        }
+
+        if ( driver != null )
+        {
+            driver.close();
+        }
+    }
+
+    @Test
+    public void shouldWorkFine() throws Throwable
+    {
+        Config config = Config.build()
+                .withEncryptionLevel( Config.EncryptionLevel.NONE )
+                .withMaxSessions( N_THREADS )
+                .toConfig();
+
+        driver = driver( neo4j.uri(), config );
+
+        AtomicBoolean stop = new AtomicBoolean();
+        AtomicReference<Throwable> failureReference = new AtomicReference<>();
+
+        doWork( stop, failureReference );
+
+        Thread.sleep( MAX_TIME );
+
+        stop.set( true );
+        executor.shutdown();
+        assertTrue( executor.awaitTermination( MAX_TIME, TimeUnit.MILLISECONDS ) );
+
+        Throwable failure = failureReference.get();
+        if ( failure != null )
+        {
+            throw new AssertionError( "Some workers have failed", failure );
+        }
+    }
+
+    private void doWork( AtomicBoolean stop, AtomicReference<Throwable> failure )
     {
         for ( int i = 0; i < N_THREADS; i++ )
         {
-            executor.execute( new Worker( driver ) );
+            executor.execute( new Worker( driver, stop, failure ) );
         }
     }
 
@@ -74,10 +116,14 @@ public class SessionPoolingStressIT
     {
         private final Random random = ThreadLocalRandom.current();
         private final Driver driver;
+        private final AtomicBoolean stop;
+        private final AtomicReference<Throwable> failureReference;
 
-        public Worker( Driver driver )
+        Worker( Driver driver, AtomicBoolean stop, AtomicReference<Throwable> failureReference )
         {
             this.driver = driver;
+            this.stop = stop;
+            this.failureReference = failureReference;
         }
 
         @Override
@@ -85,24 +131,24 @@ public class SessionPoolingStressIT
         {
             try
             {
-                long deadline = System.currentTimeMillis() + MAX_TIME;
-                for (;;)
+                while ( !stop.get() )
                 {
                     for ( String query : QUERIES )
                     {
                         runQuery( query );
                     }
-                    long left = deadline - System.currentTimeMillis();
-                    if ( left <= 0 )
-                    {
-                        break;
-                    }
                 }
             }
-            catch ( Throwable e )
+            catch ( Throwable failure )
             {
-                e.printStackTrace();
-                hasFailed.set( true );
+                if ( !failureReference.compareAndSet( null, failure ) )
+                {
+                    Throwable firstFailure = failureReference.get();
+                    synchronized ( firstFailure )
+                    {
+                        firstFailure.addSuppressed( failure );
+                    }
+                }
             }
         }
 
