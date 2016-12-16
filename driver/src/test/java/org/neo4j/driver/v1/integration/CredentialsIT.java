@@ -18,9 +18,9 @@
  */
 package org.neo4j.driver.v1.integration;
 
-import org.junit.Rule;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 
 import java.util.HashMap;
@@ -34,8 +34,11 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.util.Neo4jSettings;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
+import static junit.framework.TestCase.fail;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.neo4j.driver.v1.AuthTokens.basic;
 import static org.neo4j.driver.v1.AuthTokens.custom;
 import static org.neo4j.driver.v1.Values.ofValue;
@@ -43,22 +46,17 @@ import static org.neo4j.driver.v1.Values.parameters;
 
 public class CredentialsIT
 {
-    @Rule
-    public TemporaryFolder tempDir = new TemporaryFolder();
+    @ClassRule
+    public static TemporaryFolder tempDir = new TemporaryFolder();
 
-    @Rule
-    public TestNeo4j neo4j = new TestNeo4j();
+    @ClassRule
+    public static TestNeo4j neo4j = new TestNeo4j();
 
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
+    private static String password = "secret";
 
     @Test
     public void basicCredentialsShouldWork() throws Throwable
     {
-        // Given
-        String password = "secret";
-        enableAuth( password );
-
         // When & Then
         try( Driver driver = GraphDatabase.driver( neo4j.uri(),
                 basic("neo4j", password ) );
@@ -73,28 +71,22 @@ public class CredentialsIT
     @Test
     public void shouldGetHelpfulErrorOnInvalidCredentials() throws Throwable
     {
-        // Given
-        String password = "secret";
-        enableAuth( password );
-
-        // Expect
-        exception.expect( ClientException.class );
-        exception.expectMessage( "The client is unauthorized due to authentication failure." );
-
         // When
         try( Driver driver = GraphDatabase.driver( neo4j.uri(), basic("thisisnotthepassword", password ) );
              Session ignored = driver.session() ) {
             //empty
+            fail( "Should fail with an auth error already" );
+        }
+        catch( Throwable e )
+        {
+            assertThat( e, instanceOf( ClientException.class ) );
+            assertThat( e.getMessage(), containsString( "The client is unauthorized due to authentication failure." ) );
         }
     }
 
     @Test
     public void shouldBeAbleToProvideRealmWithBasicAuth() throws Throwable
     {
-        // Given
-        String password = "secret";
-        enableAuth( password );
-
         // When & Then
         try( Driver driver = GraphDatabase.driver( neo4j.uri(),
                 basic("neo4j", password, "native") );
@@ -108,10 +100,6 @@ public class CredentialsIT
     @Test
     public void shouldBeAbleToConnectWithCustomToken() throws Throwable
     {
-        // Given
-        String password = "secret";
-        enableAuth( password );
-
         // When & Then
         try( Driver driver = GraphDatabase.driver( neo4j.uri(),
                 custom("neo4j", password, "native", "basic" ) );
@@ -125,9 +113,6 @@ public class CredentialsIT
     @Test
     public void shouldBeAbleToConnectWithCustomTokenWithAdditionalParameters() throws Throwable
     {
-        // Given
-        String password = "secret";
-        enableAuth( password );
         HashMap<String,Object> parameters = new HashMap<>();
         parameters.put( "secret", 16 );
 
@@ -141,7 +126,8 @@ public class CredentialsIT
         }
     }
 
-    private void enableAuth( String password ) throws Exception
+    @BeforeClass
+    public static void enableAuth() throws Exception
     {
         neo4j.restart( Neo4jSettings.TEST_SETTINGS
                 .updateWith( Neo4jSettings.AUTH_ENABLED, "true" )
