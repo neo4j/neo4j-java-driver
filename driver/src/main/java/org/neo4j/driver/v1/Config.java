@@ -187,7 +187,7 @@ public class Config
         private TrustStrategy trustStrategy = trustAllCertificates();
         private int routingFailureLimit = 1;
         private long routingRetryDelayMillis = TimeUnit.SECONDS.toMillis( 5 );
-        private int connectionTimeoutMillis = (int) TimeUnit.SECONDS.toMillis( 30 );
+        private int connectionTimeoutMillis = (int) TimeUnit.SECONDS.toMillis( 5 );
 
         private ConfigBuilder() {}
 
@@ -386,6 +386,8 @@ public class Config
          * <p>
          * Timeout value should be greater or equal to zero and represent a valid {@code int} value when converted to
          * {@link TimeUnit#MILLISECONDS milliseconds}.
+         * <p>
+         * The default value of this parameter is {@code 5 SECONDS}.
          *
          * @param value the timeout duration
          * @param unit the unit in which duration is given
