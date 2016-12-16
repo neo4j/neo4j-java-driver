@@ -20,6 +20,9 @@ package org.neo4j.driver.v1.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,6 +36,8 @@ import static org.junit.Assume.assumeTrue;
 
 public class StubServer
 {
+    private static final int SOCKET_CONNECT_ATTEMPTS = 20;
+
     public static final Config INSECURE_CONFIG = Config.build()
             .withEncryptionLevel( Config.EncryptionLevel.NONE ).toConfig();
 
@@ -50,7 +55,7 @@ public class StubServer
         command.addAll( asList( Integer.toString( port ), script ) );
         ProcessBuilder server = new ProcessBuilder().inheritIO().command( command );
         process = server.start();
-        sleep( 500 );  // might take a moment for the socket to start listening
+        waitForSocket( port );
     }
 
     public static StubServer start( String resource, int port ) throws IOException, InterruptedException
@@ -99,5 +104,23 @@ public class StubServer
             // unable to run boltstub command, thus it is unavailable
             return false;
         }
+    }
+
+    private static void waitForSocket( int port ) throws InterruptedException
+    {
+        SocketAddress address = new InetSocketAddress( "localhost", port );
+        for ( int i = 0; i < SOCKET_CONNECT_ATTEMPTS; i++ )
+        {
+            try
+            {
+                SocketChannel.open( address );
+                return;
+            }
+            catch ( Exception e )
+            {
+                sleep( 300 );
+            }
+        }
+        throw new AssertionError( "Can't connect to " + address );
     }
 }

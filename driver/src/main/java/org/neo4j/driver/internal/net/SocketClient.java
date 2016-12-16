@@ -130,7 +130,7 @@ public class SocketClient
         {
             throw new ServiceUnavailableException( format(
                     "Unable to connect to %s, ensure the database is running and that there is a " +
-                    "working network connection to it.", address ) );
+                    "working network connection to it.", address ), e );
         }
         catch ( IOException e )
         {

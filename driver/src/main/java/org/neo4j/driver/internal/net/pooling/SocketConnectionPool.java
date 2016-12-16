@@ -84,11 +84,7 @@ public class SocketConnectionPool implements ConnectionPool
         };
         PooledConnection conn = connections.acquire( supplier );
 
-        if ( closed.get() )
-        {
-            connections.terminate();
-            throw poolClosedException();
-        }
+        assertNotClosed( address, connections );
 
         conn.updateTimestamp();
         return conn;
@@ -140,16 +136,21 @@ public class SocketConnectionPool implements ConnectionPool
         }
     }
 
+    private void assertNotClosed( BoltServerAddress address, BlockingPooledConnectionQueue connections )
+    {
+        if ( closed.get() )
+        {
+            connections.terminate();
+            pools.remove( address );
+            assertNotClosed();
+        }
+    }
+
     private void assertNotClosed()
     {
         if ( closed.get() )
         {
-            throw poolClosedException();
+            throw new IllegalStateException( "Pool closed" );
         }
-    }
-
-    private static RuntimeException poolClosedException()
-    {
-        return new IllegalStateException( "Pool closed" );
     }
 }
