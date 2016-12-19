@@ -120,7 +120,7 @@ public class DriverFactory
     {
         authToken = authToken == null ? AuthTokens.none() : authToken;
 
-        ConnectionSettings connectionSettings = new ConnectionSettings( authToken );
+        ConnectionSettings connectionSettings = new ConnectionSettings( authToken, config.connectionTimeoutMillis() );
         PoolSettings poolSettings = new PoolSettings( config.maxIdleConnectionPoolSize() );
         Connector connector = new SocketConnector( connectionSettings, securityPlan, config.logging() );
 

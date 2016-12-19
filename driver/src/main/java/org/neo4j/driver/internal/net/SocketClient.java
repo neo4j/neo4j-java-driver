@@ -20,17 +20,14 @@ package org.neo4j.driver.internal.net;
 
 import java.io.IOException;
 import java.net.ConnectException;
-import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
-import java.nio.channels.SocketChannel;
 import java.security.GeneralSecurityException;
 import java.util.Queue;
 
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.security.SecurityPlan;
-import org.neo4j.driver.internal.security.TLSSocketChannel;
 import org.neo4j.driver.internal.util.BytePrinter;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.exceptions.ClientException;
@@ -49,6 +46,7 @@ public class SocketClient
 
     private final BoltServerAddress address;
     private final SecurityPlan securityPlan;
+    private final int timeoutMillis;
     private final Logger logger;
 
     private SocketProtocol protocol;
@@ -57,10 +55,11 @@ public class SocketClient
 
     private ByteChannel channel;
 
-    public SocketClient( BoltServerAddress address, SecurityPlan securityPlan, Logger logger )
+    public SocketClient( BoltServerAddress address, SecurityPlan securityPlan, int timeoutMillis, Logger logger )
     {
         this.address = address;
         this.securityPlan = securityPlan;
+        this.timeoutMillis = timeoutMillis;
         this.logger = logger;
         this.channel = null;
     }
@@ -121,7 +120,7 @@ public class SocketClient
         try
         {
             logger.debug( "~~ [CONNECT] %s", address );
-            setChannel( ChannelFactory.create( address, securityPlan, logger ) );
+            setChannel( ChannelFactory.create( address, securityPlan, timeoutMillis, logger ) );
             protocol = negotiateProtocol();
             reader = protocol.reader();
             writer = protocol.writer();
@@ -278,36 +277,6 @@ public class SocketClient
     {
         int version = protocol == null ? -1 : protocol.version();
         return "SocketClient[protocolVersion=" + version + "]";
-    }
-
-    private static class ChannelFactory
-    {
-        public static ByteChannel create( BoltServerAddress address, SecurityPlan securityPlan, Logger logger )
-                throws IOException, GeneralSecurityException
-        {
-            SocketChannel soChannel = SocketChannel.open();
-            soChannel.setOption( StandardSocketOptions.SO_REUSEADDR, true );
-            soChannel.setOption( StandardSocketOptions.SO_KEEPALIVE, true );
-            soChannel.connect( address.toSocketAddress() );
-
-            ByteChannel channel;
-
-            if (securityPlan.requiresEncryption())
-            {
-                channel = TLSSocketChannel.create( address, securityPlan, soChannel, logger );
-            }
-            else
-            {
-                channel = soChannel;
-            }
-
-            if ( logger.isTraceEnabled() )
-            {
-                channel = new LoggingByteChannel( channel, logger );
-            }
-
-            return channel;
-        }
     }
 
     public BoltServerAddress address()

@@ -29,7 +29,7 @@ import static java.lang.String.format;
  */
 public class ConnectionSettings
 {
-    public static final String DEFAULT_USER_AGENT = format( "neo4j-java/%s", driverVersion() );
+    private static final String DEFAULT_USER_AGENT = format( "neo4j-java/%s", driverVersion() );
 
     /**
      * Extracts the driver version from the driver jar MANIFEST.MF file.
@@ -52,16 +52,18 @@ public class ConnectionSettings
 
     private final AuthToken authToken;
     private final String userAgent;
+    private final int timeoutMillis;
 
-    public ConnectionSettings( AuthToken authToken, String userAgent )
+    public ConnectionSettings( AuthToken authToken, String userAgent, int timeoutMillis )
     {
         this.authToken = authToken;
         this.userAgent = userAgent;
+        this.timeoutMillis = timeoutMillis;
     }
 
-    public ConnectionSettings( AuthToken authToken )
+    public ConnectionSettings( AuthToken authToken, int timeoutMillis )
     {
-        this( authToken, DEFAULT_USER_AGENT );
+        this( authToken, DEFAULT_USER_AGENT, timeoutMillis );
     }
 
     public AuthToken authToken()
@@ -74,4 +76,8 @@ public class ConnectionSettings
         return userAgent;
     }
 
+    public int timeoutMillis()
+    {
+        return timeoutMillis;
+    }
 }
