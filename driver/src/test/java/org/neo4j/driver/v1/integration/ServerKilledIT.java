@@ -21,14 +21,22 @@ package org.neo4j.driver.v1.integration;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import org.neo4j.driver.internal.DriverFactory;
+import org.neo4j.driver.internal.util.DriverFactoryWithClock;
+import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
+import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.util.Neo4jRunner;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 /**
@@ -44,25 +52,19 @@ public class ServerKilledIT
     public void shouldRecoverFromServerRestart() throws Throwable
     {
         // Given
-        try ( Driver driver = GraphDatabase.driver( Neo4jRunner.DEFAULT_URI,
-                Config.build().withEncryptionLevel( Config.EncryptionLevel.NONE ).toConfig() ) )
-        {
-            Session s1 = driver.session();
-            Session s2 = driver.session();
-            Session s3 = driver.session();
-            Session s4 = driver.session();
+        // config with sessionLivenessCheckTimeout not set, i.e. turned off
+        Config config = Config.build()
+                .withEncryptionLevel( Config.EncryptionLevel.NONE )
+                .toConfig();
 
-            // And given they are all returned to the connection pool
-            s1.close();
-            s2.close();
-            s3.close();
-            s4.close();
+        try ( Driver driver = GraphDatabase.driver( Neo4jRunner.DEFAULT_URI, config ) )
+        {
+            acquireAndReleaseSessions( 4, driver );
 
             // When
             neo4j.forceRestart();
 
             // Then we should be able to start using sessions again, at most O(numSessions) session calls later
-            // TODO: These should value evicted immediately, not show up as application-loggingLevel errors first
             int toleratedFailures = 4;
             for ( int i = 0; i < 10; i++ )
             {
@@ -81,10 +83,53 @@ public class ServerKilledIT
                 }
             }
 
-            if (toleratedFailures > 0)
+            if ( toleratedFailures > 0 )
             {
-                fail("This query should have failed " + toleratedFailures + " times");
+                fail( "This query should have failed " + toleratedFailures + " times" );
             }
+        }
+    }
+
+    @Test
+    public void shouldDropBrokenOldSessions() throws Throwable
+    {
+        // config with set liveness check timeout
+        int livenessCheckTimeoutMinutes = 10;
+        Config config = Config.build()
+                .withSessionLivenessCheckTimeout( livenessCheckTimeoutMinutes, TimeUnit.MINUTES )
+                .withEncryptionLevel( Config.EncryptionLevel.NONE )
+                .toConfig();
+
+        FakeClock clock = new FakeClock();
+        DriverFactory driverFactory = new DriverFactoryWithClock( clock );
+
+        try ( Driver driver = driverFactory.newInstance( Neo4jRunner.DEFAULT_URI, null, null, config ) )
+        {
+            acquireAndReleaseSessions( 5, driver );
+
+            // restart database to invalidate all idle connections in the pool
+            neo4j.forceRestart();
+            // move clock forward more than configured liveness check timeout
+            clock.progress( TimeUnit.MINUTES.toMillis( livenessCheckTimeoutMinutes + 1 ) );
+
+            // now all idle connections should be considered too old and will be verified during acquisition
+            // they will appear broken because of the database restart and new valid connection will be created
+            try ( Session session = driver.session() )
+            {
+                List<Record> records = session.run( "RETURN 1" ).list();
+                assertEquals( 1, records.size() );
+                assertEquals( 1, records.get( 0 ).get( 0 ).asInt() );
+            }
+        }
+    }
+
+    private static void acquireAndReleaseSessions( int count, Driver driver )
+    {
+        if ( count > 0 )
+        {
+            Session session = driver.session();
+            acquireAndReleaseSessions( count - 1, driver );
+            session.close();
         }
     }
 }

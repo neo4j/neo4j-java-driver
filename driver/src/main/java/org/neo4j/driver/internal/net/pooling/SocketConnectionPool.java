@@ -19,11 +19,13 @@
 package org.neo4j.driver.internal.net.pooling;
 
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
+import org.neo4j.driver.internal.spi.ConnectionValidator;
 import org.neo4j.driver.internal.spi.Connector;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Supplier;
@@ -46,13 +48,13 @@ public class SocketConnectionPool implements ConnectionPool
     /**
      * Pools, organized by server address.
      */
-    private final ConcurrentHashMap<BoltServerAddress,BlockingPooledConnectionQueue> pools =
-            new ConcurrentHashMap<>();
+    private final ConcurrentMap<BoltServerAddress,BlockingPooledConnectionQueue> pools = new ConcurrentHashMap<>();
 
     private final AtomicBoolean closed = new AtomicBoolean();
 
     private final PoolSettings poolSettings;
     private final Connector connector;
+    private final ConnectionValidator<PooledConnection> connectionValidator;
     private final Clock clock;
     private final Logging logging;
 
@@ -60,6 +62,7 @@ public class SocketConnectionPool implements ConnectionPool
     {
         this.poolSettings = poolSettings;
         this.connector = connector;
+        this.connectionValidator = new PooledConnectionValidator( this );
         this.clock = clock;
         this.logging = logging;
     }
@@ -68,42 +71,11 @@ public class SocketConnectionPool implements ConnectionPool
     public Connection acquire( final BoltServerAddress address )
     {
         assertNotClosed();
+        BlockingPooledConnectionQueue connectionQueue = pool( address );
+        PooledConnection connection = acquireConnection( address, connectionQueue );
+        assertNotClosed( address, connectionQueue );
 
-        final BlockingPooledConnectionQueue connections = pool( address );
-        Supplier<PooledConnection> supplier = new Supplier<PooledConnection>()
-        {
-            @Override
-            public PooledConnection get()
-            {
-                PooledConnectionValidator connectionValidator =
-                        new PooledConnectionValidator( SocketConnectionPool.this );
-                PooledConnectionReleaseConsumer releaseConsumer =
-                        new PooledConnectionReleaseConsumer( connections, connectionValidator );
-                return new PooledConnection( connector.connect( address ), releaseConsumer, clock );
-            }
-        };
-        PooledConnection conn = connections.acquire( supplier );
-
-        assertNotClosed( address, connections );
-
-        conn.updateTimestamp();
-        return conn;
-    }
-
-    private BlockingPooledConnectionQueue pool( BoltServerAddress address )
-    {
-        BlockingPooledConnectionQueue pool = pools.get( address );
-        if ( pool == null )
-        {
-            pool = new BlockingPooledConnectionQueue( address, poolSettings.maxIdleConnectionPoolSize(), logging );
-
-            if ( pools.putIfAbsent( address, pool ) != null )
-            {
-                // We lost a race to create the pool, dispose of the one we created, and recurse
-                return pool( address );
-            }
-        }
-        return pool;
+        return connection;
     }
 
     @Override
@@ -134,6 +106,75 @@ public class SocketConnectionPool implements ConnectionPool
 
             pools.clear();
         }
+    }
+
+    private BlockingPooledConnectionQueue pool( BoltServerAddress address )
+    {
+        BlockingPooledConnectionQueue pool = pools.get( address );
+        if ( pool == null )
+        {
+            pool = new BlockingPooledConnectionQueue( address, poolSettings.maxIdleConnectionPoolSize(), logging );
+
+            if ( pools.putIfAbsent( address, pool ) != null )
+            {
+                // We lost a race to create the pool, dispose of the one we created, and recurse
+                return pool( address );
+            }
+        }
+        return pool;
+    }
+
+    private PooledConnection acquireConnection( final BoltServerAddress address,
+            final BlockingPooledConnectionQueue connectionQueue )
+    {
+        Supplier<PooledConnection> supplier = newPooledConnectionSupplier( address, connectionQueue );
+
+        int acquisitionAttempt = 1;
+        PooledConnection connection = connectionQueue.acquire( supplier );
+        while ( !canBeAcquired( connection, acquisitionAttempt ) )
+        {
+            connection = connectionQueue.acquire( supplier );
+            acquisitionAttempt++;
+        }
+        return connection;
+    }
+
+    private Supplier<PooledConnection> newPooledConnectionSupplier( final BoltServerAddress address,
+            final BlockingPooledConnectionQueue connectionQueue )
+    {
+        return new Supplier<PooledConnection>()
+        {
+            @Override
+            public PooledConnection get()
+            {
+                PooledConnectionReleaseConsumer releaseConsumer =
+                        new PooledConnectionReleaseConsumer( connectionQueue, connectionValidator );
+                return new PooledConnection( connector.connect( address ), releaseConsumer, clock );
+            }
+        };
+    }
+
+    private boolean canBeAcquired( PooledConnection connection, int acquisitionAttempt )
+    {
+        if ( poolSettings.idleTimeBeforeConnectionTestConfigured() )
+        {
+            if ( acquisitionAttempt > poolSettings.maxIdleConnectionPoolSize() )
+            {
+                return true;
+            }
+
+            if ( hasBeenIdleForTooLong( connection ) )
+            {
+                return connectionValidator.isConnected( connection );
+            }
+        }
+        return true;
+    }
+
+    private boolean hasBeenIdleForTooLong( PooledConnection connection )
+    {
+        long idleTime = clock.millis() - connection.lastUsedTimestamp();
+        return idleTime > poolSettings.idleTimeBeforeConnectionTest();
     }
 
     private void assertNotClosed( BoltServerAddress address, BlockingPooledConnectionQueue connections )

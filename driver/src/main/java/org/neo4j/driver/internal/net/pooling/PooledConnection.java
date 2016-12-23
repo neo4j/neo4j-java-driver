@@ -59,19 +59,14 @@ public class PooledConnection implements Connection
     private boolean unrecoverableErrorsOccurred = false;
     private Runnable onError = null;
     private final Clock clock;
-    private long lastUsed;
+    private long lastUsedTimestamp;
 
     public PooledConnection( Connection delegate, Consumer<PooledConnection> release, Clock clock )
     {
         this.delegate = delegate;
         this.release = release;
         this.clock = clock;
-        this.lastUsed = clock.millis();
-    }
-
-    public void updateTimestamp()
-    {
-        lastUsed = clock.millis();
+        updateLastUsedTimestamp();
     }
 
     @Override
@@ -192,13 +187,14 @@ public class PooledConnection implements Connection
         }
     }
 
-    @Override
     /**
      * Make sure only close the connection once on each session to avoid releasing the connection twice, a.k.a.
      * adding back the connection twice into the pool.
      */
+    @Override
     public void close()
     {
+        updateLastUsedTimestamp();
         release.accept( this );
         // put the full logic of deciding whether to dispose the connection or to put it back to
         // the pool into the release object
@@ -286,6 +282,11 @@ public class PooledConnection implements Connection
         this.onError = runnable;
     }
 
+    public long lastUsedTimestamp()
+    {
+        return lastUsedTimestamp;
+    }
+
     private boolean isProtocolViolationError(RuntimeException e )
     {
         return e instanceof Neo4jException
@@ -300,8 +301,8 @@ public class PooledConnection implements Connection
                    || ((Neo4jException) e).code().contains( "TransientError" ));
     }
 
-    public long idleTime()
+    private void updateLastUsedTimestamp()
     {
-        return clock.millis() - lastUsed;
+        this.lastUsedTimestamp = clock.millis();
     }
 }

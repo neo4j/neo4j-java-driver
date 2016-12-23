@@ -18,10 +18,8 @@
  */
 package org.neo4j.driver.internal.net.pooling;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-
+import org.neo4j.driver.internal.spi.ConnectionValidator;
 import org.neo4j.driver.internal.util.Consumer;
-import org.neo4j.driver.v1.util.Function;
 
 /**
  * The responsibility of the PooledConnectionReleaseConsumer is to release valid connections
@@ -30,19 +28,19 @@ import org.neo4j.driver.v1.util.Function;
 class PooledConnectionReleaseConsumer implements Consumer<PooledConnection>
 {
     private final BlockingPooledConnectionQueue connections;
-    private final Function<PooledConnection, Boolean> validConnection;
+    private final ConnectionValidator<PooledConnection> connectionValidator;
 
     PooledConnectionReleaseConsumer( BlockingPooledConnectionQueue connections,
-            Function<PooledConnection, Boolean> validConnection)
+            ConnectionValidator<PooledConnection> connectionValidator )
     {
         this.connections = connections;
-        this.validConnection = validConnection;
+        this.connectionValidator = connectionValidator;
     }
 
     @Override
     public void accept( PooledConnection pooledConnection )
     {
-        if ( validConnection.apply( pooledConnection ) )
+        if ( connectionValidator.isReusable( pooledConnection ) )
         {
             connections.offer( pooledConnection );
         }

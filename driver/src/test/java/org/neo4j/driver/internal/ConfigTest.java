@@ -83,13 +83,43 @@ public class ConfigTest
     }
 
     @Test
-    public void shouldIgnoreLivenessCheckTimeoutSetting() throws Throwable
+    public void shouldSupportLivenessCheckTimeoutSetting() throws Throwable
     {
-        // when
-        Config config = Config.build().withSessionLivenessCheckTimeout( 1337 ).toConfig();
+        Config config = Config.build().withSessionLivenessCheckTimeout( 42, TimeUnit.SECONDS ).toConfig();
 
-        // then
-        assertEquals( -1, config.idleTimeBeforeConnectionTest() );
+        assertEquals( TimeUnit.SECONDS.toMillis( 42 ), config.idleTimeBeforeConnectionTest() );
+    }
+
+    @Test
+    public void shouldThrowForZeroTimeoutInLivenessCheckTimeoutSetting() throws Throwable
+    {
+        Config.ConfigBuilder builder = Config.build();
+
+        try
+        {
+            builder.withSessionLivenessCheckTimeout( 0, TimeUnit.SECONDS );
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( IllegalArgumentException.class ) );
+        }
+    }
+
+    @Test
+    public void shouldThrowForNegativeTimeoutInLivenessCheckTimeoutSetting() throws Throwable
+    {
+        Config.ConfigBuilder builder = Config.build();
+
+        try
+        {
+            builder.withSessionLivenessCheckTimeout( -42, TimeUnit.SECONDS );
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( IllegalArgumentException.class ) );
+        }
     }
 
     @Test

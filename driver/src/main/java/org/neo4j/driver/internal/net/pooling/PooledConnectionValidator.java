@@ -19,9 +19,9 @@
 package org.neo4j.driver.internal.net.pooling;
 
 import org.neo4j.driver.internal.spi.ConnectionPool;
-import org.neo4j.driver.v1.util.Function;
+import org.neo4j.driver.internal.spi.ConnectionValidator;
 
-class PooledConnectionValidator implements Function<PooledConnection,Boolean>
+class PooledConnectionValidator implements ConnectionValidator<PooledConnection>
 {
     private final ConnectionPool pool;
 
@@ -31,28 +31,25 @@ class PooledConnectionValidator implements Function<PooledConnection,Boolean>
     }
 
     @Override
-    public Boolean apply( PooledConnection pooledConnection )
+    public boolean isReusable( PooledConnection pooledConnection )
     {
         // once the pooledConn has marked to have unrecoverable errors, there is no way to remove the error
         // and we should close the conn without bothering to reset the conn at all
         return pool.hasAddress( pooledConnection.boltServerAddress() ) &&
                !pooledConnection.hasUnrecoverableErrors() &&
-               reset( pooledConnection );
+               isConnected( pooledConnection );
     }
 
-    /**
-     * In case this session has an open result or transaction or something,
-     * make sure it's reset to a nice state before we reuse it.
-     *
-     * @param conn the PooledConnection
-     * @return true if the connection is reset successfully without any error, otherwise false.
-     */
-    private static boolean reset( PooledConnection conn )
+    @Override
+    public boolean isConnected( PooledConnection connection )
     {
         try
         {
-            conn.reset();
-            conn.sync();
+            // try to use this connection for RESET message
+            // in case this session has an open result or transaction or something,
+            // make sure it's reset to a nice state before we reuse it.
+            connection.reset();
+            connection.sync();
             return true;
         }
         catch ( Throwable e )

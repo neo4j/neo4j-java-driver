@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal.net.pooling;
 
 import org.junit.Test;
+import org.mockito.InOrder;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
@@ -37,23 +38,31 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.Connector;
+import org.neo4j.driver.internal.util.Clock;
+import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.v1.Logging;
 
 import static java.util.Collections.newSetFromMap;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.isOneOf;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.RETURNS_MOCKS;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.net.BoltServerAddress.DEFAULT_PORT;
 import static org.neo4j.driver.internal.net.BoltServerAddress.LOCAL_DEFAULT;
-import static org.neo4j.driver.internal.util.Clock.SYSTEM;
 
 public class SocketConnectionPoolTest
 {
@@ -274,6 +283,213 @@ public class SocketConnectionPoolTest
         }
     }
 
+    @Test
+    public void recentlyUsedConnectionNotValidatedDuringAcquisition()
+    {
+        long idleTimeBeforeConnectionTest = 100;
+        long creationTimestamp = 42;
+        long closedAfterMs = 10;
+        long acquiredAfterMs = 20;
+
+        Connection connection = newConnectionMock( ADDRESS_1 );
+
+        FakeClock clock = new FakeClock();
+        SocketConnectionPool pool = newPool( newMockConnector( connection ), clock, idleTimeBeforeConnectionTest );
+
+        clock.progress( creationTimestamp );
+        Connection acquiredConnection1 = pool.acquire( ADDRESS_1 );
+        verify( connection, never() ).reset();
+        verify( connection, never() ).sync();
+
+        // return to the pool
+        clock.progress( closedAfterMs );
+        acquiredConnection1.close();
+        verify( connection ).reset();
+        verify( connection ).sync();
+
+        clock.progress( acquiredAfterMs );
+        Connection acquiredConnection2 = pool.acquire( ADDRESS_1 );
+        assertSame( acquiredConnection1, acquiredConnection2 );
+
+        // reset & sync were called only when pooled connection was closed previously
+        verify( connection ).reset();
+        verify( connection ).sync();
+    }
+
+    @Test
+    public void connectionThatWasIdleForALongTimeIsValidatedDuringAcquisition()
+    {
+        Connection connection = newConnectionMock( ADDRESS_1 );
+        long idleTimeBeforeConnectionTest = 100;
+        FakeClock clock = new FakeClock();
+
+        SocketConnectionPool pool = newPool( newMockConnector( connection ), clock, idleTimeBeforeConnectionTest );
+
+        Connection acquiredConnection1 = pool.acquire( ADDRESS_1 );
+        verify( connection, never() ).reset();
+        verify( connection, never() ).sync();
+
+        // return to the pool
+        acquiredConnection1.close();
+        verify( connection ).reset();
+        verify( connection ).sync();
+
+        clock.progress( idleTimeBeforeConnectionTest + 42 );
+
+        Connection acquiredConnection2 = pool.acquire( ADDRESS_1 );
+        assertSame( acquiredConnection1, acquiredConnection2 );
+
+        // reset & sync were called only when pooled connection was closed previously
+        verify( connection, times( 2 ) ).reset();
+        verify( connection, times( 2 ) ).sync();
+    }
+
+    @Test
+    public void connectionThatWasIdleForALongTimeIsNotValidatedDuringAcquisitionWhenTimeoutNotConfigured()
+    {
+        Connection connection = newConnectionMock( ADDRESS_1 );
+        long idleTimeBeforeConnectionTest = PoolSettings.NO_IDLE_CONNECTION_TEST;
+        FakeClock clock = new FakeClock();
+
+        SocketConnectionPool pool = newPool( newMockConnector( connection ), clock, idleTimeBeforeConnectionTest );
+
+        Connection acquiredConnection1 = pool.acquire( ADDRESS_1 );
+        verify( connection, never() ).reset();
+        verify( connection, never() ).sync();
+
+        // return to the pool
+        acquiredConnection1.close();
+        verify( connection ).reset();
+        verify( connection ).sync();
+
+        clock.progress( 1000 );
+
+        Connection acquiredConnection2 = pool.acquire( ADDRESS_1 );
+        assertSame( acquiredConnection1, acquiredConnection2 );
+        verify( connection ).reset();
+        verify( connection ).sync();
+    }
+
+    @Test
+    public void brokenConnectionsSkippedDuringAcquisition()
+    {
+        Connection connection1 = newConnectionMock( ADDRESS_1 );
+        Connection connection2 = newConnectionMock( ADDRESS_1 );
+        Connection connection3 = newConnectionMock( ADDRESS_1 );
+
+        doNothing().doThrow( new RuntimeException( "failed to reset" ) ).when( connection1 ).reset();
+        doNothing().doThrow( new RuntimeException( "failed to sync" ) ).when( connection2 ).sync();
+
+
+        int idleTimeBeforeConnectionTest = 10;
+        FakeClock clock = new FakeClock();
+        Connector connector = newMockConnector( connection1, connection2, connection3 );
+        SocketConnectionPool pool = newPool( connector, clock, idleTimeBeforeConnectionTest );
+
+        Connection acquiredConnection1 = pool.acquire( ADDRESS_1 );
+        Connection acquiredConnection2 = pool.acquire( ADDRESS_1 );
+        Connection acquiredConnection3 = pool.acquire( ADDRESS_1 );
+
+        // return acquired connections to the pool
+        acquiredConnection1.close();
+        acquiredConnection2.close();
+        acquiredConnection3.close();
+
+        clock.progress( idleTimeBeforeConnectionTest + 1 );
+
+        Connection acquiredConnection = pool.acquire( ADDRESS_1 );
+        acquiredConnection.reset();
+        acquiredConnection.sync();
+        assertSame( acquiredConnection3, acquiredConnection );
+    }
+
+    @Test
+    public void limitedNumberOfBrokenConnectionsIsSkippedDuringAcquisition()
+    {
+        Connection connection1 = newConnectionMock( ADDRESS_1 );
+        Connection connection2 = newConnectionMock( ADDRESS_1 );
+        Connection connection3 = newConnectionMock( ADDRESS_1 );
+        Connection connection4 = newConnectionMock( ADDRESS_1 );
+
+        doNothing().doThrow( new RuntimeException( "failed to reset 1" ) ).when( connection1 ).reset();
+        doNothing().doThrow( new RuntimeException( "failed to sync 2" ) ).when( connection2 ).sync();
+        doNothing().doThrow( new RuntimeException( "failed to reset 3" ) ).when( connection3 ).reset();
+        RuntimeException recentlyUsedConnectionFailure = new RuntimeException( "failed to sync 4" );
+        doNothing().doThrow( recentlyUsedConnectionFailure ).when( connection4 ).sync();
+
+        int idleTimeBeforeConnectionTest = 10;
+        FakeClock clock = new FakeClock();
+        Connector connector = newMockConnector( connection1, connection2, connection3, connection4 );
+        SocketConnectionPool pool = newPool( connector, clock, idleTimeBeforeConnectionTest );
+
+        Connection acquiredConnection1 = pool.acquire( ADDRESS_1 );
+        Connection acquiredConnection2 = pool.acquire( ADDRESS_1 );
+        Connection acquiredConnection3 = pool.acquire( ADDRESS_1 );
+        Connection acquiredConnection4 = pool.acquire( ADDRESS_1 );
+
+        acquiredConnection1.close();
+        acquiredConnection2.close();
+        acquiredConnection3.close();
+        clock.progress( idleTimeBeforeConnectionTest + 1 );
+        acquiredConnection4.close();
+
+        Connection acquiredConnection = pool.acquire( ADDRESS_1 );
+        acquiredConnection.reset();
+        try
+        {
+            acquiredConnection.sync();
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertSame( recentlyUsedConnectionFailure, e );
+        }
+        assertSame( acquiredConnection4, acquiredConnection );
+    }
+
+    @Test
+    public void acquireRetriesAtMostMaxPoolSizeTimes()
+    {
+        Connection connection1 = newConnectionMock( ADDRESS_1 );
+        Connection connection2 = newConnectionMock( ADDRESS_1 );
+        Connection connection3 = newConnectionMock( ADDRESS_1 );
+        Connection connection4 = newConnectionMock( ADDRESS_1 );
+
+        doNothing().doThrow( new RuntimeException() ).when( connection1 ).reset();
+        doNothing().doThrow( new RuntimeException() ).when( connection2 ).reset();
+        doNothing().doThrow( new RuntimeException() ).when( connection3 ).reset();
+
+        int maxIdleConnectionPoolSize = 3;
+        int idleTimeBeforeConnectionTest = 10;
+        FakeClock clock = new FakeClock();
+        Connector connector = newMockConnector( connection1, connection2, connection3, connection4 );
+        SocketConnectionPool pool =
+                newPool( connector, clock, maxIdleConnectionPoolSize, idleTimeBeforeConnectionTest );
+
+        Connection acquiredConnection1 = pool.acquire( ADDRESS_1 );
+        Connection acquiredConnection2 = pool.acquire( ADDRESS_1 );
+        Connection acquiredConnection3 = pool.acquire( ADDRESS_1 );
+
+        acquiredConnection1.close();
+        acquiredConnection2.close();
+        acquiredConnection3.close();
+
+        // make all connections seem idle for too long
+        clock.progress( idleTimeBeforeConnectionTest + 10 );
+
+        Connection acquiredConnection = pool.acquire( ADDRESS_1 );
+        assertThat( acquiredConnection,
+                not( isOneOf( acquiredConnection1, acquiredConnection2, acquiredConnection3 ) ) );
+
+        // all connections were tested and appeared to be broken
+        InOrder inOrder = inOrder( connection1, connection2, connection3, connection4 );
+        inOrder.verify( connection1 ).reset();
+        inOrder.verify( connection2 ).reset();
+        inOrder.verify( connection3 ).reset();
+        inOrder.verify( connection4, never() ).reset();
+        inOrder.verify( connection4, never() ).sync();
+    }
+
     private static Answer<Connection> createConnectionAnswer( final Set<Connection> createdConnections )
     {
         return new Answer<Connection>()
@@ -319,9 +535,20 @@ public class SocketConnectionPoolTest
 
     private static SocketConnectionPool newPool( Connector connector )
     {
-        PoolSettings poolSettings = new PoolSettings( 42 );
+        return newPool( connector, Clock.SYSTEM, 0 );
+    }
+
+    private static SocketConnectionPool newPool( Connector connector, Clock clock, long idleTimeBeforeConnectionTest )
+    {
+        return newPool( connector, clock, 42, idleTimeBeforeConnectionTest );
+    }
+
+    private static SocketConnectionPool newPool( Connector connector, Clock clock, int maxIdleConnectionPoolSize,
+            long idleTimeBeforeConnectionTest )
+    {
+        PoolSettings poolSettings = new PoolSettings( maxIdleConnectionPoolSize, idleTimeBeforeConnectionTest );
         Logging logging = mock( Logging.class, RETURNS_MOCKS );
-        return new SocketConnectionPool( poolSettings, connector, SYSTEM, logging );
+        return new SocketConnectionPool( poolSettings, connector, clock, logging );
     }
 
     private static Connection newConnectionMock( BoltServerAddress address )
