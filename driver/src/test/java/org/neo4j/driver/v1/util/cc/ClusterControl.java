@@ -62,14 +62,29 @@ final class ClusterControl
         return executeCommand( "neoctrl-cluster", "start", path.toString() );
     }
 
+    static String startClusterMember( Path path )
+    {
+        return executeCommand( "neoctrl-start", path.toString() );
+    }
+
     static void stopCluster( Path path )
     {
         executeCommand( "neoctrl-cluster", "stop", path.toString() );
     }
 
+    static void stopClusterMember( Path path )
+    {
+        executeCommand( "neoctrl-stop", path.toString() );
+    }
+
     static void killCluster( Path path )
     {
         executeCommand( "neoctrl-cluster", "stop", "--kill", path.toString() );
+    }
+
+    static void killClusterMember( Path path )
+    {
+        executeCommand( "neoctrl-stop", "--kill", path.toString() );
     }
 
     private static String executeCommand( String... command )

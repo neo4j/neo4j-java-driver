@@ -75,16 +75,34 @@ final class SharedCluster
         }
     }
 
+    static void start( ClusterMember member )
+    {
+        assertClusterExists();
+        ClusterControl.startClusterMember( member.getPath() );
+    }
+
     static void stop()
     {
         assertClusterExists();
         ClusterControl.stopCluster( clusterInstance.getPath() );
     }
 
+    static void stop( ClusterMember member )
+    {
+        assertClusterExists();
+        ClusterControl.stopClusterMember( member.getPath() );
+    }
+
     static void kill()
     {
         assertClusterExists();
         ClusterControl.killCluster( clusterInstance.getPath() );
+    }
+
+    static void kill( ClusterMember member )
+    {
+        assertClusterExists();
+        ClusterControl.killClusterMember( member.getPath() );
     }
 
     private static Set<ClusterMember> parseStartCommandOutput( String output )
@@ -103,7 +121,7 @@ final class SharedCluster
             }
 
             URI boltUri = URI.create( clusterMemberSplit[1] );
-            Path path = Paths.get( clusterMemberSplit[1] );
+            Path path = Paths.get( clusterMemberSplit[2] );
 
             result.add( new ClusterMember( boltUri, path ) );
         }
