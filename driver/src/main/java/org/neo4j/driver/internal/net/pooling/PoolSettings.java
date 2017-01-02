@@ -51,6 +51,6 @@ public class PoolSettings
 
     public boolean idleTimeBeforeConnectionTestConfigured()
     {
-        return idleTimeBeforeConnectionTest > 0;
+        return idleTimeBeforeConnectionTest >= 0;
     }
 }

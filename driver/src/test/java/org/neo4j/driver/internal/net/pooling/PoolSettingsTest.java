@@ -39,7 +39,9 @@ public class PoolSettingsTest
     @Test
     public void idleTimeBeforeConnectionTestWhenSetToZero()
     {
-        testWithIllegalValue( 0 );
+        PoolSettings settings = new PoolSettings( 10, 0 );
+        assertTrue( settings.idleTimeBeforeConnectionTestConfigured() );
+        assertEquals( 0, settings.idleTimeBeforeConnectionTest() );
     }
 
     @Test
@@ -47,6 +49,7 @@ public class PoolSettingsTest
     {
         testWithIllegalValue( -1 );
         testWithIllegalValue( -42 );
+        testWithIllegalValue( Integer.MIN_VALUE );
     }
 
     private static void testWithIllegalValue( int value )

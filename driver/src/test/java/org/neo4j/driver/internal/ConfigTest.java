@@ -91,35 +91,19 @@ public class ConfigTest
     }
 
     @Test
-    public void shouldThrowForZeroTimeoutInLivenessCheckTimeoutSetting() throws Throwable
+    public void shouldAllowZeroConnectionLivenessCheckTimeout() throws Throwable
     {
-        Config.ConfigBuilder builder = Config.build();
+        Config config = Config.build().withConnectionLivenessCheckTimeout( 0, TimeUnit.SECONDS ).toConfig();
 
-        try
-        {
-            builder.withConnectionLivenessCheckTimeout( 0, TimeUnit.SECONDS );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( IllegalArgumentException.class ) );
-        }
+        assertEquals( 0, config.idleTimeBeforeConnectionTest() );
     }
 
     @Test
-    public void shouldThrowForNegativeTimeoutInLivenessCheckTimeoutSetting() throws Throwable
+    public void shouldAllowNegativeConnectionLivenessCheckTimeout() throws Throwable
     {
-        Config.ConfigBuilder builder = Config.build();
+        Config config = Config.build().withConnectionLivenessCheckTimeout( -42, TimeUnit.SECONDS ).toConfig();
 
-        try
-        {
-            builder.withConnectionLivenessCheckTimeout( -42, TimeUnit.SECONDS );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( IllegalArgumentException.class ) );
-        }
+        assertEquals( TimeUnit.SECONDS.toMillis( -42 ), config.idleTimeBeforeConnectionTest() );
     }
 
     @Test

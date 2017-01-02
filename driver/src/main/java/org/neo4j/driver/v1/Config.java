@@ -292,7 +292,8 @@ public class Config
          * application seeing connection problems, and performance.
          * <p>
          * You normally should not need to tune this parameter.
-         * This feature is turned off by default.
+         * This feature is turned off by default. Value {@code 0} means connections will always be tested for
+         * validity and negative values mean connections will never be tested.
          *
          * @param value the minimum idle time in milliseconds
          * @param unit the unit in which the duration is given
@@ -300,14 +301,7 @@ public class Config
          */
         public ConfigBuilder withConnectionLivenessCheckTimeout( long value, TimeUnit unit )
         {
-            long idleTimeBeforeConnectionTestMillis = unit.toMillis( value );
-            if ( idleTimeBeforeConnectionTestMillis <= 0 )
-            {
-                throw new IllegalArgumentException( String.format(
-                        "The timeout value must be positive when converted to ms, but was %d. Given %d %s",
-                        idleTimeBeforeConnectionTestMillis, value, unit ) );
-            }
-            this.idleTimeBeforeConnectionTest = idleTimeBeforeConnectionTestMillis;
+            this.idleTimeBeforeConnectionTest = unit.toMillis( value );
             return this;
         }
 
