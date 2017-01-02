@@ -85,7 +85,7 @@ public class ConfigTest
     @Test
     public void shouldSupportLivenessCheckTimeoutSetting() throws Throwable
     {
-        Config config = Config.build().withSessionLivenessCheckTimeout( 42, TimeUnit.SECONDS ).toConfig();
+        Config config = Config.build().withConnectionLivenessCheckTimeout( 42, TimeUnit.SECONDS ).toConfig();
 
         assertEquals( TimeUnit.SECONDS.toMillis( 42 ), config.idleTimeBeforeConnectionTest() );
     }
@@ -97,7 +97,7 @@ public class ConfigTest
 
         try
         {
-            builder.withSessionLivenessCheckTimeout( 0, TimeUnit.SECONDS );
+            builder.withConnectionLivenessCheckTimeout( 0, TimeUnit.SECONDS );
             fail( "Exception expected" );
         }
         catch ( Exception e )
@@ -113,7 +113,7 @@ public class ConfigTest
 
         try
         {
-            builder.withSessionLivenessCheckTimeout( -42, TimeUnit.SECONDS );
+            builder.withConnectionLivenessCheckTimeout( -42, TimeUnit.SECONDS );
             fail( "Exception expected" );
         }
         catch ( Exception e )

@@ -96,7 +96,7 @@ public class ServerKilledIT
         // config with set liveness check timeout
         int livenessCheckTimeoutMinutes = 10;
         Config config = Config.build()
-                .withSessionLivenessCheckTimeout( livenessCheckTimeoutMinutes, TimeUnit.MINUTES )
+                .withConnectionLivenessCheckTimeout( livenessCheckTimeoutMinutes, TimeUnit.MINUTES )
                 .withEncryptionLevel( Config.EncryptionLevel.NONE )
                 .toConfig();
 

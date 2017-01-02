@@ -261,18 +261,18 @@ public class Config
         }
 
         /**
-         * Please use {@link #withSessionLivenessCheckTimeout(long, TimeUnit)}.
+         * Please use {@link #withConnectionLivenessCheckTimeout(long, TimeUnit)}.
          *
          * @param timeout minimum idle time in milliseconds
          * @return this builder
-         * @see #withSessionLivenessCheckTimeout(long, TimeUnit)
-         * @deprecated please use overloaded method with {@link TimeUnit} parameter. This method will be removed in
-         * future release.
+         * @see #withConnectionLivenessCheckTimeout(long, TimeUnit)
+         * @deprecated please use {@link #withConnectionLivenessCheckTimeout(long, TimeUnit)} method. This method
+         * will be removed in future release.
          */
         @Deprecated
         public ConfigBuilder withSessionLivenessCheckTimeout( long timeout )
         {
-            withSessionLivenessCheckTimeout( timeout, TimeUnit.MILLISECONDS );
+            withConnectionLivenessCheckTimeout( timeout, TimeUnit.MILLISECONDS );
             return this;
         }
 
@@ -298,7 +298,7 @@ public class Config
          * @param unit the unit in which the duration is given
          * @return this builder
          */
-        public ConfigBuilder withSessionLivenessCheckTimeout( long value, TimeUnit unit )
+        public ConfigBuilder withConnectionLivenessCheckTimeout( long value, TimeUnit unit )
         {
             long idleTimeBeforeConnectionTestMillis = unit.toMillis( value );
             if ( idleTimeBeforeConnectionTestMillis <= 0 )
