@@ -448,7 +448,7 @@ public class SocketConnectionPoolTest
     }
 
     @Test
-    public void acquireRetriesAtMostMaxPoolSizeTimes()
+    public void acquireRetriesUntilAConnectionIsCreated()
     {
         Connection connection1 = newConnectionMock( ADDRESS_1 );
         Connection connection2 = newConnectionMock( ADDRESS_1 );
@@ -459,12 +459,10 @@ public class SocketConnectionPoolTest
         doNothing().doThrow( new RuntimeException() ).when( connection2 ).reset();
         doNothing().doThrow( new RuntimeException() ).when( connection3 ).reset();
 
-        int maxIdleConnectionPoolSize = 3;
         int idleTimeBeforeConnectionTest = 10;
         FakeClock clock = new FakeClock();
         Connector connector = newMockConnector( connection1, connection2, connection3, connection4 );
-        SocketConnectionPool pool =
-                newPool( connector, clock, maxIdleConnectionPoolSize, idleTimeBeforeConnectionTest );
+        SocketConnectionPool pool = newPool( connector, clock, idleTimeBeforeConnectionTest );
 
         Connection acquiredConnection1 = pool.acquire( ADDRESS_1 );
         Connection acquiredConnection2 = pool.acquire( ADDRESS_1 );
@@ -540,13 +538,7 @@ public class SocketConnectionPoolTest
 
     private static SocketConnectionPool newPool( Connector connector, Clock clock, long idleTimeBeforeConnectionTest )
     {
-        return newPool( connector, clock, 42, idleTimeBeforeConnectionTest );
-    }
-
-    private static SocketConnectionPool newPool( Connector connector, Clock clock, int maxIdleConnectionPoolSize,
-            long idleTimeBeforeConnectionTest )
-    {
-        PoolSettings poolSettings = new PoolSettings( maxIdleConnectionPoolSize, idleTimeBeforeConnectionTest );
+        PoolSettings poolSettings = new PoolSettings( 42, idleTimeBeforeConnectionTest );
         Logging logging = mock( Logging.class, RETURNS_MOCKS );
         return new SocketConnectionPool( poolSettings, connector, clock, logging );
     }

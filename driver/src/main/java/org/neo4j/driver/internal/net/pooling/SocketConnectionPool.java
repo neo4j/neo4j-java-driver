@@ -124,41 +124,28 @@ public class SocketConnectionPool implements ConnectionPool
         return pool;
     }
 
-    private PooledConnection acquireConnection( final BoltServerAddress address,
-            final BlockingPooledConnectionQueue connectionQueue )
+    private PooledConnection acquireConnection( BoltServerAddress address,
+            BlockingPooledConnectionQueue connectionQueue )
     {
-        Supplier<PooledConnection> supplier = newPooledConnectionSupplier( address, connectionQueue );
+        ConnectionSupplier connectionSupplier = new ConnectionSupplier( connectionQueue, address );
 
-        int acquisitionAttempt = 1;
-        PooledConnection connection = connectionQueue.acquire( supplier );
-        while ( !canBeAcquired( connection, acquisitionAttempt ) )
+        PooledConnection connection;
+        boolean connectionCreated;
+        do
         {
-            connection = connectionQueue.acquire( supplier );
-            acquisitionAttempt++;
+            connection = connectionQueue.acquire( connectionSupplier );
+            connectionCreated = connectionSupplier.connectionCreated();
         }
+        while ( !canBeAcquired( connection, connectionCreated ) );
+
         return connection;
     }
 
-    private Supplier<PooledConnection> newPooledConnectionSupplier( final BoltServerAddress address,
-            final BlockingPooledConnectionQueue connectionQueue )
-    {
-        return new Supplier<PooledConnection>()
-        {
-            @Override
-            public PooledConnection get()
-            {
-                PooledConnectionReleaseConsumer releaseConsumer =
-                        new PooledConnectionReleaseConsumer( connectionQueue, connectionValidator );
-                return new PooledConnection( connector.connect( address ), releaseConsumer, clock );
-            }
-        };
-    }
-
-    private boolean canBeAcquired( PooledConnection connection, int acquisitionAttempt )
+    private boolean canBeAcquired( PooledConnection connection, boolean connectionCreated )
     {
         if ( poolSettings.idleTimeBeforeConnectionTestConfigured() )
         {
-            if ( acquisitionAttempt > poolSettings.maxIdleConnectionPoolSize() )
+            if ( connectionCreated )
             {
                 return true;
             }
@@ -192,6 +179,36 @@ public class SocketConnectionPool implements ConnectionPool
         if ( closed.get() )
         {
             throw new IllegalStateException( "Pool closed" );
+        }
+    }
+
+    private class ConnectionSupplier implements Supplier<PooledConnection>
+    {
+        final BlockingPooledConnectionQueue connectionQueue;
+        final BoltServerAddress address;
+
+        boolean connectionCreated;
+
+        ConnectionSupplier( BlockingPooledConnectionQueue connectionQueue, BoltServerAddress address )
+        {
+            this.connectionQueue = connectionQueue;
+            this.address = address;
+        }
+
+        @Override
+        public PooledConnection get()
+        {
+            PooledConnectionReleaseConsumer releaseConsumer = new PooledConnectionReleaseConsumer( connectionQueue,
+                    connectionValidator );
+            Connection connection = connector.connect( address );
+            PooledConnection pooledConnection = new PooledConnection( connection, releaseConsumer, clock );
+            connectionCreated = true;
+            return pooledConnection;
+        }
+
+        boolean connectionCreated()
+        {
+            return connectionCreated;
         }
     }
 }
