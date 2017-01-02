@@ -186,27 +186,9 @@ public class ConcurrencyGuardingConnection implements Connection
     }
 
     @Override
-    public void onError( Runnable runnable )
-    {
-        delegate.onError( runnable );
-    }
-
-    @Override
-    public boolean hasUnrecoverableErrors()
-    {
-        return delegate.hasUnrecoverableErrors();
-    }
-
-    @Override
     public void resetAsync()
     {
         delegate.resetAsync();
-    }
-
-    @Override
-    public boolean isAckFailureMuted()
-    {
-        return delegate.isAckFailureMuted();
     }
 
     private void markAsAvailable()

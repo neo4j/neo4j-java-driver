@@ -23,6 +23,7 @@ import java.util.Map;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Consumer;
 import org.neo4j.driver.v1.Logger;
@@ -50,7 +51,7 @@ import org.neo4j.driver.v1.summary.ServerInfo;
  *                              |           pool.close          |
  *                              ---------------------------------
  */
-public class PooledConnection implements Connection
+public class PooledSocketConnection implements PooledConnection
 {
     /** The real connection who will do all the real jobs */
     private final Connection delegate;
@@ -61,7 +62,7 @@ public class PooledConnection implements Connection
     private final Clock clock;
     private long lastUsedTimestamp;
 
-    public PooledConnection( Connection delegate, Consumer<PooledConnection> release, Clock clock )
+    public PooledSocketConnection( Connection delegate, Consumer<PooledConnection> release, Clock clock )
     {
         this.delegate = delegate;
         this.release = release;
@@ -225,12 +226,6 @@ public class PooledConnection implements Connection
     }
 
     @Override
-    public boolean isAckFailureMuted()
-    {
-        return delegate.isAckFailureMuted();
-    }
-
-    @Override
     public ServerInfo server()
     {
         return delegate.server();
@@ -248,6 +243,7 @@ public class PooledConnection implements Connection
         return delegate.logger();
     }
 
+    @Override
     public void dispose()
     {
         delegate.close();
@@ -265,7 +261,7 @@ public class PooledConnection implements Connection
         {
             unrecoverableErrorsOccurred = true;
         }
-        else if( !isAckFailureMuted() )
+        else
         {
             ackFailure();
         }

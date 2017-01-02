@@ -32,8 +32,8 @@ import java.util.Map;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Collector;
-import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
+import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Config;
@@ -361,15 +361,15 @@ public class RoutingDriverTest
     {
         ConnectionPool pool = mock( ConnectionPool.class );
 
-        when( pool.acquire( any( BoltServerAddress.class ) ) ).thenAnswer( new Answer<Connection>()
+        when( pool.acquire( any( BoltServerAddress.class ) ) ).thenAnswer( new Answer<PooledConnection>()
         {
             int answer;
 
             @Override
-            public Connection answer( InvocationOnMock invocationOnMock ) throws Throwable
+            public PooledConnection answer( InvocationOnMock invocationOnMock ) throws Throwable
             {
                 BoltServerAddress address = invocationOnMock.getArgumentAt( 0, BoltServerAddress.class );
-                Connection connection = mock( Connection.class );
+                PooledConnection connection = mock( PooledConnection.class );
                 when( connection.isOpen() ).thenReturn( true );
                 when( connection.boltServerAddress() ).thenReturn( address );
                 doAnswer( withKeys( "ttl", "servers" ) ).when( connection ).run(

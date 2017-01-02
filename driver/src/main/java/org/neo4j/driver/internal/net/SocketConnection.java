@@ -50,11 +50,24 @@ public class SocketConnection implements Connection
 {
     private final Queue<Message> pendingMessages = new LinkedList<>();
     private final SocketResponseHandler responseHandler;
-    private final AtomicBoolean isInterrupted = new AtomicBoolean( false );
-    private final AtomicBoolean isAckFailureMuted = new AtomicBoolean( false );
-    private InternalServerInfo serverInfo;
 
     private final SocketClient socket;
+    private InternalServerInfo serverInfo;
+
+    /*
+     * When interrupted, before queuing more messages, unhandled failure messages should be consumed first.
+     * This ensures that before running more statements after a client reset,
+     * no unhandled error is left in the message queue.
+     * If the connection {@link #isInterrupted}, then it definitely also {@link #isAckFailureMuted}.
+     */
+    private final AtomicBoolean isInterrupted = new AtomicBoolean( false );
+
+    /*
+     * When ackFailure is muted, calling {@link #ackFailure()} will put no ackFailure message into the sending
+     * message queue, as the error will be cleaned by client's reset instead.
+     * {@link #isAckFailureMuted} will only be set back to false when a success of reset message is received.
+     */
+    private final AtomicBoolean isAckFailureMuted = new AtomicBoolean( false );
 
     private final Logger logger;
 
@@ -77,9 +90,9 @@ public class SocketConnection implements Connection
      */
     public SocketConnection( SocketClient socket, InternalServerInfo serverInfo, Logger logger )
     {
+        this.logger = logger;
         this.socket = socket;
         this.serverInfo = serverInfo;
-        this.logger = logger;
         this.responseHandler = createResponseHandler( logger );
         this.socket.start();
     }
@@ -130,9 +143,13 @@ public class SocketConnection implements Connection
     }
 
     @Override
-    public void ackFailure()
+    public synchronized void ackFailure()
     {
-        queueMessage( ACK_FAILURE, Collector.ACK_FAILURE );
+        // only ack failure if the ackFailure is not muted.
+        if( !isAckFailureMuted.get() )
+        {
+            queueMessage( ACK_FAILURE, Collector.ACK_FAILURE );
+        }
     }
 
     @Override
@@ -257,18 +274,6 @@ public class SocketConnection implements Connection
     }
 
     @Override
-    public void onError( Runnable runnable )
-    {
-        throw new UnsupportedOperationException( "Error subscribers are not supported on SocketConnection." );
-    }
-
-    @Override
-    public boolean hasUnrecoverableErrors()
-    {
-        throw new UnsupportedOperationException( "Unrecoverable error detection is not supported on SocketConnection." );
-    }
-
-    @Override
     public synchronized void resetAsync()
     {
         queueMessage( RESET, new Collector.ResetCollector( new Runnable()
@@ -283,12 +288,6 @@ public class SocketConnection implements Connection
         flush();
         isInterrupted.set( true );
         isAckFailureMuted.set( true );
-    }
-
-    @Override
-    public boolean isAckFailureMuted()
-    {
-        return isAckFailureMuted.get();
     }
 
     @Override

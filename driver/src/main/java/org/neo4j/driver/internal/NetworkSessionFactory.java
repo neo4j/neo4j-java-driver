@@ -18,13 +18,13 @@
  */
 package org.neo4j.driver.internal;
 
-import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.v1.Session;
 
 class NetworkSessionFactory implements SessionFactory
 {
     @Override
-    public Session newInstance( Connection connection )
+    public Session newInstance( PooledConnection connection )
     {
         return new NetworkSession( connection );
     }

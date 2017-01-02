@@ -20,6 +20,7 @@ package org.neo4j.driver.internal.net.pooling;
 
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionValidator;
+import org.neo4j.driver.internal.spi.PooledConnection;
 
 class PooledConnectionValidator implements ConnectionValidator<PooledConnection>
 {

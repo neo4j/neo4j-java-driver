@@ -40,6 +40,7 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.Connector;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.FakeClock;
+import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.v1.Logging;
 
 import static java.util.Collections.newSetFromMap;

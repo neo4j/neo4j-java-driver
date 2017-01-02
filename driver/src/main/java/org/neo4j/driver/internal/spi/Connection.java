@@ -99,27 +99,9 @@ public interface Connection extends AutoCloseable
     boolean isOpen();
 
     /**
-     * If there are any errors that occur on this connection, invoke the given
-     * runnable. This is used in the driver to clean up resources associated with
-     * the connection, like an open transaction.
-     *
-     * @param runnable To be run on error.
-     */
-    void onError( Runnable runnable );
-
-
-    boolean hasUnrecoverableErrors();
-
-    /**
      * Asynchronously sending reset to the socket output channel.
      */
     void resetAsync();
-
-    /**
-     * Return true if ack_failure message is temporarily muted as the failure message will be acked using reset instead
-     * @return true if no ack_failre message should be sent when ackable failures are received.
-     */
-    boolean isAckFailureMuted();
 
     /**
      * Returns the basic information of the server connected to.
