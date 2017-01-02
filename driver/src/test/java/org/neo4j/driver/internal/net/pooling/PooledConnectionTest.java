@@ -21,14 +21,15 @@ package org.neo4j.driver.internal.net.pooling;
 import org.junit.Test;
 
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.ConnectionValidator;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Supplier;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.util.Function;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -43,24 +44,8 @@ import static org.neo4j.driver.internal.net.BoltServerAddress.LOCAL_DEFAULT;
 public class PooledConnectionTest
 {
 
-    private static final Function<PooledConnection,Boolean>
-            VALID_CONNECTION = new Function<PooledConnection,Boolean>()
-    {
-        @Override
-        public Boolean apply( PooledConnection pooledConnection )
-        {
-            return true;
-        }
-    };
-    private static final Function<PooledConnection,Boolean>
-            INVALID_CONNECTION = new Function<PooledConnection,Boolean>()
-    {
-        @Override
-        public Boolean apply( PooledConnection pooledConnection )
-        {
-            return false;
-        }
-    };
+    private static final ConnectionValidator<PooledConnection> VALID_CONNECTION = newFixedValidator( true, true );
+    private static final ConnectionValidator<PooledConnection> INVALID_CONNECTION = newFixedValidator( false, false );
 
     @Test
     public void shouldDisposeConnectionIfNotValidConnection() throws Throwable
@@ -362,8 +347,57 @@ public class PooledConnectionTest
         assertThat( pooledConnection.hasUnrecoverableErrors(), equalTo( true ) );
     }
 
+    @Test
+    public void hasNewLastUsedTimestampWhenCreated()
+    {
+        PooledConnectionReleaseConsumer releaseConsumer = mock( PooledConnectionReleaseConsumer.class );
+        Clock clock = when( mock( Clock.class ).millis() ).thenReturn( 42L ).getMock();
+
+        PooledConnection connection = new PooledConnection( mock( Connection.class ), releaseConsumer, clock );
+
+        assertEquals( 42L, connection.lastUsedTimestamp() );
+    }
+
+    @Test
+    public void lastUsedTimestampUpdatedWhenConnectionClosed()
+    {
+        PooledConnectionReleaseConsumer releaseConsumer = mock( PooledConnectionReleaseConsumer.class );
+        Clock clock = when( mock( Clock.class ).millis() )
+                .thenReturn( 42L ).thenReturn( 4242L ).thenReturn( 424242L ).getMock();
+
+        PooledConnection connection = new PooledConnection( mock( Connection.class ), releaseConsumer, clock );
+
+        assertEquals( 42, connection.lastUsedTimestamp() );
+
+        connection.close();
+        assertEquals( 4242, connection.lastUsedTimestamp() );
+
+        connection.close();
+        assertEquals( 424242, connection.lastUsedTimestamp() );
+    }
+
     private static BlockingPooledConnectionQueue newConnectionQueue( int capacity )
     {
         return new BlockingPooledConnectionQueue( LOCAL_DEFAULT, capacity, mock( Logging.class, RETURNS_MOCKS ) );
+    }
+
+    private static ConnectionValidator<PooledConnection> newFixedValidator( final boolean reusable,
+            final boolean connected )
+    {
+        return new ConnectionValidator<PooledConnection>()
+        {
+
+            @Override
+            public boolean isReusable( PooledConnection connection )
+            {
+                return reusable;
+            }
+
+            @Override
+            public boolean isConnected( PooledConnection connection )
+            {
+                return connected;
+            }
+        };
     }
 }

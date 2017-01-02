@@ -20,20 +20,37 @@ package org.neo4j.driver.internal.net.pooling;
 
 public class PoolSettings
 {
+    public static final int NO_IDLE_CONNECTION_TEST = -1;
+
     public static final int DEFAULT_MAX_IDLE_CONNECTION_POOL_SIZE = 10;
+    public static final int DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST = NO_IDLE_CONNECTION_TEST;
 
-    /**
-     * Maximum number of idle connections per pool.
-     */
     private final int maxIdleConnectionPoolSize;
+    private final long idleTimeBeforeConnectionTest;
 
-    public PoolSettings( int maxIdleConnectionPoolSize )
+    public PoolSettings( int maxIdleConnectionPoolSize, long idleTimeBeforeConnectionTest )
     {
         this.maxIdleConnectionPoolSize = maxIdleConnectionPoolSize;
+        this.idleTimeBeforeConnectionTest = idleTimeBeforeConnectionTest;
     }
 
     public int maxIdleConnectionPoolSize()
     {
         return maxIdleConnectionPoolSize;
+    }
+
+    public long idleTimeBeforeConnectionTest()
+    {
+        if ( !idleTimeBeforeConnectionTestConfigured() )
+        {
+            throw new IllegalStateException(
+                    "Idle time before connection test is not configured: " + idleTimeBeforeConnectionTest );
+        }
+        return idleTimeBeforeConnectionTest;
+    }
+
+    public boolean idleTimeBeforeConnectionTestConfigured()
+    {
+        return idleTimeBeforeConnectionTest >= 0;
     }
 }

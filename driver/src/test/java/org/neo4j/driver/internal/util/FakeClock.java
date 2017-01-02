@@ -18,14 +18,14 @@
  */
 package org.neo4j.driver.internal.util;
 
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
+
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.locks.LockSupport;
-
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-import org.hamcrest.TypeSafeMatcher;
 
 import org.neo4j.driver.internal.EventHandler;
 
@@ -62,6 +62,11 @@ public class FakeClock implements Clock
     private volatile long timestamp;
     private static final AtomicLongFieldUpdater<FakeClock> TIMESTAMP = newUpdater( FakeClock.class, "timestamp" );
     private PriorityBlockingQueue<WaitingThread> threads;
+
+    public FakeClock()
+    {
+        this( (EventHandler) null, false );
+    }
 
     public FakeClock( final EventHandler events, boolean progressOnSleep )
     {

@@ -83,13 +83,27 @@ public class ConfigTest
     }
 
     @Test
-    public void shouldIgnoreLivenessCheckTimeoutSetting() throws Throwable
+    public void shouldSupportLivenessCheckTimeoutSetting() throws Throwable
     {
-        // when
-        Config config = Config.build().withSessionLivenessCheckTimeout( 1337 ).toConfig();
+        Config config = Config.build().withConnectionLivenessCheckTimeout( 42, TimeUnit.SECONDS ).toConfig();
 
-        // then
-        assertEquals( -1, config.idleTimeBeforeConnectionTest() );
+        assertEquals( TimeUnit.SECONDS.toMillis( 42 ), config.idleTimeBeforeConnectionTest() );
+    }
+
+    @Test
+    public void shouldAllowZeroConnectionLivenessCheckTimeout() throws Throwable
+    {
+        Config config = Config.build().withConnectionLivenessCheckTimeout( 0, TimeUnit.SECONDS ).toConfig();
+
+        assertEquals( 0, config.idleTimeBeforeConnectionTest() );
+    }
+
+    @Test
+    public void shouldAllowNegativeConnectionLivenessCheckTimeout() throws Throwable
+    {
+        Config config = Config.build().withConnectionLivenessCheckTimeout( -42, TimeUnit.SECONDS ).toConfig();
+
+        assertEquals( TimeUnit.SECONDS.toMillis( -42 ), config.idleTimeBeforeConnectionTest() );
     }
 
     @Test

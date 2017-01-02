@@ -53,6 +53,12 @@ public class Config
 
     private final int maxIdleConnectionPoolSize;
 
+    /**
+     * Connections that have been idle in the pool longer than this threshold will
+     * be tested for validity before being returned to the user.
+     */
+    private final long idleTimeBeforeConnectionTest;
+
     /** Level of encryption we need to adhere to */
     private final EncryptionLevel encryptionLevel;
 
@@ -68,6 +74,7 @@ public class Config
         this.logging = builder.logging;
         this.logLeakedSessions = builder.logLeakedSessions;
 
+        this.idleTimeBeforeConnectionTest = builder.idleTimeBeforeConnectionTest;
         this.maxIdleConnectionPoolSize = builder.maxIdleConnectionPoolSize;
 
         this.encryptionLevel = builder.encryptionLevel;
@@ -116,17 +123,14 @@ public class Config
     }
 
     /**
-     * Pooled connections that have been unused for longer than this timeout will be tested before they are
-     * used again, to ensure they are still live.
+     * Pooled connections that have been idle in the pool for longer than this timeout
+     * will be tested before they are used again, to ensure they are still live.
      *
      * @return idle time in milliseconds
-     * @deprecated pooled sessions are automatically checked for validity before being returned to the pool. This
-     * method will always return <code>-1</code> and will be possibly removed in future.
      */
-    @Deprecated
     public long idleTimeBeforeConnectionTest()
     {
-        return -1;
+        return idleTimeBeforeConnectionTest;
     }
 
     /**
@@ -183,6 +187,7 @@ public class Config
         private Logging logging = new JULogging( Level.INFO );
         private boolean logLeakedSessions;
         private int maxIdleConnectionPoolSize = PoolSettings.DEFAULT_MAX_IDLE_CONNECTION_POOL_SIZE;
+        private long idleTimeBeforeConnectionTest = PoolSettings.DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST;
         private EncryptionLevel encryptionLevel = EncryptionLevel.REQUIRED;
         private TrustStrategy trustStrategy = trustAllCertificates();
         private int routingFailureLimit = 1;
@@ -256,30 +261,46 @@ public class Config
         }
 
         /**
-         * Pooled sessions that have been unused for longer than this timeout
-         * will be tested before they are used again, to ensure they are still live.
-         *
-         * If this option is set too low, an additional network call will be
-         * incurred when acquiring a session, which causes a performance hit.
-         *
-         * If this is set high, you may receive sessions that are no longer live,
-         * which will lead to exceptions in your application. Assuming the
-         * database is running, these exceptions will go away if you retry acquiring
-         * sessions.
-         *
-         * Hence, this parameter tunes a balance between the likelihood of your
-         * application seeing connection problems, and performance.
-         *
-         * You normally should not need to tune this parameter.
+         * Please use {@link #withConnectionLivenessCheckTimeout(long, TimeUnit)}.
          *
          * @param timeout minimum idle time in milliseconds
          * @return this builder
-         * @deprecated pooled sessions are automatically checked for validity before being returned to the pool.
-         * This setting will be ignored and possibly removed in future.
+         * @see #withConnectionLivenessCheckTimeout(long, TimeUnit)
+         * @deprecated please use {@link #withConnectionLivenessCheckTimeout(long, TimeUnit)} method. This method
+         * will be removed in future release.
          */
         @Deprecated
         public ConfigBuilder withSessionLivenessCheckTimeout( long timeout )
         {
+            withConnectionLivenessCheckTimeout( timeout, TimeUnit.MILLISECONDS );
+            return this;
+        }
+
+        /**
+         * Pooled connections that have been idle in the pool for longer than this timeout
+         * will be tested before they are used again, to ensure they are still live.
+         * <p>
+         * If this option is set too low, an additional network call will be
+         * incurred when acquiring a connection, which causes a performance hit.
+         * <p>
+         * If this is set high, you may receive sessions that are backed by no longer live connections,
+         * which will lead to exceptions in your application. Assuming the
+         * database is running, these exceptions will go away if you retry acquiring sessions.
+         * <p>
+         * Hence, this parameter tunes a balance between the likelihood of your
+         * application seeing connection problems, and performance.
+         * <p>
+         * You normally should not need to tune this parameter.
+         * This feature is turned off by default. Value {@code 0} means connections will always be tested for
+         * validity and negative values mean connections will never be tested.
+         *
+         * @param value the minimum idle time in milliseconds
+         * @param unit the unit in which the duration is given
+         * @return this builder
+         */
+        public ConfigBuilder withConnectionLivenessCheckTimeout( long value, TimeUnit unit )
+        {
+            this.idleTimeBeforeConnectionTest = unit.toMillis( value );
             return this;
         }
 

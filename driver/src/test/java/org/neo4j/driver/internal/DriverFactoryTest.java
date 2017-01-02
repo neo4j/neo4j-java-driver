@@ -142,21 +142,22 @@ public class DriverFactoryTest
         }
 
         @Override
-        DirectDriver createDirectDriver( BoltServerAddress address, ConnectionPool connectionPool, Config config,
-                SecurityPlan securityPlan, SessionFactory sessionFactory )
+        protected DirectDriver createDirectDriver( BoltServerAddress address, ConnectionPool connectionPool,
+                Config config, SecurityPlan securityPlan, SessionFactory sessionFactory )
         {
             throw new UnsupportedOperationException( "Can't create direct driver" );
         }
 
         @Override
-        RoutingDriver createRoutingDriver( BoltServerAddress address, ConnectionPool connectionPool, Config config,
-                RoutingSettings routingSettings, SecurityPlan securityPlan, SessionFactory sessionFactory )
+        protected RoutingDriver createRoutingDriver( BoltServerAddress address, ConnectionPool connectionPool,
+                Config config, RoutingSettings routingSettings, SecurityPlan securityPlan,
+                SessionFactory sessionFactory )
         {
             throw new UnsupportedOperationException( "Can't create routing driver" );
         }
 
         @Override
-        ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Config config )
+        protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Config config )
         {
             return connectionPool;
         }
@@ -167,16 +168,17 @@ public class DriverFactoryTest
         SessionFactory capturedSessionFactory;
 
         @Override
-        DirectDriver createDirectDriver( BoltServerAddress address, ConnectionPool connectionPool, Config config,
-                SecurityPlan securityPlan, SessionFactory sessionFactory )
+        protected DirectDriver createDirectDriver( BoltServerAddress address, ConnectionPool connectionPool,
+                Config config, SecurityPlan securityPlan, SessionFactory sessionFactory )
         {
             capturedSessionFactory = sessionFactory;
             return null;
         }
 
         @Override
-        RoutingDriver createRoutingDriver( BoltServerAddress address, ConnectionPool connectionPool, Config config,
-                RoutingSettings routingSettings, SecurityPlan securityPlan, SessionFactory sessionFactory )
+        protected RoutingDriver createRoutingDriver( BoltServerAddress address, ConnectionPool connectionPool,
+                Config config, RoutingSettings routingSettings, SecurityPlan securityPlan,
+                SessionFactory sessionFactory )
         {
             capturedSessionFactory = sessionFactory;
             return null;

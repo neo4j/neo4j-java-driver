@@ -289,7 +289,7 @@ public class Cluster
                 .withTrustStrategy( trustAllCertificates() )
                 .withEncryptionLevel( Config.EncryptionLevel.NONE )
                 .withMaxIdleSessions( 1 )
-                .withSessionLivenessCheckTimeout( TimeUnit.HOURS.toMillis( 1 ) )
+                .withConnectionLivenessCheckTimeout( 1, TimeUnit.HOURS )
                 .toConfig();
     }
 

@@ -22,10 +22,20 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.net.URI;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.logging.DevNullLogger;
+import org.neo4j.driver.internal.util.ConnectionTrackingDriverFactory;
+import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.v1.AccessMode;
+import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
@@ -44,6 +54,7 @@ import org.neo4j.driver.v1.util.cc.ClusterRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class CausalClusteringIT
@@ -181,6 +192,47 @@ public class CausalClusteringIT
         }
     }
 
+    @Test
+    public void shouldDropBrokenOldSessions() throws Exception
+    {
+        Cluster cluster = clusterRule.getCluster();
+
+        int concurrentSessionsCount = 9;
+        int livenessCheckTimeoutMinutes = 2;
+
+        Config config = Config.build()
+                .withConnectionLivenessCheckTimeout( livenessCheckTimeoutMinutes, TimeUnit.MINUTES )
+                .withEncryptionLevel( Config.EncryptionLevel.NONE )
+                .toConfig();
+
+        FakeClock clock = new FakeClock();
+        ConnectionTrackingDriverFactory driverFactory = new ConnectionTrackingDriverFactory( clock );
+
+        URI routingUri = cluster.leader().getRoutingUri();
+        RoutingSettings routingSettings = new RoutingSettings( 1, TimeUnit.SECONDS.toMillis( 5 ) );
+        AuthToken authToken = clusterRule.getDefaultAuthToken();
+
+        try ( Driver driver = driverFactory.newInstance( routingUri, authToken, routingSettings, config ) )
+        {
+            // create nodes in different threads using different sessions
+            createNodesInDifferentThreads( concurrentSessionsCount, driver );
+
+            // now pool contains many sessions, make them all invalid
+            driverFactory.closeConnections();
+            // move clock forward more than configured liveness check timeout
+            clock.progress( TimeUnit.MINUTES.toMillis( livenessCheckTimeoutMinutes + 1 ) );
+
+            // now all idle connections should be considered too old and will be verified during acquisition
+            // they will appear broken because they were closed and new valid connection will be created
+            try ( Session session = driver.session( AccessMode.WRITE ) )
+            {
+                List<Record> records = session.run( "MATCH (n) RETURN count(n)" ).list();
+                assertEquals( 1, records.size() );
+                assertEquals( concurrentSessionsCount, records.get( 0 ).get( 0 ).asInt() );
+            }
+        }
+    }
+
     private int executeWriteAndReadThroughBolt( ClusterMember member ) throws TimeoutException, InterruptedException
     {
         try ( Driver driver = createDriver( member.getRoutingUri() ) )
@@ -264,5 +316,36 @@ public class CausalClusteringIT
                 .toConfig();
 
         return GraphDatabase.driver( boltUri, clusterRule.getDefaultAuthToken(), config );
+    }
+
+    private static void createNodesInDifferentThreads( int count, final Driver driver ) throws Exception
+    {
+        final CountDownLatch beforeRunLatch = new CountDownLatch( count );
+        final CountDownLatch runQueryLatch = new CountDownLatch( 1 );
+        final ExecutorService executor = Executors.newCachedThreadPool();
+
+        for ( int i = 0; i < count; i++ )
+        {
+            executor.submit( new Callable<Void>()
+            {
+                @Override
+                public Void call() throws Exception
+                {
+                    beforeRunLatch.countDown();
+                    try ( Session session = driver.session( AccessMode.WRITE ) )
+                    {
+                        runQueryLatch.await();
+                        session.run( "CREATE ()" );
+                    }
+                    return null;
+                }
+            } );
+        }
+
+        beforeRunLatch.await();
+        runQueryLatch.countDown();
+
+        executor.shutdown();
+        assertTrue( executor.awaitTermination( 1, TimeUnit.MINUTES ) );
     }
 }

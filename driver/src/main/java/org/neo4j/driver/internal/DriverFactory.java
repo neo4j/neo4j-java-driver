@@ -36,6 +36,7 @@ import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Logger;
+import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static java.lang.String.format;
@@ -91,10 +92,10 @@ public class DriverFactory
     /**
      * Creates new {@link DirectDriver}.
      * <p>
-     * <b>This method is package-private only for testing</b>
+     * <b>This method is protected only for testing</b>
      */
-    DirectDriver createDirectDriver( BoltServerAddress address, ConnectionPool connectionPool, Config config,
-            SecurityPlan securityPlan, SessionFactory sessionFactory )
+    protected DirectDriver createDirectDriver( BoltServerAddress address, ConnectionPool connectionPool,
+            Config config, SecurityPlan securityPlan, SessionFactory sessionFactory )
     {
         return new DirectDriver( address, connectionPool, securityPlan, sessionFactory, config.logging() );
     }
@@ -102,29 +103,51 @@ public class DriverFactory
     /**
      * Creates new {@link RoutingDriver}.
      * <p>
-     * <b>This method is package-private only for testing</b>
+     * <b>This method is protected only for testing</b>
      */
-    RoutingDriver createRoutingDriver( BoltServerAddress address, ConnectionPool connectionPool, Config config,
-            RoutingSettings routingSettings, SecurityPlan securityPlan, SessionFactory sessionFactory )
+    protected RoutingDriver createRoutingDriver( BoltServerAddress address, ConnectionPool connectionPool,
+            Config config, RoutingSettings routingSettings, SecurityPlan securityPlan, SessionFactory sessionFactory )
     {
         return new RoutingDriver( routingSettings, address, connectionPool, securityPlan, sessionFactory,
-                Clock.SYSTEM, config.logging() );
+                createClock(), config.logging() );
     }
 
     /**
      * Creates new {@link ConnectionPool}.
      * <p>
-     * <b>This method is package-private only for testing</b>
+     * <b>This method is protected only for testing</b>
      */
-    ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Config config )
+    protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Config config )
     {
         authToken = authToken == null ? AuthTokens.none() : authToken;
 
         ConnectionSettings connectionSettings = new ConnectionSettings( authToken, config.connectionTimeoutMillis() );
-        PoolSettings poolSettings = new PoolSettings( config.maxIdleConnectionPoolSize() );
-        Connector connector = new SocketConnector( connectionSettings, securityPlan, config.logging() );
+        PoolSettings poolSettings = new PoolSettings( config.maxIdleConnectionPoolSize(),
+                config.idleTimeBeforeConnectionTest() );
+        Connector connector = createConnector( connectionSettings, securityPlan, config.logging() );
 
-        return new SocketConnectionPool( poolSettings, connector, Clock.SYSTEM, config.logging() );
+        return new SocketConnectionPool( poolSettings, connector, createClock(), config.logging() );
+    }
+
+    /**
+     * Creates new {@link Clock}.
+     * <p>
+     * <b>This method is protected only for testing</b>
+     */
+    protected Clock createClock()
+    {
+        return Clock.SYSTEM;
+    }
+
+    /**
+     * Creates new {@link Connector}.
+     * <p>
+     * <b>This method is protected only for testing</b>
+     */
+    protected Connector createConnector( ConnectionSettings connectionSettings, SecurityPlan securityPlan,
+            Logging logging )
+    {
+        return new SocketConnector( connectionSettings, securityPlan, logging );
     }
 
     private static SessionFactory createSessionFactory( Config config )
