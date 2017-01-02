@@ -123,7 +123,7 @@ public class Config
     }
 
     /**
-     * Pooled sessions that have been idle in the pool for longer than this timeout
+     * Pooled connections that have been idle in the pool for longer than this timeout
      * will be tested before they are used again, to ensure they are still live.
      *
      * @return idle time in milliseconds
@@ -277,16 +277,15 @@ public class Config
         }
 
         /**
-         * Pooled sessions that have been idle in the pool for longer than this timeout
+         * Pooled connections that have been idle in the pool for longer than this timeout
          * will be tested before they are used again, to ensure they are still live.
          * <p>
          * If this option is set too low, an additional network call will be
-         * incurred when acquiring a session, which causes a performance hit.
+         * incurred when acquiring a connection, which causes a performance hit.
          * <p>
-         * If this is set high, you may receive sessions that are no longer live,
+         * If this is set high, you may receive sessions that are backed by no longer live connections,
          * which will lead to exceptions in your application. Assuming the
-         * database is running, these exceptions will go away if you retry acquiring
-         * sessions.
+         * database is running, these exceptions will go away if you retry acquiring sessions.
          * <p>
          * Hence, this parameter tunes a balance between the likelihood of your
          * application seeing connection problems, and performance.
