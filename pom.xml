@@ -83,7 +83,7 @@
         <configuration>
           <header>driver/src/main/resources/license-header.txt</header>
           <properties>
-            <thisYear>2016</thisYear>
+            <thisYear>2017</thisYear>
           </properties>
           <includes>
             <include>**/*.java</include>
