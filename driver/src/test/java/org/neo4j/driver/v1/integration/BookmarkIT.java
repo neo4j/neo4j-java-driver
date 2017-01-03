@@ -24,12 +24,15 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.core.StringStartsWith.startsWith;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 import static org.neo4j.driver.v1.util.ServerVersion.v3_1_0;
 import static org.neo4j.driver.v1.util.ServerVersion.version;
@@ -64,5 +67,56 @@ public class BookmarkIT
         // Then
         assertNotNull( session.lastBookmark() );
         assertThat( session.lastBookmark(), startsWith( "neo4j:bookmark:v1:tx" ) );
+    }
+
+    @Test
+    public void bookmarkSetToNullAfterRolledBackTx()
+    {
+        assertNull( session.lastBookmark() );
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            tx.run( "CREATE (a:Person)" );
+            tx.success();
+        }
+
+        assertNotNull( session.lastBookmark() );
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            tx.run( "CREATE (a:Person)" );
+            tx.failure();
+        }
+
+        assertNull( session.lastBookmark() );
+    }
+
+    @Test
+    public void bookmarkSetToNullAfterTxFailure()
+    {
+        assertNull( session.lastBookmark() );
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            tx.run( "CREATE (a:Person)" );
+            tx.success();
+        }
+
+        assertNotNull( session.lastBookmark() );
+
+        Transaction tx = session.beginTransaction();
+        tx.run( "RETURN" );
+        tx.success();
+        try
+        {
+            tx.close();
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( ClientException.class ) );
+        }
+
+        assertNull( session.lastBookmark() );
     }
 }
