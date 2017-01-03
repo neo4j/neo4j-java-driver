@@ -31,7 +31,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.util.Extract;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Value;
@@ -167,7 +167,7 @@ public class ExtractTest
     public void testFields() throws Exception
     {
         // GIVEN
-        Connection connection = mock( Connection.class );
+        PooledConnection connection = mock( PooledConnection.class );
         String statement = "<unknown>";
 
         InternalStatementResult cursor = new InternalStatementResult( connection, null, new Statement( statement ) );

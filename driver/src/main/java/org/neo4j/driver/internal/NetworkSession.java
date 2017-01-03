@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.internal.logging.DevNullLogger;
 import org.neo4j.driver.internal.spi.PooledConnection;
-import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Record;
@@ -117,7 +116,7 @@ public class NetworkSession implements Session
         return run( connection, statement );
     }
 
-    public static StatementResult run( Connection connection, Statement statement )
+    public static StatementResult run( PooledConnection connection, Statement statement )
     {
         InternalStatementResult cursor = new InternalStatementResult( connection, null, statement );
         connection.run( statement.text(), statement.parameters().asMap( Values.ofValue() ),

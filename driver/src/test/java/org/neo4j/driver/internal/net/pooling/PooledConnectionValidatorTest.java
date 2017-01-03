@@ -59,7 +59,7 @@ import static org.neo4j.driver.internal.net.BoltServerAddress.LOCAL_DEFAULT;
 public class PooledConnectionValidatorTest
 {
     @Test
-    public void isNotReusableWhenPoolHasNoAddress()
+    public void isNotReusableWhenPoolHasNoAddress() throws Throwable
     {
         Connection connection = mock( Connection.class );
         PooledConnection pooledConnection = newPooledConnection( connection );
@@ -73,7 +73,7 @@ public class PooledConnectionValidatorTest
 
     @Test
     @SuppressWarnings( "unchecked" )
-    public void isNotReusableWhenHasUnrecoverableErrors()
+    public void isNotReusableWhenHasUnrecoverableErrors() throws Throwable
     {
         Connection connection = mock( Connection.class );
         DatabaseException runError = new DatabaseException( "", "" );
@@ -100,7 +100,7 @@ public class PooledConnectionValidatorTest
     }
 
     @Test
-    public void resetAndSyncValidConnectionWhenCheckingIfReusable()
+    public void resetAndSyncValidConnectionWhenCheckingIfReusable() throws Throwable
     {
         Connection connection = mock( Connection.class );
         PooledConnection pooledConnection = newPooledConnection( connection );
@@ -137,7 +137,7 @@ public class PooledConnectionValidatorTest
     }
 
     @Test
-    public void isConnectedReturnsFalseWhenResetFails()
+    public void isConnectedReturnsFalseWhenResetFails() throws Throwable
     {
         Connection connection = mock( Connection.class );
         doThrow( new RuntimeException() ).when( connection ).reset();
@@ -151,7 +151,7 @@ public class PooledConnectionValidatorTest
     }
 
     @Test
-    public void isConnectedReturnsFalseWhenSyncFails()
+    public void isConnectedReturnsFalseWhenSyncFails() throws Throwable
     {
         Connection connection = mock( Connection.class );
         doThrow( new RuntimeException() ).when( connection ).sync();
@@ -165,7 +165,7 @@ public class PooledConnectionValidatorTest
     }
 
     @Test
-    public void isConnectedReturnsTrueWhenUnderlyingConnectionWorks()
+    public void isConnectedReturnsTrueWhenUnderlyingConnectionWorks() throws Throwable
     {
         Connection connection = mock( Connection.class );
         PooledConnection pooledConnection = newPooledConnection( connection );

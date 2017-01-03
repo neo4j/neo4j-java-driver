@@ -70,7 +70,7 @@ public class SocketConnectorTest
 
     @Test
     @SuppressWarnings( "unchecked" )
-    public void connectSendsInit()
+    public void connectSendsInit() throws Throwable
     {
         String userAgent = "agentSmith";
         ConnectionSettings settings = new ConnectionSettings( basicAuthToken(), userAgent, CONNECTION_TIMEOUT );
@@ -102,7 +102,7 @@ public class SocketConnectorTest
 
     @Test
     @SuppressWarnings( "unchecked" )
-    public void connectClosesOpenedConnectionIfInitThrows()
+    public void connectClosesOpenedConnectionIfInitThrows() throws Throwable
     {
         Connection connection = mock( Connection.class );
         RuntimeException initError = new RuntimeException( "Init error" );
@@ -124,7 +124,7 @@ public class SocketConnectorTest
     }
 
     @Test
-    public void createsConnectionWithUsingConnectionSettings()
+    public void createsConnectionWithUsingConnectionSettings() throws Throwable
     {
         AuthToken authToken = AuthTokens.basic( "neo4j", "test" );
         String userAgent = "tester";

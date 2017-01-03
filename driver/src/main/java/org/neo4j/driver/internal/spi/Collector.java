@@ -20,9 +20,9 @@ package org.neo4j.driver.internal.spi;
 
 import java.util.List;
 
+import org.neo4j.driver.internal.exceptions.InternalNeo4jException;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.summary.Notification;
 import org.neo4j.driver.v1.summary.Plan;
 import org.neo4j.driver.v1.summary.ProfiledPlan;
@@ -36,7 +36,7 @@ public interface Collector
     Collector ACK_FAILURE = new NoOperationCollector()
     {
         @Override
-        public void doneFailure( Neo4jException error )
+        public void doneFailure( InternalNeo4jException error )
         {
             throw new ClientException(
                     "Invalid server response message `FAILURE` received for client message `ACK_FAILURE`.", error );
@@ -82,7 +82,7 @@ public interface Collector
         }
 
         @Override
-        public void doneFailure( Neo4jException error )
+        public void doneFailure( InternalNeo4jException error )
         {
             throw new ClientException(
                     "Invalid server response message `FAILURE` received for client message `RESET`.", error );
@@ -142,7 +142,7 @@ public interface Collector
         }
 
         @Override
-        public void doneFailure( Neo4jException error )
+        public void doneFailure( InternalNeo4jException error )
         {
             done();
         }
@@ -185,7 +185,7 @@ public interface Collector
 
     void doneSuccess();
 
-    void doneFailure( Neo4jException error );
+    void doneFailure( InternalNeo4jException error );
 
     void doneIgnored();
 

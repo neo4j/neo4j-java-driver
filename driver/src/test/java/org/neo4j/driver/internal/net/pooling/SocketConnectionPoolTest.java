@@ -285,7 +285,7 @@ public class SocketConnectionPoolTest
     }
 
     @Test
-    public void recentlyUsedConnectionNotValidatedDuringAcquisition()
+    public void recentlyUsedConnectionNotValidatedDuringAcquisition() throws Throwable
     {
         long idleTimeBeforeConnectionTest = 100;
         long creationTimestamp = 42;
@@ -318,7 +318,7 @@ public class SocketConnectionPoolTest
     }
 
     @Test
-    public void connectionThatWasIdleForALongTimeIsValidatedDuringAcquisition()
+    public void connectionThatWasIdleForALongTimeIsValidatedDuringAcquisition() throws Throwable
     {
         Connection connection = newConnectionMock( ADDRESS_1 );
         long idleTimeBeforeConnectionTest = 100;
@@ -346,7 +346,7 @@ public class SocketConnectionPoolTest
     }
 
     @Test
-    public void connectionThatWasIdleForALongTimeIsNotValidatedDuringAcquisitionWhenTimeoutNotConfigured()
+    public void connectionThatWasIdleForALongTimeIsNotValidatedDuringAcquisitionWhenTimeoutNotConfigured() throws Throwable
     {
         Connection connection = newConnectionMock( ADDRESS_1 );
         long idleTimeBeforeConnectionTest = PoolSettings.NO_IDLE_CONNECTION_TEST;
@@ -372,7 +372,7 @@ public class SocketConnectionPoolTest
     }
 
     @Test
-    public void brokenConnectionsSkippedDuringAcquisition()
+    public void brokenConnectionsSkippedDuringAcquisition() throws Throwable
     {
         Connection connection1 = newConnectionMock( ADDRESS_1 );
         Connection connection2 = newConnectionMock( ADDRESS_1 );
@@ -405,7 +405,7 @@ public class SocketConnectionPoolTest
     }
 
     @Test
-    public void limitedNumberOfBrokenConnectionsIsSkippedDuringAcquisition()
+    public void limitedNumberOfBrokenConnectionsIsSkippedDuringAcquisition() throws Throwable
     {
         Connection connection1 = newConnectionMock( ADDRESS_1 );
         Connection connection2 = newConnectionMock( ADDRESS_1 );
@@ -449,7 +449,7 @@ public class SocketConnectionPoolTest
     }
 
     @Test
-    public void acquireRetriesUntilAConnectionIsCreated()
+    public void acquireRetriesUntilAConnectionIsCreated() throws Throwable
     {
         Connection connection1 = newConnectionMock( ADDRESS_1 );
         Connection connection2 = newConnectionMock( ADDRESS_1 );

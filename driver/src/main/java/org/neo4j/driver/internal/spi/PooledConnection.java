@@ -18,6 +18,10 @@
  */
 package org.neo4j.driver.internal.spi;
 
+import java.util.Map;
+
+import org.neo4j.driver.v1.Value;
+
 public interface PooledConnection extends Connection
 {
     /**
@@ -45,4 +49,35 @@ public interface PooledConnection extends Connection
      * @return the last used timestamp
      */
     long lastUsedTimestamp();
+
+    // Override the methods to not throw any exceptions
+    @Override
+    void init( String clientName, Map<String,Value> authToken );
+
+    @Override
+    void run( String statement, Map<String,Value> parameters, Collector collector );
+
+    @Override
+    void discardAll( Collector collector );
+
+    @Override
+    void pullAll( Collector collector );
+
+    @Override
+    void reset();
+
+    @Override
+    void ackFailure();
+
+    @Override
+    void sync();
+
+    @Override
+    void flush();
+
+    @Override
+    void receiveOne();
+
+    @Override
+    void resetAsync();
 }

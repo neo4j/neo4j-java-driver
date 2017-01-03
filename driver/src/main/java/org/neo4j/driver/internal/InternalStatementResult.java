@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.Queue;
 
 import org.neo4j.driver.internal.spi.Collector;
-import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.summary.SummaryBuilder;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
@@ -47,7 +47,7 @@ import static java.util.Collections.emptyList;
 
 public class InternalStatementResult implements StatementResult
 {
-    private final Connection connection;
+    private final PooledConnection connection;
     private final Collector runResponseCollector;
     private final Collector pullAllResponseCollector;
     private final Queue<Record> recordBuffer = new LinkedList<>();
@@ -58,7 +58,7 @@ public class InternalStatementResult implements StatementResult
     private long position = -1;
     private boolean done = false;
 
-    InternalStatementResult( Connection connection, ExplicitTransaction transaction, Statement statement )
+    InternalStatementResult( PooledConnection connection, ExplicitTransaction transaction, Statement statement )
     {
         this.connection = connection;
         this.runResponseCollector = newRunResponseCollector();

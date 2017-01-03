@@ -32,7 +32,7 @@ import java.util.Set;
 import org.neo4j.driver.internal.EventHandler;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Collector;
-import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Value;
@@ -55,7 +55,7 @@ import static org.neo4j.driver.v1.Values.value;
 public class ClusterCompositionProviderTest
 {
     private final FakeClock clock = new FakeClock( (EventHandler) null, true );
-    private final Connection connection = mock( Connection.class );
+    private final PooledConnection connection = mock( PooledConnection.class );
 
     @Test
     public void shouldParseClusterComposition() throws Exception

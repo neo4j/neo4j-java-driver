@@ -20,6 +20,7 @@ package org.neo4j.driver.internal.net.pooling;
 
 import org.junit.Test;
 
+import org.neo4j.driver.internal.exceptions.InternalNeo4jException;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionValidator;
 import org.neo4j.driver.internal.spi.PooledConnection;
@@ -256,7 +257,7 @@ public class PooledConnectionTest
     {
         // Given
         Connection conn = mock( Connection.class );
-        ClientException error = new ClientException( "Neo.ClientError", "a recoverable error" );
+        InternalNeo4jException error = new InternalNeo4jException( "Neo.ClientError", "a recoverable error" );
         doThrow( error ).when( conn ).sync();
         PooledConnection pooledConnection = new PooledSocketConnection(
                 conn,
@@ -272,7 +273,7 @@ public class PooledConnectionTest
         // Then
         catch( ClientException e )
         {
-            assertThat( e, equalTo( error ) );
+            assertThat( e, equalTo( error.publicException() ) );
         }
         verify( conn, times( 1 ) ).ackFailure();
         assertThat( pooledConnection.hasUnrecoverableErrors(), equalTo( false ) );
@@ -282,7 +283,7 @@ public class PooledConnectionTest
     public void shouldNotAckFailureOnUnRecoverableFailure()
     {
         // Given
-        Connection conn = mock( Connection.class );
+        PooledConnection conn = mock( PooledConnection.class );
         ClientException error = new ClientException( "an unrecoverable error" );
         doThrow( error ).when( conn ).sync();
         PooledConnection pooledConnection = new PooledSocketConnection(
@@ -306,11 +307,11 @@ public class PooledConnectionTest
     }
 
     @Test
-    public void shouldThrowExceptionIfFailureReceivedForAckFailure()
+    public void shouldThrowExceptionIfFailureReceivedForAckFailure() throws Throwable
     {
         // Given
         Connection conn = mock( Connection.class );
-        ClientException error = new ClientException( "Neo.ClientError", "a recoverable error" );
+        InternalNeo4jException error = new InternalNeo4jException( "Neo.ClientError", "a recoverable error" );
 
         ClientException failedToAckFailError = new ClientException(
                 "Invalid server response message `FAILURE` received for client message `ACK_FAILURE`." );
@@ -329,7 +330,7 @@ public class PooledConnectionTest
         }
         catch( ClientException e )
         {
-            assertThat( e, equalTo( error ) );
+            assertThat( e, equalTo( error.publicException() ) );
         }
         assertThat( pooledConnection.hasUnrecoverableErrors(), equalTo( false ) );
 

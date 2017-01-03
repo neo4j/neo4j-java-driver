@@ -24,7 +24,7 @@ import java.util.Set;
 
 import org.neo4j.driver.internal.NetworkSession;
 import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Record;
@@ -41,7 +41,7 @@ final class ClusterComposition
     {
         String GET_SERVERS = "CALL dbms.cluster.routing.getServers";
 
-        ClusterComposition getClusterComposition( Connection connection ) throws ServiceUnavailableException;
+        ClusterComposition getClusterComposition( PooledConnection connection ) throws ServiceUnavailableException;
 
         final class Default implements Provider
         {
@@ -56,7 +56,7 @@ final class ClusterComposition
             }
 
             @Override
-            public ClusterComposition getClusterComposition( Connection connection ) throws ServiceUnavailableException
+            public ClusterComposition getClusterComposition( PooledConnection connection ) throws ServiceUnavailableException
             {
                 StatementResult cursor = getServers( connection );
                 List<Record> records = cursor.list();
@@ -77,7 +77,7 @@ final class ClusterComposition
                 }
             }
 
-            private StatementResult getServers( Connection connection )
+            private StatementResult getServers( PooledConnection connection )
             {
                 return NetworkSession.run( connection, GET_SERVER );
             }
