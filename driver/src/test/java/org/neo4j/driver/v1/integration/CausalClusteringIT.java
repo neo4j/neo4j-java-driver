@@ -45,15 +45,21 @@ import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.Values;
+import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
+import org.neo4j.driver.v1.exceptions.TransientException;
 import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.util.cc.Cluster;
 import org.neo4j.driver.v1.util.cc.ClusterMember;
 import org.neo4j.driver.v1.util.cc.ClusterRule;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -229,6 +235,60 @@ public class CausalClusteringIT
                 List<Record> records = session.run( "MATCH (n) RETURN count(n)" ).list();
                 assertEquals( 1, records.size() );
                 assertEquals( concurrentSessionsCount, records.get( 0 ).get( 0 ).asInt() );
+            }
+        }
+    }
+
+    @Test
+    public void beginTransactionThrowsForInvalidBookmark()
+    {
+        String invalidBookmark = "hi, this is an invalid bookmark";
+        ClusterMember leader = clusterRule.getCluster().leader();
+
+        try ( Driver driver = createDriver( leader.getBoltUri() );
+              Session session = driver.session() )
+        {
+            try
+            {
+                session.beginTransaction( invalidBookmark );
+                fail( "Exception expected" );
+            }
+            catch ( Exception e )
+            {
+                assertThat( e, instanceOf( ClientException.class ) );
+                assertThat( e.getMessage(), containsString( invalidBookmark ) );
+            }
+        }
+    }
+
+    @Test
+    public void beginTransactionThrowsForUnreachableBookmark()
+    {
+        ClusterMember leader = clusterRule.getCluster().leader();
+
+        try ( Driver driver = createDriver( leader.getBoltUri() );
+              Session session = driver.session() )
+        {
+            try ( Transaction tx = session.beginTransaction() )
+            {
+                tx.run( "CREATE ()" );
+                tx.success();
+            }
+
+            String bookmark = session.lastBookmark();
+            assertNotNull( bookmark );
+            String newBookmark = bookmark + "0";
+
+            try
+            {
+                // todo: configure bookmark wait timeout to be lower than default 30sec when neo4j supports this
+                session.beginTransaction( newBookmark );
+                fail( "Exception expected" );
+            }
+            catch ( Exception e )
+            {
+                assertThat( e, instanceOf( TransientException.class ) );
+                assertThat( e.getMessage(), startsWith( "Database not up to the requested version" ) );
             }
         }
     }

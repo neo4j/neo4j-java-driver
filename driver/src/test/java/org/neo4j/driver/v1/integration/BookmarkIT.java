@@ -23,12 +23,14 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.TransientException;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
 import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.core.StringStartsWith.startsWith;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
@@ -58,15 +60,54 @@ public class BookmarkIT
         assertNull( session.lastBookmark() );
 
         // When
+        createNodeInTx( session );
+
+        // Then
+        assertNotNull( session.lastBookmark() );
+        assertThat( session.lastBookmark(), startsWith( "neo4j:bookmark:v1:tx" ) );
+    }
+
+    @Test
+    public void shouldThrowForInvalidBookmark()
+    {
+        String invalidBookmark = "hi, this is an invalid bookmark";
+
+        try
+        {
+            session.beginTransaction( invalidBookmark );
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( ClientException.class ) );
+        }
+    }
+
+    @Test
+    public void shouldThrowForUnreachableBookmark()
+    {
+        createNodeInTx( session );
+
+        try
+        {
+            // todo: configure bookmark wait timeout to be lower than default 30sec when neo4j supports this
+            session.beginTransaction( session.lastBookmark() + 42 );
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( TransientException.class ) );
+            assertThat( e.getMessage(), startsWith( "Database not up to the requested version" ) );
+        }
+    }
+
+    private static void createNodeInTx( Session session )
+    {
         try ( Transaction tx = session.beginTransaction() )
         {
             tx.run( "CREATE (a:Person)" );
             tx.success();
         }
-
-        // Then
-        assertNotNull( session.lastBookmark() );
-        assertThat( session.lastBookmark(), startsWith( "neo4j:bookmark:v1:tx" ) );
     }
 
     @Test

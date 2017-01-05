@@ -21,8 +21,8 @@ package org.neo4j.driver.internal;
 import java.util.Collections;
 import java.util.Map;
 
-import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.Collector;
+import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
@@ -36,7 +36,6 @@ import org.neo4j.driver.v1.types.TypeSystem;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
-
 import static org.neo4j.driver.v1.Values.ofValue;
 import static org.neo4j.driver.v1.Values.value;
 
@@ -81,18 +80,7 @@ class ExplicitTransaction implements Transaction
     {
         this.conn = conn;
         this.cleanup = cleanup;
-
-        final Map<String, Value> parameters;
-        if ( bookmark == null )
-        {
-            parameters = emptyMap();
-        }
-        else
-        {
-            parameters = singletonMap( "bookmark", value( bookmark ) );
-        }
-        conn.run( "BEGIN", parameters, Collector.NO_OP );
-        conn.pullAll( Collector.NO_OP );
+        runBeginStatement( conn, bookmark );
     }
 
     @Override
@@ -253,4 +241,24 @@ class ExplicitTransaction implements Transaction
         this.bookmark = bookmark;
     }
 
+    private static void runBeginStatement( Connection connection, String bookmark )
+    {
+        Map<String,Value> parameters;
+        if ( bookmark != null )
+        {
+            parameters = singletonMap( "bookmark", value( bookmark ) );
+        }
+        else
+        {
+            parameters = emptyMap();
+        }
+
+        connection.run( "BEGIN", parameters, Collector.NO_OP );
+        connection.pullAll( Collector.NO_OP );
+
+        if ( bookmark != null )
+        {
+            connection.sync();
+        }
+    }
 }

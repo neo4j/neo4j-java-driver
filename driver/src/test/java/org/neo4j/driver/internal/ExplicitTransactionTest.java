@@ -18,10 +18,11 @@
  */
 package org.neo4j.driver.internal;
 
-import java.util.Collections;
-
 import org.junit.Test;
 import org.mockito.InOrder;
+
+import java.util.Collections;
+import java.util.Map;
 
 import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.spi.Connection;
@@ -30,9 +31,11 @@ import org.neo4j.driver.v1.Value;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.driver.v1.Values.value;
 
 public class ExplicitTransactionTest
 {
@@ -110,5 +113,34 @@ public class ExplicitTransactionTest
         order.verify( conn ).sync();
         verify( cleanup ).run();
         verifyNoMoreInteractions( conn, cleanup );
+    }
+
+    @Test
+    public void shouldOnlyQueueMessagesWhenNoBookmarkGiven()
+    {
+        Connection connection = mock( Connection.class );
+
+        new ExplicitTransaction( connection, mock( Runnable.class ), null );
+
+        InOrder inOrder = inOrder( connection );
+        inOrder.verify( connection ).run( "BEGIN", Collections.<String,Value>emptyMap(), Collector.NO_OP );
+        inOrder.verify( connection ).pullAll( Collector.NO_OP );
+        inOrder.verify( connection, never() ).sync();
+    }
+
+    @Test
+    public void shouldSyncWhenBookmarkGiven()
+    {
+        String bookmark = "hi, I'm bookmark";
+        Connection connection = mock( Connection.class );
+
+        new ExplicitTransaction( connection, mock( Runnable.class ), bookmark );
+
+        Map<String,Value> expectedParams = Collections.singletonMap( "bookmark", value( bookmark ) );
+
+        InOrder inOrder = inOrder( connection );
+        inOrder.verify( connection ).run( "BEGIN", expectedParams, Collector.NO_OP );
+        inOrder.verify( connection ).pullAll( Collector.NO_OP );
+        inOrder.verify( connection ).sync();
     }
 }
