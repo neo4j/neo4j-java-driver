@@ -20,7 +20,12 @@ package org.neo4j.driver.v1.integration;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -43,19 +48,33 @@ import static org.junit.Assert.fail;
  * Mainly concerned about the connection pool - we want to make sure that bad connections are evacuated from the
  * pool properly if the server dies, or all connections are lost for some other reason.
  */
+@RunWith(Parameterized.class)
 public class ServerKilledIT
 {
     @Rule
     public TestNeo4j neo4j = new TestNeo4j();
+
+    @Parameters(name = "{0} connections")
+    public static Collection<Object[]> data() {
+        return Arrays.asList(new Object[][] {
+                { "plaintext", Config.build().withEncryptionLevel( Config.EncryptionLevel.NONE ) },
+                { "tls encrypted", Config.build().withEncryptionLevel( Config.EncryptionLevel.REQUIRED ) }
+        });
+    }
+
+    private Config.ConfigBuilder configBuilder;
+
+    public ServerKilledIT( String testName, Config.ConfigBuilder configBuilder )
+    {
+        this.configBuilder = configBuilder;
+    }
 
     @Test
     public void shouldRecoverFromServerRestart() throws Throwable
     {
         // Given
         // config with sessionLivenessCheckTimeout not set, i.e. turned off
-        Config config = Config.build()
-                .withEncryptionLevel( Config.EncryptionLevel.NONE )
-                .toConfig();
+        Config config = configBuilder.toConfig();
 
         try ( Driver driver = GraphDatabase.driver( Neo4jRunner.DEFAULT_URI, config ) )
         {
@@ -77,8 +96,7 @@ public class ServerKilledIT
                     if ( toleratedFailures-- == 0 )
                     {
                         fail( "Expected (for now) at most four failures, one for each old connection, but now I've " +
-                              "gotten " +
-                              "five: " + e.getMessage() );
+                              "gotten " + "five: " + e.getMessage() );
                     }
                 }
             }
@@ -95,9 +113,8 @@ public class ServerKilledIT
     {
         // config with set liveness check timeout
         int livenessCheckTimeoutMinutes = 10;
-        Config config = Config.build()
+        Config config = configBuilder
                 .withConnectionLivenessCheckTimeout( livenessCheckTimeoutMinutes, TimeUnit.MINUTES )
-                .withEncryptionLevel( Config.EncryptionLevel.NONE )
                 .toConfig();
 
         FakeClock clock = new FakeClock();

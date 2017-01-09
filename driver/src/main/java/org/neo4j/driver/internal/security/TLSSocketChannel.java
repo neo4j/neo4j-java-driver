@@ -30,6 +30,7 @@ import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.internal.util.BytePrinter;
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.FINISHED;
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING;
@@ -163,7 +164,8 @@ public class TLSSocketChannel implements ByteChannel
          */
         if ( channel.read( cipherIn ) < 0 )
         {
-            throw new ClientException( "SSL Connection terminated while receiving data. " +
+            throw new ServiceUnavailableException(
+                    "SSL Connection terminated while receiving data. " +
                     "This can happen due to network instabilities, or due to restarts of the database." );
         }
         cipherIn.flip();
