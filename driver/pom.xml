@@ -6,6 +6,8 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <build.revision></build.revision>
+    <bundle.name>${project.groupId}.${project.artifactId}</bundle.name>
+    <maven.build.timestamp.format>'v'yyyyMMdd-HHmm</maven.build.timestamp.format>
   </properties>
 
   <parent>
@@ -118,6 +120,16 @@
             <goals>
               <goal>jar</goal>
             </goals>
+            <configuration>
+              <archive>
+                  <manifestEntries>
+                      <Bundle-Name>${project.name} (Source)</Bundle-Name>
+                      <Bundle-SymbolicName>${bundle.name}.source</Bundle-SymbolicName>
+                      <Bundle-Version>${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}.${build.timestamp}</Bundle-Version>
+                      <Eclipse-SourceBundle>${bundle.name};version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}.${build.timestamp}";roots:="."</Eclipse-SourceBundle>
+                  </manifestEntries>
+              </archive>
+            </configuration>
           </execution>
         </executions>
       </plugin>
@@ -147,6 +159,7 @@
         <configuration>
           <archive>
             <index>true</index>
+            <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
             <manifest>
               <packageName>org/neo4j/driver</packageName>
             </manifest>
@@ -155,6 +168,47 @@
               <Implementation-Version>${project.version}-${build.revision}</Implementation-Version>
             </manifestEntries>
           </archive>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <version>1.12</version>
+        <executions>
+            <execution>
+                <id>set-osgi-version</id>
+                <phase>validate</phase>
+                <goals>
+                    <goal>parse-version</goal>
+                </goals>
+            </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <version>3.2.0</version>
+        <extensions>true</extensions>
+        <executions>
+          <execution>
+            <id>bundle-manifest</id>
+            <phase>process-classes</phase>
+            <goals>
+              <goal>manifest</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <instructions>
+            <Bundle-SymbolicName>${bundle.name}</Bundle-SymbolicName>
+            <Bundle-Version>${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}.${build.timestamp}</Bundle-Version>
+            <_snapshot>${maven.build.timestamp}</_snapshot>
+            <_versionpolicy>[$(version;==;$(@)),$(version;+;$(@)))</_versionpolicy>
+            <_removeheaders>Bnd-*,Private-Package</_removeheaders>
+            <_nouses>true</_nouses>
+            <!-- each module can override these defaults in their osgi.bnd file -->
+            <_include>-osgi.bnd</_include>
+          </instructions>
         </configuration>
       </plugin>
       <plugin>
