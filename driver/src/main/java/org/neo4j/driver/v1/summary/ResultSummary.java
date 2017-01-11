@@ -19,9 +19,10 @@
 package org.neo4j.driver.v1.summary;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
-import org.neo4j.driver.v1.util.Immutable;
 import org.neo4j.driver.v1.Statement;
+import org.neo4j.driver.v1.util.Immutable;
 
 /**
  * The result summary of running a statement. The result summary interface can be used to investigate
@@ -90,4 +91,20 @@ public interface ResultSummary
      * notifications produced while executing the statement.
      */
     List<Notification> notifications();
+
+    /**
+     * The time it took the server to make the result available for consumption.
+     *
+     * @param unit The unit of the duration.
+     * @return The time it took for the server to have the result available in the provided time unit.
+     */
+    long resultAvailableAfter( TimeUnit unit );
+
+    /**
+     * The time it took the server to consume the result.
+     *
+     * @param unit The unit of the duration.
+     * @return The time it took for the server to consume the result in the provided time unit.
+     */
+    long resultConsumedAfter( TimeUnit unit );
 }

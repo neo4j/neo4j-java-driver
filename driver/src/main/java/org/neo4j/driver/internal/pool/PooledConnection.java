@@ -281,6 +281,13 @@ public class PooledConnection implements Connection
         return ( e instanceof Neo4jException ) && ( ( Neo4jException ) e ).neo4jErrorCode().contains( "Cluster" );
     }
 
+
+    @Override
+    public String server()
+    {
+        return delegate.server();
+    }
+
     public long idleTime()
     {
         long idleTime = clock.millis() - lastUsed;

@@ -50,16 +50,27 @@ public interface StreamCollector
         }
     };
 
-    StreamCollector INIT = new NoOperationStreamCollector()
+    class InitStreamCollector extends NoOperationStreamCollector
     {
+        private String server;
         @Override
         public void doneIgnored()
         {
             throw new ClientException(
                     "Invalid server response message `IGNORED` received for client message `INIT`." );
         }
-    };
 
+        @Override
+        public void server( String server )
+        {
+            this.server = server;
+        }
+
+        public String server()
+        {
+            return server;
+        }
+    }
 
     StreamCollector RESET = new NoOperationStreamCollector()
     {
@@ -121,6 +132,15 @@ public interface StreamCollector
         {
             done();
         }
+
+        @Override
+        public void resultAvailableAfter( long l ) {}
+
+        @Override
+        public void resultConsumedAfter( long l ) {}
+
+        @Override
+        public void server( String server ){}
     }
 
     // TODO: This should be modified to simply have head/record/tail methods
@@ -146,5 +166,11 @@ public interface StreamCollector
     void doneFailure( Neo4jException error );
 
     void doneIgnored();
+
+    void resultAvailableAfter( long l );
+
+    void resultConsumedAfter( long l );
+
+    void server( String server );
 }
 

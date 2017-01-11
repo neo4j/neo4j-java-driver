@@ -216,4 +216,10 @@ public class ConcurrencyGuardingConnection implements Connection
                                        "do that is to give each thread its own dedicated session." );
         }
     }
+
+    @Override
+    public String server()
+    {
+        return delegate.server();
+    }
 }

@@ -24,11 +24,11 @@ import org.junit.runners.model.Statement;
 import java.util.Map;
 
 import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
-import org.neo4j.driver.v1.types.TypeSystem;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.types.TypeSystem;
 
 /**
  * A little utility for integration testing, this provides tests with a session they can work with.
@@ -92,6 +92,12 @@ public class TestNeo4jSession extends TestNeo4j implements Session
     public void close()
     {
         throw new UnsupportedOperationException( "Disallowed on this test session" );
+    }
+
+    @Override
+    public String server()
+    {
+        return realSession.server();
     }
 
     @Override
