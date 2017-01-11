@@ -81,6 +81,9 @@ class SSLContextFactory
         case TRUST_ON_FIRST_USE:
             trustManagers = new TrustManager[]{new TrustOnFirstUseTrustManager( host, port, authConfig.certFile(), logger )};
             break;
+        case TRUST_ALL:
+            trustManagers = new TrustManager[]{new TrustAllTrustManager()};
+            break;
         default:
             throw new ClientException( "Unknown TLS authentication strategy: " + authConfig.strategy().name() );
         }
