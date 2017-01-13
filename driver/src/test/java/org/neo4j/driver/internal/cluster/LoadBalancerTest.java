@@ -104,8 +104,8 @@ public class LoadBalancerTest
                 clock,
                 log,
                 connections,
-                cluster,
-                new BoltServerAddress( host, port ) );
+                new ClusterRoutingTable( clock, new BoltServerAddress( host, port ) ),
+                cluster );
     }
 
     @Test
