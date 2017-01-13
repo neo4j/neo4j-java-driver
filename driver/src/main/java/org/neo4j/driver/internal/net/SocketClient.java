@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.net.ConnectException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
-import java.security.GeneralSecurityException;
 import java.util.Queue;
 
 import org.neo4j.driver.internal.messaging.Message;
@@ -133,11 +132,7 @@ public class SocketClient
         }
         catch ( IOException e )
         {
-            throw new ClientException( "Unable to process request: " + e.getMessage(), e );
-        }
-        catch ( GeneralSecurityException e )
-        {
-            throw new ClientException( "Unable to establish ssl connection with server: " + e.getMessage(), e );
+            throw new ServiceUnavailableException( "Unable to process request: " + e.getMessage(), e );
         }
     }
 
