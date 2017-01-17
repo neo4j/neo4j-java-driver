@@ -62,10 +62,11 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.driver.v1.Values.parameters;
 
 public class CausalClusteringIT
 {
-    private static final long DEFAULT_TIMEOUT_MS = 15_000;
+    private static final long DEFAULT_TIMEOUT_MS = 120_000;
 
     @Rule
     public final ClusterRule clusterRule = new ClusterRule();
@@ -293,6 +294,52 @@ public class CausalClusteringIT
         }
     }
 
+    @Test
+    public void shouldHandleGracefulLeaderSwitch() throws Exception
+    {
+        Cluster cluster = clusterRule.getCluster();
+        ClusterMember leader = cluster.leader();
+
+        try ( Driver driver = createDriver( leader.getRoutingUri() ) )
+        {
+            Session session1 = driver.session();
+            Transaction tx1 = session1.beginTransaction();
+
+            // gracefully stop current leader to force re-election
+            cluster.stop( leader );
+
+            tx1.run( "CREATE (person:Person {name: {name}, title: {title}})",
+                    parameters( "name", "Webber", "title", "Mr" ) );
+            tx1.success();
+
+            closeAndExpectException( tx1, ClientException.class );
+            closeAndExpectException( session1, ClientException.class );
+
+            String bookmark = inExpirableSession( driver, createSession(), new Function<Session,String>()
+            {
+                @Override
+                public String apply( Session session )
+                {
+                    try ( Transaction tx = session.beginTransaction() )
+                    {
+                        tx.run( "CREATE (person:Person {name: {name}, title: {title}})",
+                                parameters( "name", "Webber", "title", "Mr" ) );
+                        tx.success();
+                    }
+                    return session.lastBookmark();
+                }
+            } );
+
+            try ( Session session2 = driver.session( AccessMode.READ );
+                  Transaction tx2 = session2.beginTransaction( bookmark ) )
+            {
+                Record record = tx2.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
+                tx2.success();
+                assertEquals( 1, record.get( "count" ).asInt() );
+            }
+        }
+    }
+
     private int executeWriteAndReadThroughBolt( ClusterMember member ) throws TimeoutException, InterruptedException
     {
         try ( Driver driver = createDriver( member.getRoutingUri() ) )
@@ -350,10 +397,12 @@ public class CausalClusteringIT
             {
                 return op.apply( session );
             }
-            catch ( SessionExpiredException e )
+            catch ( SessionExpiredException | ServiceUnavailableException e )
             {
                 // role might have changed; try again;
             }
+
+            Thread.sleep( 500 );
         }
         while ( System.currentTimeMillis() < endTime );
 
@@ -407,5 +456,18 @@ public class CausalClusteringIT
 
         executor.shutdown();
         assertTrue( executor.awaitTermination( 1, TimeUnit.MINUTES ) );
+    }
+
+    private static void closeAndExpectException( AutoCloseable closeable, Class<? extends Exception> exceptionClass )
+    {
+        try
+        {
+            closeable.close();
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( exceptionClass ) );
+        }
     }
 }

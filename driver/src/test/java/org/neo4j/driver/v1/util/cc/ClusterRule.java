@@ -40,7 +40,7 @@ public class ClusterRule extends ExternalResource
     private static final int INITIAL_PORT = 20_000;
 
     // todo: neo4j version should come from environment variables
-    private static final String NEO4J_VERSION = "3.1.0-RC1";
+    private static final String NEO4J_VERSION = "3.1.0";
     // todo: should be possible to configure (dynamically add/remove) cores and read replicas
     private static final int CORE_COUNT = 3;
     private static final int READ_REPLICA_COUNT = 2;
@@ -96,7 +96,9 @@ public class ClusterRule extends ExternalResource
     @Override
     protected void after()
     {
-        getCluster().deleteData();
+        Cluster cluster = getCluster();
+        cluster.startOfflineMembers();
+        cluster.deleteData();
     }
 
     private static void addShutdownHookToStopCluster()

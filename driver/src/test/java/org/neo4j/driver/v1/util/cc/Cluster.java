@@ -43,11 +43,13 @@ import static org.neo4j.driver.v1.Config.TrustStrategy.trustAllCertificates;
 public class Cluster
 {
     private static final String ADMIN_USER = "neo4j";
-    private static final int STARTUP_TIMEOUT_SECONDS = 60;
+    private static final int STARTUP_TIMEOUT_SECONDS = 90;
+    private static final int ONLINE_MEMBERS_CHECK_SLEEP_MS = 500;
 
     private final Path path;
     private final String password;
     private final Set<ClusterMember> members;
+    private final Set<ClusterMember> offlineMembers;
 
     public Cluster( Path path, String password )
     {
@@ -59,11 +61,12 @@ public class Cluster
         this.path = path;
         this.password = password;
         this.members = members;
+        this.offlineMembers = new HashSet<>();
     }
 
     Cluster withMembers( Set<ClusterMember> newMembers ) throws ClusterUnavailableException
     {
-        waitForMembers( newMembers, password );
+        waitForMembersToBeOnline( newMembers, password );
         return new Cluster( path, password, newMembers );
     }
 
@@ -126,6 +129,35 @@ public class Cluster
         return membersWithRole( ClusterMemberRole.READ_REPLICA );
     }
 
+    public void start( ClusterMember member )
+    {
+        startNoWait( member );
+        waitForMembersToBeOnline();
+    }
+
+    public void startOfflineMembers()
+    {
+        for ( ClusterMember member : offlineMembers )
+        {
+            startNoWait( member );
+        }
+        waitForMembersToBeOnline();
+    }
+
+    public void stop( ClusterMember member )
+    {
+        removeOfflineMember( member );
+        SharedCluster.stop( member );
+        waitForMembersToBeOnline();
+    }
+
+    public void kill( ClusterMember member )
+    {
+        removeOfflineMember( member );
+        SharedCluster.kill( member );
+        waitForMembersToBeOnline();
+    }
+
     @Override
     public String toString()
     {
@@ -133,6 +165,30 @@ public class Cluster
                "path=" + path +
                ", members=" + members +
                "}";
+    }
+
+    private void addOfflineMember( ClusterMember member )
+    {
+        if ( !offlineMembers.remove( member ) )
+        {
+            throw new IllegalArgumentException( "Cluster member is not offline: " + member );
+        }
+        members.add( member );
+    }
+
+    private void removeOfflineMember( ClusterMember member )
+    {
+        if ( !members.remove( member ) )
+        {
+            throw new IllegalArgumentException( "Unknown cluster member " + member );
+        }
+        offlineMembers.add( member );
+    }
+
+    private void startNoWait( ClusterMember member )
+    {
+        addOfflineMember( member );
+        SharedCluster.start( member );
     }
 
     private Set<ClusterMember> membersWithRole( ClusterMemberRole role )
@@ -166,7 +222,19 @@ public class Cluster
         return membersWithRole;
     }
 
-    private static Set<ClusterMember> waitForMembers( Set<ClusterMember> members, String password )
+    private void waitForMembersToBeOnline()
+    {
+        try
+        {
+            waitForMembersToBeOnline( members, password );
+        }
+        catch ( ClusterUnavailableException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+
+    private static void waitForMembersToBeOnline( Set<ClusterMember> members, String password )
             throws ClusterUnavailableException
     {
         if ( members.isEmpty() )
@@ -174,33 +242,37 @@ public class Cluster
             throw new IllegalArgumentException( "No members to wait for" );
         }
 
-        Set<ClusterMember> offlineMembers = new HashSet<>( members );
+        Set<URI> expectedOnlineUris = extractBoltUris( members );
+        Set<URI> actualOnlineUris = Collections.emptySet();
+
         long deadline = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis( STARTUP_TIMEOUT_SECONDS );
+        Throwable error = null;
 
-        try ( Driver driver = createDriver( members, password ) )
+        while ( !expectedOnlineUris.equals( actualOnlineUris ) )
         {
-            while ( !offlineMembers.isEmpty() )
+            sleep( ONLINE_MEMBERS_CHECK_SLEEP_MS );
+            assertDeadlineNotReached( deadline, expectedOnlineUris, actualOnlineUris, error );
+
+            try ( Driver driver = createDriver( members, password );
+                  Session session = driver.session( AccessMode.READ ) )
             {
-                assertDeadlineNotReached( deadline );
+                List<Record> records = findClusterOverview( session );
+                actualOnlineUris = extractBoltUris( records );
+            }
+            catch ( Throwable t )
+            {
+                t.printStackTrace();
 
-                try ( Session session = driver.session( AccessMode.READ ) )
+                if ( error == null )
                 {
-                    List<Record> records = findClusterOverview( session );
-                    for ( Record record : records )
-                    {
-                        URI boltUri = extractBoltUri( record );
-
-                        ClusterMember member = findByBoltUri( boltUri, offlineMembers );
-                        if ( member != null )
-                        {
-                            offlineMembers.remove( member );
-                        }
-                    }
+                    error = t;
+                }
+                else
+                {
+                    error.addSuppressed( t );
                 }
             }
         }
-
-        return members;
     }
 
     private static Driver createDriver( Set<ClusterMember> members, String password )
@@ -243,13 +315,46 @@ public class Cluster
         return role != ClusterMemberRole.READ_REPLICA;
     }
 
-    private static void assertDeadlineNotReached( long deadline ) throws ClusterUnavailableException
+    private static void assertDeadlineNotReached( long deadline, Set<URI> expectedUris, Set<URI> actualUris,
+            Throwable error ) throws ClusterUnavailableException
     {
         if ( System.currentTimeMillis() > deadline )
         {
-            throw new ClusterUnavailableException(
-                    "Cluster did not become available in " + STARTUP_TIMEOUT_SECONDS + " seconds" );
+            String baseMessage = "Cluster did not become available in " + STARTUP_TIMEOUT_SECONDS + " seconds.\n";
+            String errorMessage = error == null ? "" : "There were errors checking cluster members.\n";
+            String expectedUrisMessage = "Expected online URIs: " + expectedUris + "\n";
+            String actualUrisMessage = "Actual last seen online URIs: " + actualUris + "\n";
+            String message = baseMessage + errorMessage + expectedUrisMessage + actualUrisMessage;
+
+            ClusterUnavailableException clusterUnavailable = new ClusterUnavailableException( message );
+
+            if ( error != null )
+            {
+                clusterUnavailable.addSuppressed( error );
+            }
+
+            throw clusterUnavailable;
         }
+    }
+
+    private static Set<URI> extractBoltUris( Set<ClusterMember> members )
+    {
+        Set<URI> uris = new HashSet<>();
+        for ( ClusterMember member : members )
+        {
+            uris.add( member.getBoltUri() );
+        }
+        return uris;
+    }
+
+    private static Set<URI> extractBoltUris( List<Record> records )
+    {
+        Set<URI> uris = new HashSet<>();
+        for ( Record record : records )
+        {
+            uris.add( extractBoltUri( record ) );
+        }
+        return uris;
     }
 
     private static URI extractBoltUri( Record record )
@@ -306,5 +411,18 @@ public class Cluster
             currentIndex++;
         }
         throw new AssertionError();
+    }
+
+    private static void sleep( int millis )
+    {
+        try
+        {
+            Thread.sleep( millis );
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException( e );
+        }
     }
 }
