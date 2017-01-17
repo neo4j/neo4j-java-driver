@@ -57,16 +57,16 @@ public class ServerKilledIT
     @Parameters(name = "{0} connections")
     public static Collection<Object[]> data() {
         return Arrays.asList(new Object[][] {
-                { "plaintext", Config.build().withEncryptionLevel( Config.EncryptionLevel.NONE ) },
-                { "tls encrypted", Config.build().withEncryptionLevel( Config.EncryptionLevel.REQUIRED ) }
+                { "plaintext", Config.EncryptionLevel.NONE },
+                { "tls encrypted", Config.EncryptionLevel.REQUIRED }
         });
     }
 
-    private Config.ConfigBuilder configBuilder;
+    private Config.EncryptionLevel encryptionLevel;
 
-    public ServerKilledIT( String testName, Config.ConfigBuilder configBuilder )
+    public ServerKilledIT( String testName, Config.EncryptionLevel encryptionLevel )
     {
-        this.configBuilder = configBuilder;
+        this.encryptionLevel = encryptionLevel;
     }
 
     @Test
@@ -74,7 +74,7 @@ public class ServerKilledIT
     {
         // Given
         // config with sessionLivenessCheckTimeout not set, i.e. turned off
-        Config config = configBuilder.toConfig();
+        Config config = Config.build().withEncryptionLevel( encryptionLevel ).toConfig();
 
         try ( Driver driver = GraphDatabase.driver( Neo4jRunner.DEFAULT_URI, config ) )
         {
@@ -113,7 +113,7 @@ public class ServerKilledIT
     {
         // config with set liveness check timeout
         int livenessCheckTimeoutMinutes = 10;
-        Config config = configBuilder
+        Config config = Config.build().withEncryptionLevel( encryptionLevel )
                 .withConnectionLivenessCheckTimeout( livenessCheckTimeoutMinutes, TimeUnit.MINUTES )
                 .toConfig();
 
