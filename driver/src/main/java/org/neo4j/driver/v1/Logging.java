@@ -18,7 +18,16 @@
  */
 package org.neo4j.driver.v1;
 
+/**
+ * Accessor for {@link Logger} instances.
+ */
 public interface Logging
 {
+    /**
+     * Obtain a {@link Logger} instance by name.
+     *
+     * @param name name of a {@link Logger}
+     * @return {@link Logger} instance
+     */
     Logger getLog( String name );
 }

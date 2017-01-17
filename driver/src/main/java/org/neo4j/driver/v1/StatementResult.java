@@ -28,7 +28,7 @@ import org.neo4j.driver.v1.util.Resource;
 
 
 /**
- * The result of running a statement, conceptually a stream of {@link Record records}.
+ * The result of running a Cypher statement, conceptually a stream of {@link Record records}.
  *
  * The standard way of navigating through the result returned by the database is to
  * {@link #next() iterate} over it.

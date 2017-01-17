@@ -18,55 +18,40 @@
  */
 package org.neo4j.driver.v1;
 
-import java.net.URI;
-
 /**
- * A Neo4j database driver, through which you can create {@link Session sessions} to run statements against the database.
+ * Accessor for a specific Neo4j graph database.
  * <p>
- * An example:
- * <pre class="doctest:DriverDocIT#exampleUsage">
- * {@code
- * // Create a driver with default configuration
- * Driver driver = GraphDatabase.driver( "bolt://localhost:7687" );
- *
- * // Establish a session
- * Session session = driver.session();
- *
- * // Running a simple statement can be done like this
- * session.run( "CREATE (n {name:'Bob'})" );
- *
- * // Or, run multiple statements together in an atomic transaction:
- * try( Transaction tx = session.beginTransaction() )
- * {
- *     tx.run( "CREATE (n {name:'Alice'})" );
- *     tx.run( "CREATE (n {name:'Tina'})" );
- *     tx.success();
- * }
- *
- * // Retrieve results
- * StatementResult result = session.run( "MATCH (n) RETURN n.name" );
- * List<String> names = new LinkedList<>();
- * while( result.hasNext() )
- * {
- *     names.add( result.next().get("n.name").asString() );
- * }
- *
- * // Sessions are pooled, to avoid the overhead of creating new connections - this means
- * // it is very important to close your session when you are done with it, otherwise you will
- * // run out of sessions.
- * session.close();
- *
- * // And, to clean up resources, always close the driver when your application is done
- * driver.close();
- * }
- * </pre>
+ * Driver implementations are typically thread-safe, act as a template
+ * for {@link Session} creation and host a connection pool. All configuration
+ * and authentication settings are held immutably by the Driver. Should
+ * different settings be required, a new Driver instance should be created.
  * <p>
+ * A driver maintains a connection pool for each remote Neo4j server. Therefore
+ * the most efficient way to make use of a Driver is to use the same instance
+ * across the application.
+ * <p>
+ * To construct a new Driver, use one of the
+ * {@link GraphDatabase#driver(String, AuthToken) GraphDatabase.driver} methods.
+ * The <a href="https://tools.ietf.org/html/rfc3986">URI</a> passed to
+ * this method determines the type of Driver created.
+ * <br>
+ * <table border="1" cellpadding="4" style="border-collapse: collapse">
+ *     <thead>
+ *         <tr><th>URI Scheme</th><th>Driver</th></tr>
+ *     </thead>
+ *     <tbody>
+ *         <tr>
+ *             <td><code>bolt</code></td>
+ *             <td>Direct driver: connects directly to the host and port specified in the URI.</td>
+ *         </tr>
+ *         <tr>
+ *             <td><code>bolt+routing</code></td>
+ *             <td>Routing driver: can automatically discover members of a Causal Cluster and route {@link Session sessions} based on {@link AccessMode}.</td>
+ *         </tr>
+ *     </tbody>
+ * </table>
  *
- * A driver maintains a connection pool for each Neo4j instance. For resource efficiency reasons you are encouraged
- * to use the same driver instance across your application. You can control the connection pooling behavior when you
- * create the driver using the {@link Config} you pass into {@link GraphDatabase#driver(URI, Config)}.
- *
- * @since 1.0
+ * @since 1.0 (<em>bolt+routing</em> URIs since 1.1)
  */
 public interface Driver extends AutoCloseable
 {
@@ -78,17 +63,22 @@ public interface Driver extends AutoCloseable
     boolean isEncrypted();
 
     /**
-     * Establish a session
+     * Create a new general purpose {@link Session}.
      *
-     * @return a session that could be used to run {@link Session#run(String) a statement} or
-     * {@link Session#beginTransaction() a transaction }.
+     * @return a new {@link Session} object.
      */
     Session session();
 
+    /**
+     * Create a new {@link Session} for a specific type of work.
+     *
+     * @param mode the type of access required by units of work in this session, e.g. {@link AccessMode#READ read access}.
+     * @return a new {@link Session} object.
+     */
     Session session(AccessMode mode);
 
     /**
-     * Close all the resources assigned to this driver
+     * Close all the resources assigned to this driver, including any open connections.
      */
     void close();
 }

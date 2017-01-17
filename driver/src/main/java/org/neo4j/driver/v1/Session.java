@@ -21,6 +21,8 @@ package org.neo4j.driver.v1;
 import org.neo4j.driver.v1.util.Resource;
 
 /**
+ * Provides a context of work for database interactions.
+ * <p>
  * A <em>Session</em> hosts a series of {@linkplain Transaction transactions}
  * carried out against a database. Within the database, all statements are
  * carried out within a transaction. Within application code, however, it is

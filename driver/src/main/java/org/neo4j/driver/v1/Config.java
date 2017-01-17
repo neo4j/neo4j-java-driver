@@ -493,6 +493,7 @@ public class Config
 
         /**
          * Return the strategy type desired.
+         *
          * @return the strategy we should use
          */
         public Strategy strategy()
@@ -530,8 +531,7 @@ public class Config
         }
 
         /**
-         *
-         * @return
+         * Trust strategy for certificates that can be verified through the local system store.
          */
         public static TrustStrategy trustSystemCertificates()
         {
@@ -539,8 +539,7 @@ public class Config
         }
 
         /**
-         *
-         * @return
+         * Trust strategy for certificates that can be verified through the local system store.
          *
          * @since 1.1
          */

@@ -37,7 +37,7 @@ import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.util.Immutable;
 
 /**
- * Represents a value from Neo4j.
+ * A unit of data that adheres to the Neo4j type system.
  *
  * This interface describes a number of <code>isType</code> methods along with
  * <code>typeValue</code> methods. The first set of these correlate with types from
