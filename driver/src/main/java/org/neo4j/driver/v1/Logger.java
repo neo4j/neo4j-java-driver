@@ -18,6 +18,9 @@
  */
 package org.neo4j.driver.v1;
 
+/**
+ * Logs messages for driver activity.
+ */
 public interface Logger
 {
     void error( String message, Throwable cause );

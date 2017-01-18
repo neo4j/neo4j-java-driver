@@ -30,13 +30,15 @@ import org.neo4j.driver.v1.util.Immutable;
 import org.neo4j.driver.v1.util.Pair;
 
 /**
- * A record is the object you work with when reading {@link StatementResult} - results
- * are streams of records, where records carry the values your statement returned.
+ * Container for Cypher result values.
+ * <p>
+ * Streams of records are returned from Cypher statement execution, contained
+ * within a {@link StatementResult}.
+ * <p>
+ * A record is a form of ordered map and, as such, contained values can be
+ * accessed by either positional {@link #get(int) index} or textual
+ * {@link #get(String) key}.
  *
- * Records are made up of named, ordered {@link #fields() fields}, each field has
- * a key and a value, both are determined by the statement you've executed. To
- * access the values in your result, you can either use the field key or the field
- * index, meaning the position the field has in the record.
  * @since 1.0
  */
 @Immutable

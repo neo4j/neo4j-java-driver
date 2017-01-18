@@ -1,15 +1,27 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
-<HTML>
-<HEAD>
-    <TITLE>API Overview</TITLE>
-</HEAD>
-<BODY>
+/**
+ * Copyright (c) 2002-2017 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
-<p>These pages document the official <a href="https://neo4j.com" target="_top">Neo4j</a> driver for Java.</p>
+package org.neo4j.docs.driver;
 
-<h3>Example</h3>
+// NOTE: This file holds a copy of the example in overview.html
 
-<pre><code>import org.neo4j.driver.v1.*;
+import org.neo4j.driver.v1.*;
 
 import static org.neo4j.driver.v1.Values.parameters;
 
@@ -72,7 +84,3 @@ public class SmallExample
         example.close();
     }
 }
-</code></pre>
-
-</BODY>
-</HTML>

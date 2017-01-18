@@ -21,29 +21,25 @@ package org.neo4j.driver.v1;
 import org.neo4j.driver.v1.util.Resource;
 
 /**
- * Represents a transaction in the Neo4j database.
- *
- * This interface may seem surprising in that it does not have explicit "commit" or "rollback" methods.
- * It is designed to minimize the complexity of the code you need to write to use transactions in a safe way, ensuring
- * that transactions are properly rolled back even if there is an exception while the transaction is running.
- *
- * <h2>Example:</h2>
- *
+ * Logical container for an atomic unit of work.
+ * <p>
+ * A driver Transaction object corresponds to a server transaction.
+ * Transactions are typically wrapped in a try-with-resources block
+ * which ensures that <code>COMMIT</code> or <code>ROLLBACK</code>
+ * occurs correctly on close.Note that <code>ROLLBACK</code> is the
+ * default action unless {@link #success()} is called before closing.
  * <pre class="docTest:TransactionDocIT#classDoc">
  * {@code
- * try( Transaction tx = session.beginTransaction() )
+ * try(Transaction tx = session.beginTransaction())
  * {
- *     tx.run( "CREATE (n)" );
+ *     tx.run("CREATE (a:Person {name: {x}})", parameters("x", "Alice"));
  *     tx.success();
  * }
  * }
  * </pre>
  *
- * <h2>Important note on semantics</h2>
- *
- * Please see the section under {@link StatementRunner} for an important overview of the guarantees
- * the transaction gives you around when statements are executed.
- *
+ * @see Session#run
+ * @see StatementRunner
  * @since 1.0
  */
 public interface Transaction extends Resource, StatementRunner
@@ -67,7 +63,7 @@ public interface Transaction extends Resource, StatementRunner
      * {@code
      * try(Transaction tx = session.beginTransaction() )
      * {
-     *     tx.run( "CREATE (n)" );
+     *     tx.run("CREATE (a:Person {name: {x}})", parameters("x", "Alice"));
      *     tx.failure();
      * }
      * }

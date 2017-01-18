@@ -19,10 +19,9 @@
 package org.neo4j.driver.v1;
 
 /**
- * This is a combination of a <b>Principal</b>, for instance a username,
- * and one or more <b>Credentials</b>, for instance a password. It is used
- * to authenticate with a Neo4j instance. See {@link AuthTokens}
- * for available types of {@link AuthToken}.
+ * Token for holding authentication details, such as <em>user name</em> and <em>password</em>.
+ * Such a token is required by a {@link Driver} to authenticate with a Neo4j
+ * instance.
  *
  * @see AuthTokens
  * @see GraphDatabase#driver(String, AuthToken)
