@@ -119,7 +119,10 @@ public class SocketClient
         try
         {
             logger.debug( "~~ [CONNECT] %s", address );
-            setChannel( ChannelFactory.create( address, securityPlan, timeoutMillis, logger ) );
+            if( channel == null )
+            {
+                setChannel( ChannelFactory.create( address, securityPlan, timeoutMillis, logger ) );
+            }
             protocol = negotiateProtocol();
             reader = protocol.reader();
             writer = protocol.writer();
