@@ -40,15 +40,11 @@ class ChannelFactory
         soChannel.setOption( StandardSocketOptions.SO_KEEPALIVE, true );
         connect( soChannel, address, timeoutMillis );
 
-        ByteChannel channel;
+        ByteChannel channel = soChannel;
 
         if ( securityPlan.requiresEncryption() )
         {
             channel = TLSSocketChannel.create( address, securityPlan, soChannel, log );
-        }
-        else
-        {
-            channel = soChannel;
         }
 
         if ( log.isTraceEnabled() )
