@@ -44,6 +44,7 @@ import static junit.framework.TestCase.fail;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.runners.Parameterized.Parameters;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.net.BoltServerAddress.LOCAL_DEFAULT;
@@ -123,14 +124,20 @@ public class SocketClientTest
     @Test
     public void testIOExceptionWhenFailedToEstablishConnection() throws Throwable
     {
-        BoltServerAddress address = new BoltServerAddress( "localhost", 0 ); // an illegal port
+        BoltServerAddress address = new BoltServerAddress( "localhost", 1234 ); // an random address
 
         SecurityPlan securityPlan = SecurityPlan.insecure();
         SocketClient client = new SocketClient( address, securityPlan, CONNECTION_TIMEOUT, new DevNullLogger() );
 
+        ByteChannel mockedChannel = mock( ByteChannel.class );
+        when( mockedChannel.write( any( ByteBuffer.class ) ) )
+                .thenThrow( new IOException( "Failed to connect to server due to IOException"
+        ) );
+        client.setChannel( mockedChannel );
+
         // Expect
         exception.expect( ServiceUnavailableException.class );
-        exception.expectMessage( "Unable to process request: Can't assign requested address" );
+        exception.expectMessage( "Unable to process request: Failed to connect to server due to IOException" );
 
         // When
         client.start();
