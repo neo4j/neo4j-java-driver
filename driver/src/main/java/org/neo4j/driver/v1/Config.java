@@ -508,6 +508,9 @@ public class Config
 
         /**
          * Use {@link #trustCustomCertificateSignedBy(File)} instead.
+         *
+         * @param certFile the trusted certificate file
+         * @return an authentication config
          */
         @Deprecated
         public static TrustStrategy trustSignedBy( File certFile )
@@ -532,6 +535,8 @@ public class Config
 
         /**
          * Trust strategy for certificates that can be verified through the local system store.
+         *
+         * @return an authentication config
          */
         public static TrustStrategy trustSystemCertificates()
         {
@@ -541,6 +546,7 @@ public class Config
         /**
          * Trust strategy for certificates that can be verified through the local system store.
          *
+         * @return an authentication config
          * @since 1.1
          */
         public static TrustStrategy trustAllCertificates()
