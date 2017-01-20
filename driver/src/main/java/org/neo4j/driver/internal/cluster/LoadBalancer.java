@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal.cluster;
 
-import java.util.HashSet;
+import java.util.Set;
 
 import org.neo4j.driver.internal.RoutingErrorHandler;
 import org.neo4j.driver.internal.net.BoltServerAddress;
@@ -29,19 +29,14 @@ import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
 import static java.lang.String.format;
-import static org.neo4j.driver.internal.cluster.Rediscovery.lookupRoutingTable;
 
 public final class LoadBalancer implements RoutingErrorHandler, AutoCloseable
 {
-    private final RoutingSettings settings;
-    private final Clock clock;
-    // dependencies
     private final Logger log;
-    private final ConnectionPool connections;
-    // state
-    private final ClusterComposition.Provider provider;
-    private final RoutingTable routingTable;
 
+    private final ConnectionPool connections;
+    private final RoutingTable routingTable;
+    private final Rediscovery rediscovery;
 
     public LoadBalancer(
             RoutingSettings settings,
@@ -54,7 +49,7 @@ public final class LoadBalancer implements RoutingErrorHandler, AutoCloseable
                 new ClusterComposition.Provider.Default( clock, log ) );
     }
 
-    LoadBalancer(
+    private LoadBalancer(
             RoutingSettings settings,
             Clock clock,
             Logger log,
@@ -62,12 +57,16 @@ public final class LoadBalancer implements RoutingErrorHandler, AutoCloseable
             RoutingTable routingTable,
             ClusterComposition.Provider provider ) throws ServiceUnavailableException
     {
-        this.settings = settings;
-        this.clock = clock;
+        this( log, connections, routingTable, new Rediscovery( settings, clock, log, provider ) );
+    }
+
+    LoadBalancer( Logger log, ConnectionPool connections, RoutingTable routingTable, Rediscovery rediscovery )
+            throws ServiceUnavailableException
+    {
         this.log = log;
         this.connections = connections;
         this.routingTable = routingTable;
-        this.provider = provider;
+        this.rediscovery = rediscovery;
 
         // initialize the routing table
         ensureRouting();
@@ -135,15 +134,14 @@ public final class LoadBalancer implements RoutingErrorHandler, AutoCloseable
 
     private synchronized void ensureRouting() throws ServiceUnavailableException
     {
-        if ( routingTable.stale() )
+        if ( routingTable.isStale() )
         {
             log.info( "Routing information is stale. %s", routingTable );
             try
             {
                 // get a new routing table
-                ClusterComposition cluster = lookupRoutingTable( settings, clock, log,
-                        connections, routingTable, provider );
-                HashSet<BoltServerAddress> removed = routingTable.update( cluster );
+                ClusterComposition cluster = rediscovery.lookupRoutingTable( connections, routingTable );
+                Set<BoltServerAddress> removed = routingTable.update( cluster );
                 // purge connections to removed addresses
                 for ( BoltServerAddress address : removed )
                 {

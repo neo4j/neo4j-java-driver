@@ -20,6 +20,7 @@
 package org.neo4j.driver.internal.cluster;
 
 import java.util.HashSet;
+import java.util.Set;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.util.Clock;
@@ -33,7 +34,9 @@ public class ClusterRoutingTable implements RoutingTable
 
     private final Clock clock;
     private long expirationTimeout;
-    private final RoundRobinAddressSet readers, writers, routers;
+    private final RoundRobinAddressSet readers;
+    private final RoundRobinAddressSet writers;
+    private final RoundRobinAddressSet routers;
 
     public ClusterRoutingTable( Clock clock, BoltServerAddress... routingAddresses )
     {
@@ -52,7 +55,7 @@ public class ClusterRoutingTable implements RoutingTable
     }
 
     @Override
-    public boolean stale()
+    public boolean isStale()
     {
         return expirationTimeout < clock.millis() || // the expiration timeout has been reached
                routers.size() <= MIN_ROUTERS || // we need to discover more routing servers
@@ -61,7 +64,7 @@ public class ClusterRoutingTable implements RoutingTable
     }
 
     @Override
-    public synchronized HashSet<BoltServerAddress> update( ClusterComposition cluster )
+    public synchronized Set<BoltServerAddress> update( ClusterComposition cluster )
     {
         expirationTimeout = cluster.expirationTimestamp;
         HashSet<BoltServerAddress> removed = new HashSet<>();

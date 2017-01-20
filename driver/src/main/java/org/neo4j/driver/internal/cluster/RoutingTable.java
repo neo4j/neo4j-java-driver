@@ -18,15 +18,15 @@
  */
 package org.neo4j.driver.internal.cluster;
 
-import java.util.HashSet;
+import java.util.Set;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
 
 public interface RoutingTable
 {
-    boolean stale();
+    boolean isStale();
 
-    HashSet<BoltServerAddress> update( ClusterComposition cluster );
+    Set<BoltServerAddress> update( ClusterComposition cluster );
 
     void forget( BoltServerAddress address );
 

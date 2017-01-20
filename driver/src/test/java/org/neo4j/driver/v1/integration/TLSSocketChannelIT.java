@@ -43,6 +43,7 @@ import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.util.CertificateToolTest;
 import org.neo4j.driver.v1.util.Neo4jRunner;
 import org.neo4j.driver.v1.util.Neo4jSettings;
@@ -156,9 +157,9 @@ public class TLSSocketChannelIT
                         TLSSocketChannel.create(address, securityPlan, channel, logger);
                 sslChannel.close();
             }
-            catch ( SSLHandshakeException e )
+            catch ( ClientException e )
             {
-                assertEquals( "General SSLEngine problem", e.getMessage() );
+                assertThat( e.getMessage(), containsString( "General SSLEngine problem" ) );
                 assertEquals( "General SSLEngine problem", e.getCause().getMessage() );
                 assertThat( e.getCause().getCause().getMessage(),
                         containsString( "unable to find valid certification path to requested target" ) );
@@ -245,9 +246,9 @@ public class TLSSocketChannelIT
             sslChannel = TLSSocketChannel.create( neo4j.address(), securityPlan, channel, mock( Logger.class ) );
             sslChannel.close();
         }
-        catch ( SSLHandshakeException e )
+        catch ( ClientException e )
         {
-            assertEquals( "General SSLEngine problem", e.getMessage() );
+            assertThat( e.getMessage(), containsString( "General SSLEngine problem" ) );
             assertEquals( "General SSLEngine problem", e.getCause().getMessage() );
             assertEquals( "No trusted certificate found", e.getCause().getCause().getMessage() );
         }

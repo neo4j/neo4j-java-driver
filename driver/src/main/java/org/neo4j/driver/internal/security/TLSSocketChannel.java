@@ -68,10 +68,25 @@ public class TLSSocketChannel implements ByteChannel
     {
         SSLEngine sslEngine = securityPlan.sslContext().createSSLEngine( address.host(), address.port() );
         sslEngine.setUseClientMode( true );
-        return new TLSSocketChannel( channel, logger, sslEngine );
+        return create( channel, logger, sslEngine );
     }
 
-    public TLSSocketChannel( ByteChannel channel, Logger logger, SSLEngine sslEngine )
+    public static TLSSocketChannel create( ByteChannel channel, Logger logger, SSLEngine sslEngine ) throws IOException
+    {
+        TLSSocketChannel tlsChannel = new TLSSocketChannel( channel, logger, sslEngine );
+        try
+        {
+            tlsChannel.runHandshake();
+        }
+        catch ( SSLHandshakeException e )
+        {
+            throw new ClientException( "Failed to establish secured connection with the server: " + e.getMessage(),
+                    e.getCause() );
+        }
+        return tlsChannel;
+    }
+
+    TLSSocketChannel( ByteChannel channel, Logger logger, SSLEngine sslEngine )
             throws IOException
     {
         this.logger = logger;
@@ -81,21 +96,6 @@ public class TLSSocketChannel implements ByteChannel
         this.cipherIn = ByteBuffer.allocate( sslEngine.getSession().getPacketBufferSize() );
         this.plainOut = ByteBuffer.allocate( sslEngine.getSession().getApplicationBufferSize() );
         this.cipherOut = ByteBuffer.allocate( sslEngine.getSession().getPacketBufferSize() );
-
-        try
-        {
-            runHandshake();
-        }
-        catch ( SSLHandshakeException e )
-        {
-            Throwable error = e;
-            if( error.getCause() != null ) // get the real exception
-            {
-                error = e.getCause();
-            }
-            throw new ClientException( "Failed to establish secured connection with the server: " + error.getMessage(),
-                    error.getCause() );
-        }
     }
 
     /**
@@ -149,6 +149,56 @@ public class TLSSocketChannel implements ByteChannel
     }
 
     /**
+     * Read from the socket channel to the buffer
+     * @param toBuffer the destination where the data read from the socket channel are saved
+     * @throws IOException when failed to read from channel
+     */
+    void channelRead( ByteBuffer toBuffer ) throws IOException
+    {
+        /**
+         * This is the only place to read from the underlying channel
+         */
+        if ( channel.read( toBuffer ) < 0 )
+        {
+            try
+            {
+                channel.close();
+            }
+            catch( IOException e )
+            {
+                // best effort
+            }
+            throw new ServiceUnavailableException(
+                    "SSL Connection terminated while receiving data. " +
+                    "This can happen due to network instabilities, or due to restarts of the database." );
+        }
+    }
+
+    /**
+     * Write the data saved in the buffer to the socket channel
+     * @param fromBuffer the source where the data written to the socket channel are saved
+     * @throws IOException when failed to write to channel
+     */
+    void channelWrite( ByteBuffer fromBuffer ) throws IOException
+    {
+        int written = channel.write( fromBuffer );
+        if (written <= 0)
+        {
+            try
+            {
+                channel.close();
+            }
+            catch( IOException e )
+            {
+                // best effort
+            }
+            throw new ServiceUnavailableException(
+                    "SSL Connection terminated while writing data. " +
+                    "This can happen due to network instabilities, or due to restarts of the database." );
+        }
+    }
+
+    /**
      * This method is mainly responsible for reading encrypted bytes from underlying socket channel and deciphering
      * them.
      *
@@ -175,23 +225,7 @@ public class TLSSocketChannel implements ByteChannel
     {
         HandshakeStatus handshakeStatus = sslEngine.getHandshakeStatus();
 
-        /**
-         * This is the only place to read from the underlying channel
-         */
-        if ( channel.read( cipherIn ) < 0 )
-        {
-            try
-            {
-                channel.close();
-            }
-            catch( IOException e )
-            {
-                // best effort
-            }
-            throw new ServiceUnavailableException(
-                    "SSL Connection terminated while receiving data. " +
-                    "This can happen due to network instabilities, or due to restarts of the database." );
-        }
+        channelRead( cipherIn );
         cipherIn.flip();
 
         Status status;
@@ -312,21 +346,7 @@ public class TLSSocketChannel implements ByteChannel
             {
                 // flush as much data as possible
                 cipherOut.flip();
-                int written = channel.write( cipherOut );
-                if (written <= 0)
-                {
-                    try
-                    {
-                        channel.close();
-                    }
-                    catch( IOException e )
-                    {
-                        // best effort
-                    }
-                    throw new ServiceUnavailableException(
-                            "SSL Connection terminated while writing data. " +
-                            "This can happen due to network instabilities, or due to restarts of the database." );
-                }
+                channelWrite( cipherOut );
                 cipherOut.compact();
                 logger.debug( "Network output buffer couldn't be enlarged, flushing data to the channel instead." );
             }
@@ -354,7 +374,7 @@ public class TLSSocketChannel implements ByteChannel
      * @param to buffer to copy to
      * @return the number of transferred bytes
      */
-    static int bufferCopy( ByteBuffer from, ByteBuffer to )
+    private static int bufferCopy( ByteBuffer from, ByteBuffer to )
     {
         int maxTransfer = Math.min( to.remaining(), from.remaining() );
 
