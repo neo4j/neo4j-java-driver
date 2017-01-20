@@ -75,7 +75,7 @@ public class TLSSocketChannelReadFragmentationIT extends TLSSocketChannelFragmen
         ByteChannel ch = SocketChannel.open( new InetSocketAddress( server.getInetAddress(), server.getLocalPort() ) );
         ch = new LittleAtATimeChannel( ch, networkFrameSize );
 
-        try ( TLSSocketChannel channel = new TLSSocketChannel( ch, new DevNullLogger(), engine ) )
+        try ( TLSSocketChannel channel = TLSSocketChannel.create( ch, new DevNullLogger(), engine ) )
         {
             ByteBuffer readBuffer = ByteBuffer.allocate( blobOfData.length );
             while ( readBuffer.position() < readBuffer.capacity() )

@@ -31,12 +31,22 @@ public class Rediscovery
 {
     private static final String NO_ROUTERS_AVAILABLE = "Could not perform discovery. No routing servers available.";
 
-    // Given a old routing table and connection pool, use the connection composition provider to obtain a new
+    private final RoutingSettings settings;
+    private final Clock clock;
+    private final Logger logger;
+    private final ClusterComposition.Provider provider;
+
+    public Rediscovery( RoutingSettings settings, Clock clock, Logger logger, ClusterComposition.Provider provider )
+    {
+        this.settings = settings;
+        this.clock = clock;
+        this.logger = logger;
+        this.provider = provider;
+    }
+
+    // Given the current routing table and connection pool, use the connection composition provider to fetch a new
     // cluster composition, which would be used to update the routing table and connection pool
-    public static ClusterComposition lookupRoutingTable(
-            RoutingSettings settings, Clock clock, Logger log,
-            ConnectionPool connections, RoutingTable routingTable,
-            ClusterComposition.Provider provider )
+    public ClusterComposition lookupRoutingTable( ConnectionPool connections, RoutingTable routingTable )
             throws InterruptedException, ServiceUnavailableException
     {
         int size = routingTable.routerSize(), failures = 0;
@@ -63,17 +73,16 @@ public class Rediscovery
                 try ( Connection connection = connections.acquire( address ) )
                 {
                     cluster = provider.getClusterComposition( connection );
-                    log.info( "Got cluster composition %s", cluster );
+                    logger.info( "Got cluster composition %s", cluster );
                 }
                 catch ( Exception e )
                 {
-                    log.error( format( "Failed to connect to routing server '%s'.", address ), e );
+                    logger.error( format( "Failed to connect to routing server '%s'.", address ), e );
                     continue;
                 }
                 if ( cluster == null || !cluster.isValid() )
                 {
-                    log.info(
-                            "Server <%s> unable to perform routing capability, dropping from list of routers.",
+                    logger.info( "Server <%s> unable to perform routing capability, dropping from list of routers.",
                             address );
                     routingTable.removeRouter( address );
                     if ( --size == 0 )

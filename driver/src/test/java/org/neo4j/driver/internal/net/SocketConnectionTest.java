@@ -34,11 +34,16 @@ import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.summary.ServerInfo;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.v1.Values.parameters;
 
@@ -79,5 +84,28 @@ public class SocketConnectionTest
         ServerInfo server = conn.server();
         assertThat( server.address(), equalTo( "neo4j.com:9000" ) );
         assertThat( server.version(), equalTo( "super-awesome" ) );
+    }
+
+    @Test
+    public void shouldCloseConnectionIfFailedToCreate() throws Throwable
+    {
+        // Given
+        SocketClient socket = mock( SocketClient.class );
+
+        // When
+        doThrow( new RuntimeException( "failed to start socket client" ) ).when( socket ).start();
+
+        // Then
+        try
+        {
+            SocketConnection conn = new SocketConnection( socket, mock( InternalServerInfo.class ), mock( Logger.class ) );
+            fail( "should have failed with the provided exception" );
+        }
+        catch( Throwable e )
+        {
+            assertThat( e, instanceOf( Exception.class ) );
+            assertThat( e.getMessage(), equalTo( "failed to start socket client" ) );
+        }
+        verify( socket, times( 1 ) ).stop();
     }
 }
