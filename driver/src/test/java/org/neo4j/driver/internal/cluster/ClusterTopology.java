@@ -32,7 +32,7 @@ import java.util.Set;
 import org.neo4j.driver.internal.Event;
 import org.neo4j.driver.internal.EventHandler;
 import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.util.Clock;
 
 import static java.util.Arrays.asList;
@@ -138,7 +138,7 @@ class ClusterTopology implements ClusterComposition.Provider
     }
 
     @Override
-    public ClusterComposition getClusterComposition( Connection connection )
+    public ClusterComposition getClusterComposition( PooledConnection connection )
     {
         BoltServerAddress router = connection.boltServerAddress();
         View view = views.get( router );

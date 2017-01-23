@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.net;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.driver.internal.exceptions.InternalException;
 import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.v1.Logger;
@@ -45,7 +46,7 @@ public class ConcurrencyGuardingConnection implements Connection
     }
 
     @Override
-    public void init( String clientName, Map<String,Value> authToken )
+    public void init( String clientName, Map<String,Value> authToken ) throws InternalException
     {
         try
         {
@@ -60,7 +61,7 @@ public class ConcurrencyGuardingConnection implements Connection
 
     @Override
     public void run( String statement, Map<String,Value> parameters,
-            Collector collector )
+            Collector collector ) throws InternalException
     {
         try
         {
@@ -74,7 +75,7 @@ public class ConcurrencyGuardingConnection implements Connection
     }
 
     @Override
-    public void discardAll( Collector collector )
+    public void discardAll( Collector collector ) throws InternalException
     {
         try
         {
@@ -88,7 +89,7 @@ public class ConcurrencyGuardingConnection implements Connection
     }
 
     @Override
-    public void pullAll( Collector collector )
+    public void pullAll( Collector collector ) throws InternalException
     {
         try
         {
@@ -102,7 +103,7 @@ public class ConcurrencyGuardingConnection implements Connection
     }
 
     @Override
-    public void reset()
+    public void reset() throws InternalException
     {
         try
         {
@@ -116,7 +117,7 @@ public class ConcurrencyGuardingConnection implements Connection
     }
 
     @Override
-    public void ackFailure()
+    public void ackFailure() throws InternalException
     {
         try
         {
@@ -130,7 +131,7 @@ public class ConcurrencyGuardingConnection implements Connection
     }
 
     @Override
-    public void sync()
+    public void sync() throws InternalException
     {
         try
         {
@@ -144,7 +145,7 @@ public class ConcurrencyGuardingConnection implements Connection
     }
 
     @Override
-    public void flush()
+    public void flush() throws InternalException
     {
         try
         {
@@ -158,7 +159,7 @@ public class ConcurrencyGuardingConnection implements Connection
     }
 
     @Override
-    public void receiveOne()
+    public void receiveOne() throws InternalException
     {
         try
         {
@@ -186,27 +187,9 @@ public class ConcurrencyGuardingConnection implements Connection
     }
 
     @Override
-    public void onError( Runnable runnable )
-    {
-        delegate.onError( runnable );
-    }
-
-    @Override
-    public boolean hasUnrecoverableErrors()
-    {
-        return delegate.hasUnrecoverableErrors();
-    }
-
-    @Override
-    public void resetAsync()
+    public void resetAsync() throws InternalException
     {
         delegate.resetAsync();
-    }
-
-    @Override
-    public boolean isAckFailureMuted()
-    {
-        return delegate.isAckFailureMuted();
     }
 
     private void markAsAvailable()

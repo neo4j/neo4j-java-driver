@@ -19,21 +19,21 @@
 package org.neo4j.driver.internal.net.pooling;
 
 import org.junit.Test;
-import org.mockito.Mockito;
 
 import java.io.IOException;
 import java.util.HashMap;
 
+import org.neo4j.driver.internal.exceptions.InternalNeo4jException;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
+import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Consumers;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
-import org.neo4j.driver.v1.exceptions.TransientException;
 
 import static junit.framework.TestCase.assertFalse;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -57,16 +57,16 @@ public class ConnectionInvalidationTest
     private final Clock clock = mock( Clock.class );
 
     private final PooledConnection conn =
-            new PooledConnection( delegate, Consumers.<PooledConnection>noOp(), Clock.SYSTEM );
+            new PooledSocketConnection( delegate, Consumers.<PooledConnection>noOp(), Clock.SYSTEM );
 
     @SuppressWarnings( "unchecked" )
     @Test
     public void shouldNotInvalidateConnectionThatIsUnableToRun() throws Throwable
     {
         // Given a connection that's broken
-        Mockito.doThrow( new ClientException( "That didn't work" ) )
+        doThrow( new ClientException( "That didn't work" ) )
                 .when( delegate ).run( anyString(), anyMap(), any( Collector.class ) );
-        PooledConnection conn = new PooledConnection( delegate, Consumers.<PooledConnection>noOp(), clock );
+        PooledConnection conn = new PooledSocketConnection( delegate, Consumers.<PooledConnection>noOp(), clock );
         PooledConnectionValidator validator = new PooledConnectionValidator( pool( true ) );
 
         // When/Then
@@ -97,8 +97,8 @@ public class ConnectionInvalidationTest
     public void shouldInvalidConnectionIfFailedToReset() throws Throwable
     {
         // Given a connection that's broken
-        Mockito.doThrow( new ClientException( "That didn't work" ) ).when( delegate ).reset();
-        PooledConnection conn = new PooledConnection( delegate, Consumers.<PooledConnection>noOp(), clock );
+        doThrow( new ClientException( "That didn't work" ) ).when( delegate ).reset();
+        PooledConnection conn = new PooledSocketConnection( delegate, Consumers.<PooledConnection>noOp(), clock );
         PooledConnectionValidator validator = new PooledConnectionValidator( pool( true ) );
         // When/Then
         BlockingPooledConnectionQueue
@@ -121,19 +121,29 @@ public class ConnectionInvalidationTest
     @Test
     public void shouldNotInvalidateOnKnownRecoverableExceptions() throws Throwable
     {
-        assertRecoverable( new ClientException( "Neo.ClientError.General.ReadOnly", "Hello, world!" ) );
-        assertRecoverable( new TransientException( "Neo.TransientError.General.ReadOnly", "Hello, world!" ) );
+        assertRecoverable( new InternalNeo4jException( "Neo.ClientError.General.ReadOnly", "Hello, world!" ) );
+        assertRecoverable( new InternalNeo4jException( "Neo.TransientError.General.ReadOnly", "Hello, world!" ) );
     }
 
     @Test
     public void shouldInvalidateOnProtocolViolationExceptions() throws Throwable
     {
-        assertUnrecoverable( new ClientException( "Neo.ClientError.Request.InvalidFormat", "Hello, world!" ) );
-        assertUnrecoverable( new ClientException( "Neo.ClientError.Request.Invalid", "Hello, world!" ) );
+        assertUnrecoverable( new InternalNeo4jException( "Neo.ClientError.Request.InvalidFormat", "Hello, world!" ) );
+        assertUnrecoverable( new InternalNeo4jException( "Neo.ClientError.Request.Invalid", "Hello, world!" ) );
+    }
+
+    private void assertUnrecoverable( InternalNeo4jException exception ) throws Throwable
+    {
+        assertUnrecoverable( exception, exception.publicException() );
+    }
+
+    private void assertUnrecoverable( Neo4jException exception ) throws Throwable
+    {
+        assertUnrecoverable( exception, exception );
     }
 
     @SuppressWarnings( "unchecked" )
-    private void assertUnrecoverable( Neo4jException exception )
+    private void assertUnrecoverable( Throwable exception, Neo4jException expected ) throws Throwable
     {
         doThrow( exception ).when( delegate )
                 .run( eq( "assert unrecoverable" ), anyMap(), any( Collector.class ) );
@@ -146,7 +156,7 @@ public class ConnectionInvalidationTest
         }
         catch ( Neo4jException e )
         {
-            assertThat( e, equalTo( exception ) );
+            assertThat( e, equalTo( expected ) );
         }
         PooledConnectionValidator validator = new PooledConnectionValidator( pool( true ) );
 
@@ -162,7 +172,7 @@ public class ConnectionInvalidationTest
     }
 
     @SuppressWarnings( "unchecked" )
-    private void assertRecoverable( Neo4jException exception )
+    private void assertRecoverable( InternalNeo4jException exception ) throws Throwable
     {
         doThrow( exception ).when( delegate ).run( eq( "assert recoverable" ), anyMap(), any( Collector.class ) );
 
@@ -174,7 +184,7 @@ public class ConnectionInvalidationTest
         }
         catch ( Neo4jException e )
         {
-            assertThat( e, equalTo( exception ) );
+            assertThat( e, equalTo( exception.publicException() ) );
         }
 
         // Then

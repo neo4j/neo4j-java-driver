@@ -19,17 +19,17 @@
 package org.neo4j.driver.internal;
 
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import org.neo4j.driver.internal.spi.Connection;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+
+import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
@@ -39,7 +39,6 @@ import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
 import org.neo4j.driver.v1.util.Pair;
 
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.junit.Assert.assertFalse;
@@ -50,7 +49,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-
 import static org.neo4j.driver.v1.Records.column;
 import static org.neo4j.driver.v1.Values.ofString;
 import static org.neo4j.driver.v1.Values.value;
@@ -388,7 +386,7 @@ public class InternalStatementResultTest
 
     private StatementResult createResult( int numberOfRecords )
     {
-        Connection connection = mock( Connection.class );
+        PooledConnection connection = mock( PooledConnection.class );
         String statement = "<unknown>";
 
         final InternalStatementResult cursor = new InternalStatementResult( connection, null, new Statement( statement ) );

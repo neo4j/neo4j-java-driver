@@ -22,7 +22,7 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.neo4j.driver.internal.spi.Collector;
-import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
@@ -66,17 +66,17 @@ class ExplicitTransaction implements Transaction
     }
 
     private final Runnable cleanup;
-    private final Connection conn;
+    private final PooledConnection conn;
 
     private String bookmark = null;
     private State state = State.ACTIVE;
 
-    ExplicitTransaction( Connection conn, Runnable cleanup )
+    ExplicitTransaction( PooledConnection conn, Runnable cleanup )
     {
         this( conn, cleanup, null );
     }
 
-    ExplicitTransaction( Connection conn, Runnable cleanup, String bookmark )
+    ExplicitTransaction( PooledConnection conn, Runnable cleanup, String bookmark )
     {
         this.conn = conn;
         this.cleanup = cleanup;
@@ -241,7 +241,7 @@ class ExplicitTransaction implements Transaction
         this.bookmark = bookmark;
     }
 
-    private static void runBeginStatement( Connection connection, String bookmark )
+    private static void runBeginStatement( PooledConnection connection, String bookmark )
     {
         Map<String,Value> parameters;
         if ( bookmark != null )

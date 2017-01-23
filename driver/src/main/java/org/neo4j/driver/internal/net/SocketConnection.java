@@ -26,6 +26,7 @@ import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.driver.internal.exceptions.InternalNeo4jException;
 import org.neo4j.driver.internal.messaging.InitMessage;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.RunMessage;
@@ -37,7 +38,6 @@ import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.summary.ServerInfo;
 
 import static java.lang.String.format;
@@ -50,11 +50,24 @@ public class SocketConnection implements Connection
 {
     private final Queue<Message> pendingMessages = new LinkedList<>();
     private final SocketResponseHandler responseHandler;
-    private final AtomicBoolean isInterrupted = new AtomicBoolean( false );
-    private final AtomicBoolean isAckFailureMuted = new AtomicBoolean( false );
-    private InternalServerInfo serverInfo;
 
     private final SocketClient socket;
+    private InternalServerInfo serverInfo;
+
+    /*
+     * When interrupted, before queuing more messages, unhandled failure messages should be consumed first.
+     * This ensures that before running more statements after a client reset,
+     * no unhandled error is left in the message queue.
+     * If the connection {@link #isInterrupted}, then it definitely also {@link #isAckFailureMuted}.
+     */
+    private final AtomicBoolean isInterrupted = new AtomicBoolean( false );
+
+    /*
+     * When ackFailure is muted, calling {@link #ackFailure()} will put no ackFailure message into the sending
+     * message queue, as the error will be cleaned by client's reset instead.
+     * {@link #isAckFailureMuted} will only be set back to false when a success of reset message is received.
+     */
+    private final AtomicBoolean isAckFailureMuted = new AtomicBoolean( false );
 
     private final Logger logger;
 
@@ -77,9 +90,9 @@ public class SocketConnection implements Connection
      */
     public SocketConnection( SocketClient socket, InternalServerInfo serverInfo, Logger logger )
     {
+        this.logger = logger;
         this.socket = socket;
         this.serverInfo = serverInfo;
-        this.logger = logger;
         this.responseHandler = createResponseHandler( logger );
         this.socket.start();
     }
@@ -97,7 +110,7 @@ public class SocketConnection implements Connection
     }
 
     @Override
-    public void init( String clientName, Map<String,Value> authToken )
+    public void init( String clientName, Map<String,Value> authToken ) throws InternalNeo4jException
     {
         Collector.InitCollector initCollector = new Collector.InitCollector();
         queueMessage( new InitMessage( clientName, authToken ), initCollector );
@@ -106,44 +119,48 @@ public class SocketConnection implements Connection
     }
 
     @Override
-    public void run( String statement, Map<String,Value> parameters, Collector collector )
+    public void run( String statement, Map<String,Value> parameters, Collector collector ) throws InternalNeo4jException
     {
         queueMessage( new RunMessage( statement, parameters ), collector );
     }
 
     @Override
-    public void discardAll( Collector collector )
+    public void discardAll( Collector collector ) throws InternalNeo4jException
     {
         queueMessage( DISCARD_ALL, collector );
     }
 
     @Override
-    public void pullAll( Collector collector )
+    public void pullAll( Collector collector ) throws InternalNeo4jException
     {
         queueMessage( PULL_ALL, collector );
     }
 
     @Override
-    public void reset()
+    public void reset() throws InternalNeo4jException
     {
         queueMessage( RESET, Collector.RESET );
     }
 
     @Override
-    public void ackFailure()
+    public synchronized void ackFailure() throws InternalNeo4jException
     {
-        queueMessage( ACK_FAILURE, Collector.ACK_FAILURE );
+        // only ack failure if the ackFailure is not muted.
+        if( !isAckFailureMuted.get() )
+        {
+            queueMessage( ACK_FAILURE, Collector.ACK_FAILURE );
+        }
     }
 
     @Override
-    public void sync()
+    public void sync() throws InternalNeo4jException
     {
         flush();
         receiveAll();
     }
 
     @Override
-    public synchronized void flush()
+    public synchronized void flush() throws InternalNeo4jException
     {
         ensureNotInterrupted();
 
@@ -158,7 +175,7 @@ public class SocketConnection implements Connection
         }
     }
 
-    private void ensureNotInterrupted()
+    private void ensureNotInterrupted() throws InternalNeo4jException
     {
         try
         {
@@ -171,17 +188,17 @@ public class SocketConnection implements Connection
                 }
             }
         }
-        catch ( Neo4jException e )
+        catch ( InternalNeo4jException e )
         {
             throw new ClientException(
                     "An error has occurred due to the cancellation of executing a previous statement. " +
                     "You received this error probably because you did not consume the result immediately after " +
-                    "running the statement which get reset in this session.", e );
+                    "running the statement which get reset in this session.", e.publicException() );
         }
 
     }
 
-    private void receiveAll()
+    private void receiveAll() throws InternalNeo4jException
     {
         try
         {
@@ -195,7 +212,7 @@ public class SocketConnection implements Connection
     }
 
     @Override
-    public void receiveOne()
+    public void receiveOne() throws InternalNeo4jException
     {
         try
         {
@@ -208,11 +225,11 @@ public class SocketConnection implements Connection
         }
     }
 
-    private void assertNoServerFailure()
+    private void assertNoServerFailure() throws InternalNeo4jException
     {
         if ( responseHandler.serverFailureOccurred() )
         {
-            Neo4jException exception = responseHandler.serverFailure();
+            InternalNeo4jException exception = responseHandler.serverFailure();
             responseHandler.clearError();
             isInterrupted.set( false );
             throw exception;
@@ -236,7 +253,7 @@ public class SocketConnection implements Connection
         }
     }
 
-    private synchronized void queueMessage( Message msg, Collector collector )
+    private synchronized void queueMessage( Message msg, Collector collector ) throws InternalNeo4jException
     {
         ensureNotInterrupted();
 
@@ -257,19 +274,7 @@ public class SocketConnection implements Connection
     }
 
     @Override
-    public void onError( Runnable runnable )
-    {
-        throw new UnsupportedOperationException( "Error subscribers are not supported on SocketConnection." );
-    }
-
-    @Override
-    public boolean hasUnrecoverableErrors()
-    {
-        throw new UnsupportedOperationException( "Unrecoverable error detection is not supported on SocketConnection." );
-    }
-
-    @Override
-    public synchronized void resetAsync()
+    public synchronized void resetAsync() throws InternalNeo4jException
     {
         queueMessage( RESET, new Collector.ResetCollector( new Runnable()
         {
@@ -283,12 +288,6 @@ public class SocketConnection implements Connection
         flush();
         isInterrupted.set( true );
         isAckFailureMuted.set( true );
-    }
-
-    @Override
-    public boolean isAckFailureMuted()
-    {
-        return isAckFailureMuted.get();
     }
 
     @Override

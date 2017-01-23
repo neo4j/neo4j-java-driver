@@ -22,11 +22,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.driver.internal.exceptions.InternalNeo4jException;
 import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.summary.Notification;
 import org.neo4j.driver.v1.summary.Plan;
 import org.neo4j.driver.v1.summary.ProfiledPlan;
@@ -149,7 +149,7 @@ public class SummaryBuilder implements Collector
     }
 
     @Override
-    public void doneFailure( Neo4jException erro )
+    public void doneFailure( InternalNeo4jException erro )
     {
         // intentionally empty
     }

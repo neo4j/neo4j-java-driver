@@ -181,7 +181,7 @@ public class SocketClient
         if ( handler.protocolViolationErrorOccurred() )
         {
             stop();
-            throw handler.serverFailure();
+            throw handler.serverFailure().publicException();
         }
     }
 

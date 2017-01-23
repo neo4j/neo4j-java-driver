@@ -20,14 +20,15 @@ package org.neo4j.driver.internal.net.pooling;
 
 import java.util.Map;
 
+import org.neo4j.driver.internal.exceptions.InternalException;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Consumer;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.summary.ServerInfo;
 
 /**
@@ -50,7 +51,7 @@ import org.neo4j.driver.v1.summary.ServerInfo;
  *                              |           pool.close          |
  *                              ---------------------------------
  */
-public class PooledConnection implements Connection
+public class PooledSocketConnection implements PooledConnection
 {
     /** The real connection who will do all the real jobs */
     private final Connection delegate;
@@ -61,7 +62,7 @@ public class PooledConnection implements Connection
     private final Clock clock;
     private long lastUsedTimestamp;
 
-    public PooledConnection( Connection delegate, Consumer<PooledConnection> release, Clock clock )
+    public PooledSocketConnection( Connection delegate, Consumer<PooledConnection> release, Clock clock )
     {
         this.delegate = delegate;
         this.release = release;
@@ -75,6 +76,10 @@ public class PooledConnection implements Connection
         try
         {
             delegate.init( clientName, authToken );
+        }
+        catch ( InternalException e )
+        {
+            onDelegateException( e );
         }
         catch( RuntimeException e )
         {
@@ -90,7 +95,11 @@ public class PooledConnection implements Connection
         {
             delegate.run( statement, parameters, collector );
         }
-        catch(RuntimeException e)
+        catch ( InternalException e )
+        {
+            onDelegateException( e );
+        }
+        catch( RuntimeException e )
         {
             onDelegateException( e );
         }
@@ -103,7 +112,11 @@ public class PooledConnection implements Connection
         {
             delegate.discardAll( collector );
         }
-        catch ( RuntimeException e )
+        catch ( InternalException e )
+        {
+            onDelegateException( e );
+        }
+        catch( RuntimeException e )
         {
             onDelegateException( e );
         }
@@ -115,6 +128,10 @@ public class PooledConnection implements Connection
         try
         {
             delegate.pullAll( collector );
+        }
+        catch ( InternalException e )
+        {
+            onDelegateException( e );
         }
         catch ( RuntimeException e )
         {
@@ -129,6 +146,10 @@ public class PooledConnection implements Connection
         {
             delegate.reset();
         }
+        catch ( InternalException e )
+        {
+            onDelegateException( e );
+        }
         catch ( RuntimeException e )
         {
             onDelegateException( e );
@@ -141,6 +162,10 @@ public class PooledConnection implements Connection
         try
         {
             delegate.ackFailure();
+        }
+        catch ( InternalException e )
+        {
+            onDelegateException( e );
         }
         catch ( RuntimeException e )
         {
@@ -155,6 +180,10 @@ public class PooledConnection implements Connection
         {
             delegate.sync();
         }
+        catch ( InternalException e )
+        {
+            onDelegateException( e );
+        }
         catch ( RuntimeException e )
         {
             onDelegateException( e );
@@ -168,6 +197,10 @@ public class PooledConnection implements Connection
         {
             delegate.flush();
         }
+        catch ( InternalException e )
+        {
+            onDelegateException( e );
+        }
         catch ( RuntimeException e )
         {
             onDelegateException( e );
@@ -180,6 +213,10 @@ public class PooledConnection implements Connection
         try
         {
             delegate.receiveOne();
+        }
+        catch ( InternalException e )
+        {
+            onDelegateException( e );
         }
         catch ( RuntimeException e )
         {
@@ -218,16 +255,14 @@ public class PooledConnection implements Connection
         {
             delegate.resetAsync();
         }
+        catch ( InternalException e )
+        {
+            onDelegateException( e );
+        }
         catch( RuntimeException e )
         {
             onDelegateException( e );
         }
-    }
-
-    @Override
-    public boolean isAckFailureMuted()
-    {
-        return delegate.isAckFailureMuted();
     }
 
     @Override
@@ -248,27 +283,44 @@ public class PooledConnection implements Connection
         return delegate.logger();
     }
 
+    @Override
     public void dispose()
     {
         delegate.close();
     }
 
     /**
+     * All runtime errors are unrecoverable errors.
+     * TODO this method will eventually go away after all internal runtime errors are converted into checked errors
+     * @param e
+     */
+    private void onDelegateException( RuntimeException e )
+    {
+        unrecoverableErrorsOccurred = true;
+        onError( e );
+    }
+    /**
      * If something goes wrong with the delegate, we want to figure out if this "wrong" is something that means
      * the connection cannot be reused (and thus should be evicted from the pool), or if it's something that we can
      * safely recover from.
      * @param e the exception the delegate threw
      */
-    private void onDelegateException( RuntimeException e )
+    private void onDelegateException( InternalException e )
     {
-        if ( !isClientOrTransientError( e ) || isProtocolViolationError( e ) )
+        if ( e.isUnrecoverableError() )
         {
             unrecoverableErrorsOccurred = true;
         }
-        else if( !isAckFailureMuted() )
+        else
         {
             ackFailure();
         }
+        // cast all checked error back to runtime errors
+        onError( e.publicException() );
+    }
+
+    private void onError( RuntimeException e )
+    {
         if( onError != null )
         {
             onError.run();
@@ -285,20 +337,6 @@ public class PooledConnection implements Connection
     public long lastUsedTimestamp()
     {
         return lastUsedTimestamp;
-    }
-
-    private boolean isProtocolViolationError(RuntimeException e )
-    {
-        return e instanceof Neo4jException
-               && ((Neo4jException) e).code().startsWith( "Neo.ClientError.Request" );
-    }
-
-    private boolean isClientOrTransientError( RuntimeException e )
-    {
-        // Eg: DatabaseErrors and unknown (no status code or not neo4j exception) cause session to be discarded
-        return e instanceof Neo4jException
-               && (((Neo4jException) e).code().contains( "ClientError" )
-                   || ((Neo4jException) e).code().contains( "TransientError" ));
     }
 
     private void updateLastUsedTimestamp()

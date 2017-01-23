@@ -27,6 +27,7 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionValidator;
 import org.neo4j.driver.internal.spi.Connector;
+import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Supplier;
 import org.neo4j.driver.v1.Logging;
@@ -68,7 +69,7 @@ public class SocketConnectionPool implements ConnectionPool
     }
 
     @Override
-    public Connection acquire( final BoltServerAddress address )
+    public PooledConnection acquire( final BoltServerAddress address )
     {
         assertNotClosed();
         BlockingPooledConnectionQueue connectionQueue = pool( address );
@@ -201,7 +202,7 @@ public class SocketConnectionPool implements ConnectionPool
             PooledConnectionReleaseConsumer releaseConsumer = new PooledConnectionReleaseConsumer( connectionQueue,
                     connectionValidator );
             Connection connection = connector.connect( address );
-            PooledConnection pooledConnection = new PooledConnection( connection, releaseConsumer, clock );
+            PooledConnection pooledConnection = new PooledSocketConnection( connection, releaseConsumer, clock );
             connectionCreated = true;
             return pooledConnection;
         }

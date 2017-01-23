@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.net;
 import java.util.Map;
 
 import org.neo4j.driver.internal.ConnectionSettings;
+import org.neo4j.driver.internal.exceptions.InternalException;
 import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.Connection;
@@ -58,7 +59,13 @@ public class SocketConnector implements Connector
         {
             connection.init( connectionSettings.userAgent(), tokenAsMap( connectionSettings.authToken() ) );
         }
-        catch ( Throwable initError )
+        catch ( InternalException initError )
+        {
+            connection.close();
+            throw initError.publicException();
+        }
+        // TODO this runtime exception should go away once all internal exceptions are checked exceptions
+        catch ( RuntimeException initError )
         {
             connection.close();
             throw initError;

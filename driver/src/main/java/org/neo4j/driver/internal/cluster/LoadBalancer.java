@@ -22,8 +22,8 @@ import java.util.HashSet;
 
 import org.neo4j.driver.internal.RoutingErrorHandler;
 import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
+import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
@@ -77,12 +77,12 @@ public final class LoadBalancer implements RoutingErrorHandler, AutoCloseable
         ensureRouting();
     }
 
-    public Connection acquireReadConnection() throws ServiceUnavailableException
+    public PooledConnection acquireReadConnection() throws ServiceUnavailableException
     {
         return acquireConnection( readers );
     }
 
-    public Connection acquireWriteConnection() throws ServiceUnavailableException
+    public PooledConnection acquireWriteConnection() throws ServiceUnavailableException
     {
         return acquireConnection( writers );
     }
@@ -105,7 +105,7 @@ public final class LoadBalancer implements RoutingErrorHandler, AutoCloseable
         connections.close();
     }
 
-    private Connection acquireConnection( RoundRobinAddressSet servers ) throws ServiceUnavailableException
+    private PooledConnection acquireConnection( RoundRobinAddressSet servers ) throws ServiceUnavailableException
     {
         for ( ; ; )
         {
@@ -183,7 +183,7 @@ public final class LoadBalancer implements RoutingErrorHandler, AutoCloseable
                     throw new ServiceUnavailableException( NO_ROUTERS_AVAILABLE );
                 }
                 ClusterComposition cluster;
-                try ( Connection connection = connections.acquire( address ) )
+                try ( PooledConnection connection = connections.acquire( address ) )
                 {
                     cluster = provider.getClusterComposition( connection );
                     log.info( "Got cluster composition %s", cluster );

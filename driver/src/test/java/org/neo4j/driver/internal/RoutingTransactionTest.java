@@ -27,7 +27,7 @@ import java.util.Map;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Collector;
-import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
@@ -50,7 +50,7 @@ import static org.mockito.Mockito.when;
 public class RoutingTransactionTest
 {
     private static final BoltServerAddress LOCALHOST = new BoltServerAddress( "localhost", 7687 );
-    private Connection connection;
+    private PooledConnection connection;
     private RoutingErrorHandler onError;
     private Runnable cleanup;
 
@@ -77,7 +77,7 @@ public class RoutingTransactionTest
     @Before
     public void setUp()
     {
-        connection = mock( Connection.class );
+        connection = mock( PooledConnection.class );
         when( connection.boltServerAddress() ).thenReturn( LOCALHOST );
         when( connection.isOpen() ).thenReturn( true );
         onError = mock( RoutingErrorHandler.class );

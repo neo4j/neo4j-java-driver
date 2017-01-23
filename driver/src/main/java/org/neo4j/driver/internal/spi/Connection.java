@@ -20,6 +20,7 @@ package org.neo4j.driver.internal.spi;
 
 import java.util.Map;
 
+import org.neo4j.driver.internal.exceptions.InternalException;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Value;
@@ -36,54 +37,54 @@ public interface Connection extends AutoCloseable
      * @param clientName should be the driver name and version: "java-driver/1.1.0"
      * @param authToken a map value
      */
-    void init( String clientName, Map<String,Value> authToken );
+    void init( String clientName, Map<String,Value> authToken ) throws InternalException;
 
     /**
      * Queue up a run action. The collector will value called with metadata about the stream that will become available
      * for retrieval.
      * @param parameters a map value of parameters
      */
-    void run( String statement, Map<String,Value> parameters, Collector collector );
+    void run( String statement, Map<String,Value> parameters, Collector collector ) throws InternalException;
 
     /**
      * Queue a discard all action, consuming any items left in the current stream.This will
      * close the stream once its completed, allowing another {@link #run(String, java.util.Map, Collector) run}
      */
-    void discardAll( Collector collector );
+    void discardAll( Collector collector ) throws InternalException;
 
     /**
      * Queue a pull-all action, output will be handed to the collector once the pull starts. This will
      * close the stream once its completed, allowing another {@link #run(String, java.util.Map, Collector) run}
      */
-    void pullAll( Collector collector );
+    void pullAll( Collector collector ) throws InternalException;
 
     /**
      * Queue a reset action, throw {@link org.neo4j.driver.v1.exceptions.ClientException} if an ignored message is received. This will
      * close the stream once its completed, allowing another {@link #run(String, java.util.Map, Collector) run}
      */
-    void reset();
+    void reset() throws InternalException;
 
     /**
      * Queue a ack_failure action, valid output could only be success. Throw {@link org.neo4j.driver.v1.exceptions.ClientException} if
      * a failure or ignored message is received. This will close the stream once it is completed, allowing another
      * {@link #run(String, java.util.Map, Collector) run}
      */
-    void ackFailure();
+    void ackFailure() throws InternalException;
 
     /**
      * Ensure all outstanding actions are carried out on the server.
      */
-    void sync();
+    void sync() throws InternalException;
 
     /**
      * Send all pending messages to the server and return the number of messages sent.
      */
-    void flush();
+    void flush() throws InternalException;
 
     /**
      * Receive the next message available.
      */
-    void receiveOne();
+    void receiveOne() throws InternalException;
 
     @Override
     void close();
@@ -99,27 +100,9 @@ public interface Connection extends AutoCloseable
     boolean isOpen();
 
     /**
-     * If there are any errors that occur on this connection, invoke the given
-     * runnable. This is used in the driver to clean up resources associated with
-     * the connection, like an open transaction.
-     *
-     * @param runnable To be run on error.
-     */
-    void onError( Runnable runnable );
-
-
-    boolean hasUnrecoverableErrors();
-
-    /**
      * Asynchronously sending reset to the socket output channel.
      */
-    void resetAsync();
-
-    /**
-     * Return true if ack_failure message is temporarily muted as the failure message will be acked using reset instead
-     * @return true if no ack_failre message should be sent when ackable failures are received.
-     */
-    boolean isAckFailureMuted();
+    void resetAsync() throws InternalException;
 
     /**
      * Returns the basic information of the server connected to.

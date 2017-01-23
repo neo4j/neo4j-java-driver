@@ -40,6 +40,7 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.Connector;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.FakeClock;
+import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.v1.Logging;
 
 import static java.util.Collections.newSetFromMap;
@@ -284,7 +285,7 @@ public class SocketConnectionPoolTest
     }
 
     @Test
-    public void recentlyUsedConnectionNotValidatedDuringAcquisition()
+    public void recentlyUsedConnectionNotValidatedDuringAcquisition() throws Throwable
     {
         long idleTimeBeforeConnectionTest = 100;
         long creationTimestamp = 42;
@@ -317,7 +318,7 @@ public class SocketConnectionPoolTest
     }
 
     @Test
-    public void connectionThatWasIdleForALongTimeIsValidatedDuringAcquisition()
+    public void connectionThatWasIdleForALongTimeIsValidatedDuringAcquisition() throws Throwable
     {
         Connection connection = newConnectionMock( ADDRESS_1 );
         long idleTimeBeforeConnectionTest = 100;
@@ -345,7 +346,7 @@ public class SocketConnectionPoolTest
     }
 
     @Test
-    public void connectionThatWasIdleForALongTimeIsNotValidatedDuringAcquisitionWhenTimeoutNotConfigured()
+    public void connectionThatWasIdleForALongTimeIsNotValidatedDuringAcquisitionWhenTimeoutNotConfigured() throws Throwable
     {
         Connection connection = newConnectionMock( ADDRESS_1 );
         long idleTimeBeforeConnectionTest = PoolSettings.NO_IDLE_CONNECTION_TEST;
@@ -371,7 +372,7 @@ public class SocketConnectionPoolTest
     }
 
     @Test
-    public void brokenConnectionsSkippedDuringAcquisition()
+    public void brokenConnectionsSkippedDuringAcquisition() throws Throwable
     {
         Connection connection1 = newConnectionMock( ADDRESS_1 );
         Connection connection2 = newConnectionMock( ADDRESS_1 );
@@ -404,7 +405,7 @@ public class SocketConnectionPoolTest
     }
 
     @Test
-    public void limitedNumberOfBrokenConnectionsIsSkippedDuringAcquisition()
+    public void limitedNumberOfBrokenConnectionsIsSkippedDuringAcquisition() throws Throwable
     {
         Connection connection1 = newConnectionMock( ADDRESS_1 );
         Connection connection2 = newConnectionMock( ADDRESS_1 );
@@ -448,7 +449,7 @@ public class SocketConnectionPoolTest
     }
 
     @Test
-    public void acquireRetriesUntilAConnectionIsCreated()
+    public void acquireRetriesUntilAConnectionIsCreated() throws Throwable
     {
         Connection connection1 = newConnectionMock( ADDRESS_1 );
         Connection connection2 = newConnectionMock( ADDRESS_1 );

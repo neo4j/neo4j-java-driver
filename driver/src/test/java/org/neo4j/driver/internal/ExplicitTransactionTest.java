@@ -23,9 +23,8 @@ import org.mockito.InOrder;
 
 import java.util.Collections;
 import java.util.Map;
-
 import org.neo4j.driver.internal.spi.Collector;
-import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.v1.Value;
 
 import static org.mockito.Matchers.any;
@@ -43,7 +42,7 @@ public class ExplicitTransactionTest
     public void shouldRollbackOnImplicitFailure() throws Throwable
     {
         // Given
-        Connection conn = mock( Connection.class );
+        PooledConnection conn = mock( PooledConnection.class );
         when( conn.isOpen() ).thenReturn( true );
         Runnable cleanup = mock( Runnable.class );
         ExplicitTransaction tx = new ExplicitTransaction( conn, cleanup );
@@ -67,7 +66,7 @@ public class ExplicitTransactionTest
     public void shouldRollbackOnExplicitFailure() throws Throwable
     {
         // Given
-        Connection conn = mock( Connection.class );
+        PooledConnection conn = mock( PooledConnection.class );
         when( conn.isOpen() ).thenReturn( true );
         Runnable cleanup = mock( Runnable.class );
         ExplicitTransaction tx = new ExplicitTransaction( conn, cleanup );
@@ -93,7 +92,7 @@ public class ExplicitTransactionTest
     public void shouldCommitOnSuccess() throws Throwable
     {
         // Given
-        Connection conn = mock( Connection.class );
+        PooledConnection conn = mock( PooledConnection.class );
         when( conn.isOpen() ).thenReturn( true );
         Runnable cleanup = mock( Runnable.class );
         ExplicitTransaction tx = new ExplicitTransaction( conn, cleanup );
@@ -118,7 +117,7 @@ public class ExplicitTransactionTest
     @Test
     public void shouldOnlyQueueMessagesWhenNoBookmarkGiven()
     {
-        Connection connection = mock( Connection.class );
+        PooledConnection connection = mock( PooledConnection.class );
 
         new ExplicitTransaction( connection, mock( Runnable.class ), null );
 
@@ -132,7 +131,7 @@ public class ExplicitTransactionTest
     public void shouldSyncWhenBookmarkGiven()
     {
         String bookmark = "hi, I'm bookmark";
-        Connection connection = mock( Connection.class );
+        PooledConnection connection = mock( PooledConnection.class );
 
         new ExplicitTransaction( connection, mock( Runnable.class ), bookmark );
 

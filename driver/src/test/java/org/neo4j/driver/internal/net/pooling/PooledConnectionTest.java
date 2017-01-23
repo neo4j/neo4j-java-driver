@@ -20,8 +20,10 @@ package org.neo4j.driver.internal.net.pooling;
 
 import org.junit.Test;
 
+import org.neo4j.driver.internal.exceptions.InternalNeo4jException;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionValidator;
+import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Supplier;
 import org.neo4j.driver.v1.Logging;
@@ -59,7 +61,7 @@ public class PooledConnectionTest
         PooledConnectionReleaseConsumer releaseConsumer = new PooledConnectionReleaseConsumer( pool, INVALID_CONNECTION );
 
 
-        PooledConnection pooledConnection = new PooledConnection( conn, releaseConsumer, Clock.SYSTEM )
+        PooledConnection pooledConnection = new PooledSocketConnection( conn, releaseConsumer, Clock.SYSTEM )
         {
             @Override
             public void dispose()
@@ -87,7 +89,7 @@ public class PooledConnectionTest
         Connection conn = mock( Connection.class );
         PooledConnectionReleaseConsumer releaseConsumer = new PooledConnectionReleaseConsumer( pool, VALID_CONNECTION );
 
-                PooledConnection pooledConnection = new PooledConnection( conn, releaseConsumer, Clock.SYSTEM )
+                PooledConnection pooledConnection = new PooledSocketConnection( conn, releaseConsumer, Clock.SYSTEM )
         {
             @Override
             public void dispose()
@@ -117,8 +119,8 @@ public class PooledConnectionTest
         Connection conn = mock( Connection.class );
         PooledConnectionReleaseConsumer releaseConsumer = new PooledConnectionReleaseConsumer( pool, VALID_CONNECTION);
 
-        PooledConnection pooledConnection = new PooledConnection( conn, releaseConsumer, Clock.SYSTEM );
-        PooledConnection shouldBeClosedConnection = new PooledConnection( conn, releaseConsumer, Clock.SYSTEM )
+        PooledConnection pooledConnection = new PooledSocketConnection( conn, releaseConsumer, Clock.SYSTEM );
+        PooledConnection shouldBeClosedConnection = new PooledSocketConnection( conn, releaseConsumer, Clock.SYSTEM )
         {
             @Override
             public void dispose()
@@ -204,7 +206,7 @@ public class PooledConnectionTest
         Connection conn = mock( Connection.class );
         PooledConnectionReleaseConsumer releaseConsumer = new PooledConnectionReleaseConsumer( pool, VALID_CONNECTION);
 
-        PooledConnection pooledConnection = new PooledConnection( conn, releaseConsumer, Clock.SYSTEM )
+        PooledConnection pooledConnection = new PooledSocketConnection( conn, releaseConsumer, Clock.SYSTEM )
         {
             @Override
             public void dispose()
@@ -233,7 +235,7 @@ public class PooledConnectionTest
 
         PooledConnectionReleaseConsumer releaseConsumer = new PooledConnectionReleaseConsumer( pool, VALID_CONNECTION);
 
-        PooledConnection pooledConnection = new PooledConnection( conn, releaseConsumer, Clock.SYSTEM )
+        PooledConnection pooledConnection = new PooledSocketConnection( conn, releaseConsumer, Clock.SYSTEM )
         {
             @Override
             public void dispose()
@@ -255,9 +257,9 @@ public class PooledConnectionTest
     {
         // Given
         Connection conn = mock( Connection.class );
-        ClientException error = new ClientException( "Neo.ClientError", "a recoverable error" );
+        InternalNeo4jException error = new InternalNeo4jException( "Neo.ClientError", "a recoverable error" );
         doThrow( error ).when( conn ).sync();
-        PooledConnection pooledConnection = new PooledConnection(
+        PooledConnection pooledConnection = new PooledSocketConnection(
                 conn,
                 mock( PooledConnectionReleaseConsumer.class ),
                 mock( Clock.class ) );
@@ -271,7 +273,7 @@ public class PooledConnectionTest
         // Then
         catch( ClientException e )
         {
-            assertThat( e, equalTo( error ) );
+            assertThat( e, equalTo( error.publicException() ) );
         }
         verify( conn, times( 1 ) ).ackFailure();
         assertThat( pooledConnection.hasUnrecoverableErrors(), equalTo( false ) );
@@ -281,10 +283,10 @@ public class PooledConnectionTest
     public void shouldNotAckFailureOnUnRecoverableFailure()
     {
         // Given
-        Connection conn = mock( Connection.class );
+        PooledConnection conn = mock( PooledConnection.class );
         ClientException error = new ClientException( "an unrecoverable error" );
         doThrow( error ).when( conn ).sync();
-        PooledConnection pooledConnection = new PooledConnection(
+        PooledConnection pooledConnection = new PooledSocketConnection(
                 conn,
                 mock( PooledConnectionReleaseConsumer.class ),
                 mock( Clock.class ) );
@@ -305,17 +307,17 @@ public class PooledConnectionTest
     }
 
     @Test
-    public void shouldThrowExceptionIfFailureReceivedForAckFailure()
+    public void shouldThrowExceptionIfFailureReceivedForAckFailure() throws Throwable
     {
         // Given
         Connection conn = mock( Connection.class );
-        ClientException error = new ClientException( "Neo.ClientError", "a recoverable error" );
+        InternalNeo4jException error = new InternalNeo4jException( "Neo.ClientError", "a recoverable error" );
 
         ClientException failedToAckFailError = new ClientException(
                 "Invalid server response message `FAILURE` received for client message `ACK_FAILURE`." );
         doThrow( error ).doThrow( failedToAckFailError ).when( conn ).sync();
 
-        PooledConnection pooledConnection = new PooledConnection(
+        PooledConnection pooledConnection = new PooledSocketConnection(
                 conn,
                 mock( PooledConnectionReleaseConsumer.class ),
                 mock( Clock.class ) );
@@ -328,7 +330,7 @@ public class PooledConnectionTest
         }
         catch( ClientException e )
         {
-            assertThat( e, equalTo( error ) );
+            assertThat( e, equalTo( error.publicException() ) );
         }
         assertThat( pooledConnection.hasUnrecoverableErrors(), equalTo( false ) );
 
@@ -353,7 +355,7 @@ public class PooledConnectionTest
         PooledConnectionReleaseConsumer releaseConsumer = mock( PooledConnectionReleaseConsumer.class );
         Clock clock = when( mock( Clock.class ).millis() ).thenReturn( 42L ).getMock();
 
-        PooledConnection connection = new PooledConnection( mock( Connection.class ), releaseConsumer, clock );
+        PooledConnection connection = new PooledSocketConnection( mock( Connection.class ), releaseConsumer, clock );
 
         assertEquals( 42L, connection.lastUsedTimestamp() );
     }
@@ -365,7 +367,7 @@ public class PooledConnectionTest
         Clock clock = when( mock( Clock.class ).millis() )
                 .thenReturn( 42L ).thenReturn( 4242L ).thenReturn( 424242L ).getMock();
 
-        PooledConnection connection = new PooledConnection( mock( Connection.class ), releaseConsumer, clock );
+        PooledConnection connection = new PooledSocketConnection( mock( Connection.class ), releaseConsumer, clock );
 
         assertEquals( 42, connection.lastUsedTimestamp() );
 
