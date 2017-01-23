@@ -181,8 +181,7 @@ public class TLSSocketChannel implements ByteChannel
      */
     void channelWrite( ByteBuffer fromBuffer ) throws IOException
     {
-        int written = channel.write( fromBuffer );
-        if (written <= 0)
+        if ( channel.write( fromBuffer ) < 0 )
         {
             try
             {
@@ -327,7 +326,7 @@ public class TLSSocketChannel implements ByteChannel
             cipherOut.flip();
             while ( cipherOut.hasRemaining() )
             {
-                channel.write( cipherOut );
+                channelWrite( cipherOut );
             }
             cipherOut.clear();
             break;
@@ -455,12 +454,7 @@ public class TLSSocketChannel implements ByteChannel
                 cipherOut.flip();
                 while ( cipherOut.hasRemaining() )
                 {
-                    int num = channel.write( cipherOut );
-                    if ( num == -1 )
-                    {
-                        // handle closed channel
-                        break;
-                    }
+                    channelWrite( cipherOut );
                 }
                 cipherOut.clear();
             }
