@@ -20,11 +20,13 @@ package org.neo4j.driver.internal.net;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
+import java.util.Arrays;
 import java.util.HashMap;
 
-import org.junit.rules.ExpectedException;
-import org.neo4j.driver.internal.logging.DevNullLogger;
 import org.neo4j.driver.internal.messaging.DiscardAllMessage;
 import org.neo4j.driver.internal.messaging.FailureMessage;
 import org.neo4j.driver.internal.messaging.IgnoredMessage;
@@ -40,24 +42,17 @@ import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Value;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.doThrow;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.anyVararg;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.Values.ofValue;
+import static org.neo4j.driver.v1.Values.parameters;
 
 public class LoggingResponseHandlerTest
 {
-
     private String log;
-    private Logger debugLogger = new DevNullLogger()
-    {
-        @Override
-        public void debug( String message, Object... params )
-        {
-            log = String.format( message, params );
-        }
-    };
+    private Logger debugLogger = newCapturingLogger();
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -176,7 +171,8 @@ public class LoggingResponseHandlerTest
         SocketResponseHandler handler = new LoggingResponseHandler( debugLogger )
         {
             @Override
-            public void handleIgnoredMessage() {
+            public void handleIgnoredMessage()
+            {
                 throw new RuntimeException( "This will not stop logging" );
             }
         };
@@ -194,5 +190,25 @@ public class LoggingResponseHandlerTest
     private String format( Message message )
     {
         return String.format( "S: %s", message );
+    }
+
+    private Logger newCapturingLogger()
+    {
+        Logger logger = mock( Logger.class );
+
+        doAnswer( new Answer<Void>()
+        {
+            @Override
+            public Void answer( InvocationOnMock invocation ) throws Throwable
+            {
+                Object[] arguments = invocation.getArguments();
+                String message = ((String) arguments[0]);
+                Object[] params = Arrays.copyOfRange( arguments, 1, arguments.length );
+                LoggingResponseHandlerTest.this.log = String.format( message, params );
+                return null;
+            }
+        } ).when( logger ).debug( anyString(), anyVararg() );
+
+        return logger;
     }
 }

@@ -30,7 +30,6 @@ import java.nio.channels.ByteChannel;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.driver.internal.logging.DevNullLogger;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
@@ -39,6 +38,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
 import static org.neo4j.driver.internal.net.BoltServerAddress.LOCAL_DEFAULT;
 
 public class SocketClientTest
@@ -59,7 +59,7 @@ public class SocketClientTest
         BoltServerAddress address = new BoltServerAddress( "localhost", server.getLocalPort() );
 
         SecurityPlan securityPlan = SecurityPlan.insecure();
-        SocketClient client = new SocketClient( address, securityPlan, CONNECTION_TIMEOUT, new DevNullLogger() );
+        SocketClient client = new SocketClient( address, securityPlan, CONNECTION_TIMEOUT, DEV_NULL_LOGGER );
 
         // Expect
         exception.expect( ClientException.class );
@@ -71,7 +71,7 @@ public class SocketClientTest
 
     private SocketClient dummyClient()
     {
-        return new SocketClient( LOCAL_DEFAULT, SecurityPlan.insecure(), CONNECTION_TIMEOUT, new DevNullLogger() );
+        return new SocketClient( LOCAL_DEFAULT, SecurityPlan.insecure(), CONNECTION_TIMEOUT, DEV_NULL_LOGGER );
     }
 
     @Test
