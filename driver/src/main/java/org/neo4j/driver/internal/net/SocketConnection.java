@@ -60,10 +60,13 @@ public class SocketConnection implements Connection
 
     public SocketConnection( BoltServerAddress address, SecurityPlan securityPlan, int timeoutMillis, Logging logging )
     {
-        this.logger = logging.getLog( format( "conn-%s", UUID.randomUUID().toString() ) );
-        this.socket = new SocketClient( address, securityPlan, timeoutMillis, logger );
-        this.responseHandler = createResponseHandler( logger );
-        this.socket.start();
+        this( address, securityPlan, timeoutMillis,
+                logging.getLog( format( "conn-%s", UUID.randomUUID().toString() ) ) );
+    }
+
+    private SocketConnection( BoltServerAddress address, SecurityPlan securityPlan, int timeoutMillis, Logger logger )
+    {
+        this( new SocketClient( address, securityPlan, timeoutMillis, logger ), null, logger );
     }
 
     /**
@@ -81,7 +84,16 @@ public class SocketConnection implements Connection
         this.serverInfo = serverInfo;
         this.logger = logger;
         this.responseHandler = createResponseHandler( logger );
-        this.socket.start();
+
+        try
+        {
+            this.socket.start();
+        }
+        catch ( Throwable e )
+        {
+            close();
+            throw e;
+        }
     }
 
     private SocketResponseHandler createResponseHandler( Logger logger )

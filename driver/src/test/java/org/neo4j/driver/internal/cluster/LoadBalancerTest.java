@@ -99,13 +99,8 @@ public class LoadBalancerTest
 
     private LoadBalancer seedLoadBalancer( String host, int port, RoutingSettings settings ) throws Exception
     {
-        return new LoadBalancer(
-                settings,
-                clock,
-                log,
-                connections,
-                cluster,
-                new BoltServerAddress( host, port ) );
+        ClusterRoutingTable routingTable = new ClusterRoutingTable( clock, new BoltServerAddress( host, port ) );
+        return new LoadBalancer( log, connections, routingTable, new Rediscovery( settings, clock, log, cluster ) );
     }
 
     @Test

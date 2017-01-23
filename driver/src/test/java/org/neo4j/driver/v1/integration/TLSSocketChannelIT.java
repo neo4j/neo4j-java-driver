@@ -27,7 +27,6 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.channels.SocketChannel;
@@ -35,12 +34,18 @@ import java.security.cert.X509Certificate;
 import javax.net.ssl.SSLHandshakeException;
 
 import org.neo4j.driver.internal.logging.DevNullLogger;
+import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.security.TLSSocketChannel;
-import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.v1.*;
 import org.neo4j.driver.internal.util.CertificateTool;
-
+import org.neo4j.driver.v1.Config;
+import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.GraphDatabase;
+import org.neo4j.driver.v1.Logger;
+import org.neo4j.driver.v1.Logging;
+import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.util.CertificateToolTest;
 import org.neo4j.driver.v1.util.Neo4jRunner;
 import org.neo4j.driver.v1.util.Neo4jSettings;
@@ -153,9 +158,9 @@ public class TLSSocketChannelIT
                         TLSSocketChannel.create(address, securityPlan, channel, logger);
                 sslChannel.close();
             }
-            catch ( SSLHandshakeException e )
+            catch ( ClientException e )
             {
-                assertEquals( "General SSLEngine problem", e.getMessage() );
+                assertThat( e.getMessage(), containsString( "General SSLEngine problem" ) );
                 assertEquals( "General SSLEngine problem", e.getCause().getMessage() );
                 assertThat( e.getCause().getCause().getMessage(),
                         containsString( "unable to find valid certification path to requested target" ) );
@@ -242,9 +247,9 @@ public class TLSSocketChannelIT
             sslChannel = TLSSocketChannel.create( neo4j.address(), securityPlan, channel, mock( Logger.class ) );
             sslChannel.close();
         }
-        catch ( SSLHandshakeException e )
+        catch ( ClientException e )
         {
-            assertEquals( "General SSLEngine problem", e.getMessage() );
+            assertThat( e.getMessage(), containsString( "General SSLEngine problem" ) );
             assertEquals( "General SSLEngine problem", e.getCause().getMessage() );
             assertEquals( "No trusted certificate found", e.getCause().getCause().getMessage() );
         }
@@ -364,20 +369,4 @@ public class TLSSocketChannelIT
         neo4j.updateEncryptionKeyAndCert( key, cert );
         return rootCert;
     }
-
-    private void createFakeServerCertPairInKnownCerts( String host, int port, File knownCerts )
-            throws Throwable
-    {
-        String ip = InetAddress.getByName( host ).getHostAddress(); // localhost -> 127.0.0.1
-        String serverId = ip + ":" + port;
-
-        X509Certificate cert = CertificateToolTest.generateSelfSignedCertificate();
-        String certStr = fingerprint( cert );
-
-        BufferedWriter writer = new BufferedWriter( new FileWriter( knownCerts, true ) );
-        writer.write( serverId + "," + certStr );
-        writer.newLine();
-        writer.close();
-    }
-
 }
