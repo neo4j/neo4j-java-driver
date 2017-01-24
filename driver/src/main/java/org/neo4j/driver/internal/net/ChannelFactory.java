@@ -19,12 +19,12 @@
 package org.neo4j.driver.internal.net;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.net.StandardSocketOptions;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.SocketChannel;
-import java.security.GeneralSecurityException;
 
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.security.TLSSocketChannel;
@@ -33,22 +33,18 @@ import org.neo4j.driver.v1.Logger;
 class ChannelFactory
 {
     static ByteChannel create( BoltServerAddress address, SecurityPlan securityPlan, int timeoutMillis, Logger log )
-            throws IOException, GeneralSecurityException
+            throws IOException
     {
         SocketChannel soChannel = SocketChannel.open();
         soChannel.setOption( StandardSocketOptions.SO_REUSEADDR, true );
         soChannel.setOption( StandardSocketOptions.SO_KEEPALIVE, true );
         connect( soChannel, address, timeoutMillis );
 
-        ByteChannel channel;
+        ByteChannel channel = soChannel;
 
         if ( securityPlan.requiresEncryption() )
         {
             channel = TLSSocketChannel.create( address, securityPlan, soChannel, log );
-        }
-        else
-        {
-            channel = soChannel;
         }
 
         if ( log.isTraceEnabled() )
@@ -69,7 +65,7 @@ class ChannelFactory
         }
         catch ( SocketTimeoutException e )
         {
-            throw new IOException( "Timeout " + timeoutMillis + "ms expired", e );
+            throw new ConnectException( "Timeout " + timeoutMillis + "ms expired" + e );
         }
     }
 }

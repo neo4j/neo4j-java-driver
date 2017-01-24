@@ -25,6 +25,7 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 import javax.net.ssl.SSLEngineResult.Status;
+import javax.net.ssl.SSLHandshakeException;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.v1.Logger;
@@ -32,6 +33,7 @@ import org.neo4j.driver.internal.util.BytePrinter;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
+import static java.lang.String.format;
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.FINISHED;
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING;
 
@@ -67,10 +69,25 @@ public class TLSSocketChannel implements ByteChannel
     {
         SSLEngine sslEngine = securityPlan.sslContext().createSSLEngine( address.host(), address.port() );
         sslEngine.setUseClientMode( true );
-        return new TLSSocketChannel( channel, logger, sslEngine );
+        return create( channel, logger, sslEngine );
     }
 
-    public TLSSocketChannel( ByteChannel channel, Logger logger, SSLEngine sslEngine ) throws IOException
+    public static TLSSocketChannel create( ByteChannel channel, Logger logger, SSLEngine sslEngine ) throws IOException
+    {
+        TLSSocketChannel tlsChannel = new TLSSocketChannel( channel, logger, sslEngine );
+        try
+        {
+            tlsChannel.runHandshake();
+        }
+        catch ( SSLHandshakeException e )
+        {
+            throw new ClientException( "Failed to establish secured connection with the server: " + e.getMessage(), e );
+        }
+        return tlsChannel;
+    }
+
+    TLSSocketChannel( ByteChannel channel, Logger logger, SSLEngine sslEngine )
+            throws IOException
     {
         this.logger = logger;
         this.channel = channel;
@@ -79,7 +96,6 @@ public class TLSSocketChannel implements ByteChannel
         this.cipherIn = ByteBuffer.allocate( sslEngine.getSession().getPacketBufferSize() );
         this.plainOut = ByteBuffer.allocate( sslEngine.getSession().getApplicationBufferSize() );
         this.cipherOut = ByteBuffer.allocate( sslEngine.getSession().getPacketBufferSize() );
-        runHandshake();
     }
 
     /**
@@ -133,6 +149,56 @@ public class TLSSocketChannel implements ByteChannel
     }
 
     /**
+     * Read from the socket channel to the buffer
+     * @param toBuffer the destination where the data read from the socket channel are saved
+     * @throws IOException when failed to read from channel
+     */
+    int channelRead( ByteBuffer toBuffer ) throws IOException
+    {
+        int read = channel.read( toBuffer );
+        if ( read < 0 )
+        {
+            try
+            {
+                channel.close();
+            }
+            catch( IOException e )
+            {
+                // best effort
+            }
+            throw new ServiceUnavailableException(
+                    "SSL Connection terminated while receiving data. " +
+                    "This can happen due to network instabilities, or due to restarts of the database." );
+        }
+        return read;
+    }
+
+    /**
+     * Write the data saved in the buffer to the socket channel
+     * @param fromBuffer the source where the data written to the socket channel are saved
+     * @throws IOException when failed to write to channel
+     */
+    int channelWrite( ByteBuffer fromBuffer ) throws IOException
+    {
+        int written = channel.write( fromBuffer );
+        if ( written < 0 )
+        {
+            try
+            {
+                channel.close();
+            }
+            catch( IOException e )
+            {
+                // best effort
+            }
+            throw new ServiceUnavailableException(
+                    "SSL Connection terminated while writing data. " +
+                    "This can happen due to network instabilities, or due to restarts of the database." );
+        }
+        return written;
+    }
+
+    /**
      * This method is mainly responsible for reading encrypted bytes from underlying socket channel and deciphering
      * them.
      *
@@ -159,15 +225,7 @@ public class TLSSocketChannel implements ByteChannel
     {
         HandshakeStatus handshakeStatus = sslEngine.getHandshakeStatus();
 
-        /**
-         * This is the only place to read from the underlying channel
-         */
-        if ( channel.read( cipherIn ) < 0 )
-        {
-            throw new ServiceUnavailableException(
-                    "SSL Connection terminated while receiving data. " +
-                    "This can happen due to network instabilities, or due to restarts of the database." );
-        }
+        channelRead( cipherIn );
         cipherIn.flip();
 
         Status status;
@@ -202,7 +260,7 @@ public class TLSSocketChannel implements ByteChannel
                 if ( newAppSize > appSize * 2 )
                 {
                     throw new ClientException(
-                            String.format( "Failed ro enlarge application input buffer from %s to %s, as the maximum " +
+                            format( "Failed ro enlarge application input buffer from %s to %s, as the maximum " +
                                            "buffer size allowed is %s. The content in the buffer is: %s\n",
                                     curAppSize, newAppSize, appSize * 2, BytePrinter.hex( plainIn ) ) );
                 }
@@ -254,7 +312,7 @@ public class TLSSocketChannel implements ByteChannel
      * @return The status of the current handshake
      * @throws IOException
      */
-    private HandshakeStatus wrap( ByteBuffer buffer ) throws IOException
+    private HandshakeStatus wrap( ByteBuffer buffer ) throws IOException, ClientException
     {
         HandshakeStatus handshakeStatus = sslEngine.getHandshakeStatus();
         Status status = sslEngine.wrap( buffer, cipherOut ).getStatus();
@@ -269,7 +327,7 @@ public class TLSSocketChannel implements ByteChannel
             cipherOut.flip();
             while ( cipherOut.hasRemaining() )
             {
-                channel.write( cipherOut );
+                channelWrite( cipherOut );
             }
             cipherOut.clear();
             break;
@@ -288,11 +346,9 @@ public class TLSSocketChannel implements ByteChannel
             {
                 // flush as much data as possible
                 cipherOut.flip();
-                int written = channel.write( cipherOut );
-                if (written == 0)
+                if ( channelWrite( cipherOut ) == 0 )
                 {
-                    throw new ClientException(
-                            String.format(
+                    throw new ClientException( format(
                                     "Failed to enlarge network buffer from %s to %s. This is either because the " +
                                     "new size is however less than the old size, or because the application " +
                                     "buffer size %s is so big that the application data still cannot fit into the " +
@@ -325,7 +381,7 @@ public class TLSSocketChannel implements ByteChannel
      * @param to buffer to copy to
      * @return the number of transferred bytes
      */
-    static int bufferCopy( ByteBuffer from, ByteBuffer to )
+    private static int bufferCopy( ByteBuffer from, ByteBuffer to )
     {
         int maxTransfer = Math.min( to.remaining(), from.remaining() );
 
@@ -406,12 +462,7 @@ public class TLSSocketChannel implements ByteChannel
                 cipherOut.flip();
                 while ( cipherOut.hasRemaining() )
                 {
-                    int num = channel.write( cipherOut );
-                    if ( num == -1 )
-                    {
-                        // handle closed channel
-                        break;
-                    }
+                    channelWrite( cipherOut );
                 }
                 cipherOut.clear();
             }

@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.net.ConnectException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
-import java.security.GeneralSecurityException;
 import java.util.Queue;
 
 import org.neo4j.driver.internal.messaging.Message;
@@ -120,7 +119,10 @@ public class SocketClient
         try
         {
             logger.debug( "~~ [CONNECT] %s", address );
-            setChannel( ChannelFactory.create( address, securityPlan, timeoutMillis, logger ) );
+            if( channel == null )
+            {
+                setChannel( ChannelFactory.create( address, securityPlan, timeoutMillis, logger ) );
+            }
             protocol = negotiateProtocol();
             reader = protocol.reader();
             writer = protocol.writer();
@@ -133,11 +135,7 @@ public class SocketClient
         }
         catch ( IOException e )
         {
-            throw new ClientException( "Unable to process request: " + e.getMessage(), e );
-        }
-        catch ( GeneralSecurityException e )
-        {
-            throw new ClientException( "Unable to establish ssl connection with server: " + e.getMessage(), e );
+            throw new ServiceUnavailableException( "Unable to process request: " + e.getMessage(), e );
         }
     }
 
@@ -205,7 +203,7 @@ public class SocketClient
             }
             else
             {
-                throw new ClientException( "Unable to close socket connection properly." + e.getMessage(), e );
+                logger.warn( "Unable to close socket connection properly: '" + e.getMessage() + "'", e );
             }
         }
     }

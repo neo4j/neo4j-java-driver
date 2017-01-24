@@ -36,6 +36,7 @@ import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
@@ -58,8 +59,7 @@ public class SocketClientTest
         ServerSocket server = new ServerSocket( 0 );
         BoltServerAddress address = new BoltServerAddress( "localhost", server.getLocalPort() );
 
-        SecurityPlan securityPlan = SecurityPlan.insecure();
-        SocketClient client = new SocketClient( address, securityPlan, CONNECTION_TIMEOUT, DEV_NULL_LOGGER );
+        SocketClient client = dummyClient( address );
 
         // Expect
         exception.expect( ClientException.class );
@@ -69,9 +69,49 @@ public class SocketClientTest
         client.start();
     }
 
+    @Test
+    public void testConnectionTimeout() throws Throwable
+    {
+        BoltServerAddress address = new BoltServerAddress( "localhost", 1234 );
+
+        SocketClient client = dummyClient( address );
+
+        // Expect
+        exception.expect( ServiceUnavailableException.class );
+        exception.expectMessage( "Unable to connect to localhost:1234, " +
+                                 "ensure the database is running and that there is a working network connection to it." );
+
+        // When
+        client.start();
+    }
+
+    @Test
+    public void testIOExceptionWhenFailedToEstablishConnection() throws Throwable
+    {
+        SocketClient client = dummyClient();
+
+        ByteChannel mockedChannel = mock( ByteChannel.class );
+        when( mockedChannel.write( any( ByteBuffer.class ) ) )
+                .thenThrow( new IOException( "Failed to connect to server due to IOException"
+        ) );
+        client.setChannel( mockedChannel );
+
+        // Expect
+        exception.expect( ServiceUnavailableException.class );
+        exception.expectMessage( "Unable to process request: Failed to connect to server due to IOException" );
+
+        // When
+        client.start();
+    }
+
+    private SocketClient dummyClient( BoltServerAddress address )
+    {
+        return new SocketClient( address, SecurityPlan.insecure(), CONNECTION_TIMEOUT, DEV_NULL_LOGGER );
+    }
+
     private SocketClient dummyClient()
     {
-        return new SocketClient( LOCAL_DEFAULT, SecurityPlan.insecure(), CONNECTION_TIMEOUT, DEV_NULL_LOGGER );
+        return dummyClient( LOCAL_DEFAULT );
     }
 
     @Test

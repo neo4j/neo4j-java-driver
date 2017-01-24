@@ -43,6 +43,7 @@ import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.util.CertificateToolTest;
 import org.neo4j.driver.v1.util.Neo4jRunner;
 import org.neo4j.driver.v1.util.Neo4jSettings;
@@ -52,7 +53,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
@@ -156,11 +156,10 @@ public class TLSSocketChannelIT
                         TLSSocketChannel.create(address, securityPlan, channel, logger);
                 sslChannel.close();
             }
-            catch ( SSLHandshakeException e )
+            catch ( ClientException e )
             {
-                assertEquals( "General SSLEngine problem", e.getMessage() );
-                assertEquals( "General SSLEngine problem", e.getCause().getMessage() );
-                assertThat( e.getCause().getCause().getMessage(),
+                assertThat( e.getMessage(), containsString( "General SSLEngine problem" ) );
+                assertThat( getRootCause( e ).getMessage(),
                         containsString( "unable to find valid certification path to requested target" ) );
             }
         }
@@ -195,8 +194,7 @@ public class TLSSocketChannelIT
         catch ( SSLHandshakeException e )
         {
             assertEquals( "General SSLEngine problem", e.getMessage() );
-            assertEquals( "General SSLEngine problem", e.getCause().getMessage() );
-            assertTrue( e.getCause().getCause().getMessage().contains(
+            assertThat( getRootCause( e ).getMessage(), containsString(
                     "If you trust the certificate the server uses now, simply remove the line that starts with" ) );
         }
         finally
@@ -245,11 +243,10 @@ public class TLSSocketChannelIT
             sslChannel = TLSSocketChannel.create( neo4j.address(), securityPlan, channel, mock( Logger.class ) );
             sslChannel.close();
         }
-        catch ( SSLHandshakeException e )
+        catch ( ClientException e )
         {
-            assertEquals( "General SSLEngine problem", e.getMessage() );
-            assertEquals( "General SSLEngine problem", e.getCause().getMessage() );
-            assertEquals( "No trusted certificate found", e.getCause().getCause().getMessage() );
+            assertThat( e.getMessage(), containsString( "General SSLEngine problem" ) );
+            assertThat( getRootCause( e ).getMessage(), containsString( "No trusted certificate found" ) );
         }
         finally
         {
@@ -258,6 +255,20 @@ public class TLSSocketChannelIT
                 sslChannel.close();
             }
         }
+    }
+
+    private Throwable getRootCause( Throwable e )
+    {
+        Throwable parentError = e;
+        Throwable error = null;
+        do
+        {
+            error = parentError;
+            parentError = error.getCause();
+
+        }
+        while( parentError != null );
+        return error;
     }
 
     @Test

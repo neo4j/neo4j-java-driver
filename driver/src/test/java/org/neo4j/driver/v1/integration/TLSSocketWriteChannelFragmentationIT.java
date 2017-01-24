@@ -84,7 +84,7 @@ public class TLSSocketWriteChannelFragmentationIT extends TLSSocketChannelFragme
         ByteChannel ch = SocketChannel.open( new InetSocketAddress( server.getInetAddress(), server.getLocalPort() ) );
         ch = new LittleAtATimeChannel( ch, networkFrameSize );
 
-        try ( TLSSocketChannel channel = new TLSSocketChannel( ch, DEV_NULL_LOGGER, engine ) )
+        try ( TLSSocketChannel channel = TLSSocketChannel.create( ch, DEV_NULL_LOGGER, engine ) )
         {
             ByteBuffer writeBuffer = ByteBuffer.wrap( blob );
             while ( writeBuffer.position() < writeBuffer.capacity() )
