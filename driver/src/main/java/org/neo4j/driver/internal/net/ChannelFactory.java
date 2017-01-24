@@ -65,7 +65,7 @@ class ChannelFactory
         }
         catch ( SocketTimeoutException e )
         {
-            throw new ConnectException( "Timeout " + timeoutMillis + "ms expired" + e.getMessage() );
+            throw new ConnectException( "Timeout " + timeoutMillis + "ms expired" + e );
         }
     }
 }

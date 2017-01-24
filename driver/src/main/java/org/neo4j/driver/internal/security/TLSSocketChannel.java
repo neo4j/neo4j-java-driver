@@ -33,6 +33,7 @@ import org.neo4j.driver.internal.util.BytePrinter;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
+import static java.lang.String.format;
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.FINISHED;
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING;
 
@@ -80,8 +81,7 @@ public class TLSSocketChannel implements ByteChannel
         }
         catch ( SSLHandshakeException e )
         {
-            throw new ClientException( "Failed to establish secured connection with the server: " + e.getMessage(),
-                    e.getCause() );
+            throw new ClientException( "Failed to establish secured connection with the server: " + e.getMessage(), e );
         }
         return tlsChannel;
     }
@@ -153,12 +153,10 @@ public class TLSSocketChannel implements ByteChannel
      * @param toBuffer the destination where the data read from the socket channel are saved
      * @throws IOException when failed to read from channel
      */
-    void channelRead( ByteBuffer toBuffer ) throws IOException
+    int channelRead( ByteBuffer toBuffer ) throws IOException
     {
-        /**
-         * This is the only place to read from the underlying channel
-         */
-        if ( channel.read( toBuffer ) < 0 )
+        int read = channel.read( toBuffer );
+        if ( read < 0 )
         {
             try
             {
@@ -172,6 +170,7 @@ public class TLSSocketChannel implements ByteChannel
                     "SSL Connection terminated while receiving data. " +
                     "This can happen due to network instabilities, or due to restarts of the database." );
         }
+        return read;
     }
 
     /**
@@ -179,9 +178,10 @@ public class TLSSocketChannel implements ByteChannel
      * @param fromBuffer the source where the data written to the socket channel are saved
      * @throws IOException when failed to write to channel
      */
-    void channelWrite( ByteBuffer fromBuffer ) throws IOException
+    int channelWrite( ByteBuffer fromBuffer ) throws IOException
     {
-        if ( channel.write( fromBuffer ) < 0 )
+        int written = channel.write( fromBuffer );
+        if ( written < 0 )
         {
             try
             {
@@ -195,6 +195,7 @@ public class TLSSocketChannel implements ByteChannel
                     "SSL Connection terminated while writing data. " +
                     "This can happen due to network instabilities, or due to restarts of the database." );
         }
+        return written;
     }
 
     /**
@@ -259,7 +260,7 @@ public class TLSSocketChannel implements ByteChannel
                 if ( newAppSize > appSize * 2 )
                 {
                     throw new ClientException(
-                            String.format( "Failed ro enlarge application input buffer from %s to %s, as the maximum " +
+                            format( "Failed ro enlarge application input buffer from %s to %s, as the maximum " +
                                            "buffer size allowed is %s. The content in the buffer is: %s\n",
                                     curAppSize, newAppSize, appSize * 2, BytePrinter.hex( plainIn ) ) );
                 }
@@ -311,7 +312,7 @@ public class TLSSocketChannel implements ByteChannel
      * @return The status of the current handshake
      * @throws IOException
      */
-    private HandshakeStatus wrap( ByteBuffer buffer ) throws IOException
+    private HandshakeStatus wrap( ByteBuffer buffer ) throws IOException, ClientException
     {
         HandshakeStatus handshakeStatus = sslEngine.getHandshakeStatus();
         Status status = sslEngine.wrap( buffer, cipherOut ).getStatus();
@@ -345,7 +346,14 @@ public class TLSSocketChannel implements ByteChannel
             {
                 // flush as much data as possible
                 cipherOut.flip();
-                channelWrite( cipherOut );
+                if ( channelWrite( cipherOut ) == 0 )
+                {
+                    throw new ClientException( format(
+                                    "Failed to enlarge network buffer from %s to %s. This is either because the " +
+                                    "new size is however less than the old size, or because the application " +
+                                    "buffer size %s is so big that the application data still cannot fit into the " +
+                                    "new network buffer.", curNetSize, netSize, buffer.capacity() ) );
+                }
                 cipherOut.compact();
                 logger.debug( "Network output buffer couldn't be enlarged, flushing data to the channel instead." );
             }

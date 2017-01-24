@@ -36,7 +36,7 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
@@ -72,7 +72,7 @@ public class TLSSocketChannelTest
             assertThat( e.getMessage(), startsWith( "SSL Connection terminated while receiving data. " ) );
         }
         // Then
-        verify( mockedChannel, times( 1 ) ).close();
+        verify( mockedChannel ).close();
     }
 
     @Test
@@ -103,7 +103,7 @@ public class TLSSocketChannelTest
         }
 
         // Then
-        verify( mockedChannel, times( 1 ) ).close();
+        verify( mockedChannel ).close();
     }
 
     @Test
@@ -131,6 +131,6 @@ public class TLSSocketChannelTest
             assertThat( e, instanceOf( ClientException.class ) );
             assertThat( e.getMessage(), startsWith( "Failed to establish secured connection with the server: Failed handshake!" ) );
         }
-        verify( mockedChannel, times( 0 ) ).close();
+        verify( mockedChannel, never() ).close();
     }
 }
