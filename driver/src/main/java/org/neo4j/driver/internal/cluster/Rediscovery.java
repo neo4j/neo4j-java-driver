@@ -23,6 +23,7 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.Logger;
+import org.neo4j.driver.v1.exceptions.ProtocolException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
 import static java.lang.String.format;
@@ -49,11 +50,8 @@ public class Rediscovery
     public ClusterComposition lookupRoutingTable( ConnectionPool connections, RoutingTable routingTable )
             throws InterruptedException, ServiceUnavailableException
     {
-        int size = routingTable.routerSize(), failures = 0;
-        if ( size == 0 )
-        {
-            throw new ServiceUnavailableException( NO_ROUTERS_AVAILABLE );
-        }
+        int failures = 0;
+
         for ( long start = clock.millis(), delay = 0; ; delay = Math.max( settings.retryTimeoutDelay, delay * 2 ) )
         {
             long waitTime = start + delay - clock.millis();
@@ -62,8 +60,10 @@ public class Rediscovery
                 clock.sleep( waitTime );
             }
             start = clock.millis();
-            for ( int i = 0; i < size; i++ )
+            for ( int i = 0, size = routingTable.routerSize(); i < size; i++ )
             {
+                assertRouterIsNotEmpty( size );
+
                 BoltServerAddress address = routingTable.nextRouter();
                 if ( address == null )
                 {
@@ -75,22 +75,25 @@ public class Rediscovery
                     cluster = provider.getClusterComposition( connection );
                     logger.info( "Got cluster composition %s", cluster );
                 }
+                catch( ProtocolException e )
+                {
+                    // illegal response
+                    throw e;
+                }
+                catch( ClusterComposition.Provider.ProcedureNotFoundException e )
+                {
+                    // talking to a server does not support CC?
+                    throw new ServiceUnavailableException( e.getMessage(), e.getCause() );
+                }
                 catch ( Exception e )
                 {
+                    // the connection breaks
                     logger.error( format( "Failed to connect to routing server '%s'.", address ), e );
+                    routingTable.removeRouter( address );
+                    assertRouterIsNotEmpty( routingTable.routerSize() );
                     continue;
                 }
-                if ( cluster == null || !cluster.isValid() )
-                {
-                    logger.info( "Server <%s> unable to perform routing capability, dropping from list of routers.",
-                            address );
-                    routingTable.removeRouter( address );
-                    if ( --size == 0 )
-                    {
-                        throw new ServiceUnavailableException( NO_ROUTERS_AVAILABLE );
-                    }
-                }
-                else
+                if ( cluster.isValid() )
                 {
                     return cluster;
                 }
@@ -99,6 +102,14 @@ public class Rediscovery
             {
                 throw new ServiceUnavailableException( NO_ROUTERS_AVAILABLE );
             }
+        }
+    }
+
+    private void assertRouterIsNotEmpty( int size )
+    {
+        if ( size == 0 )
+        {
+            throw new ServiceUnavailableException( NO_ROUTERS_AVAILABLE );
         }
     }
 }

@@ -29,23 +29,42 @@ import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
-import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.ProtocolException;
 import org.neo4j.driver.v1.exceptions.value.ValueException;
 import org.neo4j.driver.v1.util.Function;
+
+import static java.lang.String.format;
+import static org.neo4j.driver.internal.cluster.ClusterComposition.Provider.PROTOCOL_ERROR_MESSAGE;
 
 final class ClusterComposition
 {
     interface Provider
     {
-        String GET_SERVERS = "CALL dbms.cluster.routing.getServers";
+        String GET_SERVERS = "dbms.cluster.routing.getServers";
+        String CALL_GET_SERVERS = "CALL " + GET_SERVERS;
+        String PROTOCOL_ERROR_MESSAGE = "Failed to parse '" + GET_SERVERS + "' result received from server.";
 
-        ClusterComposition getClusterComposition( Connection connection ) throws ServiceUnavailableException;
+        ClusterComposition getClusterComposition( Connection connection )
+                throws ProtocolException, ProcedureNotFoundException;
+
+        class ProcedureNotFoundException extends Exception
+        {
+            ProcedureNotFoundException( String message )
+            {
+                super( message );
+            }
+
+            ProcedureNotFoundException( String message, Throwable e )
+            {
+                super( message, e );
+            }
+        }
 
         final class Default implements Provider
         {
-            private static final Statement GET_SERVER = new Statement( Provider.GET_SERVERS );
+            private static final Statement CALL_GET_SERVER = new Statement( Provider.CALL_GET_SERVERS );
             private final Clock clock;
             private final Logger log;
 
@@ -56,30 +75,40 @@ final class ClusterComposition
             }
 
             @Override
-            public ClusterComposition getClusterComposition( Connection connection ) throws ServiceUnavailableException
+            public ClusterComposition getClusterComposition( Connection connection )
+                    throws ProtocolException, ProcedureNotFoundException
             {
-                StatementResult cursor = getServers( connection );
-                List<Record> records = cursor.list();
+                List<Record> records = getServers( connection );
                 log.info( "Got getServers response: %s", records );
                 long now = clock.millis();
-                try
+
+                if ( records.size() != 1 )
                 {
-                    if ( records.size() != 1 )
-                    {
-                        // server returned too few or too many rows, this is a contract violation, treat as incapable
-                        return null;
-                    }
-                    return read( records.get( 0 ), now );
+                    throw new ProtocolException( format(
+                            "%s%nRecords received '%s' is too few or too many.", PROTOCOL_ERROR_MESSAGE,
+                            records.size() ) );
                 }
-                finally
+                ClusterComposition cluster = read( records.get( 0 ), now );
+                if ( cluster.isIllegalResponse() )
                 {
-                    cursor.consume(); // make sure we exhaust the results
+                    throw new ProtocolException( format( "%s%nNo router or reader found in response.",
+                            PROTOCOL_ERROR_MESSAGE ) );
                 }
+                return cluster;
             }
 
-            private StatementResult getServers( Connection connection )
+            private List<Record> getServers( Connection connection ) throws ProcedureNotFoundException
             {
-                return NetworkSession.run( connection, GET_SERVER );
+                try
+                {
+                    return NetworkSession.run( connection, CALL_GET_SERVER ).list();
+                }
+                catch ( ClientException e )
+                {
+                    throw new ProcedureNotFoundException( format("Failed to call '%s' procedure on server. " +
+                                   "Please make sure that there is a Neo4j 3.1+ causal cluster up running.",
+                                    GET_SERVERS ), e );
+                }
             }
         }
     }
@@ -120,7 +149,11 @@ final class ClusterComposition
 
     public boolean isValid()
     {
-        return !routers.isEmpty() && !writers.isEmpty();
+        return !writers.isEmpty();
+    }
+    public boolean isIllegalResponse()
+    {
+        return routers.isEmpty() || readers.isEmpty();
     }
 
     public Set<BoltServerAddress> readers()
@@ -173,7 +206,7 @@ final class ClusterComposition
         }
         catch ( ValueException e )
         {
-            return null;
+            throw new ProtocolException( format( "%s%nUnparsable record received.", PROTOCOL_ERROR_MESSAGE ), e );
         }
     }
 

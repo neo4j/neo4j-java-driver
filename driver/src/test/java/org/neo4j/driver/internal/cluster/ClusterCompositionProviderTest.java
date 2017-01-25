@@ -147,7 +147,7 @@ public class ClusterCompositionProviderTest
         }
     }
 
-    private ClusterComposition getClusterComposition()
+    private ClusterComposition getClusterComposition() throws ClusterComposition.Provider.ProcedureNotFoundException
     {
         return new ClusterComposition.Provider.Default( clock, mock( Logger.class ) )
                 .getClusterComposition( connection );
@@ -166,7 +166,7 @@ public class ClusterCompositionProviderTest
     private void onGetServers( Stubber stubber )
     {
         stubber.when( connection ).run(
-                eq( ClusterComposition.Provider.GET_SERVERS ),
+                eq( ClusterComposition.Provider.CALL_GET_SERVERS ),
                 eq( Collections.<String,Value>emptyMap() ),
                 any( Collector.class ) );
     }
