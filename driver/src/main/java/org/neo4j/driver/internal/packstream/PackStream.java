@@ -19,7 +19,6 @@
 package org.neo4j.driver.internal.packstream;
 
 import java.io.IOException;
-import java.nio.channels.WritableByteChannel;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
@@ -156,16 +155,6 @@ public class PackStream
         public Packer( PackOutput out )
         {
             this.out = out;
-        }
-
-        public void reset( PackOutput out )
-        {
-            this.out = out;
-        }
-
-        public void reset( WritableByteChannel channel )
-        {
-            ((BufferedChannelOutput) out).reset( channel );
         }
 
         public void flush() throws IOException
