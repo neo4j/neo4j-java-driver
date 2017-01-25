@@ -22,19 +22,22 @@ import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.Queue;
 
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.SuccessMessage;
 import org.neo4j.driver.internal.summary.InternalServerInfo;
-import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Values;
+import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.summary.ServerInfo;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
@@ -45,16 +48,20 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
+import static org.neo4j.driver.internal.net.BoltServerAddress.LOCAL_DEFAULT;
 import static org.neo4j.driver.v1.Values.parameters;
 
 public class SocketConnectionTest
 {
+    private static final InternalServerInfo SERVER_INFO = new InternalServerInfo( LOCAL_DEFAULT, "test" );
+
     @Test
     public void shouldReceiveServerInfoAfterInit() throws Throwable
     {
         // Given
         SocketClient socket = mock( SocketClient.class );
-        SocketConnection conn = new SocketConnection( socket, mock( InternalServerInfo.class ), mock( Logger.class ) );
+        SocketConnection conn = new SocketConnection( socket, SERVER_INFO, DEV_NULL_LOGGER );
 
         when( socket.address() ).thenReturn( BoltServerAddress.from( URI.create( "http://neo4j.com:9000" ) ) );
 
@@ -98,7 +105,7 @@ public class SocketConnectionTest
         // Then
         try
         {
-            SocketConnection conn = new SocketConnection( socket, mock( InternalServerInfo.class ), mock( Logger.class ) );
+            new SocketConnection( socket, SERVER_INFO, DEV_NULL_LOGGER );
             fail( "should have failed with the provided exception" );
         }
         catch( Throwable e )
@@ -107,5 +114,27 @@ public class SocketConnectionTest
             assertThat( e.getMessage(), equalTo( "failed to start socket client" ) );
         }
         verify( socket, times( 1 ) ).stop();
+    }
+
+    @Test
+    @SuppressWarnings( "unchecked" )
+    public void flushThrowsWhenSocketIsBroken() throws Exception
+    {
+        SocketClient socket = mock( SocketClient.class );
+        IOException sendError = new IOException( "Unable to send" );
+        doThrow( sendError ).when( socket ).send( any( Queue.class ) );
+
+        SocketConnection connection = new SocketConnection( socket, SERVER_INFO, DEV_NULL_LOGGER );
+
+        try
+        {
+            connection.flush();
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( ServiceUnavailableException.class ) );
+            assertSame( sendError, e.getCause() );
+        }
     }
 }

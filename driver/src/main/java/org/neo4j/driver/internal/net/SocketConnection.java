@@ -38,6 +38,7 @@ import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
+import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.summary.ServerInfo;
 
 import static java.lang.String.format;
@@ -165,8 +166,7 @@ public class SocketConnection implements Connection
         }
         catch ( IOException e )
         {
-            String message = e.getMessage();
-            throw new ClientException( "Unable to send messages to server: " + message, e );
+            throw new ServiceUnavailableException( "Unable to send messages to server: " + e.getMessage(), e );
         }
     }
 
