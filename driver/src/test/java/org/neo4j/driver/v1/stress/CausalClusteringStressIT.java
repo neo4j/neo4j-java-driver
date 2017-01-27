@@ -100,7 +100,10 @@ public class CausalClusteringStressIT
     public void tearDown() throws Exception
     {
         executor.shutdownNow();
-        driver.close();
+        if ( driver != null )
+        {
+            driver.close();
+        }
     }
 
     @Test
