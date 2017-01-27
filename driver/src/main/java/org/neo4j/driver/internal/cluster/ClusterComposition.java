@@ -19,100 +19,15 @@
 package org.neo4j.driver.internal.cluster;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
-import org.neo4j.driver.internal.NetworkSession;
 import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.util.Clock;
-import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.exceptions.ProtocolException;
-import org.neo4j.driver.v1.exceptions.value.ValueException;
 import org.neo4j.driver.v1.util.Function;
-
-import static java.lang.String.format;
-import static org.neo4j.driver.internal.cluster.ClusterComposition.Provider.PROTOCOL_ERROR_MESSAGE;
 
 final class ClusterComposition
 {
-    interface Provider
-    {
-        String GET_SERVERS = "dbms.cluster.routing.getServers";
-        String CALL_GET_SERVERS = "CALL " + GET_SERVERS;
-        String PROTOCOL_ERROR_MESSAGE = "Failed to parse '" + GET_SERVERS + "' result received from server.";
-
-        ClusterComposition getClusterComposition( Connection connection )
-                throws ProtocolException, ProcedureNotFoundException;
-
-        class ProcedureNotFoundException extends Exception
-        {
-            ProcedureNotFoundException( String message )
-            {
-                super( message );
-            }
-
-            ProcedureNotFoundException( String message, Throwable e )
-            {
-                super( message, e );
-            }
-        }
-
-        final class Default implements Provider
-        {
-            private static final Statement CALL_GET_SERVER = new Statement( Provider.CALL_GET_SERVERS );
-            private final Clock clock;
-            private final Logger log;
-
-            Default( Clock clock, Logger log )
-            {
-                this.clock = clock;
-                this.log = log;
-            }
-
-            @Override
-            public ClusterComposition getClusterComposition( Connection connection )
-                    throws ProtocolException, ProcedureNotFoundException
-            {
-                List<Record> records = getServers( connection );
-                log.info( "Got getServers response: %s", records );
-                long now = clock.millis();
-
-                if ( records.size() != 1 )
-                {
-                    throw new ProtocolException( format(
-                            "%s%nRecords received '%s' is too few or too many.", PROTOCOL_ERROR_MESSAGE,
-                            records.size() ) );
-                }
-                ClusterComposition cluster = read( records.get( 0 ), now );
-                if ( cluster.isIllegalResponse() )
-                {
-                    throw new ProtocolException( format( "%s%nNo router or reader found in response.",
-                            PROTOCOL_ERROR_MESSAGE ) );
-                }
-                return cluster;
-            }
-
-            private List<Record> getServers( Connection connection ) throws ProcedureNotFoundException
-            {
-                try
-                {
-                    return NetworkSession.run( connection, CALL_GET_SERVER ).list();
-                }
-                catch ( ClientException e )
-                {
-                    throw new ProcedureNotFoundException( format("Failed to call '%s' procedure on server. " +
-                                   "Please make sure that there is a Neo4j 3.1+ causal cluster up running.",
-                                    GET_SERVERS ), e );
-                }
-            }
-        }
-    }
-
     private static final long MAX_TTL = Long.MAX_VALUE / 1000L;
     private static final Function<Value,BoltServerAddress> OF_BoltServerAddress =
             new Function<Value,BoltServerAddress>()
@@ -123,8 +38,11 @@ final class ClusterComposition
                     return new BoltServerAddress( value.asString() );
                 }
             };
-    private final Set<BoltServerAddress> readers, writers, routers;
-    final long expirationTimestamp;
+
+    private final Set<BoltServerAddress> readers;
+    private final Set<BoltServerAddress> writers;
+    private final Set<BoltServerAddress> routers;
+    private final long expirationTimestamp;
 
     private ClusterComposition( long expirationTimestamp )
     {
@@ -171,6 +89,10 @@ final class ClusterComposition
         return new HashSet<>( routers );
     }
 
+    public long expirationTimestamp() {
+        return this.expirationTimestamp;
+    }
+
     @Override
     public String toString()
     {
@@ -182,32 +104,26 @@ final class ClusterComposition
                 '}';
     }
 
-    private static ClusterComposition read( Record record, long now )
+    public static ClusterComposition parse( Record record, long now )
     {
         if ( record == null )
         {
             return null;
         }
-        try
+
+        final ClusterComposition result;
+        result = new ClusterComposition( expirationTimestamp( now, record ) );
+        record.get( "servers" ).asList( new Function<Value,Void>()
         {
-            final ClusterComposition result;
-            result = new ClusterComposition( expirationTimestamp( now, record ) );
-            record.get( "servers" ).asList( new Function<Value,Void>()
+            @Override
+            public Void apply( Value value )
             {
-                @Override
-                public Void apply( Value value )
-                {
-                    result.servers( value.get( "role" ).asString() )
-                            .addAll( value.get( "addresses" ).asList( OF_BoltServerAddress ) );
-                    return null;
-                }
-            } );
-            return result;
-        }
-        catch ( ValueException e )
-        {
-            throw new ProtocolException( format( "%s%nUnparsable record received.", PROTOCOL_ERROR_MESSAGE ), e );
-        }
+                result.servers( value.get( "role" ).asString() )
+                        .addAll( value.get( "addresses" ).asList( OF_BoltServerAddress ) );
+                return null;
+            }
+        } );
+        return result;
     }
 
     private static long expirationTimestamp( long now, Record record )

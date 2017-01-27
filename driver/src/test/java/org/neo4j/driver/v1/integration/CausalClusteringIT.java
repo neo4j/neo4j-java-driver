@@ -104,7 +104,7 @@ public class CausalClusteringIT
         }
         catch ( ServiceUnavailableException ex )
         {
-            assertEquals( "Could not perform discovery. No routing servers available.", ex.getMessage() );
+            assertThat( ex.getMessage(), containsString( "Failed to call 'dbms.cluster.routing.getServers'" ) );
         }
     }
 

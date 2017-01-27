@@ -66,7 +66,7 @@ public class ClusterRoutingTable implements RoutingTable
     @Override
     public synchronized Set<BoltServerAddress> update( ClusterComposition cluster )
     {
-        expirationTimeout = cluster.expirationTimestamp;
+        expirationTimeout = cluster.expirationTimestamp();
         HashSet<BoltServerAddress> removed = new HashSet<>();
         readers.update( cluster.readers(), removed );
         writers.update( cluster.writers(), removed );

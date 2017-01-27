@@ -17,217 +17,258 @@
  * limitations under the License.
  */
 package org.neo4j.driver.internal.cluster;
-
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-import org.mockito.stubbing.Stubber;
 
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.driver.internal.EventHandler;
+import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.net.pooling.PooledConnection;
 import org.neo4j.driver.internal.spi.Collector;
-import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.util.FakeClock;
-import org.neo4j.driver.v1.Logger;
+import org.neo4j.driver.internal.util.Clock;
+import org.neo4j.driver.internal.value.StringValue;
+import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.exceptions.ProtocolException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
 import static java.util.Arrays.asList;
-import static java.util.Collections.singletonList;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Matchers.anyMap;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
 import static org.neo4j.driver.v1.Values.value;
 
 public class ClusterCompositionProviderTest
 {
-    private final FakeClock clock = new FakeClock( (EventHandler) null, true );
-    private final Connection connection = mock( Connection.class );
+    @Test
+    public void shouldProtocolErrorWhenNoRecord() throws Throwable
+    {
+        // Given
+        GetServersRunner mockedRunner = mock( GetServersRunner.class );
+        ClusterCompositionProvider provider = new ClusterCompositionProvider.Default( mock( Clock.class ),
+                DEV_NULL_LOGGER, mockedRunner );
+
+        PooledConnection mockedConn = mock( PooledConnection.class );
+        ArrayList<Record> emptyRecord = new ArrayList<>();
+        when( mockedRunner.run( mockedConn ) ).thenReturn( emptyRecord );
+
+        // When
+        GetClusterCompositionResponse response = provider.getClusterComposition( mockedConn );
+
+        // Then
+        assertThat( response, instanceOf( GetClusterCompositionResponse.Failure.class ) );
+        try
+        {
+            response.clusterComposition();
+            fail( "Expecting a failure but not triggered." );
+        }
+        catch( Exception e )
+        {
+            assertThat( e, instanceOf( ProtocolException.class ) );
+            assertThat( e.getMessage(), containsString( "records received '0' is too few or too many." ) );
+        }
+    }
 
     @Test
-    public void shouldParseClusterComposition() throws Exception
+    public void shouldProtocolErrorWhenMoreThanOneRecord() throws Throwable
     {
-        // given
-        clock.progress( 16500 );
-        keys( "ttl", "servers" );
-        values( new Value[] {
+        // Given
+        GetServersRunner mockedRunner = mock( GetServersRunner.class );
+        ClusterCompositionProvider provider = new ClusterCompositionProvider.Default( mock( Clock.class ),
+                DEV_NULL_LOGGER, mockedRunner );
+
+        PooledConnection mockedConn = mock( PooledConnection.class );
+        Record aRecord = new InternalRecord( asList( "key1", "key2" ), new Value[]{ new StringValue( "a value" ) } );
+        when( mockedRunner.run( mockedConn ) ).thenReturn( asList( aRecord, aRecord ) );
+
+        // When
+        GetClusterCompositionResponse response = provider.getClusterComposition( mockedConn );
+
+        // Then
+        assertThat( response, instanceOf( GetClusterCompositionResponse.Failure.class ) );
+        try
+        {
+            response.clusterComposition();
+            fail( "Expecting a failure but not triggered." );
+        }
+        catch( Exception e )
+        {
+            assertThat( e, instanceOf( ProtocolException.class ) );
+            assertThat( e.getMessage(), containsString( "records received '2' is too few or too many." ) );
+        }
+    }
+
+    @Test
+    public void shouldProtocolErrorWhenUnparsableRecord() throws Throwable
+    {
+        // Given
+        GetServersRunner mockedRunner = mock( GetServersRunner.class );
+        ClusterCompositionProvider provider = new ClusterCompositionProvider.Default( mock( Clock.class ),
+                DEV_NULL_LOGGER, mockedRunner );
+
+        PooledConnection mockedConn = mock( PooledConnection.class );
+        Record aRecord = new InternalRecord( asList( "key1", "key2" ), new Value[]{ new StringValue( "a value" ) } );
+        when( mockedRunner.run( mockedConn ) ).thenReturn( asList( aRecord ) );
+
+        // When
+        GetClusterCompositionResponse response = provider.getClusterComposition( mockedConn );
+
+        // Then
+        assertThat( response, instanceOf( GetClusterCompositionResponse.Failure.class ) );
+        try
+        {
+            response.clusterComposition();
+            fail( "Expecting a failure but not triggered." );
+        }
+        catch( Exception e )
+        {
+            assertThat( e, instanceOf( ProtocolException.class ) );
+            assertThat( e.getMessage(), containsString( "unparsable record received." ) );
+        }
+    }
+
+    @Test
+    public void shouldProtocolErrorWhenNoRouters() throws Throwable
+    {
+        // Given
+        GetServersRunner mockedRunner = mock( GetServersRunner.class );
+        Clock mockedClock = mock( Clock.class );
+        ClusterCompositionProvider provider = new ClusterCompositionProvider.Default( mockedClock,
+                DEV_NULL_LOGGER, mockedRunner );
+
+        PooledConnection mockedConn = mock( PooledConnection.class );
+        Record record = new InternalRecord( asList( "ttl", "servers" ), new Value[]{
                 value( 100 ), value( asList(
                 serverInfo( "READ", "one:1337", "two:1337" ),
-                serverInfo( "WRITE", "one:1337" ),
-                serverInfo( "ROUTE", "one:1337", "two:1337" ) ) )} );
+                serverInfo( "WRITE", "one:1337" ) ) )
+        } );
+        when( mockedRunner.run( mockedConn ) ).thenReturn( asList( record ) );
+        when( mockedClock.millis() ).thenReturn( 12345L );
 
-        // when
-        ClusterComposition composition = getClusterComposition();
+        // When
+        GetClusterCompositionResponse response = provider.getClusterComposition( mockedConn );
 
-        // then
-        assertNotNull( composition );
-        assertEquals( 16500 + 100_000, composition.expirationTimestamp );
-        assertEquals( serverSet( "one:1337", "two:1337" ), composition.readers() );
-        assertEquals( serverSet( "one:1337" ), composition.writers() );
-        assertEquals( serverSet( "one:1337", "two:1337" ), composition.routers() );
+        // Then
+        assertThat( response, instanceOf( GetClusterCompositionResponse.Failure.class ) );
+        try
+        {
+            response.clusterComposition();
+            fail( "Expecting a failure but not triggered." );
+        }
+        catch( Exception e )
+        {
+            assertThat( e, instanceOf( ProtocolException.class ) );
+            assertThat( e.getMessage(), containsString( "no router or reader found in response." ) );
+        }
     }
 
     @Test
-    public void shouldReturnNullIfResultContainsTooManyRows() throws Exception
+    public void shouldProtocolErrorWhenNoReaders() throws Throwable
     {
-        // given
-        keys( "ttl", "servers" );
-        values(
-                new Value[] {
-                        value( 100 ), value( singletonList(
-                        serverInfo( "READ", "one:1337", "two:1337" ) ) )},
-                new Value[] {
-                        value( 100 ), value( singletonList(
-                        serverInfo( "WRITE", "one:1337" ) ) )},
-                new Value[] {
-                        value( 100 ), value( singletonList(
-                        serverInfo( "ROUTE", "one:1337", "two:1337" ) ) )} );
+        // Given
+        GetServersRunner mockedRunner = mock( GetServersRunner.class );
+        Clock mockedClock = mock( Clock.class );
+        ClusterCompositionProvider provider = new ClusterCompositionProvider.Default( mockedClock,
+                DEV_NULL_LOGGER, mockedRunner );
 
-        // then
-        assertNull( getClusterComposition() );
-    }
-
-    @Test
-    public void shouldReturnNullOnEmptyResult() throws Exception
-    {
-        // given
-        keys( "ttl", "servers" );
-        values();
-
-        // then
-        assertNull( getClusterComposition() );
-    }
-
-    @Test
-    public void shouldReturnNullOnResultWithWrongFormat() throws Exception
-    {
-        // given
-        clock.progress( 16500 );
-        keys( "ttl", "addresses" );
-        values( new Value[] {
+        PooledConnection mockedConn = mock( PooledConnection.class );
+        Record record = new InternalRecord( asList( "ttl", "servers" ), new Value[]{
                 value( 100 ), value( asList(
-                serverInfo( "READ", "one:1337", "two:1337" ),
                 serverInfo( "WRITE", "one:1337" ),
-                serverInfo( "ROUTE", "one:1337", "two:1337" ) ) )} );
+                serverInfo( "ROUTE", "one:1337", "two:1337" ) ) )
+        } );
+        when( mockedRunner.run( mockedConn ) ).thenReturn( asList( record ) );
+        when( mockedClock.millis() ).thenReturn( 12345L );
 
-        // then
-        assertNull( getClusterComposition() );
+        // When
+        GetClusterCompositionResponse response = provider.getClusterComposition( mockedConn );
+
+        // Then
+        assertThat( response, instanceOf( GetClusterCompositionResponse.Failure.class ) );
+        try
+        {
+            response.clusterComposition();
+            fail( "Expecting a failure but not triggered." );
+        }
+        catch( Exception e )
+        {
+            assertThat( e, instanceOf( ProtocolException.class ) );
+            assertThat( e.getMessage(), containsString( "no router or reader found in response." ) );
+        }
     }
+
 
     @Test
     public void shouldPropagateConnectionFailureExceptions() throws Exception
     {
-        // given
-        ServiceUnavailableException expected = new ServiceUnavailableException( "spanish inquisition" );
-        onGetServers( doThrow( expected ) );
+        // Given
+        GetServersRunner mockedRunner = mock( GetServersRunner.class );
+        ClusterCompositionProvider provider = new ClusterCompositionProvider.Default( mock( Clock.class ),
+                DEV_NULL_LOGGER );
 
-        // when
+        PooledConnection mockedConn = mock( PooledConnection.class );
+        Record record = new InternalRecord( asList( "ttl", "servers" ), new Value[]{
+                value( 100 ), value( asList(
+                serverInfo( "WRITE", "one:1337" ),
+                serverInfo( "ROUTE", "one:1337", "two:1337" ) ) )
+        } );
+        doThrow( new ServiceUnavailableException( "Connection breaks during cypher execution" ) )
+                .when( mockedConn ).run( any( String.class ), anyMap(), any( Collector.class ) );
+
+        // When & Then
         try
         {
-            getClusterComposition();
-            fail( "Expected exception" );
+            provider.getClusterComposition( mockedConn );
+            fail( "Expecting a failure but not triggered." );
         }
-        // then
-        catch ( ServiceUnavailableException e )
+        catch( Exception e )
         {
-            assertSame( expected, e );
+            assertThat( e, instanceOf( ServiceUnavailableException.class ) );
+            assertThat( e.getMessage(), containsString( "Connection breaks during cypher execution" ) );
         }
     }
 
-    private ClusterComposition getClusterComposition() throws ClusterComposition.Provider.ProcedureNotFoundException
+    @Test
+    public void shouldReturnSuccessResultWhenNoError() throws Throwable
     {
-        return new ClusterComposition.Provider.Default( clock, mock( Logger.class ) )
-                .getClusterComposition( connection );
-    }
+        // Given
+        Clock mockedClock = mock( Clock.class );
+        GetServersRunner mockedRunner = mock( GetServersRunner.class );
+        ClusterCompositionProvider provider = new ClusterCompositionProvider.Default( mockedClock,
+                DEV_NULL_LOGGER, mockedRunner );
 
-    private void keys( final String... keys )
-    {
-        onGetServers( doAnswer( withKeys( keys ) ) );
-    }
+        PooledConnection mockedConn = mock( PooledConnection.class );
+        Record record = new InternalRecord( asList( "ttl", "servers" ), new Value[]{
+                value( 100 ), value( asList(
+                serverInfo( "READ", "one:1337", "two:1337" ),
+                serverInfo( "WRITE", "one:1337" ),
+                serverInfo( "ROUTE", "one:1337", "two:1337" ) ) )
+        } );
+        when( mockedRunner.run( mockedConn ) ).thenReturn( asList( record ) );
+        when( mockedClock.millis() ).thenReturn( 12345L );
 
-    private void values( final Value[]... records )
-    {
-        onPullAll( doAnswer( withServerList( records ) ) );
-    }
+        // When
+        GetClusterCompositionResponse response = provider.getClusterComposition( mockedConn );
 
-    private void onGetServers( Stubber stubber )
-    {
-        stubber.when( connection ).run(
-                eq( ClusterComposition.Provider.CALL_GET_SERVERS ),
-                eq( Collections.<String,Value>emptyMap() ),
-                any( Collector.class ) );
-    }
-
-    private void onPullAll( Stubber stubber )
-    {
-        stubber.when( connection ).pullAll( any( Collector.class ) );
-    }
-
-    public static CollectorAnswer withKeys( final String... keys )
-    {
-        return new CollectorAnswer()
-        {
-            @Override
-            void collect( Collector collector )
-            {
-                collector.keys( keys );
-            }
-        };
-    }
-
-    public static CollectorAnswer withServerList( final Value[]... records )
-    {
-        return new CollectorAnswer()
-        {
-            @Override
-            void collect( Collector collector )
-            {
-                for ( Value[] fields : records )
-                {
-                    collector.record( fields );
-                }
-            }
-        };
-    }
-
-    private static abstract class CollectorAnswer implements Answer
-    {
-        abstract void collect( Collector collector );
-
-        @Override
-        public final Object answer( InvocationOnMock invocation ) throws Throwable
-        {
-            Collector collector = collector( invocation );
-            collect( collector );
-            collector.done();
-            return null;
-        }
-
-        private Collector collector( InvocationOnMock invocation )
-        {
-            switch ( invocation.getMethod().getName() )
-            {
-            case "pullAll":
-                return invocation.getArgumentAt( 0, Collector.class );
-            case "run":
-                return invocation.getArgumentAt( 2, Collector.class );
-            default:
-                throw new UnsupportedOperationException( invocation.getMethod().getName() );
-            }
-        }
+        // Then
+        assertThat( response, instanceOf( GetClusterCompositionResponse.Success.class ) );
+        ClusterComposition cluster = response.clusterComposition();
+        assertEquals( 12345 + 100_000, cluster.expirationTimestamp() );
+        assertEquals( serverSet( "one:1337", "two:1337" ), cluster.readers() );
+        assertEquals( serverSet( "one:1337" ), cluster.writers() );
+        assertEquals( serverSet( "one:1337", "two:1337" ), cluster.routers() );
     }
 
     public static Map<String,Object> serverInfo( String role, String... addresses )
@@ -238,7 +279,7 @@ public class ClusterCompositionProviderTest
         return map;
     }
 
-    private static Set<BoltServerAddress> serverSet( String... addresses )
+    public static Set<BoltServerAddress> serverSet( String... addresses )
     {
         Set<BoltServerAddress> result = new HashSet<>();
         for ( String address : addresses )
@@ -247,4 +288,5 @@ public class ClusterCompositionProviderTest
         }
         return result;
     }
+
 }

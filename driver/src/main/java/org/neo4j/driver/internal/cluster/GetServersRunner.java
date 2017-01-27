@@ -16,22 +16,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1.exceptions;
 
-/**
- * A signal that the contract for client-server communication has broken down.
- * The user should contact support and cannot resolve this his or herself.
- */
-public class ProtocolException extends Neo4jException
+package org.neo4j.driver.internal.cluster;
+
+import java.util.List;
+
+import org.neo4j.driver.internal.NetworkSession;
+import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.Statement;
+
+public class GetServersRunner
 {
-    private static String CODE = "Protocol violation: ";
-    public ProtocolException( String message )
-    {
-        super( CODE + message );
-    }
+    private String CALL_GET_SERVERS = "CALL dbms.cluster.routing.getServers";
 
-    public ProtocolException( String message, Throwable e )
+    public List<Record> run( Connection connection )
     {
-        super( CODE + message, e );
+        return NetworkSession.run( connection, new Statement( CALL_GET_SERVERS ) ).list();
     }
 }

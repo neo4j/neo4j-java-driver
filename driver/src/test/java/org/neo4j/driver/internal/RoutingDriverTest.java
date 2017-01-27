@@ -42,12 +42,15 @@ import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.ProtocolException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
 import static java.util.Arrays.asList;
 import static junit.framework.TestCase.fail;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -55,8 +58,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.cluster.ClusterCompositionProviderTest.serverInfo;
-import static org.neo4j.driver.internal.cluster.ClusterCompositionProviderTest.withKeys;
-import static org.neo4j.driver.internal.cluster.ClusterCompositionProviderTest.withServerList;
 import static org.neo4j.driver.internal.security.SecurityPlan.insecure;
 import static org.neo4j.driver.v1.Values.value;
 
@@ -71,7 +72,7 @@ public class RoutingDriverTest
     private final Logging logging = EventLogger.provider( events, EventLogger.Level.TRACE );
 
     @Test
-    public void shouldDoRoutingOnInitialization()
+    public void shouldDiscoveryOnInitialization()
     {
         // Given
         ConnectionPool pool = poolWithServers(
@@ -88,13 +89,13 @@ public class RoutingDriverTest
     }
 
     @Test
-    public void shouldDoReRoutingOnSessionAcquisitionIfNecessary()
+    public void shouldRediscoveryIfNoWritersProvided()
     {
         // Given
         RoutingDriver routingDriver = driverWithPool( pool(
                 withServers( 10, serverInfo( "ROUTE", "localhost:1111" ),
-                        serverInfo( "READ" ),
-                        serverInfo( "WRITE", "localhost:5555" ) ),
+                        serverInfo( "WRITE" ),
+                        serverInfo( "READ", "localhost:5555" ) ),
                 withServers( 10, serverInfo( "ROUTE", "localhost:1112" ),
                         serverInfo( "READ", "localhost:2222" ),
                         serverInfo( "WRITE", "localhost:3333" ) ) ) );
@@ -107,7 +108,7 @@ public class RoutingDriverTest
     }
 
     @Test
-    public void shouldNotDoReRoutingOnSessionAcquisitionIfNotNecessary()
+    public void shouldNotRediscoveryOnSessionAcquisitionIfNotNecessary()
     {
         // Given
         RoutingDriver routingDriver = driverWithPool( pool(
@@ -142,7 +143,7 @@ public class RoutingDriverTest
         // Then
         catch ( ServiceUnavailableException e )
         {
-            assertEquals( "Could not perform discovery. No routing servers available.", e.getMessage() );
+            assertThat( e.getMessage(), containsString( "Failed to call 'dbms.cluster.routing.getServers' procedure on server" ) );
         }
     }
 
@@ -162,21 +163,21 @@ public class RoutingDriverTest
             driverWithPool( pool );
         }
         // Then
-        catch ( ServiceUnavailableException e )
+        catch ( ProtocolException e )
         {
-            assertEquals( "Could not perform discovery. No routing servers available.", e.getMessage() );
+            assertThat( e.getMessage(), containsString( "no router or reader found in response" ) );
         }
     }
 
     @Test
-    public void shouldFailIfNoWritersProvided()
+    public void shouldFailIfNoReaderProvided()
     {
         // Given
         ConnectionPool pool = poolWithServers(
                 10,
+                serverInfo( "READ" ),
                 serverInfo( "ROUTE", "localhost:1111" ),
-                serverInfo( "READ", "localhost:1111" ),
-                serverInfo( "WRITE" ) );
+                serverInfo( "WRITE", "localhost:1111" ) );
 
         // When
         try
@@ -184,20 +185,20 @@ public class RoutingDriverTest
             driverWithPool( pool );
         }
         // Then
-        catch ( ServiceUnavailableException e )
+        catch ( ProtocolException e )
         {
-            assertEquals( "Could not perform discovery. No routing servers available.", e.getMessage() );
+            assertThat( e.getMessage(), containsString( "no router or reader found in response" ) );
         }
     }
 
     @Test
-    public void shouldForgetAboutServersOnRerouting()
+    public void shouldForgetServersOnRediscovery()
     {
         // Given
         ConnectionPool pool = pool(
                 withServers( 10, serverInfo( "ROUTE", "localhost:1111" ),
-                        serverInfo( "READ" ),
-                        serverInfo( "WRITE", "localhost:5555" ) ),
+                        serverInfo( "READ", "localhost:5555" ),
+                        serverInfo( "WRITE" ) ),
                 withServers( 10, serverInfo( "ROUTE", "localhost:1112" ),
                         serverInfo( "READ", "localhost:2222" ),
                         serverInfo( "WRITE", "localhost:3333" ) ) );
@@ -389,5 +390,59 @@ public class RoutingDriverTest
         } );
 
         return pool;
+    }
+
+    private static CollectorAnswer withKeys( final String... keys )
+    {
+        return new CollectorAnswer()
+        {
+            @Override
+            void collect( Collector collector )
+            {
+                collector.keys( keys );
+            }
+        };
+    }
+
+    private static CollectorAnswer withServerList( final Value[]... records )
+    {
+        return new CollectorAnswer()
+        {
+            @Override
+            void collect( Collector collector )
+            {
+                for ( Value[] fields : records )
+                {
+                    collector.record( fields );
+                }
+            }
+        };
+    }
+
+    private static abstract class CollectorAnswer implements Answer
+    {
+        abstract void collect( Collector collector );
+
+        @Override
+        public final Object answer( InvocationOnMock invocation ) throws Throwable
+        {
+            Collector collector = collector( invocation );
+            collect( collector );
+            collector.done();
+            return null;
+        }
+
+        private Collector collector( InvocationOnMock invocation )
+        {
+            switch ( invocation.getMethod().getName() )
+            {
+            case "pullAll":
+                return invocation.getArgumentAt( 0, Collector.class );
+            case "run":
+                return invocation.getArgumentAt( 2, Collector.class );
+            default:
+                throw new UnsupportedOperationException( invocation.getMethod().getName() );
+            }
+        }
     }
 }
