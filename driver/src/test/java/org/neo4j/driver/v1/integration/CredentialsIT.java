@@ -30,7 +30,7 @@ import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.UnauthorizedException;
 import org.neo4j.driver.v1.util.Neo4jSettings;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
@@ -79,7 +79,7 @@ public class CredentialsIT
         }
         catch( Throwable e )
         {
-            assertThat( e, instanceOf( ClientException.class ) );
+            assertThat( e, instanceOf( UnauthorizedException.class ) );
             assertThat( e.getMessage(), containsString( "The client is unauthorized due to authentication failure." ) );
         }
     }

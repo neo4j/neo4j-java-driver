@@ -24,6 +24,7 @@ import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.v1.exceptions.UnauthorizedException;
 
 import static java.lang.String.format;
 
@@ -75,7 +76,11 @@ public class Rediscovery
                 {
                     response = provider.getClusterComposition( connection );
                 }
-                catch ( Throwable e )
+                catch( UnauthorizedException e )
+                {
+                    throw e; // terminate the discovery immediately
+                }
+                catch ( Exception e )
                 {
                     // the connection breaks
                     logger.error( format( "Failed to connect to routing server '%s'.", address ), e );

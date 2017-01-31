@@ -32,6 +32,7 @@ import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.internal.util.BytePrinter;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.v1.exceptions.UnauthorizedException;
 
 import static java.lang.String.format;
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.FINISHED;
@@ -81,7 +82,7 @@ public class TLSSocketChannel implements ByteChannel
         }
         catch ( SSLHandshakeException e )
         {
-            throw new ClientException( "Failed to establish secured connection with the server: " + e.getMessage(), e );
+            throw new UnauthorizedException( "Failed to establish secured connection with the server: " + e.getMessage(), e );
         }
         return tlsChannel;
     }

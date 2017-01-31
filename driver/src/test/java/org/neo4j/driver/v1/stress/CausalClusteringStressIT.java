@@ -51,7 +51,7 @@ import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.v1.exceptions.UnauthorizedException;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.util.DaemonThreadFactory;
 import org.neo4j.driver.v1.util.cc.LocalOrRemoteClusterRule;
@@ -411,14 +411,12 @@ public class CausalClusteringStressIT
             }
             catch ( Exception e )
             {
-                assertThat( e, instanceOf( ServiceUnavailableException.class ) );
+                assertThat( e, instanceOf( UnauthorizedException.class ) );
+                assertThat( e.getMessage(), containsString( "authentication failure" ) );
 
                 ArgumentCaptor<Throwable> captor = ArgumentCaptor.forClass( Throwable.class );
-                verify( logger ).error( startsWith( "Failed to connect to routing server" ), captor.capture() );
-
-                Throwable loggedThrowable = captor.getValue();
-                assertThat( loggedThrowable, instanceOf( ClientException.class ) );
-                assertThat( loggedThrowable.getMessage().toLowerCase(), containsString( "authentication failure" ) );
+                verify( logger ).debug( startsWith( "~~ [CLOSED SECURE CHANNEL]" ), captor.capture() );
+                verify( logger ).debug( startsWith( "~~ [DISCONNECT]" ), captor.capture() );
             }
         }
     }
