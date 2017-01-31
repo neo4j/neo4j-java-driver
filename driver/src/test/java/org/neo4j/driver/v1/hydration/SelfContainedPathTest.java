@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal;
+package org.neo4j.driver.v1.hydration;
 
 import java.util.Arrays;
 import java.util.List;
@@ -34,22 +34,22 @@ import org.neo4j.driver.v1.util.Lists;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class InternalPathTest
+public class SelfContainedPathTest
 {
     @Rule
     public ExpectedException thrown = ExpectedException.none();
 
     // (A)-[AB:KNOWS]->(B)<-[CB:KNOWS]-(C)-[CD:KNOWS]->(D)
-    private InternalPath testPath()
+    private SelfContainedPath testPath()
     {
-        return new InternalPath(
-                new InternalNode( 1 ),
-                new InternalRelationship( -1, 1, 2, "KNOWS" ),
-                new InternalNode( 2 ),
-                new InternalRelationship( -2, 3, 2, "KNOWS" ),
-                new InternalNode( 3 ),
-                new InternalRelationship( -3, 3, 4, "KNOWS" ),
-                new InternalNode( 4 )
+        return new SelfContainedPath(
+                new SelfContainedNode( 1 ),
+                new SelfContainedRelationship( -1, 1, 2, "KNOWS" ),
+                new SelfContainedNode( 2 ),
+                new SelfContainedRelationship( -2, 3, 2, "KNOWS" ),
+                new SelfContainedNode( 3 ),
+                new SelfContainedRelationship( -3, 3, 4, "KNOWS" ),
+                new SelfContainedNode( 4 )
         );
     }
 
@@ -57,7 +57,7 @@ public class InternalPathTest
     public void pathSizeShouldReturnNumberOfRelationships()
     {
         // When
-        InternalPath path = testPath();
+        SelfContainedPath path = testPath();
 
         // Then
         assertThat( path.length(), equalTo( 3 ) );
@@ -67,7 +67,7 @@ public class InternalPathTest
     public void shouldBeAbleToCreatePathWithSingleNode()
     {
         // When
-        InternalPath path = new InternalPath( new InternalNode( 1 ) );
+        SelfContainedPath path = new SelfContainedPath( new SelfContainedNode( 1 ) );
 
         // Then
         assertThat( path.length(), equalTo( 0 ) );
@@ -77,27 +77,27 @@ public class InternalPathTest
     public void shouldBeAbleToIterateOverPathAsSegments() throws Exception
     {
         // Given
-        InternalPath path = testPath();
+        SelfContainedPath path = testPath();
 
         // When
         List<Path.Segment> segments = Lists.asList( path );
 
         // Then
         MatcherAssert.assertThat( segments, equalTo( Arrays.asList( (Path.Segment)
-                                new InternalPath.SelfContainedSegment(
-                                        new InternalNode( 1 ),
-                                        new InternalRelationship( -1, 1, 2, "KNOWS" ),
-                                        new InternalNode( 2 )
+                                new SelfContainedPath.Segment(
+                                        new SelfContainedNode( 1 ),
+                                        new SelfContainedRelationship( -1, 1, 2, "KNOWS" ),
+                                        new SelfContainedNode( 2 )
                                 ),
-                        new InternalPath.SelfContainedSegment(
-                                new InternalNode( 2 ),
-                                new InternalRelationship( -2, 3, 2, "KNOWS" ),
-                                new InternalNode( 3 )
+                        new SelfContainedPath.Segment(
+                                new SelfContainedNode( 2 ),
+                                new SelfContainedRelationship( -2, 3, 2, "KNOWS" ),
+                                new SelfContainedNode( 3 )
                         ),
-                        new InternalPath.SelfContainedSegment(
-                                new InternalNode( 3 ),
-                                new InternalRelationship( -3, 3, 4, "KNOWS" ),
-                                new InternalNode( 4 )
+                        new SelfContainedPath.Segment(
+                                new SelfContainedNode( 3 ),
+                                new SelfContainedRelationship( -3, 3, 4, "KNOWS" ),
+                                new SelfContainedNode( 4 )
                         )
                 )
         ) );
@@ -107,33 +107,33 @@ public class InternalPathTest
     public void shouldBeAbleToIterateOverPathNodes() throws Exception
     {
         // Given
-        InternalPath path = testPath();
+        SelfContainedPath path = testPath();
 
         // When
         List<Node> segments = Lists.asList( path.nodes() );
 
         // Then
         assertThat( segments, equalTo( Arrays.asList( (Node)
-                new InternalNode( 1 ),
-                new InternalNode( 2 ),
-                new InternalNode( 3 ),
-                new InternalNode( 4 ) ) ) );
+                new SelfContainedNode( 1 ),
+                new SelfContainedNode( 2 ),
+                new SelfContainedNode( 3 ),
+                new SelfContainedNode( 4 ) ) ) );
     }
 
     @Test
     public void shouldBeAbleToIterateOverPathRelationships() throws Exception
     {
         // Given
-        InternalPath path = testPath();
+        SelfContainedPath path = testPath();
 
         // When
         List<Relationship> segments = Lists.asList( path.relationships() );
 
         // Then
         assertThat( segments, equalTo( Arrays.asList( (Relationship)
-                new InternalRelationship( -1, 1, 2, "KNOWS" ),
-                new InternalRelationship( -2, 3, 2, "KNOWS" ),
-                new InternalRelationship( -3, 3, 4, "KNOWS" ) ) ) );
+                new SelfContainedRelationship( -1, 1, 2, "KNOWS" ),
+                new SelfContainedRelationship( -2, 3, 2, "KNOWS" ),
+                new SelfContainedRelationship( -3, 3, 4, "KNOWS" ) ) ) );
     }
 
     @Test
@@ -143,7 +143,7 @@ public class InternalPathTest
         thrown.expect( IllegalArgumentException.class );
 
         // When
-        new InternalPath();
+        new SelfContainedPath();
 
     }
 
@@ -154,9 +154,9 @@ public class InternalPathTest
         thrown.expect( IllegalArgumentException.class );
 
         // When
-        new InternalPath(
-                new InternalNode( 1 ),
-                new InternalRelationship( 2, 3, 4, "KNOWS" ) );
+        new SelfContainedPath(
+                new SelfContainedNode( 1 ),
+                new SelfContainedRelationship( 2, 3, 4, "KNOWS" ) );
 
     }
 
@@ -167,9 +167,9 @@ public class InternalPathTest
         thrown.expect( IllegalArgumentException.class );
 
         // When
-        InternalNode nullNode = null;
+        SelfContainedNode nullNode = null;
         //noinspection ConstantConditions
-        new InternalPath( nullNode );
+        new SelfContainedPath( nullNode );
 
     }
 
@@ -180,10 +180,10 @@ public class InternalPathTest
         thrown.expect( IllegalArgumentException.class );
 
         // When
-        new InternalPath(
-                new InternalNode( 1 ),
-                new InternalRelationship( 2, 1, 3, "KNOWS" ),
-                new InternalNode( 4 ) );
+        new SelfContainedPath(
+                new SelfContainedNode( 1 ),
+                new SelfContainedRelationship( 2, 1, 3, "KNOWS" ),
+                new SelfContainedNode( 4 ) );
 
     }
 
@@ -194,10 +194,10 @@ public class InternalPathTest
         thrown.expect( IllegalArgumentException.class );
 
         // When
-        new InternalPath(
-                new InternalNode( 1 ),
-                new InternalRelationship( 2, 3, 4, "KNOWS" ),
-                new InternalNode( 3 ) );
+        new SelfContainedPath(
+                new SelfContainedNode( 1 ),
+                new SelfContainedRelationship( 2, 3, 4, "KNOWS" ),
+                new SelfContainedNode( 3 ) );
 
     }
 

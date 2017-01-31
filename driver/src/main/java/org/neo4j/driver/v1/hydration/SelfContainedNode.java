@@ -16,29 +16,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal;
+package org.neo4j.driver.v1.hydration;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
-import org.neo4j.driver.internal.value.NodeValue;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.Value;
 
 /**
  * {@link Node} implementation that directly contains labels and properties.
  */
-public class InternalNode extends InternalEntity implements Node
+public class SelfContainedNode extends SelfContainedEntity implements Node
 {
     private final Collection<String> labels;
 
-    public InternalNode( long id )
+    public SelfContainedNode(long id )
     {
         this( id, Collections.<String>emptyList(), Collections.<String,Value>emptyMap() );
     }
 
-    public InternalNode( long id, Collection<String> labels, Map<String, Value> properties )
+    public SelfContainedNode(long id, Collection<String> labels, Map<String, Value> properties )
     {
         super( id, properties );
         this.labels = labels;

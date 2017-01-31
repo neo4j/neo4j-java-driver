@@ -29,13 +29,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.driver.internal.InternalPath;
+import org.neo4j.driver.v1.hydration.SelfContainedPath;
 import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.internal.value.ListValue;
-import org.neo4j.driver.internal.value.NodeValue;
+import org.neo4j.driver.v1.hydration.NodeValue;
 import org.neo4j.driver.internal.value.NullValue;
-import org.neo4j.driver.internal.value.PathValue;
-import org.neo4j.driver.internal.value.RelationshipValue;
+import org.neo4j.driver.v1.hydration.PathValue;
+import org.neo4j.driver.v1.hydration.RelationshipValue;
 import org.neo4j.driver.internal.value.StringValue;
 import org.neo4j.driver.v1.types.Entity;
 import org.neo4j.driver.v1.types.Path;
@@ -171,7 +171,7 @@ public class ResultParser
             prev_n = nValue;
             nodesAndRels.add( nValue );
         }
-        return new PathValue( new InternalPath( nodesAndRels ) );
+        return new PathValue( new SelfContainedPath( nodesAndRels ) );
     }
 
     private static Collection<String> getLabels( String input )
@@ -237,7 +237,7 @@ public class ResultParser
             prevNode = node;
 
         }
-        return new PathValue( new InternalPath( nodesAndRels ) );
+        return new PathValue( new SelfContainedPath( nodesAndRels ) );
     }
 
     public static Map<String,Value> parseGiven( Map<String,Value> input )

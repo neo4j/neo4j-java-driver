@@ -20,8 +20,8 @@ package org.neo4j.driver.v1.tck.tck.util;
 
 import java.util.Map;
 
-import org.neo4j.driver.internal.InternalRelationship;
-import org.neo4j.driver.internal.value.RelationshipValue;
+import org.neo4j.driver.v1.hydration.SelfContainedRelationship;
+import org.neo4j.driver.v1.hydration.RelationshipValue;
 import org.neo4j.driver.v1.types.Entity;
 import org.neo4j.driver.v1.types.Relationship;
 import org.neo4j.driver.v1.Value;
@@ -35,7 +35,7 @@ public class TestRelationshipValue extends RelationshipValue implements Entity
 
     public TestRelationshipValue( int i, String type, Map<String,Value> properties )
     {
-        super( new InternalRelationship( i, 0, 1, type, properties ) );
+        super( new SelfContainedRelationship( i, 0, 1, type, properties ) );
     }
 
     @Override

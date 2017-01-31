@@ -16,7 +16,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.value;
+package org.neo4j.driver.v1.hydration;
+
+import org.neo4j.driver.internal.value.ValueAdapter;
 
 import static java.lang.String.format;
 

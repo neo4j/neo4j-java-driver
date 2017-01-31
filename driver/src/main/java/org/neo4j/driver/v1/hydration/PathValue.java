@@ -16,54 +16,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.value;
+package org.neo4j.driver.v1.hydration;
 
-import java.util.Map;
+import org.neo4j.driver.internal.types.InternalTypeSystem;
+import org.neo4j.driver.v1.types.Path;
+import org.neo4j.driver.v1.types.Type;
 
-import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.types.Entity;
-import org.neo4j.driver.v1.util.Function;
-
-public abstract class EntityValueAdapter<V extends Entity> extends GraphValueAdapter<V>
+public class PathValue extends GraphValueAdapter<Path>
 {
-    protected EntityValueAdapter( V adapted )
+    public PathValue( Path adapted )
     {
         super( adapted );
     }
 
-    @Override
-    public V asEntity()
+    public Path asPath()
     {
         return asObject();
     }
 
     @Override
-    public Map<String,Object> asMap()
-    {
-        return asEntity().asMap();
-    }
-
-    @Override
-    public <T> Map<String,T> asMap( Function<Value,T> mapFunction )
-    {
-        return asEntity().asMap( mapFunction );
-    }
-
-    @Override
     public int size()
     {
-        return asEntity().size();
+        return asObject().length();
     }
 
     @Override
-    public Iterable<String> keys()
+    public Type type()
     {
-        return asEntity().keys();
+        return InternalTypeSystem.TYPE_SYSTEM.PATH();
     }
 
-    @Override
-    public Value get( String key )
-    {
-        return asEntity().get( key );
-    }
 }

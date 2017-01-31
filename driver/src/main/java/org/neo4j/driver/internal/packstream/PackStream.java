@@ -18,15 +18,22 @@
  */
 package org.neo4j.driver.internal.packstream;
 
+import org.neo4j.driver.internal.value.ListValue;
+import org.neo4j.driver.internal.value.MapValue;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.hydration.PackStreamHydrant;
+
 import java.io.IOException;
 import java.nio.channels.WritableByteChannel;
 import java.nio.charset.Charset;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import static java.lang.Integer.toHexString;
 import static java.lang.String.format;
 import static java.util.Collections.singletonList;
+import static org.neo4j.driver.v1.Values.value;
 
 /**
  * PackStream is a messaging serialisation format heavily inspired by MessagePack.
@@ -146,6 +153,8 @@ public class PackStream
 
     private static final String EMPTY_STRING = "";
     private static final Charset UTF_8 = Charset.forName( "UTF-8" );
+
+    private static final Map<String,Value> EMPTY_STRING_VALUE_MAP = new HashMap<>( 0 );
 
     private PackStream() {}
 
@@ -436,6 +445,47 @@ public class PackStream
             return in.hasMoreData();
         }
 
+        public Value unpackValue() throws IOException
+        {
+            PackType type = peekNextType();
+            switch ( type )
+            {
+            case BYTES:
+                break;
+            case NULL:
+                return value( unpackNull() );
+            case BOOLEAN:
+                return value( unpackBoolean() );
+            case INTEGER:
+                return value( unpackLong() );
+            case FLOAT:
+                return value( unpackDouble() );
+            case STRING:
+                return value( unpackString() );
+            case MAP:
+            {
+                return new MapValue( unpackMap() );
+            }
+            case LIST:
+            {
+                int size = (int) unpackListHeader();
+                Value[] vals = new Value[size];
+                for ( int j = 0; j < size; j++ )
+                {
+                    vals[j] = unpackValue();
+                }
+                return new ListValue( vals );
+            }
+            case STRUCT:
+            {
+                long size = unpackStructHeader();
+                byte signature = unpackStructSignature();
+                return new PackStreamHydrant(this).hydrateStructure(size, signature);
+            }
+            }
+            throw new IOException( "Unknown value type: " + type );
+        }
+
         public long unpackStructHeader() throws IOException
         {
             final byte markerByte = in.readByte();
@@ -486,6 +536,22 @@ public class PackStream
                 case MAP_32: return unpackUINT32();
                 default: throw new Unexpected( "Expected a map, but got: " + toHexString( markerByte ));
             }
+        }
+
+        public Map<String,Value> unpackMap() throws IOException
+        {
+            int size = (int) unpackMapHeader();
+            if ( size == 0 )
+            {
+                return EMPTY_STRING_VALUE_MAP;
+            }
+            Map<String,Value> map = new HashMap<>( size );
+            for ( int i = 0; i < size; i++ )
+            {
+                String key = unpackString();
+                map.put( key, unpackValue() );
+            }
+            return map;
         }
 
         public long unpackLong() throws IOException

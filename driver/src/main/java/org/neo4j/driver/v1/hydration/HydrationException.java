@@ -16,34 +16,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.value;
 
-import org.neo4j.driver.internal.types.InternalTypeSystem;
-import org.neo4j.driver.v1.types.Path;
-import org.neo4j.driver.v1.types.Type;
+package org.neo4j.driver.v1.hydration;
 
-public class PathValue extends GraphValueAdapter<Path>
+
+import org.neo4j.driver.v1.exceptions.Neo4jException;
+
+public class HydrationException extends Neo4jException
 {
-    public PathValue( Path adapted )
+    public HydrationException(String message)
     {
-        super( adapted );
+        super(message);
     }
-
-    public Path asPath()
-    {
-        return asObject();
-    }
-
-    @Override
-    public int size()
-    {
-        return asObject().length();
-    }
-
-    @Override
-    public Type type()
-    {
-        return InternalTypeSystem.TYPE_SYSTEM.PATH();
-    }
-
 }

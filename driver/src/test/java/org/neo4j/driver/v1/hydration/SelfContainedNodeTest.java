@@ -16,28 +16,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal;
+package org.neo4j.driver.v1.hydration;
 
+import org.hamcrest.CoreMatchers;
+import org.junit.Assert;
 import org.junit.Test;
-
-import java.util.List;
-
 import org.neo4j.driver.internal.util.Iterables;
-import org.neo4j.driver.v1.types.Node;
+import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
+import org.neo4j.driver.v1.types.Node;
+import org.neo4j.driver.v1.util.Function;
+
+import java.util.*;
 
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.neo4j.driver.v1.Values.parameters;
-import static org.neo4j.driver.v1.Values.ofValue;
+import static org.junit.Assert.assertFalse;
+import static org.neo4j.driver.v1.Values.*;
 
 public class SelfContainedNodeTest
 {
 
     private Node adamTheNode()
     {
-        return new InternalNode( 1, singletonList( "Person" ),
+        return new SelfContainedNode( 1, singletonList( "Person" ),
                 parameters( "name", Values.value( "Adam" ) ).asMap( ofValue()) );
     }
 
@@ -84,4 +87,47 @@ public class SelfContainedNodeTest
         // Then
         assertThat( node.get( "name" ).asString(), equalTo( "Adam" ) );
     }
+
+    @Test
+    public void extractValuesFromNode()
+    {
+        // GIVEN
+        SelfContainedNode node = createNode();
+        Function<Value,Integer> extractor = new Function<Value,Integer>()
+        {
+            @Override
+            public Integer apply( Value value )
+            {
+                return value.asInt();
+            }
+        };
+
+        //WHEN
+        Iterable<Integer> values = node.values( extractor );
+
+        //THEN
+        Iterator<Integer> iterator = values.iterator();
+        Assert.assertThat( iterator.next(), CoreMatchers.equalTo( 1 ) );
+        Assert.assertThat( iterator.next(), CoreMatchers.equalTo( 2 ) );
+        assertFalse( iterator.hasNext() );
+    }
+
+    @Test
+    public void accessUnknownKeyShouldBeNull()
+    {
+        SelfContainedNode node = createNode();
+
+        Assert.assertThat( node.get( "k1" ), CoreMatchers.equalTo( value( 1 ) ) );
+        Assert.assertThat( node.get( "k2" ), CoreMatchers.equalTo( value( 2 ) ) );
+        Assert.assertThat( node.get( "k3" ), CoreMatchers.equalTo( NULL ) );
+    }
+
+    private SelfContainedNode createNode()
+    {
+        Map<String,Value> props = new HashMap<>();
+        props.put( "k1", value( 1 ) );
+        props.put( "k2", value( 2 ) );
+        return new SelfContainedNode( 42L, Collections.singletonList( "L" ), props );
+    }
+
 }

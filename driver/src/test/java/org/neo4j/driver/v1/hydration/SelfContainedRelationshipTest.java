@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal;
+package org.neo4j.driver.v1.hydration;
 
 import org.junit.Test;
 
@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.Map;
 
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.hydration.SelfContainedRelationship;
 import org.neo4j.driver.v1.util.Function;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -33,13 +34,13 @@ import static org.junit.Assert.assertThat;
 import static org.neo4j.driver.v1.Values.NULL;
 import static org.neo4j.driver.v1.Values.value;
 
-public class InternalRelationshipTest
+public class SelfContainedRelationshipTest
 {
     @Test
     public void extractValuesFromNode()
     {
         // GIVEN
-        InternalRelationship relationship = createRelationship();
+        SelfContainedRelationship relationship = createRelationship();
         Function<Value,Integer> extractor = new Function<Value,Integer>()
         {
             @Override
@@ -62,20 +63,20 @@ public class InternalRelationshipTest
     @Test
     public void accessUnknownKeyShouldBeNull()
     {
-        InternalRelationship relationship = createRelationship();
+        SelfContainedRelationship relationship = createRelationship();
 
         assertThat( relationship.get( "k1" ), equalTo( value( 1 ) ) );
         assertThat( relationship.get( "k2" ), equalTo( value( 2 ) ) );
         assertThat( relationship.get( "k3" ), equalTo( NULL ) );
     }
 
-    private InternalRelationship createRelationship()
+    private SelfContainedRelationship createRelationship()
     {
         Map<String,Value> props = new HashMap<>();
         props.put( "k1", value( 1 ) );
         props.put( "k2", value( 2 ) );
 
-        return new InternalRelationship(1L, 0L, 1L, "T", props );
+        return new SelfContainedRelationship(1L, 0L, 1L, "T", props );
     }
 
 }

@@ -20,7 +20,8 @@ package org.neo4j.driver.internal.value;
 
 import org.junit.Test;
 
-import org.neo4j.driver.internal.InternalRelationship;
+import org.neo4j.driver.v1.hydration.RelationshipValue;
+import org.neo4j.driver.v1.hydration.SelfContainedRelationship;
 import org.neo4j.driver.internal.types.TypeConstructor;
 import org.neo4j.driver.v1.Value;
 
@@ -65,11 +66,11 @@ public class RelationshipValueTest
 
     private RelationshipValue emptyRelationshipValue()
     {
-        return new RelationshipValue( new InternalRelationship( 1234, 1, 2, "KNOWS" ) );
+        return new RelationshipValue( new SelfContainedRelationship( 1234, 1, 2, "KNOWS" ) );
     }
 
     private RelationshipValue filledRelationshipValue()
     {
-        return new RelationshipValue( new InternalRelationship( 1234, 1, 2, "KNOWS", singletonMap( "name", value( "Dodo" ) ) ) );
+        return new RelationshipValue( new SelfContainedRelationship( 1234, 1, 2, "KNOWS", singletonMap( "name", value( "Dodo" ) ) ) );
     }
 }

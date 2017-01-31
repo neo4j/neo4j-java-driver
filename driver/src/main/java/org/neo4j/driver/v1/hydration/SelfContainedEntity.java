@@ -16,10 +16,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal;
+package org.neo4j.driver.v1.hydration;
 
 import java.util.Map;
 
+import org.neo4j.driver.internal.AsValue;
 import org.neo4j.driver.internal.util.Extract;
 import org.neo4j.driver.internal.util.Iterables;
 import org.neo4j.driver.internal.value.MapValue;
@@ -30,12 +31,12 @@ import org.neo4j.driver.v1.util.Function;
 
 import static org.neo4j.driver.v1.Values.ofObject;
 
-public abstract class InternalEntity implements Entity, AsValue
+public abstract class SelfContainedEntity implements Entity, AsValue
 {
-    private final long id;
-    private final Map<String,Value> properties;
+    protected final long id;
+    protected final Map<String,Value> properties;
 
-    public InternalEntity( long id, Map<String, Value> properties )
+    public SelfContainedEntity(long id, Map<String, Value> properties )
     {
         this.id = id;
         this.properties = properties;
@@ -83,7 +84,7 @@ public abstract class InternalEntity implements Entity, AsValue
             return false;
         }
 
-        InternalEntity that = (InternalEntity) o;
+        SelfContainedEntity that = (SelfContainedEntity) o;
 
         return id == that.id;
 

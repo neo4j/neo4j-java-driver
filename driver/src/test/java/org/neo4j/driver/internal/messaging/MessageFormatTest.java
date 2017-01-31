@@ -30,9 +30,7 @@ import java.nio.channels.WritableByteChannel;
 import java.util.ArrayList;
 import java.util.Collections;
 
-import org.neo4j.driver.internal.InternalNode;
-import org.neo4j.driver.internal.InternalPath;
-import org.neo4j.driver.internal.InternalRelationship;
+import org.neo4j.driver.v1.hydration.*;
 import org.neo4j.driver.internal.net.ChunkedOutput;
 import org.neo4j.driver.internal.packstream.PackStream;
 import org.neo4j.driver.internal.util.BytePrinter;
@@ -82,25 +80,25 @@ public class MessageFormatTest
         assertSerializesValue( value( parameters( "k", 12, "a", "banana" ) ) );
         assertSerializesValue( value( asList( "k", 12, "a", "banana" ) ) );
         assertSerializesValue( value(
-                new InternalNode( 1, Collections.singletonList( "User" ), parameters( "name", "Bob", "age", 45 ).asMap(
+                new SelfContainedNode( 1, Collections.singletonList( "User" ), parameters( "name", "Bob", "age", 45 ).asMap(
                         ofValue()) )
         ) );
-        assertSerializesValue( value( new InternalNode( 1 ) ) );
+        assertSerializesValue( value( new SelfContainedNode( 1 ) ) );
         assertSerializesValue( value(
-                new InternalRelationship( 1, 1, 1,
+                new SelfContainedRelationship( 1, 1, 1,
                         "KNOWS",
                         parameters( "name", "Bob", "age", 45 ).asMap( ofValue()) ) ) );
         assertSerializesValue( value(
-                new InternalPath(
-                        new InternalNode( 1 ),
-                        new InternalRelationship( 2, 1, 3,
+                new SelfContainedPath(
+                        new SelfContainedNode( 1 ),
+                        new SelfContainedRelationship( 2, 1, 3,
                                 "KNOWS", EmptyMap.asMap( ofValue()) ),
-                        new InternalNode( 3 ),
-                        new InternalRelationship( 4, 3, 5,
+                        new SelfContainedNode( 3 ),
+                        new SelfContainedRelationship( 4, 3, 5,
                                 "LIKES", EmptyMap.asMap( ofValue()) ),
-                        new InternalNode( 5 )
+                        new SelfContainedNode( 5 )
                 ) ) );
-        assertSerializesValue( value( new InternalPath( new InternalNode( 1 ) ) ) );
+        assertSerializesValue( value( new SelfContainedPath( new SelfContainedNode( 1 ) ) ) );
     }
 
     @Test
@@ -113,14 +111,12 @@ public class MessageFormatTest
 
         packer.packStructHeader( 1, PackStreamMessageFormatV1.MSG_RECORD );
         packer.packListHeader( 1 );
-        packer.packStructHeader( 0, PackStreamMessageFormatV1.NODE );
+        packer.packStructHeader( 0, PackStreamHydrant.NODE );
         packer.flush();
 
         // Expect
         exception.expect( RuntimeException.class );
-        exception.expectMessage( startsWith(
-                "Failed to unpack value: Invalid message received, serialized NODE structures should have 3 fields, " +
-                "received NODE structure has 0 fields." ) );
+        exception.expectMessage( startsWith( "Invalid structure size 0" ) );
 
         // When
         unpack( format, out.toByteArray() );
@@ -149,20 +145,11 @@ public class MessageFormatTest
 
     private ArrayList<Message> unpack( MessageFormat format, byte[] bytes ) throws IOException
     {
-        try
-        {
-            ByteArrayInputStream input = new ByteArrayInputStream( bytes );
-            MessageFormat.Reader reader = format.newReader( Channels.newChannel( input ) );
-            ArrayList<Message> messages = new ArrayList<>();
-            DumpMessage.unpack( messages, reader );
-            return messages;
-        }
-        catch( Exception e )
-        {
-            throw new RuntimeException(
-                    String.format( "Failed to unpack value: %s Raw data:\n%s",
-                            e.getMessage(), BytePrinter.hex( bytes ) ), e );
-        }
+        ByteArrayInputStream input = new ByteArrayInputStream( bytes );
+        MessageFormat.Reader reader = format.newReader( Channels.newChannel( input ) );
+        ArrayList<Message> messages = new ArrayList<>();
+        DumpMessage.unpack( messages, reader );
+        return messages;
     }
 
 }

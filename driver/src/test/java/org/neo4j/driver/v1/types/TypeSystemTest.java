@@ -28,9 +28,9 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.neo4j.driver.internal.InternalNode;
-import org.neo4j.driver.internal.InternalPath;
-import org.neo4j.driver.internal.InternalRelationship;
+import org.neo4j.driver.v1.hydration.SelfContainedNode;
+import org.neo4j.driver.v1.hydration.SelfContainedPath;
+import org.neo4j.driver.v1.hydration.SelfContainedRelationship;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.v1.Value;
 
@@ -42,8 +42,8 @@ import static org.neo4j.driver.v1.Values.value;
 
 public class TypeSystemTest
 {
-    private final InternalNode node = new InternalNode( 42L );
-    private final InternalRelationship relationship = new InternalRelationship( 42L, 42L, 43L, "T" );
+    private final SelfContainedNode node = new SelfContainedNode( 42L );
+    private final SelfContainedRelationship relationship = new SelfContainedRelationship( 42L, 42L, 43L, "T" );
 
     private Value integerValue = value( 13 );
     private Value floatValue = value( 13.1 );
@@ -51,7 +51,7 @@ public class TypeSystemTest
     private Value nodeValue = value( node );
     private Value relationshipValue = value( relationship );
     private Value mapValue = value( Collections.singletonMap( "type", "r" ) );
-    private Value pathValue = value( new InternalPath( Arrays.<Entity>asList( node, relationship, node ) ) );
+    private Value pathValue = value( new SelfContainedPath( Arrays.<Entity>asList( node, relationship, node ) ) );
     private Value booleanValue = value( true );
     private Value listValue = value( Arrays.asList( 1, 2, 3 ) );
     private Value nullValue = value( (Object) null );
