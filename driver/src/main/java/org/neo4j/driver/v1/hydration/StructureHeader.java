@@ -16,10 +16,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.packstream;
 
-public enum PackType
+
+package org.neo4j.driver.v1.hydration;
+
+public class StructureHeader
 {
-    NULL, BOOLEAN, INTEGER, FLOAT, BYTES,
-    STRING, LIST, MAP, STRUCT
+    private final int size;
+    private final byte signature;
+
+    public StructureHeader(int size, byte signature)
+    {
+        this.size = size;
+        this.signature = signature;
+    }
+
+    public int size()
+    {
+        return size;
+    }
+
+    public byte signature()
+    {
+        return signature;
+    }
+
 }

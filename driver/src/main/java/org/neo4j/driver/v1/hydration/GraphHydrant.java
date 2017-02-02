@@ -19,118 +19,82 @@
 
 package org.neo4j.driver.v1.hydration;
 
-import org.neo4j.driver.internal.packstream.PackStream.Unpacker;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.types.Path;
 import org.neo4j.driver.v1.types.Relationship;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
-import static java.lang.String.format;
-
-public class PackStreamHydrant
+public class GraphHydrant extends Hydrant
 {
     public static final byte NODE = 'N';
     public static final byte RELATIONSHIP = 'R';
     public static final byte RELATIONSHIP_DETAIL = 'r';
     public static final byte PATH = 'P';
 
-    private final Unpacker unpacker;
-
-    public PackStreamHydrant(Unpacker unpacker)
+    public GraphHydrant(UnpackStream unpackStream)
     {
-        this.unpacker = unpacker;
+        super(unpackStream);
     }
 
-    protected void checkSize(long size, long validSize)
-    {
-        if (size != validSize)
-        {
-            throw new HydrationException(format("Invalid structure size %d", size));
-        }
-    }
-
-    protected void checkSignature(byte signature, byte expectedSignature)
-    {
-        if (signature != expectedSignature)
-        {
-            throw new HydrationException(format("Expected structure signature %d, found signature %d", expectedSignature, signature));
-        }
-    }
-
-    protected Node hydrateNode(long size) throws IOException
+    protected Node hydrateNode(long size) throws IOException, HydrationException
     {
         checkSize(size, 3);
-
-        long id = unpacker.unpackLong();
-
-        int numLabels = (int) unpacker.unpackListHeader();
-        List<String> labels = new ArrayList<>(numLabels);
-        for (int i = 0; i < numLabels; i++)
-        {
-            labels.add(unpacker.unpackString());
-        }
-        int numProps = (int) unpacker.unpackMapHeader();
-        Map<String, Value> props = new HashMap<>();
-        for (int j = 0; j < numProps; j++)
-        {
-            String key = unpacker.unpackString();
-            props.put(key, unpacker.unpackValue());
-        }
-
-        return new SelfContainedNode(id, labels, props);
+        long id = unpackLong();
+        List<String> labels = unpackStringList();
+        Map<String, Value> properties = unpackMap();
+        return new SelfContainedNode(id, labels, properties);
     }
 
-    protected Relationship hydrateRelationship(long size) throws IOException
+    protected Relationship hydrateRelationship(long size) throws IOException, HydrationException
     {
         checkSize(size, 5);
-
-        long id = unpacker.unpackLong();
-        long startNodeId = unpacker.unpackLong();
-        long endNodeId = unpacker.unpackLong();
-        String type = unpacker.unpackString();
-        Map<String, Value> properties = unpacker.unpackMap();
-
+        long id = unpackLong();
+        long startNodeId = unpackLong();
+        long endNodeId = unpackLong();
+        String type = unpackString();
+        Map<String, Value> properties = unpackMap();
         return new SelfContainedRelationship(id, startNodeId, endNodeId, type, properties);
     }
 
-    private RelationshipDetail hydrateRelationshipDetail(long size) throws IOException
+    private RelationshipDetail hydrateRelationshipDetail(long size) throws IOException, HydrationException
     {
         checkSize(size, 3);
 
-        long id = unpacker.unpackLong();
-        String type = unpacker.unpackString();
-        Map<String, Value> properties = unpacker.unpackMap();
-
+        long id = unpackLong();
+        String type = unpackString();
+        Map<String, Value> properties = unpackMap();
         return new RelationshipDetail(id, type, properties);
     }
 
-    protected Path hydratePath(long size) throws IOException
+    protected Path hydratePath(long size) throws IOException, HydrationException
     {
         checkSize(size, 3);
 
         // List of unique nodes
-        Node[] uniqueNodes = new Node[(int) unpacker.unpackListHeader()];
+        Node[] uniqueNodes = new Node[unpackListHeader()];
         for (int i = 0; i < uniqueNodes.length; i++)
         {
-            long entitySize = unpacker.unpackStructHeader();
-            checkSignature(unpacker.unpackStructSignature(), NODE);
-            uniqueNodes[i] = hydrateNode(entitySize);
+            StructureHeader header = unpackStructureHeader();
+            checkSignature(header.signature(), NODE);
+            uniqueNodes[i] = hydrateNode(header.size());
         }
 
         // List of unique relationships, without start/end information
-        RelationshipDetail[] uniqueRelationshipDetails = new RelationshipDetail[(int) unpacker.unpackListHeader()];
+        RelationshipDetail[] uniqueRelationshipDetails = new RelationshipDetail[unpackListHeader()];
         for (int i = 0; i < uniqueRelationshipDetails.length; i++)
         {
-            long entitySize = unpacker.unpackStructHeader();
-            checkSignature(unpacker.unpackStructSignature(), RELATIONSHIP_DETAIL);
-            uniqueRelationshipDetails[i] = hydrateRelationshipDetail(entitySize);
+            StructureHeader header = unpackStructureHeader();
+            checkSignature(header.signature(), RELATIONSHIP_DETAIL);
+            uniqueRelationshipDetails[i] = hydrateRelationshipDetail(header.size());
         }
 
         // Path sequence
-        int length = (int) unpacker.unpackListHeader();
+        int length = unpackListHeader();
 
         // Knowing the sequence length, we can create the arrays that will represent the nodes, rels and segments in their "path order"
         Path.Segment[] segments = new Path.Segment[length / 2];
@@ -142,8 +106,8 @@ public class PackStreamHydrant
         Relationship relationship;
         for (int i = 0; i < segments.length; i++)
         {
-            int relationshipIndex = (int) unpacker.unpackLong();
-            nextNode = uniqueNodes[(int) unpacker.unpackLong()];
+            int relationshipIndex = (int) unpackLong();
+            nextNode = uniqueNodes[(int) unpackLong()];
             // Negative rel index means this rel was traversed "inversed" from its direction
             if (relationshipIndex < 0)
             {
@@ -163,7 +127,7 @@ public class PackStreamHydrant
         return new SelfContainedPath(Arrays.asList(segments), Arrays.asList(nodes), Arrays.asList(relationships));
     }
 
-    public Value hydrateStructure(long size, byte signature) throws IOException
+    public Value hydrateStructure(long size, byte signature) throws IOException, HydrationException
     {
         switch (signature)
         {
@@ -174,7 +138,7 @@ public class PackStreamHydrant
         case PATH:
             return new PathValue(hydratePath(size));
         default:
-            throw new HydrationException(format("Unknown signature '%s'", signature));
+            return super.hydrateStructure(size, signature);
         }
     }
 

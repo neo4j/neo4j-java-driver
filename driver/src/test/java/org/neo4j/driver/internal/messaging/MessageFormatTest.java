@@ -33,7 +33,6 @@ import java.util.Collections;
 import org.neo4j.driver.v1.hydration.*;
 import org.neo4j.driver.internal.net.ChunkedOutput;
 import org.neo4j.driver.internal.packstream.PackStream;
-import org.neo4j.driver.internal.util.BytePrinter;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.util.DumpMessage;
 
@@ -111,11 +110,11 @@ public class MessageFormatTest
 
         packer.packStructHeader( 1, PackStreamMessageFormatV1.MSG_RECORD );
         packer.packListHeader( 1 );
-        packer.packStructHeader( 0, PackStreamHydrant.NODE );
+        packer.packStructHeader( 0, GraphHydrant.NODE );
         packer.flush();
 
         // Expect
-        exception.expect( RuntimeException.class );
+        exception.expect( IOException.class );
         exception.expectMessage( startsWith( "Invalid structure size 0" ) );
 
         // When

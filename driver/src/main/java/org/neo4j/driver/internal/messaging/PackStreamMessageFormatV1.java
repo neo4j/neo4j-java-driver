@@ -30,6 +30,7 @@ import org.neo4j.driver.internal.net.ChunkedOutput;
 import org.neo4j.driver.internal.packstream.PackInput;
 import org.neo4j.driver.internal.packstream.PackOutput;
 import org.neo4j.driver.internal.packstream.PackStream;
+import org.neo4j.driver.v1.hydration.UnpackStream;
 import org.neo4j.driver.internal.util.Iterables;
 import org.neo4j.driver.internal.value.InternalValue;
 import org.neo4j.driver.v1.Value;
@@ -37,7 +38,7 @@ import org.neo4j.driver.v1.types.Entity;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.types.Path;
 import org.neo4j.driver.v1.types.Relationship;
-import org.neo4j.driver.v1.hydration.PackStreamHydrant;
+import org.neo4j.driver.v1.hydration.GraphHydrant;
 
 import static org.neo4j.driver.v1.Values.value;
 
@@ -249,7 +250,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                 case RELATIONSHIP_TyCon:
                     {
                         Relationship rel = value.asRelationship();
-                        packer.packStructHeader( 5, PackStreamHydrant.RELATIONSHIP );
+                        packer.packStructHeader( 5, GraphHydrant.RELATIONSHIP );
                         packer.pack( rel.id() );
                         packer.pack( rel.startNodeId() );
                         packer.pack( rel.endNodeId() );
@@ -262,7 +263,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
 
                 case PATH_TyCon:
                     Path path = value.asPath();
-                    packer.packStructHeader( 3, PackStreamHydrant.PATH );
+                    packer.packStructHeader( 3, GraphHydrant.PATH );
 
                     // Unique nodes
                     Map<Node, Integer> nodeIdx = new LinkedHashMap<>();
@@ -291,7 +292,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                     packer.packListHeader( relIdx.size() );
                     for ( Relationship rel : relIdx.keySet() )
                     {
-                        packer.packStructHeader( 3, PackStreamHydrant.RELATIONSHIP_DETAIL);
+                        packer.packStructHeader( 3, GraphHydrant.RELATIONSHIP_DETAIL);
                         packer.pack( rel.id() );
                         packer.pack( rel.type() );
                         packProperties( rel );
@@ -337,7 +338,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
 
         private void packNode( Node node ) throws IOException
         {
-            packer.packStructHeader( NODE_FIELDS, PackStreamHydrant.NODE );
+            packer.packStructHeader( NODE_FIELDS, GraphHydrant.NODE );
             packer.pack( node.id() );
 
             Iterable<String> labels = node.labels();
@@ -364,19 +365,19 @@ public class PackStreamMessageFormatV1 implements MessageFormat
 
     public static class Reader implements MessageFormat.Reader
     {
-        private final PackStream.Unpacker unpacker;
+        private final UnpackStream unpackStream;
         private final Runnable onMessageComplete;
 
         public Reader(PackInput input, Runnable onMessageComplete)
         {
-            unpacker = new PackStream.Unpacker(input);
+            unpackStream = new UnpackStream(input);
             this.onMessageComplete = onMessageComplete;
         }
 
         @Override
         public boolean hasNext() throws IOException
         {
-            return unpacker.hasNext();
+            return unpackStream.hasNext();
         }
 
         /**
@@ -385,8 +386,8 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         @Override
         public void read(MessageHandler handler) throws IOException
         {
-            unpacker.unpackStructHeader();
-            int type = unpacker.unpackStructSignature();
+            unpackStream.unpackStructureSize();
+            int type = unpackStream.unpackStructureSignature();
             switch (type)
             {
             case MSG_RUN:
@@ -429,7 +430,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
 
         private void unpackInitMessage(MessageHandler handler) throws IOException
         {
-            handler.handleInitMessage(unpacker.unpackString(), unpacker.unpackMap());
+            handler.handleInitMessage(unpackStream.unpackString(), unpackStream.unpackMap());
             onMessageComplete.run();
         }
 
@@ -441,7 +442,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
 
         private void unpackFailureMessage(MessageHandler output) throws IOException
         {
-            Map<String, Value> params = unpacker.unpackMap();
+            Map<String, Value> params = unpackStream.unpackMap();
             String code = params.get("code").asString();
             String message = params.get("message").asString();
             output.handleFailureMessage(code, message);
@@ -450,8 +451,8 @@ public class PackStreamMessageFormatV1 implements MessageFormat
 
         private void unpackRunMessage(MessageHandler output) throws IOException
         {
-            String statement = unpacker.unpackString();
-            Map<String, Value> params = unpacker.unpackMap();
+            String statement = unpackStream.unpackString();
+            Map<String, Value> params = unpackStream.unpackMap();
             output.handleRunMessage(statement, params);
             onMessageComplete.run();
         }
@@ -470,18 +471,18 @@ public class PackStreamMessageFormatV1 implements MessageFormat
 
         private void unpackSuccessMessage(MessageHandler output) throws IOException
         {
-            Map<String, Value> map = unpacker.unpackMap();
+            Map<String, Value> map = unpackStream.unpackMap();
             output.handleSuccessMessage(map);
             onMessageComplete.run();
         }
 
         private void unpackRecordMessage(MessageHandler output) throws IOException
         {
-            int fieldCount = (int) unpacker.unpackListHeader();
+            int fieldCount = (int) unpackStream.unpackListHeader();
             Value[] fields = new Value[fieldCount];
             for (int i = 0; i < fieldCount; i++)
             {
-                fields[i] = unpacker.unpackValue();
+                fields[i] = unpackStream.unpackValue();
             }
             output.handleRecordMessage(fields);
             onMessageComplete.run();

@@ -19,13 +19,15 @@
 
 package org.neo4j.driver.v1.hydration;
 
-
-import org.neo4j.driver.v1.exceptions.Neo4jException;
-
-public class HydrationException extends Exception
+public enum PackStreamType
 {
-    public HydrationException(String message)
-    {
-        super(message);
-    }
+    NULL,
+    BOOLEAN,
+    INTEGER,
+    FLOAT,
+    BYTES,
+    STRING,
+    LIST,
+    MAP,
+    STRUCT
 }
