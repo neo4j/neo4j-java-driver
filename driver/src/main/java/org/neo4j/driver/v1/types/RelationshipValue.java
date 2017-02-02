@@ -16,16 +16,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.neo4j.driver.v1.types;
 
-package org.neo4j.driver.v1.hydration;
+import org.neo4j.driver.internal.types.InternalTypeSystem;
 
-
-import org.neo4j.driver.v1.exceptions.Neo4jException;
-
-public class HydrationException extends Exception
+public class RelationshipValue extends EntityValueAdapter<Relationship>
 {
-    public HydrationException(String message)
+    public RelationshipValue( Relationship adapted )
     {
-        super(message);
+        super( adapted );
+    }
+
+    @Override
+    public Relationship asRelationship()
+    {
+        return asEntity();
+    }
+
+    @Override
+    public Type type()
+    {
+        return InternalTypeSystem.TYPE_SYSTEM.RELATIONSHIP();
     }
 }

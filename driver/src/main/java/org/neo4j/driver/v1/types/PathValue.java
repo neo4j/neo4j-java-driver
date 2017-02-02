@@ -16,18 +16,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.neo4j.driver.v1.types;
 
-package org.neo4j.driver.v1.hydration;
+import org.neo4j.driver.internal.types.InternalTypeSystem;
 
-public enum PackStreamType
+public class PathValue extends GraphValueAdapter<Path>
 {
-    NULL,
-    BOOLEAN,
-    INTEGER,
-    FLOAT,
-    BYTES,
-    STRING,
-    LIST,
-    MAP,
-    STRUCT
+    public PathValue( Path adapted )
+    {
+        super( adapted );
+    }
+
+    public Path asPath()
+    {
+        return asObject();
+    }
+
+    @Override
+    public int size()
+    {
+        return asObject().length();
+    }
+
+    @Override
+    public Type type()
+    {
+        return InternalTypeSystem.TYPE_SYSTEM.PATH();
+    }
+
 }

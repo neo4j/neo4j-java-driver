@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1.hydration;
+package org.neo4j.driver.v1.types;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,10 +25,6 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.driver.internal.AsValue;
-import org.neo4j.driver.v1.types.Entity;
-import org.neo4j.driver.v1.types.Node;
-import org.neo4j.driver.v1.types.Path;
-import org.neo4j.driver.v1.types.Relationship;
 import org.neo4j.driver.v1.Value;
 
 /**

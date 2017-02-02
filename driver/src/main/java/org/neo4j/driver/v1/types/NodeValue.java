@@ -16,21 +16,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1.hydration;
+package org.neo4j.driver.v1.types;
 
 import org.neo4j.driver.internal.types.InternalTypeSystem;
-import org.neo4j.driver.v1.types.Relationship;
-import org.neo4j.driver.v1.types.Type;
 
-public class RelationshipValue extends EntityValueAdapter<Relationship>
+public class NodeValue extends EntityValueAdapter<Node>
 {
-    public RelationshipValue( Relationship adapted )
+    public NodeValue( Node adapted )
     {
         super( adapted );
     }
 
     @Override
-    public Relationship asRelationship()
+    public Node asNode()
     {
         return asEntity();
     }
@@ -38,6 +36,6 @@ public class RelationshipValue extends EntityValueAdapter<Relationship>
     @Override
     public Type type()
     {
-        return InternalTypeSystem.TYPE_SYSTEM.RELATIONSHIP();
+        return InternalTypeSystem.TYPE_SYSTEM.NODE();
     }
 }

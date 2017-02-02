@@ -29,13 +29,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.driver.v1.hydration.SelfContainedPath;
+import org.neo4j.driver.v1.types.SelfContainedPath;
 import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.internal.value.ListValue;
-import org.neo4j.driver.v1.hydration.NodeValue;
+import org.neo4j.driver.v1.types.NodeValue;
 import org.neo4j.driver.internal.value.NullValue;
-import org.neo4j.driver.v1.hydration.PathValue;
-import org.neo4j.driver.v1.hydration.RelationshipValue;
+import org.neo4j.driver.v1.types.PathValue;
+import org.neo4j.driver.v1.types.RelationshipValue;
 import org.neo4j.driver.internal.value.StringValue;
 import org.neo4j.driver.v1.types.Entity;
 import org.neo4j.driver.v1.types.Path;

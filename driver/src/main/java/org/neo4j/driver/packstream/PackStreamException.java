@@ -16,34 +16,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1.hydration;
+package org.neo4j.driver.packstream;
 
-import org.neo4j.driver.internal.types.InternalTypeSystem;
-import org.neo4j.driver.v1.types.Path;
-import org.neo4j.driver.v1.types.Type;
+import java.io.IOException;
 
-public class PathValue extends GraphValueAdapter<Path>
+public class PackStreamException extends IOException
 {
-    public PathValue( Path adapted )
-    {
-        super( adapted );
-    }
+    private static final long serialVersionUID = -1491422133282345421L;
 
-    public Path asPath()
+    protected PackStreamException(String message)
     {
-        return asObject();
+        super(message);
     }
-
-    @Override
-    public int size()
-    {
-        return asObject().length();
-    }
-
-    @Override
-    public Type type()
-    {
-        return InternalTypeSystem.TYPE_SYSTEM.PATH();
-    }
-
 }

@@ -16,7 +16,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.packstream;
+package org.neo4j.driver.packstream.io;
+
+import org.neo4j.driver.packstream.EndOfStream;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -106,7 +108,7 @@ public class BufferedChannelInput implements PackInput
                 attempt( endIndex - index );
                 if ( buffer.remaining() == 0 )
                 {
-                    throw new PackStream.EndOfStream( "Expected " + (endIndex - index) + " bytes available, " +
+                    throw new EndOfStream( "Expected " + (endIndex - index) + " bytes available, " +
                                                       "but no more bytes accessible from underlying stream." );
                 }
             }
@@ -153,7 +155,7 @@ public class BufferedChannelInput implements PackInput
     {
         if ( !attempt( numBytes ) )
         {
-            throw new PackStream.EndOfStream( "Unexpected end of stream while trying to read " + numBytes + " bytes." );
+            throw new EndOfStream( "Unexpected end of stream while trying to read " + numBytes + " bytes." );
         }
     }
 }

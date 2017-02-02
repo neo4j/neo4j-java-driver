@@ -36,7 +36,7 @@ import org.neo4j.driver.internal.util.Extract;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
-import org.neo4j.driver.v1.hydration.SelfContainedNode;
+import org.neo4j.driver.v1.types.SelfContainedNode;
 import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.util.Pair;
 

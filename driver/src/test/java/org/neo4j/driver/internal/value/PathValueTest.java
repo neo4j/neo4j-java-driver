@@ -20,10 +20,10 @@ package org.neo4j.driver.internal.value;
 
 import org.junit.Test;
 
-import org.neo4j.driver.v1.hydration.PathValue;
-import org.neo4j.driver.v1.hydration.SelfContainedNode;
-import org.neo4j.driver.v1.hydration.SelfContainedPath;
-import org.neo4j.driver.v1.hydration.SelfContainedRelationship;
+import org.neo4j.driver.v1.types.PathValue;
+import org.neo4j.driver.v1.types.SelfContainedNode;
+import org.neo4j.driver.v1.types.SelfContainedPath;
+import org.neo4j.driver.v1.types.SelfContainedRelationship;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.v1.Value;
 

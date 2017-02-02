@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1.hydration;
+package org.neo4j.driver.hydration;
 
 import org.junit.Test;
 
@@ -25,7 +25,7 @@ import java.util.Iterator;
 import java.util.Map;
 
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.hydration.SelfContainedRelationship;
+import org.neo4j.driver.v1.types.SelfContainedRelationship;
 import org.neo4j.driver.v1.util.Function;
 
 import static org.hamcrest.CoreMatchers.equalTo;

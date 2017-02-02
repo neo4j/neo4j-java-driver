@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1.hydration;
+package org.neo4j.driver.hydration;
 
 import java.util.Arrays;
 import java.util.List;
@@ -26,9 +26,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import org.neo4j.driver.v1.types.Node;
-import org.neo4j.driver.v1.types.Path;
-import org.neo4j.driver.v1.types.Relationship;
+import org.neo4j.driver.v1.types.*;
 import org.neo4j.driver.v1.util.Lists;
 
 import static org.hamcrest.CoreMatchers.equalTo;

@@ -17,8 +17,11 @@
  * limitations under the License.
  */
 
-package org.neo4j.driver.v1.hydration;
+package org.neo4j.driver.hydration;
 
+import org.neo4j.driver.packstream.PackStream;
+import org.neo4j.driver.packstream.StructureHeader;
+import org.neo4j.driver.packstream.UnpackStream;
 import org.neo4j.driver.v1.Value;
 
 import java.io.IOException;
@@ -28,6 +31,15 @@ import java.util.Map;
 
 import static java.lang.String.format;
 
+/**
+ * Hydration is the process of reconstructing native objects from
+ * {@link PackStream} structures. The {@link Hydrant} class provides a base
+ * on which a client-specific hydration implementation can be built.
+ *
+ * The only public method exposed is {@link #hydrateStructure(StructureHeader)}}.
+ * This method is called by an {@link UnpackStream} when a structure is
+ * encountered.
+ */
 public class Hydrant
 {
     private final UnpackStream unpackStream;
@@ -110,19 +122,9 @@ public class Hydrant
         return unpackStream.unpackStructureHeader();
     }
 
-    protected long unpackStructureSize() throws IOException
+    public Value hydrateStructure(StructureHeader structureHeader) throws IOException, HydrationException
     {
-        return unpackStream.unpackStructureSize();
-    }
-
-    protected byte unpackStructureSignature() throws IOException
-    {
-        return unpackStream.unpackStructureSignature();
-    }
-
-    public Value hydrateStructure(long size, byte signature) throws IOException, HydrationException
-    {
-        throw new HydrationException(format("Unknown structure signature '%s'", signature));
+        throw new HydrationException(format("Unknown structure signature '%s'", structureHeader.signature()));
     }
 
 }

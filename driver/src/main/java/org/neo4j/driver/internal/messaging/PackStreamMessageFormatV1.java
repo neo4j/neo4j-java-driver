@@ -27,10 +27,11 @@ import java.util.Map;
 
 import org.neo4j.driver.internal.net.BufferingChunkedInput;
 import org.neo4j.driver.internal.net.ChunkedOutput;
-import org.neo4j.driver.internal.packstream.PackInput;
-import org.neo4j.driver.internal.packstream.PackOutput;
-import org.neo4j.driver.internal.packstream.PackStream;
-import org.neo4j.driver.v1.hydration.UnpackStream;
+import org.neo4j.driver.packstream.StructureHeader;
+import org.neo4j.driver.packstream.io.PackInput;
+import org.neo4j.driver.packstream.io.PackOutput;
+import org.neo4j.driver.packstream.PackStream;
+import org.neo4j.driver.packstream.UnpackStream;
 import org.neo4j.driver.internal.util.Iterables;
 import org.neo4j.driver.internal.value.InternalValue;
 import org.neo4j.driver.v1.Value;
@@ -38,7 +39,7 @@ import org.neo4j.driver.v1.types.Entity;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.types.Path;
 import org.neo4j.driver.v1.types.Relationship;
-import org.neo4j.driver.v1.hydration.GraphHydrant;
+import org.neo4j.driver.v1.types.GraphHydrant;
 
 import static org.neo4j.driver.v1.Values.value;
 
@@ -84,7 +85,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
 
     public static class Writer implements MessageFormat.Writer, MessageHandler
     {
-        private final PackStream.Packer packer;
+        private final PackStream packer;
         private final Runnable onMessageComplete;
 
         /**
@@ -94,7 +95,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         public Writer( PackOutput output, Runnable onMessageComplete )
         {
             this.onMessageComplete = onMessageComplete;
-            packer = new PackStream.Packer( output );
+            packer = new PackStream( output );
         }
 
         @Override
@@ -386,9 +387,8 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         @Override
         public void read(MessageHandler handler) throws IOException
         {
-            unpackStream.unpackStructureSize();
-            int type = unpackStream.unpackStructureSignature();
-            switch (type)
+            StructureHeader structureHeader = unpackStream.unpackStructureHeader();
+            switch (structureHeader.signature())
             {
             case MSG_RUN:
                 unpackRunMessage(handler);
@@ -418,7 +418,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                 unpackResetMessage(handler);
                 break;
             default:
-                throw new IOException("Unknown message type: " + type);
+                throw new IOException("Unknown message type: " + structureHeader.signature());
             }
         }
 

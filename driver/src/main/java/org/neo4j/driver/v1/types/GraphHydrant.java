@@ -17,12 +17,13 @@
  * limitations under the License.
  */
 
-package org.neo4j.driver.v1.hydration;
+package org.neo4j.driver.v1.types;
 
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.types.Node;
-import org.neo4j.driver.v1.types.Path;
-import org.neo4j.driver.v1.types.Relationship;
+import org.neo4j.driver.hydration.Hydrant;
+import org.neo4j.driver.hydration.HydrationException;
+import org.neo4j.driver.packstream.StructureHeader;
+import org.neo4j.driver.packstream.UnpackStream;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -127,18 +128,18 @@ public class GraphHydrant extends Hydrant
         return new SelfContainedPath(Arrays.asList(segments), Arrays.asList(nodes), Arrays.asList(relationships));
     }
 
-    public Value hydrateStructure(long size, byte signature) throws IOException, HydrationException
+    public Value hydrateStructure(StructureHeader structureHeader) throws IOException, HydrationException
     {
-        switch (signature)
+        switch (structureHeader.signature())
         {
         case NODE:
-            return new NodeValue(hydrateNode(size));
+            return new NodeValue(hydrateNode(structureHeader.size()));
         case RELATIONSHIP:
-            return new RelationshipValue(hydrateRelationship(size));
+            return new RelationshipValue(hydrateRelationship(structureHeader.size()));
         case PATH:
-            return new PathValue(hydratePath(size));
+            return new PathValue(hydratePath(structureHeader.size()));
         default:
-            return super.hydrateStructure(size, signature);
+            return super.hydrateStructure(structureHeader);
         }
     }
 

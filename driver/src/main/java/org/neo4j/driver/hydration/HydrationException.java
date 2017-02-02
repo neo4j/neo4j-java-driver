@@ -17,37 +17,13 @@
  * limitations under the License.
  */
 
-package org.neo4j.driver.v1.hydration;
+package org.neo4j.driver.hydration;
 
-import org.neo4j.driver.v1.Value;
 
-import java.util.Map;
-
-class RelationshipDetail
+public class HydrationException extends Exception
 {
-    private final long id;
-    private final String type;
-    private final Map<String, Value> properties;
-
-    RelationshipDetail(long id, String type, Map<String, Value> properties)
+    public HydrationException(String message)
     {
-        this.id = id;
-        this.type = type;
-        this.properties = properties;
-    }
-
-    long id()
-    {
-        return id;
-    }
-
-    String type()
-    {
-        return type;
-    }
-
-    Map<String, Value> properties()
-    {
-        return properties;
+        super(message);
     }
 }

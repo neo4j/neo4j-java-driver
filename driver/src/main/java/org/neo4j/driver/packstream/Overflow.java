@@ -16,28 +16,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1.hydration;
+package org.neo4j.driver.packstream;
 
-import org.neo4j.driver.internal.types.InternalTypeSystem;
-import org.neo4j.driver.v1.types.Node;
-import org.neo4j.driver.v1.types.Type;
-
-public class NodeValue extends EntityValueAdapter<Node>
+public class Overflow extends PackStreamException
 {
-    public NodeValue( Node adapted )
-    {
-        super( adapted );
-    }
+    private static final long serialVersionUID = -923071934446993659L;
 
-    @Override
-    public Node asNode()
+    public Overflow(String message)
     {
-        return asEntity();
-    }
-
-    @Override
-    public Type type()
-    {
-        return InternalTypeSystem.TYPE_SYSTEM.NODE();
+        super(message);
     }
 }

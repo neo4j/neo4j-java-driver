@@ -28,9 +28,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.neo4j.driver.v1.hydration.SelfContainedNode;
-import org.neo4j.driver.v1.hydration.SelfContainedPath;
-import org.neo4j.driver.v1.hydration.SelfContainedRelationship;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.v1.Value;
 

@@ -22,8 +22,8 @@ import org.junit.Test;
 
 import java.util.HashMap;
 
-import org.neo4j.driver.v1.hydration.NodeValue;
-import org.neo4j.driver.v1.hydration.SelfContainedNode;
+import org.neo4j.driver.v1.types.NodeValue;
+import org.neo4j.driver.v1.types.SelfContainedNode;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.internal.types.TypeConstructor;
 import org.neo4j.driver.v1.Value;

@@ -17,14 +17,14 @@
  * limitations under the License.
  */
 
-package org.neo4j.driver.v1.hydration;
+package org.neo4j.driver.packstream;
 
-import org.neo4j.driver.internal.packstream.Constants;
-import org.neo4j.driver.internal.packstream.PackInput;
-import org.neo4j.driver.internal.packstream.PackStream;
+import org.neo4j.driver.packstream.io.PackInput;
 import org.neo4j.driver.internal.value.ListValue;
 import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.hydration.HydrationException;
+import org.neo4j.driver.v1.types.GraphHydrant;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -32,7 +32,7 @@ import java.util.Map;
 
 import static java.lang.Integer.toHexString;
 import static java.lang.String.format;
-import static org.neo4j.driver.internal.packstream.Constants.UTF_8;
+import static org.neo4j.driver.packstream.PackStream.UTF_8;
 import static org.neo4j.driver.v1.Values.value;
 
 public class UnpackStream
@@ -55,7 +55,7 @@ public class UnpackStream
 
     public Value unpackValue() throws IOException
     {
-        PackStreamType type = peekNextType();
+        PackStream.Type type = peekNextType();
         switch (type)
         {
         case BYTES:
@@ -84,11 +84,9 @@ public class UnpackStream
             return new MapValue(unpackMap());
         case STRUCT:
         {
-            long size = unpackStructureSize();
-            byte signature = unpackStructureSignature();
             try
             {
-                return hydrant.hydrateStructure(size, signature);
+                return hydrant.hydrateStructure(unpackStructureHeader());
             }
             catch (HydrationException ex)
             {
@@ -99,39 +97,13 @@ public class UnpackStream
         throw new IOException("Unknown value type: " + type);
     }
 
-    public int unpackStructureSize() throws IOException
-    {
-        final byte markerByte = in.readByte();
-        final byte markerHighNibble = (byte) (markerByte & 0xF0);
-        final byte markerLowNibble = (byte) (markerByte & 0x0F);
-
-        if (markerHighNibble == Constants.TINY_STRUCT)
-        {
-            return markerLowNibble;
-        }
-        switch (markerByte)
-        {
-        case Constants.STRUCT_8:
-            return unpackUINT8();
-        case Constants.STRUCT_16:
-            return unpackUINT16();
-        default:
-            throw new PackStream.Unexpected("Expected a struct, but got: " + toHexString(markerByte));
-        }
-    }
-
-    public byte unpackStructureSignature() throws IOException
-    {
-        return in.readByte();
-    }
-
     public StructureHeader unpackStructureHeader() throws IOException
     {
         final byte markerByte = in.readByte();
         final byte markerHighNibble = (byte) (markerByte & 0xF0);
         final byte markerLowNibble = (byte) (markerByte & 0x0F);
         int size;
-        if (markerHighNibble == Constants.TINY_STRUCT)
+        if (markerHighNibble == PackStream.TINY_STRUCT)
         {
             size = markerLowNibble;
         }
@@ -139,12 +111,14 @@ public class UnpackStream
         {
             switch (markerByte)
             {
-            case Constants.STRUCT_8:
+            case PackStream.STRUCT_8:
                 size = unpackUINT8();
-            case Constants.STRUCT_16:
+                break;
+            case PackStream.STRUCT_16:
                 size = unpackUINT16();
+                break;
             default:
-                throw new PackStream.Unexpected("Expected a struct, but got: " + toHexString(markerByte));
+                throw new Unexpected("Expected a struct, but got: " + toHexString(markerByte));
             }
         }
         byte signature = in.readByte();
@@ -157,25 +131,25 @@ public class UnpackStream
         final byte markerHighNibble = (byte) (markerByte & 0xF0);
         final byte markerLowNibble = (byte) (markerByte & 0x0F);
 
-        if (markerHighNibble == Constants.TINY_LIST)
+        if (markerHighNibble == PackStream.TINY_LIST)
         {
             return markerLowNibble;
         }
         switch (markerByte)
         {
-        case Constants.LIST_8:
+        case PackStream.LIST_8:
             return unpackUINT8();
-        case Constants.LIST_16:
+        case PackStream.LIST_16:
             return unpackUINT16();
-        case Constants.LIST_32:
+        case PackStream.LIST_32:
             long listSize = unpackUINT32();
             if (listSize > Integer.MAX_VALUE)
             {
-                throw new PackStream.Overflow(format("Lists cannot contain more than %d items", Integer.MAX_VALUE));
+                throw new Overflow(format("Lists cannot contain more than %d items", Integer.MAX_VALUE));
             }
             return (int) listSize;
         default:
-            throw new PackStream.Unexpected("Expected a list, but got: " + toHexString(markerByte & 0xFF));
+            throw new Unexpected("Expected a list, but got: " + toHexString(markerByte & 0xFF));
         }
     }
 
@@ -185,20 +159,20 @@ public class UnpackStream
         final byte markerHighNibble = (byte) (markerByte & 0xF0);
         final byte markerLowNibble = (byte) (markerByte & 0x0F);
 
-        if (markerHighNibble == Constants.TINY_MAP)
+        if (markerHighNibble == PackStream.TINY_MAP)
         {
             return markerLowNibble;
         }
         switch (markerByte)
         {
-        case Constants.MAP_8:
+        case PackStream.MAP_8:
             return unpackUINT8();
-        case Constants.MAP_16:
+        case PackStream.MAP_16:
             return unpackUINT16();
-        case Constants.MAP_32:
+        case PackStream.MAP_32:
             return unpackUINT32();
         default:
-            throw new PackStream.Unexpected("Expected a map, but got: " + toHexString(markerByte));
+            throw new Unexpected("Expected a map, but got: " + toHexString(markerByte));
         }
     }
 
@@ -221,39 +195,39 @@ public class UnpackStream
     public long unpackLong() throws IOException
     {
         final byte markerByte = in.readByte();
-        if (markerByte >= Constants.MINUS_2_TO_THE_4)
+        if (markerByte >= PackStream.MINUS_2_TO_THE_4)
         {
             return markerByte;
         }
         switch (markerByte)
         {
-        case Constants.INT_8:
+        case PackStream.INT_8:
             return in.readByte();
-        case Constants.INT_16:
+        case PackStream.INT_16:
             return in.readShort();
-        case Constants.INT_32:
+        case PackStream.INT_32:
             return in.readInt();
-        case Constants.INT_64:
+        case PackStream.INT_64:
             return in.readLong();
         default:
-            throw new PackStream.Unexpected("Expected an integer, but got: " + toHexString(markerByte));
+            throw new Unexpected("Expected an integer, but got: " + toHexString(markerByte));
         }
     }
 
     public double unpackDouble() throws IOException
     {
         final byte markerByte = in.readByte();
-        if (markerByte == Constants.FLOAT_64)
+        if (markerByte == PackStream.FLOAT_64)
         {
             return in.readDouble();
         }
-        throw new PackStream.Unexpected("Expected a double, but got: " + toHexString(markerByte));
+        throw new Unexpected("Expected a double, but got: " + toHexString(markerByte));
     }
 
     public String unpackString() throws IOException
     {
         final byte markerByte = in.readByte();
-        if (markerByte == Constants.TINY_STRING) // Note no mask, so we compare to 0x80.
+        if (markerByte == PackStream.TINY_STRING) // Note no mask, so we compare to 0x80.
         {
             return "";
         }
@@ -267,11 +241,11 @@ public class UnpackStream
 
         switch (markerByte)
         {
-        case Constants.BYTES_8:
+        case PackStream.BYTES_8:
             return unpackBytes(unpackUINT8());
-        case Constants.BYTES_16:
+        case PackStream.BYTES_16:
             return unpackBytes(unpackUINT16());
-        case Constants.BYTES_32:
+        case PackStream.BYTES_32:
         {
             long size = unpackUINT32();
             if (size <= Integer.MAX_VALUE)
@@ -280,11 +254,11 @@ public class UnpackStream
             }
             else
             {
-                throw new PackStream.Overflow("BYTES_32 too long for Java");
+                throw new Overflow("BYTES_32 too long for Java");
             }
         }
         default:
-            throw new PackStream.Unexpected("Expected binary data, but got: 0x" + toHexString(markerByte & 0xFF));
+            throw new Unexpected("Expected binary data, but got: 0x" + toHexString(markerByte & 0xFF));
         }
     }
 
@@ -299,9 +273,9 @@ public class UnpackStream
     public Object unpackNull() throws IOException
     {
         final byte markerByte = in.readByte();
-        if (markerByte != Constants.NULL)
+        if (markerByte != PackStream.NULL)
         {
-            throw new PackStream.Unexpected("Expected a null, but got: 0x" + toHexString(markerByte & 0xFF));
+            throw new Unexpected("Expected a null, but got: 0x" + toHexString(markerByte & 0xFF));
         }
         return null;
     }
@@ -311,17 +285,17 @@ public class UnpackStream
         final byte markerHighNibble = (byte) (markerByte & 0xF0);
         final byte markerLowNibble = (byte) (markerByte & 0x0F);
 
-        if (markerHighNibble == Constants.TINY_STRING)
+        if (markerHighNibble == PackStream.TINY_STRING)
         {
             return unpackBytes(markerLowNibble);
         }
         switch (markerByte)
         {
-        case Constants.STRING_8:
+        case PackStream.STRING_8:
             return unpackBytes(unpackUINT8());
-        case Constants.STRING_16:
+        case PackStream.STRING_16:
             return unpackBytes(unpackUINT16());
-        case Constants.STRING_32:
+        case PackStream.STRING_32:
         {
             long size = unpackUINT32();
             if (size <= Integer.MAX_VALUE)
@@ -330,11 +304,11 @@ public class UnpackStream
             }
             else
             {
-                throw new PackStream.Overflow("STRING_32 too long for Java");
+                throw new Overflow("STRING_32 too long for Java");
             }
         }
         default:
-            throw new PackStream.Unexpected("Expected a string, but got: 0x" + toHexString(markerByte & 0xFF));
+            throw new Unexpected("Expected a string, but got: 0x" + toHexString(markerByte & 0xFF));
         }
     }
 
@@ -343,12 +317,12 @@ public class UnpackStream
         final byte markerByte = in.readByte();
         switch (markerByte)
         {
-        case Constants.TRUE:
+        case PackStream.TRUE:
             return true;
-        case Constants.FALSE:
+        case PackStream.FALSE:
             return false;
         default:
-            throw new PackStream.Unexpected("Expected a boolean, but got: 0x" + toHexString(markerByte & 0xFF));
+            throw new Unexpected("Expected a boolean, but got: 0x" + toHexString(markerByte & 0xFF));
         }
     }
 
@@ -374,53 +348,53 @@ public class UnpackStream
         return heapBuffer;
     }
 
-    public PackStreamType peekNextType() throws IOException
+    public PackStream.Type peekNextType() throws IOException
     {
         final byte markerByte = in.peekByte();
         final byte markerHighNibble = (byte) (markerByte & 0xF0);
 
         switch (markerHighNibble)
         {
-        case Constants.TINY_STRING:
-            return PackStreamType.STRING;
-        case Constants.TINY_LIST:
-            return PackStreamType.LIST;
-        case Constants.TINY_MAP:
-            return PackStreamType.MAP;
-        case Constants.TINY_STRUCT:
-            return PackStreamType.STRUCT;
+        case PackStream.TINY_STRING:
+            return PackStream.Type.STRING;
+        case PackStream.TINY_LIST:
+            return PackStream.Type.LIST;
+        case PackStream.TINY_MAP:
+            return PackStream.Type.MAP;
+        case PackStream.TINY_STRUCT:
+            return PackStream.Type.STRUCT;
         }
 
         switch (markerByte)
         {
-        case Constants.NULL:
-            return PackStreamType.NULL;
-        case Constants.TRUE:
-        case Constants.FALSE:
-            return PackStreamType.BOOLEAN;
-        case Constants.FLOAT_64:
-            return PackStreamType.FLOAT;
-        case Constants.BYTES_8:
-        case Constants.BYTES_16:
-        case Constants.BYTES_32:
-            return PackStreamType.BYTES;
-        case Constants.STRING_8:
-        case Constants.STRING_16:
-        case Constants.STRING_32:
-            return PackStreamType.STRING;
-        case Constants.LIST_8:
-        case Constants.LIST_16:
-        case Constants.LIST_32:
-            return PackStreamType.LIST;
-        case Constants.MAP_8:
-        case Constants.MAP_16:
-        case Constants.MAP_32:
-            return PackStreamType.MAP;
-        case Constants.STRUCT_8:
-        case Constants.STRUCT_16:
-            return PackStreamType.STRUCT;
+        case PackStream.NULL:
+            return PackStream.Type.NULL;
+        case PackStream.TRUE:
+        case PackStream.FALSE:
+            return PackStream.Type.BOOLEAN;
+        case PackStream.FLOAT_64:
+            return PackStream.Type.FLOAT;
+        case PackStream.BYTES_8:
+        case PackStream.BYTES_16:
+        case PackStream.BYTES_32:
+            return PackStream.Type.BYTES;
+        case PackStream.STRING_8:
+        case PackStream.STRING_16:
+        case PackStream.STRING_32:
+            return PackStream.Type.STRING;
+        case PackStream.LIST_8:
+        case PackStream.LIST_16:
+        case PackStream.LIST_32:
+            return PackStream.Type.LIST;
+        case PackStream.MAP_8:
+        case PackStream.MAP_16:
+        case PackStream.MAP_32:
+            return PackStream.Type.MAP;
+        case PackStream.STRUCT_8:
+        case PackStream.STRUCT_16:
+            return PackStream.Type.STRUCT;
         default:
-            return PackStreamType.INTEGER;
+            return PackStream.Type.INTEGER;
         }
     }
 }

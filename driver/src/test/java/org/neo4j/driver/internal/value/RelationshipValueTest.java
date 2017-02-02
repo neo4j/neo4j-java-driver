@@ -20,8 +20,8 @@ package org.neo4j.driver.internal.value;
 
 import org.junit.Test;
 
-import org.neo4j.driver.v1.hydration.RelationshipValue;
-import org.neo4j.driver.v1.hydration.SelfContainedRelationship;
+import org.neo4j.driver.v1.types.RelationshipValue;
+import org.neo4j.driver.v1.types.SelfContainedRelationship;
 import org.neo4j.driver.internal.types.TypeConstructor;
 import org.neo4j.driver.v1.Value;
 

@@ -30,10 +30,13 @@ import java.nio.channels.WritableByteChannel;
 import java.util.ArrayList;
 import java.util.Collections;
 
-import org.neo4j.driver.v1.hydration.*;
 import org.neo4j.driver.internal.net.ChunkedOutput;
-import org.neo4j.driver.internal.packstream.PackStream;
+import org.neo4j.driver.packstream.PackStream;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.types.GraphHydrant;
+import org.neo4j.driver.v1.types.SelfContainedNode;
+import org.neo4j.driver.v1.types.SelfContainedPath;
+import org.neo4j.driver.v1.types.SelfContainedRelationship;
 import org.neo4j.driver.v1.util.DumpMessage;
 
 import static java.util.Arrays.asList;
@@ -106,7 +109,7 @@ public class MessageFormatTest
         // Given
         ByteArrayOutputStream out = new ByteArrayOutputStream( 128 );
         WritableByteChannel writable = Channels.newChannel( out );
-        PackStream.Packer packer = new PackStream.Packer( new ChunkedOutput( writable ) );
+        PackStream packer = new PackStream( new ChunkedOutput( writable ) );
 
         packer.packStructHeader( 1, PackStreamMessageFormatV1.MSG_RECORD );
         packer.packListHeader( 1 );

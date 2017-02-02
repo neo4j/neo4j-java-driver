@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1.hydration;
+package org.neo4j.driver.v1.types;
 
 import java.util.Map;
 
@@ -26,7 +26,6 @@ import org.neo4j.driver.internal.util.Iterables;
 import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
-import org.neo4j.driver.v1.types.Entity;
 import org.neo4j.driver.v1.util.Function;
 
 import static org.neo4j.driver.v1.Values.ofObject;

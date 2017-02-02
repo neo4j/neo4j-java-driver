@@ -16,12 +16,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1.hydration;
+package org.neo4j.driver.v1.types;
 
 import java.util.Collections;
 import java.util.Map;
 
-import org.neo4j.driver.v1.types.Relationship;
 import org.neo4j.driver.v1.Value;
 
 /**

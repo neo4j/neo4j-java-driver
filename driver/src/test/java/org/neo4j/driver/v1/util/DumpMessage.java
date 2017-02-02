@@ -42,7 +42,7 @@ import org.neo4j.driver.internal.messaging.PullAllMessage;
 import org.neo4j.driver.internal.messaging.RecordMessage;
 import org.neo4j.driver.internal.messaging.RunMessage;
 import org.neo4j.driver.internal.messaging.SuccessMessage;
-import org.neo4j.driver.internal.packstream.PackInput;
+import org.neo4j.driver.packstream.io.PackInput;
 import org.neo4j.driver.internal.util.BytePrinter;
 import org.neo4j.driver.v1.Value;
 

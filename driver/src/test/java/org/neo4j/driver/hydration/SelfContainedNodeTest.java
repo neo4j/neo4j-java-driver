@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1.hydration;
+package org.neo4j.driver.hydration;
 
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
@@ -25,6 +25,7 @@ import org.neo4j.driver.internal.util.Iterables;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.types.Node;
+import org.neo4j.driver.v1.types.SelfContainedNode;
 import org.neo4j.driver.v1.util.Function;
 
 import java.util.*;

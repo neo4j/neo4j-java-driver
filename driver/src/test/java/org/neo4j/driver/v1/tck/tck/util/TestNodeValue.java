@@ -21,8 +21,8 @@ package org.neo4j.driver.v1.tck.tck.util;
 import java.util.Collection;
 import java.util.Map;
 
-import org.neo4j.driver.v1.hydration.SelfContainedNode;
-import org.neo4j.driver.v1.hydration.NodeValue;
+import org.neo4j.driver.v1.types.SelfContainedNode;
+import org.neo4j.driver.v1.types.NodeValue;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.Value;
 
