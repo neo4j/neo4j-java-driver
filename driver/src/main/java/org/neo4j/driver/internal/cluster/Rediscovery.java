@@ -24,7 +24,7 @@ import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.v1.exceptions.UnauthorizedException;
+import org.neo4j.driver.v1.exceptions.SecurityException;
 
 import static java.lang.String.format;
 
@@ -76,7 +76,7 @@ public class Rediscovery
                 {
                     response = provider.getClusterComposition( connection );
                 }
-                catch( UnauthorizedException e )
+                catch( SecurityException e )
                 {
                     throw e; // terminate the discovery immediately
                 }

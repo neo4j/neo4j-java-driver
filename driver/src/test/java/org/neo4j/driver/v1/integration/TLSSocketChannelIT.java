@@ -42,7 +42,7 @@ import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
-import org.neo4j.driver.v1.exceptions.UnauthorizedException;
+import org.neo4j.driver.v1.exceptions.SecurityException;
 import org.neo4j.driver.v1.util.CertificateToolTest;
 import org.neo4j.driver.v1.util.Neo4jRunner;
 import org.neo4j.driver.v1.util.Neo4jSettings;
@@ -156,7 +156,7 @@ public class TLSSocketChannelIT
                  sslChannel = TLSSocketChannel.create(address, securityPlan, channel, logger);
                  fail( "Should have thrown exception" );
             }
-            catch ( UnauthorizedException e )
+            catch ( SecurityException e )
             {
                 assertThat( e.getMessage(), containsString( "General SSLEngine problem" ) );
                 assertThat( getRootCause( e ).getMessage(),
@@ -198,7 +198,7 @@ public class TLSSocketChannelIT
             sslChannel = TLSSocketChannel.create( address, securityPlan, channel, DEV_NULL_LOGGER );
             fail( "Should have thrown exception" );
         }
-        catch ( UnauthorizedException e )
+        catch ( SecurityException e )
         {
             assertThat( e.getMessage(), containsString( "General SSLEngine problem" ) );
             assertThat( getRootCause( e ).getMessage(), containsString(
@@ -249,7 +249,7 @@ public class TLSSocketChannelIT
             sslChannel = TLSSocketChannel.create( neo4j.address(), securityPlan, channel, mock( Logger.class ) );
             fail( "Should have thrown exception" );
         }
-        catch ( UnauthorizedException e )
+        catch ( SecurityException e )
         {
             assertThat( e.getMessage(), containsString( "General SSLEngine problem" ) );
             assertThat( getRootCause( e ).getMessage(), containsString( "No trusted certificate found" ) );

@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import org.neo4j.driver.v1.exceptions.AuthenticationException;
 import org.neo4j.driver.internal.messaging.MessageHandler;
 import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.summary.InternalNotification;
@@ -33,7 +34,6 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.DatabaseException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.exceptions.TransientException;
-import org.neo4j.driver.v1.exceptions.UnauthorizedException;
 import org.neo4j.driver.v1.summary.Notification;
 import org.neo4j.driver.v1.summary.StatementType;
 import org.neo4j.driver.v1.util.Function;
@@ -68,7 +68,7 @@ public class SocketResponseHandler implements MessageHandler
             case "ClientError":
                 if( code.equalsIgnoreCase( "Neo.ClientError.Security.Unauthorized" ) )
                 {
-                    error = new UnauthorizedException( code, message );
+                    error = new AuthenticationException( code, message );
                 }
                 else
                 {
