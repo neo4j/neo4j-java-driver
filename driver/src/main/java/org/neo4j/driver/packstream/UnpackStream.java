@@ -27,7 +27,9 @@ import org.neo4j.driver.hydration.HydrationException;
 import org.neo4j.driver.v1.types.GraphHydrant;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static java.lang.Integer.toHexString;
@@ -71,15 +73,7 @@ public class UnpackStream
         case STRING:
             return value(unpackString());
         case LIST:
-        {
-            int size = (int) unpackListHeader();
-            Value[] vals = new Value[size];
-            for (int j = 0; j < size; j++)
-            {
-                vals[j] = unpackValue();
-            }
-            return new ListValue(vals);
-        }
+            return new ListValue(unpackArray());
         case MAP:
             return new MapValue(unpackMap());
         case STRUCT:
@@ -174,6 +168,28 @@ public class UnpackStream
         default:
             throw new Unexpected("Expected a map, but got: " + toHexString(markerByte));
         }
+    }
+
+    public Value[] unpackArray() throws IOException
+    {
+        int size = unpackListHeader();
+        Value[] array = new Value[size];
+        for (int i = 0; i < size; i++)
+        {
+            array[i] = unpackValue();
+        }
+        return array;
+    }
+
+    public List<Value> unpackList() throws IOException
+    {
+        int size = unpackListHeader();
+        List<Value> list = new ArrayList<>(size);
+        for (int i = 0; i < size; i++)
+        {
+            list.add(unpackValue());
+        }
+        return list;
     }
 
     public Map<String, Value> unpackMap() throws IOException

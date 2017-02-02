@@ -87,13 +87,7 @@ public class Hydrant
 
     protected List<Value> unpackList() throws IOException
     {
-        int size = unpackStream.unpackListHeader();
-        List<Value> list = new ArrayList<>(size);
-        for (int i = 0; i < size; i++)
-        {
-            list.add(unpackValue());
-        }
-        return list;
+        return unpackStream.unpackList();
     }
 
     protected List<String> unpackStringList() throws IOException
