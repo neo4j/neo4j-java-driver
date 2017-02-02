@@ -23,7 +23,6 @@ import org.junit.experimental.runners.Enclosed;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -65,14 +64,14 @@ import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
 public class RediscoveryTest
 {
 
-    private static GetClusterCompositionResponse.Success Success( ClusterComposition cluster )
+    private static ClusterCompositionResponse.Success Success( ClusterComposition cluster )
     {
-        return new GetClusterCompositionResponse.Success( cluster );
+        return new ClusterCompositionResponse.Success( cluster );
     }
 
-    private static GetClusterCompositionResponse.Failure Failure( RuntimeException e )
+    private static ClusterCompositionResponse.Failure Failure( RuntimeException e )
     {
-        return new GetClusterCompositionResponse.Failure( e );
+        return new ClusterCompositionResponse.Failure( e );
     }
 
     public static class RoutingSettingsTest
@@ -347,31 +346,31 @@ public class RediscoveryTest
         @Override
         public boolean isStale()
         {
-            throw new NotImplementedException();
+            throw new UnsupportedOperationException();
         }
 
         @Override
         public HashSet<BoltServerAddress> update( ClusterComposition cluster )
         {
-            throw new NotImplementedException();
+            throw new UnsupportedOperationException();
         }
 
         @Override
         public void forget( BoltServerAddress address )
         {
-            throw new NotImplementedException();
+            throw new UnsupportedOperationException();
         }
 
         @Override
         public RoundRobinAddressSet readers()
         {
-            throw new NotImplementedException();
+            throw new UnsupportedOperationException();
         }
 
         @Override
         public RoundRobinAddressSet writers()
         {
-            throw new NotImplementedException();
+            throw new UnsupportedOperationException();
         }
 
         @Override
@@ -389,14 +388,13 @@ public class RediscoveryTest
         @Override
         public void removeWriter( BoltServerAddress toRemove )
         {
-            throw new NotImplementedException();
+            throw new UnsupportedOperationException();
         }
 
         @Override
         public void removeRouter( BoltServerAddress toRemove )
         {
             removedRouters.add( toRemove );
-//            throw new UnsupportedOperationException( "Should never remove any router from routing table" );
         }
     }
 }

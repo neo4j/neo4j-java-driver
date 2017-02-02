@@ -26,9 +26,9 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
 
-public class GetServersRunner
+public class GetServersProcedureRunner
 {
-    private String CALL_GET_SERVERS = "CALL dbms.cluster.routing.getServers";
+    private final String CALL_GET_SERVERS = "CALL dbms.cluster.routing.getServers";
 
     public List<Record> run( Connection connection )
     {

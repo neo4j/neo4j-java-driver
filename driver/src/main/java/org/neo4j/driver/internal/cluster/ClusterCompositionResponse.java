@@ -18,11 +18,11 @@
  */
 package org.neo4j.driver.internal.cluster;
 
-public interface GetClusterCompositionResponse
+public interface ClusterCompositionResponse
 {
     ClusterComposition clusterComposition();
 
-    class Failure implements GetClusterCompositionResponse
+    class Failure implements ClusterCompositionResponse
     {
         private final RuntimeException error;
 
@@ -38,7 +38,7 @@ public interface GetClusterCompositionResponse
         }
     }
 
-    class Success implements GetClusterCompositionResponse
+    class Success implements ClusterCompositionResponse
     {
         private final ClusterComposition cluster;
 

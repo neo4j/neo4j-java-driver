@@ -65,11 +65,11 @@ final class ClusterComposition
         this.routers.addAll( routers );
     }
 
-    public boolean isValid()
+    public boolean hasWriters()
     {
         return !writers.isEmpty();
     }
-    public boolean isIllegalResponse()
+    public boolean hasRoutersAndReaders()
     {
         return routers.isEmpty() || readers.isEmpty();
     }
@@ -111,8 +111,7 @@ final class ClusterComposition
             return null;
         }
 
-        final ClusterComposition result;
-        result = new ClusterComposition( expirationTimestamp( now, record ) );
+        final ClusterComposition result = new ClusterComposition( expirationTimestamp( now, record ) );
         record.get( "servers" ).asList( new Function<Value,Void>()
         {
             @Override

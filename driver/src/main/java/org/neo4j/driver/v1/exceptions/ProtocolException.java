@@ -24,7 +24,8 @@ package org.neo4j.driver.v1.exceptions;
  */
 public class ProtocolException extends Neo4jException
 {
-    private static String CODE = "Protocol violation: ";
+    private static final String CODE = "Protocol violation: ";
+
     public ProtocolException( String message )
     {
         super( CODE + message );

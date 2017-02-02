@@ -29,8 +29,10 @@ import org.neo4j.driver.internal.net.BoltServerAddress;
 
 import static java.util.Arrays.asList;
 
-public class ClusterCompositionUtil
+public final class ClusterCompositionUtil
 {
+    private ClusterCompositionUtil() {}
+
     public static final long NEVER_EXPIRE = System.currentTimeMillis() + TimeUnit.HOURS.toMillis( 1 );
 
     public static final BoltServerAddress A = new BoltServerAddress( "1111:11" );

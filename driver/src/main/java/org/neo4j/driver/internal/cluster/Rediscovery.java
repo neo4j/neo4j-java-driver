@@ -23,7 +23,6 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.Logger;
-import org.neo4j.driver.v1.exceptions.ProtocolException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
 import static java.lang.String.format;
@@ -48,9 +47,9 @@ public class Rediscovery
     // Given the current routing table and connection pool, use the connection composition provider to fetch a new
     // cluster composition, which would be used to update the routing table and connection pool
     public ClusterComposition lookupRoutingTable( ConnectionPool connections, RoutingTable routingTable )
-            throws InterruptedException, ServiceUnavailableException, ProtocolException
+            throws InterruptedException
     {
-        assertRouterIsNotEmpty( routingTable.routerSize() );
+        assertHasRouters( routingTable );
         int failures = 0;
 
         for ( long start = clock.millis(), delay = 0; ; delay = Math.max( settings.retryTimeoutDelay, delay * 2 ) )
@@ -62,7 +61,8 @@ public class Rediscovery
             }
             start = clock.millis();
 
-            for ( int i = 0, size = routingTable.routerSize(); i < size; i++ )
+            int size = routingTable.routerSize();
+            for ( int i = 0; i < size; i++ )
             {
                 BoltServerAddress address = routingTable.nextRouter();
                 if ( address == null )
@@ -70,7 +70,7 @@ public class Rediscovery
                     throw new ServiceUnavailableException( NO_ROUTERS_AVAILABLE );
                 }
 
-                GetClusterCompositionResponse response = null;
+                ClusterCompositionResponse response = null;
                 try ( Connection connection = connections.acquire( address ) )
                 {
                     response = provider.getClusterComposition( connection );
@@ -81,13 +81,13 @@ public class Rediscovery
                     logger.error( format( "Failed to connect to routing server '%s'.", address ), e );
                     routingTable.removeRouter( address );
 
-                    assertRouterIsNotEmpty( routingTable.routerSize() );
+                    assertHasRouters( routingTable );
                     continue;
                 }
 
                 ClusterComposition cluster = response.clusterComposition();
                 logger.info( "Got cluster composition %s", cluster );
-                if ( cluster.isValid() )
+                if ( cluster.hasWriters() )
                 {
                     return cluster;
                 }
@@ -99,9 +99,9 @@ public class Rediscovery
         }
     }
 
-    private void assertRouterIsNotEmpty( int size )
+    private void assertHasRouters( RoutingTable table )
     {
-        if ( size == 0 )
+        if ( table.routerSize() == 0 )
         {
             throw new ServiceUnavailableException( NO_ROUTERS_AVAILABLE );
         }

@@ -47,7 +47,7 @@ public class LoadBalancer implements RoutingErrorHandler, AutoCloseable
             BoltServerAddress... routingAddresses ) throws ServiceUnavailableException
     {
         this( settings, clock, log, connections, new ClusterRoutingTable( clock, routingAddresses ),
-                new ClusterCompositionProvider.Default( clock, log ) );
+                new GetServersProcedureClusterCompositionProvider( clock, log ) );
     }
 
     private LoadBalancer(

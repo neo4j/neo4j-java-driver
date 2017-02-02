@@ -34,6 +34,8 @@ import static org.hamcrest.core.IsEqual.equalTo;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
 
@@ -83,27 +85,17 @@ public class LoadBalancerTest
     public void shouldEnsureRoutingWhenAcquireConn() throws Exception
     {
         // given
-        final AtomicInteger ensureRoutingCounter = new AtomicInteger( 0 );
-
         Connection writerConn = mock( Connection.class );
         Connection readConn = mock( Connection.class );
-        LoadBalancer balancer = setupLoadBalancer( writerConn, readConn, new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                ensureRoutingCounter.incrementAndGet();
-            }
-        } );
-        ensureRoutingCounter.set( 0 ); // clean the counter after init
+        LoadBalancer balancer = setupLoadBalancer( writerConn, readConn );
+        LoadBalancer spy = spy( balancer );
 
         // when
-        Connection connection = balancer.acquireReadConnection();
+        Connection connection = spy.acquireReadConnection();
 
         // then
-        assertThat( ensureRoutingCounter.get(), equalTo( 1 ) );
+        verify( spy ).ensureRouting();
         assertThat( connection, equalTo( readConn ) );
-
     }
 
     @Test
@@ -118,18 +110,7 @@ public class LoadBalancerTest
         assertThat( balancer.acquireWriteConnection(), equalTo( writerConn ) );
     }
 
-    private LoadBalancer setupLoadBalancer ( Connection writerConn, Connection readConn )
-    {
-        return setupLoadBalancer( writerConn, readConn, new Runnable(){
-            @Override
-            public void run()
-            {
-                // do nothing for ensureRouting
-            }
-        });
-    }
-
-    private LoadBalancer setupLoadBalancer( Connection writerConn, Connection readConn, final Runnable ensureRouting )
+    private LoadBalancer setupLoadBalancer( Connection writerConn, Connection readConn )
     {
         BoltServerAddress writer = mock( BoltServerAddress.class );
         BoltServerAddress reader = mock( BoltServerAddress.class );
@@ -149,13 +130,7 @@ public class LoadBalancerTest
         when( routingTable.writers() ).thenReturn( writerAddrs );
 
         LoadBalancer balancer = new LoadBalancer( DEV_NULL_LOGGER, connPool,
-                routingTable, mock( Rediscovery.class ) ) {
-            @Override
-            public void ensureRouting()
-            {
-                ensureRouting.run();
-            }
-        };
+                routingTable, mock( Rediscovery.class ) ) ;
 
         return balancer;
     }

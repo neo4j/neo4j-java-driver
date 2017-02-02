@@ -56,8 +56,8 @@ public class ClusterCompositionProviderTest
     public void shouldProtocolErrorWhenNoRecord() throws Throwable
     {
         // Given
-        GetServersRunner mockedRunner = mock( GetServersRunner.class );
-        ClusterCompositionProvider provider = new ClusterCompositionProvider.Default( mock( Clock.class ),
+        GetServersProcedureRunner mockedRunner = mock( GetServersProcedureRunner.class );
+        ClusterCompositionProvider provider = new GetServersProcedureClusterCompositionProvider( mock( Clock.class ),
                 DEV_NULL_LOGGER, mockedRunner );
 
         PooledConnection mockedConn = mock( PooledConnection.class );
@@ -65,10 +65,10 @@ public class ClusterCompositionProviderTest
         when( mockedRunner.run( mockedConn ) ).thenReturn( emptyRecord );
 
         // When
-        GetClusterCompositionResponse response = provider.getClusterComposition( mockedConn );
+        ClusterCompositionResponse response = provider.getClusterComposition( mockedConn );
 
         // Then
-        assertThat( response, instanceOf( GetClusterCompositionResponse.Failure.class ) );
+        assertThat( response, instanceOf( ClusterCompositionResponse.Failure.class ) );
         try
         {
             response.clusterComposition();
@@ -85,8 +85,8 @@ public class ClusterCompositionProviderTest
     public void shouldProtocolErrorWhenMoreThanOneRecord() throws Throwable
     {
         // Given
-        GetServersRunner mockedRunner = mock( GetServersRunner.class );
-        ClusterCompositionProvider provider = new ClusterCompositionProvider.Default( mock( Clock.class ),
+        GetServersProcedureRunner mockedRunner = mock( GetServersProcedureRunner.class );
+        ClusterCompositionProvider provider = new GetServersProcedureClusterCompositionProvider( mock( Clock.class ),
                 DEV_NULL_LOGGER, mockedRunner );
 
         PooledConnection mockedConn = mock( PooledConnection.class );
@@ -94,10 +94,10 @@ public class ClusterCompositionProviderTest
         when( mockedRunner.run( mockedConn ) ).thenReturn( asList( aRecord, aRecord ) );
 
         // When
-        GetClusterCompositionResponse response = provider.getClusterComposition( mockedConn );
+        ClusterCompositionResponse response = provider.getClusterComposition( mockedConn );
 
         // Then
-        assertThat( response, instanceOf( GetClusterCompositionResponse.Failure.class ) );
+        assertThat( response, instanceOf( ClusterCompositionResponse.Failure.class ) );
         try
         {
             response.clusterComposition();
@@ -114,8 +114,8 @@ public class ClusterCompositionProviderTest
     public void shouldProtocolErrorWhenUnparsableRecord() throws Throwable
     {
         // Given
-        GetServersRunner mockedRunner = mock( GetServersRunner.class );
-        ClusterCompositionProvider provider = new ClusterCompositionProvider.Default( mock( Clock.class ),
+        GetServersProcedureRunner mockedRunner = mock( GetServersProcedureRunner.class );
+        ClusterCompositionProvider provider = new GetServersProcedureClusterCompositionProvider( mock( Clock.class ),
                 DEV_NULL_LOGGER, mockedRunner );
 
         PooledConnection mockedConn = mock( PooledConnection.class );
@@ -123,10 +123,10 @@ public class ClusterCompositionProviderTest
         when( mockedRunner.run( mockedConn ) ).thenReturn( asList( aRecord ) );
 
         // When
-        GetClusterCompositionResponse response = provider.getClusterComposition( mockedConn );
+        ClusterCompositionResponse response = provider.getClusterComposition( mockedConn );
 
         // Then
-        assertThat( response, instanceOf( GetClusterCompositionResponse.Failure.class ) );
+        assertThat( response, instanceOf( ClusterCompositionResponse.Failure.class ) );
         try
         {
             response.clusterComposition();
@@ -143,9 +143,9 @@ public class ClusterCompositionProviderTest
     public void shouldProtocolErrorWhenNoRouters() throws Throwable
     {
         // Given
-        GetServersRunner mockedRunner = mock( GetServersRunner.class );
+        GetServersProcedureRunner mockedRunner = mock( GetServersProcedureRunner.class );
         Clock mockedClock = mock( Clock.class );
-        ClusterCompositionProvider provider = new ClusterCompositionProvider.Default( mockedClock,
+        ClusterCompositionProvider provider = new GetServersProcedureClusterCompositionProvider( mockedClock,
                 DEV_NULL_LOGGER, mockedRunner );
 
         PooledConnection mockedConn = mock( PooledConnection.class );
@@ -158,10 +158,10 @@ public class ClusterCompositionProviderTest
         when( mockedClock.millis() ).thenReturn( 12345L );
 
         // When
-        GetClusterCompositionResponse response = provider.getClusterComposition( mockedConn );
+        ClusterCompositionResponse response = provider.getClusterComposition( mockedConn );
 
         // Then
-        assertThat( response, instanceOf( GetClusterCompositionResponse.Failure.class ) );
+        assertThat( response, instanceOf( ClusterCompositionResponse.Failure.class ) );
         try
         {
             response.clusterComposition();
@@ -178,9 +178,9 @@ public class ClusterCompositionProviderTest
     public void shouldProtocolErrorWhenNoReaders() throws Throwable
     {
         // Given
-        GetServersRunner mockedRunner = mock( GetServersRunner.class );
+        GetServersProcedureRunner mockedRunner = mock( GetServersProcedureRunner.class );
         Clock mockedClock = mock( Clock.class );
-        ClusterCompositionProvider provider = new ClusterCompositionProvider.Default( mockedClock,
+        ClusterCompositionProvider provider = new GetServersProcedureClusterCompositionProvider( mockedClock,
                 DEV_NULL_LOGGER, mockedRunner );
 
         PooledConnection mockedConn = mock( PooledConnection.class );
@@ -193,10 +193,10 @@ public class ClusterCompositionProviderTest
         when( mockedClock.millis() ).thenReturn( 12345L );
 
         // When
-        GetClusterCompositionResponse response = provider.getClusterComposition( mockedConn );
+        ClusterCompositionResponse response = provider.getClusterComposition( mockedConn );
 
         // Then
-        assertThat( response, instanceOf( GetClusterCompositionResponse.Failure.class ) );
+        assertThat( response, instanceOf( ClusterCompositionResponse.Failure.class ) );
         try
         {
             response.clusterComposition();
@@ -214,8 +214,8 @@ public class ClusterCompositionProviderTest
     public void shouldPropagateConnectionFailureExceptions() throws Exception
     {
         // Given
-        GetServersRunner mockedRunner = mock( GetServersRunner.class );
-        ClusterCompositionProvider provider = new ClusterCompositionProvider.Default( mock( Clock.class ),
+        GetServersProcedureRunner mockedRunner = mock( GetServersProcedureRunner.class );
+        ClusterCompositionProvider provider = new GetServersProcedureClusterCompositionProvider( mock( Clock.class ),
                 DEV_NULL_LOGGER );
 
         PooledConnection mockedConn = mock( PooledConnection.class );
@@ -245,8 +245,8 @@ public class ClusterCompositionProviderTest
     {
         // Given
         Clock mockedClock = mock( Clock.class );
-        GetServersRunner mockedRunner = mock( GetServersRunner.class );
-        ClusterCompositionProvider provider = new ClusterCompositionProvider.Default( mockedClock,
+        GetServersProcedureRunner mockedRunner = mock( GetServersProcedureRunner.class );
+        ClusterCompositionProvider provider = new GetServersProcedureClusterCompositionProvider( mockedClock,
                 DEV_NULL_LOGGER, mockedRunner );
 
         PooledConnection mockedConn = mock( PooledConnection.class );
@@ -260,10 +260,10 @@ public class ClusterCompositionProviderTest
         when( mockedClock.millis() ).thenReturn( 12345L );
 
         // When
-        GetClusterCompositionResponse response = provider.getClusterComposition( mockedConn );
+        ClusterCompositionResponse response = provider.getClusterComposition( mockedConn );
 
         // Then
-        assertThat( response, instanceOf( GetClusterCompositionResponse.Success.class ) );
+        assertThat( response, instanceOf( ClusterCompositionResponse.Success.class ) );
         ClusterComposition cluster = response.clusterComposition();
         assertEquals( 12345 + 100_000, cluster.expirationTimestamp() );
         assertEquals( serverSet( "one:1337", "two:1337" ), cluster.readers() );
@@ -279,7 +279,7 @@ public class ClusterCompositionProviderTest
         return map;
     }
 
-    public static Set<BoltServerAddress> serverSet( String... addresses )
+    private static Set<BoltServerAddress> serverSet( String... addresses )
     {
         Set<BoltServerAddress> result = new HashSet<>();
         for ( String address : addresses )
