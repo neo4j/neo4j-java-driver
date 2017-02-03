@@ -64,12 +64,12 @@ import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
 public class RediscoveryTest
 {
 
-    private static ClusterCompositionResponse.Success Success( ClusterComposition cluster )
+    private static ClusterCompositionResponse.Success success( ClusterComposition cluster )
     {
         return new ClusterCompositionResponse.Success( cluster );
     }
 
-    private static ClusterCompositionResponse.Failure Failure( RuntimeException e )
+    private static ClusterCompositionResponse.Failure failure( RuntimeException e )
     {
         return new ClusterCompositionResponse.Failure( e );
     }
@@ -87,7 +87,7 @@ public class RediscoveryTest
 
             ClusterCompositionProvider mockedProvider = mock( ClusterCompositionProvider.class );
             when( mockedProvider.getClusterComposition( any( Connection.class ) ) )
-                    .thenReturn( Success( INVALID_CLUSTER_COMPOSITION ) );
+                    .thenReturn( success( INVALID_CLUSTER_COMPOSITION ) );
 
             Rediscovery rediscovery = new Rediscovery( settings, mock( Clock.class ), DEV_NULL_LOGGER, mockedProvider );
 
@@ -124,7 +124,7 @@ public class RediscoveryTest
             ClusterCompositionProvider
                     mockedProvider = mock( ClusterCompositionProvider.class );
             when( mockedProvider.getClusterComposition( healthyConn ) )
-                    .thenReturn( Success( ClusterCompositionUtil.VALID_CLUSTER_COMPOSITION ) );
+                    .thenReturn( success( ClusterCompositionUtil.VALID_CLUSTER_COMPOSITION ) );
 
             // When
             ClusterComposition clusterComposition = rediscover( mockedConnections, routingTable, mockedProvider );
@@ -152,7 +152,7 @@ public class RediscoveryTest
             ClusterCompositionProvider
                     mockedProvider = mock( ClusterCompositionProvider.class );
             when( mockedProvider.getClusterComposition( healthyConn ) )
-                    .thenReturn( Failure( new ServiceUnavailableException( "No such procedure" ) ) );
+                    .thenReturn( failure( new ServiceUnavailableException( "No such procedure" ) ) );
 
             // When & When
             try
@@ -203,9 +203,9 @@ public class RediscoveryTest
 
             ClusterCompositionProvider
                     mockedProvider = mock( ClusterCompositionProvider.class );
-            when( mockedProvider.getClusterComposition( noWriterConn ) ).thenReturn( Success( noWriters ) );
+            when( mockedProvider.getClusterComposition( noWriterConn ) ).thenReturn( success( noWriters ) );
             when( mockedProvider.getClusterComposition( healthyConn ) )
-                    .thenReturn( Success( ClusterCompositionUtil.VALID_CLUSTER_COMPOSITION ) );
+                    .thenReturn( success( ClusterCompositionUtil.VALID_CLUSTER_COMPOSITION ) );
 
             // When
             ClusterComposition clusterComposition = rediscover( mockedConnections, routingTable, mockedProvider );
@@ -226,7 +226,7 @@ public class RediscoveryTest
 
             ClusterCompositionProvider
                     mockedProvider = mock( ClusterCompositionProvider.class );
-            when( mockedProvider.getClusterComposition( noWriterConn ) ).thenReturn( Success( noWriters ) );
+            when( mockedProvider.getClusterComposition( noWriterConn ) ).thenReturn( success( noWriters ) );
 
             // When & THen
             try
@@ -278,7 +278,7 @@ public class RediscoveryTest
 
             ClusterCompositionProvider
                     mockedProvider = mock( ClusterCompositionProvider.class );
-            when( mockedProvider.getClusterComposition( healthyConn ) ).thenReturn( Success ( atLeastOneOfEach ) );
+            when( mockedProvider.getClusterComposition( healthyConn ) ).thenReturn( success( atLeastOneOfEach ) );
 
             // When
             ClusterComposition clusterComposition = rediscover( mockedConnections, routingTable, mockedProvider );
@@ -303,7 +303,7 @@ public class RediscoveryTest
 
             ClusterCompositionProvider mockedProvider = mock( ClusterCompositionProvider.class );
             ProtocolException exception = new ProtocolException( "Failed to parse result" );
-            when( mockedProvider.getClusterComposition( healthyConn ) ).thenReturn( Failure( exception ) );
+            when( mockedProvider.getClusterComposition( healthyConn ) ).thenReturn( failure( exception ) );
 
             // When & When
             try
