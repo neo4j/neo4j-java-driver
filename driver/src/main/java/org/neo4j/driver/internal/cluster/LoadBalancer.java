@@ -26,11 +26,12 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.Logger;
+import org.neo4j.driver.v1.exceptions.ProtocolException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
 import static java.lang.String.format;
 
-public final class LoadBalancer implements RoutingErrorHandler, AutoCloseable
+public class LoadBalancer implements RoutingErrorHandler, AutoCloseable
 {
     private final Logger log;
 
@@ -46,7 +47,7 @@ public final class LoadBalancer implements RoutingErrorHandler, AutoCloseable
             BoltServerAddress... routingAddresses ) throws ServiceUnavailableException
     {
         this( settings, clock, log, connections, new ClusterRoutingTable( clock, routingAddresses ),
-                new ClusterComposition.Provider.Default( clock, log ) );
+                new GetServersProcedureClusterCompositionProvider( clock, log ) );
     }
 
     private LoadBalancer(
@@ -55,7 +56,7 @@ public final class LoadBalancer implements RoutingErrorHandler, AutoCloseable
             Logger log,
             ConnectionPool connections,
             RoutingTable routingTable,
-            ClusterComposition.Provider provider ) throws ServiceUnavailableException
+            ClusterCompositionProvider provider ) throws ServiceUnavailableException
     {
         this( log, connections, routingTable, new Rediscovery( settings, clock, log, provider ) );
     }
@@ -132,7 +133,7 @@ public final class LoadBalancer implements RoutingErrorHandler, AutoCloseable
         connections.purge( address );
     }
 
-    private synchronized void ensureRouting() throws ServiceUnavailableException
+    synchronized void ensureRouting() throws ServiceUnavailableException, ProtocolException
     {
         if ( routingTable.isStale() )
         {

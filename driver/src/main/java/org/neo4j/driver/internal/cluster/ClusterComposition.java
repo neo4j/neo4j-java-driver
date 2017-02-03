@@ -19,71 +19,15 @@
 package org.neo4j.driver.internal.cluster;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
-import org.neo4j.driver.internal.NetworkSession;
 import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.util.Clock;
-import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.Statement;
-import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.v1.exceptions.value.ValueException;
 import org.neo4j.driver.v1.util.Function;
 
 final class ClusterComposition
 {
-    interface Provider
-    {
-        String GET_SERVERS = "CALL dbms.cluster.routing.getServers";
-
-        ClusterComposition getClusterComposition( Connection connection ) throws ServiceUnavailableException;
-
-        final class Default implements Provider
-        {
-            private static final Statement GET_SERVER = new Statement( Provider.GET_SERVERS );
-            private final Clock clock;
-            private final Logger log;
-
-            Default( Clock clock, Logger log )
-            {
-                this.clock = clock;
-                this.log = log;
-            }
-
-            @Override
-            public ClusterComposition getClusterComposition( Connection connection ) throws ServiceUnavailableException
-            {
-                StatementResult cursor = getServers( connection );
-                List<Record> records = cursor.list();
-                log.info( "Got getServers response: %s", records );
-                long now = clock.millis();
-                try
-                {
-                    if ( records.size() != 1 )
-                    {
-                        // server returned too few or too many rows, this is a contract violation, treat as incapable
-                        return null;
-                    }
-                    return read( records.get( 0 ), now );
-                }
-                finally
-                {
-                    cursor.consume(); // make sure we exhaust the results
-                }
-            }
-
-            private StatementResult getServers( Connection connection )
-            {
-                return NetworkSession.run( connection, GET_SERVER );
-            }
-        }
-    }
-
     private static final long MAX_TTL = Long.MAX_VALUE / 1000L;
     private static final Function<Value,BoltServerAddress> OF_BoltServerAddress =
             new Function<Value,BoltServerAddress>()
@@ -94,8 +38,11 @@ final class ClusterComposition
                     return new BoltServerAddress( value.asString() );
                 }
             };
-    private final Set<BoltServerAddress> readers, writers, routers;
-    final long expirationTimestamp;
+
+    private final Set<BoltServerAddress> readers;
+    private final Set<BoltServerAddress> writers;
+    private final Set<BoltServerAddress> routers;
+    private final long expirationTimestamp;
 
     private ClusterComposition( long expirationTimestamp )
     {
@@ -118,9 +65,13 @@ final class ClusterComposition
         this.routers.addAll( routers );
     }
 
-    public boolean isValid()
+    public boolean hasWriters()
     {
-        return !routers.isEmpty() && !writers.isEmpty();
+        return !writers.isEmpty();
+    }
+    public boolean hasRoutersAndReaders()
+    {
+        return routers.isEmpty() || readers.isEmpty();
     }
 
     public Set<BoltServerAddress> readers()
@@ -138,6 +89,10 @@ final class ClusterComposition
         return new HashSet<>( routers );
     }
 
+    public long expirationTimestamp() {
+        return this.expirationTimestamp;
+    }
+
     @Override
     public String toString()
     {
@@ -149,32 +104,25 @@ final class ClusterComposition
                 '}';
     }
 
-    private static ClusterComposition read( Record record, long now )
+    public static ClusterComposition parse( Record record, long now )
     {
         if ( record == null )
         {
             return null;
         }
-        try
+
+        final ClusterComposition result = new ClusterComposition( expirationTimestamp( now, record ) );
+        record.get( "servers" ).asList( new Function<Value,Void>()
         {
-            final ClusterComposition result;
-            result = new ClusterComposition( expirationTimestamp( now, record ) );
-            record.get( "servers" ).asList( new Function<Value,Void>()
+            @Override
+            public Void apply( Value value )
             {
-                @Override
-                public Void apply( Value value )
-                {
-                    result.servers( value.get( "role" ).asString() )
-                            .addAll( value.get( "addresses" ).asList( OF_BoltServerAddress ) );
-                    return null;
-                }
-            } );
-            return result;
-        }
-        catch ( ValueException e )
-        {
-            return null;
-        }
+                result.servers( value.get( "role" ).asString() )
+                        .addAll( value.get( "addresses" ).asList( OF_BoltServerAddress ) );
+                return null;
+            }
+        } );
+        return result;
     }
 
     private static long expirationTimestamp( long now, Record record )

@@ -34,9 +34,9 @@ public class Rediscovery
     private final RoutingSettings settings;
     private final Clock clock;
     private final Logger logger;
-    private final ClusterComposition.Provider provider;
+    private final ClusterCompositionProvider provider;
 
-    public Rediscovery( RoutingSettings settings, Clock clock, Logger logger, ClusterComposition.Provider provider )
+    public Rediscovery( RoutingSettings settings, Clock clock, Logger logger, ClusterCompositionProvider provider )
     {
         this.settings = settings;
         this.clock = clock;
@@ -47,13 +47,11 @@ public class Rediscovery
     // Given the current routing table and connection pool, use the connection composition provider to fetch a new
     // cluster composition, which would be used to update the routing table and connection pool
     public ClusterComposition lookupRoutingTable( ConnectionPool connections, RoutingTable routingTable )
-            throws InterruptedException, ServiceUnavailableException
+            throws InterruptedException
     {
-        int size = routingTable.routerSize(), failures = 0;
-        if ( size == 0 )
-        {
-            throw new ServiceUnavailableException( NO_ROUTERS_AVAILABLE );
-        }
+        assertHasRouters( routingTable );
+        int failures = 0;
+
         for ( long start = clock.millis(), delay = 0; ; delay = Math.max( settings.retryTimeoutDelay, delay * 2 ) )
         {
             long waitTime = start + delay - clock.millis();
@@ -62,6 +60,8 @@ public class Rediscovery
                 clock.sleep( waitTime );
             }
             start = clock.millis();
+
+            int size = routingTable.routerSize();
             for ( int i = 0; i < size; i++ )
             {
                 BoltServerAddress address = routingTable.nextRouter();
@@ -69,28 +69,25 @@ public class Rediscovery
                 {
                     throw new ServiceUnavailableException( NO_ROUTERS_AVAILABLE );
                 }
-                ClusterComposition cluster;
+
+                ClusterCompositionResponse response = null;
                 try ( Connection connection = connections.acquire( address ) )
                 {
-                    cluster = provider.getClusterComposition( connection );
-                    logger.info( "Got cluster composition %s", cluster );
+                    response = provider.getClusterComposition( connection );
                 }
-                catch ( Exception e )
+                catch ( Throwable e )
                 {
+                    // the connection breaks
                     logger.error( format( "Failed to connect to routing server '%s'.", address ), e );
+                    routingTable.removeRouter( address );
+
+                    assertHasRouters( routingTable );
                     continue;
                 }
-                if ( cluster == null || !cluster.isValid() )
-                {
-                    logger.info( "Server <%s> unable to perform routing capability, dropping from list of routers.",
-                            address );
-                    routingTable.removeRouter( address );
-                    if ( --size == 0 )
-                    {
-                        throw new ServiceUnavailableException( NO_ROUTERS_AVAILABLE );
-                    }
-                }
-                else
+
+                ClusterComposition cluster = response.clusterComposition();
+                logger.info( "Got cluster composition %s", cluster );
+                if ( cluster.hasWriters() )
                 {
                     return cluster;
                 }
@@ -99,6 +96,14 @@ public class Rediscovery
             {
                 throw new ServiceUnavailableException( NO_ROUTERS_AVAILABLE );
             }
+        }
+    }
+
+    private void assertHasRouters( RoutingTable table )
+    {
+        if ( table.routerSize() == 0 )
+        {
+            throw new ServiceUnavailableException( NO_ROUTERS_AVAILABLE );
         }
     }
 }
