@@ -26,12 +26,7 @@ import java.nio.channels.WritableByteChannel;
 public class BufferedChannelOutput implements PackOutput
 {
     private final ByteBuffer buffer;
-    private WritableByteChannel channel;
-
-    public BufferedChannelOutput( int bufferSize )
-    {
-        this.buffer = ByteBuffer.allocate( bufferSize ).order( ByteOrder.BIG_ENDIAN );
-    }
+    private final WritableByteChannel channel;
 
     public BufferedChannelOutput( WritableByteChannel channel )
     {
@@ -40,12 +35,7 @@ public class BufferedChannelOutput implements PackOutput
 
     public BufferedChannelOutput( WritableByteChannel channel, int bufferSize )
     {
-        this( bufferSize );
-        reset( channel );
-    }
-
-    public void reset( WritableByteChannel channel )
-    {
+        this.buffer = ByteBuffer.allocate( bufferSize ).order( ByteOrder.BIG_ENDIAN );
         this.channel = channel;
     }
 

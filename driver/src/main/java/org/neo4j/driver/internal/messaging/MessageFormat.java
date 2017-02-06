@@ -29,8 +29,6 @@ public interface MessageFormat
         Writer write( Message msg ) throws IOException;
 
         Writer flush() throws IOException;
-
-        Writer reset( WritableByteChannel channel );
     }
 
     interface Reader

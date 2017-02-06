@@ -58,10 +58,10 @@ public class LoadBalancer implements RoutingErrorHandler, AutoCloseable
             RoutingTable routingTable,
             ClusterCompositionProvider provider ) throws ServiceUnavailableException
     {
-        this( log, connections, routingTable, new Rediscovery( settings, clock, log, provider ) );
+        this( routingTable, connections, new Rediscovery( settings, clock, log, provider ), log );
     }
 
-    LoadBalancer( Logger log, ConnectionPool connections, RoutingTable routingTable, Rediscovery rediscovery )
+    LoadBalancer( RoutingTable routingTable, ConnectionPool connections, Rediscovery rediscovery, Logger log )
             throws ServiceUnavailableException
     {
         this.log = log;

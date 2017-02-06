@@ -345,13 +345,6 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             return this;
         }
 
-        @Override
-        public Writer reset( WritableByteChannel channel )
-        {
-            packer.reset( channel );
-            return this;
-        }
-
         private void packNode( Node node ) throws IOException
         {
             packer.packStructHeader( NODE_FIELDS, NODE );

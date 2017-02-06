@@ -312,8 +312,8 @@ public class CausalClusteringIT
                     parameters( "name", "Webber", "title", "Mr" ) );
             tx1.success();
 
-            closeAndExpectException( tx1, ClientException.class );
-            closeAndExpectException( session1, ClientException.class );
+            closeAndExpectException( tx1, SessionExpiredException.class );
+            session1.close();
 
             String bookmark = inExpirableSession( driver, createSession(), new Function<Session,String>()
             {

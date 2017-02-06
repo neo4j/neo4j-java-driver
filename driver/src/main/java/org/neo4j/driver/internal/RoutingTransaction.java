@@ -47,7 +47,7 @@ public class RoutingTransaction implements Transaction
     private final BoltServerAddress address;
     private final RoutingErrorHandler onError;
 
-    RoutingTransaction( Transaction delegate, AccessMode mode, BoltServerAddress address,
+    public RoutingTransaction( Transaction delegate, AccessMode mode, BoltServerAddress address,
             RoutingErrorHandler onError )
     {
         this.delegate = delegate;

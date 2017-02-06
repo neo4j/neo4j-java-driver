@@ -40,15 +40,8 @@ public class BufferedChannelInput implements PackInput
     public BufferedChannelInput( int bufferCapacity, ReadableByteChannel ch )
     {
         this.buffer = ByteBuffer.allocate( bufferCapacity ).order( ByteOrder.BIG_ENDIAN );
-        reset( ch );
-    }
-
-    public BufferedChannelInput reset( ReadableByteChannel ch )
-    {
-        this.channel = ch;
-        this.buffer.position( 0 );
         this.buffer.limit( 0 );
-        return this;
+        this.channel = ch;
     }
 
     @Override
