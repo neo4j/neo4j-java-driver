@@ -22,7 +22,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
 
-import org.neo4j.driver.internal.packstream.PackOutput;
+import org.neo4j.driver.packstream.io.PackOutput;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static java.lang.Math.max;

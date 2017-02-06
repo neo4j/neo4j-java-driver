@@ -16,54 +16,53 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.value;
+package org.neo4j.driver.v1.types;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.types.Entity;
-import org.neo4j.driver.v1.util.Function;
 
-public abstract class EntityValueAdapter<V extends Entity> extends GraphValueAdapter<V>
+/**
+ * {@link Node} implementation that directly contains labels and properties.
+ */
+public class SelfContainedNode extends SelfContainedEntity implements Node
 {
-    protected EntityValueAdapter( V adapted )
+    private final Collection<String> labels;
+
+    public SelfContainedNode(long id )
     {
-        super( adapted );
+        this( id, Collections.<String>emptyList(), Collections.<String,Value>emptyMap() );
+    }
+
+    public SelfContainedNode(long id, Collection<String> labels, Map<String, Value> properties )
+    {
+        super( id, properties );
+        this.labels = labels;
     }
 
     @Override
-    public V asEntity()
+    public Collection<String> labels()
     {
-        return asObject();
+        return labels;
     }
 
     @Override
-    public Map<String,Object> asMap()
+    public boolean hasLabel( String label )
     {
-        return asEntity().asMap();
+        return labels.contains( label );
     }
 
     @Override
-    public <T> Map<String,T> asMap( Function<Value,T> mapFunction )
+    public Value asValue()
     {
-        return asEntity().asMap( mapFunction );
+        return new NodeValue( this );
     }
 
     @Override
-    public int size()
+    public String toString()
     {
-        return asEntity().size();
-    }
-
-    @Override
-    public Iterable<String> keys()
-    {
-        return asEntity().keys();
-    }
-
-    @Override
-    public Value get( String key )
-    {
-        return asEntity().get( key );
+        return String.format( "node<%s>", id()  );
     }
 }

@@ -22,7 +22,8 @@ import org.junit.Test;
 
 import java.util.HashMap;
 
-import org.neo4j.driver.internal.InternalNode;
+import org.neo4j.driver.v1.types.NodeValue;
+import org.neo4j.driver.v1.types.SelfContainedNode;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.internal.types.TypeConstructor;
 import org.neo4j.driver.v1.Value;
@@ -72,11 +73,11 @@ public class NodeValueTest
 
     private NodeValue emptyNodeValue()
     {
-        return new NodeValue( new InternalNode( 1234, singletonList( "User" ), new HashMap<String, Value>() ) );
+        return new NodeValue( new SelfContainedNode( 1234, singletonList( "User" ), new HashMap<String, Value>() ) );
     }
 
     private NodeValue filledNodeValue()
     {
-        return new NodeValue( new InternalNode( 1234, singletonList( "User" ), singletonMap( "name", value( "Dodo" ) ) ) );
+        return new NodeValue( new SelfContainedNode( 1234, singletonList( "User" ), singletonMap( "name", value( "Dodo" ) ) ) );
     }
 }

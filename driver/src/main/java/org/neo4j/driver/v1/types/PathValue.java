@@ -16,28 +16,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.value;
+package org.neo4j.driver.v1.types;
 
 import org.neo4j.driver.internal.types.InternalTypeSystem;
-import org.neo4j.driver.v1.types.Relationship;
-import org.neo4j.driver.v1.types.Type;
 
-public class RelationshipValue extends EntityValueAdapter<Relationship>
+public class PathValue extends GraphValueAdapter<Path>
 {
-    public RelationshipValue( Relationship adapted )
+    public PathValue( Path adapted )
     {
         super( adapted );
     }
 
-    @Override
-    public Relationship asRelationship()
+    public Path asPath()
     {
-        return asEntity();
+        return asObject();
+    }
+
+    @Override
+    public int size()
+    {
+        return asObject().length();
     }
 
     @Override
     public Type type()
     {
-        return InternalTypeSystem.TYPE_SYSTEM.RELATIONSHIP();
+        return InternalTypeSystem.TYPE_SYSTEM.PATH();
     }
+
 }

@@ -20,9 +20,10 @@ package org.neo4j.driver.internal.value;
 
 import org.junit.Test;
 
-import org.neo4j.driver.internal.InternalNode;
-import org.neo4j.driver.internal.InternalPath;
-import org.neo4j.driver.internal.InternalRelationship;
+import org.neo4j.driver.v1.types.PathValue;
+import org.neo4j.driver.v1.types.SelfContainedNode;
+import org.neo4j.driver.v1.types.SelfContainedPath;
+import org.neo4j.driver.v1.types.SelfContainedRelationship;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.v1.Value;
 
@@ -56,6 +57,6 @@ public class PathValueTest
 
     private PathValue pathValue()
     {
-        return new PathValue( new InternalPath( new InternalNode(42L), new InternalRelationship( 43L, 42L, 44L, "T" ), new InternalNode( 44L ) ) );
+        return new PathValue( new SelfContainedPath( new SelfContainedNode(42L), new SelfContainedRelationship( 43L, 42L, 44L, "T" ), new SelfContainedNode( 44L ) ) );
     }
 }

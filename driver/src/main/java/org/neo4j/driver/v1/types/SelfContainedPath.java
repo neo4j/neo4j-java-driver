@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal;
+package org.neo4j.driver.v1.types;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -24,25 +24,21 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-import org.neo4j.driver.internal.value.PathValue;
-import org.neo4j.driver.v1.types.Entity;
-import org.neo4j.driver.v1.types.Node;
-import org.neo4j.driver.v1.types.Path;
-import org.neo4j.driver.v1.types.Relationship;
+import org.neo4j.driver.internal.AsValue;
 import org.neo4j.driver.v1.Value;
 
 /**
  * {@link Path} implementation that directly contains all nodes and relationships.
  */
-public class InternalPath implements Path, AsValue
+public class SelfContainedPath implements Path, AsValue
 {
-    public static class SelfContainedSegment implements Segment
+    public static class Segment implements Path.Segment
     {
         private final Node start;
         private final Relationship relationship;
         private final Node end;
 
-        public SelfContainedSegment( Node start, Relationship relationship, Node end )
+        public Segment(Node start, Relationship relationship, Node end )
         {
             this.start = start;
             this.relationship = relationship;
@@ -79,7 +75,7 @@ public class InternalPath implements Path, AsValue
                 return false;
             }
 
-            SelfContainedSegment that = (SelfContainedSegment) other;
+            Segment that = (Segment) other;
             return start.equals( that.start ) && end.equals( that.end ) && relationship.equals( that.relationship );
 
         }
@@ -107,11 +103,11 @@ public class InternalPath implements Path, AsValue
         return node.id() ==  relationship.startNodeId() || node.id() == relationship.endNodeId();
     }
 
-    private final List<Node> nodes;
-    private final List<Relationship> relationships;
-    private final List<Segment> segments;
+    protected final List<Node> nodes;
+    protected final List<Relationship> relationships;
+    protected final List<Path.Segment> segments;
 
-    public InternalPath( List<Entity> alternatingNodeAndRel )
+    public SelfContainedPath(List<Entity> alternatingNodeAndRel )
     {
         nodes = newList( alternatingNodeAndRel.size() / 2 + 1 );
         relationships = newList( alternatingNodeAndRel.size() / 2 );
@@ -184,12 +180,12 @@ public class InternalPath implements Path, AsValue
         buildSegments();
     }
 
-    public InternalPath( Entity... alternatingNodeAndRel )
+    public SelfContainedPath(Entity... alternatingNodeAndRel )
     {
         this( Arrays.asList( alternatingNodeAndRel ) );
     }
 
-    public InternalPath( List<Segment> segments, List<Node> nodes, List<Relationship> relationships )
+    public SelfContainedPath(List<Path.Segment> segments, List<Node> nodes, List<Relationship> relationships )
     {
         this.segments = segments;
         this.nodes = nodes;
@@ -244,7 +240,7 @@ public class InternalPath implements Path, AsValue
     }
 
     @Override
-    public Iterator<Segment> iterator()
+    public Iterator<Path.Segment> iterator()
     {
         return segments.iterator();
     }
@@ -267,7 +263,7 @@ public class InternalPath implements Path, AsValue
             return false;
         }
 
-        InternalPath segments1 = (InternalPath) o;
+        SelfContainedPath segments1 = (SelfContainedPath) o;
 
         return segments.equals( segments1.segments );
 
@@ -290,7 +286,7 @@ public class InternalPath implements Path, AsValue
     {
         for ( int i = 0; i < relationships.size(); i++ )
         {
-            segments.add( new SelfContainedSegment( nodes.get( i ), relationships.get( i ), nodes.get( i + 1 ) ) );
+            segments.add( new Segment( nodes.get( i ), relationships.get( i ), nodes.get( i + 1 ) ) );
         }
     }
 }

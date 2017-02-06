@@ -16,10 +16,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.packstream;
+package org.neo4j.driver.packstream;
 
-public enum PackType
+public class EndOfStream extends PackStreamException
 {
-    NULL, BOOLEAN, INTEGER, FLOAT, BYTES,
-    STRING, LIST, MAP, STRUCT
+    private static final long serialVersionUID = 5102836237108105603L;
+
+    public EndOfStream(String message)
+    {
+        super(message);
+    }
 }

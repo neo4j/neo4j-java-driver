@@ -36,6 +36,7 @@ import org.neo4j.driver.internal.util.Extract;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
+import org.neo4j.driver.v1.types.SelfContainedNode;
 import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.util.Pair;
 
@@ -151,7 +152,7 @@ public class ExtractTest
         Map<String,Value> props = new HashMap<>();
         props.put( "k1", value( 43 ) );
         props.put( "k2", value( 42 ) );
-        InternalNode node = new InternalNode( 42L, Collections.singletonList( "L" ), props );
+        SelfContainedNode node = new SelfContainedNode( 42L, Collections.singletonList( "L" ), props );
 
         // WHEN
         Iterable<Pair<String, Integer>> properties = Extract.properties( node, integerExtractor() );

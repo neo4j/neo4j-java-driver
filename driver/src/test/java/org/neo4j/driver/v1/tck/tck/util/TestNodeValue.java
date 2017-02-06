@@ -21,8 +21,8 @@ package org.neo4j.driver.v1.tck.tck.util;
 import java.util.Collection;
 import java.util.Map;
 
-import org.neo4j.driver.internal.InternalNode;
-import org.neo4j.driver.internal.value.NodeValue;
+import org.neo4j.driver.v1.types.SelfContainedNode;
+import org.neo4j.driver.v1.types.NodeValue;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.Value;
 
@@ -38,7 +38,7 @@ public class TestNodeValue extends NodeValue implements Node
 
     public TestNodeValue( long id, Collection<String> labels, Map<String,Value> properties )
     {
-        super( new InternalNode( id, labels, properties ) );
+        super( new SelfContainedNode( id, labels, properties ) );
     }
 
     @Override

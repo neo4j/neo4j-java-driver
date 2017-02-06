@@ -16,36 +16,39 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal;
+package org.neo4j.driver.v1.types;
 
 import java.util.Collections;
 import java.util.Map;
 
-import org.neo4j.driver.internal.value.RelationshipValue;
-import org.neo4j.driver.v1.types.Relationship;
 import org.neo4j.driver.v1.Value;
 
 /**
  * {@link Relationship} implementation that directly contains type and properties.
  */
-public class InternalRelationship extends InternalEntity implements Relationship
+public class SelfContainedRelationship extends SelfContainedEntity implements Relationship
 {
-    private long start;
-    private long end;
-    private final String type;
+    protected long startNodeId;
+    protected long endNodeId;
+    protected final String type;
 
-    public InternalRelationship( long id, long start, long end, String type )
+    public SelfContainedRelationship(long id, long startNodeId, long endNodeId, String type )
     {
-        this( id, start, end, type, Collections.<String,Value>emptyMap() );
+        this( id, startNodeId, endNodeId, type, Collections.<String,Value>emptyMap() );
     }
 
-    public InternalRelationship( long id, long start, long end, String type,
-                                 Map<String, Value> properties )
+    public SelfContainedRelationship(long id, long startNodeId, long endNodeId, String type,
+                                     Map<String, Value> properties )
     {
         super( id, properties );
-        this.start = start;
-        this.end = end;
+        this.startNodeId = startNodeId;
+        this.endNodeId = endNodeId;
         this.type = type;
+    }
+
+    public SelfContainedRelationship( SelfContainedRelationship relationship, long startNodeId, long endNodeId )
+    {
+        this( relationship.id, startNodeId, endNodeId, relationship.type, relationship.properties );
     }
 
     @Override
@@ -54,23 +57,16 @@ public class InternalRelationship extends InternalEntity implements Relationship
         return type().equals( relationshipType );
     }
 
-    /** Modify the start/end identities of this relationship */
-    public void setStartAndEnd( long start, long end )
-    {
-        this.start = start;
-        this.end = end;
-    }
-
     @Override
     public long startNodeId()
     {
-        return start;
+        return startNodeId;
     }
 
     @Override
     public long endNodeId()
     {
-        return end;
+        return endNodeId;
     }
 
     @Override

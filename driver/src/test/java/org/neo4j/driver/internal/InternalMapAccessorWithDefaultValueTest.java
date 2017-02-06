@@ -31,10 +31,10 @@ import org.neo4j.driver.internal.value.FloatValue;
 import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.internal.value.ListValue;
 import org.neo4j.driver.internal.value.MapValue;
-import org.neo4j.driver.internal.value.NodeValue;
+import org.neo4j.driver.v1.types.NodeValue;
 import org.neo4j.driver.internal.value.NullValue;
-import org.neo4j.driver.internal.value.PathValue;
-import org.neo4j.driver.internal.value.RelationshipValue;
+import org.neo4j.driver.v1.types.PathValue;
+import org.neo4j.driver.v1.types.RelationshipValue;
 import org.neo4j.driver.internal.value.StringValue;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Value;
@@ -43,6 +43,9 @@ import org.neo4j.driver.v1.types.Entity;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.types.Path;
 import org.neo4j.driver.v1.types.Relationship;
+import org.neo4j.driver.v1.types.SelfContainedNode;
+import org.neo4j.driver.v1.types.SelfContainedPath;
+import org.neo4j.driver.v1.types.SelfContainedRelationship;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -88,22 +91,22 @@ public class InternalMapAccessorWithDefaultValueTest
         assertThat( record.get( wrongKey, defaultMapValue ), equalTo( defaultMapValue ) );
 
         // Path
-        Value defaultPathValue = new PathValue( new InternalPath(
-                new InternalNode( 0L ),
-                new InternalRelationship( 0L, 0L, 1L, "T" ),
-                new InternalNode( 1L ) ) );
+        Value defaultPathValue = new PathValue( new SelfContainedPath(
+                new SelfContainedNode( 0L ),
+                new SelfContainedRelationship( 0L, 0L, 1L, "T" ),
+                new SelfContainedNode( 1L ) ) );
         Value realPathValue = new PathValue( createPath() );
         assertThat( record.get( "PathValue", defaultPathValue ), equalTo( realPathValue ) );
         assertThat( record.get( wrongKey, defaultPathValue ), equalTo( defaultPathValue ) );
 
         // Node
-        Value defaultNodeValue = new NodeValue( new InternalNode( 0L ) );
+        Value defaultNodeValue = new NodeValue( new SelfContainedNode( 0L ) );
         Value realNodeValue = new NodeValue( createNode() );
         assertThat( record.get( "NodeValue", defaultNodeValue ), equalTo( realNodeValue ) );
         assertThat( record.get( wrongKey, defaultNodeValue ), equalTo( defaultNodeValue ) );
 
         // Rel
-        Value defaultRelValue = new RelationshipValue( new InternalRelationship( 0L, 0L, 1L, "T" ) );
+        Value defaultRelValue = new RelationshipValue( new SelfContainedRelationship( 0L, 0L, 1L, "T" ) );
         Value realRelValue = new RelationshipValue( createRel() );
         assertThat( record.get( "RelValue", defaultRelValue ), equalTo( realRelValue ) );
         assertThat( record.get( wrongKey, defaultRelValue ), equalTo( defaultRelValue ) );
@@ -134,11 +137,11 @@ public class InternalMapAccessorWithDefaultValueTest
     {
         Record record = createRecord();
 
-        Entity defaultNodeEntity = new InternalNode( 0L );
+        Entity defaultNodeEntity = new SelfContainedNode( 0L );
         assertThat( record.get( "NodeValue", defaultNodeEntity ), equalTo( (Entity) createNode() ) );
         assertThat( record.get( wrongKey, defaultNodeEntity ), equalTo( defaultNodeEntity ) );
 
-        Entity defaultRelEntity = new InternalRelationship( 0L, 0L, 1L, "T" );
+        Entity defaultRelEntity = new SelfContainedRelationship( 0L, 0L, 1L, "T" );
         assertThat( record.get( "RelValue", defaultRelEntity ), equalTo( (Entity) createRel() ) );
         assertThat( record.get( wrongKey, defaultRelEntity ), equalTo( defaultRelEntity ) );
     }
@@ -148,7 +151,7 @@ public class InternalMapAccessorWithDefaultValueTest
     {
         Record record = createRecord();
 
-        Node defaultNode = new InternalNode( 0L );
+        Node defaultNode = new SelfContainedNode( 0L );
         assertThat( record.get( "NodeValue", defaultNode ), equalTo( createNode() ) );
         assertThat( record.get( wrongKey, defaultNode ), equalTo( defaultNode ) );
     }
@@ -158,7 +161,7 @@ public class InternalMapAccessorWithDefaultValueTest
     {
         Record record = createRecord();
 
-        Relationship defaultRel = new InternalRelationship( 0L, 0L, 1L, "T" );
+        Relationship defaultRel = new SelfContainedRelationship( 0L, 0L, 1L, "T" );
         assertThat( record.get( "RelValue", defaultRel ), equalTo( createRel() ) );
         assertThat( record.get( wrongKey, defaultRel ), equalTo( defaultRel ) );
     }
@@ -168,10 +171,10 @@ public class InternalMapAccessorWithDefaultValueTest
     {
         Record record = createRecord();
 
-        Path defaultPath = new InternalPath(
-                new InternalNode( 0L ),
-                new InternalRelationship( 0L, 0L, 1L, "T" ),
-                new InternalNode( 1L ) );
+        Path defaultPath = new SelfContainedPath(
+                new SelfContainedNode( 0L ),
+                new SelfContainedRelationship( 0L, 0L, 1L, "T" ),
+                new SelfContainedNode( 1L ) );
         assertThat( record.get( "PathValue", defaultPath ), equalTo( createPath() ) );
         assertThat( record.get( wrongKey, defaultPath ), equalTo( defaultPath ) );
     }
@@ -270,7 +273,7 @@ public class InternalMapAccessorWithDefaultValueTest
         Map<String,Value> props = new HashMap<>();
         props.put( "k1", value( 43 ) );
         props.put( "k2", value( "hello world" ) );
-        NodeValue nodeValue = new NodeValue( new InternalNode( 42L, Collections.singletonList( "L" ), props ) );
+        NodeValue nodeValue = new NodeValue( new SelfContainedNode( 42L, Collections.singletonList( "L" ), props ) );
 
         assertThat( nodeValue.get( "k1", 0 ), equalTo( 43 ) );
         assertThat( nodeValue.get( "k2", "" ), equalTo( "hello world" ) );
@@ -283,7 +286,7 @@ public class InternalMapAccessorWithDefaultValueTest
         Map<String,Value> props = new HashMap<>();
         props.put( "k1", value( 43 ) );
         props.put( "k2", value( "hello world" ) );
-        RelationshipValue relValue = new RelationshipValue( new InternalRelationship( 0L, 0L, 1L, "T", props ) );
+        RelationshipValue relValue = new RelationshipValue( new SelfContainedRelationship( 0L, 0L, 1L, "T", props ) );
 
         assertThat( relValue.get( "k1", 0 ), equalTo( 43 ) );
         assertThat( relValue.get( "k2", "" ), equalTo( "hello world" ) );
@@ -292,20 +295,20 @@ public class InternalMapAccessorWithDefaultValueTest
 
     private Path createPath()
     {
-        return new InternalPath(
-                new InternalNode( 42L ),
-                new InternalRelationship( 43L, 42L, 44L, "T" ),
-                new InternalNode( 44L ) );
+        return new SelfContainedPath(
+                new SelfContainedNode( 42L ),
+                new SelfContainedRelationship( 43L, 42L, 44L, "T" ),
+                new SelfContainedNode( 44L ) );
     }
 
     private Node createNode()
     {
-        return new InternalNode( 1L );
+        return new SelfContainedNode( 1L );
     }
 
     private Relationship createRel()
     {
-        return new InternalRelationship( 1L, 1L, 2L, "T" );
+        return new SelfContainedRelationship( 1L, 1L, 2L, "T" );
     }
 
     private Map<String, Value> createMap()

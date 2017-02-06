@@ -24,7 +24,7 @@ import java.nio.ByteOrder;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ReadableByteChannel;
 
-import org.neo4j.driver.internal.packstream.PackInput;
+import org.neo4j.driver.packstream.io.PackInput;
 import org.neo4j.driver.internal.util.BytePrinter;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
