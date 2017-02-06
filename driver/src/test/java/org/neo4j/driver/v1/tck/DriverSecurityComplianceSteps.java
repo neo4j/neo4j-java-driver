@@ -33,7 +33,7 @@ import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
-import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.SecurityException;
 import org.neo4j.driver.v1.util.CertificateToolTest.CertificateSigningRequestGenerator;
 import org.neo4j.driver.v1.util.CertificateToolTest.SelfSignedCertificateGenerator;
 import org.neo4j.driver.v1.util.Neo4jRunner;
@@ -134,7 +134,7 @@ public class DriverSecurityComplianceSteps
     public void iShouldGetAHelpfulErrorExplainingThatCertificateChanged( String str ) throws Throwable
     {
         assertThat( exception, notNullValue() );
-        assertThat( exception, instanceOf( ClientException.class ) );
+        assertThat( exception, instanceOf( SecurityException.class ) );
         Throwable rootCause = getRootCause( exception );
         assertThat( rootCause.toString(), containsString(
                 "Unable to connect to neo4j at `localhost:7687`, because the certificate the server uses has changed. " +
@@ -244,7 +244,7 @@ public class DriverSecurityComplianceSteps
     public void iShouldGetAHelpfulErrorExplainingThatCertificatedNotSigned() throws Throwable
     {
         assertThat( exception, notNullValue() );
-        assertThat( exception, instanceOf( ClientException.class ) );
+        assertThat( exception, instanceOf( SecurityException.class ) );
         Throwable rootCause = getRootCause( exception );
         assertThat( rootCause.toString(), containsString( "Signature does not match.") );
     }

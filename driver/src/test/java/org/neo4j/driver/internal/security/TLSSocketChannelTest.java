@@ -26,8 +26,8 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLSession;
 
-import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.v1.exceptions.SecurityException;
 
 import static junit.framework.TestCase.fail;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -107,7 +107,7 @@ public class TLSSocketChannelTest
     }
 
     @Test
-    public void shouldThrowClientErrorIfFailedToHandshake() throws Throwable
+    public void shouldThrowUnauthorizedIfFailedToHandshake() throws Throwable
     {
         // Given
         ByteChannel mockedChannel = mock( ByteChannel.class );
@@ -128,7 +128,7 @@ public class TLSSocketChannelTest
         }
         catch( Exception e )
         {
-            assertThat( e, instanceOf( ClientException.class ) );
+            assertThat( e, instanceOf( SecurityException.class ) );
             assertThat( e.getMessage(), startsWith( "Failed to establish secured connection with the server: Failed handshake!" ) );
         }
         verify( mockedChannel, never() ).close();

@@ -30,7 +30,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
 import java.security.cert.X509Certificate;
-import javax.net.ssl.SSLHandshakeException;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.security.SecurityPlan;
@@ -43,7 +42,7 @@ import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
-import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.SecurityException;
 import org.neo4j.driver.v1.util.CertificateToolTest;
 import org.neo4j.driver.v1.util.Neo4jRunner;
 import org.neo4j.driver.v1.util.Neo4jSettings;
@@ -53,6 +52,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
@@ -150,17 +150,24 @@ public class TLSSocketChannelIT
             SecurityPlan securityPlan = SecurityPlan.forSystemCASignedCertificates();
 
             // When
+            TLSSocketChannel sslChannel = null;
             try
             {
-                TLSSocketChannel sslChannel =
-                        TLSSocketChannel.create(address, securityPlan, channel, logger);
-                sslChannel.close();
+                 sslChannel = TLSSocketChannel.create(address, securityPlan, channel, logger);
+                 fail( "Should have thrown exception" );
             }
-            catch ( ClientException e )
+            catch ( SecurityException e )
             {
                 assertThat( e.getMessage(), containsString( "General SSLEngine problem" ) );
                 assertThat( getRootCause( e ).getMessage(),
                         containsString( "unable to find valid certification path to requested target" ) );
+            }
+            finally
+            {
+                if( sslChannel != null )
+                {
+                    sslChannel.close();
+                }
             }
         }
         finally
@@ -188,12 +195,12 @@ public class TLSSocketChannelIT
         TLSSocketChannel sslChannel = null;
         try
         {
-            sslChannel = TLSSocketChannel.create( address, securityPlan, channel, mock( Logger.class ) );
-            sslChannel.close();
+            sslChannel = TLSSocketChannel.create( address, securityPlan, channel, DEV_NULL_LOGGER );
+            fail( "Should have thrown exception" );
         }
-        catch ( SSLHandshakeException e )
+        catch ( SecurityException e )
         {
-            assertEquals( "General SSLEngine problem", e.getMessage() );
+            assertThat( e.getMessage(), containsString( "General SSLEngine problem" ) );
             assertThat( getRootCause( e ).getMessage(), containsString(
                     "If you trust the certificate the server uses now, simply remove the line that starts with" ) );
         }
@@ -209,14 +216,13 @@ public class TLSSocketChannelIT
     private void createFakeServerCertPairInKnownCerts( BoltServerAddress address, File knownCerts )
             throws Throwable
     {
-        address = address.resolve();  // localhost -> 127.0.0.1
         String serverId = address.toString();
 
         X509Certificate cert = CertificateToolTest.generateSelfSignedCertificate();
         String certStr = fingerprint(cert);
 
         BufferedWriter writer = new BufferedWriter( new FileWriter( knownCerts, true ) );
-        writer.write( serverId + "," + certStr );
+        writer.write( serverId + " " + certStr );
         writer.newLine();
         writer.close();
     }
@@ -241,9 +247,9 @@ public class TLSSocketChannelIT
         try
         {
             sslChannel = TLSSocketChannel.create( neo4j.address(), securityPlan, channel, mock( Logger.class ) );
-            sslChannel.close();
+            fail( "Should have thrown exception" );
         }
-        catch ( ClientException e )
+        catch ( SecurityException e )
         {
             assertThat( e.getMessage(), containsString( "General SSLEngine problem" ) );
             assertThat( getRootCause( e ).getMessage(), containsString( "No trusted certificate found" ) );
