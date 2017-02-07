@@ -136,7 +136,7 @@
             <script>hljs.initHighlightingOnLoad();</script>
           ]]></top>
           <!-- Required for Java 8u121 or later. See https://github.com/neo4j/neo4j-java-driver/pull/318  -->
-          <!--<additionalparam>--allow-script-in-comments</additionalparam>-->
+          <!--<additionalparam>&#45;&#45;allow-script-in-comments</additionalparam>-->
         </configuration>
         <executions>
           <execution>
