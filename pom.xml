@@ -135,7 +135,8 @@
             <script src="http://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.9.0/highlight.min.js"></script>
             <script>hljs.initHighlightingOnLoad();</script>
           ]]></top>
-          <additionalparam>--allow-script-in-comments</additionalparam>
+          <!-- Required for Java 8u121 or later. See https://github.com/neo4j/neo4j-java-driver/pull/318  -->
+          <!--<additionalparam>--allow-script-in-comments</additionalparam>-->
         </configuration>
         <executions>
           <execution>
