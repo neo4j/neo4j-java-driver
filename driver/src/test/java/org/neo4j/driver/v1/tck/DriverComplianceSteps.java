@@ -141,7 +141,9 @@ public class DriverComplianceSteps
     @Given( "^a list containing$" )
     public static void a_list_containing( List<String> table ) throws Throwable
     {
-        List<String> content = table.subList( 1, table.size() - 1 );
+        List<String> content = table.subList( 1, table.size() );
+        assertThat( content.size(), equalTo( table.size() - 1 ) );
+
         for ( String value : content )
         {
             listOfObjects.add( getJavaValueIntAsLong( value ) );
