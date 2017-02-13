@@ -41,7 +41,7 @@ public class InternalRecord extends InternalMapAccessorWithDefaultValue implemen
 {
     private final List<String> keys;
     private final Value[] values;
-    private int hashcode = 0;
+    private int hashCode = 0;
 
     public InternalRecord( List<String> keys, Value[] values )
     {
@@ -132,6 +132,7 @@ public class InternalRecord extends InternalMapAccessorWithDefaultValue implemen
         return format( "Record<%s>", formatPairs( InternalValue.Format.VALUE_ONLY, asMap( ofValue() ) ) );
     }
 
+    @Override
     public boolean equals( Object other )
     {
         if ( this == other )
@@ -167,12 +168,13 @@ public class InternalRecord extends InternalMapAccessorWithDefaultValue implemen
         }
     }
 
-    public int hashcode()
+    @Override
+    public int hashCode()
     {
-        if ( hashcode == 0 )
+        if ( hashCode == 0 )
         {
-            hashcode = 31 * keys.hashCode() + Arrays.hashCode( values );
+            hashCode = 31 * keys.hashCode() + Arrays.hashCode( values );
         }
-        return hashcode;
+        return hashCode;
     }
 }

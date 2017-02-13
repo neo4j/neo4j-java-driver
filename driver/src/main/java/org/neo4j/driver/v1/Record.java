@@ -129,11 +129,4 @@ public interface Record extends MapAccessorWithDefaultValue
      */
     List<Pair<String, Value>> fields();
 
-    // Force implementation
-    @Override
-    boolean equals( Object other );
-
-    // Force implementation
-    @Override
-    int hashCode();
 }
