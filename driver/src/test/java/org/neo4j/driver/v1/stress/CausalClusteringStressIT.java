@@ -37,7 +37,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.AuthToken;
@@ -89,7 +89,7 @@ public class CausalClusteringStressIT
     {
         URI clusterUri = clusterRule.getClusterUri();
         AuthToken authToken = clusterRule.getAuthToken();
-        Config config = Config.build().withLogging( DEV_NULL_LOGGING ).toConfig();
+        Config config = Config.build().withLogging( DEV_NULL_LOGGING ).withMaxIdleSessions( THREAD_COUNT ).toConfig();
         driver = GraphDatabase.driver( clusterUri, authToken, config );
 
         ThreadFactory threadFactory = new DaemonThreadFactory( getClass().getSimpleName() + "-worker-" );
@@ -109,11 +109,11 @@ public class CausalClusteringStressIT
     @Test
     public void basicStressTest() throws Throwable
     {
-        AtomicBoolean stop = new AtomicBoolean();
-        List<Future<?>> resultFutures = launchWorkerThreads( stop );
+        Context context = new Context();
+        List<Future<?>> resultFutures = launchWorkerThreads( context );
 
         long openFileDescriptors = sleepAndGetOpenFileDescriptorCount();
-        stop.set( true );
+        context.stop();
 
         Throwable firstError = null;
         for ( Future<?> future : resultFutures )
@@ -134,16 +134,17 @@ public class CausalClusteringStressIT
         }
 
         assertNoFileDescriptorLeak( openFileDescriptors );
+        assertExpectedNumberOfNodesCreated( context.getCreatedNodesCount() );
     }
 
-    private List<Future<?>> launchWorkerThreads( AtomicBoolean stop )
+    private List<Future<?>> launchWorkerThreads( Context context )
     {
         List<Command> commands = createCommands();
         List<Future<?>> futures = new ArrayList<>();
 
         for ( int i = 0; i < THREAD_COUNT; i++ )
         {
-            Future<Void> future = launchWorkerThread( executor, commands, stop );
+            Future<Void> future = launchWorkerThread( executor, commands, context );
             futures.add( future );
         }
 
@@ -155,9 +156,11 @@ public class CausalClusteringStressIT
         List<Command> commands = new ArrayList<>();
 
         commands.add( new ReadQuery( driver ) );
-        commands.add( new ReadQueryInTx( driver ) );
+        commands.add( new ReadQueryInTx( driver, false ) );
+        commands.add( new ReadQueryInTx( driver, true ) );
         commands.add( new WriteQuery( driver ) );
-        commands.add( new WriteQueryInTx( driver ) );
+        commands.add( new WriteQueryInTx( driver, false ) );
+        commands.add( new WriteQueryInTx( driver, true ) );
         commands.add( new WriteQueryUsingReadSession( driver ) );
         commands.add( new WriteQueryUsingReadSessionInTx( driver ) );
         commands.add( new FailedAuth( clusterRule.getClusterUri() ) );
@@ -166,18 +169,20 @@ public class CausalClusteringStressIT
     }
 
     private static Future<Void> launchWorkerThread( final ExecutorService executor, final List<Command> commands,
-            final AtomicBoolean stop )
+            final Context context )
     {
         return executor.submit( new Callable<Void>()
         {
+            final ThreadLocalRandom random = ThreadLocalRandom.current();
+
             @Override
             public Void call() throws Exception
             {
-                while ( !stop.get() )
+                while ( !context.isStopped() )
                 {
-                    int randomCommandIdx = ThreadLocalRandom.current().nextInt( commands.size() );
+                    int randomCommandIdx = random.nextInt( commands.size() );
                     Command command = commands.get( randomCommandIdx );
-                    command.execute();
+                    command.execute( context );
                 }
                 return null;
             }
@@ -200,6 +205,18 @@ public class CausalClusteringStressIT
         long currentOpenFileDescriptorCount = getOpenFileDescriptorCount();
         assertThat( "Unexpectedly high number of open file descriptors",
                 currentOpenFileDescriptorCount, lessThanOrEqualTo( maxOpenFileDescriptors ) );
+    }
+
+    private void assertExpectedNumberOfNodesCreated( long expectedCount )
+    {
+        try ( Session session = driver.session() )
+        {
+            List<Record> records = session.run( "MATCH (n) RETURN count(n) AS nodesCount" ).list();
+            assertEquals( 1, records.size() );
+            Record record = records.get( 0 );
+            long actualCount = record.get( "nodesCount" ).asLong();
+            assertEquals( "Unexpected number of nodes in the database", expectedCount, actualCount );
+        }
     }
 
     private static long getOpenFileDescriptorCount()
@@ -227,9 +244,46 @@ public class CausalClusteringStressIT
         return firstError;
     }
 
+    private static class Context
+    {
+        volatile boolean stopped;
+        volatile String bookmark;
+        final AtomicLong createdNodesCount = new AtomicLong();
+
+        boolean isStopped()
+        {
+            return stopped;
+        }
+
+        void stop()
+        {
+            this.stopped = true;
+        }
+
+        String getBookmark()
+        {
+            return bookmark;
+        }
+
+        void setBookmark( String bookmark )
+        {
+            this.bookmark = bookmark;
+        }
+
+        void nodeCreated()
+        {
+            createdNodesCount.incrementAndGet();
+        }
+
+        long getCreatedNodesCount()
+        {
+            return createdNodesCount.get();
+        }
+    }
+
     private interface Command
     {
-        void execute();
+        void execute( Context context );
     }
 
     private static abstract class BaseQuery implements Command
@@ -239,6 +293,19 @@ public class CausalClusteringStressIT
         BaseQuery( Driver driver )
         {
             this.driver = driver;
+        }
+
+        Transaction beginTx( Session session, Context context, boolean useBookmark )
+        {
+            if ( useBookmark )
+            {
+                String bookmark = context.getBookmark();
+                if ( bookmark != null )
+                {
+                    return session.beginTransaction( bookmark );
+                }
+            }
+            return session.beginTransaction();
         }
     }
 
@@ -250,7 +317,7 @@ public class CausalClusteringStressIT
         }
 
         @Override
-        public void execute()
+        public void execute( Context context )
         {
             try ( Session session = driver.session( AccessMode.READ ) )
             {
@@ -268,16 +335,19 @@ public class CausalClusteringStressIT
 
     private static class ReadQueryInTx extends BaseQuery
     {
-        ReadQueryInTx( Driver driver )
+        final boolean useBookmark;
+
+        ReadQueryInTx( Driver driver, boolean useBookmark )
         {
             super( driver );
+            this.useBookmark = useBookmark;
         }
 
         @Override
-        public void execute()
+        public void execute( Context context )
         {
             try ( Session session = driver.session( AccessMode.READ );
-                  Transaction tx = session.beginTransaction() )
+                  Transaction tx = beginTx( session, context, useBookmark ) )
             {
                 StatementResult result = tx.run( "MATCH (n) RETURN n LIMIT 1" );
                 List<Record> records = result.list();
@@ -287,6 +357,7 @@ public class CausalClusteringStressIT
                     Node node = record.get( 0 ).asNode();
                     assertNotNull( node );
                 }
+                tx.success();
             }
         }
     }
@@ -299,7 +370,7 @@ public class CausalClusteringStressIT
         }
 
         @Override
-        public void execute()
+        public void execute( Context context )
         {
             StatementResult result;
             try ( Session session = driver.session( AccessMode.WRITE ) )
@@ -307,26 +378,36 @@ public class CausalClusteringStressIT
                 result = session.run( "CREATE ()" );
             }
             assertEquals( 1, result.summary().counters().nodesCreated() );
+            context.nodeCreated();
         }
     }
 
     private static class WriteQueryInTx extends BaseQuery
     {
-        WriteQueryInTx( Driver driver )
+        final boolean useBookmark;
+
+        WriteQueryInTx( Driver driver, boolean useBookmark )
         {
             super( driver );
+            this.useBookmark = useBookmark;
         }
 
         @Override
-        public void execute()
+        public void execute( Context context )
         {
             StatementResult result;
-            try ( Session session = driver.session( AccessMode.WRITE );
-                  Transaction tx = session.beginTransaction() )
+            try ( Session session = driver.session( AccessMode.WRITE ) )
             {
-                result = tx.run( "CREATE ()" );
+                try ( Transaction tx = beginTx( session, context, useBookmark ) )
+                {
+                    result = tx.run( "CREATE ()" );
+                    tx.success();
+                }
+
+                context.setBookmark( session.lastBookmark() );
             }
             assertEquals( 1, result.summary().counters().nodesCreated() );
+            context.nodeCreated();
         }
     }
 
@@ -338,7 +419,7 @@ public class CausalClusteringStressIT
         }
 
         @Override
-        public void execute()
+        public void execute( Context context )
         {
             StatementResult result = null;
             try
@@ -366,7 +447,7 @@ public class CausalClusteringStressIT
         }
 
         @Override
-        public void execute()
+        public void execute( Context context )
         {
             StatementResult result = null;
             try
@@ -375,6 +456,7 @@ public class CausalClusteringStressIT
                       Transaction tx = session.beginTransaction() )
                 {
                     result = tx.run( "CREATE ()" );
+                    tx.success();
                 }
                 fail( "Exception expected" );
             }
@@ -397,7 +479,7 @@ public class CausalClusteringStressIT
         }
 
         @Override
-        public void execute()
+        public void execute( Context context )
         {
             Logger logger = mock( Logger.class );
             Logging logging = mock( Logging.class );
