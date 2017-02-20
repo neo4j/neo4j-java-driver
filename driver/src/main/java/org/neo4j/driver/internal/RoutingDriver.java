@@ -63,8 +63,7 @@ public class RoutingDriver extends BaseDriver
     protected Session newSessionWithMode( AccessMode mode )
     {
         Connection connection = acquireConnection( mode );
-        Session networkSession = sessionFactory.newInstance( connection );
-        return new RoutingNetworkSession( networkSession, mode, connection.boltServerAddress(), loadBalancer );
+        return sessionFactory.newInstance( connection );
     }
 
     private Connection acquireConnection( AccessMode role )

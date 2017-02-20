@@ -41,7 +41,7 @@ import static org.neo4j.driver.v1.Values.value;
 
 public class NetworkSession implements Session
 {
-    protected Connection connection;
+    private final Connection connection;
     private final String sessionId;
     private final Logger logger;
 
@@ -67,7 +67,7 @@ public class NetworkSession implements Session
     private ExplicitTransaction currentTransaction;
     private AtomicBoolean isOpen = new AtomicBoolean( true );
 
-    NetworkSession( Connection connection )
+    public NetworkSession( Connection connection )
     {
         this.connection = connection;
 

@@ -18,23 +18,9 @@
  */
 package org.neo4j.driver.internal.spi;
 
-import org.neo4j.driver.internal.net.BoltServerAddress;
-
-public interface ConnectionPool extends AutoCloseable
+public interface PooledConnection extends Connection
 {
-    /**
-     * Acquire a connection - if a live connection exists in the pool, it will
-     * be used, otherwise a new connection will be created.
-     *
-     * @param address The address to acquire
-     */
-    PooledConnection acquire( BoltServerAddress address );
+    long lastUsedTimestamp();
 
-    /**
-     * Removes all connections to a given address from the pool.
-     * @param address The address to remove.
-     */
-    void purge( BoltServerAddress address );
-
-    boolean hasAddress( BoltServerAddress address );
+    void dispose();
 }

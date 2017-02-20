@@ -34,12 +34,14 @@ import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
+import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.EventLogger;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Logging;
+import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ProtocolException;
@@ -101,10 +103,10 @@ public class RoutingDriverTest
                         serverInfo( "WRITE", "localhost:3333" ) ) ) );
 
         // When
-        RoutingNetworkSession writing = (RoutingNetworkSession) routingDriver.session( AccessMode.WRITE );
+        NetworkSessionWithAddress writing = (NetworkSessionWithAddress) routingDriver.session( AccessMode.WRITE );
 
         // Then
-        assertEquals( boltAddress( "localhost", 3333 ), writing.address() );
+        assertEquals( boltAddress( "localhost", 3333 ), writing.address );
     }
 
     @Test
@@ -120,12 +122,12 @@ public class RoutingDriverTest
                         serverInfo( "WRITE", "localhost:5555" ) ) ) );
 
         // When
-        RoutingNetworkSession writing = (RoutingNetworkSession) routingDriver.session( AccessMode.WRITE );
-        RoutingNetworkSession reading = (RoutingNetworkSession) routingDriver.session( AccessMode.READ );
+        NetworkSessionWithAddress writing = (NetworkSessionWithAddress) routingDriver.session( AccessMode.WRITE );
+        NetworkSessionWithAddress reading = (NetworkSessionWithAddress) routingDriver.session( AccessMode.READ );
 
         // Then
-        assertEquals( boltAddress( "localhost", 3333 ), writing.address() );
-        assertEquals( boltAddress( "localhost", 2222 ), reading.address() );
+        assertEquals( boltAddress( "localhost", 3333 ), writing.address );
+        assertEquals( boltAddress( "localhost", 2222 ), reading.address );
     }
 
     @Test
@@ -206,12 +208,12 @@ public class RoutingDriverTest
         RoutingDriver routingDriver = driverWithPool( pool );
 
         // When
-        RoutingNetworkSession write1 = (RoutingNetworkSession) routingDriver.session( AccessMode.WRITE );
-        RoutingNetworkSession write2 = (RoutingNetworkSession) routingDriver.session( AccessMode.WRITE );
+        NetworkSessionWithAddress write1 = (NetworkSessionWithAddress) routingDriver.session( AccessMode.WRITE );
+        NetworkSessionWithAddress write2 = (NetworkSessionWithAddress) routingDriver.session( AccessMode.WRITE );
 
         // Then
-        assertEquals( boltAddress( "localhost", 3333 ), write1.address() );
-        assertEquals( boltAddress( "localhost", 3333 ), write2.address() );
+        assertEquals( boltAddress( "localhost", 3333 ), write1.address );
+        assertEquals( boltAddress( "localhost", 3333 ), write2.address );
     }
 
     @Test
@@ -229,12 +231,12 @@ public class RoutingDriverTest
         clock.progress( 11_000 );
 
         // When
-        RoutingNetworkSession writing = (RoutingNetworkSession) routingDriver.session( AccessMode.WRITE );
-        RoutingNetworkSession reading = (RoutingNetworkSession) routingDriver.session( AccessMode.READ );
+        NetworkSessionWithAddress writing = (NetworkSessionWithAddress) routingDriver.session( AccessMode.WRITE );
+        NetworkSessionWithAddress reading = (NetworkSessionWithAddress) routingDriver.session( AccessMode.READ );
 
         // Then
-        assertEquals( boltAddress( "localhost", 8888 ), writing.address() );
-        assertEquals( boltAddress( "localhost", 7777 ), reading.address() );
+        assertEquals( boltAddress( "localhost", 8888 ), writing.address );
+        assertEquals( boltAddress( "localhost", 7777 ), reading.address );
     }
 
     @Test
@@ -251,12 +253,12 @@ public class RoutingDriverTest
         clock.progress( 9900 );
 
         // When
-        RoutingNetworkSession writer = (RoutingNetworkSession) routingDriver.session( AccessMode.WRITE );
-        RoutingNetworkSession reader = (RoutingNetworkSession) routingDriver.session( AccessMode.READ );
+        NetworkSessionWithAddress writer = (NetworkSessionWithAddress) routingDriver.session( AccessMode.WRITE );
+        NetworkSessionWithAddress reader = (NetworkSessionWithAddress) routingDriver.session( AccessMode.READ );
 
         // Then
-        assertEquals( boltAddress( "localhost", 2222 ), reader.address() );
-        assertEquals( boltAddress( "localhost", 3333 ), writer.address() );
+        assertEquals( boltAddress( "localhost", 2222 ), reader.address );
+        assertEquals( boltAddress( "localhost", 3333 ), writer.address );
     }
 
     @Test
@@ -268,20 +270,20 @@ public class RoutingDriverTest
                 serverInfo( "WRITE", "localhost:3333" ) );
 
         // When
-        RoutingNetworkSession read1 = (RoutingNetworkSession) routingDriver.session( AccessMode.READ );
-        RoutingNetworkSession read2 = (RoutingNetworkSession) routingDriver.session( AccessMode.READ );
-        RoutingNetworkSession read3 = (RoutingNetworkSession) routingDriver.session( AccessMode.READ );
-        RoutingNetworkSession read4 = (RoutingNetworkSession) routingDriver.session( AccessMode.READ );
-        RoutingNetworkSession read5 = (RoutingNetworkSession) routingDriver.session( AccessMode.READ );
-        RoutingNetworkSession read6 = (RoutingNetworkSession) routingDriver.session( AccessMode.READ );
+        NetworkSessionWithAddress read1 = (NetworkSessionWithAddress) routingDriver.session( AccessMode.READ );
+        NetworkSessionWithAddress read2 = (NetworkSessionWithAddress) routingDriver.session( AccessMode.READ );
+        NetworkSessionWithAddress read3 = (NetworkSessionWithAddress) routingDriver.session( AccessMode.READ );
+        NetworkSessionWithAddress read4 = (NetworkSessionWithAddress) routingDriver.session( AccessMode.READ );
+        NetworkSessionWithAddress read5 = (NetworkSessionWithAddress) routingDriver.session( AccessMode.READ );
+        NetworkSessionWithAddress read6 = (NetworkSessionWithAddress) routingDriver.session( AccessMode.READ );
 
         // Then
-        assertEquals( read1.address(), read4.address() );
-        assertEquals( read2.address(), read5.address() );
-        assertEquals( read3.address(), read6.address() );
-        assertNotEquals( read1.address(), read2.address() );
-        assertNotEquals( read2.address(), read3.address() );
-        assertNotEquals( read3.address(), read1.address() );
+        assertEquals( read1.address, read4.address );
+        assertEquals( read2.address, read5.address );
+        assertEquals( read3.address, read6.address );
+        assertNotEquals( read1.address, read2.address );
+        assertNotEquals( read2.address, read3.address );
+        assertNotEquals( read3.address, read1.address );
     }
 
     @Test
@@ -293,20 +295,20 @@ public class RoutingDriverTest
                 serverInfo( "WRITE", "localhost:2222", "localhost:2223", "localhost:2224" ) );
 
         // When
-        RoutingNetworkSession write1 = (RoutingNetworkSession) routingDriver.session( AccessMode.WRITE );
-        RoutingNetworkSession write2 = (RoutingNetworkSession) routingDriver.session( AccessMode.WRITE );
-        RoutingNetworkSession write3 = (RoutingNetworkSession) routingDriver.session( AccessMode.WRITE );
-        RoutingNetworkSession write4 = (RoutingNetworkSession) routingDriver.session( AccessMode.WRITE );
-        RoutingNetworkSession write5 = (RoutingNetworkSession) routingDriver.session( AccessMode.WRITE );
-        RoutingNetworkSession write6 = (RoutingNetworkSession) routingDriver.session( AccessMode.WRITE );
+        NetworkSessionWithAddress write1 = (NetworkSessionWithAddress) routingDriver.session( AccessMode.WRITE );
+        NetworkSessionWithAddress write2 = (NetworkSessionWithAddress) routingDriver.session( AccessMode.WRITE );
+        NetworkSessionWithAddress write3 = (NetworkSessionWithAddress) routingDriver.session( AccessMode.WRITE );
+        NetworkSessionWithAddress write4 = (NetworkSessionWithAddress) routingDriver.session( AccessMode.WRITE );
+        NetworkSessionWithAddress write5 = (NetworkSessionWithAddress) routingDriver.session( AccessMode.WRITE );
+        NetworkSessionWithAddress write6 = (NetworkSessionWithAddress) routingDriver.session( AccessMode.WRITE );
 
         // Then
-        assertEquals( write1.address(), write4.address() );
-        assertEquals( write2.address(), write5.address() );
-        assertEquals( write3.address(), write6.address() );
-        assertNotEquals( write1.address(), write2.address() );
-        assertNotEquals( write2.address(), write3.address() );
-        assertNotEquals( write3.address(), write1.address() );
+        assertEquals( write1.address, write4.address );
+        assertEquals( write2.address, write5.address );
+        assertEquals( write3.address, write6.address );
+        assertNotEquals( write1.address, write2.address );
+        assertNotEquals( write2.address, write3.address );
+        assertNotEquals( write3.address, write1.address );
     }
 
     @Test
@@ -338,7 +340,8 @@ public class RoutingDriverTest
     private RoutingDriver driverWithPool( ConnectionPool pool )
     {
         RoutingSettings settings = new RoutingSettings( 10, 5_000 );
-        return new RoutingDriver( settings, SEED, pool, insecure(), new NetworkSessionFactory(), clock, logging );
+        SessionFactory sessionFactory = new NetworkSessionWithAddressFactory();
+        return new RoutingDriver( settings, SEED, pool, insecure(), sessionFactory, clock, logging );
     }
 
     @SafeVarargs
@@ -362,15 +365,15 @@ public class RoutingDriverTest
     {
         ConnectionPool pool = mock( ConnectionPool.class );
 
-        when( pool.acquire( any( BoltServerAddress.class ) ) ).thenAnswer( new Answer<Connection>()
+        when( pool.acquire( any( BoltServerAddress.class ) ) ).thenAnswer( new Answer<PooledConnection>()
         {
             int answer;
 
             @Override
-            public Connection answer( InvocationOnMock invocationOnMock ) throws Throwable
+            public PooledConnection answer( InvocationOnMock invocationOnMock ) throws Throwable
             {
                 BoltServerAddress address = invocationOnMock.getArgumentAt( 0, BoltServerAddress.class );
-                Connection connection = mock( Connection.class );
+                PooledConnection connection = mock( PooledConnection.class );
                 when( connection.isOpen() ).thenReturn( true );
                 when( connection.boltServerAddress() ).thenReturn( address );
                 doAnswer( withKeys( "ttl", "servers" ) ).when( connection ).run(
@@ -417,6 +420,26 @@ public class RoutingDriverTest
                 }
             }
         };
+    }
+
+    private static class NetworkSessionWithAddressFactory implements SessionFactory
+    {
+        @Override
+        public Session newInstance( Connection connection )
+        {
+            return new NetworkSessionWithAddress( connection );
+        }
+    }
+
+    private static class NetworkSessionWithAddress extends NetworkSession
+    {
+        final BoltServerAddress address;
+
+        NetworkSessionWithAddress( Connection connection )
+        {
+            super( connection );
+            this.address = connection.boltServerAddress();
+        }
     }
 
     private static abstract class CollectorAnswer implements Answer

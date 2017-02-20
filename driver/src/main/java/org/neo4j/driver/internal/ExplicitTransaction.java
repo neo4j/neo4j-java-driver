@@ -39,7 +39,7 @@ import static java.util.Collections.singletonMap;
 import static org.neo4j.driver.v1.Values.ofValue;
 import static org.neo4j.driver.v1.Values.value;
 
-class ExplicitTransaction implements Transaction
+public class ExplicitTransaction implements Transaction
 {
     private enum State
     {
@@ -71,7 +71,7 @@ class ExplicitTransaction implements Transaction
     private String bookmark = null;
     private State state = State.ACTIVE;
 
-    ExplicitTransaction( Connection conn, Runnable cleanup )
+    public ExplicitTransaction( Connection conn, Runnable cleanup )
     {
         this( conn, cleanup, null );
     }
