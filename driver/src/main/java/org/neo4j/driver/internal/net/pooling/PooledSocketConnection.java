@@ -291,18 +291,31 @@ public class PooledSocketConnection implements PooledConnection
         return lastUsedTimestamp;
     }
 
-    private boolean isProtocolViolationError(RuntimeException e )
+    private boolean isProtocolViolationError( RuntimeException e )
     {
-        return e instanceof Neo4jException
-               && ((Neo4jException) e).code().startsWith( "Neo.ClientError.Request" );
+        if ( e instanceof Neo4jException )
+        {
+            String errorCode = ((Neo4jException) e).code();
+            if ( errorCode != null )
+            {
+                return errorCode.startsWith( "Neo.ClientError.Request" );
+            }
+        }
+        return false;
     }
 
     private boolean isClientOrTransientError( RuntimeException e )
     {
         // Eg: DatabaseErrors and unknown (no status code or not neo4j exception) cause session to be discarded
-        return e instanceof Neo4jException
-               && (((Neo4jException) e).code().contains( "ClientError" )
-                   || ((Neo4jException) e).code().contains( "TransientError" ));
+        if ( e instanceof Neo4jException )
+        {
+            String errorCode = ((Neo4jException) e).code();
+            if ( errorCode != null )
+            {
+                return errorCode.contains( "ClientError" ) || errorCode.contains( "TransientError" );
+            }
+        }
+        return false;
     }
 
     private void updateLastUsedTimestamp()

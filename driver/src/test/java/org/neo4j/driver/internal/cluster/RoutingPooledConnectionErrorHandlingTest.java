@@ -127,20 +127,13 @@ public class RoutingPooledConnectionErrorHandlingTest
     @Test
     public void shouldPropagateThrowable()
     {
-        RuntimeException error = new RuntimeException( "Random error" );
-        Connector connector = newConnectorWithThrowingConnections( error );
-        RoutingTable routingTable = newRoutingTable( ADDRESS1, ADDRESS2, ADDRESS3 );
-        ConnectionPool connectionPool = newConnectionPool( connector, ADDRESS1, ADDRESS2, ADDRESS3 );
-        LoadBalancer loadBalancer = newLoadBalancer( routingTable, connectionPool );
+        testThrowablePropagation( new RuntimeException( "Random error" ) );
+    }
 
-        Connection readConnection = loadBalancer.acquireReadConnection();
-        verifyThrowablePropagation( readConnection, method, routingTable, connectionPool );
-
-        Connection writeConnection = loadBalancer.acquireWriteConnection();
-        verifyThrowablePropagation( writeConnection, method, routingTable, connectionPool );
-
-        assertThat( routingTable, containsRouter( ADDRESS3 ) );
-        assertTrue( connectionPool.hasAddress( ADDRESS3 ) );
+    @Test
+    public void shouldPropagateClientExceptionWithoutErrorCode()
+    {
+        testThrowablePropagation( new ClientException( null, "Message" ) );
     }
 
     private void testHandleFailureToWriteWithWriteConnection( ClientException error )
@@ -199,6 +192,23 @@ public class RoutingPooledConnectionErrorHandlingTest
         assertTrue( connectionPool.hasAddress( ADDRESS3 ) );
     }
 
+    private void testThrowablePropagation( Throwable error )
+    {
+        Connector connector = newConnectorWithThrowingConnections( error );
+        RoutingTable routingTable = newRoutingTable( ADDRESS1, ADDRESS2, ADDRESS3 );
+        ConnectionPool connectionPool = newConnectionPool( connector, ADDRESS1, ADDRESS2, ADDRESS3 );
+        LoadBalancer loadBalancer = newLoadBalancer( routingTable, connectionPool );
+
+        Connection readConnection = loadBalancer.acquireReadConnection();
+        verifyThrowablePropagation( readConnection, routingTable, connectionPool, error.getClass() );
+
+        Connection writeConnection = loadBalancer.acquireWriteConnection();
+        verifyThrowablePropagation( writeConnection, routingTable, connectionPool, error.getClass() );
+
+        assertThat( routingTable, containsRouter( ADDRESS3 ) );
+        assertTrue( connectionPool.hasAddress( ADDRESS3 ) );
+    }
+
     private void verifyServiceUnavailableHandling( Connection connection, RoutingTable routingTable,
             ConnectionPool connectionPool )
     {
@@ -220,8 +230,8 @@ public class RoutingPooledConnectionErrorHandlingTest
         }
     }
 
-    private void verifyThrowablePropagation( Connection connection, ConnectionMethod method, RoutingTable routingTable,
-            ConnectionPool connectionPool )
+    private <T extends Throwable> void verifyThrowablePropagation( Connection connection, RoutingTable routingTable,
+            ConnectionPool connectionPool, Class<T> expectedClass )
     {
         try
         {
@@ -230,7 +240,7 @@ public class RoutingPooledConnectionErrorHandlingTest
         }
         catch ( Exception e )
         {
-            assertThat( e, instanceOf( RuntimeException.class ) );
+            assertThat( e, instanceOf( expectedClass ) );
 
             BoltServerAddress address = connection.boltServerAddress();
             assertThat( routingTable, containsRouter( address ) );

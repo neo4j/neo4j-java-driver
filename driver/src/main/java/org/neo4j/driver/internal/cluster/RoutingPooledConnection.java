@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal.cluster;
 
 import java.util.Map;
+import java.util.Objects;
 
 import org.neo4j.driver.internal.RoutingErrorHandler;
 import org.neo4j.driver.internal.net.BoltServerAddress;
@@ -283,7 +284,8 @@ class RoutingPooledConnection implements PooledConnection
 
     private static boolean isFailureToWrite( ClientException e )
     {
-        return e.code().equals( "Neo.ClientError.Cluster.NotALeader" ) ||
-               e.code().equals( "Neo.ClientError.General.ForbiddenOnReadOnlyDatabase" );
+        String errorCode = e.code();
+        return Objects.equals( errorCode, "Neo.ClientError.Cluster.NotALeader" ) ||
+               Objects.equals( errorCode, "Neo.ClientError.General.ForbiddenOnReadOnlyDatabase" );
     }
 }
