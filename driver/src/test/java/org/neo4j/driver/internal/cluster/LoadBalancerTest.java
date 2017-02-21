@@ -160,7 +160,7 @@ public class LoadBalancerTest
         BoltServerAddress address = new BoltServerAddress( "host", 42 );
 
         PooledConnection connection = newConnectionWithFailingSync( address );
-        Connection routingConnection = new RoutingPooledConnection( connection, loadBalancer, AccessMode.WRITE );
+        PooledConnection routingConnection = new RoutingPooledConnection( connection, loadBalancer, AccessMode.WRITE );
         NetworkSession session = new NetworkSession( routingConnection );
 
         assertThrowsSessionExpiredException( session );

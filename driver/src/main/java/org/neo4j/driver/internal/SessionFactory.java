@@ -18,10 +18,10 @@
  */
 package org.neo4j.driver.internal;
 
-import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.v1.Session;
 
 interface SessionFactory
 {
-    Session newInstance( Connection connection );
+    Session newInstance( PooledConnection connection );
 }

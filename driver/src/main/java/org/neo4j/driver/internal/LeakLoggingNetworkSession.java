@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal;
 
-import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.v1.Logger;
 
 import static java.lang.System.lineSeparator;
@@ -28,7 +28,7 @@ class LeakLoggingNetworkSession extends NetworkSession
     private final Logger log;
     private final String stackTrace;
 
-    LeakLoggingNetworkSession( Connection connection, Logger log )
+    LeakLoggingNetworkSession( PooledConnection connection, Logger log )
     {
         super( connection );
         this.log = log;

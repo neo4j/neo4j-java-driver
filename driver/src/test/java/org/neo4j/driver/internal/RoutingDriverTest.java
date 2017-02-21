@@ -32,7 +32,6 @@ import java.util.Map;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Collector;
-import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.util.FakeClock;
@@ -425,7 +424,7 @@ public class RoutingDriverTest
     private static class NetworkSessionWithAddressFactory implements SessionFactory
     {
         @Override
-        public Session newInstance( Connection connection )
+        public Session newInstance( PooledConnection connection )
         {
             return new NetworkSessionWithAddress( connection );
         }
@@ -435,7 +434,7 @@ public class RoutingDriverTest
     {
         final BoltServerAddress address;
 
-        NetworkSessionWithAddress( Connection connection )
+        NetworkSessionWithAddress( PooledConnection connection )
         {
             super( connection );
             this.address = connection.boltServerAddress();

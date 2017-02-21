@@ -22,7 +22,6 @@ import java.util.Set;
 
 import org.neo4j.driver.internal.RoutingErrorHandler;
 import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.util.Clock;
@@ -75,13 +74,13 @@ public class LoadBalancer implements RoutingErrorHandler, AutoCloseable
         ensureRouting();
     }
 
-    public Connection acquireReadConnection() throws ServiceUnavailableException
+    public PooledConnection acquireReadConnection() throws ServiceUnavailableException
     {
         PooledConnection connection = acquireConnection( routingTable.readers() );
         return new RoutingPooledConnection( connection, this, AccessMode.READ );
     }
 
-    public Connection acquireWriteConnection() throws ServiceUnavailableException
+    public PooledConnection acquireWriteConnection() throws ServiceUnavailableException
     {
         PooledConnection connection = acquireConnection( routingTable.writers() );
         return new RoutingPooledConnection( connection, this, AccessMode.WRITE );

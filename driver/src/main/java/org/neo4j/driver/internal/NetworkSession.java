@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.internal.logging.DevNullLogger;
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Record;
@@ -41,7 +42,7 @@ import static org.neo4j.driver.v1.Values.value;
 
 public class NetworkSession implements Session
 {
-    private final Connection connection;
+    private final PooledConnection connection;
     private final String sessionId;
     private final Logger logger;
 
@@ -67,7 +68,7 @@ public class NetworkSession implements Session
     private ExplicitTransaction currentTransaction;
     private AtomicBoolean isOpen = new AtomicBoolean( true );
 
-    public NetworkSession( Connection connection )
+    public NetworkSession( PooledConnection connection )
     {
         this.connection = connection;
 

@@ -25,7 +25,7 @@ import org.mockito.ArgumentCaptor;
 
 import java.lang.reflect.Method;
 
-import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Session;
 
@@ -83,9 +83,9 @@ public class LeakLoggingNetworkSessionTest
         finalizeMethod.invoke( session );
     }
 
-    private static Connection connectionMock( boolean open )
+    private static PooledConnection connectionMock( boolean open )
     {
-        Connection connection = mock( Connection.class );
+        PooledConnection connection = mock( PooledConnection.class );
         when( connection.isOpen() ).thenReturn( open );
         return connection;
     }
