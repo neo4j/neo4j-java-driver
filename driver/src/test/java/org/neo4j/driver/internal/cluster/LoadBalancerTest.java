@@ -52,6 +52,8 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
+import static org.neo4j.driver.v1.AccessMode.READ;
+import static org.neo4j.driver.v1.AccessMode.WRITE;
 
 public class LoadBalancerTest
 {
@@ -107,7 +109,7 @@ public class LoadBalancerTest
         LoadBalancer spy = spy( balancer );
 
         // when
-        Connection connection = spy.acquireReadConnection();
+        Connection connection = spy.acquireConnection( READ );
         connection.init( "Test", Collections.<String,Value>emptyMap() );
 
         // then
@@ -122,11 +124,11 @@ public class LoadBalancerTest
         PooledConnection readConn = mock( PooledConnection.class );
         LoadBalancer balancer = setupLoadBalancer( writerConn, readConn );
 
-        Connection acquiredReadConn = balancer.acquireReadConnection();
+        Connection acquiredReadConn = balancer.acquireConnection( READ );
         acquiredReadConn.init( "TestRead", Collections.<String,Value>emptyMap() );
         verify( readConn ).init( "TestRead", Collections.<String,Value>emptyMap() );
 
-        Connection acquiredWriteConn = balancer.acquireWriteConnection();
+        Connection acquiredWriteConn = balancer.acquireConnection( WRITE );
         acquiredWriteConn.init( "TestWrite", Collections.<String,Value>emptyMap() );
         verify( writerConn ).init( "TestWrite", Collections.<String,Value>emptyMap() );
     }

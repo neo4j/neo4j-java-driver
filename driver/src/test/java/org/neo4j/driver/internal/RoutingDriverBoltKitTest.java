@@ -31,6 +31,7 @@ import java.util.logging.Level;
 import org.neo4j.driver.internal.logging.ConsoleLogging;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Config;
+import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
@@ -62,7 +63,7 @@ public class RoutingDriverBoltKitTest
         //START a read server
         StubServer readServer = StubServer.start( "read_server.script", 9005 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
-        try ( RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
+        try ( Driver driver = GraphDatabase.driver( uri, config );
               Session session = driver.session( AccessMode.READ ) )
         {
             List<String> result = session.run( "MATCH (n) RETURN n.name" ).list( new Function<Record,String>()
@@ -92,7 +93,7 @@ public class RoutingDriverBoltKitTest
         //START a read server
         StubServer readServer = StubServer.start( "read_server.script", 9005 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
-        try ( RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
+        try ( Driver driver = GraphDatabase.driver( uri, config );
               Session session = driver.session( AccessMode.READ );
               Transaction tx = session.beginTransaction() )
         {
@@ -123,7 +124,7 @@ public class RoutingDriverBoltKitTest
         StubServer readServer1 = StubServer.start( "read_server.script", 9005 );
         StubServer readServer2 = StubServer.start( "read_server.script", 9006 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
-        try ( RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config ) )
+        try ( Driver driver = GraphDatabase.driver( uri, config ) )
         {
             // Run twice, one on each read server
             for ( int i = 0; i < 2; i++ )
@@ -158,7 +159,7 @@ public class RoutingDriverBoltKitTest
         StubServer readServer1 = StubServer.start( "read_server.script", 9005 );
         StubServer readServer2 = StubServer.start( "read_server.script", 9006 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
-        try ( RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config ) )
+        try ( Driver driver = GraphDatabase.driver( uri, config ) )
         {
             // Run twice, one on each read server
             for ( int i = 0; i < 2; i++ )
@@ -199,7 +200,7 @@ public class RoutingDriverBoltKitTest
         exception.expect( SessionExpiredException.class );
         exception.expectMessage( "Server at 127.0.0.1:9005 is no longer available" );
 
-        try ( RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
+        try ( Driver driver = GraphDatabase.driver( uri, config );
               Session session = driver.session( AccessMode.READ ) )
         {
             session.run( "MATCH (n) RETURN n.name" );
@@ -225,7 +226,7 @@ public class RoutingDriverBoltKitTest
         exception.expect( SessionExpiredException.class );
         exception.expectMessage( "Server at 127.0.0.1:9005 is no longer available" );
 
-        try ( RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
+        try ( Driver driver = GraphDatabase.driver( uri, config );
               Session session = driver.session( AccessMode.READ );
               Transaction tx = session.beginTransaction() )
         {
@@ -253,7 +254,7 @@ public class RoutingDriverBoltKitTest
         exception.expect( SessionExpiredException.class );
         //exception.expectMessage( "Server at 127.0.0.1:9006 is no longer available" );
 
-        try ( RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
+        try ( Driver driver = GraphDatabase.driver( uri, config );
               Session session = driver.session( AccessMode.WRITE ) )
         {
             session.run( "MATCH (n) RETURN n.name" ).consume();
@@ -278,7 +279,7 @@ public class RoutingDriverBoltKitTest
         //Expect
         exception.expect( SessionExpiredException.class );
 
-        try ( RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
+        try ( Driver driver = GraphDatabase.driver( uri, config );
               Session session = driver.session( AccessMode.WRITE );
               Transaction tx = session.beginTransaction() )
         {
@@ -300,7 +301,7 @@ public class RoutingDriverBoltKitTest
         //START a write server
         StubServer writeServer = StubServer.start( "write_server.script", 9007 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
-        try ( RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
+        try ( Driver driver = GraphDatabase.driver( uri, config );
               Session session = driver.session( AccessMode.WRITE ) )
         {
             session.run( "CREATE (n {name:'Bob'})" );
@@ -320,7 +321,7 @@ public class RoutingDriverBoltKitTest
         //START a write server
         StubServer writeServer = StubServer.start( "write_server.script", 9007 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
-        try ( RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
+        try ( Driver driver = GraphDatabase.driver( uri, config );
               Session session = driver.session( AccessMode.WRITE );
               Transaction tx = session.beginTransaction() )
         {
@@ -342,7 +343,7 @@ public class RoutingDriverBoltKitTest
         StubServer writeServer1 = StubServer.start( "write_server.script", 9007 );
         StubServer writeServer2 = StubServer.start( "write_server.script", 9008 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
-        try ( RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config ) )
+        try ( Driver driver = GraphDatabase.driver( uri, config ) )
         {
             for ( int i = 0; i < 2; i++ )
             {
@@ -368,7 +369,7 @@ public class RoutingDriverBoltKitTest
         StubServer writeServer1 = StubServer.start( "write_server.script", 9007 );
         StubServer writeServer2 = StubServer.start( "write_server.script", 9008 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
-        try ( RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config ) )
+        try ( Driver driver = GraphDatabase.driver( uri, config ) )
         {
             for ( int i = 0; i < 2; i++ )
             {
@@ -424,7 +425,7 @@ public class RoutingDriverBoltKitTest
         //START a write server that doesn't accept writes
         StubServer.start( "not_able_to_write_server.script", 9007 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
-        RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
+        Driver driver = GraphDatabase.driver( uri, config );
         boolean failed = false;
         try ( Session session = driver.session( AccessMode.WRITE ) )
         {
@@ -452,7 +453,7 @@ public class RoutingDriverBoltKitTest
         //START a write server that doesn't accept writes
         StubServer.start( "not_able_to_write_server.script", 9007 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
-        RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
+        Driver driver = GraphDatabase.driver( uri, config );
         boolean failed = false;
         try ( Session session = driver.session( AccessMode.WRITE ) )
         {
@@ -480,7 +481,7 @@ public class RoutingDriverBoltKitTest
         //START a write server that doesn't accept writes
         StubServer.start( "not_able_to_write_server.script", 9007 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
-        RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
+        Driver driver = GraphDatabase.driver( uri, config );
         boolean failed = false;
         try ( Session session = driver.session( AccessMode.WRITE );
               Transaction tx = session.beginTransaction() )
@@ -509,7 +510,7 @@ public class RoutingDriverBoltKitTest
         //START a write server that doesn't accept writes
         StubServer.start( "not_able_to_write_server.script", 9007 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
-        RoutingDriver driver = (RoutingDriver) GraphDatabase.driver( uri, config );
+        Driver driver = GraphDatabase.driver( uri, config );
         boolean failed = false;
         try ( Session session = driver.session( AccessMode.WRITE );
               Transaction tx = session.beginTransaction() )

@@ -29,14 +29,17 @@ import java.io.File;
 import java.util.Collections;
 import java.util.Map;
 
+import org.neo4j.driver.internal.cluster.LoadBalancer;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.spi.ConnectionPool;
+import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Config;
+import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.EventLogger;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Logging;
@@ -93,7 +96,7 @@ public class RoutingDriverTest
     public void shouldRediscoveryIfNoWritersProvided()
     {
         // Given
-        RoutingDriver routingDriver = driverWithPool( pool(
+        Driver driver = driverWithPool( pool(
                 withServers( 10, serverInfo( "ROUTE", "localhost:1111" ),
                         serverInfo( "WRITE" ),
                         serverInfo( "READ", "localhost:5555" ) ),
@@ -102,7 +105,7 @@ public class RoutingDriverTest
                         serverInfo( "WRITE", "localhost:3333" ) ) ) );
 
         // When
-        NetworkSessionWithAddress writing = (NetworkSessionWithAddress) routingDriver.session( AccessMode.WRITE );
+        NetworkSessionWithAddress writing = (NetworkSessionWithAddress) driver.session( AccessMode.WRITE );
 
         // Then
         assertEquals( boltAddress( "localhost", 3333 ), writing.address );
@@ -112,7 +115,7 @@ public class RoutingDriverTest
     public void shouldNotRediscoveryOnSessionAcquisitionIfNotNecessary()
     {
         // Given
-        RoutingDriver routingDriver = driverWithPool( pool(
+        Driver driver = driverWithPool( pool(
                 withServers( 10, serverInfo( "ROUTE", "localhost:1111", "localhost:1112", "localhost:1113" ),
                         serverInfo( "READ", "localhost:2222" ),
                         serverInfo( "WRITE", "localhost:3333" ) ),
@@ -121,8 +124,8 @@ public class RoutingDriverTest
                         serverInfo( "WRITE", "localhost:5555" ) ) ) );
 
         // When
-        NetworkSessionWithAddress writing = (NetworkSessionWithAddress) routingDriver.session( AccessMode.WRITE );
-        NetworkSessionWithAddress reading = (NetworkSessionWithAddress) routingDriver.session( AccessMode.READ );
+        NetworkSessionWithAddress writing = (NetworkSessionWithAddress) driver.session( AccessMode.WRITE );
+        NetworkSessionWithAddress reading = (NetworkSessionWithAddress) driver.session( AccessMode.READ );
 
         // Then
         assertEquals( boltAddress( "localhost", 3333 ), writing.address );
@@ -204,11 +207,11 @@ public class RoutingDriverTest
                         serverInfo( "READ", "localhost:2222" ),
                         serverInfo( "WRITE", "localhost:3333" ) ) );
 
-        RoutingDriver routingDriver = driverWithPool( pool );
+        Driver driver = driverWithPool( pool );
 
         // When
-        NetworkSessionWithAddress write1 = (NetworkSessionWithAddress) routingDriver.session( AccessMode.WRITE );
-        NetworkSessionWithAddress write2 = (NetworkSessionWithAddress) routingDriver.session( AccessMode.WRITE );
+        NetworkSessionWithAddress write1 = (NetworkSessionWithAddress) driver.session( AccessMode.WRITE );
+        NetworkSessionWithAddress write2 = (NetworkSessionWithAddress) driver.session( AccessMode.WRITE );
 
         // Then
         assertEquals( boltAddress( "localhost", 3333 ), write1.address );
@@ -219,7 +222,7 @@ public class RoutingDriverTest
     public void shouldRediscoverOnTimeout()
     {
         // Given
-        RoutingDriver routingDriver = driverWithPool( pool(
+        Driver driver = driverWithPool( pool(
                 withServers( 10, serverInfo( "ROUTE", "localhost:1111", "localhost:1112", "localhost:1113" ),
                         serverInfo( "READ", "localhost:2222" ),
                         serverInfo( "WRITE", "localhost:3333" ) ),
@@ -230,8 +233,8 @@ public class RoutingDriverTest
         clock.progress( 11_000 );
 
         // When
-        NetworkSessionWithAddress writing = (NetworkSessionWithAddress) routingDriver.session( AccessMode.WRITE );
-        NetworkSessionWithAddress reading = (NetworkSessionWithAddress) routingDriver.session( AccessMode.READ );
+        NetworkSessionWithAddress writing = (NetworkSessionWithAddress) driver.session( AccessMode.WRITE );
+        NetworkSessionWithAddress reading = (NetworkSessionWithAddress) driver.session( AccessMode.READ );
 
         // Then
         assertEquals( boltAddress( "localhost", 8888 ), writing.address );
@@ -242,7 +245,7 @@ public class RoutingDriverTest
     public void shouldNotRediscoverWhenNoTimeout()
     {
         // Given
-        RoutingDriver routingDriver = driverWithPool( pool(
+        Driver driver = driverWithPool( pool(
                 withServers( 10, serverInfo( "ROUTE", "localhost:1111", "localhost:1112", "localhost:1113" ),
                         serverInfo( "READ", "localhost:2222" ),
                         serverInfo( "WRITE", "localhost:3333" ) ),
@@ -252,8 +255,8 @@ public class RoutingDriverTest
         clock.progress( 9900 );
 
         // When
-        NetworkSessionWithAddress writer = (NetworkSessionWithAddress) routingDriver.session( AccessMode.WRITE );
-        NetworkSessionWithAddress reader = (NetworkSessionWithAddress) routingDriver.session( AccessMode.READ );
+        NetworkSessionWithAddress writer = (NetworkSessionWithAddress) driver.session( AccessMode.WRITE );
+        NetworkSessionWithAddress reader = (NetworkSessionWithAddress) driver.session( AccessMode.READ );
 
         // Then
         assertEquals( boltAddress( "localhost", 2222 ), reader.address );
@@ -264,17 +267,18 @@ public class RoutingDriverTest
     public void shouldRoundRobinAmongReadServers()
     {
         // Given
-        RoutingDriver routingDriver = driverWithServers( 60, serverInfo( "ROUTE", "localhost:1111", "localhost:1112" ),
+        Driver driver = driverWithServers( 60,
+                serverInfo( "ROUTE", "localhost:1111", "localhost:1112" ),
                 serverInfo( "READ", "localhost:2222", "localhost:2223", "localhost:2224" ),
                 serverInfo( "WRITE", "localhost:3333" ) );
 
         // When
-        NetworkSessionWithAddress read1 = (NetworkSessionWithAddress) routingDriver.session( AccessMode.READ );
-        NetworkSessionWithAddress read2 = (NetworkSessionWithAddress) routingDriver.session( AccessMode.READ );
-        NetworkSessionWithAddress read3 = (NetworkSessionWithAddress) routingDriver.session( AccessMode.READ );
-        NetworkSessionWithAddress read4 = (NetworkSessionWithAddress) routingDriver.session( AccessMode.READ );
-        NetworkSessionWithAddress read5 = (NetworkSessionWithAddress) routingDriver.session( AccessMode.READ );
-        NetworkSessionWithAddress read6 = (NetworkSessionWithAddress) routingDriver.session( AccessMode.READ );
+        NetworkSessionWithAddress read1 = (NetworkSessionWithAddress) driver.session( AccessMode.READ );
+        NetworkSessionWithAddress read2 = (NetworkSessionWithAddress) driver.session( AccessMode.READ );
+        NetworkSessionWithAddress read3 = (NetworkSessionWithAddress) driver.session( AccessMode.READ );
+        NetworkSessionWithAddress read4 = (NetworkSessionWithAddress) driver.session( AccessMode.READ );
+        NetworkSessionWithAddress read5 = (NetworkSessionWithAddress) driver.session( AccessMode.READ );
+        NetworkSessionWithAddress read6 = (NetworkSessionWithAddress) driver.session( AccessMode.READ );
 
         // Then
         assertEquals( read1.address, read4.address );
@@ -289,17 +293,17 @@ public class RoutingDriverTest
     public void shouldRoundRobinAmongWriteServers()
     {
         // Given
-        RoutingDriver routingDriver = driverWithServers( 60, serverInfo( "ROUTE", "localhost:1111", "localhost:1112" ),
+        Driver driver = driverWithServers( 60, serverInfo( "ROUTE", "localhost:1111", "localhost:1112" ),
                 serverInfo( "READ", "localhost:3333" ),
                 serverInfo( "WRITE", "localhost:2222", "localhost:2223", "localhost:2224" ) );
 
         // When
-        NetworkSessionWithAddress write1 = (NetworkSessionWithAddress) routingDriver.session( AccessMode.WRITE );
-        NetworkSessionWithAddress write2 = (NetworkSessionWithAddress) routingDriver.session( AccessMode.WRITE );
-        NetworkSessionWithAddress write3 = (NetworkSessionWithAddress) routingDriver.session( AccessMode.WRITE );
-        NetworkSessionWithAddress write4 = (NetworkSessionWithAddress) routingDriver.session( AccessMode.WRITE );
-        NetworkSessionWithAddress write5 = (NetworkSessionWithAddress) routingDriver.session( AccessMode.WRITE );
-        NetworkSessionWithAddress write6 = (NetworkSessionWithAddress) routingDriver.session( AccessMode.WRITE );
+        NetworkSessionWithAddress write1 = (NetworkSessionWithAddress) driver.session( AccessMode.WRITE );
+        NetworkSessionWithAddress write2 = (NetworkSessionWithAddress) driver.session( AccessMode.WRITE );
+        NetworkSessionWithAddress write3 = (NetworkSessionWithAddress) driver.session( AccessMode.WRITE );
+        NetworkSessionWithAddress write4 = (NetworkSessionWithAddress) driver.session( AccessMode.WRITE );
+        NetworkSessionWithAddress write5 = (NetworkSessionWithAddress) driver.session( AccessMode.WRITE );
+        NetworkSessionWithAddress write6 = (NetworkSessionWithAddress) driver.session( AccessMode.WRITE );
 
         // Then
         assertEquals( write1.address, write4.address );
@@ -331,16 +335,17 @@ public class RoutingDriverTest
     }
 
     @SafeVarargs
-    private final RoutingDriver driverWithServers( long ttl, Map<String,Object>... serverInfo )
+    private final Driver driverWithServers( long ttl, Map<String,Object>... serverInfo )
     {
         return driverWithPool( poolWithServers( ttl, serverInfo ) );
     }
 
-    private RoutingDriver driverWithPool( ConnectionPool pool )
+    private Driver driverWithPool( ConnectionPool pool )
     {
         RoutingSettings settings = new RoutingSettings( 10, 5_000 );
+        ConnectionProvider connectionProvider = new LoadBalancer( settings, pool, clock, logging, SEED );
         SessionFactory sessionFactory = new NetworkSessionWithAddressFactory();
-        return new RoutingDriver( settings, SEED, pool, insecure(), sessionFactory, clock, logging );
+        return new InternalDriver( insecure(), sessionFactory, connectionProvider, logging );
     }
 
     @SafeVarargs

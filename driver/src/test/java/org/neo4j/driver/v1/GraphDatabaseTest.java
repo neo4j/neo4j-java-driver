@@ -20,15 +20,20 @@ package org.neo4j.driver.v1;
 
 import org.junit.Test;
 
+import java.io.File;
 import java.net.URI;
 
-import org.neo4j.driver.internal.DirectDriver;
-import org.neo4j.driver.internal.RoutingDriver;
+import org.neo4j.driver.internal.DirectConnectionProvider;
+import org.neo4j.driver.internal.InternalDriver;
+import org.neo4j.driver.internal.cluster.LoadBalancer;
 import org.neo4j.driver.v1.util.StubServer;
 
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+import static org.neo4j.driver.v1.Config.EncryptionLevel.REQUIRED;
+import static org.neo4j.driver.v1.Config.TrustStrategy.trustOnFirstUse;
 import static org.neo4j.driver.v1.util.StubServer.INSECURE_CONFIG;
 
 public class GraphDatabaseTest
@@ -43,8 +48,8 @@ public class GraphDatabaseTest
         Driver driver = GraphDatabase.driver( uri );
 
         // Then
-        assertThat( driver, instanceOf( DirectDriver.class ) );
-
+        assertThat( driver, instanceOf( InternalDriver.class ) );
+        assertThat( ((InternalDriver) driver).getConnectionProvider(), instanceOf( DirectConnectionProvider.class ) );
     }
 
     @Test
@@ -58,10 +63,32 @@ public class GraphDatabaseTest
         Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG );
 
         // Then
-        assertThat( driver, instanceOf( RoutingDriver.class ) );
+        assertThat( driver, instanceOf( InternalDriver.class ) );
+        assertThat( ((InternalDriver) driver).getConnectionProvider(), instanceOf( LoadBalancer.class ) );
 
         // Finally
         driver.close();
         assertThat( server.exitStatus(), equalTo( 0 ) );
+    }
+
+    @Test
+    public void boltPlusDiscoverySchemeShouldNotSupportTrustOnFirstUse()
+    {
+        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+
+        Config config = Config.build()
+                .withEncryptionLevel( REQUIRED )
+                .withTrustStrategy( trustOnFirstUse( new File( "./known_hosts" ) ) )
+                .toConfig();
+
+        try
+        {
+            GraphDatabase.driver( uri, config );
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( IllegalArgumentException.class ) );
+        }
     }
 }

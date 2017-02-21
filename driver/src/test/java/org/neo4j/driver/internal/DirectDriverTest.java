@@ -40,13 +40,13 @@ public class DirectDriverTest
     public void shouldUseDefaultPortIfMissing()
     {
         // Given
-        URI uri = URI.create( "bolt://localhost:7687" );
+        URI uri = URI.create( "bolt://localhost" );
 
         // When
-        DirectDriver driver = (DirectDriver) GraphDatabase.driver( uri );
+        Driver driver = GraphDatabase.driver( uri );
 
         // Then
-        BoltServerAddress address = driver.server();
+        BoltServerAddress address = serverAddressFor( driver );
         assertThat( address.port(), equalTo( BoltServerAddress.DEFAULT_PORT ) );
     }
 
@@ -58,12 +58,11 @@ public class DirectDriverTest
         BoltServerAddress address = BoltServerAddress.from( uri );
 
         // When
-        DirectDriver driver = (DirectDriver) GraphDatabase.driver( uri );
+        Driver driver = GraphDatabase.driver( uri );
 
         // Then
-        BoltServerAddress driverAddress = driver.server();
-        assertThat( driverAddress, equalTo( address ));
-
+        BoltServerAddress driverAddress = serverAddressFor( driver );
+        assertThat( driverAddress, equalTo( address ) );
     }
 
     @Test
@@ -89,5 +88,10 @@ public class DirectDriverTest
 
         // Finally
         assertThat( server.exitStatus(), equalTo( 0 ) );
+    }
+
+    private static BoltServerAddress serverAddressFor( Driver driver )
+    {
+        return ((DirectConnectionProvider) ((InternalDriver) driver).getConnectionProvider()).getAddress();
     }
 }

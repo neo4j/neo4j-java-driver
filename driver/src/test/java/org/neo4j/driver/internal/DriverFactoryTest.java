@@ -35,6 +35,7 @@ import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
+import org.neo4j.driver.v1.Driver;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertArrayEquals;
@@ -142,16 +143,15 @@ public class DriverFactoryTest
         }
 
         @Override
-        protected DirectDriver createDirectDriver( BoltServerAddress address, ConnectionPool connectionPool,
-                Config config, SecurityPlan securityPlan, SessionFactory sessionFactory )
+        protected Driver createDirectDriver( BoltServerAddress address, ConnectionPool connectionPool, Config config,
+                SecurityPlan securityPlan, SessionFactory sessionFactory )
         {
             throw new UnsupportedOperationException( "Can't create direct driver" );
         }
 
         @Override
-        protected RoutingDriver createRoutingDriver( BoltServerAddress address, ConnectionPool connectionPool,
-                Config config, RoutingSettings routingSettings, SecurityPlan securityPlan,
-                SessionFactory sessionFactory )
+        protected Driver createRoutingDriver( BoltServerAddress address, ConnectionPool connectionPool, Config config,
+                RoutingSettings routingSettings, SecurityPlan securityPlan, SessionFactory sessionFactory )
         {
             throw new UnsupportedOperationException( "Can't create routing driver" );
         }
@@ -168,17 +168,16 @@ public class DriverFactoryTest
         SessionFactory capturedSessionFactory;
 
         @Override
-        protected DirectDriver createDirectDriver( BoltServerAddress address, ConnectionPool connectionPool,
-                Config config, SecurityPlan securityPlan, SessionFactory sessionFactory )
+        protected Driver createDirectDriver( BoltServerAddress address, ConnectionPool connectionPool, Config config,
+                SecurityPlan securityPlan, SessionFactory sessionFactory )
         {
             capturedSessionFactory = sessionFactory;
             return null;
         }
 
         @Override
-        protected RoutingDriver createRoutingDriver( BoltServerAddress address, ConnectionPool connectionPool,
-                Config config, RoutingSettings routingSettings, SecurityPlan securityPlan,
-                SessionFactory sessionFactory )
+        protected Driver createRoutingDriver( BoltServerAddress address, ConnectionPool connectionPool, Config config,
+                RoutingSettings routingSettings, SecurityPlan securityPlan, SessionFactory sessionFactory )
         {
             capturedSessionFactory = sessionFactory;
             return null;

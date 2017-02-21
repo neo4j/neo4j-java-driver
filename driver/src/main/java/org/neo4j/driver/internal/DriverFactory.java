@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.security.GeneralSecurityException;
 
+import org.neo4j.driver.internal.cluster.LoadBalancer;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.net.SocketConnector;
@@ -29,6 +30,7 @@ import org.neo4j.driver.internal.net.pooling.PoolSettings;
 import org.neo4j.driver.internal.net.pooling.SocketConnectionPool;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.ConnectionPool;
+import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.spi.Connector;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.AuthToken;
@@ -90,26 +92,32 @@ public class DriverFactory
     }
 
     /**
-     * Creates new {@link DirectDriver}.
+     * Creates a new driver for "bolt" scheme.
      * <p>
      * <b>This method is protected only for testing</b>
      */
-    protected DirectDriver createDirectDriver( BoltServerAddress address, ConnectionPool connectionPool,
+    protected Driver createDirectDriver( BoltServerAddress address, ConnectionPool connectionPool,
             Config config, SecurityPlan securityPlan, SessionFactory sessionFactory )
     {
-        return new DirectDriver( address, connectionPool, securityPlan, sessionFactory, config.logging() );
+        ConnectionProvider connectionProvider = new DirectConnectionProvider( address, connectionPool );
+        return new InternalDriver( securityPlan, sessionFactory, connectionProvider, config.logging() );
     }
 
     /**
-     * Creates new {@link RoutingDriver}.
+     * Creates new a new driver for "bolt+routing" scheme.
      * <p>
      * <b>This method is protected only for testing</b>
      */
-    protected RoutingDriver createRoutingDriver( BoltServerAddress address, ConnectionPool connectionPool,
+    protected Driver createRoutingDriver( BoltServerAddress address, ConnectionPool connectionPool,
             Config config, RoutingSettings routingSettings, SecurityPlan securityPlan, SessionFactory sessionFactory )
     {
-        return new RoutingDriver( routingSettings, address, connectionPool, securityPlan, sessionFactory,
-                createClock(), config.logging() );
+        if ( !securityPlan.isRoutingCompatible() )
+        {
+            throw new IllegalArgumentException( "The chosen security plan is not compatible with a routing driver" );
+        }
+        ConnectionProvider connectionProvider = new LoadBalancer( routingSettings, connectionPool, createClock(),
+                config.logging(), address );
+        return new InternalDriver( securityPlan, sessionFactory, connectionProvider, config.logging() );
     }
 
     /**
