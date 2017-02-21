@@ -20,23 +20,27 @@ package org.neo4j.driver.internal;
 
 import org.junit.Test;
 
-import org.neo4j.driver.internal.spi.PooledConnection;
-import org.neo4j.driver.v1.Logging;
+import org.neo4j.driver.internal.spi.ConnectionProvider;
+import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Session;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 
 public class LeakLoggingNetworkSessionFactoryTest
 {
     @Test
     public void createsLeakLoggingNetworkSessions()
     {
-        SessionFactory factory = new LeakLoggingNetworkSessionFactory( mock( Logging.class ) );
+        SessionFactory factory = new LeakLoggingNetworkSessionFactory( mock( ConnectionProvider.class ),
+                DEV_NULL_LOGGING );
 
-        Session session = factory.newInstance( mock( PooledConnection.class ) );
+        Session readSession = factory.newInstance( AccessMode.READ );
+        assertThat( readSession, instanceOf( LeakLoggingNetworkSession.class ) );
 
-        assertThat( session, instanceOf( LeakLoggingNetworkSession.class ) );
+        Session writeSession = factory.newInstance( AccessMode.WRITE );
+        assertThat( writeSession, instanceOf( LeakLoggingNetworkSession.class ) );
     }
 }

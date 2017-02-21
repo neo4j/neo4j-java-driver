@@ -22,11 +22,13 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.driver.internal.logging.DevNullLogger;
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
+import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Logger;
+import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
@@ -38,13 +40,15 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.types.TypeSystem;
 
+import static java.lang.String.format;
 import static org.neo4j.driver.v1.Values.value;
 
 public class NetworkSession implements Session
 {
+    private final ConnectionProvider connectionProvider;
     private final PooledConnection connection;
     private final String sessionId;
-    private final Logger logger;
+    protected final Logger logger;
 
     private String lastBookmark = null;
 
@@ -68,19 +72,12 @@ public class NetworkSession implements Session
     private ExplicitTransaction currentTransaction;
     private AtomicBoolean isOpen = new AtomicBoolean( true );
 
-    public NetworkSession( PooledConnection connection )
+    public NetworkSession( ConnectionProvider connectionProvider, AccessMode mode, Logging logging )
     {
-        this.connection = connection;
-
-        if( connection != null && connection.logger() != null )
-        {
-            this.logger = connection.logger();
-        }
-        else
-        {
-            this.logger = DevNullLogger.DEV_NULL_LOGGER;
-        }
-        sessionId = UUID.randomUUID().toString();
+        this.connectionProvider = connectionProvider;
+        this.connection = connectionProvider.acquireConnection( mode );
+        this.sessionId = UUID.randomUUID().toString();
+        this.logger = logging.getLog( format( "Session-%s", sessionId ) );
         this.logger.debug( "~~ connection claimed by [session-%s]", sessionId );
     }
 
@@ -291,9 +288,10 @@ public class NetworkSession implements Session
     {
         if ( !connection.isOpen() )
         {
-            throw new ServiceUnavailableException( "The current session cannot be reused as the underlying connection with the " +
-                                                   "server has been closed due to unrecoverable errors. " +
-                                                   "Please close this session and retry your statement in another new session." );
+            throw new ServiceUnavailableException(
+                    "The current session cannot be reused as the underlying connection with the " +
+                    "server has been closed due to unrecoverable errors. " +
+                    "Please close this session and retry your statement in another new session." );
         }
     }
 

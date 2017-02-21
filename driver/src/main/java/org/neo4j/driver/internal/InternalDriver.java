@@ -22,7 +22,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
-import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Logger;
@@ -97,14 +96,14 @@ public class InternalDriver implements Driver
 
     private Session newSessionWithMode( AccessMode mode )
     {
-        PooledConnection connection = connectionProvider.acquireConnection( mode );
-        return sessionFactory.newInstance( connection );
+        return sessionFactory.newInstance( mode );
     }
 
     private void closeResources()
     {
         try
         {
+            // todo: driver can just close session factory here...
             connectionProvider.close();
         }
         catch ( Exception ex )

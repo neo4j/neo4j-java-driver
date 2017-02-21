@@ -44,6 +44,7 @@ import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
@@ -52,6 +53,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
+import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.v1.AccessMode.READ;
 import static org.neo4j.driver.v1.AccessMode.WRITE;
 
@@ -155,15 +157,15 @@ public class LoadBalancerTest
     @Test
     public void shouldForgetAddressAndItsConnectionsOnServiceUnavailableWhileClosingSession()
     {
-        RoutingTable routingTable = mock( RoutingTable.class );
+        RoutingTable routingTable = mock( RoutingTable.class, RETURNS_MOCKS );
         ConnectionPool connectionPool = mock( ConnectionPool.class );
+        BoltServerAddress address = new BoltServerAddress( "host", 42 );
+        PooledConnection connectionWithFailingSync = newConnectionWithFailingSync( address );
+        when( connectionPool.acquire( any( BoltServerAddress.class ) ) ).thenReturn( connectionWithFailingSync );
         Rediscovery rediscovery = mock( Rediscovery.class );
         LoadBalancer loadBalancer = new LoadBalancer( routingTable, connectionPool, rediscovery, DEV_NULL_LOGGER );
-        BoltServerAddress address = new BoltServerAddress( "host", 42 );
 
-        PooledConnection connection = newConnectionWithFailingSync( address );
-        PooledConnection routingConnection = new RoutingPooledConnection( connection, loadBalancer, AccessMode.WRITE );
-        NetworkSession session = new NetworkSession( routingConnection );
+        NetworkSession session = new NetworkSession( loadBalancer, AccessMode.WRITE, DEV_NULL_LOGGING );
 
         assertThrowsSessionExpiredException( session );
 

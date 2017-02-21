@@ -62,6 +62,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.cluster.ClusterCompositionProviderTest.serverInfo;
+import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.security.SecurityPlan.insecure;
 import static org.neo4j.driver.v1.Values.value;
 
@@ -344,7 +345,7 @@ public class RoutingDriverTest
     {
         RoutingSettings settings = new RoutingSettings( 10, 5_000 );
         ConnectionProvider connectionProvider = new LoadBalancer( settings, pool, clock, logging, SEED );
-        SessionFactory sessionFactory = new NetworkSessionWithAddressFactory();
+        SessionFactory sessionFactory = new NetworkSessionWithAddressFactory( connectionProvider, DEV_NULL_LOGGING );
         return new InternalDriver( insecure(), sessionFactory, connectionProvider, logging );
     }
 
@@ -428,10 +429,19 @@ public class RoutingDriverTest
 
     private static class NetworkSessionWithAddressFactory implements SessionFactory
     {
-        @Override
-        public Session newInstance( PooledConnection connection )
+        final ConnectionProvider connectionProvider;
+        final Logging logging;
+
+        NetworkSessionWithAddressFactory( ConnectionProvider connectionProvider, Logging logging )
         {
-            return new NetworkSessionWithAddress( connection );
+            this.connectionProvider = connectionProvider;
+            this.logging = logging;
+        }
+
+        @Override
+        public Session newInstance( AccessMode mode )
+        {
+            return new NetworkSessionWithAddress( connectionProvider, mode, logging );
         }
     }
 
@@ -439,10 +449,13 @@ public class RoutingDriverTest
     {
         final BoltServerAddress address;
 
-        NetworkSessionWithAddress( PooledConnection connection )
+        NetworkSessionWithAddress( ConnectionProvider connectionProvider, AccessMode mode, Logging logging )
         {
-            super( connection );
-            this.address = connection.boltServerAddress();
+            super( connectionProvider, mode, logging );
+            try ( PooledConnection connection = connectionProvider.acquireConnection( mode ) )
+            {
+                this.address = connection.boltServerAddress();
+            }
         }
     }
 

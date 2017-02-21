@@ -18,25 +18,25 @@
  */
 package org.neo4j.driver.internal;
 
-import org.neo4j.driver.internal.spi.PooledConnection;
-import org.neo4j.driver.v1.Logger;
+import org.neo4j.driver.internal.spi.ConnectionProvider;
+import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Session;
 
 class LeakLoggingNetworkSessionFactory implements SessionFactory
 {
-    private static final String LOGGER_NAME = "sessionLeak";
+    private final ConnectionProvider connectionProvider;
+    private final Logging logging;
 
-    private final Logger logger;
-
-    LeakLoggingNetworkSessionFactory( Logging logging )
+    LeakLoggingNetworkSessionFactory( ConnectionProvider connectionProvider, Logging logging )
     {
-        this.logger = logging.getLog( LOGGER_NAME );
+        this.connectionProvider = connectionProvider;
+        this.logging = logging;
     }
 
     @Override
-    public Session newInstance( PooledConnection connection )
+    public Session newInstance( AccessMode mode )
     {
-        return new LeakLoggingNetworkSession( connection, logger );
+        return new LeakLoggingNetworkSession( connectionProvider, mode, logging );
     }
 }

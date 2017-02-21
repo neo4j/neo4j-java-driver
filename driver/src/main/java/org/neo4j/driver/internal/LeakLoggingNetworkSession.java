@@ -18,20 +18,20 @@
  */
 package org.neo4j.driver.internal;
 
-import org.neo4j.driver.internal.spi.PooledConnection;
-import org.neo4j.driver.v1.Logger;
+import org.neo4j.driver.internal.spi.ConnectionProvider;
+import org.neo4j.driver.v1.AccessMode;
+import org.neo4j.driver.v1.Logging;
 
 import static java.lang.System.lineSeparator;
 
+// todo: what to do with this thing now?
 class LeakLoggingNetworkSession extends NetworkSession
 {
-    private final Logger log;
     private final String stackTrace;
 
-    LeakLoggingNetworkSession( PooledConnection connection, Logger log )
+    LeakLoggingNetworkSession( ConnectionProvider connectionProvider, AccessMode mode, Logging logging )
     {
-        super( connection );
-        this.log = log;
+        super( connectionProvider, mode, logging );
         this.stackTrace = captureStackTrace();
     }
 
@@ -46,9 +46,9 @@ class LeakLoggingNetworkSession extends NetworkSession
     {
         if ( isOpen() )
         {
-            log.error( "Neo4j Session object leaked, please ensure that your application" +
-                       "calls the `close` method on Sessions before disposing of the objects.\n" +
-                       "Session was create at:\n" + stackTrace, null );
+            logger.error( "Neo4j Session object leaked, please ensure that your application" +
+                          "calls the `close` method on Sessions before disposing of the objects.\n" +
+                          "Session was create at:\n" + stackTrace, null );
         }
     }
 

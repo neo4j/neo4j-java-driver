@@ -18,11 +18,14 @@
  */
 package org.neo4j.driver.internal;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.spi.PooledConnection;
+import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
@@ -31,55 +34,67 @@ import static junit.framework.Assert.fail;
 import static junit.framework.TestCase.assertNotNull;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
+import static org.neo4j.driver.v1.AccessMode.READ;
 
 public class NetworkSessionTest
 {
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
-    private final PooledConnection mock = mock( PooledConnection.class );
-    private final NetworkSession sess = new NetworkSession( mock );
+    private PooledConnection connection;
+    private NetworkSession session;
+
+    @Before
+    public void setUp() throws Exception
+    {
+        connection = mock( PooledConnection.class );
+        ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
+        when( connectionProvider.acquireConnection( any( AccessMode.class ) ) ).thenReturn( connection );
+        session = new NetworkSession( connectionProvider, READ, DEV_NULL_LOGGING );
+    }
 
     @Test
     public void shouldSendAllOnRun() throws Throwable
     {
         // Given
-        when( mock.isOpen() ).thenReturn( true );
-        NetworkSession sess = new NetworkSession( mock );
+        when( connection.isOpen() ).thenReturn( true );
 
         // When
-        sess.run( "whatever" );
+        session.run( "whatever" );
 
         // Then
-        verify( mock ).flush();
+        verify( connection ).flush();
     }
 
     @Test
     public void shouldNotAllowNewTxWhileOneIsRunning() throws Throwable
     {
         // Given
-        when( mock.isOpen() ).thenReturn( true );
-        sess.beginTransaction();
+        when( connection.isOpen() ).thenReturn( true );
+        session.beginTransaction();
 
         // Expect
         exception.expect( ClientException.class );
 
         // When
-        sess.beginTransaction();
+        session.beginTransaction();
     }
 
     @Test
     public void shouldBeAbleToOpenTxAfterPreviousIsClosed() throws Throwable
     {
         // Given
-        when( mock.isOpen() ).thenReturn( true );
-        sess.beginTransaction().close();
+        when( connection.isOpen() ).thenReturn( true );
+        session.beginTransaction().close();
 
         // When
-        Transaction tx = sess.beginTransaction();
+        Transaction tx = session.beginTransaction();
 
         // Then we should've gotten a transaction object back
         assertNotNull( tx );
@@ -89,61 +104,62 @@ public class NetworkSessionTest
     public void shouldNotBeAbleToUseSessionWhileOngoingTransaction() throws Throwable
     {
         // Given
-        when( mock.isOpen() ).thenReturn( true );
-        sess.beginTransaction();
+        when( connection.isOpen() ).thenReturn( true );
+        session.beginTransaction();
 
         // Expect
         exception.expect( ClientException.class );
 
         // When
-        sess.run( "whatever" );
+        session.run( "whatever" );
     }
 
     @Test
     public void shouldBeAbleToUseSessionAgainWhenTransactionIsClosed() throws Throwable
     {
         // Given
-        when( mock.isOpen() ).thenReturn( true );
-        sess.beginTransaction().close();
+        when( connection.isOpen() ).thenReturn( true );
+        session.beginTransaction().close();
 
         // When
-        sess.run( "whatever" );
+        session.run( "whatever" );
 
         // Then
-        verify( mock ).flush();
+        verify( connection ).flush();
     }
 
     @Test
     public void shouldNotAllowMoreStatementsInSessionWhileConnectionClosed() throws Throwable
     {
         // Given
-        when( mock.isOpen() ).thenReturn( false );
+        when( connection.isOpen() ).thenReturn( false );
 
         // Expect
         exception.expect( ServiceUnavailableException.class );
 
         // When
-        sess.run( "whatever" );
+        session.run( "whatever" );
     }
 
     @Test
     public void shouldNotAllowMoreTransactionsInSessionWhileConnectionClosed() throws Throwable
     {
         // Given
-        when( mock.isOpen() ).thenReturn( false );
+        when( connection.isOpen() ).thenReturn( false );
 
         // Expect
         exception.expect( ServiceUnavailableException.class );
 
         // When
-        sess.beginTransaction();
+        session.beginTransaction();
     }
 
     @Test
     public void shouldGetExceptionIfTryingToCloseSessionMoreThanOnce() throws Throwable
     {
         // Given
-        NetworkSession sess = new NetworkSession( mock( PooledConnection.class ) );
+        ConnectionProvider connectionProvider = mock( ConnectionProvider.class, RETURNS_MOCKS );
+        NetworkSession sess = new NetworkSession( connectionProvider, READ, DEV_NULL_LOGGING );
         try
         {
             sess.close();
