@@ -20,7 +20,7 @@ package org.neo4j.driver.internal;
 
 import org.junit.Test;
 
-import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Session;
 
@@ -35,7 +35,7 @@ public class LeakLoggingNetworkSessionFactoryTest
     {
         SessionFactory factory = new LeakLoggingNetworkSessionFactory( mock( Logging.class ) );
 
-        Session session = factory.newInstance( mock( Connection.class ) );
+        Session session = factory.newInstance( mock( PooledConnection.class ) );
 
         assertThat( session, instanceOf( LeakLoggingNetworkSession.class ) );
     }

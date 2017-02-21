@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
 
-class RoundRobinAddressSet
+public class RoundRobinAddressSet
 {
     private static final BoltServerAddress[] NONE = {};
     private final AtomicInteger offset = new AtomicInteger();

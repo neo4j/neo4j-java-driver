@@ -28,6 +28,7 @@ import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
+import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Consumers;
 import org.neo4j.driver.v1.Value;
@@ -57,7 +58,7 @@ public class ConnectionInvalidationTest
     private final Clock clock = mock( Clock.class );
 
     private final PooledConnection conn =
-            new PooledConnection( delegate, Consumers.<PooledConnection>noOp(), Clock.SYSTEM );
+            new PooledSocketConnection( delegate, Consumers.<PooledConnection>noOp(), Clock.SYSTEM );
 
     @SuppressWarnings( "unchecked" )
     @Test
@@ -66,7 +67,7 @@ public class ConnectionInvalidationTest
         // Given a connection that's broken
         Mockito.doThrow( new ClientException( "That didn't work" ) )
                 .when( delegate ).run( anyString(), anyMap(), any( Collector.class ) );
-        PooledConnection conn = new PooledConnection( delegate, Consumers.<PooledConnection>noOp(), clock );
+        PooledConnection conn = new PooledSocketConnection( delegate, Consumers.<PooledConnection>noOp(), clock );
         PooledConnectionValidator validator = new PooledConnectionValidator( pool( true ) );
 
         // When/Then
@@ -98,7 +99,7 @@ public class ConnectionInvalidationTest
     {
         // Given a connection that's broken
         Mockito.doThrow( new ClientException( "That didn't work" ) ).when( delegate ).reset();
-        PooledConnection conn = new PooledConnection( delegate, Consumers.<PooledConnection>noOp(), clock );
+        PooledConnection conn = new PooledSocketConnection( delegate, Consumers.<PooledConnection>noOp(), clock );
         PooledConnectionValidator validator = new PooledConnectionValidator( pool( true ) );
         // When/Then
         BlockingPooledConnectionQueue

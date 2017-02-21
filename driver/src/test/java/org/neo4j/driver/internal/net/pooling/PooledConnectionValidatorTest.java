@@ -33,6 +33,7 @@ import org.neo4j.driver.internal.net.SocketConnection;
 import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
+import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.summary.InternalServerInfo;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Consumers;
@@ -178,7 +179,7 @@ public class PooledConnectionValidatorTest
 
     private static PooledConnection newPooledConnection( Connection connection )
     {
-        return new PooledConnection( connection, Consumers.<PooledConnection>noOp(), Clock.SYSTEM );
+        return new PooledSocketConnection( connection, Consumers.<PooledConnection>noOp(), Clock.SYSTEM );
     }
 
     private static ConnectionPool connectionPoolMock( boolean knowsAddressed )

@@ -22,9 +22,10 @@ import java.util.Set;
 
 import org.neo4j.driver.internal.RoutingErrorHandler;
 import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
+import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.util.Clock;
+import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.exceptions.ProtocolException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
@@ -73,14 +74,16 @@ public class LoadBalancer implements RoutingErrorHandler, AutoCloseable
         ensureRouting();
     }
 
-    public Connection acquireReadConnection() throws ServiceUnavailableException
+    public PooledConnection acquireReadConnection() throws ServiceUnavailableException
     {
-        return acquireConnection( routingTable.readers() );
+        PooledConnection connection = acquireConnection( routingTable.readers() );
+        return new RoutingPooledConnection( connection, this, AccessMode.READ );
     }
 
-    public Connection acquireWriteConnection() throws ServiceUnavailableException
+    public PooledConnection acquireWriteConnection() throws ServiceUnavailableException
     {
-        return acquireConnection( routingTable.writers() );
+        PooledConnection connection = acquireConnection( routingTable.writers() );
+        return new RoutingPooledConnection( connection, this, AccessMode.WRITE );
     }
 
     @Override
@@ -101,7 +104,7 @@ public class LoadBalancer implements RoutingErrorHandler, AutoCloseable
         connections.close();
     }
 
-    private Connection acquireConnection( RoundRobinAddressSet servers ) throws ServiceUnavailableException
+    private PooledConnection acquireConnection( RoundRobinAddressSet servers ) throws ServiceUnavailableException
     {
         for ( ; ; )
         {

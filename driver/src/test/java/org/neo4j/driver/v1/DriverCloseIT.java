@@ -195,7 +195,7 @@ public class DriverCloseIT
             }
             catch ( Exception e )
             {
-                assertThat( e.getCause(), instanceOf( ServiceUnavailableException.class ) );
+                assertThat( e, instanceOf( ServiceUnavailableException.class ) );
             }
 
             assertEquals( 0, readServer.exitStatus() );

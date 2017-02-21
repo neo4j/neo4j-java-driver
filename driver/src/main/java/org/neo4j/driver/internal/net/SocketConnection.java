@@ -269,18 +269,6 @@ public class SocketConnection implements Connection
     }
 
     @Override
-    public void onError( Runnable runnable )
-    {
-        throw new UnsupportedOperationException( "Error subscribers are not supported on SocketConnection." );
-    }
-
-    @Override
-    public boolean hasUnrecoverableErrors()
-    {
-        throw new UnsupportedOperationException( "Unrecoverable error detection is not supported on SocketConnection." );
-    }
-
-    @Override
     public synchronized void resetAsync()
     {
         queueMessage( RESET, new Collector.ResetCollector( new Runnable()

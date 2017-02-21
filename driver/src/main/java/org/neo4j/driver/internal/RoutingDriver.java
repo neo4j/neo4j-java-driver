@@ -22,8 +22,8 @@ import org.neo4j.driver.internal.cluster.LoadBalancer;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.security.SecurityPlan;
-import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
+import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Logging;
@@ -62,12 +62,11 @@ public class RoutingDriver extends BaseDriver
     @Override
     protected Session newSessionWithMode( AccessMode mode )
     {
-        Connection connection = acquireConnection( mode );
-        Session networkSession = sessionFactory.newInstance( connection );
-        return new RoutingNetworkSession( networkSession, mode, connection.boltServerAddress(), loadBalancer );
+        PooledConnection connection = acquireConnection( mode );
+        return sessionFactory.newInstance( connection );
     }
 
-    private Connection acquireConnection( AccessMode role )
+    private PooledConnection acquireConnection( AccessMode role )
     {
         switch ( role )
         {

@@ -22,6 +22,7 @@ package org.neo4j.driver.internal.net.pooling;
 import org.junit.Test;
 
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.util.Consumer;
 import org.neo4j.driver.internal.util.Supplier;
 import org.neo4j.driver.v1.Logger;
@@ -159,9 +160,9 @@ public class BlockingPooledConnectionQueueTest
         doThrow( closeError2 ).when( connection2 ).close();
         doThrow( closeError3 ).when( connection3 ).close();
 
-        PooledConnection pooledConnection1 = new PooledConnection( connection1, mock( Consumer.class ), SYSTEM );
-        PooledConnection pooledConnection2 = new PooledConnection( connection2, mock( Consumer.class ), SYSTEM );
-        PooledConnection pooledConnection3 = new PooledConnection( connection3, mock( Consumer.class ), SYSTEM );
+        PooledConnection pooledConnection1 = new PooledSocketConnection( connection1, mock( Consumer.class ), SYSTEM );
+        PooledConnection pooledConnection2 = new PooledSocketConnection( connection2, mock( Consumer.class ), SYSTEM );
+        PooledConnection pooledConnection3 = new PooledSocketConnection( connection3, mock( Consumer.class ), SYSTEM );
 
         queue.offer( pooledConnection1 );
         queue.offer( pooledConnection2 );
@@ -187,7 +188,7 @@ public class BlockingPooledConnectionQueueTest
         Connection connection = mock( Connection.class );
         RuntimeException closeError = new RuntimeException( "Fail" );
         doThrow( closeError ).when( connection ).close();
-        PooledConnection pooledConnection = new PooledConnection( connection, mock( Consumer.class ), SYSTEM );
+        PooledConnection pooledConnection = new PooledSocketConnection( connection, mock( Consumer.class ), SYSTEM );
         queue.offer( pooledConnection );
 
         queue.terminate();

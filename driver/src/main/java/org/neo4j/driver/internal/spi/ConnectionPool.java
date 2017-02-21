@@ -28,7 +28,7 @@ public interface ConnectionPool extends AutoCloseable
      *
      * @param address The address to acquire
      */
-    Connection acquire( BoltServerAddress address );
+    PooledConnection acquire( BoltServerAddress address );
 
     /**
      * Removes all connections to a given address from the pool.

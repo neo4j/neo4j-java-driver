@@ -27,8 +27,8 @@ import java.util.Set;
 
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.internal.net.pooling.PooledConnection;
 import org.neo4j.driver.internal.spi.Collector;
+import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.value.StringValue;
 import org.neo4j.driver.v1.Record;

@@ -99,18 +99,6 @@ public interface Connection extends AutoCloseable
     boolean isOpen();
 
     /**
-     * If there are any errors that occur on this connection, invoke the given
-     * runnable. This is used in the driver to clean up resources associated with
-     * the connection, like an open transaction.
-     *
-     * @param runnable To be run on error.
-     */
-    void onError( Runnable runnable );
-
-
-    boolean hasUnrecoverableErrors();
-
-    /**
      * Asynchronously sending reset to the socket output channel.
      */
     void resetAsync();

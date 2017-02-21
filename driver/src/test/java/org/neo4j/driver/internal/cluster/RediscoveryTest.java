@@ -30,9 +30,9 @@ import java.util.HashSet;
 import java.util.List;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.internal.net.pooling.PooledConnection;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
+import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.exceptions.ProtocolException;
