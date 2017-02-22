@@ -55,7 +55,6 @@ public class InternalStatementResult implements StatementResult
     private List<String> keys = null;
     private ResultSummary summary = null;
 
-    private long position = -1;
     private boolean done = false;
 
     InternalStatementResult( Connection connection, ExplicitTransaction transaction, Statement statement )
@@ -202,7 +201,6 @@ public class InternalStatementResult implements StatementResult
         // and have it copy out its fields from some lower level data structure.
         if ( tryFetchNext() )
         {
-            position += 1;
             return recordBuffer.poll();
         }
         else
