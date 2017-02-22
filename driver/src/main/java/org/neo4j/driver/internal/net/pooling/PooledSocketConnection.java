@@ -27,7 +27,6 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Consumer;
-import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.summary.ServerInfo;
@@ -244,12 +243,6 @@ public class PooledSocketConnection implements PooledConnection
     public BoltServerAddress boltServerAddress()
     {
         return delegate.boltServerAddress();
-    }
-
-    @Override
-    public Logger logger()
-    {
-        return delegate.logger();
     }
 
     @Override

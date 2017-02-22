@@ -19,7 +19,6 @@
 package org.neo4j.driver.internal;
 
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.internal.spi.Connection;
@@ -39,13 +38,11 @@ import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.types.TypeSystem;
 
-import static java.lang.String.format;
 import static org.neo4j.driver.v1.Values.value;
 
 public class NetworkSession implements Session, ConnectionHandler
 {
     private final ConnectionProvider connectionProvider;
-    private final String sessionId;
     private final AccessMode mode;
     protected final Logger logger;
 
@@ -55,14 +52,11 @@ public class NetworkSession implements Session, ConnectionHandler
 
     private final AtomicBoolean isOpen = new AtomicBoolean( true );
 
-    // todo: make sure logging is correct
     public NetworkSession( ConnectionProvider connectionProvider, AccessMode mode, Logging logging )
     {
         this.connectionProvider = connectionProvider;
-        this.sessionId = UUID.randomUUID().toString();
         this.mode = mode;
-        this.logger = logging.getLog( format( "Session-%s", sessionId ) );
-        this.logger.debug( "~~ connection claimed by [session-%s]", sessionId );
+        this.logger = logging.getLog( "Session-" + hashCode() );
     }
 
     @Override
@@ -212,6 +206,7 @@ public class NetworkSession implements Session, ConnectionHandler
     @Override
     public synchronized void transactionClosed( ExplicitTransaction tx )
     {
+        // todo: connection should be closed here!
         if ( currentTransaction != null && currentTransaction == tx )
         {
             lastBookmark = currentTransaction.bookmark();
@@ -281,7 +276,9 @@ public class NetworkSession implements Session, ConnectionHandler
 
     private PooledConnection acquireConnection()
     {
-        return connectionProvider.acquireConnection( mode );
+        PooledConnection connection = connectionProvider.acquireConnection( mode );
+        logger.debug( "Acquired connection " + connection.hashCode() );
+        return connection;
     }
 
     boolean currentConnectionIsOpen()
@@ -296,9 +293,10 @@ public class NetworkSession implements Session, ConnectionHandler
             return;
         }
 
-        try ( PooledConnection connection = currentConnection )
+        PooledConnection connection = currentConnection;
+        currentConnection = null;
+        try
         {
-            currentConnection = null;
             if ( sync )
             {
                 connection.sync();
@@ -306,7 +304,8 @@ public class NetworkSession implements Session, ConnectionHandler
         }
         finally
         {
-            logger.debug( "~~ connection released by [session-%s]", sessionId );
+            connection.close();
+            logger.debug( "Released connection " + connection.hashCode() );
         }
     }
 }
