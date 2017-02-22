@@ -21,7 +21,7 @@ package org.neo4j.driver.internal;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Session;
 
-interface SessionFactory
+public interface SessionFactory extends AutoCloseable
 {
     Session newInstance( AccessMode mode );
 }

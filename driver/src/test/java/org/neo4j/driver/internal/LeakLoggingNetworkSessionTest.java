@@ -71,6 +71,8 @@ public class LeakLoggingNetworkSessionTest
         Logger log = mock( Logger.class );
         when( logging.getLog( anyString() ) ).thenReturn( log );
         LeakLoggingNetworkSession session = newSession( logging, true );
+        // begin transaction to make session obtain a connection
+        session.beginTransaction();
 
         finalize( session );
 

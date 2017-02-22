@@ -51,7 +51,7 @@ public class DirectConnectionProvider implements ConnectionProvider
         pool.close();
     }
 
-    BoltServerAddress getAddress()
+    public BoltServerAddress getAddress()
     {
         return address;
     }

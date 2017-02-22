@@ -42,6 +42,7 @@ import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.v1.Logging;
+import org.neo4j.driver.v1.exceptions.DriverClosedException;
 
 import static java.util.Collections.newSetFromMap;
 import static org.hamcrest.Matchers.instanceOf;
@@ -267,7 +268,7 @@ public class SocketConnectionPoolTest
             catch ( Exception e )
             {
                 assertThat( e, instanceOf( ExecutionException.class ) );
-                assertThat( e.getCause(), instanceOf( IllegalStateException.class ) );
+                assertThat( e.getCause(), instanceOf( DriverClosedException.class ) );
             }
         }
         executor.shutdownNow();

@@ -345,8 +345,9 @@ public class RoutingDriverTest
     {
         RoutingSettings settings = new RoutingSettings( 10, 5_000 );
         ConnectionProvider connectionProvider = new LoadBalancer( settings, pool, clock, logging, SEED );
-        SessionFactory sessionFactory = new NetworkSessionWithAddressFactory( connectionProvider, DEV_NULL_LOGGING );
-        return new InternalDriver( insecure(), sessionFactory, connectionProvider, logging );
+        SessionFactory sessionFactory = new NetworkSessionWithAddressFactory( connectionProvider,
+                Config.defaultConfig(), DEV_NULL_LOGGING );
+        return new InternalDriver( insecure(), sessionFactory, logging );
     }
 
     @SafeVarargs
@@ -427,15 +428,11 @@ public class RoutingDriverTest
         };
     }
 
-    private static class NetworkSessionWithAddressFactory implements SessionFactory
+    private static class NetworkSessionWithAddressFactory extends SessionFactoryImpl
     {
-        final ConnectionProvider connectionProvider;
-        final Logging logging;
-
-        NetworkSessionWithAddressFactory( ConnectionProvider connectionProvider, Logging logging )
+        NetworkSessionWithAddressFactory( ConnectionProvider connectionProvider, Config config, Logging logging )
         {
-            this.connectionProvider = connectionProvider;
-            this.logging = logging;
+            super( connectionProvider, config, logging );
         }
 
         @Override

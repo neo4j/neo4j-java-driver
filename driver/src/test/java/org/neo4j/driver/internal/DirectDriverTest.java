@@ -29,8 +29,11 @@ import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.util.StubServer;
 
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.driver.internal.net.BoltServerAddress.LOCAL_DEFAULT;
+import static org.neo4j.driver.internal.util.Matchers.directDriverWithAddress;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.util.StubServer.INSECURE_CONFIG;
 
@@ -46,8 +49,7 @@ public class DirectDriverTest
         Driver driver = GraphDatabase.driver( uri );
 
         // Then
-        BoltServerAddress address = serverAddressFor( driver );
-        assertThat( address.port(), equalTo( BoltServerAddress.DEFAULT_PORT ) );
+        assertThat( driver, is( directDriverWithAddress( LOCAL_DEFAULT ) ) );
     }
 
     @Test
@@ -61,8 +63,7 @@ public class DirectDriverTest
         Driver driver = GraphDatabase.driver( uri );
 
         // Then
-        BoltServerAddress driverAddress = serverAddressFor( driver );
-        assertThat( driverAddress, equalTo( address ) );
+        assertThat( driver, is( directDriverWithAddress( address ) ) );
     }
 
     @Test
@@ -88,10 +89,5 @@ public class DirectDriverTest
 
         // Finally
         assertThat( server.exitStatus(), equalTo( 0 ) );
-    }
-
-    private static BoltServerAddress serverAddressFor( Driver driver )
-    {
-        return ((DirectConnectionProvider) ((InternalDriver) driver).getConnectionProvider()).getAddress();
     }
 }

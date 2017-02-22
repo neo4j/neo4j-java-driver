@@ -24,7 +24,6 @@ import org.neo4j.driver.v1.Logging;
 
 import static java.lang.System.lineSeparator;
 
-// todo: what to do with this thing now?
 class LeakLoggingNetworkSession extends NetworkSession
 {
     private final String stackTrace;
@@ -44,7 +43,7 @@ class LeakLoggingNetworkSession extends NetworkSession
 
     private void logLeakIfNeeded()
     {
-        if ( isOpen() )
+        if ( currentConnectionIsOpen() )
         {
             logger.error( "Neo4j Session object leaked, please ensure that your application" +
                           "calls the `close` method on Sessions before disposing of the objects.\n" +

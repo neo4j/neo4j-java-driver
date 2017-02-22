@@ -22,9 +22,18 @@ import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 
+import java.util.Objects;
+
+import org.neo4j.driver.internal.DirectConnectionProvider;
+import org.neo4j.driver.internal.InternalDriver;
+import org.neo4j.driver.internal.SessionFactory;
+import org.neo4j.driver.internal.SessionFactoryImpl;
+import org.neo4j.driver.internal.cluster.LoadBalancer;
 import org.neo4j.driver.internal.cluster.RoundRobinAddressSet;
 import org.neo4j.driver.internal.cluster.RoutingTable;
 import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.spi.ConnectionProvider;
+import org.neo4j.driver.v1.Driver;
 
 public final class Matchers
 {
@@ -93,6 +102,61 @@ public final class Matchers
         };
     }
 
+    public static Matcher<Driver> directDriver()
+    {
+        return new TypeSafeMatcher<Driver>()
+        {
+            @Override
+            protected boolean matchesSafely( Driver driver )
+            {
+                return hasConnectionProvider( driver, DirectConnectionProvider.class );
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( "direct 'bolt://' driver " );
+            }
+        };
+    }
+
+    public static Matcher<Driver> directDriverWithAddress( final BoltServerAddress address )
+    {
+        return new TypeSafeMatcher<Driver>()
+        {
+            @Override
+            protected boolean matchesSafely( Driver driver )
+            {
+                DirectConnectionProvider provider = extractConnectionProvider( driver, DirectConnectionProvider.class );
+                return provider != null && Objects.equals( provider.getAddress(), address );
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( "direct driver with address bolt://" ).appendValue( address );
+            }
+        };
+    }
+
+    public static Matcher<Driver> clusterDriver()
+    {
+        return new TypeSafeMatcher<Driver>()
+        {
+            @Override
+            protected boolean matchesSafely( Driver driver )
+            {
+                return hasConnectionProvider( driver, LoadBalancer.class );
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( "cluster 'bolt+routing://' driver " );
+            }
+        };
+    }
+
     private static boolean contains( RoundRobinAddressSet set, BoltServerAddress address )
     {
         for ( int i = 0; i < set.size(); i++ )
@@ -103,5 +167,27 @@ public final class Matchers
             }
         }
         return false;
+    }
+
+    private static boolean hasConnectionProvider( Driver driver, Class<? extends ConnectionProvider> providerClass )
+    {
+        return extractConnectionProvider( driver, providerClass ) != null;
+    }
+
+    private static <T extends ConnectionProvider> T extractConnectionProvider( Driver driver, Class<T> providerClass )
+    {
+        if ( driver instanceof InternalDriver )
+        {
+            SessionFactory sessionFactory = ((InternalDriver) driver).getSessionFactory();
+            if ( sessionFactory instanceof SessionFactoryImpl )
+            {
+                ConnectionProvider provider = ((SessionFactoryImpl) sessionFactory).getConnectionProvider();
+                if ( providerClass.isInstance( provider ) )
+                {
+                    return providerClass.cast( provider );
+                }
+            }
+        }
+        return null;
     }
 }

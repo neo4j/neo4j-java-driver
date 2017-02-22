@@ -28,7 +28,6 @@ import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
 import static junit.framework.Assert.fail;
 import static junit.framework.TestCase.assertNotNull;
@@ -126,32 +125,6 @@ public class NetworkSessionTest
 
         // Then
         verify( connection ).flush();
-    }
-
-    @Test
-    public void shouldNotAllowMoreStatementsInSessionWhileConnectionClosed() throws Throwable
-    {
-        // Given
-        when( connection.isOpen() ).thenReturn( false );
-
-        // Expect
-        exception.expect( ServiceUnavailableException.class );
-
-        // When
-        session.run( "whatever" );
-    }
-
-    @Test
-    public void shouldNotAllowMoreTransactionsInSessionWhileConnectionClosed() throws Throwable
-    {
-        // Given
-        when( connection.isOpen() ).thenReturn( false );
-
-        // Expect
-        exception.expect( ServiceUnavailableException.class );
-
-        // When
-        session.beginTransaction();
     }
 
     @Test

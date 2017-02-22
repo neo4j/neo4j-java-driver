@@ -31,6 +31,7 @@ import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Supplier;
 import org.neo4j.driver.v1.Logging;
+import org.neo4j.driver.v1.exceptions.DriverClosedException;
 
 /**
  * The pool is designed to buffer certain amount of free sessions into session pool. When closing a session, we first
@@ -179,7 +180,7 @@ public class SocketConnectionPool implements ConnectionPool
     {
         if ( closed.get() )
         {
-            throw new IllegalStateException( "Pool closed" );
+            throw new DriverClosedException( "Unable to use the connection pool" );
         }
     }
 

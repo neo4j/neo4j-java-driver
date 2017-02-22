@@ -16,27 +16,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal;
+package org.neo4j.driver.v1.exceptions;
 
-import org.neo4j.driver.internal.spi.ConnectionProvider;
-import org.neo4j.driver.v1.AccessMode;
-import org.neo4j.driver.v1.Logging;
-import org.neo4j.driver.v1.Session;
-
-class LeakLoggingNetworkSessionFactory implements SessionFactory
+public class DriverClosedException extends RuntimeException
 {
-    private final ConnectionProvider connectionProvider;
-    private final Logging logging;
+    private static final String MESSAGE_PREFIX = "This driver has already been closed. ";
 
-    LeakLoggingNetworkSessionFactory( ConnectionProvider connectionProvider, Logging logging )
+    public DriverClosedException()
     {
-        this.connectionProvider = connectionProvider;
-        this.logging = logging;
+        super( "" );
     }
 
-    @Override
-    public Session newInstance( AccessMode mode )
+    public DriverClosedException( String message )
     {
-        return new LeakLoggingNetworkSession( connectionProvider, mode, logging );
+        super( MESSAGE_PREFIX + message );
     }
 }

@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.cluster;
 import java.util.Map;
 import java.util.Objects;
 
+import org.neo4j.driver.internal.ConnectionHandler;
 import org.neo4j.driver.internal.RoutingErrorHandler;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Collector;
@@ -191,9 +192,9 @@ class RoutingPooledConnection implements PooledConnection
     }
 
     @Override
-    public void onError( Runnable runnable )
+    public void setConnectionHandler( ConnectionHandler connectionHandler )
     {
-        delegate.onError( runnable );
+        delegate.setConnectionHandler( connectionHandler );
     }
 
     @Override

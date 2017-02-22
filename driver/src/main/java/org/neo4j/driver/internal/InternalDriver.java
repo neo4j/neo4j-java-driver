@@ -21,12 +21,12 @@ package org.neo4j.driver.internal;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.internal.security.SecurityPlan;
-import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.exceptions.DriverClosedException;
 
 import static java.lang.String.format;
 
@@ -36,17 +36,14 @@ public class InternalDriver implements Driver
 
     private final SecurityPlan securityPlan;
     private final SessionFactory sessionFactory;
-    private final ConnectionProvider connectionProvider;
     private final Logger log;
 
     private AtomicBoolean closed = new AtomicBoolean( false );
 
-    InternalDriver( SecurityPlan securityPlan, SessionFactory sessionFactory, ConnectionProvider connectionProvider,
-            Logging logging )
+    InternalDriver( SecurityPlan securityPlan, SessionFactory sessionFactory, Logging logging )
     {
         this.securityPlan = securityPlan;
         this.sessionFactory = sessionFactory;
-        this.connectionProvider = connectionProvider;
         this.log = logging.getLog( DRIVER_LOG_NAME );
     }
 
@@ -67,7 +64,7 @@ public class InternalDriver implements Driver
     public final Session session( AccessMode mode )
     {
         assertOpen();
-        Session session = newSessionWithMode( mode );
+        Session session = sessionFactory.newInstance( mode );
         if ( closed.get() )
         {
             // the driver is already closed and we either 1. obtain this session from the old session pool
@@ -75,7 +72,7 @@ public class InternalDriver implements Driver
             // For 1. this closeResources will take no effect as everything is already closed.
             // For 2. this closeResources will close the new connection pool just created to ensure no resource leak.
             closeResources();
-            throw driverCloseException();
+            throw new DriverClosedException();
         }
         return session;
     }
@@ -89,22 +86,23 @@ public class InternalDriver implements Driver
         }
     }
 
-    public final ConnectionProvider getConnectionProvider()
+    /**
+     * Get the underlying session factory.
+     * <p>
+     * <b>This method is only for testing</b>
+     *
+     * @return the session factory used by this driver.
+     */
+    public final SessionFactory getSessionFactory()
     {
-        return connectionProvider;
-    }
-
-    private Session newSessionWithMode( AccessMode mode )
-    {
-        return sessionFactory.newInstance( mode );
+        return sessionFactory;
     }
 
     private void closeResources()
     {
         try
         {
-            // todo: driver can just close session factory here...
-            connectionProvider.close();
+            sessionFactory.close();
         }
         catch ( Exception ex )
         {
@@ -116,12 +114,7 @@ public class InternalDriver implements Driver
     {
         if ( closed.get() )
         {
-            throw driverCloseException();
+            throw new DriverClosedException();
         }
-    }
-
-    private static RuntimeException driverCloseException()
-    {
-        return new IllegalStateException( "This driver instance has already been closed" );
     }
 }

@@ -22,6 +22,7 @@ import org.junit.Test;
 
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.v1.AccessMode;
+import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Session;
 
 import static org.hamcrest.Matchers.instanceOf;
@@ -29,13 +30,26 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 
-public class LeakLoggingNetworkSessionFactoryTest
+public class SessionFactoryImplTest
 {
+    @Test
+    public void createsNetworkSessions()
+    {
+        Config config = Config.defaultConfig();
+        SessionFactory factory = new SessionFactoryImpl( mock( ConnectionProvider.class ), config, DEV_NULL_LOGGING );
+
+        Session readSession = factory.newInstance( AccessMode.READ );
+        assertThat( readSession, instanceOf( NetworkSession.class ) );
+
+        Session writeSession = factory.newInstance( AccessMode.WRITE );
+        assertThat( writeSession, instanceOf( NetworkSession.class ) );
+    }
+
     @Test
     public void createsLeakLoggingNetworkSessions()
     {
-        SessionFactory factory = new LeakLoggingNetworkSessionFactory( mock( ConnectionProvider.class ),
-                DEV_NULL_LOGGING );
+        Config config = Config.build().withLeakedSessionsLogging().toConfig();
+        SessionFactory factory = new SessionFactoryImpl( mock( ConnectionProvider.class ), config, DEV_NULL_LOGGING );
 
         Session readSession = factory.newInstance( AccessMode.READ );
         assertThat( readSession, instanceOf( LeakLoggingNetworkSession.class ) );

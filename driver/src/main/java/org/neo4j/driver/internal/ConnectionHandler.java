@@ -18,25 +18,29 @@
  */
 package org.neo4j.driver.internal;
 
-import org.neo4j.driver.internal.spi.ConnectionProvider;
-import org.neo4j.driver.v1.AccessMode;
-import org.neo4j.driver.v1.Logging;
-import org.neo4j.driver.v1.Session;
-
-class NetworkSessionFactory implements SessionFactory
+public interface ConnectionHandler
 {
-    private final ConnectionProvider connectionProvider;
-    private final Logging logging;
+    void resultBuffered();
 
-    NetworkSessionFactory( ConnectionProvider connectionProvider, Logging logging )
-    {
-        this.connectionProvider = connectionProvider;
-        this.logging = logging;
-    }
+    void transactionClosed( ExplicitTransaction tx );
 
-    @Override
-    public Session newInstance( AccessMode mode )
+    void connectionErrorOccurred( boolean recoverable );
+
+    ConnectionHandler NO_OP = new ConnectionHandler()
     {
-        return new NetworkSession( connectionProvider, mode, logging );
-    }
+        @Override
+        public void resultBuffered()
+        {
+        }
+
+        @Override
+        public void transactionClosed( ExplicitTransaction tx )
+        {
+        }
+
+        @Override
+        public void connectionErrorOccurred( boolean recoverable )
+        {
+        }
+    };
 }

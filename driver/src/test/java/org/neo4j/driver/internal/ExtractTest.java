@@ -170,18 +170,19 @@ public class ExtractTest
         Connection connection = mock( Connection.class );
         String statement = "<unknown>";
 
-        InternalStatementResult cursor = new InternalStatementResult( connection, null, new Statement( statement ) );
-        cursor.runResponseCollector().keys( new String[]{"k1"} );
-        cursor.runResponseCollector().done();
-        cursor.pullAllResponseCollector().record( new Value[]{value( 42 )} );
-        cursor.pullAllResponseCollector().done();
+        InternalStatementResult result = new InternalStatementResult( connection, ConnectionHandler.NO_OP, null,
+                new Statement( statement ) );
+        result.runResponseCollector().keys( new String[]{"k1"} );
+        result.runResponseCollector().done();
+        result.pullAllResponseCollector().record( new Value[]{value( 42 )} );
+        result.pullAllResponseCollector().done();
 
-        connection.run( statement, Values.EmptyMap.asMap( ofValue() ), cursor.runResponseCollector() );
-        connection.pullAll( cursor.pullAllResponseCollector() );
+        connection.run( statement, Values.EmptyMap.asMap( ofValue() ), result.runResponseCollector() );
+        connection.pullAll( result.pullAllResponseCollector() );
         connection.flush();
 
         // WHEN
-        List<Pair<String, Integer>> fields = Extract.fields( cursor.single(), integerExtractor() );
+        List<Pair<String, Integer>> fields = Extract.fields( result.single(), integerExtractor() );
 
 
         // THEN

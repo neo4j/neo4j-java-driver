@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.driver.internal.ConnectionHandler;
 import org.neo4j.driver.internal.ExplicitTransaction;
 import org.neo4j.driver.internal.NetworkSession;
 import org.neo4j.driver.internal.net.BoltServerAddress;
@@ -45,6 +46,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.RETURNS_MOCKS;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
@@ -146,7 +148,7 @@ public class LoadBalancerTest
 
         PooledConnection connection = newConnectionWithFailingSync( address );
         Connection routingConnection = new RoutingPooledConnection( connection, loadBalancer, AccessMode.WRITE );
-        Transaction tx = new ExplicitTransaction( routingConnection, mock( Runnable.class ) );
+        Transaction tx = new ExplicitTransaction( routingConnection, mock( ConnectionHandler.class ) );
 
         assertThrowsSessionExpiredException( tx );
 
@@ -166,11 +168,14 @@ public class LoadBalancerTest
         LoadBalancer loadBalancer = new LoadBalancer( routingTable, connectionPool, rediscovery, DEV_NULL_LOGGER );
 
         NetworkSession session = new NetworkSession( loadBalancer, AccessMode.WRITE, DEV_NULL_LOGGING );
+        // begin transaction to make session obtain a connection
+        session.beginTransaction();
 
         assertThrowsSessionExpiredException( session );
 
-        verify( routingTable ).forget( address );
-        verify( connectionPool ).purge( address );
+        // todo: atLeastOnce looks strange, can it be avoided?
+        verify( routingTable, atLeastOnce() ).forget( address );
+        verify( connectionPool, atLeastOnce() ).purge( address );
     }
 
     private LoadBalancer setupLoadBalancer( PooledConnection writerConn, PooledConnection readConn )

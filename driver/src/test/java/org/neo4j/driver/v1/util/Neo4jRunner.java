@@ -92,6 +92,10 @@ public class Neo4jRunner
 
     public Driver driver()
     {
+        if ( driver == null )
+        {
+            driver = GraphDatabase.driver( DEFAULT_URI );
+        }
         return driver;
     }
 
@@ -105,7 +109,6 @@ public class Neo4jRunner
         {
             throw new IOException( "Failed to start neo4j server." );
         }
-        driver = GraphDatabase.driver( DEFAULT_URI /* default encryption REQUIRED_NON_LOCAL */ );
     }
 
     public synchronized void stopNeo4j() throws IOException

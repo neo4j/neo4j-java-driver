@@ -96,7 +96,7 @@ public class DriverFactory
     {
         ConnectionProvider connectionProvider = new DirectConnectionProvider( address, connectionPool );
         SessionFactory sessionFactory = createSessionFactory( connectionProvider, config );
-        return createDriver( config, securityPlan, connectionProvider, sessionFactory );
+        return createDriver( config, securityPlan, sessionFactory );
     }
 
     /**
@@ -113,7 +113,7 @@ public class DriverFactory
         }
         ConnectionProvider connectionProvider = createLoadBalancer( address, connectionPool, config, routingSettings );
         SessionFactory sessionFactory = createSessionFactory( connectionProvider, config );
-        return createDriver( config, securityPlan, connectionProvider, sessionFactory );
+        return createDriver( config, securityPlan, sessionFactory );
     }
 
     /**
@@ -121,10 +121,9 @@ public class DriverFactory
      * <p>
      * <b>This method is protected only for testing</b>
      */
-    protected InternalDriver createDriver( Config config, SecurityPlan securityPlan,
-            ConnectionProvider connectionProvider, SessionFactory sessionFactory )
+    protected InternalDriver createDriver( Config config, SecurityPlan securityPlan, SessionFactory sessionFactory )
     {
-        return new InternalDriver( securityPlan, sessionFactory, connectionProvider, config.logging() );
+        return new InternalDriver( securityPlan, sessionFactory, config.logging() );
     }
 
     /**
@@ -183,12 +182,7 @@ public class DriverFactory
      */
     protected SessionFactory createSessionFactory( ConnectionProvider connectionProvider, Config config )
     {
-        Logging logging = config.logging();
-        if ( config.logLeakedSessions() )
-        {
-            return new LeakLoggingNetworkSessionFactory( connectionProvider, logging );
-        }
-        return new NetworkSessionFactory( connectionProvider, logging );
+        return new SessionFactoryImpl( connectionProvider, config, config.logging() );
     }
 
     private static SecurityPlan createSecurityPlan( BoltServerAddress address, Config config )

@@ -45,9 +45,11 @@ import org.neo4j.driver.v1.util.Functions;
 
 import static java.util.Collections.emptyList;
 
+// todo: connection should be released if fetching from network fails
 public class InternalStatementResult implements StatementResult
 {
     private final Connection connection;
+    private final ConnectionHandler connectionHandler;
     private final Collector runResponseCollector;
     private final Collector pullAllResponseCollector;
     private final Queue<Record> recordBuffer = new LinkedList<>();
@@ -57,11 +59,13 @@ public class InternalStatementResult implements StatementResult
 
     private boolean done = false;
 
-    InternalStatementResult( Connection connection, ExplicitTransaction transaction, Statement statement )
+    InternalStatementResult( Connection connection, ConnectionHandler connectionHandler,
+            ExplicitTransaction transaction, Statement statement )
     {
         this.connection = connection;
         this.runResponseCollector = newRunResponseCollector();
         this.pullAllResponseCollector = newStreamResponseCollector( transaction, statement, connection.server() );
+        this.connectionHandler = connectionHandler;
     }
 
     private Collector newRunResponseCollector()
@@ -317,6 +321,7 @@ public class InternalStatementResult implements StatementResult
         {
             if ( done )
             {
+                connectionHandler.resultBuffered();
                 return false;
             }
             connection.receiveOne();

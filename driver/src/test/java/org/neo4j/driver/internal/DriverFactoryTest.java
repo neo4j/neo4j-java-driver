@@ -46,6 +46,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.driver.v1.AccessMode.READ;
 import static org.neo4j.driver.v1.Config.defaultConfig;
 
 @RunWith( Parameterized.class )
@@ -111,7 +112,7 @@ public class DriverFactoryTest
 
         factory.newInstance( uri, dummyAuthToken(), dummyRoutingSettings(), config );
 
-        assertThat( factory.capturedSessionFactory, instanceOf( NetworkSessionFactory.class ) );
+        assertThat( factory.capturedSessionFactory.newInstance( READ ), instanceOf( NetworkSession.class ) );
     }
 
     @Test
@@ -122,7 +123,7 @@ public class DriverFactoryTest
 
         factory.newInstance( uri, dummyAuthToken(), dummyRoutingSettings(), config );
 
-        assertThat( factory.capturedSessionFactory, instanceOf( LeakLoggingNetworkSessionFactory.class ) );
+        assertThat( factory.capturedSessionFactory.newInstance( READ ), instanceOf( LeakLoggingNetworkSession.class ) );
     }
 
     private static AuthToken dummyAuthToken()
@@ -170,8 +171,7 @@ public class DriverFactoryTest
         SessionFactory capturedSessionFactory;
 
         @Override
-        protected InternalDriver createDriver( Config config, SecurityPlan securityPlan,
-                ConnectionProvider connectionProvider, SessionFactory sessionFactory )
+        protected InternalDriver createDriver( Config config, SecurityPlan securityPlan, SessionFactory sessionFactory )
         {
             return null;
         }
