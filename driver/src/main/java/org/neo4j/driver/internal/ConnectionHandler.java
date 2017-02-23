@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.internal;
 
+// todo: ConnectionCloseHandler or ConnectionTerminationHandler?
+// todo: better method names 'onSomething...'
 public interface ConnectionHandler
 {
     void resultBuffered();

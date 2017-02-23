@@ -185,8 +185,8 @@ public class ExplicitTransaction implements Transaction
 
         try
         {
-            InternalStatementResult result = new InternalStatementResult( conn, ConnectionHandler.NO_OP, this, statement
-            );
+            InternalStatementResult result =
+                    new InternalStatementResult( conn, ConnectionHandler.NO_OP, this, statement );
             conn.run( statement.text(),
                     statement.parameters().asMap( ofValue() ),
                     result.runResponseCollector() );

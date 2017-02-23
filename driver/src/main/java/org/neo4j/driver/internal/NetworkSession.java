@@ -200,15 +200,15 @@ public class NetworkSession implements Session, ConnectionHandler
     @Override
     public synchronized void resultBuffered()
     {
-        closeCurrentConnection( true );
+        closeCurrentConnection( false );
     }
 
     @Override
     public synchronized void transactionClosed( ExplicitTransaction tx )
     {
-        // todo: connection should be closed here!
         if ( currentTransaction != null && currentTransaction == tx )
         {
+            closeCurrentConnection( false );
             lastBookmark = currentTransaction.bookmark();
             currentTransaction = null;
         }

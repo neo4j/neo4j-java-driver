@@ -37,7 +37,6 @@ import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
-import org.neo4j.driver.v1.util.Resource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
@@ -46,7 +45,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.RETURNS_MOCKS;
-import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
@@ -150,7 +148,16 @@ public class LoadBalancerTest
         Connection routingConnection = new RoutingPooledConnection( connection, loadBalancer, AccessMode.WRITE );
         Transaction tx = new ExplicitTransaction( routingConnection, mock( ConnectionHandler.class ) );
 
-        assertThrowsSessionExpiredException( tx );
+        try
+        {
+            tx.close();
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( SessionExpiredException.class ) );
+            assertThat( e.getCause(), instanceOf( ServiceUnavailableException.class ) );
+        }
 
         verify( routingTable ).forget( address );
         verify( connectionPool ).purge( address );
@@ -171,11 +178,10 @@ public class LoadBalancerTest
         // begin transaction to make session obtain a connection
         session.beginTransaction();
 
-        assertThrowsSessionExpiredException( session );
+        session.close();
 
-        // todo: atLeastOnce looks strange, can it be avoided?
-        verify( routingTable, atLeastOnce() ).forget( address );
-        verify( connectionPool, atLeastOnce() ).purge( address );
+        verify( routingTable ).forget( address );
+        verify( connectionPool ).purge( address );
     }
 
     private LoadBalancer setupLoadBalancer( PooledConnection writerConn, PooledConnection readConn )
@@ -210,17 +216,4 @@ public class LoadBalancerTest
         return connection;
     }
 
-    private static void assertThrowsSessionExpiredException( Resource resource )
-    {
-        try
-        {
-            resource.close();
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( SessionExpiredException.class ) );
-            assertThat( e.getCause(), instanceOf( ServiceUnavailableException.class ) );
-        }
-    }
 }

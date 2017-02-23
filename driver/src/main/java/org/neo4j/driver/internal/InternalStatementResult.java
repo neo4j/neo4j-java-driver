@@ -45,7 +45,7 @@ import org.neo4j.driver.v1.util.Functions;
 
 import static java.util.Collections.emptyList;
 
-// todo: connection should be released if fetching from network fails
+// todo: connection should be released if fetching from network fails, no need to sync...
 public class InternalStatementResult implements StatementResult
 {
     private final Connection connection;
