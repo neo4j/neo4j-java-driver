@@ -41,6 +41,7 @@ import org.neo4j.driver.v1.util.Pair;
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -49,6 +50,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.neo4j.driver.v1.Records.column;
 import static org.neo4j.driver.v1.Values.ofString;
 import static org.neo4j.driver.v1.Values.value;
@@ -384,12 +386,77 @@ public class InternalStatementResultTest
         Record future = result.peek();
     }
 
+    @Test
+    public void shouldNotifyResourcesHandlerWhenFetchedViaList()
+    {
+        SessionResourcesHandler resourcesHandler = mock( SessionResourcesHandler.class );
+        StatementResult result = createResult( 10, resourcesHandler );
+
+        List<Record> records = result.list();
+        assertEquals( 10, records.size() );
+
+        verify( resourcesHandler ).onResultConsumed();
+    }
+
+    @Test
+    public void shouldNotifyResourcesHandlerWhenFetchedViaSingle()
+    {
+        SessionResourcesHandler resourcesHandler = mock( SessionResourcesHandler.class );
+        StatementResult result = createResult( 1, resourcesHandler );
+
+        Record record = result.single();
+        assertEquals( "v1-1", record.get( "k1" ).asString() );
+
+        verify( resourcesHandler ).onResultConsumed();
+    }
+
+    @Test
+    public void shouldNotifyResourcesHandlerWhenFetchedViaIterator()
+    {
+        SessionResourcesHandler resourcesHandler = mock( SessionResourcesHandler.class );
+        StatementResult result = createResult( 1, resourcesHandler );
+
+        while ( result.hasNext() )
+        {
+            assertNotNull( result.next() );
+        }
+
+        verify( resourcesHandler ).onResultConsumed();
+    }
+
+    @Test
+    public void shouldNotifyResourcesHandlerWhenSummary()
+    {
+        SessionResourcesHandler resourcesHandler = mock( SessionResourcesHandler.class );
+        StatementResult result = createResult( 10, resourcesHandler );
+
+        assertNotNull( result.summary() );
+
+        verify( resourcesHandler ).onResultConsumed();
+    }
+
+    @Test
+    public void shouldNotifyResourcesHandlerWhenConsumed()
+    {
+        SessionResourcesHandler resourcesHandler = mock( SessionResourcesHandler.class );
+        StatementResult result = createResult( 5, resourcesHandler );
+
+        result.consume();
+
+        verify( resourcesHandler ).onResultConsumed();
+    }
+
     private StatementResult createResult( int numberOfRecords )
+    {
+        return createResult( numberOfRecords, SessionResourcesHandler.NO_OP );
+    }
+
+    private StatementResult createResult( int numberOfRecords, SessionResourcesHandler resourcesHandler )
     {
         Connection connection = mock( Connection.class );
         String statement = "<unknown>";
 
-        final InternalStatementResult result = new InternalStatementResult( connection, SessionResourcesHandler.NO_OP, null,
+        final InternalStatementResult result = new InternalStatementResult( connection, resourcesHandler, null,
                 new Statement( statement ) );
 
         // Each time the cursor calls `recieveOne`, we'll run one of these,

@@ -99,12 +99,12 @@ public class NetworkSession implements Session, SessionResourcesHandler
 
     public static StatementResult run( Connection connection, Statement statement, SessionResourcesHandler resourcesHandler )
     {
-        InternalStatementResult cursor = new InternalStatementResult( connection, resourcesHandler, null, statement );
+        InternalStatementResult result = new InternalStatementResult( connection, resourcesHandler, null, statement );
         connection.run( statement.text(), statement.parameters().asMap( Values.ofValue() ),
-                cursor.runResponseCollector() );
-        connection.pullAll( cursor.pullAllResponseCollector() );
+                result.runResponseCollector() );
+        connection.pullAll( result.pullAllResponseCollector() );
         connection.flush();
-        return cursor;
+        return result;
     }
 
     @Override

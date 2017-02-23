@@ -23,15 +23,19 @@ import org.junit.Test;
 
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.driver.v1.Values.parameters;
 
 public class ResultStreamIT
@@ -111,6 +115,7 @@ public class ResultStreamIT
         try
         {
             res1.consume();
+            fail( "Exception expected" );
         }
         catch ( Exception e )
         {
@@ -186,5 +191,41 @@ public class ResultStreamIT
         assertThat( summary.counters().nodesCreated(), equalTo( 0 ) );
 
         assertThat( result.hasNext(), equalTo( false ) );
+    }
+
+    @Test
+    public void shouldHasNoElementsAfterFailure()
+    {
+        StatementResult result = session.run( "INVALID" );
+
+        try
+        {
+            result.hasNext();
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( ClientException.class ) );
+        }
+
+        assertFalse( result.hasNext() );
+    }
+
+    @Test
+    public void shouldBeAnEmptyLitAfterFailure()
+    {
+        StatementResult result = session.run( "UNWIND (0, 1) as i RETURN 10 / i" );
+
+        try
+        {
+            result.list();
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( ClientException.class ) );
+        }
+
+        assertTrue( result.list().isEmpty() );
     }
 }
