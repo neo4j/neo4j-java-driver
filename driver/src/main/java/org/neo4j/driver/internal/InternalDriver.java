@@ -26,7 +26,6 @@ import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Session;
-import org.neo4j.driver.v1.exceptions.DriverClosedException;
 
 import static java.lang.String.format;
 
@@ -72,7 +71,7 @@ public class InternalDriver implements Driver
             // For 1. this closeResources will take no effect as everything is already closed.
             // For 2. this closeResources will close the new connection pool just created to ensure no resource leak.
             closeResources();
-            throw new DriverClosedException();
+            throw driverCloseException();
         }
         return session;
     }
@@ -114,7 +113,12 @@ public class InternalDriver implements Driver
     {
         if ( closed.get() )
         {
-            throw new DriverClosedException();
+            throw driverCloseException();
         }
+    }
+
+    private static RuntimeException driverCloseException()
+    {
+        return new IllegalStateException( "This driver instance has already been closed" );
     }
 }
