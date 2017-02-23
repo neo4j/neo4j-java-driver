@@ -410,7 +410,7 @@ public class NetworkSessionTest
         when( connectionProvider.acquireConnection( READ ) ).thenReturn( connection );
         NetworkSession session = newSession( connectionProvider, READ );
 
-        session.transactionClosed( mock( ExplicitTransaction.class ) );
+        session.onTransactionClosed( mock( ExplicitTransaction.class ) );
 
         verifyZeroInteractions( connection );
     }
@@ -427,7 +427,7 @@ public class NetworkSessionTest
         verify( connectionProvider ).acquireConnection( READ );
 
         ExplicitTransaction wrongTx = mock( ExplicitTransaction.class );
-        session.transactionClosed( wrongTx );
+        session.onTransactionClosed( wrongTx );
 
         verify( connection, never() ).close();
     }
@@ -444,7 +444,7 @@ public class NetworkSessionTest
         Transaction tx = session.beginTransaction();
         assertTrue( tx.isOpen() );
 
-        session.connectionErrorOccurred( true );
+        session.onConnectionError( true );
 
         assertFalse( tx.isOpen() );
     }
@@ -461,7 +461,7 @@ public class NetworkSessionTest
         Transaction tx = session.beginTransaction();
         assertTrue( tx.isOpen() );
 
-        session.connectionErrorOccurred( false );
+        session.onConnectionError( false );
 
         assertFalse( tx.isOpen() );
     }
@@ -479,7 +479,7 @@ public class NetworkSessionTest
         verify( connectionProvider ).acquireConnection( READ );
         verify( connection ).run( eq( "RETURN 1" ), anyParams(), any( Collector.class ) );
 
-        session.resultBuffered();
+        session.onResultConsumed();
 
         verify( connection, never() ).sync();
         verify( connection ).close();

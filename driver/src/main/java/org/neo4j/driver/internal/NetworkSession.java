@@ -40,7 +40,7 @@ import org.neo4j.driver.v1.types.TypeSystem;
 
 import static org.neo4j.driver.v1.Values.value;
 
-public class NetworkSession implements Session, ConnectionHandler
+public class NetworkSession implements Session, SessionResourcesHandler
 {
     private final ConnectionProvider connectionProvider;
     private final AccessMode mode;
@@ -97,9 +97,9 @@ public class NetworkSession implements Session, ConnectionHandler
         return run( currentConnection, statement, this );
     }
 
-    public static StatementResult run( Connection connection, Statement statement, ConnectionHandler connectionHandler )
+    public static StatementResult run( Connection connection, Statement statement, SessionResourcesHandler resourcesHandler )
     {
-        InternalStatementResult cursor = new InternalStatementResult( connection, connectionHandler, null, statement );
+        InternalStatementResult cursor = new InternalStatementResult( connection, resourcesHandler, null, statement );
         connection.run( statement.text(), statement.parameters().asMap( Values.ofValue() ),
                 cursor.runResponseCollector() );
         connection.pullAll( cursor.pullAllResponseCollector() );
@@ -181,7 +181,7 @@ public class NetworkSession implements Session, ConnectionHandler
         currentConnection = acquireConnection();
 
         currentTransaction = new ExplicitTransaction( currentConnection, this, bookmark );
-        currentConnection.setConnectionHandler( this );
+        currentConnection.setResourcesHandler( this );
         return currentTransaction;
     }
 
@@ -198,13 +198,13 @@ public class NetworkSession implements Session, ConnectionHandler
     }
 
     @Override
-    public synchronized void resultBuffered()
+    public synchronized void onResultConsumed()
     {
         closeCurrentConnection( false );
     }
 
     @Override
-    public synchronized void transactionClosed( ExplicitTransaction tx )
+    public synchronized void onTransactionClosed( ExplicitTransaction tx )
     {
         if ( currentTransaction != null && currentTransaction == tx )
         {
@@ -215,7 +215,7 @@ public class NetworkSession implements Session, ConnectionHandler
     }
 
     @Override
-    public synchronized void connectionErrorOccurred( boolean recoverable )
+    public synchronized void onConnectionError( boolean recoverable )
     {
         // must check if transaction has been closed
         if ( currentTransaction != null )

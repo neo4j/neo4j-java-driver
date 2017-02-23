@@ -20,7 +20,7 @@ package org.neo4j.driver.internal.net.pooling;
 
 import java.util.Map;
 
-import org.neo4j.driver.internal.ConnectionHandler;
+import org.neo4j.driver.internal.SessionResourcesHandler;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.spi.Connection;
@@ -58,7 +58,7 @@ public class PooledSocketConnection implements PooledConnection
     private final Consumer<PooledConnection> release;
 
     private boolean unrecoverableErrorsOccurred = false;
-    private ConnectionHandler connectionHandler;
+    private SessionResourcesHandler resourcesHandler;
     private final Clock clock;
     private long lastUsedTimestamp;
 
@@ -196,7 +196,7 @@ public class PooledSocketConnection implements PooledConnection
     public void close()
     {
         updateLastUsedTimestamp();
-        connectionHandler = null;
+        resourcesHandler = null;
         release.accept( this );
         // put the full logic of deciding whether to dispose the connection or to put it back to
         // the pool into the release object
@@ -267,17 +267,17 @@ public class PooledSocketConnection implements PooledConnection
         {
             ackFailure();
         }
-        if ( connectionHandler != null )
+        if ( resourcesHandler != null )
         {
-            connectionHandler.connectionErrorOccurred( !unrecoverableErrorsOccurred );
+            resourcesHandler.onConnectionError( !unrecoverableErrorsOccurred );
         }
         throw e;
     }
 
     @Override
-    public void setConnectionHandler( ConnectionHandler connectionHandler )
+    public void setResourcesHandler( SessionResourcesHandler resourcesHandler )
     {
-        this.connectionHandler = connectionHandler;
+        this.resourcesHandler = resourcesHandler;
     }
 
     @Override

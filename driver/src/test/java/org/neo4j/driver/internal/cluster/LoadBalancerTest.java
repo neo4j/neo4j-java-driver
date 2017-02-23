@@ -25,9 +25,9 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.driver.internal.ConnectionHandler;
 import org.neo4j.driver.internal.ExplicitTransaction;
 import org.neo4j.driver.internal.NetworkSession;
+import org.neo4j.driver.internal.SessionResourcesHandler;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
@@ -146,7 +146,7 @@ public class LoadBalancerTest
 
         PooledConnection connection = newConnectionWithFailingSync( address );
         Connection routingConnection = new RoutingPooledConnection( connection, loadBalancer, AccessMode.WRITE );
-        Transaction tx = new ExplicitTransaction( routingConnection, mock( ConnectionHandler.class ) );
+        Transaction tx = new ExplicitTransaction( routingConnection, mock( SessionResourcesHandler.class ) );
 
         try
         {

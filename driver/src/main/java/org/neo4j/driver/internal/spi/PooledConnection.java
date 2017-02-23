@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal.spi;
 
-import org.neo4j.driver.internal.ConnectionHandler;
+import org.neo4j.driver.internal.SessionResourcesHandler;
 import org.neo4j.driver.internal.util.Clock;
 
 public interface PooledConnection extends Connection
@@ -28,9 +28,9 @@ public interface PooledConnection extends Connection
      * about them. This is used in the driver to clean up resources associated with
      * the connection, like an open transaction.
      *
-     * @param connectionHandler To be notified on error.
+     * @param resourcesHandler To be notified on error.
      */
-    void setConnectionHandler( ConnectionHandler connectionHandler );
+    void setResourcesHandler( SessionResourcesHandler resourcesHandler );
 
     /**
      * Check if this connection experienced any unrecoverable errors. Connections with unrecoverable errors should be

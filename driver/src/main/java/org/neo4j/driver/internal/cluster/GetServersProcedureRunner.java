@@ -21,8 +21,8 @@ package org.neo4j.driver.internal.cluster;
 
 import java.util.List;
 
-import org.neo4j.driver.internal.ConnectionHandler;
 import org.neo4j.driver.internal.NetworkSession;
+import org.neo4j.driver.internal.SessionResourcesHandler;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
@@ -33,6 +33,6 @@ public class GetServersProcedureRunner
 
     public List<Record> run( Connection connection )
     {
-        return NetworkSession.run( connection, new Statement( CALL_GET_SERVERS ), ConnectionHandler.NO_OP ).list();
+        return NetworkSession.run( connection, new Statement( CALL_GET_SERVERS ), SessionResourcesHandler.NO_OP ).list();
     }
 }

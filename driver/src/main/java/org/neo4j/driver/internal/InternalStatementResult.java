@@ -49,7 +49,7 @@ import static java.util.Collections.emptyList;
 public class InternalStatementResult implements StatementResult
 {
     private final Connection connection;
-    private final ConnectionHandler connectionHandler;
+    private final SessionResourcesHandler resourcesHandler;
     private final Collector runResponseCollector;
     private final Collector pullAllResponseCollector;
     private final Queue<Record> recordBuffer = new LinkedList<>();
@@ -59,13 +59,13 @@ public class InternalStatementResult implements StatementResult
 
     private boolean done = false;
 
-    InternalStatementResult( Connection connection, ConnectionHandler connectionHandler,
+    InternalStatementResult( Connection connection, SessionResourcesHandler resourcesHandler,
             ExplicitTransaction transaction, Statement statement )
     {
         this.connection = connection;
         this.runResponseCollector = newRunResponseCollector();
         this.pullAllResponseCollector = newStreamResponseCollector( transaction, statement, connection.server() );
-        this.connectionHandler = connectionHandler;
+        this.resourcesHandler = resourcesHandler;
     }
 
     private Collector newRunResponseCollector()
@@ -321,7 +321,7 @@ public class InternalStatementResult implements StatementResult
         {
             if ( done )
             {
-                connectionHandler.resultBuffered();
+                resourcesHandler.onResultConsumed();
                 return false;
             }
             connection.receiveOne();

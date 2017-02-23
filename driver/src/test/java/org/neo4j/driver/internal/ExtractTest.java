@@ -170,7 +170,7 @@ public class ExtractTest
         Connection connection = mock( Connection.class );
         String statement = "<unknown>";
 
-        InternalStatementResult result = new InternalStatementResult( connection, ConnectionHandler.NO_OP, null,
+        InternalStatementResult result = new InternalStatementResult( connection, SessionResourcesHandler.NO_OP, null,
                 new Statement( statement ) );
         result.runResponseCollector().keys( new String[]{"k1"} );
         result.runResponseCollector().done();

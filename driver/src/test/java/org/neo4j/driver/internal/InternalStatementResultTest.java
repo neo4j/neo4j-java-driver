@@ -389,7 +389,7 @@ public class InternalStatementResultTest
         Connection connection = mock( Connection.class );
         String statement = "<unknown>";
 
-        final InternalStatementResult result = new InternalStatementResult( connection, ConnectionHandler.NO_OP, null,
+        final InternalStatementResult result = new InternalStatementResult( connection, SessionResourcesHandler.NO_OP, null,
                 new Statement( statement ) );
 
         // Each time the cursor calls `recieveOne`, we'll run one of these,

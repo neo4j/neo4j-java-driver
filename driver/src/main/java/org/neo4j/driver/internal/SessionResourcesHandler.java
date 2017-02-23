@@ -18,30 +18,28 @@
  */
 package org.neo4j.driver.internal;
 
-// todo: ConnectionCloseHandler or ConnectionTerminationHandler?
-// todo: better method names 'onSomething...'
-public interface ConnectionHandler
+public interface SessionResourcesHandler
 {
-    void resultBuffered();
+    void onResultConsumed();
 
-    void transactionClosed( ExplicitTransaction tx );
+    void onTransactionClosed( ExplicitTransaction tx );
 
-    void connectionErrorOccurred( boolean recoverable );
+    void onConnectionError( boolean recoverable );
 
-    ConnectionHandler NO_OP = new ConnectionHandler()
+    SessionResourcesHandler NO_OP = new SessionResourcesHandler()
     {
         @Override
-        public void resultBuffered()
+        public void onResultConsumed()
         {
         }
 
         @Override
-        public void transactionClosed( ExplicitTransaction tx )
+        public void onTransactionClosed( ExplicitTransaction tx )
         {
         }
 
         @Override
-        public void connectionErrorOccurred( boolean recoverable )
+        public void onConnectionError( boolean recoverable )
         {
         }
     };
