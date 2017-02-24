@@ -22,11 +22,11 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.neo4j.driver.internal.RoutingErrorHandler;
+import org.neo4j.driver.internal.SessionResourcesHandler;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.v1.AccessMode;
-import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
@@ -191,9 +191,9 @@ class RoutingPooledConnection implements PooledConnection
     }
 
     @Override
-    public void onError( Runnable runnable )
+    public void setResourcesHandler( SessionResourcesHandler resourcesHandler )
     {
-        delegate.onError( runnable );
+        delegate.setResourcesHandler( resourcesHandler );
     }
 
     @Override
@@ -218,12 +218,6 @@ class RoutingPooledConnection implements PooledConnection
     public BoltServerAddress boltServerAddress()
     {
         return delegate.boltServerAddress();
-    }
-
-    @Override
-    public Logger logger()
-    {
-        return delegate.logger();
     }
 
     @Override

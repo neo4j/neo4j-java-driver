@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.security.GeneralSecurityException;
 
+import org.neo4j.driver.internal.cluster.LoadBalancer;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.net.SocketConnector;
@@ -29,6 +30,7 @@ import org.neo4j.driver.internal.net.pooling.PoolSettings;
 import org.neo4j.driver.internal.net.pooling.SocketConnectionPool;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.ConnectionPool;
+import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.spi.Connector;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.AuthToken;
@@ -50,13 +52,10 @@ public class DriverFactory
         BoltServerAddress address = BoltServerAddress.from( uri );
         SecurityPlan securityPlan = createSecurityPlan( address, config );
         ConnectionPool connectionPool = createConnectionPool( authToken, securityPlan, config );
-        SessionFactory sessionFactory = createSessionFactory( config );
 
         try
         {
-            return createDriver( address, uri.getScheme(), connectionPool, config, routingSettings, securityPlan,
-                    sessionFactory
-            );
+            return createDriver( address, uri.getScheme(), connectionPool, config, routingSettings, securityPlan );
         }
         catch ( Throwable driverError )
         {
@@ -74,42 +73,68 @@ public class DriverFactory
     }
 
     private Driver createDriver( BoltServerAddress address, String scheme, ConnectionPool connectionPool,
-            Config config, RoutingSettings routingSettings, SecurityPlan securityPlan,
-            SessionFactory sessionFactory )
+            Config config, RoutingSettings routingSettings, SecurityPlan securityPlan )
     {
         switch ( scheme.toLowerCase() )
         {
         case "bolt":
-            return createDirectDriver( address, connectionPool, config, securityPlan, sessionFactory );
+            return createDirectDriver( address, connectionPool, config, securityPlan );
         case "bolt+routing":
-            return createRoutingDriver( address, connectionPool, config, routingSettings, securityPlan,
-                    sessionFactory );
+            return createRoutingDriver( address, connectionPool, config, routingSettings, securityPlan );
         default:
             throw new ClientException( format( "Unsupported URI scheme: %s", scheme ) );
         }
     }
 
     /**
-     * Creates new {@link DirectDriver}.
+     * Creates a new driver for "bolt" scheme.
      * <p>
      * <b>This method is protected only for testing</b>
      */
-    protected DirectDriver createDirectDriver( BoltServerAddress address, ConnectionPool connectionPool,
-            Config config, SecurityPlan securityPlan, SessionFactory sessionFactory )
+    protected Driver createDirectDriver( BoltServerAddress address, ConnectionPool connectionPool, Config config,
+            SecurityPlan securityPlan )
     {
-        return new DirectDriver( address, connectionPool, securityPlan, sessionFactory, config.logging() );
+        ConnectionProvider connectionProvider = new DirectConnectionProvider( address, connectionPool );
+        SessionFactory sessionFactory = createSessionFactory( connectionProvider, config );
+        return createDriver( config, securityPlan, sessionFactory );
     }
 
     /**
-     * Creates new {@link RoutingDriver}.
+     * Creates new a new driver for "bolt+routing" scheme.
      * <p>
      * <b>This method is protected only for testing</b>
      */
-    protected RoutingDriver createRoutingDriver( BoltServerAddress address, ConnectionPool connectionPool,
-            Config config, RoutingSettings routingSettings, SecurityPlan securityPlan, SessionFactory sessionFactory )
+    protected Driver createRoutingDriver( BoltServerAddress address, ConnectionPool connectionPool,
+            Config config, RoutingSettings routingSettings, SecurityPlan securityPlan )
     {
-        return new RoutingDriver( routingSettings, address, connectionPool, securityPlan, sessionFactory,
-                createClock(), config.logging() );
+        if ( !securityPlan.isRoutingCompatible() )
+        {
+            throw new IllegalArgumentException( "The chosen security plan is not compatible with a routing driver" );
+        }
+        ConnectionProvider connectionProvider = createLoadBalancer( address, connectionPool, config, routingSettings );
+        SessionFactory sessionFactory = createSessionFactory( connectionProvider, config );
+        return createDriver( config, securityPlan, sessionFactory );
+    }
+
+    /**
+     * Creates new {@link Driver}.
+     * <p>
+     * <b>This method is protected only for testing</b>
+     */
+    protected InternalDriver createDriver( Config config, SecurityPlan securityPlan, SessionFactory sessionFactory )
+    {
+        return new InternalDriver( securityPlan, sessionFactory, config.logging() );
+    }
+
+    /**
+     * Creates new {@link LoadBalancer} for the routing driver.
+     * <p>
+     * <b>This method is protected only for testing</b>
+     */
+    protected LoadBalancer createLoadBalancer( BoltServerAddress address, ConnectionPool connectionPool, Config config,
+            RoutingSettings routingSettings )
+    {
+        return new LoadBalancer( routingSettings, connectionPool, createClock(), config.logging(), address );
     }
 
     /**
@@ -150,13 +175,14 @@ public class DriverFactory
         return new SocketConnector( connectionSettings, securityPlan, logging );
     }
 
-    private static SessionFactory createSessionFactory( Config config )
+    /**
+     * Creates new {@link SessionFactory}.
+     * <p>
+     * <b>This method is protected only for testing</b>
+     */
+    protected SessionFactory createSessionFactory( ConnectionProvider connectionProvider, Config config )
     {
-        if ( config.logLeakedSessions() )
-        {
-            return new LeakLoggingNetworkSessionFactory( config.logging() );
-        }
-        return new NetworkSessionFactory();
+        return new SessionFactoryImpl( connectionProvider, config, config.logging() );
     }
 
     private static SecurityPlan createSecurityPlan( BoltServerAddress address, Config config )

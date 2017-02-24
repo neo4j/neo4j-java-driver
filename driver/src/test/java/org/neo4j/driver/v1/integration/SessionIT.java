@@ -381,18 +381,4 @@ public class SessionIT
             }
         }
     }
-
-    @Test
-    public void shouldCloseSessionWhenDriverIsClosed() throws Throwable
-    {
-        // Given
-        Driver driver = GraphDatabase.driver( neo4j.uri() );
-        Session session = driver.session();
-
-        // When
-        driver.close();
-
-        // Then
-        assertFalse( session.isOpen() );
-    }
 }

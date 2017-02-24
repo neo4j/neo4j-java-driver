@@ -20,15 +20,20 @@ package org.neo4j.driver.v1;
 
 import org.junit.Test;
 
+import java.io.File;
 import java.net.URI;
 
-import org.neo4j.driver.internal.DirectDriver;
-import org.neo4j.driver.internal.RoutingDriver;
 import org.neo4j.driver.v1.util.StubServer;
 
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+import static org.neo4j.driver.internal.util.Matchers.clusterDriver;
+import static org.neo4j.driver.internal.util.Matchers.directDriver;
+import static org.neo4j.driver.v1.Config.EncryptionLevel.REQUIRED;
+import static org.neo4j.driver.v1.Config.TrustStrategy.trustOnFirstUse;
 import static org.neo4j.driver.v1.util.StubServer.INSECURE_CONFIG;
 
 public class GraphDatabaseTest
@@ -43,8 +48,7 @@ public class GraphDatabaseTest
         Driver driver = GraphDatabase.driver( uri );
 
         // Then
-        assertThat( driver, instanceOf( DirectDriver.class ) );
-
+        assertThat( driver, is( directDriver() ) );
     }
 
     @Test
@@ -58,10 +62,31 @@ public class GraphDatabaseTest
         Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG );
 
         // Then
-        assertThat( driver, instanceOf( RoutingDriver.class ) );
+        assertThat( driver, is( clusterDriver() ) );
 
         // Finally
         driver.close();
         assertThat( server.exitStatus(), equalTo( 0 ) );
+    }
+
+    @Test
+    public void boltPlusDiscoverySchemeShouldNotSupportTrustOnFirstUse()
+    {
+        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+
+        Config config = Config.build()
+                .withEncryptionLevel( REQUIRED )
+                .withTrustStrategy( trustOnFirstUse( new File( "./known_hosts" ) ) )
+                .toConfig();
+
+        try
+        {
+            GraphDatabase.driver( uri, config );
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( IllegalArgumentException.class ) );
+        }
     }
 }

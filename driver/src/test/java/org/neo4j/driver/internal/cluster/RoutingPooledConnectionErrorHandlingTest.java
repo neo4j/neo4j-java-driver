@@ -62,6 +62,8 @@ import static org.neo4j.driver.internal.spi.Collector.NO_OP;
 import static org.neo4j.driver.internal.util.Matchers.containsReader;
 import static org.neo4j.driver.internal.util.Matchers.containsRouter;
 import static org.neo4j.driver.internal.util.Matchers.containsWriter;
+import static org.neo4j.driver.v1.AccessMode.READ;
+import static org.neo4j.driver.v1.AccessMode.WRITE;
 import static org.neo4j.driver.v1.Values.value;
 
 @RunWith( Parameterized.class )
@@ -99,10 +101,10 @@ public class RoutingPooledConnectionErrorHandlingTest
         ConnectionPool connectionPool = newConnectionPool( connector, ADDRESS1, ADDRESS2, ADDRESS3 );
         LoadBalancer loadBalancer = newLoadBalancer( routingTable, connectionPool );
 
-        Connection readConnection = loadBalancer.acquireReadConnection();
+        Connection readConnection = loadBalancer.acquireConnection( READ );
         verifyServiceUnavailableHandling( readConnection, routingTable, connectionPool );
 
-        Connection writeConnection = loadBalancer.acquireWriteConnection();
+        Connection writeConnection = loadBalancer.acquireConnection( WRITE );
         verifyServiceUnavailableHandling( writeConnection, routingTable, connectionPool );
 
         assertThat( routingTable, containsRouter( ADDRESS3 ) );
@@ -143,7 +145,7 @@ public class RoutingPooledConnectionErrorHandlingTest
         ConnectionPool connectionPool = newConnectionPool( connector, ADDRESS1, ADDRESS2, ADDRESS3 );
         LoadBalancer loadBalancer = newLoadBalancer( routingTable, connectionPool );
 
-        Connection readConnection = loadBalancer.acquireReadConnection();
+        Connection readConnection = loadBalancer.acquireConnection( READ );
         try
         {
             method.invoke( readConnection );
@@ -171,7 +173,7 @@ public class RoutingPooledConnectionErrorHandlingTest
         ConnectionPool connectionPool = newConnectionPool( connector, ADDRESS1, ADDRESS2, ADDRESS3 );
         LoadBalancer loadBalancer = newLoadBalancer( routingTable, connectionPool );
 
-        Connection readConnection = loadBalancer.acquireWriteConnection();
+        Connection readConnection = loadBalancer.acquireConnection( WRITE );
         try
         {
             method.invoke( readConnection );
@@ -199,10 +201,10 @@ public class RoutingPooledConnectionErrorHandlingTest
         ConnectionPool connectionPool = newConnectionPool( connector, ADDRESS1, ADDRESS2, ADDRESS3 );
         LoadBalancer loadBalancer = newLoadBalancer( routingTable, connectionPool );
 
-        Connection readConnection = loadBalancer.acquireReadConnection();
+        Connection readConnection = loadBalancer.acquireConnection( READ );
         verifyThrowablePropagation( readConnection, routingTable, connectionPool, error.getClass() );
 
-        Connection writeConnection = loadBalancer.acquireWriteConnection();
+        Connection writeConnection = loadBalancer.acquireConnection( WRITE );
         verifyThrowablePropagation( writeConnection, routingTable, connectionPool, error.getClass() );
 
         assertThat( routingTable, containsRouter( ADDRESS3 ) );

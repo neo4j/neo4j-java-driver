@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.logging.Level;
 
 import org.neo4j.driver.internal.logging.ConsoleLogging;
-import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.util.StubServer;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
@@ -136,7 +135,7 @@ public class DriverCloseIT
             }
             catch ( Exception e )
             {
-                assertThat( e, instanceOf( ServiceUnavailableException.class ) );
+                assertThat( e, instanceOf( IllegalStateException.class ) );
             }
         }
     }
@@ -195,7 +194,7 @@ public class DriverCloseIT
             }
             catch ( Exception e )
             {
-                assertThat( e, instanceOf( ServiceUnavailableException.class ) );
+                assertThat( e, instanceOf( IllegalStateException.class ) );
             }
 
             assertEquals( 0, readServer.exitStatus() );

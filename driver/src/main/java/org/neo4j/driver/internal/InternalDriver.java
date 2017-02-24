@@ -27,17 +27,19 @@ import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Session;
 
-abstract class BaseDriver implements Driver
+import static java.lang.String.format;
+
+public class InternalDriver implements Driver
 {
     private final static String DRIVER_LOG_NAME = "Driver";
 
     private final SecurityPlan securityPlan;
-    protected final SessionFactory sessionFactory;
-    protected final Logger log;
+    private final SessionFactory sessionFactory;
+    private final Logger log;
 
     private AtomicBoolean closed = new AtomicBoolean( false );
 
-    BaseDriver( SecurityPlan securityPlan, SessionFactory sessionFactory, Logging logging )
+    InternalDriver( SecurityPlan securityPlan, SessionFactory sessionFactory, Logging logging )
     {
         this.securityPlan = securityPlan;
         this.sessionFactory = sessionFactory;
@@ -61,8 +63,8 @@ abstract class BaseDriver implements Driver
     public final Session session( AccessMode mode )
     {
         assertOpen();
-        Session session = newSessionWithMode( mode );
-        if( closed.get() )
+        Session session = sessionFactory.newInstance( mode );
+        if ( closed.get() )
         {
             // the driver is already closed and we either 1. obtain this session from the old session pool
             // or 2. we obtain this session from a new session pool
@@ -77,15 +79,35 @@ abstract class BaseDriver implements Driver
     @Override
     public final void close()
     {
-        if ( closed.compareAndSet(false, true) )
+        if ( closed.compareAndSet( false, true ) )
         {
             closeResources();
         }
     }
 
-    protected abstract Session newSessionWithMode( AccessMode mode );
+    /**
+     * Get the underlying session factory.
+     * <p>
+     * <b>This method is only for testing</b>
+     *
+     * @return the session factory used by this driver.
+     */
+    public final SessionFactory getSessionFactory()
+    {
+        return sessionFactory;
+    }
 
-    protected abstract void closeResources();
+    private void closeResources()
+    {
+        try
+        {
+            sessionFactory.close();
+        }
+        catch ( Exception ex )
+        {
+            log.error( format( "~~ [ERROR] %s", ex.getMessage() ), ex );
+        }
+    }
 
     private void assertOpen()
     {
@@ -95,7 +117,7 @@ abstract class BaseDriver implements Driver
         }
     }
 
-    private IllegalStateException driverCloseException()
+    private static RuntimeException driverCloseException()
     {
         return new IllegalStateException( "This driver instance has already been closed" );
     }

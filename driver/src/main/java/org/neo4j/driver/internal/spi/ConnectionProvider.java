@@ -16,26 +16,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal;
+package org.neo4j.driver.internal.spi;
 
-import org.junit.Test;
+import org.neo4j.driver.v1.AccessMode;
 
-import org.neo4j.driver.internal.spi.PooledConnection;
-import org.neo4j.driver.v1.Session;
-
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
-
-public class NetworkSessionFactoryTest
+/**
+ * Interface defines a layer used by the driver to obtain connections. It is meant to be the only component that
+ * differs between "direct" and "routing" driver.
+ */
+public interface ConnectionProvider extends AutoCloseable
 {
-    @Test
-    public void createsNetworkSessions()
-    {
-        SessionFactory factory = new NetworkSessionFactory();
-
-        Session session = factory.newInstance( mock( PooledConnection.class ) );
-
-        assertThat( session, instanceOf( NetworkSession.class ) );
-    }
+    /**
+     * Acquire new {@link PooledConnection pooled connection} for the given {@link AccessMode mode}.
+     *
+     * @param mode the access mode for the connection.
+     * @return free or new pooled connection.
+     */
+    PooledConnection acquireConnection( AccessMode mode );
 }

@@ -22,11 +22,16 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 import org.mockito.ArgumentCaptor;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import java.lang.reflect.Method;
 
+import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.spi.PooledConnection;
+import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Logger;
+import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Session;
 
 import static org.hamcrest.Matchers.containsString;
@@ -34,10 +39,12 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.driver.v1.AccessMode.READ;
 
 public class LeakLoggingNetworkSessionTest
 {
@@ -47,24 +54,30 @@ public class LeakLoggingNetworkSessionTest
     @Test
     public void logsNothingDuringFinalizationIfClosed() throws Exception
     {
-        Logger logger = mock( Logger.class );
-        Session session = new LeakLoggingNetworkSession( connectionMock( false ), logger );
+        Logging logging = mock( Logging.class );
+        Logger log = mock( Logger.class );
+        when( logging.getLog( anyString() ) ).thenReturn( log );
+        LeakLoggingNetworkSession session = newSession( logging, false );
 
         finalize( session );
 
-        verifyZeroInteractions( logger );
+        verify( log, never() ).error( anyString(), any( Throwable.class ) );
     }
 
     @Test
     public void logsMessageWithStacktraceDuringFinalizationIfLeaked() throws Exception
     {
-        Logger logger = mock( Logger.class );
-        Session session = new LeakLoggingNetworkSession( connectionMock( true ), logger );
+        Logging logging = mock( Logging.class );
+        Logger log = mock( Logger.class );
+        when( logging.getLog( anyString() ) ).thenReturn( log );
+        LeakLoggingNetworkSession session = newSession( logging, true );
+        // begin transaction to make session obtain a connection
+        session.beginTransaction();
 
         finalize( session );
 
         ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass( String.class );
-        verify( logger ).error( messageCaptor.capture(), any( Throwable.class ) );
+        verify( log ).error( messageCaptor.capture(), any( Throwable.class ) );
 
         assertEquals( 1, messageCaptor.getAllValues().size() );
 
@@ -81,6 +94,25 @@ public class LeakLoggingNetworkSessionTest
         Method finalizeMethod = session.getClass().getDeclaredMethod( "finalize" );
         finalizeMethod.setAccessible( true );
         finalizeMethod.invoke( session );
+    }
+
+    private static LeakLoggingNetworkSession newSession( Logging logging, boolean openConnection )
+    {
+        return new LeakLoggingNetworkSession( connectionProviderMock( openConnection ), READ, logging );
+    }
+
+    private static ConnectionProvider connectionProviderMock( final boolean openConnection )
+    {
+        ConnectionProvider provider = mock( ConnectionProvider.class );
+        when( provider.acquireConnection( any( AccessMode.class ) ) ).thenAnswer( new Answer<PooledConnection>()
+        {
+            @Override
+            public PooledConnection answer( InvocationOnMock invocation ) throws Throwable
+            {
+                return connectionMock( openConnection );
+            }
+        } );
+        return provider;
     }
 
     private static PooledConnection connectionMock( boolean open )

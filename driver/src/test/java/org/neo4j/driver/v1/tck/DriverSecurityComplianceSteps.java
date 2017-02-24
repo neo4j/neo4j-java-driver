@@ -123,7 +123,10 @@ public class DriverSecurityComplianceSteps
     @Then( "^creating sessions should fail$" )
     public void creatingSessionsShouldFail() throws Throwable
     {
-        try ( Session session = driver.session() ) {}
+        try ( Session session = driver.session() )
+        {
+            session.run( "RETURN 1" );
+        }
         catch ( Exception e )
         {
             exception = e;

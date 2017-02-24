@@ -19,51 +19,39 @@
 package org.neo4j.driver.internal;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.ConnectionPool;
+import org.neo4j.driver.internal.spi.ConnectionProvider;
+import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.v1.AccessMode;
-import org.neo4j.driver.v1.Logging;
-import org.neo4j.driver.v1.Session;
 
-import static java.lang.String.format;
-
-public class DirectDriver extends BaseDriver
+/**
+ * Simple {@link ConnectionProvider connection provider} that obtains connections form the given pool only for
+ * the given address.
+ */
+public class DirectConnectionProvider implements ConnectionProvider
 {
     private final BoltServerAddress address;
-    protected final ConnectionPool connections;
+    private final ConnectionPool pool;
 
-    public DirectDriver(
-            BoltServerAddress address,
-            ConnectionPool connections,
-            SecurityPlan securityPlan,
-            SessionFactory sessionFactory,
-            Logging logging )
+    DirectConnectionProvider( BoltServerAddress address, ConnectionPool pool )
     {
-        super( securityPlan, sessionFactory, logging );
         this.address = address;
-        this.connections = connections;
+        this.pool = pool;
     }
 
     @Override
-    protected Session newSessionWithMode( AccessMode mode )
+    public PooledConnection acquireConnection( AccessMode mode )
     {
-        return sessionFactory.newInstance( connections.acquire( address ) );
+        return pool.acquire( address );
     }
 
     @Override
-    protected void closeResources()
+    public void close() throws Exception
     {
-        try
-        {
-            connections.close();
-        }
-        catch ( Exception ex )
-        {
-            log.error( format( "~~ [ERROR] %s", ex.getMessage() ), ex );
-        }
+        pool.close();
     }
 
-    BoltServerAddress server()
+    public BoltServerAddress getAddress()
     {
         return address;
     }

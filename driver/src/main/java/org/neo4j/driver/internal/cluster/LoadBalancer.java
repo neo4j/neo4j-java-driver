@@ -23,47 +23,41 @@ import java.util.Set;
 import org.neo4j.driver.internal.RoutingErrorHandler;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.ConnectionPool;
+import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Logger;
+import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.exceptions.ProtocolException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
 import static java.lang.String.format;
 
-public class LoadBalancer implements RoutingErrorHandler, AutoCloseable
+public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, AutoCloseable
 {
-    private final Logger log;
+    private static final String LOAD_BALANCER_LOG_NAME = "LoadBalancer";
 
     private final ConnectionPool connections;
     private final RoutingTable routingTable;
     private final Rediscovery rediscovery;
+    private final Logger log;
 
-    public LoadBalancer(
-            RoutingSettings settings,
-            Clock clock,
-            Logger log,
-            ConnectionPool connections,
-            BoltServerAddress... routingAddresses ) throws ServiceUnavailableException
+    public LoadBalancer( RoutingSettings settings, ConnectionPool connections, Clock clock, Logging logging,
+            BoltServerAddress... routingAddresses )
     {
-        this( settings, clock, log, connections, new ClusterRoutingTable( clock, routingAddresses ),
-                new GetServersProcedureClusterCompositionProvider( clock, log ) );
+        this( settings, new ClusterRoutingTable( clock, routingAddresses ), connections, clock,
+                logging.getLog( LOAD_BALANCER_LOG_NAME ) );
     }
 
-    private LoadBalancer(
-            RoutingSettings settings,
-            Clock clock,
-            Logger log,
-            ConnectionPool connections,
-            RoutingTable routingTable,
-            ClusterCompositionProvider provider ) throws ServiceUnavailableException
+    private LoadBalancer( RoutingSettings settings, RoutingTable routingTable, ConnectionPool connections,
+            Clock clock, Logger log )
     {
-        this( routingTable, connections, new Rediscovery( settings, clock, log, provider ), log );
+        this( routingTable, connections, new Rediscovery( settings, clock, log,
+                new GetServersProcedureClusterCompositionProvider( clock, log ) ), log );
     }
 
     LoadBalancer( RoutingTable routingTable, ConnectionPool connections, Rediscovery rediscovery, Logger log )
-            throws ServiceUnavailableException
     {
         this.log = log;
         this.connections = connections;
@@ -74,16 +68,12 @@ public class LoadBalancer implements RoutingErrorHandler, AutoCloseable
         ensureRouting();
     }
 
-    public PooledConnection acquireReadConnection() throws ServiceUnavailableException
+    @Override
+    public PooledConnection acquireConnection( AccessMode mode )
     {
-        PooledConnection connection = acquireConnection( routingTable.readers() );
-        return new RoutingPooledConnection( connection, this, AccessMode.READ );
-    }
-
-    public PooledConnection acquireWriteConnection() throws ServiceUnavailableException
-    {
-        PooledConnection connection = acquireConnection( routingTable.writers() );
-        return new RoutingPooledConnection( connection, this, AccessMode.WRITE );
+        RoundRobinAddressSet addressSet = addressSetFor( mode );
+        PooledConnection connection = acquireConnection( addressSet );
+        return new RoutingPooledConnection( connection, this, mode );
     }
 
     @Override
@@ -161,5 +151,16 @@ public class LoadBalancer implements RoutingErrorHandler, AutoCloseable
         }
     }
 
-
+    private RoundRobinAddressSet addressSetFor( AccessMode mode )
+    {
+        switch ( mode )
+        {
+        case READ:
+            return routingTable.readers();
+        case WRITE:
+            return routingTable.writers();
+        default:
+            throw new IllegalArgumentException( "Mode '" + mode + "' is not supported" );
+        }
+    }
 }

@@ -48,6 +48,7 @@ import static java.util.Collections.emptyList;
 public class InternalStatementResult implements StatementResult
 {
     private final Connection connection;
+    private final SessionResourcesHandler resourcesHandler;
     private final Collector runResponseCollector;
     private final Collector pullAllResponseCollector;
     private final Queue<Record> recordBuffer = new LinkedList<>();
@@ -55,14 +56,15 @@ public class InternalStatementResult implements StatementResult
     private List<String> keys = null;
     private ResultSummary summary = null;
 
-    private long position = -1;
     private boolean done = false;
 
-    InternalStatementResult( Connection connection, ExplicitTransaction transaction, Statement statement )
+    InternalStatementResult( Connection connection, SessionResourcesHandler resourcesHandler,
+            ExplicitTransaction transaction, Statement statement )
     {
         this.connection = connection;
         this.runResponseCollector = newRunResponseCollector();
         this.pullAllResponseCollector = newStreamResponseCollector( transaction, statement, connection.server() );
+        this.resourcesHandler = resourcesHandler;
     }
 
     private Collector newRunResponseCollector()
@@ -202,7 +204,6 @@ public class InternalStatementResult implements StatementResult
         // and have it copy out its fields from some lower level data structure.
         if ( tryFetchNext() )
         {
-            position += 1;
             return recordBuffer.poll();
         }
         else
@@ -287,7 +288,7 @@ public class InternalStatementResult implements StatementResult
         {
             do
             {
-                connection.receiveOne();
+                receiveOne();
                 recordBuffer.clear();
             }
             while ( !done );
@@ -301,7 +302,7 @@ public class InternalStatementResult implements StatementResult
     {
         while( !done )
         {
-            connection.receiveOne();
+            receiveOne();
         }
 
         return summary;
@@ -321,9 +322,26 @@ public class InternalStatementResult implements StatementResult
             {
                 return false;
             }
-            connection.receiveOne();
+            receiveOne();
         }
 
         return true;
+    }
+
+    private void receiveOne()
+    {
+        try
+        {
+            connection.receiveOne();
+        }
+        catch ( Throwable error )
+        {
+            resourcesHandler.onResultConsumed();
+            throw error;
+        }
+        if ( done )
+        {
+            resourcesHandler.onResultConsumed();
+        }
     }
 }

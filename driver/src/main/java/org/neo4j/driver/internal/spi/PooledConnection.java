@@ -18,18 +18,19 @@
  */
 package org.neo4j.driver.internal.spi;
 
+import org.neo4j.driver.internal.SessionResourcesHandler;
 import org.neo4j.driver.internal.util.Clock;
 
 public interface PooledConnection extends Connection
 {
     /**
-     * If there are any errors that occur on this connection, invoke the given
-     * runnable. This is used in the driver to clean up resources associated with
+     * If there are any errors that occur on this connection, notify the given handler
+     * about them. This is used in the driver to clean up resources associated with
      * the connection, like an open transaction.
      *
-     * @param runnable To be run on error.
+     * @param resourcesHandler To be notified on error.
      */
-    void onError( Runnable runnable );
+    void setResourcesHandler( SessionResourcesHandler resourcesHandler );
 
     /**
      * Check if this connection experienced any unrecoverable errors. Connections with unrecoverable errors should be

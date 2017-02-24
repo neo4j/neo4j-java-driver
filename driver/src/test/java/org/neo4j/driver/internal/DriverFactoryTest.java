@@ -28,13 +28,16 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 
+import org.neo4j.driver.internal.cluster.LoadBalancer;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.ConnectionPool;
+import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
+import org.neo4j.driver.v1.Driver;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertArrayEquals;
@@ -43,6 +46,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.driver.v1.AccessMode.READ;
 import static org.neo4j.driver.v1.Config.defaultConfig;
 
 @RunWith( Parameterized.class )
@@ -108,7 +112,7 @@ public class DriverFactoryTest
 
         factory.newInstance( uri, dummyAuthToken(), dummyRoutingSettings(), config );
 
-        assertThat( factory.capturedSessionFactory, instanceOf( NetworkSessionFactory.class ) );
+        assertThat( factory.capturedSessionFactory.newInstance( READ ), instanceOf( NetworkSession.class ) );
     }
 
     @Test
@@ -119,7 +123,7 @@ public class DriverFactoryTest
 
         factory.newInstance( uri, dummyAuthToken(), dummyRoutingSettings(), config );
 
-        assertThat( factory.capturedSessionFactory, instanceOf( LeakLoggingNetworkSessionFactory.class ) );
+        assertThat( factory.capturedSessionFactory.newInstance( READ ), instanceOf( LeakLoggingNetworkSession.class ) );
     }
 
     private static AuthToken dummyAuthToken()
@@ -142,16 +146,15 @@ public class DriverFactoryTest
         }
 
         @Override
-        protected DirectDriver createDirectDriver( BoltServerAddress address, ConnectionPool connectionPool,
-                Config config, SecurityPlan securityPlan, SessionFactory sessionFactory )
+        protected Driver createDirectDriver( BoltServerAddress address, ConnectionPool connectionPool, Config config,
+                SecurityPlan securityPlan )
         {
             throw new UnsupportedOperationException( "Can't create direct driver" );
         }
 
         @Override
-        protected RoutingDriver createRoutingDriver( BoltServerAddress address, ConnectionPool connectionPool,
-                Config config, RoutingSettings routingSettings, SecurityPlan securityPlan,
-                SessionFactory sessionFactory )
+        protected Driver createRoutingDriver( BoltServerAddress address, ConnectionPool connectionPool, Config config,
+                RoutingSettings routingSettings, SecurityPlan securityPlan )
         {
             throw new UnsupportedOperationException( "Can't create routing driver" );
         }
@@ -168,20 +171,24 @@ public class DriverFactoryTest
         SessionFactory capturedSessionFactory;
 
         @Override
-        protected DirectDriver createDirectDriver( BoltServerAddress address, ConnectionPool connectionPool,
-                Config config, SecurityPlan securityPlan, SessionFactory sessionFactory )
+        protected InternalDriver createDriver( Config config, SecurityPlan securityPlan, SessionFactory sessionFactory )
         {
-            capturedSessionFactory = sessionFactory;
             return null;
         }
 
         @Override
-        protected RoutingDriver createRoutingDriver( BoltServerAddress address, ConnectionPool connectionPool,
-                Config config, RoutingSettings routingSettings, SecurityPlan securityPlan,
-                SessionFactory sessionFactory )
+        protected LoadBalancer createLoadBalancer( BoltServerAddress address, ConnectionPool connectionPool,
+                Config config, RoutingSettings routingSettings )
         {
-            capturedSessionFactory = sessionFactory;
             return null;
+        }
+
+        @Override
+        protected SessionFactory createSessionFactory( ConnectionProvider connectionProvider, Config config )
+        {
+            SessionFactory sessionFactory = super.createSessionFactory( connectionProvider, config );
+            capturedSessionFactory = sessionFactory;
+            return sessionFactory;
         }
     }
 }

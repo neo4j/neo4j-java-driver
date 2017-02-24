@@ -65,21 +65,21 @@ public class ExplicitTransaction implements Transaction
         ROLLED_BACK
     }
 
-    private final Runnable cleanup;
+    private final SessionResourcesHandler resourcesHandler;
     private final Connection conn;
 
     private String bookmark = null;
     private State state = State.ACTIVE;
 
-    public ExplicitTransaction( Connection conn, Runnable cleanup )
+    public ExplicitTransaction( Connection conn, SessionResourcesHandler resourcesHandler )
     {
-        this( conn, cleanup, null );
+        this( conn, resourcesHandler, null );
     }
 
-    ExplicitTransaction( Connection conn, Runnable cleanup, String bookmark )
+    ExplicitTransaction( Connection conn, SessionResourcesHandler resourcesHandler, String bookmark )
     {
         this.conn = conn;
-        this.cleanup = cleanup;
+        this.resourcesHandler = resourcesHandler;
         runBeginStatement( conn, bookmark );
     }
 
@@ -139,7 +139,7 @@ public class ExplicitTransaction implements Transaction
         }
         finally
         {
-            cleanup.run();
+            resourcesHandler.onTransactionClosed( this );
         }
     }
 
@@ -185,13 +185,14 @@ public class ExplicitTransaction implements Transaction
 
         try
         {
-            InternalStatementResult cursor = new InternalStatementResult( conn, this, statement );
+            InternalStatementResult result =
+                    new InternalStatementResult( conn, SessionResourcesHandler.NO_OP, this, statement );
             conn.run( statement.text(),
                     statement.parameters().asMap( ofValue() ),
-                    cursor.runResponseCollector() );
-            conn.pullAll( cursor.pullAllResponseCollector() );
+                    result.runResponseCollector() );
+            conn.pullAll( result.pullAllResponseCollector() );
             conn.flush();
-            return cursor;
+            return result;
         }
         catch ( Neo4jException e )
         {

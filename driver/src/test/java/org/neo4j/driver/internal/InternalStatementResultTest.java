@@ -19,15 +19,15 @@
 package org.neo4j.driver.internal;
 
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.value.NullValue;
@@ -39,9 +39,9 @@ import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
 import org.neo4j.driver.v1.util.Pair;
 
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -50,7 +50,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-
+import static org.mockito.Mockito.verify;
 import static org.neo4j.driver.v1.Records.column;
 import static org.neo4j.driver.v1.Values.ofString;
 import static org.neo4j.driver.v1.Values.value;
@@ -68,15 +68,15 @@ public class InternalStatementResultTest
 
         // WHEN
         assertTrue( result.hasNext() );
-        assertThat( values( result.next() ), equalTo( asList(value("v1-1"), value( "v2-1" ))));
+        assertThat( values( result.next() ), equalTo( asList( value( "v1-1" ), value( "v2-1" ) ) ) );
 
         assertTrue( result.hasNext() );
-        assertThat( values( result.next() ), equalTo( asList(value("v1-2"), value( "v2-2" ))));
+        assertThat( values( result.next() ), equalTo( asList( value( "v1-2" ), value( "v2-2" ) ) ) );
 
         assertTrue( result.hasNext() ); //1 -> 2
 
         // THEN
-        assertThat( values( result.next() ), equalTo( asList(value("v1-3"), value( "v2-3" ))));
+        assertThat( values( result.next() ), equalTo( asList( value( "v1-3" ), value( "v2-3" ) ) ) );
         assertFalse( result.hasNext() );
 
         expectedException.expect( NoSuchRecordException.class );
@@ -92,7 +92,7 @@ public class InternalStatementResultTest
         StatementResult result = createResult( 3 );
 
         // THEN
-        assertThat( result.next().get("k1"), equalTo( value("v1-1") ) );
+        assertThat( result.next().get( "k1" ), equalTo( value( "v1-1" ) ) );
         assertTrue( result.hasNext() );
     }
 
@@ -103,7 +103,7 @@ public class InternalStatementResultTest
         StatementResult result = createResult( 3 );
 
         // THEN
-        assertThat( result.next().get(0), equalTo( value("v1-1") ) );
+        assertThat( result.next().get( 0 ), equalTo( value( "v1-1" ) ) );
         assertTrue( result.hasNext() );
     }
 
@@ -158,7 +158,7 @@ public class InternalStatementResultTest
         StatementResult result = createResult( 1 );
 
         // THEN
-        assertThat( result.single().get("k1"), equalTo( value("v1-1") ) );
+        assertThat( result.single().get( "k1" ), equalTo( value( "v1-1" ) ) );
         assertFalse( result.hasNext() );
     }
 
@@ -169,7 +169,7 @@ public class InternalStatementResultTest
         StatementResult result = createResult( 1 );
 
         // THEN
-        assertThat( result.single().get(0), equalTo( value("v1-1") ) );
+        assertThat( result.single().get( 0 ), equalTo( value( "v1-1" ) ) );
         assertFalse( result.hasNext() );
     }
 
@@ -287,8 +287,8 @@ public class InternalStatementResultTest
         List<Record> records = result.list();
 
         // THEN
-        assertFalse(result.hasNext());
-        assertThat(records, hasSize( 3 ) );
+        assertFalse( result.hasNext() );
+        assertThat( records, hasSize( 3 ) );
     }
 
     @Test
@@ -301,8 +301,8 @@ public class InternalStatementResultTest
         List<Value> records = result.list( column( "k1" ) );
 
         // THEN
-        assertFalse(result.hasNext());
-        assertThat(records, hasSize( 3 ) );
+        assertFalse( result.hasNext() );
+        assertThat( records, hasSize( 3 ) );
     }
 
     @Test
@@ -315,8 +315,8 @@ public class InternalStatementResultTest
         List<Value> records = result.list( column( 0 ) );
 
         // THEN
-        assertFalse(result.hasNext());
-        assertThat(records, hasSize( 3 ) );
+        assertFalse( result.hasNext() );
+        assertThat( records, hasSize( 3 ) );
     }
 
     @Test
@@ -386,23 +386,103 @@ public class InternalStatementResultTest
         Record future = result.peek();
     }
 
+    @Test
+    public void shouldNotifyResourcesHandlerWhenFetchedViaList()
+    {
+        SessionResourcesHandler resourcesHandler = mock( SessionResourcesHandler.class );
+        StatementResult result = createResult( 10, resourcesHandler );
+
+        List<Record> records = result.list();
+        assertEquals( 10, records.size() );
+
+        verify( resourcesHandler ).onResultConsumed();
+    }
+
+    @Test
+    public void shouldNotifyResourcesHandlerWhenFetchedViaSingle()
+    {
+        SessionResourcesHandler resourcesHandler = mock( SessionResourcesHandler.class );
+        StatementResult result = createResult( 1, resourcesHandler );
+
+        Record record = result.single();
+        assertEquals( "v1-1", record.get( "k1" ).asString() );
+
+        verify( resourcesHandler ).onResultConsumed();
+    }
+
+    @Test
+    public void shouldNotifyResourcesHandlerWhenFetchedViaIterator()
+    {
+        SessionResourcesHandler resourcesHandler = mock( SessionResourcesHandler.class );
+        StatementResult result = createResult( 1, resourcesHandler );
+
+        while ( result.hasNext() )
+        {
+            assertNotNull( result.next() );
+        }
+
+        verify( resourcesHandler ).onResultConsumed();
+    }
+
+    @Test
+    public void shouldNotifyResourcesHandlerWhenSummary()
+    {
+        SessionResourcesHandler resourcesHandler = mock( SessionResourcesHandler.class );
+        StatementResult result = createResult( 10, resourcesHandler );
+
+        assertNotNull( result.summary() );
+
+        verify( resourcesHandler ).onResultConsumed();
+    }
+
+    @Test
+    public void shouldNotifyResourcesHandlerWhenConsumed()
+    {
+        SessionResourcesHandler resourcesHandler = mock( SessionResourcesHandler.class );
+        StatementResult result = createResult( 5, resourcesHandler );
+
+        result.consume();
+
+        verify( resourcesHandler ).onResultConsumed();
+    }
+
+    @Test
+    public void shouldNotifyResourcesHandlerOnlyOnceWhenConsumed()
+    {
+        SessionResourcesHandler resourcesHandler = mock( SessionResourcesHandler.class );
+        StatementResult result = createResult( 8, resourcesHandler );
+
+        assertEquals( 8, result.list().size() );
+        assertNotNull( result.summary() );
+        assertNotNull( result.consume() );
+        assertNotNull( result.summary() );
+
+        verify( resourcesHandler ).onResultConsumed();
+    }
+
     private StatementResult createResult( int numberOfRecords )
+    {
+        return createResult( numberOfRecords, SessionResourcesHandler.NO_OP );
+    }
+
+    private StatementResult createResult( int numberOfRecords, SessionResourcesHandler resourcesHandler )
     {
         Connection connection = mock( Connection.class );
         String statement = "<unknown>";
 
-        final InternalStatementResult cursor = new InternalStatementResult( connection, null, new Statement( statement ) );
+        final InternalStatementResult result = new InternalStatementResult( connection, resourcesHandler, null,
+                new Statement( statement ) );
 
         // Each time the cursor calls `recieveOne`, we'll run one of these,
         // to emulate how messages are handed over to the cursor
         final LinkedList<Runnable> inboundMessages = new LinkedList<>();
 
-        inboundMessages.add( streamHeadMessage( cursor ) );
+        inboundMessages.add( streamHeadMessage( result ) );
         for ( int i = 1; i <= numberOfRecords; i++ )
         {
-            inboundMessages.add( recordMessage( cursor, i ) );
+            inboundMessages.add( recordMessage( result, i ) );
         }
-        inboundMessages.add( streamTailMessage( cursor ) );
+        inboundMessages.add( streamTailMessage( result ) );
 
         doAnswer( new Answer()
         {
@@ -412,9 +492,9 @@ public class InternalStatementResultTest
                 inboundMessages.poll().run();
                 return null;
             }
-        }).when( connection ).receiveOne();
+        } ).when( connection ).receiveOne();
 
-        return cursor;
+        return result;
     }
 
     private Runnable streamTailMessage( final InternalStatementResult cursor )
@@ -457,7 +537,7 @@ public class InternalStatementResultTest
     private List<Value> values( Record record )
     {
         List<Value> result = new ArrayList<>( record.keys().size() );
-        for ( Pair<String, Value> property : record.fields() )
+        for ( Pair<String,Value> property : record.fields() )
         {
             result.add( property.value() );
         }

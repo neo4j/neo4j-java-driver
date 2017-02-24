@@ -32,6 +32,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.only;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -45,8 +46,8 @@ public class ExplicitTransactionTest
         // Given
         Connection conn = mock( Connection.class );
         when( conn.isOpen() ).thenReturn( true );
-        Runnable cleanup = mock( Runnable.class );
-        ExplicitTransaction tx = new ExplicitTransaction( conn, cleanup );
+        SessionResourcesHandler resourcesHandler = mock( SessionResourcesHandler.class );
+        ExplicitTransaction tx = new ExplicitTransaction( conn, resourcesHandler );
 
         // When
         tx.close();
@@ -59,8 +60,8 @@ public class ExplicitTransactionTest
         order.verify( conn ).run( "ROLLBACK", Collections.<String, Value>emptyMap(), Collector.NO_OP );
         order.verify( conn ).pullAll( any( Collector.class ) );
         order.verify( conn ).sync();
-        verify( cleanup ).run();
-        verifyNoMoreInteractions( conn, cleanup );
+        verify( resourcesHandler, only() ).onTransactionClosed( tx );
+        verifyNoMoreInteractions( conn, resourcesHandler );
     }
 
     @Test
@@ -69,8 +70,8 @@ public class ExplicitTransactionTest
         // Given
         Connection conn = mock( Connection.class );
         when( conn.isOpen() ).thenReturn( true );
-        Runnable cleanup = mock( Runnable.class );
-        ExplicitTransaction tx = new ExplicitTransaction( conn, cleanup );
+        SessionResourcesHandler resourcesHandler = mock( SessionResourcesHandler.class );
+        ExplicitTransaction tx = new ExplicitTransaction( conn, resourcesHandler );
 
         // When
         tx.failure();
@@ -85,8 +86,8 @@ public class ExplicitTransactionTest
         order.verify( conn ).run( "ROLLBACK", Collections.<String, Value>emptyMap(), Collector.NO_OP );
         order.verify( conn ).pullAll( any( BookmarkCollector.class ) );
         order.verify( conn ).sync();
-        verify( cleanup ).run();
-        verifyNoMoreInteractions( conn, cleanup );
+        verify( resourcesHandler, only() ).onTransactionClosed( tx );
+        verifyNoMoreInteractions( conn, resourcesHandler );
     }
 
     @Test
@@ -95,8 +96,8 @@ public class ExplicitTransactionTest
         // Given
         Connection conn = mock( Connection.class );
         when( conn.isOpen() ).thenReturn( true );
-        Runnable cleanup = mock( Runnable.class );
-        ExplicitTransaction tx = new ExplicitTransaction( conn, cleanup );
+        SessionResourcesHandler resourcesHandler = mock( SessionResourcesHandler.class );
+        ExplicitTransaction tx = new ExplicitTransaction( conn, resourcesHandler );
 
         // When
         tx.success();
@@ -111,8 +112,8 @@ public class ExplicitTransactionTest
         order.verify( conn ).run( "COMMIT", Collections.<String, Value>emptyMap(), Collector.NO_OP );
         order.verify( conn ).pullAll( any( BookmarkCollector.class ) );
         order.verify( conn ).sync();
-        verify( cleanup ).run();
-        verifyNoMoreInteractions( conn, cleanup );
+        verify( resourcesHandler, only() ).onTransactionClosed( tx );
+        verifyNoMoreInteractions( conn, resourcesHandler );
     }
 
     @Test
@@ -120,7 +121,7 @@ public class ExplicitTransactionTest
     {
         Connection connection = mock( Connection.class );
 
-        new ExplicitTransaction( connection, mock( Runnable.class ), null );
+        new ExplicitTransaction( connection, mock( SessionResourcesHandler.class ), null );
 
         InOrder inOrder = inOrder( connection );
         inOrder.verify( connection ).run( "BEGIN", Collections.<String,Value>emptyMap(), Collector.NO_OP );
@@ -134,7 +135,7 @@ public class ExplicitTransactionTest
         String bookmark = "hi, I'm bookmark";
         Connection connection = mock( Connection.class );
 
-        new ExplicitTransaction( connection, mock( Runnable.class ), bookmark );
+        new ExplicitTransaction( connection, mock( SessionResourcesHandler.class ), bookmark );
 
         Map<String,Value> expectedParams = Collections.singletonMap( "bookmark", value( bookmark ) );
 

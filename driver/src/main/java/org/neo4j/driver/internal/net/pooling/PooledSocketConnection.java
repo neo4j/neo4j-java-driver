@@ -20,13 +20,13 @@ package org.neo4j.driver.internal.net.pooling;
 
 import java.util.Map;
 
+import org.neo4j.driver.internal.SessionResourcesHandler;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Consumer;
-import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.summary.ServerInfo;
@@ -58,7 +58,7 @@ public class PooledSocketConnection implements PooledConnection
     private final Consumer<PooledConnection> release;
 
     private boolean unrecoverableErrorsOccurred = false;
-    private Runnable onError = null;
+    private SessionResourcesHandler resourcesHandler;
     private final Clock clock;
     private long lastUsedTimestamp;
 
@@ -196,6 +196,7 @@ public class PooledSocketConnection implements PooledConnection
     public void close()
     {
         updateLastUsedTimestamp();
+        resourcesHandler = null;
         release.accept( this );
         // put the full logic of deciding whether to dispose the connection or to put it back to
         // the pool into the release object
@@ -245,12 +246,6 @@ public class PooledSocketConnection implements PooledConnection
     }
 
     @Override
-    public Logger logger()
-    {
-        return delegate.logger();
-    }
-
-    @Override
     public void dispose()
     {
         delegate.close();
@@ -268,21 +263,21 @@ public class PooledSocketConnection implements PooledConnection
         {
             unrecoverableErrorsOccurred = true;
         }
-        else if( !isAckFailureMuted() )
+        else if ( !isAckFailureMuted() )
         {
             ackFailure();
         }
-        if( onError != null )
+        if ( resourcesHandler != null )
         {
-            onError.run();
+            resourcesHandler.onConnectionError( !unrecoverableErrorsOccurred );
         }
         throw e;
     }
 
     @Override
-    public void onError( Runnable runnable )
+    public void setResourcesHandler( SessionResourcesHandler resourcesHandler )
     {
-        this.onError = runnable;
+        this.resourcesHandler = resourcesHandler;
     }
 
     @Override

@@ -34,11 +34,11 @@ import org.neo4j.driver.v1.exceptions.SecurityException;
 import org.neo4j.driver.v1.util.Neo4jSettings;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
-import static junit.framework.TestCase.fail;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.fail;
 import static org.neo4j.driver.v1.AuthTokens.basic;
 import static org.neo4j.driver.v1.AuthTokens.custom;
 import static org.neo4j.driver.v1.Values.ofValue;
@@ -67,17 +67,17 @@ public class CredentialsIT
         }
     }
 
-    @SuppressWarnings( "EmptyTryBlock" )
     @Test
     public void shouldGetHelpfulErrorOnInvalidCredentials() throws Throwable
     {
         // When
-        try( Driver driver = GraphDatabase.driver( neo4j.uri(), basic("thisisnotthepassword", password ) );
-             Session ignored = driver.session() ) {
-            //empty
+        try ( Driver driver = GraphDatabase.driver( neo4j.uri(), basic( "thisisnotthepassword", password ) );
+              Session session = driver.session() )
+        {
+            session.run( "RETURN 1" );
             fail( "Should fail with an auth error already" );
         }
-        catch( Throwable e )
+        catch ( Throwable e )
         {
             assertThat( e, instanceOf( SecurityException.class ) );
             assertThat( e.getMessage(), containsString( "The client is unauthorized due to authentication failure." ) );

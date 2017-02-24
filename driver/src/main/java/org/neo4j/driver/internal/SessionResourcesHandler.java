@@ -18,14 +18,29 @@
  */
 package org.neo4j.driver.internal;
 
-import org.neo4j.driver.internal.spi.PooledConnection;
-import org.neo4j.driver.v1.Session;
-
-class NetworkSessionFactory implements SessionFactory
+public interface SessionResourcesHandler
 {
-    @Override
-    public Session newInstance( PooledConnection connection )
+    void onResultConsumed();
+
+    void onTransactionClosed( ExplicitTransaction tx );
+
+    void onConnectionError( boolean recoverable );
+
+    SessionResourcesHandler NO_OP = new SessionResourcesHandler()
     {
-        return new NetworkSession( connection );
-    }
+        @Override
+        public void onResultConsumed()
+        {
+        }
+
+        @Override
+        public void onTransactionClosed( ExplicitTransaction tx )
+        {
+        }
+
+        @Override
+        public void onConnectionError( boolean recoverable )
+        {
+        }
+    };
 }

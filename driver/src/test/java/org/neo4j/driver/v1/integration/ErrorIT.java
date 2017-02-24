@@ -114,15 +114,18 @@ public class ErrorIT
     @Test
     public void shouldExplainConnectionError() throws Throwable
     {
-        // Expect
-        exception.expect( ServiceUnavailableException.class );
-        exception.expectMessage( "Unable to connect to localhost:7777, ensure the database is running " +
-                                 "and that there is a working network connection to it." );
-
-        // When
-        //noinspection EmptyTryBlock
+        // Given
         try ( Driver driver = GraphDatabase.driver( "bolt://localhost:7777" );
-              Session ignore = driver.session()) {/*empty*/}
+              Session session = driver.session() )
+        {
+            // Expect
+            exception.expect( ServiceUnavailableException.class );
+            exception.expectMessage( "Unable to connect to localhost:7777, ensure the database is running " +
+                                     "and that there is a working network connection to it." );
+
+            // When
+            session.run( "RETURN 1" );
+        }
     }
 
     @Test
@@ -157,8 +160,9 @@ public class ErrorIT
         // Given
         //the http server needs some time to start up
         Thread.sleep( 2000 );
-        try( Driver driver = GraphDatabase.driver( "bolt://localhost:7474",
-                Config.build().withEncryptionLevel( Config.EncryptionLevel.NONE ).toConfig() ) )
+        Config config = Config.build().withEncryptionLevel( Config.EncryptionLevel.NONE ).toConfig();
+        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:7474", config );
+              Session session = driver.session() )
         {
             // Expect
             exception.expect( ClientException.class );
@@ -167,8 +171,7 @@ public class ErrorIT
                     "(HTTP defaults to port 7474 whereas BOLT defaults to port 7687)" );
 
             // When
-            //noinspection EmptyTryBlock
-            try(Session ignore = driver.session() ){/*empty*/}
+            session.run( "RETURN 1" );
         }
     }
 

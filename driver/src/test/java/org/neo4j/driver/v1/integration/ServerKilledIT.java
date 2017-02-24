@@ -78,7 +78,7 @@ public class ServerKilledIT
 
         try ( Driver driver = GraphDatabase.driver( Neo4jRunner.DEFAULT_URI, config ) )
         {
-            acquireAndReleaseSessions( 4, driver );
+            acquireAndReleaseConnections( 4, driver );
 
             // When
             neo4j.forceRestart();
@@ -122,7 +122,7 @@ public class ServerKilledIT
 
         try ( Driver driver = driverFactory.newInstance( Neo4jRunner.DEFAULT_URI, null, null, config ) )
         {
-            acquireAndReleaseSessions( 5, driver );
+            acquireAndReleaseConnections( 5, driver );
 
             // restart database to invalidate all idle connections in the pool
             neo4j.forceRestart();
@@ -140,12 +140,13 @@ public class ServerKilledIT
         }
     }
 
-    private static void acquireAndReleaseSessions( int count, Driver driver )
+    private static void acquireAndReleaseConnections( int count, Driver driver )
     {
         if ( count > 0 )
         {
             Session session = driver.session();
-            acquireAndReleaseSessions( count - 1, driver );
+            session.run( "RETURN 1" );
+            acquireAndReleaseConnections( count - 1, driver );
             session.close();
         }
     }

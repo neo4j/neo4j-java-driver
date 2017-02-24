@@ -23,7 +23,6 @@ import java.net.SocketTimeoutException;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.internal.messaging.InitMessage;
@@ -41,7 +40,6 @@ import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.summary.ServerInfo;
 
-import static java.lang.String.format;
 import static org.neo4j.driver.internal.messaging.AckFailureMessage.ACK_FAILURE;
 import static org.neo4j.driver.internal.messaging.DiscardAllMessage.DISCARD_ALL;
 import static org.neo4j.driver.internal.messaging.PullAllMessage.PULL_ALL;
@@ -57,17 +55,13 @@ public class SocketConnection implements Connection
 
     private final SocketClient socket;
 
-    private final Logger logger;
-
-    public SocketConnection( BoltServerAddress address, SecurityPlan securityPlan, int timeoutMillis, Logging logging )
+    SocketConnection( BoltServerAddress address, SecurityPlan securityPlan, int timeoutMillis, Logging logging )
     {
-        this( address, securityPlan, timeoutMillis,
-                logging.getLog( format( "conn-%s", UUID.randomUUID().toString() ) ) );
-    }
+        Logger logger = logging.getLog( "Connection-" + hashCode() );
+        this.socket = new SocketClient( address, securityPlan, timeoutMillis, logger );
+        this.responseHandler = createResponseHandler( logger );
 
-    private SocketConnection( BoltServerAddress address, SecurityPlan securityPlan, int timeoutMillis, Logger logger )
-    {
-        this( new SocketClient( address, securityPlan, timeoutMillis, logger ), null, logger );
+        startSocketClient();
     }
 
     /**
@@ -83,9 +77,13 @@ public class SocketConnection implements Connection
     {
         this.socket = socket;
         this.serverInfo = serverInfo;
-        this.logger = logger;
         this.responseHandler = createResponseHandler( logger );
 
+        startSocketClient();
+    }
+
+    private void startSocketClient()
+    {
         try
         {
             this.socket.start();
@@ -301,11 +299,5 @@ public class SocketConnection implements Connection
     public BoltServerAddress boltServerAddress()
     {
         return this.serverInfo.boltServerAddress();
-    }
-
-    @Override
-    public Logger logger()
-    {
-        return this.logger;
     }
 }

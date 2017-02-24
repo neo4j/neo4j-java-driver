@@ -29,8 +29,11 @@ import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.util.StubServer;
 
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.driver.internal.net.BoltServerAddress.LOCAL_DEFAULT;
+import static org.neo4j.driver.internal.util.Matchers.directDriverWithAddress;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.util.StubServer.INSECURE_CONFIG;
 
@@ -40,14 +43,13 @@ public class DirectDriverTest
     public void shouldUseDefaultPortIfMissing()
     {
         // Given
-        URI uri = URI.create( "bolt://localhost:7687" );
+        URI uri = URI.create( "bolt://localhost" );
 
         // When
-        DirectDriver driver = (DirectDriver) GraphDatabase.driver( uri );
+        Driver driver = GraphDatabase.driver( uri );
 
         // Then
-        BoltServerAddress address = driver.server();
-        assertThat( address.port(), equalTo( BoltServerAddress.DEFAULT_PORT ) );
+        assertThat( driver, is( directDriverWithAddress( LOCAL_DEFAULT ) ) );
     }
 
     @Test
@@ -58,12 +60,10 @@ public class DirectDriverTest
         BoltServerAddress address = BoltServerAddress.from( uri );
 
         // When
-        DirectDriver driver = (DirectDriver) GraphDatabase.driver( uri );
+        Driver driver = GraphDatabase.driver( uri );
 
         // Then
-        BoltServerAddress driverAddress = driver.server();
-        assertThat( driverAddress, equalTo( address ));
-
+        assertThat( driver, is( directDriverWithAddress( address ) ) );
     }
 
     @Test

@@ -162,9 +162,10 @@ public class ErrorReportingSteps
     @When( "^I set up a driver to an incorrect port" )
     public void iSetUpADriverToAnIncorrectPort() throws Throwable
     {
-        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:7777" ) )
+        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:7777" );
+              Session session = driver.session() )
         {
-            driver.session();
+            session.run( "RETURN 1" );
         }
         catch ( Exception e )
         {

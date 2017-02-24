@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.driver.internal.ExplicitTransaction;
 import org.neo4j.driver.internal.NetworkSession;
+import org.neo4j.driver.internal.SessionResourcesHandler;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
@@ -36,7 +37,6 @@ import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
-import org.neo4j.driver.v1.util.Resource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
@@ -44,6 +44,7 @@ import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
@@ -52,6 +53,9 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
+import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
+import static org.neo4j.driver.v1.AccessMode.READ;
+import static org.neo4j.driver.v1.AccessMode.WRITE;
 
 public class LoadBalancerTest
 {
@@ -107,7 +111,7 @@ public class LoadBalancerTest
         LoadBalancer spy = spy( balancer );
 
         // when
-        Connection connection = spy.acquireReadConnection();
+        Connection connection = spy.acquireConnection( READ );
         connection.init( "Test", Collections.<String,Value>emptyMap() );
 
         // then
@@ -122,11 +126,11 @@ public class LoadBalancerTest
         PooledConnection readConn = mock( PooledConnection.class );
         LoadBalancer balancer = setupLoadBalancer( writerConn, readConn );
 
-        Connection acquiredReadConn = balancer.acquireReadConnection();
+        Connection acquiredReadConn = balancer.acquireConnection( READ );
         acquiredReadConn.init( "TestRead", Collections.<String,Value>emptyMap() );
         verify( readConn ).init( "TestRead", Collections.<String,Value>emptyMap() );
 
-        Connection acquiredWriteConn = balancer.acquireWriteConnection();
+        Connection acquiredWriteConn = balancer.acquireConnection( WRITE );
         acquiredWriteConn.init( "TestWrite", Collections.<String,Value>emptyMap() );
         verify( writerConn ).init( "TestWrite", Collections.<String,Value>emptyMap() );
     }
@@ -142,9 +146,18 @@ public class LoadBalancerTest
 
         PooledConnection connection = newConnectionWithFailingSync( address );
         Connection routingConnection = new RoutingPooledConnection( connection, loadBalancer, AccessMode.WRITE );
-        Transaction tx = new ExplicitTransaction( routingConnection, mock( Runnable.class ) );
+        Transaction tx = new ExplicitTransaction( routingConnection, mock( SessionResourcesHandler.class ) );
 
-        assertThrowsSessionExpiredException( tx );
+        try
+        {
+            tx.close();
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( SessionExpiredException.class ) );
+            assertThat( e.getCause(), instanceOf( ServiceUnavailableException.class ) );
+        }
 
         verify( routingTable ).forget( address );
         verify( connectionPool ).purge( address );
@@ -153,17 +166,19 @@ public class LoadBalancerTest
     @Test
     public void shouldForgetAddressAndItsConnectionsOnServiceUnavailableWhileClosingSession()
     {
-        RoutingTable routingTable = mock( RoutingTable.class );
+        RoutingTable routingTable = mock( RoutingTable.class, RETURNS_MOCKS );
         ConnectionPool connectionPool = mock( ConnectionPool.class );
+        BoltServerAddress address = new BoltServerAddress( "host", 42 );
+        PooledConnection connectionWithFailingSync = newConnectionWithFailingSync( address );
+        when( connectionPool.acquire( any( BoltServerAddress.class ) ) ).thenReturn( connectionWithFailingSync );
         Rediscovery rediscovery = mock( Rediscovery.class );
         LoadBalancer loadBalancer = new LoadBalancer( routingTable, connectionPool, rediscovery, DEV_NULL_LOGGER );
-        BoltServerAddress address = new BoltServerAddress( "host", 42 );
 
-        PooledConnection connection = newConnectionWithFailingSync( address );
-        PooledConnection routingConnection = new RoutingPooledConnection( connection, loadBalancer, AccessMode.WRITE );
-        NetworkSession session = new NetworkSession( routingConnection );
+        NetworkSession session = new NetworkSession( loadBalancer, AccessMode.WRITE, DEV_NULL_LOGGING );
+        // begin transaction to make session obtain a connection
+        session.beginTransaction();
 
-        assertThrowsSessionExpiredException( session );
+        session.close();
 
         verify( routingTable ).forget( address );
         verify( connectionPool ).purge( address );
@@ -201,17 +216,4 @@ public class LoadBalancerTest
         return connection;
     }
 
-    private static void assertThrowsSessionExpiredException( Resource resource )
-    {
-        try
-        {
-            resource.close();
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( SessionExpiredException.class ) );
-            assertThat( e.getCause(), instanceOf( ServiceUnavailableException.class ) );
-        }
-    }
 }
