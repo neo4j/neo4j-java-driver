@@ -91,7 +91,7 @@ public class NetworkSession implements Session, SessionResourcesHandler
         ensureSessionIsOpen();
         ensureNoOpenTransactionBeforeRunningSession();
 
-        closeCurrentConnection( true );
+        syncAndCloseCurrentConnection();
         currentConnection = acquireConnection();
 
         return run( currentConnection, statement, this );
@@ -140,13 +140,6 @@ public class NetworkSession implements Session, SessionResourcesHandler
             throw new ClientException( "This session has already been closed." );
         }
 
-        if ( currentConnection != null && !currentConnection.isOpen() )
-        {
-            // the socket connection is already closed due to some error, cannot send more data
-            closeCurrentConnection( false );
-            return;
-        }
-
         synchronized ( this )
         {
             if ( currentTransaction != null )
@@ -162,7 +155,8 @@ public class NetworkSession implements Session, SessionResourcesHandler
                 }
             }
         }
-        closeCurrentConnection( true );
+        
+        syncAndCloseCurrentConnection();
     }
 
     @Override
@@ -177,7 +171,7 @@ public class NetworkSession implements Session, SessionResourcesHandler
         ensureSessionIsOpen();
         ensureNoOpenTransactionBeforeOpeningTransaction();
 
-        closeCurrentConnection( true );
+        syncAndCloseCurrentConnection();
         currentConnection = acquireConnection();
 
         currentTransaction = new ExplicitTransaction( currentConnection, this, bookmark );
@@ -200,7 +194,7 @@ public class NetworkSession implements Session, SessionResourcesHandler
     @Override
     public synchronized void onResultConsumed()
     {
-        closeCurrentConnection( false );
+        closeCurrentConnection();
     }
 
     @Override
@@ -208,7 +202,7 @@ public class NetworkSession implements Session, SessionResourcesHandler
     {
         if ( currentTransaction != null && currentTransaction == tx )
         {
-            closeCurrentConnection( false );
+            closeCurrentConnection();
             lastBookmark = currentTransaction.bookmark();
             currentTransaction = null;
         }
@@ -286,6 +280,16 @@ public class NetworkSession implements Session, SessionResourcesHandler
         return currentConnection != null && currentConnection.isOpen();
     }
 
+    private void syncAndCloseCurrentConnection()
+    {
+        closeCurrentConnection( true );
+    }
+
+    private void closeCurrentConnection()
+    {
+        closeCurrentConnection( false );
+    }
+
     private void closeCurrentConnection( boolean sync )
     {
         if ( currentConnection == null )
@@ -297,7 +301,7 @@ public class NetworkSession implements Session, SessionResourcesHandler
         currentConnection = null;
         try
         {
-            if ( sync )
+            if ( sync && connection.isOpen() )
             {
                 connection.sync();
             }

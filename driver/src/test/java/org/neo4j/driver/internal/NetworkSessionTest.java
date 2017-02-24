@@ -22,6 +22,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.mockito.InOrder;
 
 import java.util.Map;
 
@@ -47,6 +48,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.anyMapOf;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -204,7 +206,31 @@ public class NetworkSessionTest
     }
 
     @Test
-    public void closesPreviousConnectionForRun()
+    public void syncsAndClosesPreviousConnectionForRun()
+    {
+        ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
+        PooledConnection connection1 = mock( PooledConnection.class );
+        when( connection1.isOpen() ).thenReturn( true );
+        PooledConnection connection2 = mock( PooledConnection.class );
+        when( connection2.isOpen() ).thenReturn( true );
+        when( connectionProvider.acquireConnection( READ ) ).thenReturn( connection1 ).thenReturn( connection2 );
+        NetworkSession session = newSession( connectionProvider, READ );
+
+        session.run( "RETURN 1" );
+        verify( connectionProvider ).acquireConnection( READ );
+        verify( connection1 ).run( eq( "RETURN 1" ), anyParams(), any( Collector.class ) );
+
+        session.run( "RETURN 2" );
+        verify( connectionProvider, times( 2 ) ).acquireConnection( READ );
+        verify( connection2 ).run( eq( "RETURN 2" ), anyParams(), any( Collector.class ) );
+
+        InOrder inOrder = inOrder( connection1 );
+        inOrder.verify( connection1 ).sync();
+        inOrder.verify( connection1 ).close();
+    }
+
+    @Test
+    public void closesPreviousBrokenConnectionForRun()
     {
         ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
         PooledConnection connection1 = mock( PooledConnection.class );
@@ -220,7 +246,7 @@ public class NetworkSessionTest
         verify( connectionProvider, times( 2 ) ).acquireConnection( READ );
         verify( connection2 ).run( eq( "RETURN 2" ), anyParams(), any( Collector.class ) );
 
-        verify( connection1 ).sync();
+        verify( connection1, never() ).sync();
         verify( connection1 ).close();
     }
 
