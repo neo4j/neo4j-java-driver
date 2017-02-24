@@ -68,15 +68,15 @@ public class InternalStatementResultTest
 
         // WHEN
         assertTrue( result.hasNext() );
-        assertThat( values( result.next() ), equalTo( asList(value("v1-1"), value( "v2-1" ))));
+        assertThat( values( result.next() ), equalTo( asList( value( "v1-1" ), value( "v2-1" ) ) ) );
 
         assertTrue( result.hasNext() );
-        assertThat( values( result.next() ), equalTo( asList(value("v1-2"), value( "v2-2" ))));
+        assertThat( values( result.next() ), equalTo( asList( value( "v1-2" ), value( "v2-2" ) ) ) );
 
         assertTrue( result.hasNext() ); //1 -> 2
 
         // THEN
-        assertThat( values( result.next() ), equalTo( asList(value("v1-3"), value( "v2-3" ))));
+        assertThat( values( result.next() ), equalTo( asList( value( "v1-3" ), value( "v2-3" ) ) ) );
         assertFalse( result.hasNext() );
 
         expectedException.expect( NoSuchRecordException.class );
@@ -92,7 +92,7 @@ public class InternalStatementResultTest
         StatementResult result = createResult( 3 );
 
         // THEN
-        assertThat( result.next().get("k1"), equalTo( value("v1-1") ) );
+        assertThat( result.next().get( "k1" ), equalTo( value( "v1-1" ) ) );
         assertTrue( result.hasNext() );
     }
 
@@ -103,7 +103,7 @@ public class InternalStatementResultTest
         StatementResult result = createResult( 3 );
 
         // THEN
-        assertThat( result.next().get(0), equalTo( value("v1-1") ) );
+        assertThat( result.next().get( 0 ), equalTo( value( "v1-1" ) ) );
         assertTrue( result.hasNext() );
     }
 
@@ -158,7 +158,7 @@ public class InternalStatementResultTest
         StatementResult result = createResult( 1 );
 
         // THEN
-        assertThat( result.single().get("k1"), equalTo( value("v1-1") ) );
+        assertThat( result.single().get( "k1" ), equalTo( value( "v1-1" ) ) );
         assertFalse( result.hasNext() );
     }
 
@@ -169,7 +169,7 @@ public class InternalStatementResultTest
         StatementResult result = createResult( 1 );
 
         // THEN
-        assertThat( result.single().get(0), equalTo( value("v1-1") ) );
+        assertThat( result.single().get( 0 ), equalTo( value( "v1-1" ) ) );
         assertFalse( result.hasNext() );
     }
 
@@ -287,8 +287,8 @@ public class InternalStatementResultTest
         List<Record> records = result.list();
 
         // THEN
-        assertFalse(result.hasNext());
-        assertThat(records, hasSize( 3 ) );
+        assertFalse( result.hasNext() );
+        assertThat( records, hasSize( 3 ) );
     }
 
     @Test
@@ -301,8 +301,8 @@ public class InternalStatementResultTest
         List<Value> records = result.list( column( "k1" ) );
 
         // THEN
-        assertFalse(result.hasNext());
-        assertThat(records, hasSize( 3 ) );
+        assertFalse( result.hasNext() );
+        assertThat( records, hasSize( 3 ) );
     }
 
     @Test
@@ -315,8 +315,8 @@ public class InternalStatementResultTest
         List<Value> records = result.list( column( 0 ) );
 
         // THEN
-        assertFalse(result.hasNext());
-        assertThat(records, hasSize( 3 ) );
+        assertFalse( result.hasNext() );
+        assertThat( records, hasSize( 3 ) );
     }
 
     @Test
@@ -446,6 +446,20 @@ public class InternalStatementResultTest
         verify( resourcesHandler ).onResultConsumed();
     }
 
+    @Test
+    public void shouldNotifyResourcesHandlerOnlyOnceWhenConsumed()
+    {
+        SessionResourcesHandler resourcesHandler = mock( SessionResourcesHandler.class );
+        StatementResult result = createResult( 8, resourcesHandler );
+
+        assertEquals( 8, result.list().size() );
+        assertNotNull( result.summary() );
+        assertNotNull( result.consume() );
+        assertNotNull( result.summary() );
+
+        verify( resourcesHandler ).onResultConsumed();
+    }
+
     private StatementResult createResult( int numberOfRecords )
     {
         return createResult( numberOfRecords, SessionResourcesHandler.NO_OP );
@@ -478,7 +492,7 @@ public class InternalStatementResultTest
                 inboundMessages.poll().run();
                 return null;
             }
-        }).when( connection ).receiveOne();
+        } ).when( connection ).receiveOne();
 
         return result;
     }
@@ -523,7 +537,7 @@ public class InternalStatementResultTest
     private List<Value> values( Record record )
     {
         List<Value> result = new ArrayList<>( record.keys().size() );
-        for ( Pair<String, Value> property : record.fields() )
+        for ( Pair<String,Value> property : record.fields() )
         {
             result.add( property.value() );
         }
