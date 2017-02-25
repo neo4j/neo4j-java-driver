@@ -76,7 +76,7 @@ import static org.neo4j.driver.v1.AuthTokens.basic;
 public class CausalClusteringStressIT
 {
     private static final int THREAD_COUNT = Integer.getInteger( "threadCount", 8 );
-    private static final int EXECUTION_TIME_SECONDS = Integer.getInteger( "executionTimeSeconds", 20 );
+    private static final int EXECUTION_TIME_SECONDS = Integer.getInteger( "executionTimeSeconds", 30 );
 
     @Rule
     public final LocalOrRemoteClusterRule clusterRule = new LocalOrRemoteClusterRule();
@@ -155,14 +155,18 @@ public class CausalClusteringStressIT
     {
         List<Command> commands = new ArrayList<>();
 
-        commands.add( new ReadQuery( driver ) );
+        commands.add( new ReadQuery( driver, false ) );
+        commands.add( new ReadQuery( driver, true ) );
         commands.add( new ReadQueryInTx( driver, false ) );
         commands.add( new ReadQueryInTx( driver, true ) );
-        commands.add( new WriteQuery( driver ) );
+        commands.add( new WriteQuery( driver, false ) );
+        commands.add( new WriteQuery( driver, true ) );
         commands.add( new WriteQueryInTx( driver, false ) );
         commands.add( new WriteQueryInTx( driver, true ) );
-        commands.add( new WriteQueryUsingReadSession( driver ) );
-        commands.add( new WriteQueryUsingReadSessionInTx( driver ) );
+        commands.add( new WriteQueryUsingReadSession( driver, false ) );
+        commands.add( new WriteQueryUsingReadSession( driver, true ) );
+        commands.add( new WriteQueryUsingReadSessionInTx( driver, false ) );
+        commands.add( new WriteQueryUsingReadSessionInTx( driver, true ) );
         commands.add( new FailedAuth( clusterRule.getClusterUri() ) );
 
         return commands;
@@ -289,37 +293,35 @@ public class CausalClusteringStressIT
     private static abstract class BaseQuery implements Command
     {
         final Driver driver;
+        final boolean useBookmark;
 
-        BaseQuery( Driver driver )
+        BaseQuery( Driver driver, boolean useBookmark )
         {
             this.driver = driver;
+            this.useBookmark = useBookmark;
         }
 
-        Transaction beginTx( Session session, Context context, boolean useBookmark )
+        Session newSession( AccessMode mode, Context context )
         {
             if ( useBookmark )
             {
-                String bookmark = context.getBookmark();
-                if ( bookmark != null )
-                {
-                    return session.beginTransaction( bookmark );
-                }
+                return driver.session( mode, context.getBookmark() );
             }
-            return session.beginTransaction();
+            return driver.session( mode );
         }
     }
 
     private static class ReadQuery extends BaseQuery
     {
-        ReadQuery( Driver driver )
+        ReadQuery( Driver driver, boolean useBookmark )
         {
-            super( driver );
+            super( driver, useBookmark );
         }
 
         @Override
         public void execute( Context context )
         {
-            try ( Session session = driver.session( AccessMode.READ ) )
+            try ( Session session = newSession( AccessMode.READ, context ) )
             {
                 StatementResult result = session.run( "MATCH (n) RETURN n LIMIT 1" );
                 List<Record> records = result.list();
@@ -335,19 +337,16 @@ public class CausalClusteringStressIT
 
     private static class ReadQueryInTx extends BaseQuery
     {
-        final boolean useBookmark;
-
         ReadQueryInTx( Driver driver, boolean useBookmark )
         {
-            super( driver );
-            this.useBookmark = useBookmark;
+            super( driver, useBookmark );
         }
 
         @Override
         public void execute( Context context )
         {
-            try ( Session session = driver.session( AccessMode.READ );
-                  Transaction tx = beginTx( session, context, useBookmark ) )
+            try ( Session session = newSession( AccessMode.READ, context );
+                  Transaction tx = session.beginTransaction() )
             {
                 StatementResult result = tx.run( "MATCH (n) RETURN n LIMIT 1" );
                 List<Record> records = result.list();
@@ -364,16 +363,16 @@ public class CausalClusteringStressIT
 
     private static class WriteQuery extends BaseQuery
     {
-        WriteQuery( Driver driver )
+        WriteQuery( Driver driver, boolean useBookmark )
         {
-            super( driver );
+            super( driver, useBookmark );
         }
 
         @Override
         public void execute( Context context )
         {
             StatementResult result;
-            try ( Session session = driver.session( AccessMode.WRITE ) )
+            try ( Session session = newSession( AccessMode.WRITE, context ) )
             {
                 result = session.run( "CREATE ()" );
             }
@@ -384,21 +383,18 @@ public class CausalClusteringStressIT
 
     private static class WriteQueryInTx extends BaseQuery
     {
-        final boolean useBookmark;
-
         WriteQueryInTx( Driver driver, boolean useBookmark )
         {
-            super( driver );
-            this.useBookmark = useBookmark;
+            super( driver, useBookmark );
         }
 
         @Override
         public void execute( Context context )
         {
             StatementResult result;
-            try ( Session session = driver.session( AccessMode.WRITE ) )
+            try ( Session session = newSession( AccessMode.WRITE, context ) )
             {
-                try ( Transaction tx = beginTx( session, context, useBookmark ) )
+                try ( Transaction tx = session.beginTransaction() )
                 {
                     result = tx.run( "CREATE ()" );
                     tx.success();
@@ -413,9 +409,9 @@ public class CausalClusteringStressIT
 
     private static class WriteQueryUsingReadSession extends BaseQuery
     {
-        WriteQueryUsingReadSession( Driver driver )
+        WriteQueryUsingReadSession( Driver driver, boolean useBookmark )
         {
-            super( driver );
+            super( driver, useBookmark );
         }
 
         @Override
@@ -424,7 +420,7 @@ public class CausalClusteringStressIT
             StatementResult result = null;
             try
             {
-                try ( Session session = driver.session( AccessMode.READ ) )
+                try ( Session session = newSession( AccessMode.READ, context ) )
                 {
                     result = session.run( "CREATE ()" );
                 }
@@ -441,9 +437,9 @@ public class CausalClusteringStressIT
 
     private static class WriteQueryUsingReadSessionInTx extends BaseQuery
     {
-        WriteQueryUsingReadSessionInTx( Driver driver )
+        WriteQueryUsingReadSessionInTx( Driver driver, boolean useBookmark )
         {
-            super( driver );
+            super( driver, useBookmark );
         }
 
         @Override
@@ -452,7 +448,7 @@ public class CausalClusteringStressIT
             StatementResult result = null;
             try
             {
-                try ( Session session = driver.session( AccessMode.READ );
+                try ( Session session = newSession( AccessMode.READ, context );
                       Transaction tx = session.beginTransaction() )
                 {
                     result = tx.run( "CREATE ()" );
