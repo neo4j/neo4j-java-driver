@@ -40,11 +40,17 @@ public class SessionFactoryImpl implements SessionFactory
     @Override
     public Session newInstance( AccessMode mode, String bookmark )
     {
+        NetworkSession session;
         if ( leakedSessionsLoggingEnabled )
         {
-            return new LeakLoggingNetworkSession( connectionProvider, mode, bookmark, logging );
+            session = new LeakLoggingNetworkSession( connectionProvider, mode, logging );
         }
-        return new NetworkSession( connectionProvider, mode, bookmark, logging );
+        else
+        {
+            session = new NetworkSession( connectionProvider, mode, logging );
+        }
+        session.setLastBookmark( bookmark );
+        return session;
     }
 
     @Override

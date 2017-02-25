@@ -758,7 +758,9 @@ public class NetworkSessionTest
 
     private static NetworkSession newSession( ConnectionProvider connectionProvider, AccessMode mode, String bookmark )
     {
-        return new NetworkSession( connectionProvider, mode, bookmark, DEV_NULL_LOGGING );
+        NetworkSession session = new NetworkSession( connectionProvider, mode, DEV_NULL_LOGGING );
+        session.setLastBookmark( bookmark );
+        return session;
     }
 
     private static PooledConnection openConnectionMock()

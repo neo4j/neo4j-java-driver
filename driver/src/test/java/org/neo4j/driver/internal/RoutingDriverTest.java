@@ -438,7 +438,9 @@ public class RoutingDriverTest
         @Override
         public Session newInstance( AccessMode mode, String bookmark )
         {
-            return new NetworkSessionWithAddress( connectionProvider, mode, bookmark, logging );
+            NetworkSessionWithAddress session = new NetworkSessionWithAddress( connectionProvider, mode, logging );
+            session.setLastBookmark( bookmark );
+            return session;
         }
     }
 
@@ -446,10 +448,9 @@ public class RoutingDriverTest
     {
         final BoltServerAddress address;
 
-        NetworkSessionWithAddress( ConnectionProvider connectionProvider, AccessMode mode, String bookmark,
-                Logging logging )
+        NetworkSessionWithAddress( ConnectionProvider connectionProvider, AccessMode mode, Logging logging )
         {
-            super( connectionProvider, mode, bookmark, logging );
+            super( connectionProvider, mode, logging );
             try ( PooledConnection connection = connectionProvider.acquireConnection( mode ) )
             {
                 this.address = connection.boltServerAddress();

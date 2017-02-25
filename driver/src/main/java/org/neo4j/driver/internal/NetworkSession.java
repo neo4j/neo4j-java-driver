@@ -53,11 +53,10 @@ public class NetworkSession implements Session, SessionResourcesHandler
 
     private final AtomicBoolean isOpen = new AtomicBoolean( true );
 
-    public NetworkSession( ConnectionProvider connectionProvider, AccessMode mode, String bookmark, Logging logging )
+    public NetworkSession( ConnectionProvider connectionProvider, AccessMode mode, Logging logging )
     {
         this.connectionProvider = connectionProvider;
         this.mode = mode;
-        this.lastBookmark = bookmark;
         this.logger = logging.getLog( "Session-" + hashCode() );
     }
 
@@ -99,7 +98,8 @@ public class NetworkSession implements Session, SessionResourcesHandler
         return run( currentConnection, statement, this );
     }
 
-    public static StatementResult run( Connection connection, Statement statement, SessionResourcesHandler resourcesHandler )
+    public static StatementResult run( Connection connection, Statement statement,
+            SessionResourcesHandler resourcesHandler )
     {
         InternalStatementResult result = new InternalStatementResult( connection, resourcesHandler, null, statement );
         connection.run( statement.text(), statement.parameters().asMap( Values.ofValue() ),
@@ -118,7 +118,7 @@ public class NetworkSession implements Session, SessionResourcesHandler
         if ( currentTransaction != null )
         {
             currentTransaction.markToClose();
-            lastBookmark = currentTransaction.bookmark();
+            setLastBookmark( currentTransaction.bookmark() );
             currentTransaction = null;
         }
         if ( currentConnection != null )
@@ -157,7 +157,7 @@ public class NetworkSession implements Session, SessionResourcesHandler
                 }
             }
         }
-        
+
         syncAndCloseCurrentConnection();
     }
 
@@ -170,7 +170,7 @@ public class NetworkSession implements Session, SessionResourcesHandler
     @Override
     public synchronized Transaction beginTransaction( String bookmark )
     {
-        lastBookmark = bookmark;
+        setLastBookmark( bookmark );
         return beginTransaction();
     }
 
@@ -184,6 +184,14 @@ public class NetworkSession implements Session, SessionResourcesHandler
     public <T> T writeTransaction( Function<Transaction,T> work )
     {
         return transaction( AccessMode.WRITE, work );
+    }
+
+    void setLastBookmark( String bookmark )
+    {
+        if ( bookmark != null )
+        {
+            lastBookmark = bookmark;
+        }
     }
 
     @Override
@@ -210,11 +218,7 @@ public class NetworkSession implements Session, SessionResourcesHandler
         if ( currentTransaction != null && currentTransaction == tx )
         {
             closeCurrentConnection();
-            String bookmark = currentTransaction.bookmark();
-            if ( bookmark != null )
-            {
-                lastBookmark = bookmark;
-            }
+            setLastBookmark( currentTransaction.bookmark() );
             currentTransaction = null;
         }
     }
