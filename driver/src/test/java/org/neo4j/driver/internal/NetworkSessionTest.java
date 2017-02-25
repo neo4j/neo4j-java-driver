@@ -30,9 +30,11 @@ import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.v1.AccessMode;
+import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.util.Function;
 
 import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -213,10 +215,8 @@ public class NetworkSessionTest
     public void syncsAndClosesPreviousConnectionForRun()
     {
         ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
-        PooledConnection connection1 = mock( PooledConnection.class );
-        when( connection1.isOpen() ).thenReturn( true );
-        PooledConnection connection2 = mock( PooledConnection.class );
-        when( connection2.isOpen() ).thenReturn( true );
+        PooledConnection connection1 = openConnectionMock();
+        PooledConnection connection2 = openConnectionMock();
         when( connectionProvider.acquireConnection( READ ) ).thenReturn( connection1 ).thenReturn( connection2 );
         NetworkSession session = newSession( connectionProvider, READ );
 
@@ -258,8 +258,7 @@ public class NetworkSessionTest
     public void closesAndSyncOpenConnectionUsedForRunWhenSessionIsClosed()
     {
         ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
-        PooledConnection connection = mock( PooledConnection.class );
-        when( connection.isOpen() ).thenReturn( true );
+        PooledConnection connection = openConnectionMock();
         when( connectionProvider.acquireConnection( READ ) ).thenReturn( connection );
         NetworkSession session = newSession( connectionProvider, READ );
 
@@ -347,8 +346,7 @@ public class NetworkSessionTest
     public void updatesBookmarkWhenTxIsClosed()
     {
         ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
-        PooledConnection connection = mock( PooledConnection.class );
-        when( connection.isOpen() ).thenReturn( true );
+        PooledConnection connection = openConnectionMock();
         when( connectionProvider.acquireConnection( READ ) ).thenReturn( connection );
         NetworkSession session = newSession( connectionProvider, READ );
 
@@ -365,8 +363,7 @@ public class NetworkSessionTest
     public void closesConnectionWhenTxIsClosed()
     {
         ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
-        PooledConnection connection = mock( PooledConnection.class );
-        when( connection.isOpen() ).thenReturn( true );
+        PooledConnection connection = openConnectionMock();
         when( connectionProvider.acquireConnection( READ ) ).thenReturn( connection );
         NetworkSession session = newSession( connectionProvider, READ );
 
@@ -385,10 +382,8 @@ public class NetworkSessionTest
     public void ignoresWronglyClosedTx()
     {
         ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
-        PooledConnection connection1 = mock( PooledConnection.class );
-        PooledConnection connection2 = mock( PooledConnection.class );
-        when( connection1.isOpen() ).thenReturn( true );
-        when( connection2.isOpen() ).thenReturn( true );
+        PooledConnection connection1 = openConnectionMock();
+        PooledConnection connection2 = openConnectionMock();
         when( connectionProvider.acquireConnection( READ ) ).thenReturn( connection1 ).thenReturn( connection2 );
         NetworkSession session = newSession( connectionProvider, READ );
 
@@ -411,10 +406,8 @@ public class NetworkSessionTest
     public void ignoresWronglyClosedTxWhenAnotherTxInProgress()
     {
         ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
-        PooledConnection connection1 = mock( PooledConnection.class );
-        PooledConnection connection2 = mock( PooledConnection.class );
-        when( connection1.isOpen() ).thenReturn( true );
-        when( connection2.isOpen() ).thenReturn( true );
+        PooledConnection connection1 = openConnectionMock();
+        PooledConnection connection2 = openConnectionMock();
         when( connectionProvider.acquireConnection( READ ) ).thenReturn( connection1 ).thenReturn( connection2 );
         NetworkSession session = newSession( connectionProvider, READ );
 
@@ -466,8 +459,7 @@ public class NetworkSessionTest
     public void markTxAsFailedOnRecoverableConnectionError()
     {
         ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
-        PooledConnection connection = mock( PooledConnection.class );
-        when( connection.isOpen() ).thenReturn( true );
+        PooledConnection connection = openConnectionMock();
         when( connectionProvider.acquireConnection( READ ) ).thenReturn( connection );
         NetworkSession session = newSession( connectionProvider, READ );
 
@@ -483,8 +475,7 @@ public class NetworkSessionTest
     public void markTxToCloseOnUnrecoverableConnectionError()
     {
         ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
-        PooledConnection connection = mock( PooledConnection.class );
-        when( connection.isOpen() ).thenReturn( true );
+        PooledConnection connection = openConnectionMock();
         when( connectionProvider.acquireConnection( READ ) ).thenReturn( connection );
         NetworkSession session = newSession( connectionProvider, READ );
 
@@ -500,8 +491,7 @@ public class NetworkSessionTest
     public void closesConnectionWhenResultIsBuffered()
     {
         ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
-        PooledConnection connection = mock( PooledConnection.class );
-        when( connection.isOpen() ).thenReturn( true );
+        PooledConnection connection = openConnectionMock();
         when( connectionProvider.acquireConnection( READ ) ).thenReturn( connection );
         NetworkSession session = newSession( connectionProvider, READ );
 
@@ -580,13 +570,185 @@ public class NetworkSessionTest
     {
         ConnectionProvider connectionProvider = mock( ConnectionProvider.class, RETURNS_MOCKS );
 
-        NetworkSession session1 = new NetworkSession( connectionProvider, READ, null, DEV_NULL_LOGGING );
+        NetworkSession session1 = newSession( connectionProvider, READ );
         session1.beginTransaction();
         verify( connectionProvider ).acquireConnection( READ );
 
-        NetworkSession session2 = new NetworkSession( connectionProvider, WRITE, null, DEV_NULL_LOGGING );
+        NetworkSession session2 = newSession( connectionProvider, WRITE );
         session2.beginTransaction();
         verify( connectionProvider ).acquireConnection( WRITE );
+    }
+
+    @Test
+    public void acquiresReadConnectionForReadTxInReadSession()
+    {
+        testConnectionAcquisition( READ, READ );
+    }
+
+    @Test
+    public void acquiresWriteConnectionForWriteTxInReadSession()
+    {
+        testConnectionAcquisition( READ, WRITE );
+    }
+
+    @Test
+    public void acquiresReadConnectionForReadTxInWriteSession()
+    {
+        testConnectionAcquisition( WRITE, READ );
+    }
+
+    @Test
+    public void acquiresWriteConnectionForWriteTxInWriteSession()
+    {
+        testConnectionAcquisition( WRITE, WRITE );
+    }
+
+    @Test
+    public void commitsReadTxWhenMarkedSuccessful()
+    {
+        testTxCommitOrRollback( READ, true );
+    }
+
+    @Test
+    public void commitsWriteTxWhenMarkedSuccessful()
+    {
+        testTxCommitOrRollback( WRITE, true );
+    }
+
+    @Test
+    public void rollsBackReadTxWhenMarkedSuccessful()
+    {
+        testTxCommitOrRollback( READ, false );
+    }
+
+    @Test
+    public void rollsBackWriteTxWhenMarkedSuccessful()
+    {
+        testTxCommitOrRollback( READ, true );
+    }
+
+    @Test
+    public void rollsBackReadTxWhenFunctionThrows()
+    {
+        testTxRollbackWhenThrows( READ );
+    }
+
+    @Test
+    public void rollsBackWriteTxWhenFunctionThrows()
+    {
+        testTxRollbackWhenThrows( WRITE );
+    }
+
+    private static void testConnectionAcquisition( AccessMode sessionMode, AccessMode transactionMode )
+    {
+        ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
+        PooledConnection connection = openConnectionMock();
+        when( connectionProvider.acquireConnection( transactionMode ) ).thenReturn( connection );
+        NetworkSession session = newSession( connectionProvider, sessionMode );
+
+        Function<Transaction,Integer> work = new Function<Transaction,Integer>()
+        {
+            @Override
+            public Integer apply( Transaction tx )
+            {
+                tx.success();
+                return 42;
+            }
+        };
+
+        int result = executeTransaction( session, transactionMode, work );
+
+        verify( connectionProvider ).acquireConnection( transactionMode );
+        verify( connection ).run( eq( "BEGIN" ), anyParams(), any( Collector.class ) );
+        verify( connection ).run( eq( "COMMIT" ), anyParams(), any( Collector.class ) );
+        assertEquals( 42, result );
+    }
+
+    private static void testTxCommitOrRollback( AccessMode transactionMode, final boolean commit )
+    {
+        ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
+        PooledConnection connection = openConnectionMock();
+        when( connectionProvider.acquireConnection( transactionMode ) ).thenReturn( connection );
+        NetworkSession session = newSession( connectionProvider, WRITE );
+
+        Function<Transaction,Integer> work = new Function<Transaction,Integer>()
+        {
+            @Override
+            public Integer apply( Transaction tx )
+            {
+                if ( commit )
+                {
+                    tx.success();
+                }
+                else
+                {
+                    tx.failure();
+                }
+                return 4242;
+            }
+        };
+
+        int result = executeTransaction( session, transactionMode, work );
+
+        verify( connectionProvider ).acquireConnection( transactionMode );
+        verify( connection ).run( eq( "BEGIN" ), anyParams(), any( Collector.class ) );
+        if ( commit )
+        {
+            verify( connection ).run( eq( "COMMIT" ), anyParams(), any( Collector.class ) );
+        }
+        else
+        {
+            verify( connection ).run( eq( "ROLLBACK" ), anyParams(), any( Collector.class ) );
+        }
+        assertEquals( 4242, result );
+    }
+
+    private static void testTxRollbackWhenThrows( AccessMode transactionMode )
+    {
+        ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
+        PooledConnection connection = openConnectionMock();
+        when( connectionProvider.acquireConnection( transactionMode ) ).thenReturn( connection );
+        NetworkSession session = newSession( connectionProvider, WRITE );
+
+        final RuntimeException error = new IllegalStateException( "Oh!" );
+        Function<Transaction,Void> work = new Function<Transaction,Void>()
+        {
+            @Override
+            public Void apply( Transaction tx )
+            {
+                throw error;
+            }
+        };
+
+        try
+        {
+            executeTransaction( session, transactionMode, work );
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertEquals( error, e );
+        }
+
+        verify( connectionProvider ).acquireConnection( transactionMode );
+        verify( connection ).run( eq( "BEGIN" ), anyParams(), any( Collector.class ) );
+        verify( connection ).run( eq( "ROLLBACK" ), anyParams(), any( Collector.class ) );
+    }
+
+    private static <T> T executeTransaction( Session session, AccessMode mode, Function<Transaction,T> work )
+    {
+        if ( mode == READ )
+        {
+            return session.readTransaction( work );
+        }
+        else if ( mode == WRITE )
+        {
+            return session.writeTransaction( work );
+        }
+        else
+        {
+            throw new IllegalArgumentException( "Unknown mode " + mode );
+        }
     }
 
     private static NetworkSession newSession( ConnectionProvider connectionProvider, AccessMode mode )
@@ -597,6 +759,13 @@ public class NetworkSessionTest
     private static NetworkSession newSession( ConnectionProvider connectionProvider, AccessMode mode, String bookmark )
     {
         return new NetworkSession( connectionProvider, mode, bookmark, DEV_NULL_LOGGING );
+    }
+
+    private static PooledConnection openConnectionMock()
+    {
+        PooledConnection connection = mock( PooledConnection.class );
+        when( connection.isOpen() ).thenReturn( true );
+        return connection;
     }
 
     private static Map<String,Value> anyParams()

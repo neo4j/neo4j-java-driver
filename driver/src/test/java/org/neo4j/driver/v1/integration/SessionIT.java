@@ -23,22 +23,32 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
+import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
+import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.startsWith;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -379,6 +389,141 @@ public class SessionIT
                 tx.run("Return 2");
                 tx.success();
             }
+        }
+    }
+
+    @Test
+    public void executeReadTxInReadSession()
+    {
+        testExecuteReadTx( AccessMode.READ );
+    }
+
+    @Test
+    public void executeReadTxInWriteSession()
+    {
+        testExecuteReadTx( AccessMode.WRITE );
+    }
+
+    @Test
+    public void executeWriteTxInReadSession()
+    {
+        testExecuteWriteTx( AccessMode.READ );
+    }
+
+    @Test
+    public void executeWriteTxInWriteSession()
+    {
+        testExecuteWriteTx( AccessMode.WRITE );
+    }
+
+    @Test
+    public void rollsBackWriteTxInReadSessionWhenFunctionThrows()
+    {
+        testTxRollbackWhenFunctionThrows( AccessMode.READ );
+    }
+
+    @Test
+    public void rollsBackWriteTxInWriteSessionWhenFunctionThrows()
+    {
+        testTxRollbackWhenFunctionThrows( AccessMode.WRITE );
+    }
+
+    private void testExecuteReadTx( AccessMode sessionMode )
+    {
+        Driver driver = neo4j.driver();
+
+        // write some test data
+        try ( Session session = driver.session() )
+        {
+            session.run( "CREATE (:Person {name: 'Tony Stark'})" );
+            session.run( "CREATE (:Person {name: 'Steve Rogers'})" );
+        }
+
+        // read previously committed data
+        try ( Session session = driver.session( sessionMode ) )
+        {
+            Set<String> names = session.readTransaction( new Function<Transaction,Set<String>>()
+            {
+                @Override
+                public Set<String> apply( Transaction tx )
+                {
+                    List<Record> records = tx.run( "MATCH (p:Person) RETURN p.name AS name" ).list();
+                    Set<String> names = new HashSet<>( records.size() );
+                    for ( Record record : records )
+                    {
+                        names.add( record.get( "name" ).asString() );
+                    }
+                    return names;
+                }
+            } );
+
+            assertThat( names, containsInAnyOrder( "Tony Stark", "Steve Rogers" ) );
+        }
+    }
+
+    private void testExecuteWriteTx( AccessMode sessionMode )
+    {
+        Driver driver = neo4j.driver();
+
+        // write some test data
+        try ( Session session = driver.session( sessionMode ) )
+        {
+            String material = session.writeTransaction( new Function<Transaction,String>()
+            {
+                @Override
+                public String apply( Transaction tx )
+                {
+                    StatementResult result = tx.run( "CREATE (s:Shield {material: 'Vibranium'}) RETURN s" );
+                    tx.success();
+                    Record record = result.single();
+                    return record.get( 0 ).asNode().get( "material" ).asString();
+                }
+            } );
+
+            assertEquals( "Vibranium", material );
+        }
+
+        // read previously committed data
+        try ( Session session = driver.session() )
+        {
+            Record record = session.run( "MATCH (s:Shield) RETURN s.material" ).single();
+            assertEquals( "Vibranium", record.get( 0 ).asString() );
+        }
+    }
+
+    private void testTxRollbackWhenFunctionThrows( AccessMode sessionMode )
+    {
+        Driver driver = neo4j.driver();
+
+        try ( Session session = driver.session( sessionMode ) )
+        {
+            try
+            {
+                session.writeTransaction( new Function<Transaction,Void>()
+                {
+                    @Override
+                    public Void apply( Transaction tx )
+                    {
+                        tx.run( "CREATE (:Person {name: 'Thanos'})" );
+                        // trigger division by zero error:
+                        tx.run( "UNWIND range(0, 1) AS i RETURN 10/i" );
+                        tx.success();
+                        return null;
+                    }
+                } );
+                fail( "Exception expected" );
+            }
+            catch ( Exception e )
+            {
+                assertThat( e, instanceOf( ClientException.class ) );
+            }
+        }
+
+        // no data should have been committed
+        try ( Session session = driver.session() )
+        {
+            Record record = session.run( "MATCH (p:Person {name: 'Thanos'}) RETURN count(p)" ).single();
+            assertEquals( 0, record.get( 0 ).asInt() );
         }
     }
 }

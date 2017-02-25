@@ -37,6 +37,7 @@ import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.types.TypeSystem;
+import org.neo4j.driver.v1.util.Function;
 
 import static org.neo4j.driver.v1.Values.value;
 
@@ -93,7 +94,7 @@ public class NetworkSession implements Session, SessionResourcesHandler
         ensureNoOpenTransactionBeforeRunningSession();
 
         syncAndCloseCurrentConnection();
-        currentConnection = acquireConnection();
+        currentConnection = acquireConnection( mode );
 
         return run( currentConnection, statement, this );
     }
@@ -163,15 +164,7 @@ public class NetworkSession implements Session, SessionResourcesHandler
     @Override
     public synchronized Transaction beginTransaction()
     {
-        ensureSessionIsOpen();
-        ensureNoOpenTransactionBeforeOpeningTransaction();
-
-        syncAndCloseCurrentConnection();
-        currentConnection = acquireConnection();
-
-        currentTransaction = new ExplicitTransaction( currentConnection, this, lastBookmark );
-        currentConnection.setResourcesHandler( this );
-        return currentTransaction;
+        return beginTransaction( mode );
     }
 
     @Override
@@ -179,6 +172,18 @@ public class NetworkSession implements Session, SessionResourcesHandler
     {
         lastBookmark = bookmark;
         return beginTransaction();
+    }
+
+    @Override
+    public <T> T readTransaction( Function<Transaction,T> work )
+    {
+        return transaction( AccessMode.READ, work );
+    }
+
+    @Override
+    public <T> T writeTransaction( Function<Transaction,T> work )
+    {
+        return transaction( AccessMode.WRITE, work );
     }
 
     @Override
@@ -231,6 +236,27 @@ public class NetworkSession implements Session, SessionResourcesHandler
         }
     }
 
+    private synchronized <T> T transaction( AccessMode mode, Function<Transaction,T> work )
+    {
+        try ( Transaction tx = beginTransaction( mode ) )
+        {
+            return work.apply( tx );
+        }
+    }
+
+    private synchronized Transaction beginTransaction( AccessMode mode )
+    {
+        ensureSessionIsOpen();
+        ensureNoOpenTransactionBeforeOpeningTransaction();
+
+        syncAndCloseCurrentConnection();
+        currentConnection = acquireConnection( mode );
+
+        currentTransaction = new ExplicitTransaction( currentConnection, this, lastBookmark );
+        currentConnection.setResourcesHandler( this );
+        return currentTransaction;
+    }
+
     private void ensureNoUnrecoverableError()
     {
         if ( currentConnection != null && currentConnection.hasUnrecoverableErrors() )
@@ -274,7 +300,7 @@ public class NetworkSession implements Session, SessionResourcesHandler
         }
     }
 
-    private PooledConnection acquireConnection()
+    private PooledConnection acquireConnection( AccessMode mode )
     {
         PooledConnection connection = connectionProvider.acquireConnection( mode );
         logger.debug( "Acquired connection " + connection.hashCode() );
