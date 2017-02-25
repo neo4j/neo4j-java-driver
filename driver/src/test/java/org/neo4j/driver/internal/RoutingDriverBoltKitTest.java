@@ -42,6 +42,7 @@ import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.util.StubServer;
 
 import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -360,7 +361,7 @@ public class RoutingDriverBoltKitTest
     }
 
     @Test
-    public void shouldRoundRobinWriteSessionsInTransaction() throws IOException, InterruptedException, StubServer.ForceKilled
+    public void shouldRoundRobinWriteSessionsInTransaction() throws Exception
     {
         // Given
         StubServer server = StubServer.start( "acquire_endpoints.script", 9001 );
@@ -374,7 +375,7 @@ public class RoutingDriverBoltKitTest
             for ( int i = 0; i < 2; i++ )
             {
                 try ( Session session = driver.session();
-                      Transaction tx = session.beginTransaction())
+                      Transaction tx = session.beginTransaction() )
                 {
                     tx.run( "CREATE (n {name:'Bob'})" );
                     tx.success();
@@ -527,5 +528,128 @@ public class RoutingDriverBoltKitTest
         driver.close();
         // Finally
         assertThat( server.exitStatus(), equalTo( 0 ) );
+    }
+
+    @Test
+    public void shouldSendAndReceiveBookmark() throws Exception
+    {
+        StubServer router = StubServer.start( "acquire_endpoints.script", 9001 );
+        StubServer writer = StubServer.start( "write_tx_with_bookmarks.script", 9007 );
+
+        try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9001", config );
+              Session session = driver.session() )
+        {
+            try ( Transaction tx = session.beginTransaction( "OldBookmark" ) )
+            {
+                tx.run( "CREATE (n {name:'Bob'})" );
+                tx.success();
+            }
+
+            assertEquals( "NewBookmark", session.lastBookmark() );
+        }
+
+        assertThat( router.exitStatus(), equalTo( 0 ) );
+        assertThat( writer.exitStatus(), equalTo( 0 ) );
+    }
+
+    @Test
+    public void shouldSendInitialBookmark() throws Exception
+    {
+        StubServer router = StubServer.start( "acquire_endpoints.script", 9001 );
+        StubServer writer = StubServer.start( "write_tx_with_bookmarks.script", 9007 );
+
+        try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9001", config );
+              Session session = driver.session( "OldBookmark" ) )
+        {
+            try ( Transaction tx = session.beginTransaction() )
+            {
+                tx.run( "CREATE (n {name:'Bob'})" );
+                tx.success();
+            }
+
+            assertEquals( "NewBookmark", session.lastBookmark() );
+        }
+
+        assertThat( router.exitStatus(), equalTo( 0 ) );
+        assertThat( writer.exitStatus(), equalTo( 0 ) );
+    }
+
+    @Test
+    public void shouldUseWriteSessionModeAndInitialBookmark() throws Exception
+    {
+        StubServer router = StubServer.start( "acquire_endpoints.script", 9001 );
+        StubServer writer = StubServer.start( "write_tx_with_bookmarks.script", 9008 );
+
+        try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9001", config );
+              Session session = driver.session( AccessMode.WRITE, "OldBookmark" ) )
+        {
+            try ( Transaction tx = session.beginTransaction() )
+            {
+                tx.run( "CREATE (n {name:'Bob'})" );
+                tx.success();
+            }
+
+            assertEquals( "NewBookmark", session.lastBookmark() );
+        }
+
+        assertThat( router.exitStatus(), equalTo( 0 ) );
+        assertThat( writer.exitStatus(), equalTo( 0 ) );
+    }
+
+    @Test
+    public void shouldUseReadSessionModeAndInitialBookmark() throws Exception
+    {
+        StubServer router = StubServer.start( "acquire_endpoints.script", 9001 );
+        StubServer writer = StubServer.start( "read_tx_with_bookmarks.script", 9005 );
+
+        try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9001", config );
+              Session session = driver.session( AccessMode.READ, "OldBookmark" ) )
+        {
+            try ( Transaction tx = session.beginTransaction() )
+            {
+                List<Record> records = tx.run( "MATCH (n) RETURN n.name AS name" ).list();
+                assertEquals( 2, records.size() );
+                assertEquals( "Bob", records.get( 0 ).get( "name" ).asString() );
+                assertEquals( "Alice", records.get( 1 ).get( "name" ).asString() );
+                tx.success();
+            }
+
+            assertEquals( "NewBookmark", session.lastBookmark() );
+        }
+
+        assertThat( router.exitStatus(), equalTo( 0 ) );
+        assertThat( writer.exitStatus(), equalTo( 0 ) );
+    }
+
+    @Test
+    public void shouldPassBookmarkFromTransactionToTransaction() throws Exception
+    {
+        StubServer router = StubServer.start( "acquire_endpoints.script", 9001 );
+        StubServer writer = StubServer.start( "write_read_tx_with_bookmarks.script", 9007 );
+
+        try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9001", config );
+              Session session = driver.session( "BookmarkA" ) )
+        {
+            try ( Transaction tx = session.beginTransaction() )
+            {
+                tx.run( "CREATE (n {name:'Bob'})" );
+                tx.success();
+            }
+
+            assertEquals( "BookmarkB", session.lastBookmark() );
+
+            try ( Transaction tx = session.beginTransaction() )
+            {
+                List<Record> records = tx.run( "MATCH (n) RETURN n.name AS name" ).list();
+                assertEquals( 1, records.size() );
+                assertEquals( "Bob", records.get( 0 ).get( "name" ).asString() );
+                tx.success();
+            }
+
+            assertEquals( "BookmarkC", session.lastBookmark() );
+        }
+
+        assertThat( router.exitStatus(), equalTo( 0 ) );
+        assertThat( writer.exitStatus(), equalTo( 0 ) );
     }
 }

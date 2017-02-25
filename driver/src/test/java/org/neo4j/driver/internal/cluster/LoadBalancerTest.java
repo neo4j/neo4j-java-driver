@@ -174,7 +174,7 @@ public class LoadBalancerTest
         Rediscovery rediscovery = mock( Rediscovery.class );
         LoadBalancer loadBalancer = new LoadBalancer( routingTable, connectionPool, rediscovery, DEV_NULL_LOGGER );
 
-        NetworkSession session = new NetworkSession( loadBalancer, AccessMode.WRITE, DEV_NULL_LOGGING );
+        NetworkSession session = new NetworkSession( loadBalancer, AccessMode.WRITE, null, DEV_NULL_LOGGING );
         // begin transaction to make session obtain a connection
         session.beginTransaction();
 

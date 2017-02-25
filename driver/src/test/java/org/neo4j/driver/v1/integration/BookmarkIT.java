@@ -23,14 +23,20 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.HashSet;
+
+import org.neo4j.driver.v1.AccessMode;
+import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.TransientException;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
+import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.startsWith;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
@@ -44,11 +50,17 @@ public class BookmarkIT
     @Rule
     public ExpectedException exception = ExpectedException.none();
     @Rule
-    public TestNeo4jSession session = new TestNeo4jSession();
+    public TestNeo4jSession sessionRule = new TestNeo4jSession();
+
+    private Driver driver;
+    private Session session;
 
     @Before
     public void assumeBookmarkSupport()
     {
+        driver = sessionRule.driver();
+        session = sessionRule;
+
         String version = session.run( "RETURN 1" ).consume().server().version();
         assumeTrue( version( version ).greaterThanOrEqual( v3_1_0 ) );
     }
@@ -101,27 +113,15 @@ public class BookmarkIT
         }
     }
 
-    private static void createNodeInTx( Session session )
-    {
-        try ( Transaction tx = session.beginTransaction() )
-        {
-            tx.run( "CREATE (a:Person)" );
-            tx.success();
-        }
-    }
-
     @Test
-    public void bookmarkSetToNullAfterRolledBackTx()
+    public void bookmarkRemainsAfterRolledBackTx()
     {
         assertNull( session.lastBookmark() );
 
-        try ( Transaction tx = session.beginTransaction() )
-        {
-            tx.run( "CREATE (a:Person)" );
-            tx.success();
-        }
+        createNodeInTx( session );
 
-        assertNotNull( session.lastBookmark() );
+        String bookmark = session.lastBookmark();
+        assertNotNull( bookmark );
 
         try ( Transaction tx = session.beginTransaction() )
         {
@@ -129,21 +129,18 @@ public class BookmarkIT
             tx.failure();
         }
 
-        assertNull( session.lastBookmark() );
+        assertEquals( bookmark, session.lastBookmark() );
     }
 
     @Test
-    public void bookmarkSetToNullAfterTxFailure()
+    public void bookmarkRemainsAfterTxFailure()
     {
         assertNull( session.lastBookmark() );
 
-        try ( Transaction tx = session.beginTransaction() )
-        {
-            tx.run( "CREATE (a:Person)" );
-            tx.success();
-        }
+        createNodeInTx( session );
 
-        assertNotNull( session.lastBookmark() );
+        String bookmark = session.lastBookmark();
+        assertNotNull( bookmark );
 
         Transaction tx = session.beginTransaction();
         tx.run( "RETURN" );
@@ -158,6 +155,93 @@ public class BookmarkIT
             assertThat( e, instanceOf( ClientException.class ) );
         }
 
+        assertEquals( bookmark, session.lastBookmark() );
+    }
+
+    @Test
+    public void bookmarkRemainsAfterSuccessfulSessionRun()
+    {
         assertNull( session.lastBookmark() );
+
+        createNodeInTx( session );
+
+        String bookmark = session.lastBookmark();
+        assertNotNull( bookmark );
+
+        session.run( "RETURN 1" ).consume();
+
+        assertEquals( bookmark, session.lastBookmark() );
+    }
+
+    @Test
+    public void bookmarkRemainsAfterFailedSessionRun()
+    {
+        assertNull( session.lastBookmark() );
+
+        createNodeInTx( session );
+
+        String bookmark = session.lastBookmark();
+        assertNotNull( bookmark );
+
+        try
+        {
+            session.run( "RETURN" ).consume();
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( ClientException.class ) );
+        }
+
+        assertEquals( bookmark, session.lastBookmark() );
+    }
+
+    @Test
+    public void bookmarkIsUpdatedOnEveryCommittedTx()
+    {
+        assertNull( session.lastBookmark() );
+
+        createNodeInTx( session );
+        String bookmark1 = session.lastBookmark();
+        assertNotNull( bookmark1 );
+
+        createNodeInTx( session );
+        String bookmark2 = session.lastBookmark();
+        assertNotNull( bookmark2 );
+
+        createNodeInTx( session );
+        String bookmark3 = session.lastBookmark();
+        assertNotNull( bookmark3 );
+
+        assertEquals( 3, new HashSet<>( asList( bookmark1, bookmark2, bookmark3 ) ).size() );
+    }
+
+    @Test
+    public void createSessionWithInitialBookmark()
+    {
+        String bookmark = "TheBookmark";
+        try ( Session session = driver.session( bookmark ) )
+        {
+            assertEquals( bookmark, session.lastBookmark() );
+        }
+    }
+
+    @Test
+    public void createSessionWithAccessModeAndInitialBookmark()
+    {
+        String bookmark = "TheBookmark";
+        try ( Session session = driver.session( AccessMode.WRITE, bookmark ) )
+        {
+            assertEquals( bookmark, session.lastBookmark() );
+        }
+    }
+
+    private static void createNodeInTx( Session session )
+    {
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            tx.run( "CREATE (a:Person)" );
+            tx.success();
+        }
     }
 }

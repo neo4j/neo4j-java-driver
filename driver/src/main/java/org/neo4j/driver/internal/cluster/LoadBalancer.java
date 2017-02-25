@@ -94,6 +94,7 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
         connections.close();
     }
 
+    // todo: why servers are mixed up here? see shouldReceiveBookmark...
     private PooledConnection acquireConnection( RoundRobinAddressSet servers ) throws ServiceUnavailableException
     {
         for ( ; ; )
@@ -108,6 +109,7 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
                 }
                 catch ( ServiceUnavailableException e )
                 {
+                    // todo: this log message is wrong
                     log.error( format( "Failed to refresh routing information using routing address %s",
                             address ), e );
 

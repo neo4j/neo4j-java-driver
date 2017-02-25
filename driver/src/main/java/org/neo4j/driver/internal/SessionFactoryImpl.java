@@ -38,13 +38,13 @@ public class SessionFactoryImpl implements SessionFactory
     }
 
     @Override
-    public Session newInstance( AccessMode mode )
+    public Session newInstance( AccessMode mode, String bookmark )
     {
         if ( leakedSessionsLoggingEnabled )
         {
-            return new LeakLoggingNetworkSession( connectionProvider, mode, logging );
+            return new LeakLoggingNetworkSession( connectionProvider, mode, bookmark, logging );
         }
-        return new NetworkSession( connectionProvider, mode, logging );
+        return new NetworkSession( connectionProvider, mode, bookmark, logging );
     }
 
     @Override

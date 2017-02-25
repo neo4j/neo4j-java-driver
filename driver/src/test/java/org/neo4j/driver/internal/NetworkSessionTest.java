@@ -34,6 +34,7 @@ import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
+import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -56,7 +57,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
+import static org.neo4j.driver.internal.spi.Collector.NO_OP;
 import static org.neo4j.driver.v1.AccessMode.READ;
+import static org.neo4j.driver.v1.AccessMode.WRITE;
+import static org.neo4j.driver.v1.Values.value;
 
 public class NetworkSessionTest
 {
@@ -511,14 +515,98 @@ public class NetworkSessionTest
         verify( connection ).close();
     }
 
+    @Test
+    public void bookmarkIsPropagatedFromSession()
+    {
+        String bookmark = "Bookmark";
+
+        ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
+        PooledConnection connection = mock( PooledConnection.class );
+        when( connectionProvider.acquireConnection( READ ) ).thenReturn( connection );
+        NetworkSession session = newSession( connectionProvider, READ, bookmark );
+
+        try ( Transaction ignore = session.beginTransaction() )
+        {
+            verify( connection ).run( "BEGIN", singletonMap( "bookmark", value( bookmark ) ), NO_OP );
+        }
+    }
+
+    @Test
+    public void bookmarkIsPropagatedInBeginTransaction()
+    {
+        String bookmark = "Bookmark";
+
+        ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
+        PooledConnection connection = mock( PooledConnection.class );
+        when( connectionProvider.acquireConnection( READ ) ).thenReturn( connection );
+        NetworkSession session = newSession( connectionProvider, READ );
+
+        try ( Transaction ignore = session.beginTransaction( bookmark ) )
+        {
+            verify( connection ).run( "BEGIN", singletonMap( "bookmark", value( bookmark ) ), NO_OP );
+        }
+    }
+
+    @Test
+    public void bookmarkIsPropagatedBetweenTransactions()
+    {
+        String bookmark1 = "Bookmark1";
+        String bookmark2 = "Bookmark2";
+
+        ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
+        PooledConnection connection = mock( PooledConnection.class );
+        when( connectionProvider.acquireConnection( READ ) ).thenReturn( connection );
+        NetworkSession session = newSession( connectionProvider, READ );
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            setBookmark( tx, bookmark1 );
+        }
+
+        assertEquals( bookmark1, session.lastBookmark() );
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            verify( connection ).run( "BEGIN", singletonMap( "bookmark", value( bookmark1 ) ), NO_OP );
+            assertNull( getBookmark( tx ) );
+            setBookmark( tx, bookmark2 );
+        }
+
+        assertEquals( bookmark2, session.lastBookmark() );
+    }
+
+    @Test
+    public void accessModeUsedToAcquireConnections()
+    {
+        ConnectionProvider connectionProvider = mock( ConnectionProvider.class, RETURNS_MOCKS );
+
+        NetworkSession session1 = new NetworkSession( connectionProvider, READ, null, DEV_NULL_LOGGING );
+        session1.beginTransaction();
+        verify( connectionProvider ).acquireConnection( READ );
+
+        NetworkSession session2 = new NetworkSession( connectionProvider, WRITE, null, DEV_NULL_LOGGING );
+        session2.beginTransaction();
+        verify( connectionProvider ).acquireConnection( WRITE );
+    }
+
     private static NetworkSession newSession( ConnectionProvider connectionProvider, AccessMode mode )
     {
-        return new NetworkSession( connectionProvider, mode, DEV_NULL_LOGGING );
+        return newSession( connectionProvider, mode, null );
+    }
+
+    private static NetworkSession newSession( ConnectionProvider connectionProvider, AccessMode mode, String bookmark )
+    {
+        return new NetworkSession( connectionProvider, mode, bookmark, DEV_NULL_LOGGING );
     }
 
     private static Map<String,Value> anyParams()
     {
         return anyMapOf( String.class, Value.class );
+    }
+
+    private static String getBookmark( Transaction tx )
+    {
+        return ((ExplicitTransaction) tx).bookmark();
     }
 
     private static void setBookmark( Transaction tx, String bookmark )

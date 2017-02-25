@@ -38,10 +38,10 @@ public class SessionFactoryImplTest
         Config config = Config.defaultConfig();
         SessionFactory factory = new SessionFactoryImpl( mock( ConnectionProvider.class ), config, DEV_NULL_LOGGING );
 
-        Session readSession = factory.newInstance( AccessMode.READ );
+        Session readSession = factory.newInstance( AccessMode.READ, null );
         assertThat( readSession, instanceOf( NetworkSession.class ) );
 
-        Session writeSession = factory.newInstance( AccessMode.WRITE );
+        Session writeSession = factory.newInstance( AccessMode.WRITE, null );
         assertThat( writeSession, instanceOf( NetworkSession.class ) );
     }
 
@@ -51,10 +51,10 @@ public class SessionFactoryImplTest
         Config config = Config.build().withLeakedSessionsLogging().toConfig();
         SessionFactory factory = new SessionFactoryImpl( mock( ConnectionProvider.class ), config, DEV_NULL_LOGGING );
 
-        Session readSession = factory.newInstance( AccessMode.READ );
+        Session readSession = factory.newInstance( AccessMode.READ, null );
         assertThat( readSession, instanceOf( LeakLoggingNetworkSession.class ) );
 
-        Session writeSession = factory.newInstance( AccessMode.WRITE );
+        Session writeSession = factory.newInstance( AccessMode.WRITE, null );
         assertThat( writeSession, instanceOf( LeakLoggingNetworkSession.class ) );
     }
 }

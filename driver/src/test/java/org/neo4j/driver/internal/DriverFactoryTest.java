@@ -112,7 +112,8 @@ public class DriverFactoryTest
 
         factory.newInstance( uri, dummyAuthToken(), dummyRoutingSettings(), config );
 
-        assertThat( factory.capturedSessionFactory.newInstance( READ ), instanceOf( NetworkSession.class ) );
+        SessionFactory capturedFactory = factory.capturedSessionFactory;
+        assertThat( capturedFactory.newInstance( READ, null ), instanceOf( NetworkSession.class ) );
     }
 
     @Test
@@ -123,7 +124,8 @@ public class DriverFactoryTest
 
         factory.newInstance( uri, dummyAuthToken(), dummyRoutingSettings(), config );
 
-        assertThat( factory.capturedSessionFactory.newInstance( READ ), instanceOf( LeakLoggingNetworkSession.class ) );
+        SessionFactory capturedFactory = factory.capturedSessionFactory;
+        assertThat( capturedFactory.newInstance( READ, null ), instanceOf( LeakLoggingNetworkSession.class ) );
     }
 
     private static AuthToken dummyAuthToken()

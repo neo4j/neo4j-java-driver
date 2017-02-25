@@ -52,10 +52,11 @@ public class NetworkSession implements Session, SessionResourcesHandler
 
     private final AtomicBoolean isOpen = new AtomicBoolean( true );
 
-    public NetworkSession( ConnectionProvider connectionProvider, AccessMode mode, Logging logging )
+    public NetworkSession( ConnectionProvider connectionProvider, AccessMode mode, String bookmark, Logging logging )
     {
         this.connectionProvider = connectionProvider;
         this.mode = mode;
+        this.lastBookmark = bookmark;
         this.logger = logging.getLog( "Session-" + hashCode() );
     }
 
@@ -160,13 +161,7 @@ public class NetworkSession implements Session, SessionResourcesHandler
     }
 
     @Override
-    public Transaction beginTransaction()
-    {
-        return beginTransaction( null );
-    }
-
-    @Override
-    public synchronized Transaction beginTransaction( String bookmark )
+    public synchronized Transaction beginTransaction()
     {
         ensureSessionIsOpen();
         ensureNoOpenTransactionBeforeOpeningTransaction();
@@ -174,9 +169,16 @@ public class NetworkSession implements Session, SessionResourcesHandler
         syncAndCloseCurrentConnection();
         currentConnection = acquireConnection();
 
-        currentTransaction = new ExplicitTransaction( currentConnection, this, bookmark );
+        currentTransaction = new ExplicitTransaction( currentConnection, this, lastBookmark );
         currentConnection.setResourcesHandler( this );
         return currentTransaction;
+    }
+
+    @Override
+    public synchronized Transaction beginTransaction( String bookmark )
+    {
+        lastBookmark = bookmark;
+        return beginTransaction();
     }
 
     @Override
@@ -203,7 +205,11 @@ public class NetworkSession implements Session, SessionResourcesHandler
         if ( currentTransaction != null && currentTransaction == tx )
         {
             closeCurrentConnection();
-            lastBookmark = currentTransaction.bookmark();
+            String bookmark = currentTransaction.bookmark();
+            if ( bookmark != null )
+            {
+                lastBookmark = bookmark;
+            }
             currentTransaction = null;
         }
     }
