@@ -56,7 +56,7 @@ public class GetServersProcedureClusterCompositionProvider implements ClusterCom
     @Override
     public ClusterCompositionResponse getClusterComposition( Connection connection )
     {
-        List<Record> records = null;
+        List<Record> records;
 
         // failed to invoke procedure
         try
@@ -94,7 +94,7 @@ public class GetServersProcedureClusterCompositionProvider implements ClusterCom
         }
 
         // the cluster result is not a legal reply
-        if ( cluster.hasRoutersAndReaders() )
+        if ( !cluster.hasRoutersAndReaders() )
         {
             return new ClusterCompositionResponse.Failure( new ProtocolException( format(
                     "%sno router or reader found in response.", PROTOCOL_ERROR_MESSAGE ) ) );

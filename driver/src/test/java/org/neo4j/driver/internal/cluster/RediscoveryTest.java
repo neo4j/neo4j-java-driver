@@ -26,7 +26,6 @@ import org.junit.runners.Parameterized.Parameters;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
@@ -83,7 +82,7 @@ public class RediscoveryTest
             int maxRoutingFailures = 7;
             RoutingSettings settings = new RoutingSettings( maxRoutingFailures, 10 );
 
-            ListBasedRoutingTable routingTable = new ListBasedRoutingTable( asList( A ) );
+            RoutingTable routingTable = new TestRoutingTable( A );
 
             ClusterCompositionProvider mockedProvider = mock( ClusterCompositionProvider.class );
             when( mockedProvider.getClusterComposition( any( Connection.class ) ) )
@@ -114,7 +113,7 @@ public class RediscoveryTest
         public void shouldForgetRouterAndTryNextRouterWhenFailedToConnect() throws Throwable
         {
             // Given
-            ListBasedRoutingTable routingTable = new ListBasedRoutingTable( asList( A, B ) );
+            TestRoutingTable routingTable = new TestRoutingTable( A, B );
 
             PooledConnection healthyConn = mock( PooledConnection.class );
             ConnectionPool mockedConnections = mock( ConnectionPool.class );
@@ -142,7 +141,7 @@ public class RediscoveryTest
         public void shouldThrowServiceUnavailableWhenNoProcedureFound() throws Throwable
         {
             // Given
-            RoutingTable routingTable = new ListBasedRoutingTable( asList( A ) );
+            RoutingTable routingTable = new TestRoutingTable( A );
 
             PooledConnection healthyConn = mock( PooledConnection.class );
             ConnectionPool mockedConnections = mock( ConnectionPool.class );
@@ -193,7 +192,7 @@ public class RediscoveryTest
         public void shouldTryNextRouterWhenNoWriters() throws Throwable
         {
             // Given
-            RoutingTable routingTable = new ListBasedRoutingTable( asList( A, B ) );
+            RoutingTable routingTable = new TestRoutingTable( A, B );
 
             PooledConnection noWriterConn = mock( PooledConnection.class );
             PooledConnection healthyConn = mock( PooledConnection.class );
@@ -218,7 +217,7 @@ public class RediscoveryTest
         public void shouldThrowServiceUnavailableWhenNoNextRouter() throws Throwable
         {
             // Given
-            RoutingTable routingTable = new ListBasedRoutingTable( asList( A ) );
+            RoutingTable routingTable = new TestRoutingTable( A );
 
             PooledConnection noWriterConn = mock( PooledConnection.class );
             ConnectionPool mockedConnections = mock( ConnectionPool.class );
@@ -270,7 +269,7 @@ public class RediscoveryTest
         public void shouldUpdateRoutingTableWithTheNewOne() throws Throwable
         {
             // Given
-            RoutingTable routingTable = new ListBasedRoutingTable( asList( A ) );
+            RoutingTable routingTable = new TestRoutingTable( A );
 
             PooledConnection healthyConn = mock( PooledConnection.class );
             ConnectionPool mockedConnections = mock( ConnectionPool.class );
@@ -294,7 +293,7 @@ public class RediscoveryTest
         public void shouldProtocolErrorWhenFailedToPaseClusterCompositin() throws Throwable
         {
             // Given
-            RoutingTable routingTable = new ListBasedRoutingTable( asList( A ) );
+            RoutingTable routingTable = new TestRoutingTable( A );
 
             PooledConnection healthyConn = mock( PooledConnection.class );
             ConnectionPool mockedConnections = mock( ConnectionPool.class );
@@ -331,70 +330,20 @@ public class RediscoveryTest
         return rediscovery.lookupRoutingTable( connections, routingTable );
     }
 
-    private static class ListBasedRoutingTable implements RoutingTable
+    private static class TestRoutingTable extends ClusterRoutingTable
     {
-        private final List<BoltServerAddress> routers;
-        private int index;
-        private final List<BoltServerAddress> removedRouters = new ArrayList<>();
+        final List<BoltServerAddress> removedRouters = new ArrayList<>();
 
-        public ListBasedRoutingTable( List<BoltServerAddress> routers )
+        TestRoutingTable( BoltServerAddress... routers )
         {
-            this.routers = routers;
-            this.index = 0;
+            super( Clock.SYSTEM, routers );
         }
 
         @Override
-        public boolean isStale()
+        public void removeRouter( BoltServerAddress router )
         {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public HashSet<BoltServerAddress> update( ClusterComposition cluster )
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void forget( BoltServerAddress address )
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public RoundRobinAddressSet readers()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public RoundRobinAddressSet writers()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public BoltServerAddress nextRouter()
-        {
-            return routers.get( (index ++) % routerSize() );
-        }
-
-        @Override
-        public int routerSize()
-        {
-            return routers.size();
-        }
-
-        @Override
-        public void removeWriter( BoltServerAddress toRemove )
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void removeRouter( BoltServerAddress toRemove )
-        {
-            removedRouters.add( toRemove );
+            super.removeRouter( router );
+            removedRouters.add( router );
         }
     }
 }
