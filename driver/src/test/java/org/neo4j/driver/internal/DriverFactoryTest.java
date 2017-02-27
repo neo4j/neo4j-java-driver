@@ -44,7 +44,6 @@ import org.neo4j.driver.v1.Driver;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doThrow;
@@ -114,7 +113,7 @@ public class DriverFactoryTest
         Config config = Config.defaultConfig();
         SessionFactoryCapturingDriverFactory factory = new SessionFactoryCapturingDriverFactory();
 
-        assertNotNull( createDriver( factory, config ) );
+        createDriver( factory, config );
 
         SessionFactory capturedFactory = factory.capturedSessionFactory;
         assertThat( capturedFactory.newInstance( READ, null ), instanceOf( NetworkSession.class ) );
@@ -126,7 +125,7 @@ public class DriverFactoryTest
         Config config = Config.build().withLeakedSessionsLogging().toConfig();
         SessionFactoryCapturingDriverFactory factory = new SessionFactoryCapturingDriverFactory();
 
-        assertNotNull( createDriver( factory, config ) );
+        createDriver( factory, config );
 
         SessionFactory capturedFactory = factory.capturedSessionFactory;
         assertThat( capturedFactory.newInstance( READ, null ), instanceOf( LeakLoggingNetworkSession.class ) );
