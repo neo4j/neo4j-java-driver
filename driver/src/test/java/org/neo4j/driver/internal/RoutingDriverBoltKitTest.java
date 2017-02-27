@@ -782,8 +782,8 @@ public class RoutingDriverBoltKitTest
         StubServer router1 = StubServer.start( "acquire_endpoints.script", 9010 );
         StubServer brokenReader1 = StubServer.start( "dead_read_server.script", 9005 );
         StubServer brokenReader2 = StubServer.start( "dead_read_server.script", 9006 );
-        StubServer router2 = StubServer.start( "discover_servers.script", 9002 );
-        StubServer reader = StubServer.start( "read_server.script", 9003 );
+        StubServer router2 = StubServer.start( "discover_servers.script", 9003 );
+        StubServer reader = StubServer.start( "read_server.script", 9004 );
 
         try ( Driver driver = newDriverWithSleeplessClock( "bolt+routing://127.0.0.1:9010", 5 );
               Session session = driver.session() )
@@ -810,7 +810,7 @@ public class RoutingDriverBoltKitTest
         StubServer router1 = StubServer.start( "acquire_endpoints.script", 9010 );
         StubServer brokenWriter1 = StubServer.start( "dead_write_server.script", 9007 );
         StubServer brokenWriter2 = StubServer.start( "dead_write_server.script", 9008 );
-        StubServer router2 = StubServer.start( "discover_servers.script", 9003 );
+        StubServer router2 = StubServer.start( "discover_servers.script", 9002 );
         StubServer writer = StubServer.start( "write_server.script", 9001 );
 
         try ( Driver driver = newDriverWithSleeplessClock( "bolt+routing://127.0.0.1:9010", 5 );
