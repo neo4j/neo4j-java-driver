@@ -152,6 +152,11 @@ public class RetryWithDelayTest
             assertThat( e, instanceOf( IllegalStateException.class ) );
             assertThat( e.getCause(), instanceOf( InterruptedException.class ) );
         }
+        finally
+        {
+            // Clear the interruption flag so all subsequent tests do not see this thread as interrupted
+            Thread.interrupted();
+        }
     }
 
     private static RetryWithDelay newRetryWithDelay( int maxAttempts, long delayMs, Clock clock )
