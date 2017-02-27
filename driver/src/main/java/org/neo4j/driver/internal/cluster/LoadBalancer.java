@@ -32,8 +32,6 @@ import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.exceptions.ProtocolException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
-import static java.lang.String.format;
-
 public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, AutoCloseable
 {
     private static final String LOAD_BALANCER_LOG_NAME = "LoadBalancer";
@@ -94,7 +92,6 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
         connections.close();
     }
 
-    // todo: why servers are mixed up here? see shouldReceiveBookmark...
     private PooledConnection acquireConnection( RoundRobinAddressSet servers ) throws ServiceUnavailableException
     {
         for ( ; ; )
@@ -109,10 +106,7 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
                 }
                 catch ( ServiceUnavailableException e )
                 {
-                    // todo: this log message is wrong
-                    log.error( format( "Failed to refresh routing information using routing address %s",
-                            address ), e );
-
+                    log.error( "Failed to obtain a connection towards address " + address, e );
                     forget( address );
                 }
             }
