@@ -27,6 +27,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.neo4j.driver.internal.DriverFactory;
+import org.neo4j.driver.internal.cluster.RoutingSettings;
+import org.neo4j.driver.internal.retry.RetrySettings;
+import org.neo4j.driver.internal.util.DriverFactoryWithClock;
+import org.neo4j.driver.internal.util.SleeplessClock;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.AuthTokens;
@@ -38,6 +43,7 @@ import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
+import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
@@ -53,6 +59,11 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.neo4j.driver.v1.Config.defaultConfig;
 import static org.neo4j.driver.v1.Values.parameters;
 
 public class SessionIT
@@ -428,6 +439,133 @@ public class SessionIT
         testTxRollbackWhenFunctionThrows( AccessMode.WRITE );
     }
 
+    @Test
+    public void readTxRetriedUntilSuccess()
+    {
+        int maxRetries = 6;
+        try ( Driver driver = newDriverWithSleeplessClock( maxRetries ) )
+        {
+            try ( Session session = driver.session() )
+            {
+                session.run( "CREATE (:Person {name: 'Bruce Banner'})" );
+            }
+
+            ThrowingWork work = newThrowingWorkSpy( "MATCH (n) RETURN n.name", maxRetries - 1 );
+            try ( Session session = driver.session() )
+            {
+                Record record = session.readTransaction( work );
+                assertEquals( "Bruce Banner", record.get( 0 ).asString() );
+            }
+
+            verify( work, times( maxRetries ) ).apply( any( Transaction.class ) );
+        }
+    }
+
+    @Test
+    public void writeTxRetriedUntilSuccess()
+    {
+        int maxRetries = 4;
+        try ( Driver driver = newDriverWithSleeplessClock( maxRetries ) )
+        {
+            ThrowingWork work = newThrowingWorkSpy( "CREATE (p:Person {name: 'Hulk'}) RETURN p", maxRetries - 1 );
+            try ( Session session = driver.session() )
+            {
+                Record record = session.writeTransaction( work );
+                assertEquals( "Hulk", record.get( 0 ).asNode().get( "name" ).asString() );
+            }
+
+            try ( Session session = driver.session() )
+            {
+                Record record = session.run( "MATCH (p: Person {name: 'Hulk'}) RETURN count(p)" ).single();
+                assertEquals( 1, record.get( 0 ).asInt() );
+            }
+
+            verify( work, times( maxRetries ) ).apply( any( Transaction.class ) );
+        }
+    }
+
+    @Test
+    public void readTxRetriedUntilFailure()
+    {
+        int maxRetries = 3;
+        try ( Driver driver = newDriverWithSleeplessClock( maxRetries ) )
+        {
+            ThrowingWork work = newThrowingWorkSpy( "MATCH (n) RETURN n.name", maxRetries + 1 );
+            try ( Session session = driver.session() )
+            {
+                try
+                {
+                    session.readTransaction( work );
+                    fail( "Exception expected" );
+                }
+                catch ( Exception e )
+                {
+                    assertThat( e, instanceOf( ServiceUnavailableException.class ) );
+                    assertEquals( maxRetries - 1, e.getSuppressed().length );
+                }
+            }
+
+            verify( work, times( maxRetries ) ).apply( any( Transaction.class ) );
+        }
+    }
+
+    @Test
+    public void writeTxRetriedUntilFailure()
+    {
+        int maxRetries = 8;
+        try ( Driver driver = newDriverWithSleeplessClock( maxRetries ) )
+        {
+            ThrowingWork work = newThrowingWorkSpy( "CREATE (:Person {name: 'Ronan the Accuser'})", maxRetries + 1 );
+            try ( Session session = driver.session() )
+            {
+                try
+                {
+                    session.writeTransaction( work );
+                    fail( "Exception expected" );
+                }
+                catch ( Exception e )
+                {
+                    assertThat( e, instanceOf( ServiceUnavailableException.class ) );
+                    assertEquals( maxRetries - 1, e.getSuppressed().length );
+                }
+            }
+
+            try ( Session session = driver.session() )
+            {
+                StatementResult result = session.run( "MATCH (p:Person {name: 'Ronan the Accuser'}) RETURN count(p)" );
+                assertEquals( 0, result.single().get( 0 ).asInt() );
+            }
+
+            verify( work, times( maxRetries ) ).apply( any( Transaction.class ) );
+        }
+    }
+
+    @Test
+    public void writeTxDoesNotCommitWhenMarkedForFailure()
+    {
+        try ( Session session = neo4j.driver().session() )
+        {
+            int answer = session.writeTransaction( new Function<Transaction,Integer>()
+            {
+                @Override
+                public Integer apply( Transaction tx )
+                {
+                    tx.run( "CREATE (:Person {name: 'Natasha Romanoff'})" );
+                    tx.failure();
+                    return 42;
+                }
+            } );
+
+            assertEquals( 42, answer );
+        }
+
+        try ( Session session = neo4j.driver().session() )
+        {
+            StatementResult result = session.run( "MATCH (p:Person {name: 'Natasha Romanoff'}) RETURN count(p)" );
+            assertEquals( 0, result.single().get( 0 ).asInt() );
+        }
+    }
+
     private void testExecuteReadTx( AccessMode sessionMode )
     {
         Driver driver = neo4j.driver();
@@ -524,6 +662,46 @@ public class SessionIT
         {
             Record record = session.run( "MATCH (p:Person {name: 'Thanos'}) RETURN count(p)" ).single();
             assertEquals( 0, record.get( 0 ).asInt() );
+        }
+    }
+
+    private Driver newDriverWithSleeplessClock( int maxRetries )
+    {
+        DriverFactory driverFactory = new DriverFactoryWithClock( new SleeplessClock() );
+        RoutingSettings routingConf = new RoutingSettings( 1, 1 );
+        RetrySettings retryConf = new RetrySettings( maxRetries, 1_000 );
+        AuthToken auth = AuthTokens.none();
+        return driverFactory.newInstance( neo4j.uri(), auth, routingConf, retryConf, defaultConfig() );
+    }
+
+    private static ThrowingWork newThrowingWorkSpy( String query, int failures )
+    {
+        return spy( new ThrowingWork( query, failures ) );
+    }
+
+    private static class ThrowingWork implements Function<Transaction,Record>
+    {
+        final String query;
+        final int failures;
+
+        int invoked;
+
+        ThrowingWork( String query, int failures )
+        {
+            this.query = query;
+            this.failures = failures;
+        }
+
+        @Override
+        public Record apply( Transaction tx )
+        {
+            StatementResult result = tx.run( query );
+            if ( invoked++ < failures )
+            {
+                throw new ServiceUnavailableException( "" );
+            }
+            tx.success();
+            return result.single();
         }
     }
 }

@@ -16,14 +16,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal;
+package org.neo4j.driver.v1;
 
 import org.junit.Test;
 
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.util.FileTools;
 
 import static java.lang.System.getProperty;
@@ -167,6 +166,70 @@ public class ConfigTest
         {
             assertThat( e, instanceOf( IllegalArgumentException.class ) );
         }
+    }
+
+    @Test
+    public void shouldNotAllowNegativeRetryAttempts()
+    {
+        Config.ConfigBuilder builder = Config.build();
+
+        try
+        {
+            builder.withTransactionRetryPolicy( -42, 100, TimeUnit.SECONDS );
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( IllegalArgumentException.class ) );
+        }
+    }
+
+    @Test
+    public void shouldNotAllowNegativeRetryDelay()
+    {
+        Config.ConfigBuilder builder = Config.build();
+
+        try
+        {
+            builder.withTransactionRetryPolicy( 100, -42, TimeUnit.SECONDS );
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( IllegalArgumentException.class ) );
+        }
+    }
+
+    @Test
+    public void shouldAllowZeroRetryAttempts()
+    {
+        Config config = Config.build().withTransactionRetryPolicy( 0, 100, TimeUnit.MILLISECONDS ).toConfig();
+
+        assertEquals( 0, config.retrySettings().maxAttempts() );
+    }
+
+    @Test
+    public void shouldAllowZeroRetryDelay()
+    {
+        Config config = Config.build().withTransactionRetryPolicy( 100, 0, TimeUnit.MILLISECONDS ).toConfig();
+
+        assertEquals( 0, config.retrySettings().delayMs() );
+    }
+
+    @Test
+    public void shouldAllowPositiveRetryAttempts()
+    {
+        Config config = Config.build().withTransactionRetryPolicy( 42, 100, TimeUnit.MILLISECONDS ).toConfig();
+
+        assertEquals( 42, config.retrySettings().maxAttempts() );
+    }
+
+    @Test
+    public void shouldAllowPositiveRetryDelay()
+    {
+        Config config = Config.build().withTransactionRetryPolicy( 100, 42, TimeUnit.MILLISECONDS ).toConfig();
+
+        assertEquals( 42, config.retrySettings().delayMs() );
     }
 
     public static void deleteDefaultKnownCertFileIfExists()

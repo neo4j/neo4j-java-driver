@@ -32,6 +32,7 @@ import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.net.pooling.PoolSettings;
 import org.neo4j.driver.internal.net.pooling.SocketConnectionPool;
+import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
@@ -79,8 +80,10 @@ public class ConnectionHandlingIT
     public void createDriver()
     {
         DriverFactoryWithConnector driverFactory = new DriverFactoryWithConnector();
+        AuthToken auth = AuthTokens.none();
         RoutingSettings routingSettings = new RoutingSettings( 1, 1 );
-        driver = driverFactory.newInstance( neo4j.uri(), AuthTokens.none(), routingSettings, defaultConfig() );
+        RetrySettings retrySettings = RetrySettings.DEFAULT;
+        driver = driverFactory.newInstance( neo4j.uri(), auth, routingSettings, retrySettings, defaultConfig() );
         connectionPool = driverFactory.connectionPool;
     }
 

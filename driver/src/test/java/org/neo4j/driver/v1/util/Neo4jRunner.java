@@ -29,7 +29,7 @@ import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 
-import static org.neo4j.driver.internal.ConfigTest.deleteDefaultKnownCertFileIfExists;
+import static org.neo4j.driver.v1.ConfigTest.deleteDefaultKnownCertFileIfExists;
 import static org.neo4j.driver.v1.util.FileTools.updateProperties;
 
 /**

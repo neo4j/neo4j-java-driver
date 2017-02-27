@@ -32,6 +32,7 @@ import java.util.concurrent.TimeoutException;
 
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.logging.DevNullLogger;
+import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.util.ConnectionTrackingDriverFactory;
 import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.v1.AccessMode;
@@ -216,10 +217,11 @@ public class CausalClusteringIT
         ConnectionTrackingDriverFactory driverFactory = new ConnectionTrackingDriverFactory( clock );
 
         URI routingUri = cluster.leader().getRoutingUri();
+        AuthToken auth = clusterRule.getDefaultAuthToken();
         RoutingSettings routingSettings = new RoutingSettings( 1, TimeUnit.SECONDS.toMillis( 5 ) );
-        AuthToken authToken = clusterRule.getDefaultAuthToken();
+        RetrySettings retrySettings = RetrySettings.DEFAULT;
 
-        try ( Driver driver = driverFactory.newInstance( routingUri, authToken, routingSettings, config ) )
+        try ( Driver driver = driverFactory.newInstance( routingUri, auth, routingSettings, retrySettings, config ) )
         {
             // create nodes in different threads using different sessions
             createNodesInDifferentThreads( concurrentSessionsCount, driver );

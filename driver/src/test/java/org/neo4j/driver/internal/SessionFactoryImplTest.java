@@ -29,14 +29,15 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
+import static org.neo4j.driver.internal.retry.RetryWithDelay.defaultRetryLogic;
 
 public class SessionFactoryImplTest
 {
     @Test
     public void createsNetworkSessions()
     {
-        Config config = Config.defaultConfig();
-        SessionFactory factory = new SessionFactoryImpl( mock( ConnectionProvider.class ), config, DEV_NULL_LOGGING );
+        Config config = Config.build().withLogging( DEV_NULL_LOGGING ).toConfig();
+        SessionFactory factory = newSessionFactory( config );
 
         Session readSession = factory.newInstance( AccessMode.READ, null );
         assertThat( readSession, instanceOf( NetworkSession.class ) );
@@ -48,13 +49,18 @@ public class SessionFactoryImplTest
     @Test
     public void createsLeakLoggingNetworkSessions()
     {
-        Config config = Config.build().withLeakedSessionsLogging().toConfig();
-        SessionFactory factory = new SessionFactoryImpl( mock( ConnectionProvider.class ), config, DEV_NULL_LOGGING );
+        Config config = Config.build().withLogging( DEV_NULL_LOGGING ).withLeakedSessionsLogging().toConfig();
+        SessionFactory factory = newSessionFactory( config );
 
         Session readSession = factory.newInstance( AccessMode.READ, null );
         assertThat( readSession, instanceOf( LeakLoggingNetworkSession.class ) );
 
         Session writeSession = factory.newInstance( AccessMode.WRITE, null );
         assertThat( writeSession, instanceOf( LeakLoggingNetworkSession.class ) );
+    }
+
+    private static SessionFactory newSessionFactory( Config config )
+    {
+        return new SessionFactoryImpl( mock( ConnectionProvider.class ), defaultRetryLogic(), config );
     }
 }

@@ -27,6 +27,7 @@ import org.mockito.stubbing.Answer;
 
 import java.lang.reflect.Method;
 
+import org.neo4j.driver.internal.retry.RetryWithDelay;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.v1.AccessMode;
@@ -98,7 +99,8 @@ public class LeakLoggingNetworkSessionTest
 
     private static LeakLoggingNetworkSession newSession( Logging logging, boolean openConnection )
     {
-        return new LeakLoggingNetworkSession( connectionProviderMock( openConnection ), READ, logging );
+        return new LeakLoggingNetworkSession( connectionProviderMock( openConnection ), READ,
+                RetryWithDelay.defaultRetryLogic(), logging );
     }
 
     private static ConnectionProvider connectionProviderMock( final boolean openConnection )

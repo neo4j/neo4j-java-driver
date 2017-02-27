@@ -30,8 +30,13 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.driver.internal.DriverFactory;
+import org.neo4j.driver.internal.cluster.RoutingSettings;
+import org.neo4j.driver.internal.retry.RetrySettings;
+import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.DriverFactoryWithClock;
 import org.neo4j.driver.internal.util.FakeClock;
+import org.neo4j.driver.v1.AuthToken;
+import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
@@ -118,9 +123,8 @@ public class ServerKilledIT
                 .toConfig();
 
         FakeClock clock = new FakeClock();
-        DriverFactory driverFactory = new DriverFactoryWithClock( clock );
 
-        try ( Driver driver = driverFactory.newInstance( Neo4jRunner.DEFAULT_URI, null, null, config ) )
+        try ( Driver driver = createDriver( clock, config ) )
         {
             acquireAndReleaseConnections( 5, driver );
 
@@ -149,5 +153,14 @@ public class ServerKilledIT
             acquireAndReleaseConnections( count - 1, driver );
             session.close();
         }
+    }
+
+    private static Driver createDriver( Clock clock, Config config )
+    {
+        DriverFactory factory = new DriverFactoryWithClock( clock );
+        AuthToken auth = AuthTokens.none();
+        RoutingSettings routingSettings = new RoutingSettings( 1, 1 );
+        RetrySettings retrySettings = RetrySettings.DEFAULT;
+        return factory.newInstance( Neo4jRunner.DEFAULT_URI, auth, routingSettings, retrySettings, config );
     }
 }

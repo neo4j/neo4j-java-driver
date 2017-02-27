@@ -18,9 +18,13 @@
  */
 package org.neo4j.driver.internal;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.driver.internal.retry.RetryDecision;
+import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.spi.PooledConnection;
@@ -45,6 +49,7 @@ public class NetworkSession implements Session, SessionResourcesHandler
 {
     private final ConnectionProvider connectionProvider;
     private final AccessMode mode;
+    private final RetryLogic<RetryDecision> retryLogic;
     protected final Logger logger;
 
     private String lastBookmark;
@@ -53,10 +58,12 @@ public class NetworkSession implements Session, SessionResourcesHandler
 
     private final AtomicBoolean isOpen = new AtomicBoolean( true );
 
-    public NetworkSession( ConnectionProvider connectionProvider, AccessMode mode, Logging logging )
+    public NetworkSession( ConnectionProvider connectionProvider, AccessMode mode, RetryLogic<RetryDecision> retryLogic,
+            Logging logging )
     {
         this.connectionProvider = connectionProvider;
         this.mode = mode;
+        this.retryLogic = retryLogic;
         this.logger = logging.getLog( "Session-" + hashCode() );
     }
 
@@ -242,9 +249,29 @@ public class NetworkSession implements Session, SessionResourcesHandler
 
     private synchronized <T> T transaction( AccessMode mode, Function<Transaction,T> work )
     {
-        try ( Transaction tx = beginTransaction( mode ) )
+        RetryDecision decision = null;
+        List<Throwable> errors = null;
+
+        while ( true )
         {
-            return work.apply( tx );
+            try ( Transaction tx = beginTransaction( mode ) )
+            {
+                return work.apply( tx );
+            }
+            catch ( Throwable newError )
+            {
+                decision = retryLogic.apply( newError, decision );
+
+                if ( decision.shouldRetry() )
+                {
+                    errors = recordError( newError, errors );
+                }
+                else
+                {
+                    addSuppressed( newError, errors );
+                    throw newError;
+                }
+            }
         }
     }
 
@@ -346,6 +373,30 @@ public class NetworkSession implements Session, SessionResourcesHandler
         {
             connection.close();
             logger.debug( "Released connection " + connection.hashCode() );
+        }
+    }
+
+    private static List<Throwable> recordError( Throwable error, List<Throwable> errors )
+    {
+        if ( errors == null )
+        {
+            errors = new ArrayList<>();
+        }
+        errors.add( error );
+        return errors;
+    }
+
+    private static void addSuppressed( Throwable error, List<Throwable> suppressedErrors )
+    {
+        if ( suppressedErrors != null )
+        {
+            for ( Throwable suppressedError : suppressedErrors )
+            {
+                if ( error != suppressedError )
+                {
+                    error.addSuppressed( suppressedError );
+                }
+            }
         }
     }
 }

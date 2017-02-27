@@ -55,6 +55,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
+import static org.neo4j.driver.internal.retry.RetryWithDelay.defaultRetryLogic;
 import static org.neo4j.driver.v1.AccessMode.READ;
 import static org.neo4j.driver.v1.AccessMode.WRITE;
 
@@ -209,7 +210,7 @@ public class LoadBalancerTest
 
     private static Session newSession( LoadBalancer loadBalancer )
     {
-        return new NetworkSession( loadBalancer, AccessMode.WRITE, DEV_NULL_LOGGING );
+        return new NetworkSession( loadBalancer, AccessMode.WRITE, defaultRetryLogic(), DEV_NULL_LOGGING );
     }
 
     private static PooledConnection newConnectionWithFailingSync( BoltServerAddress address )
