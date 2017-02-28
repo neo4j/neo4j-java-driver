@@ -34,6 +34,7 @@ import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.spi.PooledConnection;
+import org.neo4j.driver.internal.util.FixedRetryLogic;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Transaction;
@@ -62,12 +63,13 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
-import static org.neo4j.driver.internal.retry.RetryWithDelay.noRetries;
+import static org.neo4j.driver.internal.retry.ExponentialBackoff.noRetries;
 import static org.neo4j.driver.internal.spi.Collector.NO_OP;
 import static org.neo4j.driver.v1.AccessMode.READ;
 import static org.neo4j.driver.v1.AccessMode.WRITE;
@@ -842,7 +844,7 @@ public class NetworkSessionTest
     private static void testTxIsRetriedUntilSuccessWhenFunctionThrows( AccessMode mode )
     {
         final int failures = 4;
-        RetryLogic<RetryDecision> retryLogic = retryLogicMock( failures + 1 );
+        RetryLogic<RetryDecision> retryLogic = fixedRetryLogicSpy( failures + 1 );
         ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
         PooledConnection connection = openConnectionMock();
         when( connectionProvider.acquireConnection( mode ) ).thenReturn( connection );
@@ -874,7 +876,7 @@ public class NetworkSessionTest
         final int failures = 6;
         final int retries = failures + 1;
 
-        RetryLogic<RetryDecision> retryLogic = retryLogicMock( retries );
+        RetryLogic<RetryDecision> retryLogic = fixedRetryLogicSpy( retries );
         ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
         PooledConnection connection = connectionWithFailingCommit( failures );
         when( connectionProvider.acquireConnection( mode ) ).thenReturn( connection );
@@ -901,7 +903,7 @@ public class NetworkSessionTest
         final int failures = 4;
         final int retries = failures - 1;
 
-        RetryLogic<RetryDecision> retryLogic = retryLogicMock( retries );
+        RetryLogic<RetryDecision> retryLogic = fixedRetryLogicSpy( retries );
         ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
         PooledConnection connection = connectionWithFailingCommit( failures );
         when( connectionProvider.acquireConnection( mode ) ).thenReturn( connection );
@@ -939,7 +941,7 @@ public class NetworkSessionTest
         final int failures = 7;
         final int retries = failures - 1;
 
-        RetryLogic<RetryDecision> retryLogic = retryLogicMock( retries );
+        RetryLogic<RetryDecision> retryLogic = fixedRetryLogicSpy( retries );
         ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
         PooledConnection connection = connectionWithFailingCommit( failures );
         when( connectionProvider.acquireConnection( mode ) ).thenReturn( connection );
@@ -971,7 +973,7 @@ public class NetworkSessionTest
         final int failures = 7;
         final int retries = failures - 1;
 
-        RetryLogic<RetryDecision> retryLogic = retryLogicMock( retries );
+        RetryLogic<RetryDecision> retryLogic = fixedRetryLogicSpy( retries );
         NetworkSession session = newSession( mock( ConnectionProvider.class, RETURNS_MOCKS ), retryLogic );
 
         try
@@ -1012,7 +1014,7 @@ public class NetworkSessionTest
         final int failures = 7;
         final int retries = failures - 1;
 
-        RetryLogic<RetryDecision> retryLogic = retryLogicMock( retries );
+        RetryLogic<RetryDecision> retryLogic = fixedRetryLogicSpy( retries );
         NetworkSession session = newSession( mock( ConnectionProvider.class, RETURNS_MOCKS ), retryLogic );
 
         // same instance of the exception is thrown, can't be suppressed
@@ -1091,26 +1093,9 @@ public class NetworkSessionTest
         return connection;
     }
 
-    @SuppressWarnings( "unchecked" )
-    private static RetryLogic<RetryDecision> retryLogicMock( final int failures )
+    private static RetryLogic<RetryDecision> fixedRetryLogicSpy( final int failures )
     {
-        RetryLogic<RetryDecision> retryLogic = mock( RetryLogic.class );
-        when( retryLogic.apply( any( Throwable.class ), any( RetryDecision.class ) ) ).then( new Answer<RetryDecision>()
-        {
-            int invoked;
-
-            @Override
-            public RetryDecision answer( InvocationOnMock invocation ) throws Throwable
-            {
-                RetryDecision decision = mock( RetryDecision.class );
-                if ( invoked++ < failures )
-                {
-                    when( decision.shouldRetry() ).thenReturn( true );
-                }
-                return decision;
-            }
-        } );
-        return retryLogic;
+        return spy( new FixedRetryLogic( failures ) );
     }
 
     private static PooledConnection connectionWithFailingCommit( final int times )

@@ -18,23 +18,16 @@
  */
 package org.neo4j.driver.internal.retry;
 
-class RetryWithDelayDecision implements RetryDecision
+public class ExponentialBackoffDecision implements RetryDecision
 {
-    private int attempt = 1;
+    private final long startTimestamp;
+    private long delay;
     private boolean shouldRetry = true;
 
-    RetryWithDelayDecision()
+    ExponentialBackoffDecision( long startTimestamp, long initialDelay )
     {
-    }
-
-    /**
-     * Create a decision with the specified attempt.
-     * <p>
-     * <b>Note:</b> only for testing.
-     */
-    RetryWithDelayDecision( int attempt )
-    {
-        this.attempt = attempt;
+        this.startTimestamp = startTimestamp;
+        this.delay = initialDelay;
     }
 
     @Override
@@ -43,22 +36,23 @@ class RetryWithDelayDecision implements RetryDecision
         return shouldRetry;
     }
 
-    int attempt()
+    long startTimestamp()
     {
-        return attempt;
+        return startTimestamp;
     }
 
-    RetryWithDelayDecision incrementAttempt()
+    long delay()
     {
-        attempt++;
-        if ( attempt == Integer.MAX_VALUE )
-        {
-            stopRetrying();
-        }
+        return delay;
+    }
+
+    ExponentialBackoffDecision withDelay( long delay )
+    {
+        this.delay = delay;
         return this;
     }
 
-    RetryWithDelayDecision stopRetrying()
+    ExponentialBackoffDecision stopRetrying()
     {
         shouldRetry = false;
         return this;

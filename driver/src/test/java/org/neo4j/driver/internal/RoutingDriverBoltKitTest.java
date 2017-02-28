@@ -33,6 +33,7 @@ import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.logging.ConsoleLogging;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.util.DriverFactoryWithClock;
+import org.neo4j.driver.internal.util.DriverFactoryWithFixedRetryLogic;
 import org.neo4j.driver.internal.util.SleeplessClock;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.AuthToken;
@@ -669,7 +670,7 @@ public class RoutingDriverBoltKitTest
         StubServer brokenReader = StubServer.start( "dead_read_server.script", 9005 );
         StubServer reader = StubServer.start( "read_server.script", 9006 );
 
-        try ( Driver driver = newDriverWithSleeplessClock( "bolt+routing://127.0.0.1:9001", 2 );
+        try ( Driver driver = newDriverWithSleeplessClock( "bolt+routing://127.0.0.1:9001" );
               Session session = driver.session() )
         {
             AtomicInteger invocations = new AtomicInteger();
@@ -693,7 +694,7 @@ public class RoutingDriverBoltKitTest
         StubServer brokenWriter = StubServer.start( "dead_write_server.script", 9007 );
         StubServer writer = StubServer.start( "write_server.script", 9008 );
 
-        try ( Driver driver = newDriverWithSleeplessClock( "bolt+routing://127.0.0.1:9001", 2 );
+        try ( Driver driver = newDriverWithSleeplessClock( "bolt+routing://127.0.0.1:9001" );
               Session session = driver.session() )
         {
             AtomicInteger invocations = new AtomicInteger();
@@ -717,7 +718,7 @@ public class RoutingDriverBoltKitTest
         StubServer brokenReader1 = StubServer.start( "dead_read_server.script", 9005 );
         StubServer brokenReader2 = StubServer.start( "dead_read_server.script", 9006 );
 
-        try ( Driver driver = newDriverWithSleeplessClock( "bolt+routing://127.0.0.1:9001", 2 );
+        try ( Driver driver = newDriverWithFixedRetries( "bolt+routing://127.0.0.1:9001", 1 );
               Session session = driver.session() )
         {
             AtomicInteger invocations = new AtomicInteger();
@@ -750,7 +751,7 @@ public class RoutingDriverBoltKitTest
         StubServer brokenWriter1 = StubServer.start( "dead_write_server.script", 9007 );
         StubServer brokenWriter2 = StubServer.start( "dead_write_server.script", 9008 );
 
-        try ( Driver driver = newDriverWithSleeplessClock( "bolt+routing://127.0.0.1:9001", 2 );
+        try ( Driver driver = newDriverWithFixedRetries( "bolt+routing://127.0.0.1:9001", 1 );
               Session session = driver.session() )
         {
             AtomicInteger invocations = new AtomicInteger();
@@ -785,7 +786,7 @@ public class RoutingDriverBoltKitTest
         StubServer router2 = StubServer.start( "discover_servers.script", 9003 );
         StubServer reader = StubServer.start( "read_server.script", 9004 );
 
-        try ( Driver driver = newDriverWithSleeplessClock( "bolt+routing://127.0.0.1:9010", 5 );
+        try ( Driver driver = newDriverWithSleeplessClock( "bolt+routing://127.0.0.1:9010" );
               Session session = driver.session() )
         {
             AtomicInteger invocations = new AtomicInteger();
@@ -813,7 +814,7 @@ public class RoutingDriverBoltKitTest
         StubServer router2 = StubServer.start( "discover_servers.script", 9002 );
         StubServer writer = StubServer.start( "write_server.script", 9001 );
 
-        try ( Driver driver = newDriverWithSleeplessClock( "bolt+routing://127.0.0.1:9010", 5 );
+        try ( Driver driver = newDriverWithSleeplessClock( "bolt+routing://127.0.0.1:9010" );
               Session session = driver.session() )
         {
             AtomicInteger invocations = new AtomicInteger();
@@ -832,14 +833,24 @@ public class RoutingDriverBoltKitTest
         }
     }
 
-    private Driver newDriverWithSleeplessClock( String uriString, int maxRetries )
+    private static Driver newDriverWithSleeplessClock( String uriString )
     {
         DriverFactory driverFactory = new DriverFactoryWithClock( new SleeplessClock() );
+        return newDriver( uriString, driverFactory );
+    }
+
+    private static Driver newDriverWithFixedRetries( String uriString, int retries )
+    {
+        DriverFactory driverFactory = new DriverFactoryWithFixedRetryLogic( retries );
+        return newDriver( uriString, driverFactory );
+    }
+
+    private static Driver newDriver( String uriString, DriverFactory driverFactory )
+    {
         URI uri = URI.create( uriString );
         RoutingSettings routingConf = new RoutingSettings( 1, 1 );
-        RetrySettings retryConf = new RetrySettings( maxRetries, 1_000 );
         AuthToken auth = AuthTokens.none();
-        return driverFactory.newInstance( uri, auth, routingConf, retryConf, config );
+        return driverFactory.newInstance( uri, auth, routingConf, RetrySettings.DEFAULT, config );
     }
 
     private static Function<Transaction,List<Record>> queryWork( final String query, final AtomicInteger invocations )

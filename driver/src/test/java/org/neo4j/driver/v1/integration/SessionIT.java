@@ -30,8 +30,7 @@ import java.util.Set;
 import org.neo4j.driver.internal.DriverFactory;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
-import org.neo4j.driver.internal.util.DriverFactoryWithClock;
-import org.neo4j.driver.internal.util.SleeplessClock;
+import org.neo4j.driver.internal.util.DriverFactoryWithFixedRetryLogic;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.AuthTokens;
@@ -442,32 +441,34 @@ public class SessionIT
     @Test
     public void readTxRetriedUntilSuccess()
     {
-        int maxRetries = 6;
-        try ( Driver driver = newDriverWithSleeplessClock( maxRetries ) )
+        int failures = 6;
+        int retries = failures + 1;
+        try ( Driver driver = newDriverWithFixedRetries( retries ) )
         {
             try ( Session session = driver.session() )
             {
                 session.run( "CREATE (:Person {name: 'Bruce Banner'})" );
             }
 
-            ThrowingWork work = newThrowingWorkSpy( "MATCH (n) RETURN n.name", maxRetries - 1 );
+            ThrowingWork work = newThrowingWorkSpy( "MATCH (n) RETURN n.name", failures );
             try ( Session session = driver.session() )
             {
                 Record record = session.readTransaction( work );
                 assertEquals( "Bruce Banner", record.get( 0 ).asString() );
             }
 
-            verify( work, times( maxRetries ) ).apply( any( Transaction.class ) );
+            verify( work, times( retries ) ).apply( any( Transaction.class ) );
         }
     }
 
     @Test
     public void writeTxRetriedUntilSuccess()
     {
-        int maxRetries = 4;
-        try ( Driver driver = newDriverWithSleeplessClock( maxRetries ) )
+        int failures = 4;
+        int retries = failures + 1;
+        try ( Driver driver = newDriverWithFixedRetries( retries ) )
         {
-            ThrowingWork work = newThrowingWorkSpy( "CREATE (p:Person {name: 'Hulk'}) RETURN p", maxRetries - 1 );
+            ThrowingWork work = newThrowingWorkSpy( "CREATE (p:Person {name: 'Hulk'}) RETURN p", failures );
             try ( Session session = driver.session() )
             {
                 Record record = session.writeTransaction( work );
@@ -480,17 +481,18 @@ public class SessionIT
                 assertEquals( 1, record.get( 0 ).asInt() );
             }
 
-            verify( work, times( maxRetries ) ).apply( any( Transaction.class ) );
+            verify( work, times( retries ) ).apply( any( Transaction.class ) );
         }
     }
 
     @Test
     public void readTxRetriedUntilFailure()
     {
-        int maxRetries = 3;
-        try ( Driver driver = newDriverWithSleeplessClock( maxRetries ) )
+        int failures = 3;
+        int retries = failures - 1;
+        try ( Driver driver = newDriverWithFixedRetries( retries ) )
         {
-            ThrowingWork work = newThrowingWorkSpy( "MATCH (n) RETURN n.name", maxRetries + 1 );
+            ThrowingWork work = newThrowingWorkSpy( "MATCH (n) RETURN n.name", failures );
             try ( Session session = driver.session() )
             {
                 try
@@ -501,21 +503,22 @@ public class SessionIT
                 catch ( Exception e )
                 {
                     assertThat( e, instanceOf( ServiceUnavailableException.class ) );
-                    assertEquals( maxRetries - 1, e.getSuppressed().length );
+                    assertEquals( retries, e.getSuppressed().length );
                 }
             }
 
-            verify( work, times( maxRetries ) ).apply( any( Transaction.class ) );
+            verify( work, times( failures ) ).apply( any( Transaction.class ) );
         }
     }
 
     @Test
     public void writeTxRetriedUntilFailure()
     {
-        int maxRetries = 8;
-        try ( Driver driver = newDriverWithSleeplessClock( maxRetries ) )
+        int failures = 8;
+        int retries = failures - 1;
+        try ( Driver driver = newDriverWithFixedRetries( retries ) )
         {
-            ThrowingWork work = newThrowingWorkSpy( "CREATE (:Person {name: 'Ronan the Accuser'})", maxRetries + 1 );
+            ThrowingWork work = newThrowingWorkSpy( "CREATE (:Person {name: 'Ronan'})", failures );
             try ( Session session = driver.session() )
             {
                 try
@@ -526,17 +529,17 @@ public class SessionIT
                 catch ( Exception e )
                 {
                     assertThat( e, instanceOf( ServiceUnavailableException.class ) );
-                    assertEquals( maxRetries - 1, e.getSuppressed().length );
+                    assertEquals( retries, e.getSuppressed().length );
                 }
             }
 
             try ( Session session = driver.session() )
             {
-                StatementResult result = session.run( "MATCH (p:Person {name: 'Ronan the Accuser'}) RETURN count(p)" );
+                StatementResult result = session.run( "MATCH (p:Person {name: 'Ronan'}) RETURN count(p)" );
                 assertEquals( 0, result.single().get( 0 ).asInt() );
             }
 
-            verify( work, times( maxRetries ) ).apply( any( Transaction.class ) );
+            verify( work, times( failures ) ).apply( any( Transaction.class ) );
         }
     }
 
@@ -665,13 +668,12 @@ public class SessionIT
         }
     }
 
-    private Driver newDriverWithSleeplessClock( int maxRetries )
+    private Driver newDriverWithFixedRetries( int maxRetriesCount )
     {
-        DriverFactory driverFactory = new DriverFactoryWithClock( new SleeplessClock() );
+        DriverFactory driverFactory = new DriverFactoryWithFixedRetryLogic( maxRetriesCount );
         RoutingSettings routingConf = new RoutingSettings( 1, 1 );
-        RetrySettings retryConf = new RetrySettings( maxRetries, 1_000 );
         AuthToken auth = AuthTokens.none();
-        return driverFactory.newInstance( neo4j.uri(), auth, routingConf, retryConf, defaultConfig() );
+        return driverFactory.newInstance( neo4j.uri(), auth, routingConf, RetrySettings.DEFAULT, defaultConfig() );
     }
 
     private static ThrowingWork newThrowingWorkSpy( String query, int failures )

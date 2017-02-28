@@ -16,21 +16,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.retry;
+package org.neo4j.driver.internal.util;
 
-public final class RetrySettings
+import org.neo4j.driver.internal.retry.RetryDecision;
+import org.neo4j.driver.internal.retry.RetryLogic;
+import org.neo4j.driver.internal.retry.RetrySettings;
+
+public class DriverFactoryWithFixedRetryLogic extends DriverFactoryWithClock
 {
-    public static final RetrySettings DEFAULT = new RetrySettings( ExponentialBackoff.DEFAULT_MAX_RETRY_TIME_MS );
+    private final int retryCount;
 
-    private final long maxRetryTimeMs;
-
-    public RetrySettings( long maxRetryTimeMs )
+    public DriverFactoryWithFixedRetryLogic( int retryCount )
     {
-        this.maxRetryTimeMs = maxRetryTimeMs;
+        super( new SleeplessClock() );
+        this.retryCount = retryCount;
     }
 
-    public long maxRetryTimeMs()
+    @Override
+    protected RetryLogic<RetryDecision> createRetryLogic( RetrySettings settings )
     {
-        return maxRetryTimeMs;
+        return new FixedRetryLogic( retryCount );
     }
 }

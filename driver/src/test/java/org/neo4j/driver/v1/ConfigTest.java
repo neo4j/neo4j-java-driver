@@ -169,13 +169,13 @@ public class ConfigTest
     }
 
     @Test
-    public void shouldNotAllowNegativeRetryAttempts()
+    public void shouldNotAllowNegativeMaxRetryTimeMs()
     {
         Config.ConfigBuilder builder = Config.build();
 
         try
         {
-            builder.withTransactionRetryPolicy( -42, 100, TimeUnit.SECONDS );
+            builder.withMaxTransactionRetryTime( -42, TimeUnit.SECONDS );
             fail( "Exception expected" );
         }
         catch ( Exception e )
@@ -185,51 +185,19 @@ public class ConfigTest
     }
 
     @Test
-    public void shouldNotAllowNegativeRetryDelay()
+    public void shouldAllowZeroMaxRetryTimeMs()
     {
-        Config.ConfigBuilder builder = Config.build();
+        Config config = Config.build().withMaxTransactionRetryTime( 0, TimeUnit.SECONDS ).toConfig();
 
-        try
-        {
-            builder.withTransactionRetryPolicy( 100, -42, TimeUnit.SECONDS );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( IllegalArgumentException.class ) );
-        }
-    }
-
-    @Test
-    public void shouldAllowZeroRetryAttempts()
-    {
-        Config config = Config.build().withTransactionRetryPolicy( 0, 100, TimeUnit.MILLISECONDS ).toConfig();
-
-        assertEquals( 0, config.retrySettings().maxAttempts() );
-    }
-
-    @Test
-    public void shouldAllowZeroRetryDelay()
-    {
-        Config config = Config.build().withTransactionRetryPolicy( 100, 0, TimeUnit.MILLISECONDS ).toConfig();
-
-        assertEquals( 0, config.retrySettings().delayMs() );
+        assertEquals( 0, config.retrySettings().maxRetryTimeMs() );
     }
 
     @Test
     public void shouldAllowPositiveRetryAttempts()
     {
-        Config config = Config.build().withTransactionRetryPolicy( 42, 100, TimeUnit.MILLISECONDS ).toConfig();
+        Config config = Config.build().withMaxTransactionRetryTime( 42, TimeUnit.SECONDS ).toConfig();
 
-        assertEquals( 42, config.retrySettings().maxAttempts() );
-    }
-
-    @Test
-    public void shouldAllowPositiveRetryDelay()
-    {
-        Config config = Config.build().withTransactionRetryPolicy( 100, 42, TimeUnit.MILLISECONDS ).toConfig();
-
-        assertEquals( 42, config.retrySettings().delayMs() );
+        assertEquals( TimeUnit.SECONDS.toMillis( 42 ), config.retrySettings().maxRetryTimeMs() );
     }
 
     public static void deleteDefaultKnownCertFileIfExists()

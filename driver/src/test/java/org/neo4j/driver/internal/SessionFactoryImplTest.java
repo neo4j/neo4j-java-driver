@@ -29,7 +29,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
-import static org.neo4j.driver.internal.retry.RetryWithDelay.defaultRetryLogic;
+import static org.neo4j.driver.internal.retry.ExponentialBackoff.defaultRetryLogic;
 
 public class SessionFactoryImplTest
 {

@@ -62,7 +62,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.cluster.ClusterCompositionProviderTest.serverInfo;
-import static org.neo4j.driver.internal.retry.RetryWithDelay.defaultRetryLogic;
+import static org.neo4j.driver.internal.retry.ExponentialBackoff.defaultRetryLogic;
 import static org.neo4j.driver.internal.security.SecurityPlan.insecure;
 import static org.neo4j.driver.v1.Values.value;
 

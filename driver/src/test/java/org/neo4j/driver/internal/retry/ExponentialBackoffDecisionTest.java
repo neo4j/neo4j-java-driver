@@ -24,50 +24,45 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class RetryWithDelayDecisionTest
+public class ExponentialBackoffDecisionTest
 {
     @Test
-    public void newlyCreatedDecisionShouldRetry()
+    public void shouldRetryAfterConstruction()
     {
-        assertTrue( new RetryWithDelayDecision().shouldRetry() );
-    }
-
-    @Test
-    public void newlyCreatedDecisionIsFirstAttempt()
-    {
-        assertEquals( 1, new RetryWithDelayDecision().attempt() );
-    }
-
-    @Test
-    public void incrementAttempt()
-    {
-        RetryWithDelayDecision decision = new RetryWithDelayDecision();
-
-        decision.incrementAttempt();
-        decision.incrementAttempt();
-        decision.incrementAttempt();
-
-        assertEquals( 4, decision.attempt() );
-    }
-
-    @Test
-    public void stopRetrying()
-    {
-        RetryWithDelayDecision decision = new RetryWithDelayDecision();
+        ExponentialBackoffDecision decision = new ExponentialBackoffDecision( 0, 0 );
         assertTrue( decision.shouldRetry() );
+    }
+
+    @Test
+    public void startTimestampAfterConstruction()
+    {
+        ExponentialBackoffDecision decision = new ExponentialBackoffDecision( 42, 0 );
+        assertEquals( 42, decision.startTimestamp() );
+    }
+
+    @Test
+    public void delayAfterConstruction()
+    {
+        ExponentialBackoffDecision decision = new ExponentialBackoffDecision( 0, 42 );
+        assertEquals( 42, decision.delay() );
+    }
+
+    @Test
+    public void withDelayChangesTheDelay()
+    {
+        ExponentialBackoffDecision decision = new ExponentialBackoffDecision( 0, 42 );
+
+        decision.withDelay( 4242 );
+
+        assertEquals( 4242, decision.delay() );
+    }
+
+    @Test
+    public void shouldNotRetryAfterStopRetrying()
+    {
+        ExponentialBackoffDecision decision = new ExponentialBackoffDecision( 0, 0 );
 
         decision.stopRetrying();
-
-        assertFalse( decision.shouldRetry() );
-    }
-
-    @Test
-    public void stopRetryingWhenOverflow()
-    {
-        RetryWithDelayDecision decision = new RetryWithDelayDecision( Integer.MAX_VALUE - 1 );
-        assertTrue( decision.shouldRetry() );
-
-        decision.incrementAttempt();
 
         assertFalse( decision.shouldRetry() );
     }

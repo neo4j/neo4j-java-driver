@@ -449,33 +449,27 @@ public class Config
         }
 
         /**
-         * Specify retry policy for transaction execution via {@link Session#readTransaction(Function)} and
+         * Specify the maximum time transactions are allowed to retry via {@link Session#readTransaction(Function)} and
          * {@link Session#writeTransaction(Function)} methods. These methods will retry the given unit of work on
-         * {@link ServiceUnavailableException}, {@link SessionExpiredException} and {@link TransientException} at most
-         * configured number of times with configured delay in between.
+         * {@link ServiceUnavailableException}, {@link SessionExpiredException} and {@link TransientException} with
+         * exponential backoff using initial delay of 1 second.
          * <p>
-         * Default policy is to retry at most {@value RetrySettings#DEFAULT_MAX_ATTEMPTS} times with {@value
-         * RetrySettings#DEFAULT_DELAY_MS} seconds delay.
+         * Default value is 30 seconds.
          *
-         * @param maxAttempts the maximum number of times to retry given unit of work. Value must be greater or equal
-         * to zero, where zero means never retry
-         * @param delay the delay duration. Value must be greated or equal to zero
-         * @param delayUnit the unit in which delay is given
+         * @param value the timeout duration
+         * @param unit the unit in which duration is given
          * @return this builder
-         * @throws IllegalArgumentException when either given attempts count or delay is negative.
+         * @throws IllegalArgumentException when given value is negative
          */
-        public ConfigBuilder withTransactionRetryPolicy( int maxAttempts, long delay, TimeUnit delayUnit )
+        public ConfigBuilder withMaxTransactionRetryTime( long value, TimeUnit unit )
         {
-            if ( maxAttempts < 0 )
+            long maxRetryTimeMs = unit.toMillis( value );
+            if ( maxRetryTimeMs < 0 )
             {
-                throw new IllegalArgumentException( "Max number of attempts should not be negative: " + maxAttempts );
+                throw new IllegalArgumentException( String.format(
+                        "The max retry time may not be smaller than 0, but was %d %s.", value, unit ) );
             }
-            long delayMs = delayUnit.toMillis( delay );
-            if ( delayMs < 0 )
-            {
-                throw new IllegalArgumentException( "Delay should not be negative: " + delay + " " + delayUnit );
-            }
-            this.retrySettings = new RetrySettings( maxAttempts, delayMs );
+            this.retrySettings = new RetrySettings( maxRetryTimeMs );
             return this;
         }
 
