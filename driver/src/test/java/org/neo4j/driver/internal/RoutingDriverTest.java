@@ -62,7 +62,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.cluster.ClusterCompositionProviderTest.serverInfo;
-import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
+import static org.neo4j.driver.internal.retry.ExponentialBackoff.defaultRetryLogic;
 import static org.neo4j.driver.internal.security.SecurityPlan.insecure;
 import static org.neo4j.driver.v1.Values.value;
 
@@ -148,7 +148,8 @@ public class RoutingDriverTest
         // Then
         catch ( ServiceUnavailableException e )
         {
-            assertThat( e.getMessage(), containsString( "Failed to call 'dbms.cluster.routing.getServers' procedure on server" ) );
+            assertThat( e.getMessage(),
+                    containsString( "Failed to call 'dbms.cluster.routing.getServers' procedure on server" ) );
         }
     }
 
@@ -345,8 +346,8 @@ public class RoutingDriverTest
     {
         RoutingSettings settings = new RoutingSettings( 10, 5_000 );
         ConnectionProvider connectionProvider = new LoadBalancer( settings, pool, clock, logging, SEED );
-        SessionFactory sessionFactory = new NetworkSessionWithAddressFactory( connectionProvider,
-                Config.defaultConfig(), DEV_NULL_LOGGING );
+        Config config = Config.build().withLogging( logging ).toConfig();
+        SessionFactory sessionFactory = new NetworkSessionWithAddressFactory( connectionProvider, config );
         return new InternalDriver( insecure(), sessionFactory, logging );
     }
 
@@ -359,7 +360,7 @@ public class RoutingDriverTest
     @SafeVarargs
     private static Answer withServers( long ttl, Map<String,Object>... serverInfo )
     {
-        return withServerList( new Value[] {value( ttl ), value( asList( serverInfo ) )} );
+        return withServerList( new Value[]{value( ttl ), value( asList( serverInfo ) )} );
     }
 
     private BoltServerAddress boltAddress( String host, int port )
@@ -430,15 +431,17 @@ public class RoutingDriverTest
 
     private static class NetworkSessionWithAddressFactory extends SessionFactoryImpl
     {
-        NetworkSessionWithAddressFactory( ConnectionProvider connectionProvider, Config config, Logging logging )
+        NetworkSessionWithAddressFactory( ConnectionProvider connectionProvider, Config config )
         {
-            super( connectionProvider, config, logging );
+            super( connectionProvider, defaultRetryLogic(), config );
         }
 
         @Override
-        public Session newInstance( AccessMode mode )
+        public Session newInstance( AccessMode mode, String bookmark )
         {
-            return new NetworkSessionWithAddress( connectionProvider, mode, logging );
+            NetworkSessionWithAddress session = new NetworkSessionWithAddress( connectionProvider, mode, logging );
+            session.setLastBookmark( bookmark );
+            return session;
         }
     }
 
@@ -448,7 +451,7 @@ public class RoutingDriverTest
 
         NetworkSessionWithAddress( ConnectionProvider connectionProvider, AccessMode mode, Logging logging )
         {
-            super( connectionProvider, mode, logging );
+            super( connectionProvider, mode, defaultRetryLogic(), logging );
             try ( PooledConnection connection = connectionProvider.acquireConnection( mode ) )
             {
                 this.address = connection.boltServerAddress();

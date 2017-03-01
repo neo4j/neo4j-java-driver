@@ -33,6 +33,7 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.v1.AccessMode;
+import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
@@ -54,6 +55,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
+import static org.neo4j.driver.internal.retry.ExponentialBackoff.defaultRetryLogic;
 import static org.neo4j.driver.v1.AccessMode.READ;
 import static org.neo4j.driver.v1.AccessMode.WRITE;
 
@@ -174,7 +176,7 @@ public class LoadBalancerTest
         Rediscovery rediscovery = mock( Rediscovery.class );
         LoadBalancer loadBalancer = new LoadBalancer( routingTable, connectionPool, rediscovery, DEV_NULL_LOGGER );
 
-        NetworkSession session = new NetworkSession( loadBalancer, AccessMode.WRITE, DEV_NULL_LOGGING );
+        Session session = newSession( loadBalancer );
         // begin transaction to make session obtain a connection
         session.beginTransaction();
 
@@ -204,6 +206,11 @@ public class LoadBalancerTest
         when( routingTable.writers() ).thenReturn( writerAddrs );
 
         return new LoadBalancer( routingTable, connPool, mock( Rediscovery.class ), DEV_NULL_LOGGER );
+    }
+
+    private static Session newSession( LoadBalancer loadBalancer )
+    {
+        return new NetworkSession( loadBalancer, AccessMode.WRITE, defaultRetryLogic(), DEV_NULL_LOGGING );
     }
 
     private static PooledConnection newConnectionWithFailingSync( BoltServerAddress address )

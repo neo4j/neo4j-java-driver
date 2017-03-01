@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.v1;
 
+import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.util.Resource;
 
 /**
@@ -75,8 +76,30 @@ public interface Session extends Resource, StatementRunner
      *
      * @param bookmark a reference to a previous transaction
      * @return a new {@link Transaction}
+     * @deprecated This method is deprecated in favour of {@link Driver#session(String)} that accepts an initial
+     * bookmark. Session will ensure that all nested transactions are chained with bookmarks to guarantee
+     * causal consistency. <b>This method will be removed in the next major release.</b>
      */
+    @Deprecated
     Transaction beginTransaction( String bookmark );
+
+    /**
+     * Execute given unit of work in a  {@link AccessMode#READ read} transaction.
+     *
+     * @param work the {@link Function} to be applied to a new read transaction.
+     * @param <T> the return type of the given unit of work.
+     * @return a result as returned by the given unit of work.
+     */
+    <T> T readTransaction( Function<Transaction,T> work );
+
+    /**
+     * Execute given unit of work in a {@link AccessMode#WRITE write} transaction.
+     *
+     * @param work the {@link Function} to be applied to a new write transaction.
+     * @param <T> the return type of the given unit of work.
+     * @return a result as returned by the given unit of work.
+     */
+    <T> T writeTransaction( Function<Transaction,T> work );
 
     /**
      * Return the bookmark received following the last completed

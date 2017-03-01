@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.internal;
 
+import org.neo4j.driver.internal.retry.RetryDecision;
+import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Config;
@@ -27,24 +29,32 @@ import org.neo4j.driver.v1.Session;
 public class SessionFactoryImpl implements SessionFactory
 {
     protected final ConnectionProvider connectionProvider;
+    protected final RetryLogic<RetryDecision> retryLogic;
     protected final Logging logging;
     protected final boolean leakedSessionsLoggingEnabled;
 
-    SessionFactoryImpl( ConnectionProvider connectionProvider, Config config, Logging logging )
+    SessionFactoryImpl( ConnectionProvider connectionProvider, RetryLogic<RetryDecision> retryLogic, Config config )
     {
         this.connectionProvider = connectionProvider;
         this.leakedSessionsLoggingEnabled = config.logLeakedSessions();
-        this.logging = logging;
+        this.retryLogic = retryLogic;
+        this.logging = config.logging();
     }
 
     @Override
-    public Session newInstance( AccessMode mode )
+    public Session newInstance( AccessMode mode, String bookmark )
     {
+        NetworkSession session;
         if ( leakedSessionsLoggingEnabled )
         {
-            return new LeakLoggingNetworkSession( connectionProvider, mode, logging );
+            session = new LeakLoggingNetworkSession( connectionProvider, mode, retryLogic, logging );
         }
-        return new NetworkSession( connectionProvider, mode, logging );
+        else
+        {
+            session = new NetworkSession( connectionProvider, mode, retryLogic, logging );
+        }
+        session.setLastBookmark( bookmark );
+        return session;
     }
 
     @Override

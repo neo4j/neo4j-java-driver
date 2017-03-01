@@ -16,12 +16,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal;
+package org.neo4j.driver.internal.util;
 
-import org.neo4j.driver.v1.AccessMode;
-import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.internal.retry.RetryDecision;
+import org.neo4j.driver.internal.retry.RetryLogic;
+import org.neo4j.driver.internal.retry.RetrySettings;
 
-public interface SessionFactory extends AutoCloseable
+public class DriverFactoryWithFixedRetryLogic extends DriverFactoryWithClock
 {
-    Session newInstance( AccessMode mode, String bookmark );
+    private final int retryCount;
+
+    public DriverFactoryWithFixedRetryLogic( int retryCount )
+    {
+        super( new SleeplessClock() );
+        this.retryCount = retryCount;
+    }
+
+    @Override
+    protected RetryLogic<RetryDecision> createRetryLogic( RetrySettings settings )
+    {
+        return new FixedRetryLogic( retryCount );
+    }
 }

@@ -62,8 +62,20 @@ public class InternalDriver implements Driver
     @Override
     public final Session session( AccessMode mode )
     {
+        return session( mode, null );
+    }
+
+    @Override
+    public final Session session( String bookmark )
+    {
+        return session( AccessMode.WRITE, bookmark );
+    }
+
+    @Override
+    public final Session session( AccessMode mode, String bookmark )
+    {
         assertOpen();
-        Session session = sessionFactory.newInstance( mode );
+        Session session = sessionFactory.newInstance( mode, bookmark );
         if ( closed.get() )
         {
             // the driver is already closed and we either 1. obtain this session from the old session pool

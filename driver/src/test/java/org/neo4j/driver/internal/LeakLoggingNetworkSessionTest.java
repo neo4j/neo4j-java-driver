@@ -44,6 +44,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.driver.internal.retry.ExponentialBackoff.defaultRetryLogic;
 import static org.neo4j.driver.v1.AccessMode.READ;
 
 public class LeakLoggingNetworkSessionTest
@@ -98,7 +99,8 @@ public class LeakLoggingNetworkSessionTest
 
     private static LeakLoggingNetworkSession newSession( Logging logging, boolean openConnection )
     {
-        return new LeakLoggingNetworkSession( connectionProviderMock( openConnection ), READ, logging );
+        return new LeakLoggingNetworkSession( connectionProviderMock( openConnection ), READ,
+                defaultRetryLogic(), logging );
     }
 
     private static ConnectionProvider connectionProviderMock( final boolean openConnection )

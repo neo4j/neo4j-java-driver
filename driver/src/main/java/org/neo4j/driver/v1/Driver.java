@@ -64,6 +64,8 @@ public interface Driver extends AutoCloseable
 
     /**
      * Create a new general purpose {@link Session}.
+     * <p>
+     * Alias to {@code session(AccessMode.WRITE, null)}.
      *
      * @return a new {@link Session} object.
      */
@@ -71,11 +73,40 @@ public interface Driver extends AutoCloseable
 
     /**
      * Create a new {@link Session} for a specific type of work.
+     * <p>
+     * Alias to {@code session(mode, null)}.
      *
-     * @param mode the type of access required by units of work in this session, e.g. {@link AccessMode#READ read access}.
+     * @param mode the type of access required by units of work in this session,
+     * e.g. {@link AccessMode#READ read access}.
      * @return a new {@link Session} object.
      */
-    Session session(AccessMode mode);
+    Session session( AccessMode mode );
+
+    /**
+     * Create a new {@link AccessMode#WRITE write} {@link Session} with the specified initial bookmark.
+     * First transaction in the created session will ensure that server hosting is at least as up-to-date as the
+     * transaction referenced by the supplied <em>bookmark</em>.
+     * <p>
+     * Alias to {@code session(AccessMode.WRITE, bookmark)}.
+     *
+     * @param bookmark the initial reference to some previous transaction. A {@code null} value is permitted, and
+     * indicates that the bookmark does not exist or is unknown.
+     * @return a new {@link Session} object.
+     */
+    Session session( String bookmark );
+
+    /**
+     * Create a new {@link Session} for a specific type of work with the specified initial bookmark.
+     * First transaction in the created session will ensure that server hosting is at least as up-to-date as the
+     * transaction referenced by the supplied <em>bookmark</em>.
+     *
+     * @param mode the type of access required by units of work in this session,
+     * e.g. {@link AccessMode#READ read access}.
+     * @param bookmark the initial reference to some previous transaction. A {@code null} value is permitted, and
+     * indicates that the bookmark does not exist or is unknown.
+     * @return a new {@link Session} object.
+     */
+    Session session( AccessMode mode, String bookmark );
 
     /**
      * Close all the resources assigned to this driver, including any open connections.

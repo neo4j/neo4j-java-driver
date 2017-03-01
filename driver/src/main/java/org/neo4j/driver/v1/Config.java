@@ -25,6 +25,11 @@ import java.util.logging.Level;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.logging.JULogging;
 import org.neo4j.driver.internal.net.pooling.PoolSettings;
+import org.neo4j.driver.internal.retry.RetrySettings;
+import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.v1.exceptions.SessionExpiredException;
+import org.neo4j.driver.v1.exceptions.TransientException;
+import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.util.Immutable;
 import org.neo4j.driver.v1.util.Resource;
 
@@ -68,6 +73,7 @@ public class Config
     private final int routingFailureLimit;
     private final long routingRetryDelayMillis;
     private final int connectionTimeoutMillis;
+    private final RetrySettings retrySettings;
 
     private Config( ConfigBuilder builder)
     {
@@ -82,6 +88,7 @@ public class Config
         this.routingFailureLimit = builder.routingFailureLimit;
         this.routingRetryDelayMillis = builder.routingRetryDelayMillis;
         this.connectionTimeoutMillis = builder.connectionTimeoutMillis;
+        this.retrySettings = builder.retrySettings;
     }
 
     /**
@@ -179,6 +186,11 @@ public class Config
         return new RoutingSettings( routingFailureLimit, routingRetryDelayMillis );
     }
 
+    RetrySettings retrySettings()
+    {
+        return retrySettings;
+    }
+
     /**
      * Used to build new config instances
      */
@@ -193,6 +205,7 @@ public class Config
         private int routingFailureLimit = 1;
         private long routingRetryDelayMillis = TimeUnit.SECONDS.toMillis( 5 );
         private int connectionTimeoutMillis = (int) TimeUnit.SECONDS.toMillis( 5 );
+        private RetrySettings retrySettings = RetrySettings.DEFAULT;
 
         private ConfigBuilder() {}
 
@@ -432,6 +445,31 @@ public class Config
                         connectionTimeoutMillis ) );
             }
             this.connectionTimeoutMillis = connectionTimeoutMillisInt;
+            return this;
+        }
+
+        /**
+         * Specify the maximum time transactions are allowed to retry via {@link Session#readTransaction(Function)} and
+         * {@link Session#writeTransaction(Function)} methods. These methods will retry the given unit of work on
+         * {@link ServiceUnavailableException}, {@link SessionExpiredException} and {@link TransientException} with
+         * exponential backoff using initial delay of 1 second.
+         * <p>
+         * Default value is 30 seconds.
+         *
+         * @param value the timeout duration
+         * @param unit the unit in which duration is given
+         * @return this builder
+         * @throws IllegalArgumentException when given value is negative
+         */
+        public ConfigBuilder withMaxTransactionRetryTime( long value, TimeUnit unit )
+        {
+            long maxRetryTimeMs = unit.toMillis( value );
+            if ( maxRetryTimeMs < 0 )
+            {
+                throw new IllegalArgumentException( String.format(
+                        "The max retry time may not be smaller than 0, but was %d %s.", value, unit ) );
+            }
+            this.retrySettings = new RetrySettings( maxRetryTimeMs );
             return this;
         }
 

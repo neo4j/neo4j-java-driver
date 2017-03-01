@@ -23,6 +23,7 @@ import org.junit.Test;
 import org.neo4j.driver.internal.util.FakeClock;
 
 import static java.util.Arrays.asList;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.A;
@@ -31,6 +32,7 @@ import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.C;
 import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.D;
 import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.E;
 import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.EMPTY;
+import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.F;
 import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.createClusterComposition;
 
 public class ClusterRoutingTableTest
@@ -79,7 +81,6 @@ public class ClusterRoutingTableTest
         assertTrue( routingTable.isStale() );
     }
 
-
     @Test
     public void shouldReturnStatleIfNoWriter() throws Exception
     {
@@ -119,5 +120,18 @@ public class ClusterRoutingTableTest
 
         // Then
         assertTrue( routingTable.isStale() );
+    }
+
+    @Test
+    public void preservesOrderingOfRouters()
+    {
+        ClusterRoutingTable routingTable = new ClusterRoutingTable( new FakeClock(), A, C, D, F, B, E );
+
+        assertEquals( A, routingTable.nextRouter() );
+        assertEquals( C, routingTable.nextRouter() );
+        assertEquals( D, routingTable.nextRouter() );
+        assertEquals( F, routingTable.nextRouter() );
+        assertEquals( B, routingTable.nextRouter() );
+        assertEquals( E, routingTable.nextRouter() );
     }
 }

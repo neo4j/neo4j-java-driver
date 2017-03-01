@@ -16,12 +16,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal;
+package org.neo4j.driver.internal.retry;
 
-import org.neo4j.driver.v1.AccessMode;
-import org.neo4j.driver.v1.Session;
-
-public interface SessionFactory extends AutoCloseable
+public interface RetryLogic<T extends RetryDecision>
 {
-    Session newInstance( AccessMode mode, String bookmark );
+    T apply( Throwable error, T previousDecision );
 }

@@ -21,6 +21,8 @@ package org.neo4j.driver.v1;
 import java.net.URI;
 
 import org.neo4j.driver.internal.DriverFactory;
+import org.neo4j.driver.internal.cluster.RoutingSettings;
+import org.neo4j.driver.internal.retry.RetrySettings;
 
 /**
  * Creates {@link Driver drivers}, optionally letting you {@link #driver(URI, Config)} to configure them.
@@ -124,7 +126,9 @@ public class GraphDatabase
     {
         // Make sure we have some configuration to play with
         config = config == null ? Config.defaultConfig() : config;
+        RoutingSettings routingSettings = config.routingSettings();
+        RetrySettings retrySettings = config.retrySettings();
 
-        return new DriverFactory().newInstance( uri, authToken, config.routingSettings(), config );
+        return new DriverFactory().newInstance( uri, authToken, routingSettings, retrySettings, config );
     }
 }

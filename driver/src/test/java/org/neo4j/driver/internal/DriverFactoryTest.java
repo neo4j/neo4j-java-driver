@@ -31,6 +31,9 @@ import java.util.List;
 import org.neo4j.driver.internal.cluster.LoadBalancer;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.retry.RetryDecision;
+import org.neo4j.driver.internal.retry.RetryLogic;
+import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
@@ -72,7 +75,7 @@ public class DriverFactoryTest
 
         try
         {
-            factory.newInstance( uri, dummyAuthToken(), dummyRoutingSettings(), defaultConfig() );
+            createDriver( factory );
             fail( "Exception expected" );
         }
         catch ( Exception e )
@@ -93,7 +96,7 @@ public class DriverFactoryTest
 
         try
         {
-            factory.newInstance( uri, dummyAuthToken(), dummyRoutingSettings(), defaultConfig() );
+            createDriver( factory );
             fail( "Exception expected" );
         }
         catch ( Exception e )
@@ -110,9 +113,10 @@ public class DriverFactoryTest
         Config config = Config.defaultConfig();
         SessionFactoryCapturingDriverFactory factory = new SessionFactoryCapturingDriverFactory();
 
-        factory.newInstance( uri, dummyAuthToken(), dummyRoutingSettings(), config );
+        createDriver( factory, config );
 
-        assertThat( factory.capturedSessionFactory.newInstance( READ ), instanceOf( NetworkSession.class ) );
+        SessionFactory capturedFactory = factory.capturedSessionFactory;
+        assertThat( capturedFactory.newInstance( READ, null ), instanceOf( NetworkSession.class ) );
     }
 
     @Test
@@ -121,19 +125,22 @@ public class DriverFactoryTest
         Config config = Config.build().withLeakedSessionsLogging().toConfig();
         SessionFactoryCapturingDriverFactory factory = new SessionFactoryCapturingDriverFactory();
 
-        factory.newInstance( uri, dummyAuthToken(), dummyRoutingSettings(), config );
+        createDriver( factory, config );
 
-        assertThat( factory.capturedSessionFactory.newInstance( READ ), instanceOf( LeakLoggingNetworkSession.class ) );
+        SessionFactory capturedFactory = factory.capturedSessionFactory;
+        assertThat( capturedFactory.newInstance( READ, null ), instanceOf( LeakLoggingNetworkSession.class ) );
     }
 
-    private static AuthToken dummyAuthToken()
+    private Driver createDriver( DriverFactory driverFactory )
     {
-        return AuthTokens.basic( "neo4j", "neo4j" );
+        return createDriver( driverFactory, defaultConfig() );
     }
 
-    private static RoutingSettings dummyRoutingSettings()
+    private Driver createDriver( DriverFactory driverFactory, Config config )
     {
-        return new RoutingSettings( 42, 42 );
+        AuthToken auth = AuthTokens.none();
+        RoutingSettings routingSettings = new RoutingSettings( 42, 42 );
+        return driverFactory.newInstance( uri, auth, routingSettings, RetrySettings.DEFAULT, config );
     }
 
     private static class ThrowingDriverFactory extends DriverFactory
@@ -146,15 +153,14 @@ public class DriverFactoryTest
         }
 
         @Override
-        protected Driver createDirectDriver( BoltServerAddress address, ConnectionPool connectionPool, Config config,
-                SecurityPlan securityPlan )
+        protected InternalDriver createDriver( Config config, SecurityPlan securityPlan, SessionFactory sessionFactory )
         {
             throw new UnsupportedOperationException( "Can't create direct driver" );
         }
 
         @Override
         protected Driver createRoutingDriver( BoltServerAddress address, ConnectionPool connectionPool, Config config,
-                RoutingSettings routingSettings, SecurityPlan securityPlan )
+                RoutingSettings routingSettings, SecurityPlan securityPlan, RetryLogic<RetryDecision> retryLogic )
         {
             throw new UnsupportedOperationException( "Can't create routing driver" );
         }
@@ -184,9 +190,10 @@ public class DriverFactoryTest
         }
 
         @Override
-        protected SessionFactory createSessionFactory( ConnectionProvider connectionProvider, Config config )
+        protected SessionFactory createSessionFactory( ConnectionProvider connectionProvider,
+                RetryLogic<RetryDecision> retryLogic, Config config )
         {
-            SessionFactory sessionFactory = super.createSessionFactory( connectionProvider, config );
+            SessionFactory sessionFactory = super.createSessionFactory( connectionProvider, retryLogic, config );
             capturedSessionFactory = sessionFactory;
             return sessionFactory;
         }

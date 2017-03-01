@@ -16,14 +16,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal;
+package org.neo4j.driver.v1;
 
 import org.junit.Test;
 
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.util.FileTools;
 
 import static java.lang.System.getProperty;
@@ -167,6 +166,38 @@ public class ConfigTest
         {
             assertThat( e, instanceOf( IllegalArgumentException.class ) );
         }
+    }
+
+    @Test
+    public void shouldNotAllowNegativeMaxRetryTimeMs()
+    {
+        Config.ConfigBuilder builder = Config.build();
+
+        try
+        {
+            builder.withMaxTransactionRetryTime( -42, TimeUnit.SECONDS );
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( IllegalArgumentException.class ) );
+        }
+    }
+
+    @Test
+    public void shouldAllowZeroMaxRetryTimeMs()
+    {
+        Config config = Config.build().withMaxTransactionRetryTime( 0, TimeUnit.SECONDS ).toConfig();
+
+        assertEquals( 0, config.retrySettings().maxRetryTimeMs() );
+    }
+
+    @Test
+    public void shouldAllowPositiveRetryAttempts()
+    {
+        Config config = Config.build().withMaxTransactionRetryTime( 42, TimeUnit.SECONDS ).toConfig();
+
+        assertEquals( TimeUnit.SECONDS.toMillis( 42 ), config.retrySettings().maxRetryTimeMs() );
     }
 
     public static void deleteDefaultKnownCertFileIfExists()

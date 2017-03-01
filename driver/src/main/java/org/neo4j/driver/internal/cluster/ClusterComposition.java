@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal.cluster;
 
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
@@ -46,9 +46,9 @@ final class ClusterComposition
 
     private ClusterComposition( long expirationTimestamp )
     {
-        this.readers = new HashSet<>();
-        this.writers = new HashSet<>();
-        this.routers = new HashSet<>();
+        this.readers = new LinkedHashSet<>();
+        this.writers = new LinkedHashSet<>();
+        this.routers = new LinkedHashSet<>();
         this.expirationTimestamp = expirationTimestamp;
     }
 
@@ -69,24 +69,25 @@ final class ClusterComposition
     {
         return !writers.isEmpty();
     }
+
     public boolean hasRoutersAndReaders()
     {
-        return routers.isEmpty() || readers.isEmpty();
+        return !routers.isEmpty() && !readers.isEmpty();
     }
 
     public Set<BoltServerAddress> readers()
     {
-        return new HashSet<>( readers );
+        return new LinkedHashSet<>( readers );
     }
 
     public Set<BoltServerAddress> writers()
     {
-        return new HashSet<>( writers );
+        return new LinkedHashSet<>( writers );
     }
 
     public Set<BoltServerAddress> routers()
     {
-        return new HashSet<>( routers );
+        return new LinkedHashSet<>( routers );
     }
 
     public long expirationTimestamp() {

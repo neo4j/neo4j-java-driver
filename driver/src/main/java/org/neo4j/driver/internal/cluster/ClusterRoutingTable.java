@@ -20,6 +20,7 @@
 package org.neo4j.driver.internal.cluster;
 
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
@@ -41,7 +42,7 @@ public class ClusterRoutingTable implements RoutingTable
     public ClusterRoutingTable( Clock clock, BoltServerAddress... routingAddresses )
     {
         this( clock );
-        routers.update( new HashSet<>( asList( routingAddresses ) ), new HashSet<BoltServerAddress>() );
+        routers.update( new LinkedHashSet<>( asList( routingAddresses ) ), new HashSet<BoltServerAddress>() );
     }
 
     private ClusterRoutingTable( Clock clock )
@@ -67,7 +68,7 @@ public class ClusterRoutingTable implements RoutingTable
     public synchronized Set<BoltServerAddress> update( ClusterComposition cluster )
     {
         expirationTimeout = cluster.expirationTimestamp();
-        HashSet<BoltServerAddress> removed = new HashSet<>();
+        Set<BoltServerAddress> removed = new HashSet<>();
         readers.update( cluster.readers(), removed );
         writers.update( cluster.writers(), removed );
         routers.update( cluster.routers(), removed );

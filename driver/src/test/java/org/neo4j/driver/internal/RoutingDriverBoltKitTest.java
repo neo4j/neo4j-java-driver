@@ -26,10 +26,18 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 
+import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.logging.ConsoleLogging;
+import org.neo4j.driver.internal.retry.RetrySettings;
+import org.neo4j.driver.internal.util.DriverFactoryWithClock;
+import org.neo4j.driver.internal.util.DriverFactoryWithFixedRetryLogic;
+import org.neo4j.driver.internal.util.SleeplessClock;
 import org.neo4j.driver.v1.AccessMode;
+import org.neo4j.driver.v1.AuthToken;
+import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
@@ -41,9 +49,12 @@ import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.util.StubServer;
 
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class RoutingDriverBoltKitTest
 {
@@ -193,7 +204,7 @@ public class RoutingDriverBoltKitTest
         StubServer server = StubServer.start( "acquire_endpoints.script", 9001 );
 
         //START a read server
-        StubServer.start( "dead_server.script", 9005 );
+        StubServer.start( "dead_read_server.script", 9005 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
 
         //Expect
@@ -219,7 +230,7 @@ public class RoutingDriverBoltKitTest
         StubServer server = StubServer.start( "acquire_endpoints.script", 9001 );
 
         //START a read server
-        StubServer.start( "dead_server.script", 9005 );
+        StubServer.start( "dead_read_server.script", 9005 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
 
         //Expect
@@ -247,7 +258,7 @@ public class RoutingDriverBoltKitTest
         StubServer server = StubServer.start( "acquire_endpoints.script", 9001 );
 
         //START a dead write servers
-        StubServer.start( "dead_server.script", 9007 );
+        StubServer.start( "dead_read_server.script", 9007 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
 
         //Expect
@@ -273,7 +284,7 @@ public class RoutingDriverBoltKitTest
         StubServer server = StubServer.start( "acquire_endpoints.script", 9001 );
 
         //START a dead write servers
-        StubServer.start( "dead_server.script", 9007 );
+        StubServer.start( "dead_read_server.script", 9007 );
 
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         //Expect
@@ -360,7 +371,7 @@ public class RoutingDriverBoltKitTest
     }
 
     @Test
-    public void shouldRoundRobinWriteSessionsInTransaction() throws IOException, InterruptedException, StubServer.ForceKilled
+    public void shouldRoundRobinWriteSessionsInTransaction() throws Exception
     {
         // Given
         StubServer server = StubServer.start( "acquire_endpoints.script", 9001 );
@@ -374,7 +385,7 @@ public class RoutingDriverBoltKitTest
             for ( int i = 0; i < 2; i++ )
             {
                 try ( Session session = driver.session();
-                      Transaction tx = session.beginTransaction())
+                      Transaction tx = session.beginTransaction() )
                 {
                     tx.run( "CREATE (n {name:'Bob'})" );
                     tx.success();
@@ -527,5 +538,331 @@ public class RoutingDriverBoltKitTest
         driver.close();
         // Finally
         assertThat( server.exitStatus(), equalTo( 0 ) );
+    }
+
+    @Test
+    public void shouldSendAndReceiveBookmark() throws Exception
+    {
+        StubServer router = StubServer.start( "acquire_endpoints.script", 9001 );
+        StubServer writer = StubServer.start( "write_tx_with_bookmarks.script", 9007 );
+
+        try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9001", config );
+              Session session = driver.session() )
+        {
+            try ( Transaction tx = session.beginTransaction( "OldBookmark" ) )
+            {
+                tx.run( "CREATE (n {name:'Bob'})" );
+                tx.success();
+            }
+
+            assertEquals( "NewBookmark", session.lastBookmark() );
+        }
+
+        assertThat( router.exitStatus(), equalTo( 0 ) );
+        assertThat( writer.exitStatus(), equalTo( 0 ) );
+    }
+
+    @Test
+    public void shouldSendInitialBookmark() throws Exception
+    {
+        StubServer router = StubServer.start( "acquire_endpoints.script", 9001 );
+        StubServer writer = StubServer.start( "write_tx_with_bookmarks.script", 9007 );
+
+        try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9001", config );
+              Session session = driver.session( "OldBookmark" ) )
+        {
+            try ( Transaction tx = session.beginTransaction() )
+            {
+                tx.run( "CREATE (n {name:'Bob'})" );
+                tx.success();
+            }
+
+            assertEquals( "NewBookmark", session.lastBookmark() );
+        }
+
+        assertThat( router.exitStatus(), equalTo( 0 ) );
+        assertThat( writer.exitStatus(), equalTo( 0 ) );
+    }
+
+    @Test
+    public void shouldUseWriteSessionModeAndInitialBookmark() throws Exception
+    {
+        StubServer router = StubServer.start( "acquire_endpoints.script", 9001 );
+        StubServer writer = StubServer.start( "write_tx_with_bookmarks.script", 9008 );
+
+        try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9001", config );
+              Session session = driver.session( AccessMode.WRITE, "OldBookmark" ) )
+        {
+            try ( Transaction tx = session.beginTransaction() )
+            {
+                tx.run( "CREATE (n {name:'Bob'})" );
+                tx.success();
+            }
+
+            assertEquals( "NewBookmark", session.lastBookmark() );
+        }
+
+        assertThat( router.exitStatus(), equalTo( 0 ) );
+        assertThat( writer.exitStatus(), equalTo( 0 ) );
+    }
+
+    @Test
+    public void shouldUseReadSessionModeAndInitialBookmark() throws Exception
+    {
+        StubServer router = StubServer.start( "acquire_endpoints.script", 9001 );
+        StubServer writer = StubServer.start( "read_tx_with_bookmarks.script", 9005 );
+
+        try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9001", config );
+              Session session = driver.session( AccessMode.READ, "OldBookmark" ) )
+        {
+            try ( Transaction tx = session.beginTransaction() )
+            {
+                List<Record> records = tx.run( "MATCH (n) RETURN n.name AS name" ).list();
+                assertEquals( 2, records.size() );
+                assertEquals( "Bob", records.get( 0 ).get( "name" ).asString() );
+                assertEquals( "Alice", records.get( 1 ).get( "name" ).asString() );
+                tx.success();
+            }
+
+            assertEquals( "NewBookmark", session.lastBookmark() );
+        }
+
+        assertThat( router.exitStatus(), equalTo( 0 ) );
+        assertThat( writer.exitStatus(), equalTo( 0 ) );
+    }
+
+    @Test
+    public void shouldPassBookmarkFromTransactionToTransaction() throws Exception
+    {
+        StubServer router = StubServer.start( "acquire_endpoints.script", 9001 );
+        StubServer writer = StubServer.start( "write_read_tx_with_bookmarks.script", 9007 );
+
+        try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9001", config );
+              Session session = driver.session( "BookmarkA" ) )
+        {
+            try ( Transaction tx = session.beginTransaction() )
+            {
+                tx.run( "CREATE (n {name:'Bob'})" );
+                tx.success();
+            }
+
+            assertEquals( "BookmarkB", session.lastBookmark() );
+
+            try ( Transaction tx = session.beginTransaction() )
+            {
+                List<Record> records = tx.run( "MATCH (n) RETURN n.name AS name" ).list();
+                assertEquals( 1, records.size() );
+                assertEquals( "Bob", records.get( 0 ).get( "name" ).asString() );
+                tx.success();
+            }
+
+            assertEquals( "BookmarkC", session.lastBookmark() );
+        }
+
+        assertThat( router.exitStatus(), equalTo( 0 ) );
+        assertThat( writer.exitStatus(), equalTo( 0 ) );
+    }
+
+    @Test
+    public void shouldRetryReadTransactionUntilSuccess() throws Exception
+    {
+        StubServer router = StubServer.start( "acquire_endpoints.script", 9001 );
+        StubServer brokenReader = StubServer.start( "dead_read_server.script", 9005 );
+        StubServer reader = StubServer.start( "read_server.script", 9006 );
+
+        try ( Driver driver = newDriverWithSleeplessClock( "bolt+routing://127.0.0.1:9001" );
+              Session session = driver.session() )
+        {
+            AtomicInteger invocations = new AtomicInteger();
+            List<Record> records = session.readTransaction( queryWork( "MATCH (n) RETURN n.name", invocations ) );
+
+            assertEquals( 3, records.size() );
+            assertEquals( 2, invocations.get() );
+        }
+        finally
+        {
+            assertEquals( 0, router.exitStatus() );
+            assertEquals( 0, brokenReader.exitStatus() );
+            assertEquals( 0, reader.exitStatus() );
+        }
+    }
+
+    @Test
+    public void shouldRetryWriteTransactionUntilSuccess() throws Exception
+    {
+        StubServer router = StubServer.start( "acquire_endpoints.script", 9001 );
+        StubServer brokenWriter = StubServer.start( "dead_write_server.script", 9007 );
+        StubServer writer = StubServer.start( "write_server.script", 9008 );
+
+        try ( Driver driver = newDriverWithSleeplessClock( "bolt+routing://127.0.0.1:9001" );
+              Session session = driver.session() )
+        {
+            AtomicInteger invocations = new AtomicInteger();
+            List<Record> records = session.writeTransaction( queryWork( "CREATE (n {name:'Bob'})", invocations ) );
+
+            assertEquals( 0, records.size() );
+            assertEquals( 2, invocations.get() );
+        }
+        finally
+        {
+            assertEquals( 0, router.exitStatus() );
+            assertEquals( 0, brokenWriter.exitStatus() );
+            assertEquals( 0, writer.exitStatus() );
+        }
+    }
+
+    @Test
+    public void shouldRetryReadTransactionUntilFailure() throws Exception
+    {
+        StubServer router = StubServer.start( "acquire_endpoints.script", 9001 );
+        StubServer brokenReader1 = StubServer.start( "dead_read_server.script", 9005 );
+        StubServer brokenReader2 = StubServer.start( "dead_read_server.script", 9006 );
+
+        try ( Driver driver = newDriverWithFixedRetries( "bolt+routing://127.0.0.1:9001", 1 );
+              Session session = driver.session() )
+        {
+            AtomicInteger invocations = new AtomicInteger();
+            try
+            {
+                session.readTransaction( queryWork( "MATCH (n) RETURN n.name", invocations ) );
+                fail( "Exception expected" );
+            }
+            catch ( Exception e )
+            {
+                assertThat( e, instanceOf( SessionExpiredException.class ) );
+                Throwable[] suppressed = e.getSuppressed();
+                assertEquals( 1, suppressed.length );
+                assertThat( suppressed[0], instanceOf( SessionExpiredException.class ) );
+            }
+            assertEquals( 2, invocations.get() );
+        }
+        finally
+        {
+            assertEquals( 0, router.exitStatus() );
+            assertEquals( 0, brokenReader1.exitStatus() );
+            assertEquals( 0, brokenReader2.exitStatus() );
+        }
+    }
+
+    @Test
+    public void shouldRetryWriteTransactionUntilFailure() throws Exception
+    {
+        StubServer router = StubServer.start( "acquire_endpoints.script", 9001 );
+        StubServer brokenWriter1 = StubServer.start( "dead_write_server.script", 9007 );
+        StubServer brokenWriter2 = StubServer.start( "dead_write_server.script", 9008 );
+
+        try ( Driver driver = newDriverWithFixedRetries( "bolt+routing://127.0.0.1:9001", 1 );
+              Session session = driver.session() )
+        {
+            AtomicInteger invocations = new AtomicInteger();
+            try
+            {
+                session.writeTransaction( queryWork( "CREATE (n {name:'Bob'})", invocations ) );
+                fail( "Exception expected" );
+            }
+            catch ( Exception e )
+            {
+                assertThat( e, instanceOf( SessionExpiredException.class ) );
+                Throwable[] suppressed = e.getSuppressed();
+                assertEquals( 1, suppressed.length );
+                assertThat( suppressed[0], instanceOf( SessionExpiredException.class ) );
+            }
+            assertEquals( 2, invocations.get() );
+        }
+        finally
+        {
+            assertEquals( 0, router.exitStatus() );
+            assertEquals( 0, brokenWriter1.exitStatus() );
+            assertEquals( 0, brokenWriter2.exitStatus() );
+        }
+    }
+
+    @Test
+    public void shouldRetryReadTransactionAndPerformRediscoveryUntilSuccess() throws Exception
+    {
+        StubServer router1 = StubServer.start( "acquire_endpoints.script", 9010 );
+        StubServer brokenReader1 = StubServer.start( "dead_read_server.script", 9005 );
+        StubServer brokenReader2 = StubServer.start( "dead_read_server.script", 9006 );
+        StubServer router2 = StubServer.start( "discover_servers.script", 9003 );
+        StubServer reader = StubServer.start( "read_server.script", 9004 );
+
+        try ( Driver driver = newDriverWithSleeplessClock( "bolt+routing://127.0.0.1:9010" );
+              Session session = driver.session() )
+        {
+            AtomicInteger invocations = new AtomicInteger();
+            List<Record> records = session.readTransaction( queryWork( "MATCH (n) RETURN n.name", invocations ) );
+
+            assertEquals( 3, records.size() );
+            assertEquals( 3, invocations.get() );
+        }
+        finally
+        {
+            assertEquals( 0, router1.exitStatus() );
+            assertEquals( 0, brokenReader1.exitStatus() );
+            assertEquals( 0, brokenReader2.exitStatus() );
+            assertEquals( 0, router2.exitStatus() );
+            assertEquals( 0, reader.exitStatus() );
+        }
+    }
+
+    @Test
+    public void shouldRetryWriteTransactionAndPerformRediscoveryUntilSuccess() throws Exception
+    {
+        StubServer router1 = StubServer.start( "acquire_endpoints.script", 9010 );
+        StubServer brokenWriter1 = StubServer.start( "dead_write_server.script", 9007 );
+        StubServer brokenWriter2 = StubServer.start( "dead_write_server.script", 9008 );
+        StubServer router2 = StubServer.start( "discover_servers.script", 9002 );
+        StubServer writer = StubServer.start( "write_server.script", 9001 );
+
+        try ( Driver driver = newDriverWithSleeplessClock( "bolt+routing://127.0.0.1:9010" );
+              Session session = driver.session() )
+        {
+            AtomicInteger invocations = new AtomicInteger();
+            List<Record> records = session.writeTransaction( queryWork( "CREATE (n {name:'Bob'})", invocations ) );
+
+            assertEquals( 0, records.size() );
+            assertEquals( 3, invocations.get() );
+        }
+        finally
+        {
+            assertEquals( 0, router1.exitStatus() );
+            assertEquals( 0, brokenWriter1.exitStatus() );
+            assertEquals( 0, brokenWriter2.exitStatus() );
+            assertEquals( 0, router2.exitStatus() );
+            assertEquals( 0, writer.exitStatus() );
+        }
+    }
+
+    private static Driver newDriverWithSleeplessClock( String uriString )
+    {
+        DriverFactory driverFactory = new DriverFactoryWithClock( new SleeplessClock() );
+        return newDriver( uriString, driverFactory );
+    }
+
+    private static Driver newDriverWithFixedRetries( String uriString, int retries )
+    {
+        DriverFactory driverFactory = new DriverFactoryWithFixedRetryLogic( retries );
+        return newDriver( uriString, driverFactory );
+    }
+
+    private static Driver newDriver( String uriString, DriverFactory driverFactory )
+    {
+        URI uri = URI.create( uriString );
+        RoutingSettings routingConf = new RoutingSettings( 1, 1 );
+        AuthToken auth = AuthTokens.none();
+        return driverFactory.newInstance( uri, auth, routingConf, RetrySettings.DEFAULT, config );
+    }
+
+    private static Function<Transaction,List<Record>> queryWork( final String query, final AtomicInteger invocations )
+    {
+        return new Function<Transaction,List<Record>>()
+        {
+            @Override
+            public List<Record> apply( Transaction tx )
+            {
+                invocations.incrementAndGet();
+                return tx.run( query ).list();
+            }
+        };
     }
 }

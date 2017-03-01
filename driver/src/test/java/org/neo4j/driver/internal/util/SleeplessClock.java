@@ -16,12 +16,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal;
+package org.neo4j.driver.internal.util;
 
-import org.neo4j.driver.v1.AccessMode;
-import org.neo4j.driver.v1.Session;
-
-public interface SessionFactory extends AutoCloseable
+public final class SleeplessClock implements Clock
 {
-    Session newInstance( AccessMode mode, String bookmark );
+    private final Clock delegate;
+
+    public SleeplessClock()
+    {
+        this( Clock.SYSTEM );
+    }
+
+    public SleeplessClock( Clock delegate )
+    {
+        this.delegate = delegate;
+    }
+
+    @Override
+    public long millis()
+    {
+        return delegate.millis();
+    }
+
+    @Override
+    public void sleep( long millis ) throws InterruptedException
+    {
+    }
 }

@@ -18,9 +18,13 @@
  */
 package org.neo4j.driver.internal;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.driver.internal.retry.RetryDecision;
+import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.spi.PooledConnection;
@@ -37,6 +41,7 @@ import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.types.TypeSystem;
+import org.neo4j.driver.v1.util.Function;
 
 import static org.neo4j.driver.v1.Values.value;
 
@@ -44,6 +49,7 @@ public class NetworkSession implements Session, SessionResourcesHandler
 {
     private final ConnectionProvider connectionProvider;
     private final AccessMode mode;
+    private final RetryLogic<RetryDecision> retryLogic;
     protected final Logger logger;
 
     private String lastBookmark;
@@ -52,10 +58,12 @@ public class NetworkSession implements Session, SessionResourcesHandler
 
     private final AtomicBoolean isOpen = new AtomicBoolean( true );
 
-    public NetworkSession( ConnectionProvider connectionProvider, AccessMode mode, Logging logging )
+    public NetworkSession( ConnectionProvider connectionProvider, AccessMode mode, RetryLogic<RetryDecision> retryLogic,
+            Logging logging )
     {
         this.connectionProvider = connectionProvider;
         this.mode = mode;
+        this.retryLogic = retryLogic;
         this.logger = logging.getLog( "Session-" + hashCode() );
     }
 
@@ -92,12 +100,13 @@ public class NetworkSession implements Session, SessionResourcesHandler
         ensureNoOpenTransactionBeforeRunningSession();
 
         syncAndCloseCurrentConnection();
-        currentConnection = acquireConnection();
+        currentConnection = acquireConnection( mode );
 
         return run( currentConnection, statement, this );
     }
 
-    public static StatementResult run( Connection connection, Statement statement, SessionResourcesHandler resourcesHandler )
+    public static StatementResult run( Connection connection, Statement statement,
+            SessionResourcesHandler resourcesHandler )
     {
         InternalStatementResult result = new InternalStatementResult( connection, resourcesHandler, null, statement );
         connection.run( statement.text(), statement.parameters().asMap( Values.ofValue() ),
@@ -116,7 +125,7 @@ public class NetworkSession implements Session, SessionResourcesHandler
         if ( currentTransaction != null )
         {
             currentTransaction.markToClose();
-            lastBookmark = currentTransaction.bookmark();
+            updateLastBookmarkFrom( currentTransaction );
             currentTransaction = null;
         }
         if ( currentConnection != null )
@@ -155,28 +164,38 @@ public class NetworkSession implements Session, SessionResourcesHandler
                 }
             }
         }
-        
+
         syncAndCloseCurrentConnection();
     }
 
     @Override
-    public Transaction beginTransaction()
+    public synchronized Transaction beginTransaction()
     {
-        return beginTransaction( null );
+        return beginTransaction( mode );
     }
 
     @Override
     public synchronized Transaction beginTransaction( String bookmark )
     {
-        ensureSessionIsOpen();
-        ensureNoOpenTransactionBeforeOpeningTransaction();
+        lastBookmark = bookmark;
+        return beginTransaction();
+    }
 
-        syncAndCloseCurrentConnection();
-        currentConnection = acquireConnection();
+    @Override
+    public <T> T readTransaction( Function<Transaction,T> work )
+    {
+        return transaction( AccessMode.READ, work );
+    }
 
-        currentTransaction = new ExplicitTransaction( currentConnection, this, bookmark );
-        currentConnection.setResourcesHandler( this );
-        return currentTransaction;
+    @Override
+    public <T> T writeTransaction( Function<Transaction,T> work )
+    {
+        return transaction( AccessMode.WRITE, work );
+    }
+
+    void setLastBookmark( String bookmark )
+    {
+        lastBookmark = bookmark;
     }
 
     @Override
@@ -203,7 +222,7 @@ public class NetworkSession implements Session, SessionResourcesHandler
         if ( currentTransaction != null && currentTransaction == tx )
         {
             closeCurrentConnection();
-            lastBookmark = currentTransaction.bookmark();
+            updateLastBookmarkFrom( currentTransaction );
             currentTransaction = null;
         }
     }
@@ -223,6 +242,47 @@ public class NetworkSession implements Session, SessionResourcesHandler
                 currentTransaction.markToClose();
             }
         }
+    }
+
+    private synchronized <T> T transaction( AccessMode mode, Function<Transaction,T> work )
+    {
+        RetryDecision decision = null;
+        List<Throwable> errors = null;
+
+        while ( true )
+        {
+            try ( Transaction tx = beginTransaction( mode ) )
+            {
+                return work.apply( tx );
+            }
+            catch ( Throwable newError )
+            {
+                decision = retryLogic.apply( newError, decision );
+
+                if ( decision.shouldRetry() )
+                {
+                    errors = recordError( newError, errors );
+                }
+                else
+                {
+                    addSuppressed( newError, errors );
+                    throw newError;
+                }
+            }
+        }
+    }
+
+    private synchronized Transaction beginTransaction( AccessMode mode )
+    {
+        ensureSessionIsOpen();
+        ensureNoOpenTransactionBeforeOpeningTransaction();
+
+        syncAndCloseCurrentConnection();
+        currentConnection = acquireConnection( mode );
+
+        currentTransaction = new ExplicitTransaction( currentConnection, this, lastBookmark );
+        currentConnection.setResourcesHandler( this );
+        return currentTransaction;
     }
 
     private void ensureNoUnrecoverableError()
@@ -268,7 +328,7 @@ public class NetworkSession implements Session, SessionResourcesHandler
         }
     }
 
-    private PooledConnection acquireConnection()
+    private PooledConnection acquireConnection( AccessMode mode )
     {
         PooledConnection connection = connectionProvider.acquireConnection( mode );
         logger.debug( "Acquired connection " + connection.hashCode() );
@@ -310,6 +370,38 @@ public class NetworkSession implements Session, SessionResourcesHandler
         {
             connection.close();
             logger.debug( "Released connection " + connection.hashCode() );
+        }
+    }
+
+    private void updateLastBookmarkFrom( ExplicitTransaction tx )
+    {
+        if ( tx.bookmark() != null )
+        {
+            lastBookmark = tx.bookmark();
+        }
+    }
+
+    private static List<Throwable> recordError( Throwable error, List<Throwable> errors )
+    {
+        if ( errors == null )
+        {
+            errors = new ArrayList<>();
+        }
+        errors.add( error );
+        return errors;
+    }
+
+    private static void addSuppressed( Throwable error, List<Throwable> suppressedErrors )
+    {
+        if ( suppressedErrors != null )
+        {
+            for ( Throwable suppressedError : suppressedErrors )
+            {
+                if ( error != suppressedError )
+                {
+                    error.addSuppressed( suppressedError );
+                }
+            }
         }
     }
 }

@@ -28,6 +28,10 @@ import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.net.SocketConnector;
 import org.neo4j.driver.internal.net.pooling.PoolSettings;
 import org.neo4j.driver.internal.net.pooling.SocketConnectionPool;
+import org.neo4j.driver.internal.retry.ExponentialBackoff;
+import org.neo4j.driver.internal.retry.RetryDecision;
+import org.neo4j.driver.internal.retry.RetryLogic;
+import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
@@ -47,15 +51,18 @@ import static org.neo4j.driver.v1.Config.EncryptionLevel.REQUIRED;
 
 public class DriverFactory
 {
-    public final Driver newInstance( URI uri, AuthToken authToken, RoutingSettings routingSettings, Config config )
+    public final Driver newInstance( URI uri, AuthToken authToken, RoutingSettings routingSettings,
+            RetrySettings retrySettings, Config config )
     {
         BoltServerAddress address = BoltServerAddress.from( uri );
         SecurityPlan securityPlan = createSecurityPlan( address, config );
         ConnectionPool connectionPool = createConnectionPool( authToken, securityPlan, config );
+        RetryLogic<RetryDecision> retryLogic = createRetryLogic( retrySettings );
 
         try
         {
-            return createDriver( address, uri.getScheme(), connectionPool, config, routingSettings, securityPlan );
+            return createDriver( address, uri.getScheme(), connectionPool, config, routingSettings, securityPlan,
+                    retryLogic );
         }
         catch ( Throwable driverError )
         {
@@ -73,14 +80,15 @@ public class DriverFactory
     }
 
     private Driver createDriver( BoltServerAddress address, String scheme, ConnectionPool connectionPool,
-            Config config, RoutingSettings routingSettings, SecurityPlan securityPlan )
+            Config config, RoutingSettings routingSettings, SecurityPlan securityPlan,
+            RetryLogic<RetryDecision> retryLogic )
     {
         switch ( scheme.toLowerCase() )
         {
         case "bolt":
-            return createDirectDriver( address, connectionPool, config, securityPlan );
+            return createDirectDriver( address, connectionPool, config, securityPlan, retryLogic );
         case "bolt+routing":
-            return createRoutingDriver( address, connectionPool, config, routingSettings, securityPlan );
+            return createRoutingDriver( address, connectionPool, config, routingSettings, securityPlan, retryLogic );
         default:
             throw new ClientException( format( "Unsupported URI scheme: %s", scheme ) );
         }
@@ -92,10 +100,10 @@ public class DriverFactory
      * <b>This method is protected only for testing</b>
      */
     protected Driver createDirectDriver( BoltServerAddress address, ConnectionPool connectionPool, Config config,
-            SecurityPlan securityPlan )
+            SecurityPlan securityPlan, RetryLogic<RetryDecision> retryLogic )
     {
         ConnectionProvider connectionProvider = new DirectConnectionProvider( address, connectionPool );
-        SessionFactory sessionFactory = createSessionFactory( connectionProvider, config );
+        SessionFactory sessionFactory = createSessionFactory( connectionProvider, retryLogic, config );
         return createDriver( config, securityPlan, sessionFactory );
     }
 
@@ -105,14 +113,15 @@ public class DriverFactory
      * <b>This method is protected only for testing</b>
      */
     protected Driver createRoutingDriver( BoltServerAddress address, ConnectionPool connectionPool,
-            Config config, RoutingSettings routingSettings, SecurityPlan securityPlan )
+            Config config, RoutingSettings routingSettings, SecurityPlan securityPlan,
+            RetryLogic<RetryDecision> retryLogic )
     {
         if ( !securityPlan.isRoutingCompatible() )
         {
             throw new IllegalArgumentException( "The chosen security plan is not compatible with a routing driver" );
         }
         ConnectionProvider connectionProvider = createLoadBalancer( address, connectionPool, config, routingSettings );
-        SessionFactory sessionFactory = createSessionFactory( connectionProvider, config );
+        SessionFactory sessionFactory = createSessionFactory( connectionProvider, retryLogic, config );
         return createDriver( config, securityPlan, sessionFactory );
     }
 
@@ -180,9 +189,20 @@ public class DriverFactory
      * <p>
      * <b>This method is protected only for testing</b>
      */
-    protected SessionFactory createSessionFactory( ConnectionProvider connectionProvider, Config config )
+    protected SessionFactory createSessionFactory( ConnectionProvider connectionProvider,
+            RetryLogic<RetryDecision> retryLogic, Config config )
     {
-        return new SessionFactoryImpl( connectionProvider, config, config.logging() );
+        return new SessionFactoryImpl( connectionProvider, retryLogic, config );
+    }
+
+    /**
+     * Creates new {@link RetryLogic<RetryDecision>}.
+     * <p>
+     * <b>This method is protected only for testing</b>
+     */
+    protected RetryLogic<RetryDecision> createRetryLogic( RetrySettings settings )
+    {
+        return ExponentialBackoff.create( settings, createClock() );
     }
 
     private static SecurityPlan createSecurityPlan( BoltServerAddress address, Config config )
