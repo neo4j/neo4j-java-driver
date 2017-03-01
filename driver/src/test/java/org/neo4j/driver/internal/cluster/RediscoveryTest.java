@@ -93,7 +93,7 @@ public class RediscoveryTest
             // when
             try
             {
-                rediscovery.lookupRoutingTable( mock( ConnectionPool.class ), routingTable );
+                rediscovery.lookupClusterComposition( mock( ConnectionPool.class ), routingTable );
                 fail("Should fail as failed to discovery");
             }
             catch( ServiceUnavailableException e )
@@ -327,7 +327,7 @@ public class RediscoveryTest
         Logger mockedLogger = mock( Logger.class );
 
         Rediscovery rediscovery = new Rediscovery( defaultRoutingSettings, mockedClock, mockedLogger, provider );
-        return rediscovery.lookupRoutingTable( connections, routingTable );
+        return rediscovery.lookupClusterComposition( connections, routingTable );
     }
 
     private static class TestRoutingTable extends ClusterRoutingTable

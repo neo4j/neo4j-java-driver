@@ -127,23 +127,17 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
         if ( routingTable.isStale() )
         {
             log.info( "Routing information is stale. %s", routingTable );
-            try
-            {
-                // get a new routing table
-                ClusterComposition cluster = rediscovery.lookupRoutingTable( connections, routingTable );
-                Set<BoltServerAddress> removed = routingTable.update( cluster );
-                // purge connections to removed addresses
-                for ( BoltServerAddress address : removed )
-                {
-                    connections.purge( address );
-                }
 
-                log.info( "Refreshed routing information. %s", routingTable );
-            }
-            catch ( InterruptedException e )
+            // get a new routing table
+            ClusterComposition cluster = rediscovery.lookupClusterComposition( connections, routingTable );
+            Set<BoltServerAddress> removed = routingTable.update( cluster );
+            // purge connections to removed addresses
+            for ( BoltServerAddress address : removed )
             {
-                throw new ServiceUnavailableException( "Thread was interrupted while establishing connection.", e );
+                connections.purge( address );
             }
+
+            log.info( "Refreshed routing information. %s", routingTable );
         }
     }
 

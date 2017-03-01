@@ -78,7 +78,7 @@ public class LoadBalancerTest
         // then
         assertNotNull( balancer );
         InOrder inOrder = inOrder( rediscovery, routingTable, conns );
-        inOrder.verify( rediscovery ).lookupRoutingTable( conns, routingTable );
+        inOrder.verify( rediscovery ).lookupClusterComposition( conns, routingTable );
         inOrder.verify( routingTable ).update( any( ClusterComposition.class ) );
         inOrder.verify( conns ).purge( new BoltServerAddress( "abc", 12 ) );
     }
