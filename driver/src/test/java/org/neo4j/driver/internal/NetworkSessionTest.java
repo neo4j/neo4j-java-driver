@@ -601,14 +601,28 @@ public class NetworkSessionTest
     }
 
     @Test
-    public void notPossibleToOverwriteBookmarkWithNull()
+    public void possibleToOverwriteBookmarkWithNull()
     {
         NetworkSession session = newSession( mock( ConnectionProvider.class ), WRITE );
         session.setLastBookmark( "TheBookmark" );
 
         session.setLastBookmark( null );
 
-        assertEquals( "TheBookmark", session.lastBookmark() );
+        assertNull( session.lastBookmark() );
+    }
+
+    @Test
+    public void allowsToStartTransactionWithNullBookmark()
+    {
+        ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
+        PooledConnection connection = openConnectionMock();
+        when( connectionProvider.acquireConnection( READ ) ).thenReturn( connection );
+        NetworkSession session = newSession( connectionProvider, READ );
+        session.setLastBookmark( "SomeUndesiredBookmark" );
+
+        session.beginTransaction( null );
+
+        assertNull( session.lastBookmark() );
     }
 
     @Test
