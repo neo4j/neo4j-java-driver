@@ -345,7 +345,7 @@ public class RoutingDriverTest
     private Driver driverWithPool( ConnectionPool pool )
     {
         RoutingSettings settings = new RoutingSettings( 10, 5_000 );
-        ConnectionProvider connectionProvider = new LoadBalancer( settings, pool, clock, logging, SEED );
+        ConnectionProvider connectionProvider = new LoadBalancer( SEED, settings, pool, clock, logging );
         Config config = Config.build().withLogging( logging ).toConfig();
         SessionFactory sessionFactory = new NetworkSessionWithAddressFactory( connectionProvider, config );
         return new InternalDriver( insecure(), sessionFactory, logging );

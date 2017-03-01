@@ -32,13 +32,16 @@ public class Rediscovery
 {
     private static final String NO_ROUTERS_AVAILABLE = "Could not perform discovery. No routing servers available.";
 
+    private final BoltServerAddress initialRouter;
     private final RoutingSettings settings;
     private final Clock clock;
     private final Logger logger;
     private final ClusterCompositionProvider provider;
 
-    public Rediscovery( RoutingSettings settings, Clock clock, Logger logger, ClusterCompositionProvider provider )
+    public Rediscovery( BoltServerAddress initialRouter, RoutingSettings settings, Clock clock, Logger logger,
+            ClusterCompositionProvider provider )
     {
+        this.initialRouter = initialRouter;
         this.settings = settings;
         this.clock = clock;
         this.logger = logger;
@@ -49,7 +52,6 @@ public class Rediscovery
     // cluster composition, which would be used to update the routing table and connection pool
     public ClusterComposition lookupClusterComposition( ConnectionPool connections, RoutingTable routingTable )
     {
-        assertHasRouters( routingTable );
         int failures = 0;
 
         for ( long start = clock.millis(), delay = 0; ; delay = Math.max( settings.retryTimeoutDelay, delay * 2 ) )
@@ -74,13 +76,19 @@ public class Rediscovery
     private ClusterComposition lookupClusterCompositionOnKnownRouters( ConnectionPool connections,
             RoutingTable routingTable )
     {
+        boolean triedInitialRouter = false;
         int size = routingTable.routerSize();
         for ( int i = 0; i < size; i++ )
         {
             BoltServerAddress address = routingTable.nextRouter();
             if ( address == null )
             {
-                throw new ServiceUnavailableException( NO_ROUTERS_AVAILABLE );
+                break;
+            }
+
+            if ( address.equals( initialRouter ) )
+            {
+                triedInitialRouter = true;
             }
 
             ClusterComposition composition = lookupClusterCompositionOnRouter( address, connections, routingTable );
@@ -89,7 +97,12 @@ public class Rediscovery
                 return composition;
             }
         }
-        return null;
+
+        if ( triedInitialRouter )
+        {
+            return null;
+        }
+        return lookupClusterCompositionOnRouter( initialRouter, connections, routingTable );
     }
 
     private ClusterComposition lookupClusterCompositionOnRouter( BoltServerAddress routerAddress,
@@ -136,14 +149,6 @@ public class Rediscovery
                 Thread.currentThread().interrupt();
                 throw new ServiceUnavailableException( "Thread was interrupted while performing discovery", e );
             }
-        }
-    }
-
-    private void assertHasRouters( RoutingTable table )
-    {
-        if ( table.routerSize() == 0 )
-        {
-            throw new ServiceUnavailableException( NO_ROUTERS_AVAILABLE );
         }
     }
 }

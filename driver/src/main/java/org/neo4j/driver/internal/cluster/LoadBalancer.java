@@ -41,26 +41,25 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
     private final Rediscovery rediscovery;
     private final Logger log;
 
-    public LoadBalancer( RoutingSettings settings, ConnectionPool connections, Clock clock, Logging logging,
-            BoltServerAddress... routingAddresses )
+    public LoadBalancer( BoltServerAddress initialRouter, RoutingSettings settings, ConnectionPool connections,
+            Clock clock, Logging logging )
     {
-        this( settings, new ClusterRoutingTable( clock, routingAddresses ), connections, clock,
+        this( initialRouter, settings, connections, new ClusterRoutingTable( clock, initialRouter ), clock,
                 logging.getLog( LOAD_BALANCER_LOG_NAME ) );
     }
 
-    private LoadBalancer( RoutingSettings settings, RoutingTable routingTable, ConnectionPool connections,
-            Clock clock, Logger log )
+    private LoadBalancer( BoltServerAddress initialRouter, RoutingSettings settings, ConnectionPool connections,
+            RoutingTable routingTable, Clock clock, Logger log )
     {
-        this( routingTable, connections, new Rediscovery( settings, clock, log,
-                new GetServersProcedureClusterCompositionProvider( clock, log ) ), log );
+        this( connections, routingTable, createRediscovery( initialRouter, settings, clock, log ), log );
     }
 
-    LoadBalancer( RoutingTable routingTable, ConnectionPool connections, Rediscovery rediscovery, Logger log )
+    LoadBalancer( ConnectionPool connections, RoutingTable routingTable, Rediscovery rediscovery, Logger log )
     {
-        this.log = log;
         this.connections = connections;
         this.routingTable = routingTable;
         this.rediscovery = rediscovery;
+        this.log = log;
 
         // initialize the routing table
         ensureRouting();
@@ -152,5 +151,12 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
         default:
             throw new IllegalArgumentException( "Mode '" + mode + "' is not supported" );
         }
+    }
+
+    private static Rediscovery createRediscovery( BoltServerAddress initialRouter, RoutingSettings settings,
+            Clock clock, Logger log )
+    {
+        ClusterCompositionProvider clusterComposition = new GetServersProcedureClusterCompositionProvider( clock, log );
+        return new Rediscovery( initialRouter, settings, clock, log, clusterComposition );
     }
 }

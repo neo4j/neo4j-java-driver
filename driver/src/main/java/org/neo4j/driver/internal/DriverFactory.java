@@ -143,7 +143,7 @@ public class DriverFactory
     protected LoadBalancer createLoadBalancer( BoltServerAddress address, ConnectionPool connectionPool, Config config,
             RoutingSettings routingSettings )
     {
-        return new LoadBalancer( routingSettings, connectionPool, createClock(), config.logging(), address );
+        return new LoadBalancer( address, routingSettings, connectionPool, createClock(), config.logging() );
     }
 
     /**

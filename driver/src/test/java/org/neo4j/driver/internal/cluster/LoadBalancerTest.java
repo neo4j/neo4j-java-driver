@@ -73,7 +73,7 @@ public class LoadBalancerTest
         when( routingTable.update( any( ClusterComposition.class ) ) ).thenReturn( set );
 
         // when
-        LoadBalancer balancer = new LoadBalancer( routingTable, conns, rediscovery, DEV_NULL_LOGGER );
+        LoadBalancer balancer = new LoadBalancer( conns, routingTable, rediscovery, DEV_NULL_LOGGER );
 
         // then
         assertNotNull( balancer );
@@ -88,7 +88,7 @@ public class LoadBalancerTest
     {
         // given & when
         final AtomicInteger ensureRoutingCounter = new AtomicInteger( 0 );
-        LoadBalancer balancer = new LoadBalancer( mock( RoutingTable.class ), mock( ConnectionPool.class ),
+        LoadBalancer balancer = new LoadBalancer( mock( ConnectionPool.class ), mock( RoutingTable.class ),
                 mock( Rediscovery.class ), DEV_NULL_LOGGER )
         {
             @Override
@@ -143,7 +143,7 @@ public class LoadBalancerTest
         RoutingTable routingTable = mock( RoutingTable.class );
         ConnectionPool connectionPool = mock( ConnectionPool.class );
         Rediscovery rediscovery = mock( Rediscovery.class );
-        LoadBalancer loadBalancer = new LoadBalancer( routingTable, connectionPool, rediscovery, DEV_NULL_LOGGER );
+        LoadBalancer loadBalancer = new LoadBalancer( connectionPool, routingTable, rediscovery, DEV_NULL_LOGGER );
         BoltServerAddress address = new BoltServerAddress( "host", 42 );
 
         PooledConnection connection = newConnectionWithFailingSync( address );
@@ -174,7 +174,7 @@ public class LoadBalancerTest
         PooledConnection connectionWithFailingSync = newConnectionWithFailingSync( address );
         when( connectionPool.acquire( any( BoltServerAddress.class ) ) ).thenReturn( connectionWithFailingSync );
         Rediscovery rediscovery = mock( Rediscovery.class );
-        LoadBalancer loadBalancer = new LoadBalancer( routingTable, connectionPool, rediscovery, DEV_NULL_LOGGER );
+        LoadBalancer loadBalancer = new LoadBalancer( connectionPool, routingTable, rediscovery, DEV_NULL_LOGGER );
 
         Session session = newSession( loadBalancer );
         // begin transaction to make session obtain a connection
@@ -205,7 +205,7 @@ public class LoadBalancerTest
         when( routingTable.readers() ).thenReturn( readerAddrs );
         when( routingTable.writers() ).thenReturn( writerAddrs );
 
-        return new LoadBalancer( routingTable, connPool, mock( Rediscovery.class ), DEV_NULL_LOGGER );
+        return new LoadBalancer( connPool, routingTable, mock( Rediscovery.class ), DEV_NULL_LOGGER );
     }
 
     private static Session newSession( LoadBalancer loadBalancer )

@@ -315,7 +315,7 @@ public class RoutingPooledConnectionErrorHandlingTest
 
     private static LoadBalancer newLoadBalancer( RoutingTable routingTable, ConnectionPool connectionPool )
     {
-        return new LoadBalancer( routingTable, connectionPool, mock( Rediscovery.class ), DEV_NULL_LOGGER );
+        return new LoadBalancer( connectionPool, routingTable, mock( Rediscovery.class ), DEV_NULL_LOGGER );
     }
 
     private interface ConnectionMethod
