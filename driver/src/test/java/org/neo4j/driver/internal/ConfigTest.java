@@ -63,7 +63,7 @@ public class ConfigTest
         Config.TrustStrategy authConfig = config.trustStrategy();
 
         // Then
-        assertEquals( authConfig.strategy(), Config.TrustStrategy.Strategy.TRUST_ON_FIRST_USE );
+        assertEquals( authConfig.strategy(), Config.TrustStrategy.Strategy.TRUST_ALL_CERTIFICATES );
         assertEquals( knownCerts.getAbsolutePath(), authConfig.certFile().getAbsolutePath() );
     }
 
