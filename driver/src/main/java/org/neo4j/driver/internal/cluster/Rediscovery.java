@@ -23,8 +23,8 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.Logger;
-import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SecurityException;
+import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
 import static java.lang.String.format;
 
@@ -32,13 +32,16 @@ public class Rediscovery
 {
     private static final String NO_ROUTERS_AVAILABLE = "Could not perform discovery. No routing servers available.";
 
+    private final BoltServerAddress initialRouter;
     private final RoutingSettings settings;
     private final Clock clock;
     private final Logger logger;
     private final ClusterCompositionProvider provider;
 
-    public Rediscovery( RoutingSettings settings, Clock clock, Logger logger, ClusterCompositionProvider provider )
+    public Rediscovery( BoltServerAddress initialRouter, RoutingSettings settings, Clock clock, Logger logger,
+            ClusterCompositionProvider provider )
     {
+        this.initialRouter = initialRouter;
         this.settings = settings;
         this.clock = clock;
         this.logger = logger;
@@ -47,56 +50,22 @@ public class Rediscovery
 
     // Given the current routing table and connection pool, use the connection composition provider to fetch a new
     // cluster composition, which would be used to update the routing table and connection pool
-    public ClusterComposition lookupRoutingTable( ConnectionPool connections, RoutingTable routingTable )
-            throws InterruptedException
+    public ClusterComposition lookupClusterComposition( ConnectionPool connections, RoutingTable routingTable )
     {
-        assertHasRouters( routingTable );
         int failures = 0;
 
         for ( long start = clock.millis(), delay = 0; ; delay = Math.max( settings.retryTimeoutDelay, delay * 2 ) )
         {
             long waitTime = start + delay - clock.millis();
-            if ( waitTime > 0 )
-            {
-                clock.sleep( waitTime );
-            }
+            sleep( waitTime );
             start = clock.millis();
 
-            int size = routingTable.routerSize();
-            for ( int i = 0; i < size; i++ )
+            ClusterComposition composition = lookupClusterCompositionOnKnownRouters( connections, routingTable );
+            if ( composition != null )
             {
-                BoltServerAddress address = routingTable.nextRouter();
-                if ( address == null )
-                {
-                    throw new ServiceUnavailableException( NO_ROUTERS_AVAILABLE );
-                }
-
-                ClusterCompositionResponse response = null;
-                try ( Connection connection = connections.acquire( address ) )
-                {
-                    response = provider.getClusterComposition( connection );
-                }
-                catch( SecurityException e )
-                {
-                    throw e; // terminate the discovery immediately
-                }
-                catch ( Exception e )
-                {
-                    // the connection breaks
-                    logger.error( format( "Failed to connect to routing server '%s'.", address ), e );
-                    routingTable.removeRouter( address );
-
-                    assertHasRouters( routingTable );
-                    continue;
-                }
-
-                ClusterComposition cluster = response.clusterComposition();
-                logger.info( "Got cluster composition %s", cluster );
-                if ( cluster.hasWriters() )
-                {
-                    return cluster;
-                }
+                return composition;
             }
+
             if ( ++failures >= settings.maxRoutingFailures )
             {
                 throw new ServiceUnavailableException( NO_ROUTERS_AVAILABLE );
@@ -104,11 +73,82 @@ public class Rediscovery
         }
     }
 
-    private void assertHasRouters( RoutingTable table )
+    private ClusterComposition lookupClusterCompositionOnKnownRouters( ConnectionPool connections,
+            RoutingTable routingTable )
     {
-        if ( table.routerSize() == 0 )
+        boolean triedInitialRouter = false;
+        int size = routingTable.routerSize();
+        for ( int i = 0; i < size; i++ )
         {
-            throw new ServiceUnavailableException( NO_ROUTERS_AVAILABLE );
+            BoltServerAddress address = routingTable.nextRouter();
+            if ( address == null )
+            {
+                break;
+            }
+
+            if ( address.equals( initialRouter ) )
+            {
+                triedInitialRouter = true;
+            }
+
+            ClusterComposition composition = lookupClusterCompositionOnRouter( address, connections, routingTable );
+            if ( composition != null )
+            {
+                return composition;
+            }
+        }
+
+        if ( triedInitialRouter )
+        {
+            return null;
+        }
+        return lookupClusterCompositionOnRouter( initialRouter, connections, routingTable );
+    }
+
+    private ClusterComposition lookupClusterCompositionOnRouter( BoltServerAddress routerAddress,
+            ConnectionPool connections, RoutingTable routingTable )
+    {
+        ClusterCompositionResponse response;
+        try ( Connection connection = connections.acquire( routerAddress ) )
+        {
+            response = provider.getClusterComposition( connection );
+        }
+        catch ( SecurityException e )
+        {
+            // auth error happened, terminate the discovery procedure immediately
+            throw e;
+        }
+        catch ( Throwable t )
+        {
+            // connection turned out to be broken
+            logger.error( format( "Failed to connect to routing server '%s'.", routerAddress ), t );
+            routingTable.removeRouter( routerAddress );
+            return null;
+        }
+
+        ClusterComposition cluster = response.clusterComposition();
+        logger.info( "Got cluster composition %s", cluster );
+        if ( cluster.hasWriters() )
+        {
+            return cluster;
+        }
+        return null;
+    }
+
+    private void sleep( long millis )
+    {
+        if ( millis > 0 )
+        {
+            try
+            {
+                clock.sleep( millis );
+            }
+            catch ( InterruptedException e )
+            {
+                // restore the interrupted status
+                Thread.currentThread().interrupt();
+                throw new ServiceUnavailableException( "Thread was interrupted while performing discovery", e );
+            }
         }
     }
 }

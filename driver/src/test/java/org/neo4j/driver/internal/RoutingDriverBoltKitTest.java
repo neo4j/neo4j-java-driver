@@ -833,6 +833,30 @@ public class RoutingDriverBoltKitTest
         }
     }
 
+    @Test
+    public void shouldUseInitialRouterForRediscoveryWhenAllOtherRoutersAreDead() throws Exception
+    {
+        // initial router does not have itself in the returned set of routers
+        StubServer router = StubServer.start( "acquire_endpoints.script", 9010 );
+
+        try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9010", config ) )
+        {
+            try ( Session session = driver.session( AccessMode.READ ) )
+            {
+                // restart router on the same port with different script that contains itself as reader
+                assertEquals( 0, router.exitStatus() );
+                router = StubServer.start( "rediscover_using_initial_router.script", 9010 );
+
+                List<Record> records = session.run( "MATCH (n) RETURN n.name AS name" ).list();
+                assertEquals( 2, records.size() );
+                assertEquals( "Bob", records.get( 0 ).get( "name" ).asString() );
+                assertEquals( "Alice", records.get( 1 ).get( "name" ).asString() );
+            }
+        }
+
+        assertEquals( 0, router.exitStatus() );
+    }
+
     private static Driver newDriverWithSleeplessClock( String uriString )
     {
         DriverFactory driverFactory = new DriverFactoryWithClock( new SleeplessClock() );
