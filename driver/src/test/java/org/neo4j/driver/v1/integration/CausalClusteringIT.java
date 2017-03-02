@@ -467,6 +467,7 @@ public class CausalClusteringIT
         }
         catch ( Exception e )
         {
+            e.printStackTrace();
             assertThat( e, instanceOf( exceptionClass ) );
         }
     }
