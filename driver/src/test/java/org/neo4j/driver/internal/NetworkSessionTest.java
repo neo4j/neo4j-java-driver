@@ -38,11 +38,11 @@ import org.neo4j.driver.internal.util.FixedRetryLogic;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.v1.TransactionWork;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
-import org.neo4j.driver.v1.util.Function;
 
 import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -764,10 +764,10 @@ public class NetworkSessionTest
         when( connectionProvider.acquireConnection( transactionMode ) ).thenReturn( connection );
         NetworkSession session = newSession( connectionProvider, sessionMode );
 
-        Function<Transaction,Integer> work = new Function<Transaction,Integer>()
+        TransactionWork<Integer> work = new TransactionWork<Integer>()
         {
             @Override
-            public Integer apply( Transaction tx )
+            public Integer execute( Transaction tx )
             {
                 tx.success();
                 return 42;
@@ -789,10 +789,10 @@ public class NetworkSessionTest
         when( connectionProvider.acquireConnection( transactionMode ) ).thenReturn( connection );
         NetworkSession session = newSession( connectionProvider, WRITE );
 
-        Function<Transaction,Integer> work = new Function<Transaction,Integer>()
+        TransactionWork<Integer> work = new TransactionWork<Integer>()
         {
             @Override
-            public Integer apply( Transaction tx )
+            public Integer execute( Transaction tx )
             {
                 if ( commit )
                 {
@@ -831,10 +831,10 @@ public class NetworkSessionTest
         NetworkSession session = newSession( connectionProvider, WRITE );
 
         final RuntimeException error = new IllegalStateException( "Oh!" );
-        Function<Transaction,Void> work = new Function<Transaction,Void>()
+        TransactionWork<Void> work = new TransactionWork<Void>()
         {
             @Override
-            public Void apply( Transaction tx )
+            public Void execute( Transaction tx )
             {
                 throw error;
             }
@@ -864,12 +864,12 @@ public class NetworkSessionTest
         when( connectionProvider.acquireConnection( mode ) ).thenReturn( connection );
         NetworkSession session = newSession( connectionProvider, retryLogic );
 
-        int answer = executeTransaction( session, mode, new Function<Transaction,Integer>()
+        int answer = executeTransaction( session, mode, new TransactionWork<Integer>()
         {
             int invoked;
 
             @Override
-            public Integer apply( Transaction tx )
+            public Integer execute( Transaction tx )
             {
                 if ( invoked++ < failures )
                 {
@@ -896,10 +896,10 @@ public class NetworkSessionTest
         when( connectionProvider.acquireConnection( mode ) ).thenReturn( connection );
         NetworkSession session = newSession( connectionProvider, retryLogic );
 
-        int answer = executeTransaction( session, mode, new Function<Transaction,Integer>()
+        int answer = executeTransaction( session, mode, new TransactionWork<Integer>()
         {
             @Override
-            public Integer apply( Transaction tx )
+            public Integer execute( Transaction tx )
             {
                 tx.success();
                 return 43;
@@ -925,12 +925,12 @@ public class NetworkSessionTest
 
         try
         {
-            executeTransaction( session, mode, new Function<Transaction,Integer>()
+            executeTransaction( session, mode, new TransactionWork<Integer>()
             {
                 int invoked;
 
                 @Override
-                public Integer apply( Transaction tx )
+                public Integer execute( Transaction tx )
                 {
                     if ( invoked++ < failures )
                     {
@@ -963,10 +963,10 @@ public class NetworkSessionTest
 
         try
         {
-            executeTransaction( session, mode, new Function<Transaction,Integer>()
+            executeTransaction( session, mode, new TransactionWork<Integer>()
             {
                 @Override
-                public Integer apply( Transaction tx )
+                public Integer execute( Transaction tx )
                 {
                     tx.success();
                     return 42;
@@ -992,12 +992,12 @@ public class NetworkSessionTest
 
         try
         {
-            executeTransaction( session, mode, new Function<Transaction,Integer>()
+            executeTransaction( session, mode, new TransactionWork<Integer>()
             {
                 int invoked;
 
                 @Override
-                public Integer apply( Transaction tx )
+                public Integer execute( Transaction tx )
                 {
                     if ( invoked++ < failures )
                     {
@@ -1035,12 +1035,12 @@ public class NetworkSessionTest
         final ServiceUnavailableException error = new ServiceUnavailableException( "Oh!" );
         try
         {
-            executeTransaction( session, mode, new Function<Transaction,Integer>()
+            executeTransaction( session, mode, new TransactionWork<Integer>()
             {
                 int invoked;
 
                 @Override
-                public Integer apply( Transaction tx )
+                public Integer execute( Transaction tx )
                 {
                     if ( invoked++ < failures )
                     {
@@ -1060,7 +1060,7 @@ public class NetworkSessionTest
         }
     }
 
-    private static <T> T executeTransaction( Session session, AccessMode mode, Function<Transaction,T> work )
+    private static <T> T executeTransaction( Session session, AccessMode mode, TransactionWork<T> work )
     {
         if ( mode == READ )
         {

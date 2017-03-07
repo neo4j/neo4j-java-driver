@@ -27,6 +27,7 @@ import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.v1.TransactionWork;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.types.TypeSystem;
 
@@ -107,13 +108,13 @@ public class TestNeo4jSession extends TestNeo4j implements Session
     }
 
     @Override
-    public <T> T readTransaction( Function<Transaction,T> work )
+    public <T> T readTransaction( TransactionWork<T> work )
     {
         return realSession.readTransaction( work );
     }
 
     @Override
-    public <T> T writeTransaction( Function<Transaction,T> work )
+    public <T> T writeTransaction( TransactionWork<T> work )
     {
         return realSession.writeTransaction( work );
     }

@@ -40,10 +40,10 @@ import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.v1.TransactionWork;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -457,7 +457,7 @@ public class SessionIT
                 assertEquals( "Bruce Banner", record.get( 0 ).asString() );
             }
 
-            verify( work, times( retries ) ).apply( any( Transaction.class ) );
+            verify( work, times( retries ) ).execute( any( Transaction.class ) );
         }
     }
 
@@ -481,7 +481,7 @@ public class SessionIT
                 assertEquals( 1, record.get( 0 ).asInt() );
             }
 
-            verify( work, times( retries ) ).apply( any( Transaction.class ) );
+            verify( work, times( retries ) ).execute( any( Transaction.class ) );
         }
     }
 
@@ -507,7 +507,7 @@ public class SessionIT
                 }
             }
 
-            verify( work, times( failures ) ).apply( any( Transaction.class ) );
+            verify( work, times( failures ) ).execute( any( Transaction.class ) );
         }
     }
 
@@ -539,7 +539,7 @@ public class SessionIT
                 assertEquals( 0, result.single().get( 0 ).asInt() );
             }
 
-            verify( work, times( failures ) ).apply( any( Transaction.class ) );
+            verify( work, times( failures ) ).execute( any( Transaction.class ) );
         }
     }
 
@@ -548,10 +548,10 @@ public class SessionIT
     {
         try ( Session session = neo4j.driver().session() )
         {
-            int answer = session.writeTransaction( new Function<Transaction,Integer>()
+            int answer = session.writeTransaction( new TransactionWork<Integer>()
             {
                 @Override
-                public Integer apply( Transaction tx )
+                public Integer execute( Transaction tx )
                 {
                     tx.run( "CREATE (:Person {name: 'Natasha Romanoff'})" );
                     tx.failure();
@@ -583,10 +583,10 @@ public class SessionIT
         // read previously committed data
         try ( Session session = driver.session( sessionMode ) )
         {
-            Set<String> names = session.readTransaction( new Function<Transaction,Set<String>>()
+            Set<String> names = session.readTransaction( new TransactionWork<Set<String>>()
             {
                 @Override
-                public Set<String> apply( Transaction tx )
+                public Set<String> execute( Transaction tx )
                 {
                     List<Record> records = tx.run( "MATCH (p:Person) RETURN p.name AS name" ).list();
                     Set<String> names = new HashSet<>( records.size() );
@@ -609,10 +609,10 @@ public class SessionIT
         // write some test data
         try ( Session session = driver.session( sessionMode ) )
         {
-            String material = session.writeTransaction( new Function<Transaction,String>()
+            String material = session.writeTransaction( new TransactionWork<String>()
             {
                 @Override
-                public String apply( Transaction tx )
+                public String execute( Transaction tx )
                 {
                     StatementResult result = tx.run( "CREATE (s:Shield {material: 'Vibranium'}) RETURN s" );
                     tx.success();
@@ -640,10 +640,10 @@ public class SessionIT
         {
             try
             {
-                session.writeTransaction( new Function<Transaction,Void>()
+                session.writeTransaction( new TransactionWork<Void>()
                 {
                     @Override
-                    public Void apply( Transaction tx )
+                    public Void execute( Transaction tx )
                     {
                         tx.run( "CREATE (:Person {name: 'Thanos'})" );
                         // trigger division by zero error:
@@ -681,7 +681,7 @@ public class SessionIT
         return spy( new ThrowingWork( query, failures ) );
     }
 
-    private static class ThrowingWork implements Function<Transaction,Record>
+    private static class ThrowingWork implements TransactionWork<Record>
     {
         final String query;
         final int failures;
@@ -695,7 +695,7 @@ public class SessionIT
         }
 
         @Override
-        public Record apply( Transaction tx )
+        public Record execute( Transaction tx )
         {
             StatementResult result = tx.run( query );
             if ( invoked++ < failures )
