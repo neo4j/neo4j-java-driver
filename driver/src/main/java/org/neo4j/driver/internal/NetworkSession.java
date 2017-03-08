@@ -37,11 +37,11 @@ import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.v1.TransactionWork;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.types.TypeSystem;
-import org.neo4j.driver.v1.util.Function;
 
 import static org.neo4j.driver.v1.Values.value;
 
@@ -182,13 +182,13 @@ public class NetworkSession implements Session, SessionResourcesHandler
     }
 
     @Override
-    public <T> T readTransaction( Function<Transaction,T> work )
+    public <T> T readTransaction( TransactionWork<T> work )
     {
         return transaction( AccessMode.READ, work );
     }
 
     @Override
-    public <T> T writeTransaction( Function<Transaction,T> work )
+    public <T> T writeTransaction( TransactionWork<T> work )
     {
         return transaction( AccessMode.WRITE, work );
     }
@@ -244,7 +244,7 @@ public class NetworkSession implements Session, SessionResourcesHandler
         }
     }
 
-    private synchronized <T> T transaction( AccessMode mode, Function<Transaction,T> work )
+    private synchronized <T> T transaction( AccessMode mode, TransactionWork<T> work )
     {
         RetryDecision decision = null;
         List<Throwable> errors = null;
@@ -253,7 +253,21 @@ public class NetworkSession implements Session, SessionResourcesHandler
         {
             try ( Transaction tx = beginTransaction( mode ) )
             {
-                return work.apply( tx );
+                T result;
+                try
+                {
+                    result = work.execute( tx );
+                }
+                catch ( Throwable t )
+                {
+                    // mark transaction for failure if the given unit of work threw exception
+                    // this will override any success marks that were made by the unit of work
+                    tx.failure();
+                    throw t;
+                }
+                // given unit of work completed successfully, mark transaction for commit
+                tx.success();
+                return result;
             }
             catch ( Throwable newError )
             {

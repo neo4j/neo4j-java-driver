@@ -44,6 +44,7 @@ import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.v1.TransactionWork;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 import org.neo4j.driver.v1.util.Function;
@@ -877,12 +878,12 @@ public class RoutingDriverBoltKitTest
         return driverFactory.newInstance( uri, auth, routingConf, RetrySettings.DEFAULT, config );
     }
 
-    private static Function<Transaction,List<Record>> queryWork( final String query, final AtomicInteger invocations )
+    private static TransactionWork<List<Record>> queryWork( final String query, final AtomicInteger invocations )
     {
-        return new Function<Transaction,List<Record>>()
+        return new TransactionWork<List<Record>>()
         {
             @Override
-            public List<Record> apply( Transaction tx )
+            public List<Record> execute( Transaction tx )
             {
                 invocations.incrementAndGet();
                 return tx.run( query ).list();

@@ -18,7 +18,6 @@
  */
 package org.neo4j.driver.v1;
 
-import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.util.Resource;
 
 /**
@@ -85,21 +84,27 @@ public interface Session extends Resource, StatementRunner
 
     /**
      * Execute given unit of work in a  {@link AccessMode#READ read} transaction.
+     * <p>
+     * Transaction will automatically be committed unless exception is thrown from the unit of work itself or from
+     * {@link Transaction#close()} or transaction is explicitly marked for failure via {@link Transaction#failure()}.
      *
-     * @param work the {@link Function} to be applied to a new read transaction.
+     * @param work the {@link TransactionWork} to be applied to a new read transaction.
      * @param <T> the return type of the given unit of work.
      * @return a result as returned by the given unit of work.
      */
-    <T> T readTransaction( Function<Transaction,T> work );
+    <T> T readTransaction( TransactionWork<T> work );
 
     /**
      * Execute given unit of work in a {@link AccessMode#WRITE write} transaction.
+     * <p>
+     * Transaction will automatically be committed unless exception is thrown from the unit of work itself or from
+     * {@link Transaction#close()} or transaction is explicitly marked for failure via {@link Transaction#failure()}.
      *
-     * @param work the {@link Function} to be applied to a new write transaction.
+     * @param work the {@link TransactionWork} to be applied to a new write transaction.
      * @param <T> the return type of the given unit of work.
      * @return a result as returned by the given unit of work.
      */
-    <T> T writeTransaction( Function<Transaction,T> work );
+    <T> T writeTransaction( TransactionWork<T> work );
 
     /**
      * Return the bookmark received following the last completed
