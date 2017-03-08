@@ -55,6 +55,8 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -544,28 +546,297 @@ public class SessionIT
     }
 
     @Test
-    public void writeTxDoesNotCommitWhenMarkedForFailure()
+    public void readTxCommittedWithoutTxSuccess()
     {
-        try ( Session session = neo4j.driver().session() )
+        try ( Driver driver = newDriverWithoutRetries();
+              Session session = driver.session() )
         {
-            int answer = session.writeTransaction( new TransactionWork<Integer>()
+            assertNull( session.lastBookmark() );
+
+            long answer = session.readTransaction( new TransactionWork<Long>()
             {
                 @Override
-                public Integer execute( Transaction tx )
+                public Long execute( Transaction tx )
                 {
-                    tx.run( "CREATE (:Person {name: 'Natasha Romanoff'})" );
-                    tx.failure();
-                    return 42;
+                    return tx.run( "RETURN 42" ).single().get( 0 ).asLong();
                 }
             } );
-
             assertEquals( 42, answer );
-        }
 
-        try ( Session session = neo4j.driver().session() )
+            // bookmark should be not-null after commit
+            assertNotNull( session.lastBookmark() );
+        }
+    }
+
+    @Test
+    public void writeTxCommittedWithoutTxSuccess()
+    {
+        try ( Driver driver = newDriverWithoutRetries() )
         {
-            StatementResult result = session.run( "MATCH (p:Person {name: 'Natasha Romanoff'}) RETURN count(p)" );
-            assertEquals( 0, result.single().get( 0 ).asInt() );
+            try ( Session session = driver.session() )
+            {
+                long answer = session.writeTransaction( new TransactionWork<Long>()
+                {
+                    @Override
+                    public Long execute( Transaction tx )
+                    {
+                        return tx.run( "CREATE (:Person {name: 'Thor Odinson'}) RETURN 42" ).single().get( 0 ).asLong();
+                    }
+                } );
+                assertEquals( 42, answer );
+            }
+
+            try ( Session session = driver.session() )
+            {
+                StatementResult result = session.run( "MATCH (p:Person {name: 'Thor Odinson'}) RETURN count(p)" );
+                assertEquals( 1, result.single().get( 0 ).asInt() );
+            }
+        }
+    }
+
+    @Test
+    public void readTxRolledBackWithTxFailure()
+    {
+        try ( Driver driver = newDriverWithoutRetries();
+              Session session = driver.session() )
+        {
+            assertNull( session.lastBookmark() );
+
+            long answer = session.readTransaction( new TransactionWork<Long>()
+            {
+                @Override
+                public Long execute( Transaction tx )
+                {
+                    StatementResult result = tx.run( "RETURN 42" );
+                    tx.failure();
+                    return result.single().get( 0 ).asLong();
+                }
+            } );
+            assertEquals( 42, answer );
+
+            // bookmark should remain null after rollback
+            assertNull( session.lastBookmark() );
+        }
+    }
+
+    @Test
+    public void writeTxRolledBackWithTxFailure()
+    {
+        try ( Driver driver = newDriverWithoutRetries() )
+        {
+            try ( Session session = driver.session() )
+            {
+                int answer = session.writeTransaction( new TransactionWork<Integer>()
+                {
+                    @Override
+                    public Integer execute( Transaction tx )
+                    {
+                        tx.run( "CREATE (:Person {name: 'Natasha Romanoff'})" );
+                        tx.failure();
+                        return 42;
+                    }
+                } );
+
+                assertEquals( 42, answer );
+            }
+
+            try ( Session session = driver.session() )
+            {
+                StatementResult result = session.run( "MATCH (p:Person {name: 'Natasha Romanoff'}) RETURN count(p)" );
+                assertEquals( 0, result.single().get( 0 ).asInt() );
+            }
+        }
+    }
+
+    @Test
+    public void readTxRolledBackWhenExceptionIsThrown()
+    {
+        try ( Driver driver = newDriverWithoutRetries();
+              Session session = driver.session() )
+        {
+            assertNull( session.lastBookmark() );
+
+            try
+            {
+                session.readTransaction( new TransactionWork<Long>()
+                {
+                    @Override
+                    public Long execute( Transaction tx )
+                    {
+                        StatementResult result = tx.run( "RETURN 42" );
+                        if ( result.single().get( 0 ).asLong() == 42 )
+                        {
+                            throw new IllegalStateException();
+                        }
+                        return 1L;
+                    }
+                } );
+                fail( "Exception expected" );
+            }
+            catch ( Exception e )
+            {
+                assertThat( e, instanceOf( IllegalStateException.class ) );
+            }
+
+            // bookmark should remain null after rollback
+            assertNull( session.lastBookmark() );
+        }
+    }
+
+    @Test
+    public void writeTxRolledBackWhenExceptionIsThrown()
+    {
+        try ( Driver driver = newDriverWithoutRetries() )
+        {
+            try ( Session session = driver.session() )
+            {
+                try
+                {
+                    session.writeTransaction( new TransactionWork<Integer>()
+                    {
+                        @Override
+                        public Integer execute( Transaction tx )
+                        {
+                            tx.run( "CREATE (:Person {name: 'Loki Odinson'})" );
+                            throw new IllegalStateException();
+                        }
+                    } );
+                    fail( "Exception expected" );
+                }
+                catch ( Exception e )
+                {
+                    assertThat( e, instanceOf( IllegalStateException.class ) );
+                }
+            }
+
+            try ( Session session = driver.session() )
+            {
+                StatementResult result = session.run( "MATCH (p:Person {name: 'Natasha Romanoff'}) RETURN count(p)" );
+                assertEquals( 0, result.single().get( 0 ).asInt() );
+            }
+        }
+    }
+
+    @Test
+    public void readTxRolledBackWhenMarkedBothSuccessAndFailure()
+    {
+        try ( Driver driver = newDriverWithoutRetries();
+              Session session = driver.session() )
+        {
+            assertNull( session.lastBookmark() );
+
+            long answer = session.readTransaction( new TransactionWork<Long>()
+            {
+                @Override
+                public Long execute( Transaction tx )
+                {
+                    StatementResult result = tx.run( "RETURN 42" );
+                    tx.success();
+                    tx.failure();
+                    return result.single().get( 0 ).asLong();
+                }
+            } );
+            assertEquals( 42, answer );
+
+            // bookmark should remain null after rollback
+            assertNull( session.lastBookmark() );
+        }
+    }
+
+    @Test
+    public void writeTxRolledBackWhenMarkedBothSuccessAndFailure()
+    {
+        try ( Driver driver = newDriverWithoutRetries() )
+        {
+            try ( Session session = driver.session() )
+            {
+                int answer = session.writeTransaction( new TransactionWork<Integer>()
+                {
+                    @Override
+                    public Integer execute( Transaction tx )
+                    {
+                        tx.run( "CREATE (:Person {name: 'Natasha Romanoff'})" );
+                        tx.success();
+                        tx.failure();
+                        return 42;
+                    }
+                } );
+
+                assertEquals( 42, answer );
+            }
+
+            try ( Session session = driver.session() )
+            {
+                StatementResult result = session.run( "MATCH (p:Person {name: 'Natasha Romanoff'}) RETURN count(p)" );
+                assertEquals( 0, result.single().get( 0 ).asInt() );
+            }
+        }
+    }
+
+    @Test
+    public void readTxRolledBackWhenMarkedAsSuccessAndThrowsException()
+    {
+        try ( Driver driver = newDriverWithoutRetries();
+              Session session = driver.session() )
+        {
+            assertNull( session.lastBookmark() );
+
+            try
+            {
+                session.readTransaction( new TransactionWork<Long>()
+                {
+                    @Override
+                    public Long execute( Transaction tx )
+                    {
+                        tx.run( "RETURN 42" );
+                        tx.success();
+                        throw new IllegalStateException();
+                    }
+                } );
+                fail( "Exception expected" );
+            }
+            catch ( Exception e )
+            {
+                assertThat( e, instanceOf( IllegalStateException.class ) );
+            }
+
+            // bookmark should remain null after rollback
+            assertNull( session.lastBookmark() );
+        }
+    }
+
+    @Test
+    public void writeTxRolledBackWhenMarkedAsSuccessAndThrowsException()
+    {
+        try ( Driver driver = newDriverWithoutRetries() )
+        {
+            try ( Session session = driver.session() )
+            {
+                try
+                {
+                    session.writeTransaction( new TransactionWork<Integer>()
+                    {
+                        @Override
+                        public Integer execute( Transaction tx )
+                        {
+                            tx.run( "CREATE (:Person {name: 'Natasha Romanoff'})" );
+                            tx.success();
+                            throw new IllegalStateException();
+                        }
+                    } );
+                    fail( "Exception expected" );
+                }
+                catch ( Exception e )
+                {
+                    assertThat( e, instanceOf( IllegalStateException.class ) );
+                }
+            }
+
+            try ( Session session = driver.session() )
+            {
+                StatementResult result = session.run( "MATCH (p:Person {name: 'Natasha Romanoff'}) RETURN count(p)" );
+                assertEquals( 0, result.single().get( 0 ).asInt() );
+            }
         }
     }
 
@@ -666,6 +937,11 @@ public class SessionIT
             Record record = session.run( "MATCH (p:Person {name: 'Thanos'}) RETURN count(p)" ).single();
             assertEquals( 0, record.get( 0 ).asInt() );
         }
+    }
+
+    private Driver newDriverWithoutRetries()
+    {
+        return newDriverWithFixedRetries( 0 );
     }
 
     private Driver newDriverWithFixedRetries( int maxRetriesCount )

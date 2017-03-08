@@ -29,7 +29,6 @@ import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 import org.neo4j.driver.v1.exceptions.TransientException;
-import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.util.Immutable;
 import org.neo4j.driver.v1.util.Resource;
 
@@ -449,10 +448,11 @@ public class Config
         }
 
         /**
-         * Specify the maximum time transactions are allowed to retry via {@link Session#readTransaction(Function)} and
-         * {@link Session#writeTransaction(Function)} methods. These methods will retry the given unit of work on
-         * {@link ServiceUnavailableException}, {@link SessionExpiredException} and {@link TransientException} with
-         * exponential backoff using initial delay of 1 second.
+         * Specify the maximum time transactions are allowed to retry via
+         * {@link Session#readTransaction(TransactionWork)} and {@link Session#writeTransaction(TransactionWork)}
+         * methods. These methods will retry the given unit of work on {@link ServiceUnavailableException},
+         * {@link SessionExpiredException} and {@link TransientException} with exponential backoff using initial
+         * delay of 1 second.
          * <p>
          * Default value is 30 seconds.
          *

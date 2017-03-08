@@ -253,7 +253,21 @@ public class NetworkSession implements Session, SessionResourcesHandler
         {
             try ( Transaction tx = beginTransaction( mode ) )
             {
-                return work.execute( tx );
+                T result;
+                try
+                {
+                    result = work.execute( tx );
+                }
+                catch ( Throwable t )
+                {
+                    // mark transaction for failure if the given unit of work threw exception
+                    // this will override any success marks that were made by the unit of work
+                    tx.failure();
+                    throw t;
+                }
+                // given unit of work completed successfully, mark transaction for commit
+                tx.success();
+                return result;
             }
             catch ( Throwable newError )
             {
