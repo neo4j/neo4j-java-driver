@@ -21,6 +21,9 @@ package org.neo4j.driver.v1.util;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.Session;
+
 import static java.lang.Integer.compare;
 
 public class ServerVersion
@@ -40,6 +43,15 @@ public class ServerVersion
     }
     public static final ServerVersion v3_1_0 = new ServerVersion(3, 1, 0);
     public static final ServerVersion v3_0_0 = new ServerVersion(3, 0, 0);
+
+    public static ServerVersion version( Driver driver )
+    {
+        try ( Session session = driver.session() )
+        {
+            String versionString = session.run( "RETURN 1" ).consume().server().version();
+            return version( versionString );
+        }
+    }
 
     public static ServerVersion version( String server )
     {

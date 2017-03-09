@@ -44,6 +44,7 @@ import org.neo4j.driver.v1.TransactionWork;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.v1.util.ServerVersion;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -60,12 +61,14 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.driver.v1.Config.defaultConfig;
 import static org.neo4j.driver.v1.Values.parameters;
+import static org.neo4j.driver.v1.util.ServerVersion.v3_1_0;
 
 public class SessionIT
 {
@@ -551,6 +554,7 @@ public class SessionIT
         try ( Driver driver = newDriverWithoutRetries();
               Session session = driver.session() )
         {
+            assumeBookmarkSupport( driver );
             assertNull( session.lastBookmark() );
 
             long answer = session.readTransaction( new TransactionWork<Long>()
@@ -600,6 +604,7 @@ public class SessionIT
         try ( Driver driver = newDriverWithoutRetries();
               Session session = driver.session() )
         {
+            assumeBookmarkSupport( driver );
             assertNull( session.lastBookmark() );
 
             long answer = session.readTransaction( new TransactionWork<Long>()
@@ -654,6 +659,7 @@ public class SessionIT
         try ( Driver driver = newDriverWithoutRetries();
               Session session = driver.session() )
         {
+            assumeBookmarkSupport( driver );
             assertNull( session.lastBookmark() );
 
             try
@@ -723,6 +729,7 @@ public class SessionIT
         try ( Driver driver = newDriverWithoutRetries();
               Session session = driver.session() )
         {
+            assumeBookmarkSupport( driver );
             assertNull( session.lastBookmark() );
 
             long answer = session.readTransaction( new TransactionWork<Long>()
@@ -779,6 +786,7 @@ public class SessionIT
         try ( Driver driver = newDriverWithoutRetries();
               Session session = driver.session() )
         {
+            assumeBookmarkSupport( driver );
             assertNull( session.lastBookmark() );
 
             try
@@ -955,6 +963,12 @@ public class SessionIT
     private static ThrowingWork newThrowingWorkSpy( String query, int failures )
     {
         return spy( new ThrowingWork( query, failures ) );
+    }
+
+    private static void assumeBookmarkSupport( Driver driver )
+    {
+        ServerVersion serverVersion = ServerVersion.version( driver );
+        assumeTrue( serverVersion.greaterThanOrEqual( v3_1_0 ) );
     }
 
     private static class ThrowingWork implements TransactionWork<Record>
