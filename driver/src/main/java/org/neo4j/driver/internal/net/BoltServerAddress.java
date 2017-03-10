@@ -41,6 +41,12 @@ public class BoltServerAddress
         {
             port = DEFAULT_PORT;
         }
+
+        if( uri.getHost() == null )
+        {
+            throw new IllegalArgumentException( "Invalid URI format `" + uri.toString() + "`");
+        }
+
         return new BoltServerAddress( uri.getHost(), port );
     }
 

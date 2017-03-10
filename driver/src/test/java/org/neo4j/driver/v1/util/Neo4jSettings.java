@@ -33,6 +33,8 @@ public class Neo4jSettings
     public static final String DATA_DIR = "dbms.directories.data";
     public static final String CERT_DIR = "dbms.directories.certificates";
     public static final String IMPORT_DIR = "dbms.directories.import";
+    public static final String LISTEN_ADDR = "dbms.connectors.default_listen_address"; // only valid for 3.1+
+    public static final String IPV6_ENABLED_ADDR = "::";
 
     private static final String DEFAULT_IMPORT_DIR = "import";
     private static final String DEFAULT_CERT_DIR = "certificates";
@@ -52,7 +54,8 @@ public class Neo4jSettings
             CERT_DIR, DEFAULT_CERT_DIR,
             DATA_DIR, DEFAULT_DATA_DIR,
             IMPORT_DIR, DEFAULT_IMPORT_DIR,
-            AUTH_ENABLED, "false" ), Collections.<String>emptySet() );
+            AUTH_ENABLED, "false",
+            LISTEN_ADDR, IPV6_ENABLED_ADDR ), Collections.<String>emptySet() );
 
     private Neo4jSettings( Map<String, String> settings, Set<String> excludes )
     {
