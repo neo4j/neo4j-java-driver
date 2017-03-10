@@ -18,25 +18,29 @@
  */
 package org.neo4j.driver.internal.cluster;
 
+import org.junit.Test;
+
 import java.util.Set;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
 
-public interface RoutingTable
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.junit.Assert.assertThat;
+import static org.neo4j.driver.internal.cluster.DnsResolver.DEFAULT;
+
+public class DnsResolverTest
 {
-    boolean isStale();
+    @Test
+    public void shouldResolveDNSToIPs()
+    {
+        Set<BoltServerAddress> resolve = DEFAULT.resolve( new BoltServerAddress( "google.com", 80 ) );
+        assertThat( resolve.size(), greaterThanOrEqualTo( 1 ) );
+    }
 
-    Set<BoltServerAddress> update( ClusterComposition cluster );
-
-    void forget( BoltServerAddress address );
-
-    RoundRobinAddressSet readers();
-
-    RoundRobinAddressSet writers();
-
-    BoltServerAddress nextRouter();
-
-    int routerSize();
-
-    void removeWriter( BoltServerAddress toRemove );
+    @Test
+    public void shouldResolveLocalhostDNSToIPs()
+    {
+        Set<BoltServerAddress> resolve = DEFAULT.resolve( new BoltServerAddress( "127.0.0.1", 80 ) );
+        assertThat( resolve.size(), greaterThanOrEqualTo( 1 ) );
+    }
 }

@@ -18,6 +18,9 @@
  */
 package org.neo4j.driver.internal.cluster;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
@@ -37,15 +40,17 @@ public class Rediscovery
     private final Clock clock;
     private final Logger logger;
     private final ClusterCompositionProvider provider;
+    private final DnsResolver dnsResolver;
 
     public Rediscovery( BoltServerAddress initialRouter, RoutingSettings settings, Clock clock, Logger logger,
-            ClusterCompositionProvider provider )
+            ClusterCompositionProvider provider, DnsResolver dnsResolver )
     {
         this.initialRouter = initialRouter;
         this.settings = settings;
         this.clock = clock;
         this.logger = logger;
         this.provider = provider;
+        this.dnsResolver = dnsResolver;
     }
 
     // Given the current routing table and connection pool, use the connection composition provider to fetch a new
@@ -76,8 +81,8 @@ public class Rediscovery
     private ClusterComposition lookupClusterCompositionOnKnownRouters( ConnectionPool connections,
             RoutingTable routingTable )
     {
-        boolean triedInitialRouter = false;
         int size = routingTable.routerSize();
+        Set<BoltServerAddress> triedServers = new HashSet<>( size );
         for ( int i = 0; i < size; i++ )
         {
             BoltServerAddress address = routingTable.nextRouter();
@@ -86,11 +91,21 @@ public class Rediscovery
                 break;
             }
 
-            if ( address.equals( initialRouter ) )
+            ClusterComposition composition = lookupClusterCompositionOnRouter( address, connections, routingTable );
+            if ( composition != null )
             {
-                triedInitialRouter = true;
+                return composition;
             }
+            else
+            {
+                triedServers.add( address );
+            }
+        }
 
+        Set<BoltServerAddress> ips = dnsResolver.resolve( initialRouter );
+        ips.removeAll( triedServers );
+        for ( BoltServerAddress address : ips )
+        {
             ClusterComposition composition = lookupClusterCompositionOnRouter( address, connections, routingTable );
             if ( composition != null )
             {
@@ -98,11 +113,7 @@ public class Rediscovery
             }
         }
 
-        if ( triedInitialRouter )
-        {
-            return null;
-        }
-        return lookupClusterCompositionOnRouter( initialRouter, connections, routingTable );
+        return null;
     }
 
     private ClusterComposition lookupClusterCompositionOnRouter( BoltServerAddress routerAddress,
@@ -122,7 +133,7 @@ public class Rediscovery
         {
             // connection turned out to be broken
             logger.error( format( "Failed to connect to routing server '%s'.", routerAddress ), t );
-            routingTable.removeRouter( routerAddress );
+            routingTable.forget( routerAddress );
             return null;
         }
 
