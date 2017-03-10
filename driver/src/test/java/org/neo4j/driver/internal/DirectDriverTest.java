@@ -32,6 +32,7 @@ import org.neo4j.driver.v1.util.StubServer;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.neo4j.driver.internal.net.BoltServerAddress.LOCAL_DEFAULT;
 import static org.neo4j.driver.internal.util.Matchers.directDriverWithAddress;
 import static org.neo4j.driver.v1.Values.parameters;
@@ -50,6 +51,38 @@ public class DirectDriverTest
 
         // Then
         assertThat( driver, is( directDriverWithAddress( LOCAL_DEFAULT ) ) );
+    }
+
+    @Test
+    public void shouldAllowIPv6Address()
+    {
+        // Given
+        URI uri = URI.create( "bolt://[::1]" );
+        BoltServerAddress address = BoltServerAddress.from( uri );
+
+        // When
+        Driver driver = GraphDatabase.driver( uri );
+
+        // Then
+        assertThat( driver, is( directDriverWithAddress( address ) ) );
+    }
+
+    @Test
+    public void shouldRejectInvalidAddress()
+    {
+        // Given
+        URI uri = URI.create( "*" );
+
+        // When & Then
+        try
+        {
+            Driver driver = GraphDatabase.driver( uri );
+            fail("Expecting error for wrong uri");
+        }
+        catch( IllegalArgumentException e )
+        {
+            assertThat( e.getMessage(), equalTo( "Invalid URI format `*`" ) );
+        }
     }
 
     @Test
