@@ -31,7 +31,7 @@ import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.TransientException;
-import org.neo4j.driver.v1.util.ServerVersion;
+import org.neo4j.driver.internal.cluster.ServerVersion;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
 import static java.util.Arrays.asList;
@@ -43,7 +43,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
-import static org.neo4j.driver.v1.util.ServerVersion.v3_1_0;
+import static org.neo4j.driver.internal.cluster.ServerVersion.v3_1_0;
 
 public class BookmarkIT
 {

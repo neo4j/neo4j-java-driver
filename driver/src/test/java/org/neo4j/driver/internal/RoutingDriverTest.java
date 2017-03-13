@@ -36,6 +36,7 @@ import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.spi.PooledConnection;
+import org.neo4j.driver.internal.summary.InternalServerInfo;
 import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Config;
@@ -148,8 +149,8 @@ public class RoutingDriverTest
         // Then
         catch ( ServiceUnavailableException e )
         {
-            assertThat( e.getMessage(),
-                    containsString( "Failed to call 'dbms.cluster.routing.getServers' procedure on server" ) );
+            assertThat( e.getMessage(), containsString( "Failed to run " +
+                    "'Statement{text='CALL dbms.cluster.routing.getServers', parameters={}}' on server." ) );
         }
     }
 
@@ -344,7 +345,7 @@ public class RoutingDriverTest
 
     private Driver driverWithPool( ConnectionPool pool )
     {
-        RoutingSettings settings = new RoutingSettings( 10, 5_000 );
+        RoutingSettings settings = new RoutingSettings( 10, 5_000, null );
         ConnectionProvider connectionProvider = new LoadBalancer( SEED, settings, pool, clock, logging );
         Config config = Config.build().withLogging( logging ).toConfig();
         SessionFactory sessionFactory = new NetworkSessionWithAddressFactory( connectionProvider, config );
@@ -383,6 +384,7 @@ public class RoutingDriverTest
                 PooledConnection connection = mock( PooledConnection.class );
                 when( connection.isOpen() ).thenReturn( true );
                 when( connection.boltServerAddress() ).thenReturn( address );
+                when( connection.server() ).thenReturn( new InternalServerInfo( address, "Neo4j/3.1.0" ) );
                 doAnswer( withKeys( "ttl", "servers" ) ).when( connection ).run(
                         eq( GET_SERVERS ),
                         eq( Collections.<String,Value>emptyMap() ),

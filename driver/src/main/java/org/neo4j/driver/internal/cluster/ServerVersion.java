@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1.util;
+package org.neo4j.driver.internal.cluster;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -44,6 +44,7 @@ public class ServerVersion
     public static final ServerVersion v3_2_0 = new ServerVersion(3, 2, 0);
     public static final ServerVersion v3_1_0 = new ServerVersion(3, 1, 0);
     public static final ServerVersion v3_0_0 = new ServerVersion(3, 0, 0);
+    public static final ServerVersion v3_2_0 = new ServerVersion(3, 2, 0);
 
     public static ServerVersion version( Driver driver )
     {

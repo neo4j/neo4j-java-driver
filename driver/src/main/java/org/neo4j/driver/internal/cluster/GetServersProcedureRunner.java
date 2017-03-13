@@ -22,17 +22,49 @@ package org.neo4j.driver.internal.cluster;
 import java.util.List;
 
 import org.neo4j.driver.internal.NetworkSession;
-import org.neo4j.driver.internal.SessionResourcesHandler;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
+import org.neo4j.driver.v1.Value;
+
+import static org.neo4j.driver.internal.SessionResourcesHandler.NO_OP;
+import static org.neo4j.driver.internal.cluster.ServerVersion.v3_2_0;
+import static org.neo4j.driver.internal.cluster.ServerVersion.version;
 
 public class GetServersProcedureRunner
 {
-    private static final String CALL_GET_SERVERS = "CALL dbms.cluster.routing.getServers";
+    private static final String GET_SERVERS = "dbms.cluster.routing.getServers";
+    private static final String GET_SERVERS_V2 = "dbms.cluster.routing.getServersV2";
+
+    private final Value routingParameters;
+    private Statement procedureCalled;
+
+    public GetServersProcedureRunner( Value parameters )
+    {
+        this.routingParameters = parameters;
+    }
 
     public List<Record> run( Connection connection )
     {
-        return NetworkSession.run( connection, new Statement( CALL_GET_SERVERS ), SessionResourcesHandler.NO_OP ).list();
+        if( version( connection.server().version() ).greaterThanOrEqual( v3_2_0 ) )
+        {
+            procedureCalled = new Statement( "CALL " + GET_SERVERS_V2, routingParameters );
+        }
+        else
+        {
+            procedureCalled = new Statement("CALL " + GET_SERVERS );
+        }
+
+        return runProcedure( connection, procedureCalled );
+    }
+
+    List<Record> runProcedure( Connection connection, Statement procedure )
+    {
+        return NetworkSession.run( connection, procedure, NO_OP ).list();
+    }
+
+    Statement procedureCalled()
+    {
+        return procedureCalled;
     }
 }

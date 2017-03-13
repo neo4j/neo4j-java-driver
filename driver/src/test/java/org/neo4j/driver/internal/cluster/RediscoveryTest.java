@@ -84,7 +84,7 @@ public class RediscoveryTest
         {
             // given
             int maxRoutingFailures = 7;
-            RoutingSettings settings = new RoutingSettings( maxRoutingFailures, 10 );
+            RoutingSettings settings = new RoutingSettings( maxRoutingFailures, 10, null );
             Clock clock = mock( Clock.class );
             RoutingTable routingTable = new TestRoutingTable( A );
 
@@ -450,7 +450,7 @@ public class RediscoveryTest
     private static ClusterComposition rediscover( BoltServerAddress initialRouter, ConnectionPool connections,
             RoutingTable routingTable, ClusterCompositionProvider provider )
     {
-        RoutingSettings settings = new RoutingSettings( 1, 0 );
+        RoutingSettings settings = new RoutingSettings( 1, 0, null );
         Clock mockedClock = mock( Clock.class );
         Logger mockedLogger = mock( Logger.class );
 

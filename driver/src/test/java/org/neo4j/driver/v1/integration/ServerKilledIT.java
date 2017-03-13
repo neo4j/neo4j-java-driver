@@ -159,7 +159,7 @@ public class ServerKilledIT
     {
         DriverFactory factory = new DriverFactoryWithClock( clock );
         AuthToken auth = AuthTokens.none();
-        RoutingSettings routingSettings = new RoutingSettings( 1, 1 );
+        RoutingSettings routingSettings = new RoutingSettings( 1, 1, null );
         RetrySettings retrySettings = RetrySettings.DEFAULT;
         return factory.newInstance( Neo4jRunner.DEFAULT_URI, auth, routingSettings, retrySettings, config );
     }
