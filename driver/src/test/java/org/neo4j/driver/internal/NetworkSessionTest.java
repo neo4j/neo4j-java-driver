@@ -614,15 +614,28 @@ public class NetworkSessionTest
     }
 
     @Test
-    public void allowsToStartTransactionWithNullBookmark()
+    public void testPassingNoBookmarkShouldRetainBookmark()
     {
         ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
         PooledConnection connection = openConnectionMock();
         when( connectionProvider.acquireConnection( READ ) ).thenReturn( connection );
         NetworkSession session = newSession( connectionProvider, READ );
-        session.setBookmark( "SomeUndesiredBookmark" );
+        session.setBookmark( "X" );
         session.beginTransaction();
-        assertNull( session.lastBookmark() );
+        assertThat( session.lastBookmark(), equalTo( "X" ) );
+    }
+
+    @SuppressWarnings( "deprecation" )
+    @Test
+    public void testPassingNullBookmarkShouldRetainBookmark()
+    {
+        ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
+        PooledConnection connection = openConnectionMock();
+        when( connectionProvider.acquireConnection( READ ) ).thenReturn( connection );
+        NetworkSession session = newSession( connectionProvider, READ );
+        session.setBookmark( "X" );
+        session.beginTransaction( null );
+        assertThat( session.lastBookmark(), equalTo( "X" ) );
     }
 
     @Test

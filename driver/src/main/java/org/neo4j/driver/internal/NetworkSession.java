@@ -179,7 +179,10 @@ public class NetworkSession implements Session, SessionResourcesHandler
     @Override
     public synchronized Transaction beginTransaction( String bookmark )
     {
-        this.bookmark = bookmark;
+        if ( bookmark != null )
+        {
+            this.bookmark = bookmark;
+        }
         return beginTransaction();
     }
 
