@@ -103,17 +103,20 @@ public class BookmarkIT
     {
         String invalidBookmark = "hi, this is an invalid bookmark";
 
-        try
-        {
-            session.beginTransaction( invalidBookmark );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( ClientException.class ) );
+        try (Session session = driver.session( invalidBookmark )) {
+            try
+            {
+                session.beginTransaction();
+                fail( "Exception expected" );
+            }
+            catch ( Exception e )
+            {
+                assertThat( e, instanceOf( ClientException.class ) );
+            }
         }
     }
 
+    @SuppressWarnings( "deprecation" )
     @Test
     public void shouldThrowForUnreachableBookmark()
     {

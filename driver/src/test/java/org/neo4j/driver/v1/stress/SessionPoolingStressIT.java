@@ -81,7 +81,6 @@ public class SessionPoolingStressIT
     {
         Config config = Config.build()
                 .withEncryptionLevel( Config.EncryptionLevel.NONE )
-                .withMaxSessions( N_THREADS )
                 .toConfig();
 
         driver = driver( neo4j.uri(), config );

@@ -301,6 +301,7 @@ public class NetworkSessionTest
         verify( connection ).close();
     }
 
+    @SuppressWarnings( "deprecation" )
     @Test
     public void resetDoesNothingWhenNoTransactionAndNoConnection()
     {
@@ -541,8 +542,9 @@ public class NetworkSessionTest
         PooledConnection connection = mock( PooledConnection.class );
         when( connectionProvider.acquireConnection( READ ) ).thenReturn( connection );
         NetworkSession session = newSession( connectionProvider, READ );
+        session.setBookmark(bookmark);
 
-        try ( Transaction ignore = session.beginTransaction( bookmark ) )
+        try ( Transaction ignore = session.beginTransaction() )
         {
             verifyBeginTx( connection, bookmark );
         }
@@ -595,7 +597,7 @@ public class NetworkSessionTest
     {
         NetworkSession session = newSession( mock( ConnectionProvider.class ), WRITE );
 
-        session.setLastBookmark( "TheBookmark" );
+        session.setBookmark( "TheBookmark" );
 
         assertEquals( "TheBookmark", session.lastBookmark() );
     }
@@ -604,9 +606,9 @@ public class NetworkSessionTest
     public void possibleToOverwriteBookmarkWithNull()
     {
         NetworkSession session = newSession( mock( ConnectionProvider.class ), WRITE );
-        session.setLastBookmark( "TheBookmark" );
+        session.setBookmark( "TheBookmark" );
 
-        session.setLastBookmark( null );
+        session.setBookmark( null );
 
         assertNull( session.lastBookmark() );
     }
@@ -618,10 +620,8 @@ public class NetworkSessionTest
         PooledConnection connection = openConnectionMock();
         when( connectionProvider.acquireConnection( READ ) ).thenReturn( connection );
         NetworkSession session = newSession( connectionProvider, READ );
-        session.setLastBookmark( "SomeUndesiredBookmark" );
-
-        session.beginTransaction( null );
-
+        session.setBookmark( "SomeUndesiredBookmark" );
+        session.beginTransaction();
         assertNull( session.lastBookmark() );
     }
 
@@ -1096,7 +1096,7 @@ public class NetworkSessionTest
             RetryLogic<RetryDecision> retryLogic, String bookmark )
     {
         NetworkSession session = new NetworkSession( connectionProvider, mode, retryLogic, DEV_NULL_LOGGING );
-        session.setLastBookmark( bookmark );
+        session.setBookmark( bookmark );
         return session;
     }
 

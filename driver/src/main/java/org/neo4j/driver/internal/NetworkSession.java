@@ -52,7 +52,7 @@ public class NetworkSession implements Session, SessionResourcesHandler
     private final RetryLogic<RetryDecision> retryLogic;
     protected final Logger logger;
 
-    private String lastBookmark;
+    private String bookmark;
     private PooledConnection currentConnection;
     private ExplicitTransaction currentTransaction;
 
@@ -116,6 +116,7 @@ public class NetworkSession implements Session, SessionResourcesHandler
         return result;
     }
 
+    @Deprecated
     @Override
     public synchronized void reset()
     {
@@ -174,10 +175,11 @@ public class NetworkSession implements Session, SessionResourcesHandler
         return beginTransaction( mode );
     }
 
+    @Deprecated
     @Override
     public synchronized Transaction beginTransaction( String bookmark )
     {
-        lastBookmark = bookmark;
+        this.bookmark = bookmark;
         return beginTransaction();
     }
 
@@ -193,15 +195,15 @@ public class NetworkSession implements Session, SessionResourcesHandler
         return transaction( AccessMode.WRITE, work );
     }
 
-    void setLastBookmark( String bookmark )
+    void setBookmark(String bookmark )
     {
-        lastBookmark = bookmark;
+        this.bookmark = bookmark;
     }
 
     @Override
     public String lastBookmark()
     {
-        return lastBookmark;
+        return bookmark;
     }
 
     @Override
@@ -294,7 +296,7 @@ public class NetworkSession implements Session, SessionResourcesHandler
         syncAndCloseCurrentConnection();
         currentConnection = acquireConnection( mode );
 
-        currentTransaction = new ExplicitTransaction( currentConnection, this, lastBookmark );
+        currentTransaction = new ExplicitTransaction( currentConnection, this, bookmark);
         currentConnection.setResourcesHandler( this );
         return currentTransaction;
     }
@@ -391,7 +393,7 @@ public class NetworkSession implements Session, SessionResourcesHandler
     {
         if ( tx.bookmark() != null )
         {
-            lastBookmark = tx.bookmark();
+            bookmark = tx.bookmark();
         }
     }
 

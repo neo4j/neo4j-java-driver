@@ -220,6 +220,7 @@ public class SessionIT
         }
     }
 
+    @SuppressWarnings( "deprecation" )
     @Test
     public void shouldNotAllowBeginTxIfResetFailureIsNotConsumed() throws Throwable
     {
@@ -246,6 +247,7 @@ public class SessionIT
         }
     }
 
+    @SuppressWarnings( "deprecation" )
     @Test
     public void shouldThrowExceptionOnCloseIfResetFailureIsNotConsumed() throws Throwable
     {
@@ -267,6 +269,7 @@ public class SessionIT
         session.close();
     }
 
+    @SuppressWarnings( "deprecation" )
     @Test
     public void shouldBeAbleToBeginTxAfterResetFailureIsConsumed() throws Throwable
     {
@@ -310,6 +313,7 @@ public class SessionIT
         }
     }
 
+    @SuppressWarnings( "deprecation" )
     private void resetSessionAfterTimeout( final Session session, final int timeout )
     {
         new Thread( new Runnable()
@@ -333,6 +337,7 @@ public class SessionIT
         } ).start();
     }
 
+    @SuppressWarnings( "deprecation" )
     @Test
     public void shouldAllowMoreStatementAfterSessionReset()
     {
@@ -351,6 +356,7 @@ public class SessionIT
         }
     }
 
+    @SuppressWarnings( "deprecation" )
     @Test
     public void shouldAllowMoreTxAfterSessionReset()
     {
@@ -376,6 +382,7 @@ public class SessionIT
         }
     }
 
+    @SuppressWarnings( "deprecation" )
     @Test
     public void shouldMarkTxAsFailedAndDisallowRunAfterSessionReset()
     {
@@ -398,6 +405,7 @@ public class SessionIT
         }
     }
 
+    @SuppressWarnings( "deprecation" )
     @Test
     public void shouldAllowMoreTxAfterSessionResetInTx()
     {

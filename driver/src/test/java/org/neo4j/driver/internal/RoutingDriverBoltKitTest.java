@@ -548,9 +548,9 @@ public class RoutingDriverBoltKitTest
         StubServer writer = StubServer.start( "write_tx_with_bookmarks.script", 9007 );
 
         try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9001", config );
-              Session session = driver.session() )
+              Session session = driver.session( "OldBookmark" ) )
         {
-            try ( Transaction tx = session.beginTransaction( "OldBookmark" ) )
+            try ( Transaction tx = session.beginTransaction() )
             {
                 tx.run( "CREATE (n {name:'Bob'})" );
                 tx.success();

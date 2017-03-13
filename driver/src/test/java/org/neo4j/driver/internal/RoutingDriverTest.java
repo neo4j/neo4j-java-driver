@@ -316,6 +316,7 @@ public class RoutingDriverTest
         assertNotEquals( write3.address, write1.address );
     }
 
+    @SuppressWarnings( "deprecation" )
     @Test
     public void testTrustOnFirstUseNotCompatibleWithRoutingDriver()
     {
@@ -440,7 +441,7 @@ public class RoutingDriverTest
         public Session newInstance( AccessMode mode, String bookmark )
         {
             NetworkSessionWithAddress session = new NetworkSessionWithAddress( connectionProvider, mode, logging );
-            session.setLastBookmark( bookmark );
+            session.setBookmark( bookmark );
             return session;
         }
     }

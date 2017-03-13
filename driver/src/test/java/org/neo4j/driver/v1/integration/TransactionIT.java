@@ -217,6 +217,7 @@ public class TransactionIT
         // Then it wasn't the end of the world as we know it
     }
 
+    @SuppressWarnings( "deprecation" )
     @Test
     public void shouldBeAbleToRunMoreStatementsAfterResetOnNoErrorState() throws Throwable
     {
@@ -235,6 +236,7 @@ public class TransactionIT
         assertThat( nodes, equalTo( 1L ) );
     }
 
+    @SuppressWarnings( "deprecation" )
     @Test
     public void shouldHandleResetBeforeRun() throws Throwable
     {
@@ -250,6 +252,8 @@ public class TransactionIT
     }
 
     private Transaction globalTx = null;
+
+    @SuppressWarnings( "deprecation" )
     @Test
     public void shouldHandleResetFromMultipleThreads() throws Throwable
     {
