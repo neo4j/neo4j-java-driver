@@ -18,16 +18,8 @@
  */
 package org.neo4j.driver.v1.util.cc;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.nio.file.Path;
-import java.util.Arrays;
-
-import org.neo4j.driver.v1.util.ProcessEnvConfigurator;
-
-import static java.lang.System.lineSeparator;
+import static org.neo4j.driver.v1.util.cc.CommandLineUtil.executeCommand;
 
 final class ClusterControl
 {
@@ -42,7 +34,7 @@ final class ClusterControl
             executeCommand( "neoctrl-cluster", "--help" );
             return true;
         }
-        catch ( ClusterControlException e )
+        catch ( CommandLineException e )
         {
             return false;
         }
@@ -87,55 +79,4 @@ final class ClusterControl
         executeCommand( "neoctrl-stop", "--kill", path.toString() );
     }
 
-    private static String executeCommand( String... command )
-    {
-        try
-        {
-            ProcessBuilder processBuilder = new ProcessBuilder().command( command );
-            ProcessEnvConfigurator.configure( processBuilder );
-            return executeAndGetStdOut( processBuilder );
-        }
-        catch ( IOException e )
-        {
-            throw new ClusterControlException( "Error running command " + Arrays.toString( command ), e );
-        }
-        catch ( InterruptedException e )
-        {
-            Thread.currentThread().interrupt();
-            throw new ClusterControlException( "Interrupted while waiting for command " +
-                                               Arrays.toString( command ), e );
-        }
-    }
-
-    private static String executeAndGetStdOut( ProcessBuilder processBuilder )
-            throws IOException, InterruptedException
-    {
-        Process process = processBuilder.start();
-        int exitCode = process.waitFor();
-        String stdOut = asString( process.getInputStream() );
-        String stdErr = asString( process.getErrorStream() );
-        if ( exitCode != 0 )
-        {
-            throw new ClusterControlException( "Non-zero exit code\nSTDOUT:\n" + stdOut + "\nSTDERR:\n" + stdErr );
-        }
-        return stdOut;
-    }
-
-    private static String asString( InputStream input )
-    {
-        StringBuilder result = new StringBuilder();
-        try ( BufferedReader reader = new BufferedReader( new InputStreamReader( input ) ) )
-        {
-            String line;
-            while ( (line = reader.readLine()) != null )
-            {
-                result.append( line ).append( lineSeparator() );
-            }
-        }
-        catch ( IOException e )
-        {
-            throw new ClusterControlException( "Unable to read from stream", e );
-        }
-        return result.toString();
-    }
 }

@@ -37,7 +37,6 @@ import org.neo4j.driver.v1.exceptions.SecurityException;
 import org.neo4j.driver.v1.util.CertificateToolTest.CertificateSigningRequestGenerator;
 import org.neo4j.driver.v1.util.CertificateToolTest.SelfSignedCertificateGenerator;
 import org.neo4j.driver.v1.util.Neo4jRunner;
-import org.neo4j.driver.v1.util.Neo4jSettings;
 
 import static java.io.File.createTempFile;
 import static junit.framework.Assert.assertEquals;
@@ -50,6 +49,8 @@ import static org.neo4j.driver.v1.Config.TrustStrategy.trustCustomCertificateSig
 import static org.neo4j.driver.v1.Config.TrustStrategy.trustOnFirstUse;
 import static org.neo4j.driver.v1.tck.DriverComplianceIT.neo4j;
 import static org.neo4j.driver.v1.util.CertificateToolTest.generateSelfSignedCertificate;
+import static org.neo4j.driver.v1.util.Neo4jRunner.NEO4J_HOME;
+import static org.neo4j.driver.v1.util.Neo4jSettings.DEFAULT_TLS_CERT_PATH;
 
 public class DriverSecurityComplianceSteps
 {
@@ -226,7 +227,9 @@ public class DriverSecurityComplianceSteps
         driver = GraphDatabase.driver(
                 Neo4jRunner.DEFAULT_URI,
                 Config.build().withEncryptionLevel( EncryptionLevel.REQUIRED )
-                        .withTrustStrategy( trustCustomCertificateSignedBy( Neo4jSettings.DEFAULT_TLS_CERT_FILE ) ).toConfig() );
+                        .withTrustStrategy( trustCustomCertificateSignedBy(
+                                new File( NEO4J_HOME, DEFAULT_TLS_CERT_PATH ) ) )
+                        .toConfig() );
     }
 
     // invalid cert

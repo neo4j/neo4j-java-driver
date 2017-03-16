@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1;
+package org.neo4j.driver.v1.integration;
 
 import org.junit.After;
 import org.junit.Before;
@@ -29,6 +29,12 @@ import java.util.List;
 import java.util.logging.Level;
 
 import org.neo4j.driver.internal.logging.ConsoleLogging;
+import org.neo4j.driver.v1.AccessMode;
+import org.neo4j.driver.v1.Config;
+import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.GraphDatabase;
+import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.util.StubServer;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
