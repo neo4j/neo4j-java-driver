@@ -18,14 +18,14 @@
  */
 package org.neo4j.driver.v1.util.cc;
 
-class ClusterControlException extends RuntimeException
+class CommandLineException extends RuntimeException
 {
-    ClusterControlException( String message )
+    CommandLineException( String message )
     {
         super( message );
     }
 
-    ClusterControlException( String message, Throwable cause )
+    CommandLineException( String message, Throwable cause )
     {
         super( message, cause );
     }

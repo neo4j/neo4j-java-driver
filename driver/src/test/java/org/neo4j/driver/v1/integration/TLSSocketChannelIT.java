@@ -286,7 +286,7 @@ public class TLSSocketChannelIT
         channel.connect( address.toSocketAddress() );
 
         // When
-        SecurityPlan securityPlan = SecurityPlan.forCustomCASignedCertificates( Neo4jSettings.DEFAULT_TLS_CERT_FILE );
+        SecurityPlan securityPlan = SecurityPlan.forCustomCASignedCertificates( neo4j.tlsCertFile() );
         TLSSocketChannel sslChannel = TLSSocketChannel.create( address, securityPlan, channel, logger );
         sslChannel.close();
 
@@ -322,7 +322,7 @@ public class TLSSocketChannelIT
 
         Config config = Config.build()
                 .withEncryptionLevel( Config.EncryptionLevel.REQUIRED )
-                .withTrustStrategy( Config.TrustStrategy.trustSignedBy( Neo4jSettings.DEFAULT_TLS_CERT_FILE ) )
+                .withTrustStrategy( Config.TrustStrategy.trustSignedBy( neo4j.tlsCertFile() ) )
                 .withLogging( logging )
                 .toConfig();
 

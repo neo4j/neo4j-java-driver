@@ -23,14 +23,18 @@ import java.io.IOException;
 import java.net.StandardSocketOptions;
 import java.net.URI;
 import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 
+import static java.util.Arrays.asList;
 import static org.neo4j.driver.v1.ConfigTest.deleteDefaultKnownCertFileIfExists;
 import static org.neo4j.driver.v1.util.FileTools.updateProperties;
+import static org.neo4j.driver.v1.util.cc.CommandLineUtil.executeCommand;
 
 /**
  * This class wraps the neo4j stand-alone jar in some code to help pulling it in from a remote URL and then launching
@@ -42,15 +46,15 @@ public class Neo4jRunner
 
     private static final boolean debug = Boolean.getBoolean( "neo4j.runner.debug" );
 
-    public static final String NEORUN_START_ARGS = System.getProperty( "neorun.start.args" );
+    private static final String DEFAULT_NEOCTRL_ARGS = "-e 3.1.2";
+    public static final String NEOCTRL_ARGS = System.getProperty( "neoctrl.args", DEFAULT_NEOCTRL_ARGS );
     public static final URI DEFAULT_URI = URI.create( "bolt://localhost:7687" );
     public static final BoltServerAddress DEFAULT_ADDRESS = BoltServerAddress.from( DEFAULT_URI );
     private Driver driver;
     private Neo4jSettings currentSettings = Neo4jSettings.DEFAULT_SETTINGS;
 
-    public static final String NEO4J_HOME = new File("../target/neo4j/neo4jhome").getAbsolutePath();
-    private static final String NEORUN_PATH = new File("../neokit/neorun.py").getAbsolutePath();
-    private static final String NEO4J_CONF = new File( NEO4J_HOME, "conf/neo4j.conf" ).getAbsolutePath();
+    private static final String NEO4J_DIR = new File( "../target/neo4j" ).getAbsolutePath();
+    public static String NEO4J_HOME;
 
     /** Global runner controlling a single server, used to avoid having to restart the server between tests */
     public static synchronized Neo4jRunner getOrCreateGlobalRunner() throws IOException
@@ -75,7 +79,7 @@ public class Neo4jRunner
         }
     }
 
-    public void ensureRunning(Neo4jSettings neo4jSettings) throws IOException, InterruptedException
+    public void ensureRunning( Neo4jSettings neo4jSettings ) throws IOException, InterruptedException
     {
         ServerStatus status = serverStatus();
         switch( status )
@@ -99,16 +103,27 @@ public class Neo4jRunner
         return driver;
     }
 
-    private void startNeo4j() throws IOException
+    private void installNeo4j() throws IOException
     {
         // this is required for windows as python scripts cannot delete the file when it is used by driver tests
         deleteDefaultKnownCertFileIfExists();
 
-        int processStatus = runCommand( "python", NEORUN_PATH, "--start=" + NEO4J_HOME );
-        if (processStatus != 0) // not success
-        {
-            throw new IOException( "Failed to start neo4j server." );
-        }
+        List<String> commands = new ArrayList<>();
+        commands.add( "neoctrl-install" );
+        String[] split = NEOCTRL_ARGS.trim().split( "\\s+" );
+        commands.addAll( asList( split ) );
+        commands.add( NEO4J_DIR );
+
+        NEO4J_HOME = executeCommand( commands ).trim();
+
+    }
+
+    private void startNeo4j() throws IOException
+    {
+        installNeo4j();
+        updateServerSettingsFile();
+        executeCommand( "neoctrl-create-user", NEO4J_HOME, "neo4j", "neo4j" );
+        executeCommand( "neoctrl-start", NEO4J_HOME );
     }
 
     public synchronized void stopNeo4j() throws IOException
@@ -123,11 +138,7 @@ public class Neo4jRunner
             driver = null;
         }
 
-        int processStatus = runCommand( "python", NEORUN_PATH, "--stop=" + NEO4J_HOME );
-        if( processStatus != 0 )
-        {
-            throw new IOException( "Failed to stop neo4j server." );
-        }
+        executeCommand( "neoctrl-stop", NEO4J_HOME );
     }
 
     public void forceToRestart() throws IOException
@@ -150,7 +161,7 @@ public class Neo4jRunner
      * @param neo4jSettings
      * @throws IOException
      */
-    public void restartNeo4j(Neo4jSettings neo4jSettings) throws IOException
+    public void restartNeo4j( Neo4jSettings neo4jSettings ) throws IOException
     {
         if( updateServerSettings( neo4jSettings ) ) // needs to update server setting files
         {
@@ -158,34 +169,9 @@ public class Neo4jRunner
         }
     }
 
-    @SuppressWarnings("LoopStatementThatDoesntLoop")
-    private int runCommand( String... cmd ) throws IOException
-    {
-        ProcessBuilder pb = new ProcessBuilder().inheritIO();
-        ProcessEnvConfigurator.configure( pb );
-        if( NEORUN_START_ARGS != null )
-        {
-            // overwrite the env var in the sub process if the system property is specified
-            pb.environment().put( "NEORUN_START_ARGS", NEORUN_START_ARGS );
-        }
-        Process process = pb.command( cmd ).start();
-        while (true)
-        {
-            try
-            {
-                return process.waitFor();
-            }
-            catch ( InterruptedException e )
-            {
-                Thread.interrupted();
-            }
-        }
-    }
-
     private enum ServerStatus
     {
         ONLINE, OFFLINE
-
     }
 
     private ServerStatus serverStatus()
@@ -231,7 +217,7 @@ public class Neo4jRunner
             return;
         }
 
-        File oldFile = new File( NEO4J_CONF );
+        File oldFile = new File( NEO4J_HOME, "conf/neo4j.conf" );
         try
         {
             debug( "Changing server properties file (for next start): " + oldFile.getCanonicalPath() );
@@ -261,7 +247,6 @@ public class Neo4jRunner
             {
                 debug("Starting shutdown hook");
                 stopNeo4j();
-                updateServerSettings( Neo4jSettings.TEST_SETTINGS );
                 debug("Finished shutdown hook");
             }
             catch ( Exception e )

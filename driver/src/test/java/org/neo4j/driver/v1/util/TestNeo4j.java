@@ -32,6 +32,10 @@ import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Session;
 
+import static org.neo4j.driver.v1.util.Neo4jRunner.*;
+import static org.neo4j.driver.v1.util.Neo4jSettings.DEFAULT_TLS_CERT_PATH;
+import static org.neo4j.driver.v1.util.Neo4jSettings.DEFAULT_TLS_KEY_PATH;
+
 public class TestNeo4j implements TestRule
 {
     public static final String TEST_RESOURCE_FOLDER_PATH = "src/test/resources";
@@ -56,7 +60,7 @@ public class TestNeo4j implements TestRule
             @Override
             public void evaluate() throws Throwable
             {
-                runner = Neo4jRunner.getOrCreateGlobalRunner();
+                runner = getOrCreateGlobalRunner();
                 runner.ensureRunning( settings );
                 try ( Session session = driver().session() )
                 {
@@ -100,17 +104,17 @@ public class TestNeo4j implements TestRule
 
     public URI uri()
     {
-        return Neo4jRunner.DEFAULT_URI;
+        return DEFAULT_URI;
     }
 
     public BoltServerAddress address()
     {
-        return Neo4jRunner.DEFAULT_ADDRESS;
+        return DEFAULT_ADDRESS;
     }
 
     static void clearDatabaseContents( Session session, String reason )
     {
-        Neo4jRunner.debug( "Clearing database contents for: %s", reason );
+        debug( "Clearing database contents for: %s", reason );
 
         // Note - this hangs for extended periods some times, because there are tests that leave sessions running.
         // Thus, we need to wait for open sessions and transactions to time out before this will go through.
@@ -120,14 +124,24 @@ public class TestNeo4j implements TestRule
 
     public void updateEncryptionKeyAndCert( File key, File cert ) throws Exception
     {
-        FileTools.copyFile( key, Neo4jSettings.DEFAULT_TLS_KEY_FILE );
-        FileTools.copyFile( cert, Neo4jSettings.DEFAULT_TLS_CERT_FILE );
+        FileTools.copyFile( key, tlsKeyFile() );
+        FileTools.copyFile( cert, tlsCertFile() );
         runner.forceToRestart(); // needs to force to restart as no configuration changed
+    }
+
+    public File tlsCertFile()
+    {
+        return new File( NEO4J_HOME, DEFAULT_TLS_CERT_PATH );
+    }
+
+    public File tlsKeyFile()
+    {
+        return new File( NEO4J_HOME, DEFAULT_TLS_KEY_PATH );
     }
 
     public void ensureProcedures( String jarName ) throws IOException
     {
-        File procedureJar = new File( Neo4jRunner.NEO4J_HOME, "plugins/" + jarName );
+        File procedureJar = new File( NEO4J_HOME, "plugins/" + jarName );
         if( !procedureJar.exists() )
         {
             FileTools.copyFile( new File( TEST_RESOURCE_FOLDER_PATH, jarName ), procedureJar );
