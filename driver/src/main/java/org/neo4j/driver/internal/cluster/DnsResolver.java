@@ -24,35 +24,38 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.v1.Logger;
 
-public interface DnsResolver
+public class DnsResolver implements HostNameResolver
 {
-    DnsResolver DEFAULT = new DnsResolver()
+    private final Logger logger;
+
+    public DnsResolver( Logger logger )
     {
-        @Override
-        public Set<BoltServerAddress> resolve( BoltServerAddress initialRouter )
+        this.logger = logger;
+    }
+
+    @Override
+    public Set<BoltServerAddress> resolve( BoltServerAddress initialRouter )
+    {
+        Set<BoltServerAddress> addresses = new HashSet<>();
+        try
         {
-            try
+            InetAddress[] ipAddresses = InetAddress.getAllByName( initialRouter.host() );
+
+            for ( InetAddress ipAddress : ipAddresses )
             {
-                InetAddress[] ipAddresses = InetAddress.getAllByName( initialRouter.host() );
-                Set<BoltServerAddress> addresses = new HashSet<>( ipAddresses.length );
-
-                for ( int i = 0; i < ipAddresses.length; i ++ )
-                {
-                    addresses.add( new BoltServerAddress( ipAddresses[i].getHostAddress(), initialRouter.port() ) );
-                }
-
-                return addresses;
-
+                addresses.add( new BoltServerAddress( ipAddress.getHostAddress(), initialRouter.port() ) );
             }
-            catch ( UnknownHostException e )
-            {
-                throw new ServiceUnavailableException(
-                        "Failed to resolve URI `" + initialRouter + "` to IPs due to error: " + e.getMessage(), e );
-            }
+
+            return addresses;
         }
-    };
+        catch ( UnknownHostException e )
+        {
+            logger.error( "Failed to resolve URI `" + initialRouter + "` to IPs due to error: " + e.getMessage(), e );
 
-    Set<BoltServerAddress> resolve( BoltServerAddress initialRouter );
+            addresses.add( initialRouter );
+            return addresses;
+        }
+    }
 }

@@ -26,6 +26,7 @@ import org.junit.runners.Parameterized.Parameters;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -68,6 +69,16 @@ import static org.neo4j.driver.internal.net.BoltServerAddress.LOCAL_DEFAULT;
 @RunWith( Enclosed.class )
 public class RediscoveryTest
 {
+    private static HostNameResolver directMapProvider = new HostNameResolver()
+    {
+        @Override
+        public Set<BoltServerAddress> resolve( BoltServerAddress initialRouter )
+        {
+            Set<BoltServerAddress> directMap = new HashSet<>();
+            directMap.add( initialRouter );
+            return directMap;
+        }
+    };
 
     private static ClusterCompositionResponse.Success success( ClusterComposition cluster )
     {
@@ -459,17 +470,6 @@ public class RediscoveryTest
                 directMapProvider );
         return rediscovery.lookupClusterComposition( connections, routingTable );
     }
-
-    private static DnsResolver directMapProvider = new DnsResolver()
-    {
-        @Override
-        public Set<BoltServerAddress> resolve( BoltServerAddress initialRouter )
-        {
-            Set<BoltServerAddress> directMap = new HashSet<>( 1 );
-            directMap.add( initialRouter );
-            return directMap;
-        }
-    };
 
     private static class TestRoutingTable extends ClusterRoutingTable
     {

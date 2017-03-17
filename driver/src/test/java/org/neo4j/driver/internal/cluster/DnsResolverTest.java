@@ -20,27 +20,57 @@ package org.neo4j.driver.internal.cluster;
 
 import org.junit.Test;
 
+import java.net.UnknownHostException;
 import java.util.Set;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.v1.Logger;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.driver.internal.cluster.DnsResolver.DEFAULT;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 public class DnsResolverTest
 {
+    private DnsResolver resolver = new DnsResolver( mock( Logger.class ) );
+
     @Test
     public void shouldResolveDNSToIPs()
     {
-        Set<BoltServerAddress> resolve = DEFAULT.resolve( new BoltServerAddress( "google.com", 80 ) );
+        Set<BoltServerAddress> resolve = resolver.resolve( new BoltServerAddress( "google.com", 80 ) );
+        assertThat( resolve.size(), greaterThanOrEqualTo( 1 ) );
+    }
+
+    @Test
+    public void shouldResolveLocalhostIPDNSToIPs()
+    {
+        Set<BoltServerAddress> resolve = resolver.resolve( new BoltServerAddress( "127.0.0.1", 80 ) );
         assertThat( resolve.size(), greaterThanOrEqualTo( 1 ) );
     }
 
     @Test
     public void shouldResolveLocalhostDNSToIPs()
     {
-        Set<BoltServerAddress> resolve = DEFAULT.resolve( new BoltServerAddress( "127.0.0.1", 80 ) );
+        Set<BoltServerAddress> resolve = resolver.resolve( new BoltServerAddress( "localhost", 80 ) );
+        assertThat( resolve.size(), greaterThanOrEqualTo( 1 ) );
+    }
+
+    @Test
+    public void shouldResolveIPv6LocalhostDNSToIPs()
+    {
+        Set<BoltServerAddress> resolve = resolver.resolve( new BoltServerAddress( "[::1]", 80 ) );
+        assertThat( resolve.size(), greaterThanOrEqualTo( 1 ) );
+    }
+
+    @Test
+    public void shouldExceptionAndGiveDefaultValue()
+    {
+        Logger logger = mock( Logger.class );
+        DnsResolver resolver = new DnsResolver( logger );
+        Set<BoltServerAddress> resolve = resolver.resolve( new BoltServerAddress( "[/]", 80 ) );
+        verify( logger ).error( any( String.class ), any( UnknownHostException.class ) );
         assertThat( resolve.size(), greaterThanOrEqualTo( 1 ) );
     }
 }

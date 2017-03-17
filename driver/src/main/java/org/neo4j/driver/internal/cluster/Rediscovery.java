@@ -40,17 +40,17 @@ public class Rediscovery
     private final Clock clock;
     private final Logger logger;
     private final ClusterCompositionProvider provider;
-    private final DnsResolver dnsResolver;
+    private final HostNameResolver hostNameResolver;
 
     public Rediscovery( BoltServerAddress initialRouter, RoutingSettings settings, Clock clock, Logger logger,
-            ClusterCompositionProvider provider, DnsResolver dnsResolver )
+            ClusterCompositionProvider provider, HostNameResolver hostNameResolver )
     {
         this.initialRouter = initialRouter;
         this.settings = settings;
         this.clock = clock;
         this.logger = logger;
         this.provider = provider;
-        this.dnsResolver = dnsResolver;
+        this.hostNameResolver = hostNameResolver;
     }
 
     // Given the current routing table and connection pool, use the connection composition provider to fetch a new
@@ -82,7 +82,7 @@ public class Rediscovery
             RoutingTable routingTable )
     {
         int size = routingTable.routerSize();
-        Set<BoltServerAddress> triedServers = new HashSet<>( size );
+        Set<BoltServerAddress> triedServers = new HashSet<>();
         for ( int i = 0; i < size; i++ )
         {
             BoltServerAddress address = routingTable.nextRouter();
@@ -102,7 +102,7 @@ public class Rediscovery
             }
         }
 
-        Set<BoltServerAddress> ips = dnsResolver.resolve( initialRouter );
+        Set<BoltServerAddress> ips = hostNameResolver.resolve( initialRouter );
         ips.removeAll( triedServers );
         for ( BoltServerAddress address : ips )
         {
