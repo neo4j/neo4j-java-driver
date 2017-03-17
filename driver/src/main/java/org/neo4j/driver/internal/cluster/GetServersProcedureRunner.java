@@ -28,27 +28,27 @@ import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Value;
 
 import static org.neo4j.driver.internal.SessionResourcesHandler.NO_OP;
-import static org.neo4j.driver.internal.cluster.ServerVersion.v3_2_0;
-import static org.neo4j.driver.internal.cluster.ServerVersion.version;
+import static org.neo4j.driver.internal.util.ServerVersion.v3_2_0;
+import static org.neo4j.driver.internal.util.ServerVersion.version;
 
 public class GetServersProcedureRunner
 {
-    private static final String GET_SERVERS = "dbms.cluster.routing.getServers";
-    private static final String GET_SERVERS_V2 = "dbms.cluster.routing.getServersV2";
+    static final String GET_SERVERS = "dbms.cluster.routing.getServers";
+    static final String GET_ROUTING_TABLE = "dbms.cluster.routing.getRoutingTable";
 
-    private final Value routingParameters;
+    private final Value routingContext;
     private Statement procedureCalled;
 
-    public GetServersProcedureRunner( Value parameters )
+    public GetServersProcedureRunner( Value context )
     {
-        this.routingParameters = parameters;
+        this.routingContext = context;
     }
 
     public List<Record> run( Connection connection )
     {
         if( version( connection.server().version() ).greaterThanOrEqual( v3_2_0 ) )
         {
-            procedureCalled = new Statement( "CALL " + GET_SERVERS_V2, routingParameters );
+            procedureCalled = new Statement( "CALL " + GET_ROUTING_TABLE, routingContext );
         }
         else
         {

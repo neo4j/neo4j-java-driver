@@ -44,7 +44,7 @@ import org.neo4j.driver.v1.TransactionWork;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.internal.cluster.ServerVersion;
+import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -68,7 +68,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.driver.v1.Config.defaultConfig;
 import static org.neo4j.driver.v1.Values.parameters;
-import static org.neo4j.driver.internal.cluster.ServerVersion.v3_1_0;
+import static org.neo4j.driver.internal.util.ServerVersion.v3_1_0;
 
 public class SessionIT
 {

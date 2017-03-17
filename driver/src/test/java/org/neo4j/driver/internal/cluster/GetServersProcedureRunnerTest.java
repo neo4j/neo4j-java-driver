@@ -34,6 +34,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.driver.internal.cluster.GetServersProcedureRunner.GET_SERVERS;
+import static org.neo4j.driver.internal.cluster.GetServersProcedureRunner.GET_ROUTING_TABLE;
 import static org.neo4j.driver.v1.Values.value;
 
 public class GetServersProcedureRunnerTest
@@ -50,8 +52,8 @@ public class GetServersProcedureRunnerTest
         runner.run( mock );
 
         // Then
-        assertThat( runner.procedureCalled().toString(), equalTo(
-                "Statement{text='CALL dbms.cluster.routing.getServersV2', parameters=NULL}" ) );
+        assertThat( runner.procedureCalled(), equalTo(
+                new Statement( "CALL " + GET_ROUTING_TABLE, value( (Object) null) ) ) );
     }
 
     @Test
@@ -69,9 +71,8 @@ public class GetServersProcedureRunnerTest
         runner.run( mock );
 
         // Then
-        assertThat( runner.procedureCalled().toString(), equalTo(
-                "Statement{text='CALL dbms.cluster.routing.getServersV2', " +
-                "parameters={key2: \"value2\", key1: \"value1\"}}" ) );
+        assertThat( runner.procedureCalled(), equalTo(
+                new Statement( "CALL " + GET_ROUTING_TABLE, value( param ) ) ) );
     }
 
     @Test
@@ -89,8 +90,8 @@ public class GetServersProcedureRunnerTest
         runner.run( mock );
 
         // Then
-        assertThat( runner.procedureCalled().toString(), equalTo(
-                "Statement{text='CALL dbms.cluster.routing.getServers', parameters={}}" ) );
+        assertThat( runner.procedureCalled(), equalTo(
+                new Statement( "CALL " + GET_SERVERS ) ) );
     }
 
     private static class TestGetServersProcedureRunner extends GetServersProcedureRunner
