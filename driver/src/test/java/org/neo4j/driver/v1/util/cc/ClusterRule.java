@@ -30,6 +30,8 @@ import java.nio.file.attribute.BasicFileAttributes;
 
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.AuthTokens;
+import org.neo4j.driver.v1.util.Neo4jRunner;
+import org.neo4j.driver.v1.util.ServerVersion;
 
 import static org.junit.Assume.assumeTrue;
 
@@ -39,8 +41,6 @@ public class ClusterRule extends ExternalResource
     private static final String PASSWORD = "test";
     private static final int INITIAL_PORT = 20_000;
 
-    // todo: neo4j version should come from environment variables
-    private static final String NEO4J_VERSION = "3.1.0";
     // todo: should be possible to configure (dynamically add/remove) cores and read replicas
     private static final int CORE_COUNT = 3;
     private static final int READ_REPLICA_COUNT = 2;
@@ -64,7 +64,8 @@ public class ClusterRule extends ExternalResource
         {
             deleteClusterDir();
 
-            SharedCluster.install( NEO4J_VERSION, CORE_COUNT, READ_REPLICA_COUNT, PASSWORD, INITIAL_PORT, CLUSTER_DIR );
+            SharedCluster.install( parseNeo4jVersion(),
+                    CORE_COUNT, READ_REPLICA_COUNT, PASSWORD, INITIAL_PORT, CLUSTER_DIR );
 
             try
             {
@@ -99,6 +100,15 @@ public class ClusterRule extends ExternalResource
         Cluster cluster = getCluster();
         cluster.startOfflineMembers();
         cluster.deleteData();
+    }
+
+    private static String parseNeo4jVersion()
+    {
+        String[] split = Neo4jRunner.NEOCTRL_ARGS.split( "\\s+" );
+        String version = split[split.length - 1];
+        // if the server version is older than 3.1 series, then ignore the tests
+        assumeTrue( ServerVersion.version( "Neo4j/" + version ).greaterThanOrEqual( ServerVersion.v3_1_0 ) );
+        return version;
     }
 
     private static void addShutdownHookToStopCluster()

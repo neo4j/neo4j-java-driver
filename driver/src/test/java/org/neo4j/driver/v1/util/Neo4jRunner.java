@@ -47,14 +47,13 @@ public class Neo4jRunner
     private static final boolean debug = Boolean.getBoolean( "neo4j.runner.debug" );
 
     private static final String DEFAULT_NEOCTRL_ARGS = "-e 3.1.2";
-    private static final String NEOCTRL_ARGS = System.getProperty( "neoctrl.args" ) == null?
-                                               DEFAULT_NEOCTRL_ARGS : System.getProperty( "neoctrl.args" );
+    public static final String NEOCTRL_ARGS = System.getProperty( "neoctrl.args", DEFAULT_NEOCTRL_ARGS );
     public static final URI DEFAULT_URI = URI.create( "bolt://localhost:7687" );
     public static final BoltServerAddress DEFAULT_ADDRESS = BoltServerAddress.from( DEFAULT_URI );
     private Driver driver;
     private Neo4jSettings currentSettings = Neo4jSettings.DEFAULT_SETTINGS;
 
-    private static final String NEO4J_PATH = new File( "../target/neo4j" ).getAbsolutePath();
+    private static final String NEO4J_DIR = new File( "../target/neo4j" ).getAbsolutePath();
     public static String NEO4J_HOME;
 
     /** Global runner controlling a single server, used to avoid having to restart the server between tests */
@@ -111,12 +110,9 @@ public class Neo4jRunner
 
         List<String> commands = new ArrayList<>();
         commands.add( "neoctrl-install" );
-        if( NEOCTRL_ARGS != null )
-        {
-            String[] split = NEOCTRL_ARGS.trim().split( "\\s+" );
-            commands.addAll( asList( split ) );
-        }
-        commands.add( NEO4J_PATH );
+        String[] split = NEOCTRL_ARGS.trim().split( "\\s+" );
+        commands.addAll( asList( split ) );
+        commands.add( NEO4J_DIR );
 
         NEO4J_HOME = executeCommand( commands ).trim();
 
