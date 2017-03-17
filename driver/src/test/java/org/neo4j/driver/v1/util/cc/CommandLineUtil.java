@@ -31,6 +31,18 @@ import static java.util.Arrays.asList;
 
 public class CommandLineUtil
 {
+    public static boolean boltKitAvailable()
+    {
+        try
+        {
+            executeCommand( "neoctrl-cluster", "--help" );
+            return true;
+        }
+        catch ( CommandLineException e )
+        {
+            return false;
+        }
+    }
 
     public static String executeCommand( List<String> commands )
     {

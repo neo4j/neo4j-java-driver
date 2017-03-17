@@ -44,7 +44,6 @@ public class Neo4jSettings
     private final Map<String, String> settings;
     private final Set<String> excludes;
 
-    public static Neo4jSettings DEFAULT_SETTINGS = new Neo4jSettings( new HashMap<String, String>(), Collections.<String>emptySet() );
     public static Neo4jSettings TEST_SETTINGS = new Neo4jSettings( map(
             CERT_DIR, DEFAULT_CERT_DIR,
             DATA_DIR, DEFAULT_DATA_DIR,
