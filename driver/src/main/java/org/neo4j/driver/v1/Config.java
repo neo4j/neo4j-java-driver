@@ -33,6 +33,7 @@ import org.neo4j.driver.v1.exceptions.TransientException;
 import org.neo4j.driver.v1.util.Immutable;
 import org.neo4j.driver.v1.util.Resource;
 
+import static java.util.Collections.emptyMap;
 import static org.neo4j.driver.v1.Config.TrustStrategy.trustAllCertificates;
 
 /**
@@ -75,7 +76,7 @@ public class Config
     private final int connectionTimeoutMillis;
     private final RetrySettings retrySettings;
 
-    private final Map<String, String> routingContext;
+    private final Map<String, Object> routingContext;
 
     private Config( ConfigBuilder builder)
     {
@@ -210,7 +211,7 @@ public class Config
         private long routingRetryDelayMillis = TimeUnit.SECONDS.toMillis( 5 );
         private int connectionTimeoutMillis = (int) TimeUnit.SECONDS.toMillis( 5 );
         private RetrySettings retrySettings = RetrySettings.DEFAULT;
-        private Map<String,String> routingContext = null;
+        private Map<String,Object> routingContext = emptyMap();
 
         private ConfigBuilder() {}
 
@@ -488,7 +489,7 @@ public class Config
          * @since 1.3
          * @return this builder
          */
-        public ConfigBuilder withRoutingContext( Map<String, String> context )
+        public ConfigBuilder withRoutingContext( Map<String, Object> context )
         {
             this.routingContext = context;
             return this;

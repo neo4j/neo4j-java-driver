@@ -22,7 +22,9 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.net.URI;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -106,7 +108,7 @@ public class CausalClusteringIT
         catch ( ServiceUnavailableException ex )
         {
             assertThat( ex.getMessage(), containsString(
-                    "Failed to run 'Statement{text='CALL dbms.cluster.routing.getServers', parameters={}}' on server." ) );
+                    "Failed to run 'Statement{text='CALL dbms.cluster.routing" ) );
         }
     }
 
@@ -219,7 +221,8 @@ public class CausalClusteringIT
 
         URI routingUri = cluster.leader().getRoutingUri();
         AuthToken auth = clusterRule.getDefaultAuthToken();
-        RoutingSettings routingSettings = new RoutingSettings( 1, TimeUnit.SECONDS.toMillis( 5 ), null );
+        RoutingSettings routingSettings = new RoutingSettings( 1,
+                TimeUnit.SECONDS.toMillis( 5 ), emptyRoutingContext() );
         RetrySettings retrySettings = RetrySettings.DEFAULT;
 
         try ( Driver driver = driverFactory.newInstance( routingUri, auth, routingSettings, retrySettings, config ) )
@@ -425,9 +428,15 @@ public class CausalClusteringIT
 
         Config config = Config.build()
                 .withLogging( devNullLogging )
+                .withRoutingContext( emptyRoutingContext() )
                 .toConfig();
 
         return GraphDatabase.driver( boltUri, clusterRule.getDefaultAuthToken(), config );
+    }
+
+    public static Map<String, Object> emptyRoutingContext()
+    {
+        return Collections.singletonMap( "context", (Object)Collections.emptyMap() );
     }
 
     private static void createNodesInDifferentThreads( int count, final Driver driver ) throws Exception

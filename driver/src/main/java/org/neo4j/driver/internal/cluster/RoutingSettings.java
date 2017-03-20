@@ -29,7 +29,7 @@ public class RoutingSettings
     final long retryTimeoutDelay;
     final Value routingParameters;
 
-    public RoutingSettings( int maxRoutingFailures, long retryTimeoutDelay, Map<String, String> routingParameters )
+    public RoutingSettings( int maxRoutingFailures, long retryTimeoutDelay, Map<String, Object> routingParameters )
     {
         this.maxRoutingFailures = maxRoutingFailures;
         this.retryTimeoutDelay = retryTimeoutDelay;

@@ -52,6 +52,7 @@ import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.SecurityException;
+import org.neo4j.driver.v1.integration.CausalClusteringIT;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.util.DaemonThreadFactory;
 import org.neo4j.driver.v1.util.cc.LocalOrRemoteClusterRule;
@@ -480,7 +481,8 @@ public class CausalClusteringStressIT
             Logger logger = mock( Logger.class );
             Logging logging = mock( Logging.class );
             when( logging.getLog( anyString() ) ).thenReturn( logger );
-            Config config = Config.build().withLogging( logging ).toConfig();
+            Config config = Config.build().withLogging( logging )
+                    .withRoutingContext( CausalClusteringIT.emptyRoutingContext() ).toConfig();
 
             try
             {
