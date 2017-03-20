@@ -3,6 +3,9 @@
 This is the first official Neo4j java driver for connecting to Neo4j-the-database via the newly designed remoting
 protocol BOLT.
 
+For detailed information such as manual, driver API documentations, changelogs, please refer to 
+[wiki](https://github.com/neo4j/neo4j-java-driver/wiki).
+
 ## Minimum viable snippet
 
 Add the driver to your project:
@@ -30,8 +33,6 @@ Connect to a Neo4j 3.0.0+ database:
     
     driver.close();
 
-For more examples and details of usage, please refer to the [Driver Manual] (http://neo4j.com/docs/developer-manual/3.0/index.html#driver-manual-index).
-
 ## Binding
 
 The source code here reflects the current development status of a new driver version.
@@ -40,10 +41,8 @@ code with git tags instead.
 
 ### Java version
 
-To compile the code and run all tests, you first need to prepare the `neokit` submodule which is used for integration tests:
-
-    git submodule init
-    git submodule update
+The driver unit tests relies on latest [`boltkit`](https://github.com/neo4j-contrib/boltkit) installed on your local machine. 
+If `boltkit` is not installed, then all tests that requires `boltkit` will be ignored and not be executed.
 
 Then if you are running Java 8:
 
@@ -60,13 +59,5 @@ Java 8, because Neo4j-the-database needs it to run.
 
 ### Windows
 
-If you are building on windows, you need to have Python (v2.7) installed and have Python.exe to be added in your system `PATH` variables.
-Then run install as admin, so that Neo4j-the-database could be installed and started with Python scripts for integration tests.
-
-Or you could choose to ignore integration tests by running:
-
-    mvn clean install -DskipITs 
-
-Without integration tests, there is no need to install Python or run as admin.
-
-For more information such as manual, driver API documentations, changelogs, please refer to [wiki](https://github.com/neo4j/neo4j-java-driver/wiki).
+If you are building on windows, you need to run install as admin, so that Neo4j-the-database could be installed and 
+started for integration tests.

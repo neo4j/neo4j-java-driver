@@ -114,8 +114,6 @@ public class TestNeo4j implements TestRule
 
     static void clearDatabaseContents( Session session, String reason )
     {
-        debug( "Clearing database contents for: %s", reason );
-
         // Note - this hangs for extended periods some times, because there are tests that leave sessions running.
         // Thus, we need to wait for open sessions and transactions to time out before this will go through.
         // This could be helped by an extension in the future.

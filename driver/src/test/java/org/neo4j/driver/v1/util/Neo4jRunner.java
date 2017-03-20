@@ -32,8 +32,10 @@ import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 
 import static java.util.Arrays.asList;
+import static org.junit.Assume.assumeTrue;
 import static org.neo4j.driver.v1.ConfigTest.deleteDefaultKnownCertFileIfExists;
 import static org.neo4j.driver.v1.util.FileTools.updateProperties;
+import static org.neo4j.driver.v1.util.cc.CommandLineUtil.boltKitAvailable;
 import static org.neo4j.driver.v1.util.cc.CommandLineUtil.executeCommand;
 
 /**
@@ -44,21 +46,23 @@ public class Neo4jRunner
 {
     private static Neo4jRunner globalInstance;
 
-    private static final boolean debug = Boolean.getBoolean( "neo4j.runner.debug" );
+    private static final boolean debug = true;
 
     private static final String DEFAULT_NEOCTRL_ARGS = "-e 3.1.2";
     public static final String NEOCTRL_ARGS = System.getProperty( "neoctrl.args", DEFAULT_NEOCTRL_ARGS );
     public static final URI DEFAULT_URI = URI.create( "bolt://localhost:7687" );
     public static final BoltServerAddress DEFAULT_ADDRESS = BoltServerAddress.from( DEFAULT_URI );
     private Driver driver;
-    private Neo4jSettings currentSettings = Neo4jSettings.DEFAULT_SETTINGS;
+    private Neo4jSettings currentSettings = Neo4jSettings.TEST_SETTINGS;
 
-    private static final String NEO4J_DIR = new File( "../target/neo4j" ).getAbsolutePath();
+    public static final String TARGET_DIR = new File( "../target" ).getAbsolutePath();
+    private static final String NEO4J_DIR = new File(  TARGET_DIR, "neo4j" ).getAbsolutePath();
     public static String NEO4J_HOME;
 
     /** Global runner controlling a single server, used to avoid having to restart the server between tests */
     public static synchronized Neo4jRunner getOrCreateGlobalRunner() throws IOException
     {
+        assumeTrue( "BoltKit support unavailable", boltKitAvailable() );
         if ( globalInstance == null )
         {
             globalInstance = new Neo4jRunner();
@@ -70,6 +74,7 @@ public class Neo4jRunner
     {
         try
         {
+            installNeo4j();
             startNeo4j();
         }
         finally
@@ -115,30 +120,34 @@ public class Neo4jRunner
         commands.add( NEO4J_DIR );
 
         NEO4J_HOME = executeCommand( commands ).trim();
+        updateServerSettingsFile();
 
+        debug( "Installed server at `%s`.", NEO4J_HOME );
     }
 
     private void startNeo4j() throws IOException
     {
-        installNeo4j();
-        updateServerSettingsFile();
+        debug( "Starting server..." );
         executeCommand( "neoctrl-create-user", NEO4J_HOME, "neo4j", "neo4j" );
         executeCommand( "neoctrl-start", NEO4J_HOME );
+        debug( "Server started." );
     }
 
     public synchronized void stopNeo4j() throws IOException
     {
-        if(serverStatus() == ServerStatus.OFFLINE)
+        if( serverStatus() == ServerStatus.OFFLINE )
         {
             return;
         }
-        if(driver != null)
+        if( driver != null )
         {
             driver.close();
             driver = null;
         }
 
+        debug( "Stopping server..." );
         executeCommand( "neoctrl-stop", NEO4J_HOME );
+        debug( "Server stopped." );
     }
 
     public void forceToRestart() throws IOException
@@ -220,7 +229,7 @@ public class Neo4jRunner
         File oldFile = new File( NEO4J_HOME, "conf/neo4j.conf" );
         try
         {
-            debug( "Changing server properties file (for next start): " + oldFile.getCanonicalPath() );
+            debug( "Changing server properties file (for next start): %s", oldFile.getCanonicalPath() );
             for ( Map.Entry<String, String> property : propertiesMap.entrySet() )
             {
                 String name = property.getKey();
@@ -261,7 +270,7 @@ public class Neo4jRunner
     {
         if ( debug )
         {
-            System.err.println( "Neo4jRunner: " + String.format( text, args ) );
+            System.out.println( String.format( text, args ) );
         }
     }
 }
