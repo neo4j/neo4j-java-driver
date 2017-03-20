@@ -36,6 +36,7 @@ import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.exceptions.ProtocolException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.v1.util.cc.TestRoutingSettings;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.containsString;
@@ -84,7 +85,7 @@ public class RediscoveryTest
         {
             // given
             int maxRoutingFailures = 7;
-            RoutingSettings settings = new RoutingSettings( maxRoutingFailures, 10, null );
+            RoutingSettings settings = new TestRoutingSettings( maxRoutingFailures, 10 );
             Clock clock = mock( Clock.class );
             RoutingTable routingTable = new TestRoutingTable( A );
 
@@ -450,7 +451,7 @@ public class RediscoveryTest
     private static ClusterComposition rediscover( BoltServerAddress initialRouter, ConnectionPool connections,
             RoutingTable routingTable, ClusterCompositionProvider provider )
     {
-        RoutingSettings settings = new RoutingSettings( 1, 0, null );
+        RoutingSettings settings = new TestRoutingSettings( 1, 0 );
         Clock mockedClock = mock( Clock.class );
         Logger mockedLogger = mock( Logger.class );
 

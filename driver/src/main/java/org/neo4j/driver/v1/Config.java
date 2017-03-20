@@ -34,6 +34,7 @@ import org.neo4j.driver.v1.util.Immutable;
 import org.neo4j.driver.v1.util.Resource;
 
 import static java.util.Collections.emptyMap;
+import static java.util.Collections.singletonMap;
 import static org.neo4j.driver.v1.Config.TrustStrategy.trustAllCertificates;
 
 /**
@@ -211,7 +212,7 @@ public class Config
         private long routingRetryDelayMillis = TimeUnit.SECONDS.toMillis( 5 );
         private int connectionTimeoutMillis = (int) TimeUnit.SECONDS.toMillis( 5 );
         private RetrySettings retrySettings = RetrySettings.DEFAULT;
-        private Map<String,Object> routingContext = emptyMap();
+        private Map<String,Object> routingContext = singletonMap( "context", (Object) emptyMap() );
 
         private ConfigBuilder() {}
 

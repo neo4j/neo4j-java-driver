@@ -22,9 +22,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.net.URI;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -56,6 +54,7 @@ import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.util.cc.Cluster;
 import org.neo4j.driver.v1.util.cc.ClusterMember;
 import org.neo4j.driver.v1.util.cc.ClusterRule;
+import org.neo4j.driver.v1.util.cc.TestRoutingSettings;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
@@ -221,8 +220,8 @@ public class CausalClusteringIT
 
         URI routingUri = cluster.leader().getRoutingUri();
         AuthToken auth = clusterRule.getDefaultAuthToken();
-        RoutingSettings routingSettings = new RoutingSettings( 1,
-                TimeUnit.SECONDS.toMillis( 5 ), emptyRoutingContext() );
+        RoutingSettings routingSettings = new TestRoutingSettings( 1,
+                TimeUnit.SECONDS.toMillis( 5 ) );
         RetrySettings retrySettings = RetrySettings.DEFAULT;
 
         try ( Driver driver = driverFactory.newInstance( routingUri, auth, routingSettings, retrySettings, config ) )
@@ -428,15 +427,9 @@ public class CausalClusteringIT
 
         Config config = Config.build()
                 .withLogging( devNullLogging )
-                .withRoutingContext( emptyRoutingContext() )
                 .toConfig();
 
         return GraphDatabase.driver( boltUri, clusterRule.getDefaultAuthToken(), config );
-    }
-
-    public static Map<String, Object> emptyRoutingContext()
-    {
-        return Collections.singletonMap( "context", (Object)Collections.emptyMap() );
     }
 
     private static void createNodesInDifferentThreads( int count, final Driver driver ) throws Exception

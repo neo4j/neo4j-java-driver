@@ -41,6 +41,7 @@ import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.util.cc.TestRoutingSettings;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertArrayEquals;
@@ -139,7 +140,7 @@ public class DriverFactoryTest
     private Driver createDriver( DriverFactory driverFactory, Config config )
     {
         AuthToken auth = AuthTokens.none();
-        RoutingSettings routingSettings = new RoutingSettings( 42, 42, null );
+        RoutingSettings routingSettings = new TestRoutingSettings( 42, 42 );
         return driverFactory.newInstance( uri, auth, routingSettings, RetrySettings.DEFAULT, config );
     }
 
