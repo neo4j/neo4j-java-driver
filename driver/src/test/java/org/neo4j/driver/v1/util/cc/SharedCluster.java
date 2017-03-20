@@ -127,14 +127,19 @@ final class SharedCluster
         String[] lines = output.split( lineSeparator() );
         for ( int i = 0; i < lines.length; i++ )
         {
-            String line = lines[i];
+            String line = lines[i].trim();
+            if( line.isEmpty() )
+            {
+                // skip any empty lines
+                continue;
+            }
             String[] clusterMemberSplit = line.split( " " );
             if ( clusterMemberSplit.length != 3 )
             {
                 throw new IllegalArgumentException( String.format(
                         "Wrong start command output found at line [%s]. " +
-                        "Expected to have 'http_uri bolt_uri path' on each line. " +
-                        "Command output:%n'%s'", i + 1, output ) );
+                        "Expected to have 'http_uri bolt_uri path' on each nonempty line. " +
+                        "Command output:%n`%s`", i + 1, output ) );
             }
 
             URI boltUri = URI.create( clusterMemberSplit[1] );

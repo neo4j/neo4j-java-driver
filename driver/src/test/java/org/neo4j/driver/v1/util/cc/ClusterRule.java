@@ -20,13 +20,8 @@ package org.neo4j.driver.v1.util.cc;
 
 import org.junit.rules.ExternalResource;
 
-import java.io.IOException;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.AuthToken;
@@ -130,46 +125,5 @@ public class ClusterRule extends ExternalResource
                 }
             }
         } );
-    }
-
-    private static void deleteClusterDir()
-    {
-        delete( CLUSTER_DIR );
-    }
-
-    private static void delete( final Path path )
-    {
-        try
-        {
-            if ( !Files.exists( path ) )
-            {
-                return;
-            }
-
-            Files.walkFileTree( path, new SimpleFileVisitor<Path>()
-            {
-                @Override
-                public FileVisitResult visitFile( Path file, BasicFileAttributes attributes ) throws IOException
-                {
-                    Files.delete( file );
-                    return FileVisitResult.CONTINUE;
-                }
-
-                @Override
-                public FileVisitResult postVisitDirectory( Path dir, IOException error ) throws IOException
-                {
-                    if ( error != null )
-                    {
-                        return FileVisitResult.TERMINATE;
-                    }
-                    Files.delete( dir );
-                    return FileVisitResult.CONTINUE;
-                }
-            } );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( "Unable to delete '" + path + "'", e );
-        }
     }
 }
