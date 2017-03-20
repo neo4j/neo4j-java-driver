@@ -64,8 +64,6 @@ public class ClusterRule extends ExternalResource
 
         if ( !SharedCluster.exists() )
         {
-            deleteClusterDir();
-
             SharedCluster.install( parseNeo4jVersion(),
                     CORE_COUNT, READ_REPLICA_COUNT, PASSWORD, INITIAL_PORT, CLUSTER_DIR );
 

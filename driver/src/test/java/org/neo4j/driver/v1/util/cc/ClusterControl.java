@@ -19,6 +19,8 @@
 package org.neo4j.driver.v1.util.cc;
 
 import java.nio.file.Path;
+
+import static org.neo4j.driver.v1.util.Neo4jRunner.debug;
 import static org.neo4j.driver.v1.util.cc.CommandLineUtil.executeCommand;
 
 final class ClusterControl

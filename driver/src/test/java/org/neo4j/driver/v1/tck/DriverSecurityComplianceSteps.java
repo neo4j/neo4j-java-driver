@@ -49,7 +49,7 @@ import static org.neo4j.driver.v1.Config.TrustStrategy.trustCustomCertificateSig
 import static org.neo4j.driver.v1.Config.TrustStrategy.trustOnFirstUse;
 import static org.neo4j.driver.v1.tck.DriverComplianceIT.neo4j;
 import static org.neo4j.driver.v1.util.CertificateToolTest.generateSelfSignedCertificate;
-import static org.neo4j.driver.v1.util.Neo4jRunner.NEO4J_HOME;
+import static org.neo4j.driver.v1.util.Neo4jRunner.HOME_DIR;
 import static org.neo4j.driver.v1.util.Neo4jSettings.DEFAULT_TLS_CERT_PATH;
 
 public class DriverSecurityComplianceSteps
@@ -228,7 +228,7 @@ public class DriverSecurityComplianceSteps
                 Neo4jRunner.DEFAULT_URI,
                 Config.build().withEncryptionLevel( EncryptionLevel.REQUIRED )
                         .withTrustStrategy( trustCustomCertificateSignedBy(
-                                new File( NEO4J_HOME, DEFAULT_TLS_CERT_PATH ) ) )
+                                new File( HOME_DIR, DEFAULT_TLS_CERT_PATH ) ) )
                         .toConfig() );
     }
 

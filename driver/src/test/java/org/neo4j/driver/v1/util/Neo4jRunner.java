@@ -34,6 +34,7 @@ import org.neo4j.driver.v1.GraphDatabase;
 import static java.util.Arrays.asList;
 import static org.junit.Assume.assumeTrue;
 import static org.neo4j.driver.v1.ConfigTest.deleteDefaultKnownCertFileIfExists;
+import static org.neo4j.driver.v1.util.FileTools.moveFile;
 import static org.neo4j.driver.v1.util.FileTools.updateProperties;
 import static org.neo4j.driver.v1.util.cc.CommandLineUtil.boltKitAvailable;
 import static org.neo4j.driver.v1.util.cc.CommandLineUtil.executeCommand;
@@ -56,8 +57,8 @@ public class Neo4jRunner
     private Neo4jSettings currentSettings = Neo4jSettings.TEST_SETTINGS;
 
     public static final String TARGET_DIR = new File( "../target" ).getAbsolutePath();
-    private static final String NEO4J_DIR = new File(  TARGET_DIR, "neo4j" ).getAbsolutePath();
-    public static String NEO4J_HOME;
+    private static final String NEO4J_DIR = new File(  TARGET_DIR, "test-server" ).getAbsolutePath();
+    public static final String HOME_DIR = new File( NEO4J_DIR, "neo4jHome" ).getAbsolutePath();
 
     /** Global runner controlling a single server, used to avoid having to restart the server between tests */
     public static synchronized Neo4jRunner getOrCreateGlobalRunner() throws IOException
@@ -111,25 +112,36 @@ public class Neo4jRunner
     private void installNeo4j() throws IOException
     {
         // this is required for windows as python scripts cannot delete the file when it is used by driver tests
-        deleteDefaultKnownCertFileIfExists();
+        deleteDefaultKnownCertFileIfExists(); // Remove this once TrustOnFirstUse is removed.
 
-        List<String> commands = new ArrayList<>();
-        commands.add( "neoctrl-install" );
-        String[] split = NEOCTRL_ARGS.trim().split( "\\s+" );
-        commands.addAll( asList( split ) );
-        commands.add( NEO4J_DIR );
+        File targetHomeFile = new File( HOME_DIR );
+        if( targetHomeFile.exists() )
+        {
+            debug( "Found and using server installed at `%s`. ", HOME_DIR );
+        }
+        else
+        {
+            List<String> commands = new ArrayList<>();
+            commands.add( "neoctrl-install" );
+            String[] split = NEOCTRL_ARGS.trim().split( "\\s+" );
+            commands.addAll( asList( split ) );
+            commands.add( NEO4J_DIR );
 
-        NEO4J_HOME = executeCommand( commands ).trim();
+            String tempHomeDir = executeCommand( commands ).trim();
+            debug( "Downloaded server at `%s`, now renaming to `%s`.", tempHomeDir, HOME_DIR );
+
+            moveFile( new File( tempHomeDir ), targetHomeFile );
+            debug( "Installed server at `%s`.", HOME_DIR );
+        }
+
         updateServerSettingsFile();
-
-        debug( "Installed server at `%s`.", NEO4J_HOME );
     }
 
     private void startNeo4j() throws IOException
     {
         debug( "Starting server..." );
-        executeCommand( "neoctrl-create-user", NEO4J_HOME, "neo4j", "neo4j" );
-        executeCommand( "neoctrl-start", NEO4J_HOME );
+        executeCommand( "neoctrl-create-user", HOME_DIR, "neo4j", "neo4j" );
+        executeCommand( "neoctrl-start", HOME_DIR );
         debug( "Server started." );
     }
 
@@ -146,7 +158,7 @@ public class Neo4jRunner
         }
 
         debug( "Stopping server..." );
-        executeCommand( "neoctrl-stop", NEO4J_HOME );
+        executeCommand( "neoctrl-stop", HOME_DIR );
         debug( "Server stopped." );
     }
 
@@ -226,7 +238,7 @@ public class Neo4jRunner
             return;
         }
 
-        File oldFile = new File( NEO4J_HOME, "conf/neo4j.conf" );
+        File oldFile = new File( HOME_DIR, "conf/neo4j.conf" );
         try
         {
             debug( "Changing server properties file (for next start): %s", oldFile.getCanonicalPath() );
@@ -266,7 +278,7 @@ public class Neo4jRunner
         } ) );
     }
 
-    static void debug( String text, Object... args )
+    public static void debug( String text, Object... args )
     {
         if ( debug )
         {
