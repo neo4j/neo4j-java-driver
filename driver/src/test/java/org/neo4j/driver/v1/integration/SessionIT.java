@@ -47,6 +47,7 @@ import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.util.ServerVersion;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
+import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -968,7 +969,8 @@ public class SessionIT
     private static void assumeBookmarkSupport( Driver driver )
     {
         ServerVersion serverVersion = ServerVersion.version( driver );
-        assumeTrue( serverVersion.greaterThanOrEqual( v3_1_0 ) );
+        assumeTrue( format( "Server version `%s` does not support bookmark", serverVersion ),
+                serverVersion.greaterThanOrEqual( v3_1_0 ) );
     }
 
     private static class ThrowingWork implements TransactionWork<Record>
