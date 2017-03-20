@@ -34,10 +34,12 @@ import org.neo4j.driver.v1.util.Neo4jRunner;
 import org.neo4j.driver.v1.util.ServerVersion;
 
 import static org.junit.Assume.assumeTrue;
+import static org.neo4j.driver.v1.util.Neo4jRunner.TARGET_DIR;
+import static org.neo4j.driver.v1.util.cc.CommandLineUtil.boltKitAvailable;
 
 public class ClusterRule extends ExternalResource
 {
-    private static final Path CLUSTER_DIR = Paths.get( "target", "test-cluster" ).toAbsolutePath();
+    private static final Path CLUSTER_DIR = Paths.get( TARGET_DIR, "test-cluster" ).toAbsolutePath();
     private static final String PASSWORD = "test";
     private static final int INITIAL_PORT = 20_000;
 
@@ -58,7 +60,7 @@ public class ClusterRule extends ExternalResource
     @Override
     protected void before() throws Throwable
     {
-        assumeTrue( "BoltKit cluster support unavailable", ClusterControl.boltKitClusterAvailable() );
+        assumeTrue( "BoltKit cluster support unavailable", boltKitAvailable() );
 
         if ( !SharedCluster.exists() )
         {
@@ -107,7 +109,8 @@ public class ClusterRule extends ExternalResource
         String[] split = Neo4jRunner.NEOCTRL_ARGS.split( "\\s+" );
         String version = split[split.length - 1];
         // if the server version is older than 3.1 series, then ignore the tests
-        assumeTrue( ServerVersion.version( "Neo4j/" + version ).greaterThanOrEqual( ServerVersion.v3_1_0 ) );
+        assumeTrue( "Server version `" + version + "` does not support Casual Cluster",
+                ServerVersion.version( version ).greaterThanOrEqual( ServerVersion.v3_1_0 ) );
         return version;
     }
 

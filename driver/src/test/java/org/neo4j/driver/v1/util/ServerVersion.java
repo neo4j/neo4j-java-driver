@@ -33,7 +33,7 @@ public class ServerVersion
     private final int patch;
 
     private static final Pattern PATTERN =
-            Pattern.compile("Neo4j/(\\d+)\\.(\\d+)(?:\\.)?(\\d*)(\\.|-|\\+)?([0-9A-Za-z-.]*)?");
+            Pattern.compile("(Neo4j/)?(\\d+)\\.(\\d+)(?:\\.)?(\\d*)(\\.|-|\\+)?([0-9A-Za-z-.]*)?");
 
     private ServerVersion( int major, int minor, int patch )
     {
@@ -64,9 +64,9 @@ public class ServerVersion
             Matcher matcher = PATTERN.matcher( server );
             if ( matcher.matches() )
             {
-                int major = Integer.valueOf( matcher.group( 1 ) );
-                int minor = Integer.valueOf( matcher.group( 2 ) );
-                String patchString = matcher.group( 3 );
+                int major = Integer.valueOf( matcher.group( 2 ) );
+                int minor = Integer.valueOf( matcher.group( 3 ) );
+                String patchString = matcher.group( 4 );
                 int patch = 0;
                 if ( patchString != null && !patchString.isEmpty() )
                 {
@@ -140,5 +140,11 @@ public class ServerVersion
         }
 
         return c;
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format( "%s.%s.%s", major, minor, patch );
     }
 }

@@ -62,7 +62,8 @@ public class BookmarkIT
         session = sessionRule;
 
         ServerVersion serverVersion = ServerVersion.version( driver );
-        assumeTrue( serverVersion.greaterThanOrEqual( v3_1_0 ) );
+        assumeTrue( "Server version `" + serverVersion + "` does not support bookmark",
+                serverVersion.greaterThanOrEqual( v3_1_0 ) );
     }
 
     @Test

@@ -27,19 +27,6 @@ final class ClusterControl
     {
     }
 
-    static boolean boltKitClusterAvailable()
-    {
-        try
-        {
-            executeCommand( "neoctrl-cluster", "--help" );
-            return true;
-        }
-        catch ( CommandLineException e )
-        {
-            return false;
-        }
-    }
-
     static void installCluster( String neo4jVersion, int cores, int readReplicas, String password, int port,
             Path path )
     {
