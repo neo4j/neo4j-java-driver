@@ -139,7 +139,7 @@ public class DriverFactoryTest
     private Driver createDriver( DriverFactory driverFactory, Config config )
     {
         AuthToken auth = AuthTokens.none();
-        RoutingSettings routingSettings = new RoutingSettings( 42, 42 );
+        RoutingSettings routingSettings = new RoutingSettings( 42, 42, null );
         return driverFactory.newInstance( uri, auth, routingSettings, RetrySettings.DEFAULT, config );
     }
 

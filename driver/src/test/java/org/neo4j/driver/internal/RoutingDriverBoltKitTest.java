@@ -873,7 +873,7 @@ public class RoutingDriverBoltKitTest
     private static Driver newDriver( String uriString, DriverFactory driverFactory )
     {
         URI uri = URI.create( uriString );
-        RoutingSettings routingConf = new RoutingSettings( 1, 1 );
+        RoutingSettings routingConf = new RoutingSettings( 1, 1, null );
         AuthToken auth = AuthTokens.none();
         return driverFactory.newInstance( uri, auth, routingConf, RetrySettings.DEFAULT, config );
     }

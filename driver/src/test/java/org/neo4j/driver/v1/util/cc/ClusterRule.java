@@ -28,10 +28,10 @@ import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 
+import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.util.Neo4jRunner;
-import org.neo4j.driver.v1.util.ServerVersion;
 
 import static org.junit.Assume.assumeTrue;
 import static org.neo4j.driver.v1.util.Neo4jRunner.TARGET_DIR;

@@ -156,7 +156,8 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
     private static Rediscovery createRediscovery( BoltServerAddress initialRouter, RoutingSettings settings,
             Clock clock, Logger log )
     {
-        ClusterCompositionProvider clusterComposition = new GetServersProcedureClusterCompositionProvider( clock, log );
+        ClusterCompositionProvider clusterComposition =
+                new GetServersProcedureClusterCompositionProvider( clock, log, settings );
         return new Rediscovery( initialRouter, settings, clock, log, clusterComposition );
     }
 }

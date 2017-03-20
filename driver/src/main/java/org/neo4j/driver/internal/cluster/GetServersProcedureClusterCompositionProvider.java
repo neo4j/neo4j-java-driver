@@ -33,17 +33,16 @@ import static java.lang.String.format;
 
 public class GetServersProcedureClusterCompositionProvider implements ClusterCompositionProvider
 {
-    private final String GET_SERVERS = "dbms.cluster.routing.getServers";
-    private final String PROTOCOL_ERROR_MESSAGE = "Failed to parse '" + GET_SERVERS +
-                                                         "' result received from server due to ";
+
+    private final String PROTOCOL_ERROR_MESSAGE = "Failed to parse `%s' result received from server due to ";
 
     private final Clock clock;
     private final Logger log;
     private final GetServersProcedureRunner getServersRunner;
 
-    public GetServersProcedureClusterCompositionProvider( Clock clock, Logger log )
+    public GetServersProcedureClusterCompositionProvider( Clock clock, Logger log, RoutingSettings settings )
     {
-        this( clock, log, new GetServersProcedureRunner() );
+        this( clock, log, new GetServersProcedureRunner( settings.routingParameters ) );
     }
 
     GetServersProcedureClusterCompositionProvider( Clock clock, Logger log, GetServersProcedureRunner getServersRunner )
@@ -66,8 +65,10 @@ public class GetServersProcedureClusterCompositionProvider implements ClusterCom
         catch ( ClientException e )
         {
             return new ClusterCompositionResponse.Failure( new ServiceUnavailableException( format(
-                    "Failed to call '%s' procedure on server. " +
-                    "Please make sure that there is a Neo4j 3.1+ causal cluster up running.", GET_SERVERS ), e ) );
+                    "Failed to run '%s' on server. " +
+                    "Please make sure that there is a Neo4j 3.1+ causal cluster up running.",
+                    getServersRunner.procedureCalled() ), e
+            ) );
         }
 
         log.info( "Got getServers response: %s", records );
@@ -77,7 +78,8 @@ public class GetServersProcedureClusterCompositionProvider implements ClusterCom
         if ( records.size() != 1 )
         {
             return new ClusterCompositionResponse.Failure( new ProtocolException( format(
-                    "%srecords received '%s' is too few or too many.", PROTOCOL_ERROR_MESSAGE,
+                    PROTOCOL_ERROR_MESSAGE +
+                    "records received '%s' is too few or too many.", getServersRunner.procedureCalled(),
                     records.size() ) ) );
         }
 
@@ -90,14 +92,16 @@ public class GetServersProcedureClusterCompositionProvider implements ClusterCom
         catch ( ValueException e )
         {
             return new ClusterCompositionResponse.Failure( new ProtocolException( format(
-                    "%sunparsable record received.", PROTOCOL_ERROR_MESSAGE ), e ) );
+                    PROTOCOL_ERROR_MESSAGE +
+                    "unparsable record received.", getServersRunner.procedureCalled() ), e ) );
         }
 
         // the cluster result is not a legal reply
         if ( !cluster.hasRoutersAndReaders() )
         {
             return new ClusterCompositionResponse.Failure( new ProtocolException( format(
-                    "%sno router or reader found in response.", PROTOCOL_ERROR_MESSAGE ) ) );
+                    PROTOCOL_ERROR_MESSAGE +
+                    "no router or reader found in response.", getServersRunner.procedureCalled() ) ) );
         }
 
         // all good

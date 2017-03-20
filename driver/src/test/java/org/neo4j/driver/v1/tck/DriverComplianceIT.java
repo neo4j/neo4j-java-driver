@@ -27,12 +27,12 @@ import org.junit.runner.RunWith;
 
 import java.io.IOException;
 
+import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.Driver;
-import org.neo4j.driver.v1.util.ServerVersion;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static org.junit.Assume.assumeTrue;
-import static org.neo4j.driver.v1.util.ServerVersion.v3_2_0;
+import static org.neo4j.driver.internal.util.ServerVersion.v3_2_0;
 
 /**
  * The base class to run all cucumber tests

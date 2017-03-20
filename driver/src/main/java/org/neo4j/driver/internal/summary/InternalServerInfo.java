@@ -26,7 +26,7 @@ public class InternalServerInfo implements ServerInfo
     private final BoltServerAddress address;
     private final String version;
 
-    public InternalServerInfo(BoltServerAddress address, String version)
+    public InternalServerInfo( BoltServerAddress address, String version )
     {
         this.address = address;
         this.version = version;

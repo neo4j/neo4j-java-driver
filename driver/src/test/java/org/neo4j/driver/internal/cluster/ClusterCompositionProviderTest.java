@@ -27,7 +27,6 @@ import java.util.Set;
 
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.value.StringValue;
@@ -42,8 +41,6 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyMap;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -216,7 +213,7 @@ public class ClusterCompositionProviderTest
         // Given
         GetServersProcedureRunner mockedRunner = mock( GetServersProcedureRunner.class );
         ClusterCompositionProvider provider = new GetServersProcedureClusterCompositionProvider( mock( Clock.class ),
-                DEV_NULL_LOGGER );
+                DEV_NULL_LOGGER, mockedRunner );
 
         PooledConnection mockedConn = mock( PooledConnection.class );
         Record record = new InternalRecord( asList( "ttl", "servers" ), new Value[]{
@@ -225,7 +222,7 @@ public class ClusterCompositionProviderTest
                 serverInfo( "ROUTE", "one:1337", "two:1337" ) ) )
         } );
         doThrow( new ServiceUnavailableException( "Connection breaks during cypher execution" ) )
-                .when( mockedConn ).run( any( String.class ), anyMap(), any( Collector.class ) );
+                .when( mockedRunner ).run( mockedConn );
 
         // When & Then
         try
