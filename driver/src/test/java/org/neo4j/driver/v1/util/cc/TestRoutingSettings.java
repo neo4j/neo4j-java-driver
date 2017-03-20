@@ -16,26 +16,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.cluster;
+package org.neo4j.driver.v1.util.cc;
 
-import java.util.Map;
-
-import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.Values;
+import org.neo4j.driver.internal.cluster.RoutingSettings;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
 
-public class RoutingSettings
+public class TestRoutingSettings extends RoutingSettings
 {
-    final int maxRoutingFailures;
-    final long retryTimeoutDelay;
-    final Value routingParameters;
-
-    public RoutingSettings( int maxRoutingFailures, long retryTimeoutDelay, Map<String, Object> routingParameters )
+    public TestRoutingSettings( int maxRoutingFailures, long retryTimeoutDelay )
     {
-        this.maxRoutingFailures = maxRoutingFailures;
-        this.retryTimeoutDelay = retryTimeoutDelay;
-        this.routingParameters = Values.value( routingParameters );
+        super( maxRoutingFailures, retryTimeoutDelay, singletonMap( "context", (Object) emptyMap() ) );
     }
 }
