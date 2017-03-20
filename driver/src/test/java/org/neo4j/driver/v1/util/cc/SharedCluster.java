@@ -139,7 +139,7 @@ final class SharedCluster
                 throw new IllegalArgumentException( String.format(
                         "Wrong start command output found at line [%s]. " +
                         "Expected to have 'http_uri bolt_uri path' on each nonempty line. " +
-                        "Command output:%n%s", i + 1, output ) );
+                        "Command output:%n`%s`", i + 1, output ) );
             }
 
             URI boltUri = URI.create( clusterMemberSplit[1] );
