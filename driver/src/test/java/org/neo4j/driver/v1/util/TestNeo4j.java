@@ -124,25 +124,27 @@ public class TestNeo4j implements TestRule
     {
         FileTools.copyFile( key, tlsKeyFile() );
         FileTools.copyFile( cert, tlsCertFile() );
+        debug( "Updated neo4j key and certificate file." );
         runner.forceToRestart(); // needs to force to restart as no configuration changed
     }
 
     public File tlsCertFile()
     {
-        return new File( NEO4J_HOME, DEFAULT_TLS_CERT_PATH );
+        return new File( HOME_DIR, DEFAULT_TLS_CERT_PATH );
     }
 
     public File tlsKeyFile()
     {
-        return new File( NEO4J_HOME, DEFAULT_TLS_KEY_PATH );
+        return new File( HOME_DIR, DEFAULT_TLS_KEY_PATH );
     }
 
     public void ensureProcedures( String jarName ) throws IOException
     {
-        File procedureJar = new File( NEO4J_HOME, "plugins/" + jarName );
+        File procedureJar = new File( HOME_DIR, "plugins/" + jarName );
         if( !procedureJar.exists() )
         {
             FileTools.copyFile( new File( TEST_RESOURCE_FOLDER_PATH, jarName ), procedureJar );
+            debug( "Added a new procedure `%s`", jarName );
             runner.forceToRestart(); // needs to force to restart as no configuration changed
         }
     }

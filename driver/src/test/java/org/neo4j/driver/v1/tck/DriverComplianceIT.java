@@ -43,7 +43,7 @@ import static org.neo4j.driver.internal.util.ServerVersion.v3_2_0;
 public class DriverComplianceIT
 {
     @Rule
-    TemporaryFolder folder = new TemporaryFolder(  );
+    TemporaryFolder folder = new TemporaryFolder();
 
     @ClassRule
     public static TestNeo4j neo4j = new TestNeo4j();
