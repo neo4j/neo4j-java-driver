@@ -20,26 +20,28 @@
 package org.neo4j.driver.internal.cluster;
 
 import java.util.List;
+import java.util.Map;
 
 import org.neo4j.driver.internal.NetworkSession;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
-import org.neo4j.driver.v1.Value;
 
 import static org.neo4j.driver.internal.SessionResourcesHandler.NO_OP;
 import static org.neo4j.driver.internal.util.ServerVersion.v3_2_0;
 import static org.neo4j.driver.internal.util.ServerVersion.version;
+import static org.neo4j.driver.v1.Values.parameters;
 
 public class GetServersProcedureRunner
 {
     static final String GET_SERVERS = "dbms.cluster.routing.getServers";
-    static final String GET_ROUTING_TABLE = "dbms.cluster.routing.getRoutingTable";
+    static final String GET_ROUTING_TABLE_PARAM = "context";
+    static final String GET_ROUTING_TABLE = "dbms.cluster.routing.getRoutingTable({" + GET_ROUTING_TABLE_PARAM + "})";
 
-    private final Value routingContext;
+    private final Map<String, String> routingContext;
     private Statement procedureCalled;
 
-    public GetServersProcedureRunner( Value context )
+    public GetServersProcedureRunner( Map<String, String> context )
     {
         this.routingContext = context;
     }
@@ -48,7 +50,8 @@ public class GetServersProcedureRunner
     {
         if( version( connection.server().version() ).greaterThanOrEqual( v3_2_0 ) )
         {
-            procedureCalled = new Statement( "CALL " + GET_ROUTING_TABLE, routingContext );
+            procedureCalled = new Statement( "CALL " + GET_ROUTING_TABLE,
+                    parameters(GET_ROUTING_TABLE_PARAM, routingContext ) );
         }
         else
         {

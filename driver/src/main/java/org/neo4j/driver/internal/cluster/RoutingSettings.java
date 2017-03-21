@@ -20,19 +20,16 @@ package org.neo4j.driver.internal.cluster;
 
 import java.util.Map;
 
-import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.Values;
-
 public class RoutingSettings
 {
     final int maxRoutingFailures;
     final long retryTimeoutDelay;
-    final Value routingParameters;
+    final Map<String, String> routingParameters;
 
     public RoutingSettings( int maxRoutingFailures, long retryTimeoutDelay, Map<String, String> routingParameters )
     {
         this.maxRoutingFailures = maxRoutingFailures;
         this.retryTimeoutDelay = retryTimeoutDelay;
-        this.routingParameters = Values.value( routingParameters );
+        this.routingParameters = routingParameters;
     }
 }

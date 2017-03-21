@@ -22,29 +22,31 @@ import org.junit.Test;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.summary.InternalServerInfo;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
-import org.neo4j.driver.v1.Value;
 
+import static java.util.Collections.EMPTY_MAP;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.driver.internal.cluster.GetServersProcedureRunner.GET_SERVERS;
 import static org.neo4j.driver.internal.cluster.GetServersProcedureRunner.GET_ROUTING_TABLE;
-import static org.neo4j.driver.v1.Values.value;
+import static org.neo4j.driver.internal.cluster.GetServersProcedureRunner.GET_ROUTING_TABLE_PARAM;
+import static org.neo4j.driver.internal.cluster.GetServersProcedureRunner.GET_SERVERS;
+import static org.neo4j.driver.v1.Values.parameters;
 
 public class GetServersProcedureRunnerTest
 {
     @Test
-    public void shouldCallGetServersV2WithNull() throws Throwable
+    public void shouldCallGetRoutingTableWithEmptyMap() throws Throwable
     {
         // Given
-        GetServersProcedureRunner runner = new TestGetServersProcedureRunner( value( (Object)null ) );
+        GetServersProcedureRunner runner = new TestGetServersProcedureRunner( EMPTY_MAP );
         Connection mock = mock( Connection.class );
         when( mock.server() ).thenReturn(
                 new InternalServerInfo( new BoltServerAddress( "123:45" ), "Neo4j/3.2.1" ) );
@@ -53,17 +55,17 @@ public class GetServersProcedureRunnerTest
 
         // Then
         assertThat( runner.procedureCalled(), equalTo(
-                new Statement( "CALL " + GET_ROUTING_TABLE, value( (Object) null) ) ) );
+                new Statement( "CALL " + GET_ROUTING_TABLE, parameters( GET_ROUTING_TABLE_PARAM, EMPTY_MAP ) ) ) );
     }
 
     @Test
-    public void shouldCallGetServersV2WithParam() throws Throwable
+    public void shouldCallGetRoutingTableWithParam() throws Throwable
     {
         // Given
         HashMap<String,String> param = new HashMap<>();
         param.put( "key1", "value1" );
         param.put( "key2", "value2" );
-        GetServersProcedureRunner runner = new TestGetServersProcedureRunner( value( param ) );
+        GetServersProcedureRunner runner = new TestGetServersProcedureRunner( param );
         Connection mock = mock( Connection.class );
         when( mock.server() ).thenReturn(
                 new InternalServerInfo( new BoltServerAddress( "123:45" ), "Neo4j/3.2.1" ) );
@@ -72,17 +74,17 @@ public class GetServersProcedureRunnerTest
 
         // Then
         assertThat( runner.procedureCalled(), equalTo(
-                new Statement( "CALL " + GET_ROUTING_TABLE, value( param ) ) ) );
+                new Statement( "CALL " + GET_ROUTING_TABLE, parameters( GET_ROUTING_TABLE_PARAM, param ) ) ) );
     }
 
     @Test
-    public void shouldCallGetServerV1() throws Throwable
+    public void shouldCallGetServers() throws Throwable
     {
         // Given
         HashMap<String,String> param = new HashMap<>();
         param.put( "key1", "value1" );
         param.put( "key2", "value2" );
-        GetServersProcedureRunner runner = new TestGetServersProcedureRunner( value( param ) );
+        GetServersProcedureRunner runner = new TestGetServersProcedureRunner( param );
         Connection mock = mock( Connection.class );
         when( mock.server() ).thenReturn(
                 new InternalServerInfo( new BoltServerAddress( "123:45" ), "Neo4j/3.1.8" ) );
@@ -97,7 +99,7 @@ public class GetServersProcedureRunnerTest
     private static class TestGetServersProcedureRunner extends GetServersProcedureRunner
     {
 
-        TestGetServersProcedureRunner( Value parameters )
+        TestGetServersProcedureRunner( Map<String, String> parameters )
         {
             super( parameters );
         }
