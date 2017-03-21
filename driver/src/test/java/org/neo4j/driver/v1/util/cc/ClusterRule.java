@@ -40,7 +40,7 @@ public class ClusterRule extends ExternalResource
 
     // todo: should be possible to configure (dynamically add/remove) cores and read replicas
     private static final int CORE_COUNT = 3;
-    private static final int READ_REPLICA_COUNT = 1;
+    private static final int READ_REPLICA_COUNT = 2;
 
     public Cluster getCluster()
     {
