@@ -45,7 +45,6 @@ import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.util.Neo4jRunner;
 import org.neo4j.driver.v1.util.TestNeo4j;
-import org.neo4j.driver.v1.util.cc.TestRoutingSettings;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -160,7 +159,7 @@ public class ServerKilledIT
     {
         DriverFactory factory = new DriverFactoryWithClock( clock );
         AuthToken auth = AuthTokens.none();
-        RoutingSettings routingSettings = new TestRoutingSettings( 1, 1 );
+        RoutingSettings routingSettings = new RoutingSettings( 1, 1, null );
         RetrySettings retrySettings = RetrySettings.DEFAULT;
         return factory.newInstance( Neo4jRunner.DEFAULT_URI, auth, routingSettings, retrySettings, config );
     }

@@ -23,16 +23,13 @@ import java.util.Map;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 
-import static java.util.Collections.emptyMap;
-import static java.util.Collections.singletonMap;
-
 public class RoutingSettings
 {
     final int maxRoutingFailures;
     final long retryTimeoutDelay;
     final Value routingParameters;
 
-    public RoutingSettings( int maxRoutingFailures, long retryTimeoutDelay, Map<String, Object> routingParameters )
+    public RoutingSettings( int maxRoutingFailures, long retryTimeoutDelay, Map<String, String> routingParameters )
     {
         this.maxRoutingFailures = maxRoutingFailures;
         this.retryTimeoutDelay = retryTimeoutDelay;

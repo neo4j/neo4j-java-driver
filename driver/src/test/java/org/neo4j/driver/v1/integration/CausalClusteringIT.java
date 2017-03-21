@@ -54,7 +54,6 @@ import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.util.cc.Cluster;
 import org.neo4j.driver.v1.util.cc.ClusterMember;
 import org.neo4j.driver.v1.util.cc.ClusterRule;
-import org.neo4j.driver.v1.util.cc.TestRoutingSettings;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
@@ -107,7 +106,7 @@ public class CausalClusteringIT
         catch ( ServiceUnavailableException ex )
         {
             assertThat( ex.getMessage(), containsString(
-                    "Failed to run 'Statement{text='CALL dbms.cluster.routing" ) );
+                    "Failed to run 'Statement{text='CALL dbms.cluster.routing.getServers', parameters={}}' on server." ) );
         }
     }
 
@@ -220,8 +219,7 @@ public class CausalClusteringIT
 
         URI routingUri = cluster.leader().getRoutingUri();
         AuthToken auth = clusterRule.getDefaultAuthToken();
-        RoutingSettings routingSettings = new TestRoutingSettings( 1,
-                TimeUnit.SECONDS.toMillis( 5 ) );
+        RoutingSettings routingSettings = new RoutingSettings( 1, TimeUnit.SECONDS.toMillis( 5 ), null );
         RetrySettings retrySettings = RetrySettings.DEFAULT;
 
         try ( Driver driver = driverFactory.newInstance( routingUri, auth, routingSettings, retrySettings, config ) )

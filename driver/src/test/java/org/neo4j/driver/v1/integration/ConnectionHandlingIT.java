@@ -52,7 +52,6 @@ import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.util.TestNeo4j;
-import org.neo4j.driver.v1.util.cc.TestRoutingSettings;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
@@ -82,7 +81,7 @@ public class ConnectionHandlingIT
     {
         DriverFactoryWithConnector driverFactory = new DriverFactoryWithConnector();
         AuthToken auth = AuthTokens.none();
-        RoutingSettings routingSettings = new TestRoutingSettings( 1, 1 );
+        RoutingSettings routingSettings = new RoutingSettings( 1, 1, null );
         RetrySettings retrySettings = RetrySettings.DEFAULT;
         driver = driverFactory.newInstance( neo4j.uri(), auth, routingSettings, retrySettings, defaultConfig() );
         connectionPool = driverFactory.connectionPool;

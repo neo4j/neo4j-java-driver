@@ -49,7 +49,6 @@ import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.util.StubServer;
-import org.neo4j.driver.v1.util.cc.TestRoutingSettings;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -874,7 +873,7 @@ public class RoutingDriverBoltKitTest
     private static Driver newDriver( String uriString, DriverFactory driverFactory )
     {
         URI uri = URI.create( uriString );
-        RoutingSettings routingConf = new TestRoutingSettings( 1, 1 );
+        RoutingSettings routingConf = new RoutingSettings( 1, 1, null );
         AuthToken auth = AuthTokens.none();
         return driverFactory.newInstance( uri, auth, routingConf, RetrySettings.DEFAULT, config );
     }

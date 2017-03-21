@@ -49,7 +49,6 @@ import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ProtocolException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.v1.util.cc.TestRoutingSettings;
 
 import static java.util.Arrays.asList;
 import static junit.framework.TestCase.fail;
@@ -346,7 +345,7 @@ public class RoutingDriverTest
 
     private Driver driverWithPool( ConnectionPool pool )
     {
-        RoutingSettings settings = new TestRoutingSettings( 10, 5_000 );
+        RoutingSettings settings = new RoutingSettings( 10, 5_000, null );
         ConnectionProvider connectionProvider = new LoadBalancer( SEED, settings, pool, clock, logging );
         Config config = Config.build().withLogging( logging ).toConfig();
         SessionFactory sessionFactory = new NetworkSessionWithAddressFactory( connectionProvider, config );
