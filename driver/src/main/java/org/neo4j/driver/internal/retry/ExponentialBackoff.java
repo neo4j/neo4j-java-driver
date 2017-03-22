@@ -150,6 +150,25 @@ public class ExponentialBackoff implements RetryLogic<ExponentialBackoffDecision
     {
         return error instanceof SessionExpiredException ||
                error instanceof ServiceUnavailableException ||
-               error instanceof TransientException;
+               isTransientError( error );
+    }
+
+    private static boolean isTransientError( Throwable error )
+    {
+        if ( error instanceof TransientException )
+        {
+            String code = ((TransientException) error).code();
+            // Retries should not happen when transaction was explicitly terminated by the user.
+            // Termination of transaction might result in two different error codes depending on where it was
+            // terminated. These are really client errors but classification on the server is not entirely correct and
+            // they are classified as transient.
+            if ( "Neo.TransientError.Transaction.Terminated".equals( code ) ||
+                 "Neo.TransientError.Transaction.LockClientStopped".equals( code ) )
+            {
+                return false;
+            }
+            return true;
+        }
+        return false;
     }
 }

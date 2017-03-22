@@ -254,6 +254,32 @@ public class ExponentialBackoffTest
     }
 
     @Test
+    public void doesNothingWhenTransactionTerminatedError() throws Exception
+    {
+        Clock clock = mock( Clock.class );
+        ExponentialBackoff backoff = newBackoff( 1, 1, 1, 0, clock );
+
+        TransientException exception = new TransientException( "Neo.TransientError.Transaction.Terminated", "" );
+        ExponentialBackoffDecision decision = backoff.apply( exception, null );
+
+        assertFalse( decision.shouldRetry() );
+        verify( clock, never() ).sleep( anyLong() );
+    }
+
+    @Test
+    public void doesNothingWhenTransactionLockClientStoppedError() throws Exception
+    {
+        Clock clock = mock( Clock.class );
+        ExponentialBackoff backoff = newBackoff( 1, 1, 1, 0, clock );
+
+        TransientException exception = new TransientException( "Neo.TransientError.Transaction.LockClientStopped", "" );
+        ExponentialBackoffDecision decision = backoff.apply( exception, null );
+
+        assertFalse( decision.shouldRetry() );
+        verify( clock, never() ).sleep( anyLong() );
+    }
+
+    @Test
     public void throwsWhenSleepInterrupted() throws Exception
     {
         Clock clock = mock( Clock.class );
