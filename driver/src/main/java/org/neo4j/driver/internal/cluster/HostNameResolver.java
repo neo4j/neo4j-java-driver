@@ -22,21 +22,7 @@ import java.util.Set;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
 
-public interface RoutingTable
+public interface HostNameResolver
 {
-    boolean isStale();
-
-    Set<BoltServerAddress> update( ClusterComposition cluster );
-
-    void forget( BoltServerAddress address );
-
-    RoundRobinAddressSet readers();
-
-    RoundRobinAddressSet writers();
-
-    BoltServerAddress nextRouter();
-
-    int routerSize();
-
-    void removeWriter( BoltServerAddress toRemove );
+    Set<BoltServerAddress> resolve( BoltServerAddress initialRouter );
 }
