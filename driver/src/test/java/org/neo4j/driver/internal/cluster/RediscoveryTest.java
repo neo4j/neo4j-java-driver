@@ -26,7 +26,10 @@ import org.junit.runners.Parameterized.Parameters;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Connection;
@@ -66,6 +69,16 @@ import static org.neo4j.driver.internal.net.BoltServerAddress.LOCAL_DEFAULT;
 @RunWith( Enclosed.class )
 public class RediscoveryTest
 {
+    private static HostNameResolver directMapProvider = new HostNameResolver()
+    {
+        @Override
+        public Set<BoltServerAddress> resolve( BoltServerAddress initialRouter )
+        {
+            Set<BoltServerAddress> directMap = new HashSet<>();
+            directMap.add( initialRouter );
+            return directMap;
+        }
+    };
 
     private static ClusterCompositionResponse.Success success( ClusterComposition cluster )
     {
@@ -92,7 +105,7 @@ public class RediscoveryTest
             when( mockedProvider.getClusterComposition( any( Connection.class ) ) )
                     .thenReturn( success( INVALID_CLUSTER_COMPOSITION ) );
 
-            Rediscovery rediscovery = new Rediscovery( A, settings, clock, DEV_NULL_LOGGER, mockedProvider );
+            Rediscovery rediscovery = new Rediscovery( A, settings, clock, DEV_NULL_LOGGER, mockedProvider, directMapProvider );
 
             // when
             try
@@ -372,7 +385,6 @@ public class RediscoveryTest
                     .thenThrow( new ServiceUnavailableException( "Can't connect" ) );
 
             RoutingTable routingTable = new TestRoutingTable( B, C );
-
             ClusterComposition composition = rediscover( A, connections, routingTable, clusterComposition );
 
             assertEquals( VALID_CLUSTER_COMPOSITION, composition );
@@ -454,7 +466,8 @@ public class RediscoveryTest
         Clock mockedClock = mock( Clock.class );
         Logger mockedLogger = mock( Logger.class );
 
-        Rediscovery rediscovery = new Rediscovery( initialRouter, settings, mockedClock, mockedLogger, provider );
+        Rediscovery rediscovery = new Rediscovery( initialRouter, settings, mockedClock, mockedLogger, provider,
+                directMapProvider );
         return rediscovery.lookupClusterComposition( connections, routingTable );
     }
 
@@ -468,9 +481,9 @@ public class RediscoveryTest
         }
 
         @Override
-        public void removeRouter( BoltServerAddress router )
+        public void forget( BoltServerAddress router )
         {
-            super.removeRouter( router );
+            super.forget( router );
             removedRouters.add( router );
         }
     }

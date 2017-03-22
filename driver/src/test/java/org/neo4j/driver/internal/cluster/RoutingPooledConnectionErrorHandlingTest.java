@@ -225,7 +225,7 @@ public class RoutingPooledConnectionErrorHandlingTest
             assertThat( e.getCause(), instanceOf( ServiceUnavailableException.class ) );
 
             BoltServerAddress address = connection.boltServerAddress();
-            assertThat( routingTable, containsRouter( address ) );
+            assertThat( routingTable, not( containsRouter( address ) ) );
             assertThat( routingTable, not( containsReader( address ) ) );
             assertThat( routingTable, not( containsWriter( address ) ) );
             assertFalse( connectionPool.hasAddress( address ) );

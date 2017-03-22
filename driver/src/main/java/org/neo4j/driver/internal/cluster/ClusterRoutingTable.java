@@ -78,9 +78,7 @@ public class ClusterRoutingTable implements RoutingTable
     @Override
     public synchronized void forget( BoltServerAddress address )
     {
-        // Don't remove it from the set of routers, since that might mean we lose our ability to re-discover,
-        // just remove it from the set of readers and writers, so that we don't use it for actual work without
-        // performing discovery first.
+        routers.remove( address );
         readers.remove( address );
         writers.remove( address );
     }
@@ -115,11 +113,6 @@ public class ClusterRoutingTable implements RoutingTable
         writers.remove( toRemove );
     }
 
-    @Override
-    public void removeRouter( BoltServerAddress toRemove )
-    {
-        routers.remove( toRemove );
-    }
 
     @Override
     public String toString()

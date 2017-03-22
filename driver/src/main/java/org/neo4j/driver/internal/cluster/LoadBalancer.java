@@ -157,6 +157,6 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
             Clock clock, Logger log )
     {
         ClusterCompositionProvider clusterComposition = new GetServersProcedureClusterCompositionProvider( clock, log );
-        return new Rediscovery( initialRouter, settings, clock, log, clusterComposition );
+        return new Rediscovery( initialRouter, settings, clock, log, clusterComposition, new DnsResolver( log ) );
     }
 }
