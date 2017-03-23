@@ -244,7 +244,7 @@ public class NetworkSession implements Session, SessionResourcesHandler
         }
     }
 
-    private synchronized <T> T transaction( AccessMode mode, TransactionWork<T> work )
+    private <T> T transaction( AccessMode mode, TransactionWork<T> work )
     {
         RetryDecision decision = null;
         List<Throwable> errors = null;
