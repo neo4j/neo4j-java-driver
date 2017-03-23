@@ -33,6 +33,7 @@ import org.neo4j.driver.v1.GraphDatabase;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assume.assumeTrue;
+import static org.neo4j.driver.v1.AuthTokens.basic;
 import static org.neo4j.driver.v1.ConfigTest.deleteDefaultKnownCertFileIfExists;
 import static org.neo4j.driver.v1.util.FileTools.moveFile;
 import static org.neo4j.driver.v1.util.FileTools.updateProperties;
@@ -104,7 +105,7 @@ public class Neo4jRunner
     {
         if ( driver == null )
         {
-            driver = GraphDatabase.driver( DEFAULT_URI );
+            driver = GraphDatabase.driver( DEFAULT_URI, basic(TestNeo4j.USER, TestNeo4j.PASSWORD) );
         }
         return driver;
     }
@@ -137,10 +138,10 @@ public class Neo4jRunner
         updateServerSettingsFile();
     }
 
-    private void startNeo4j() throws IOException
+    public void startNeo4j() throws IOException
     {
         debug( "Starting server..." );
-        executeCommand( "neoctrl-create-user", HOME_DIR, "neo4j", "neo4j" );
+        executeCommand( "neoctrl-create-user", HOME_DIR, TestNeo4j.USER, TestNeo4j.PASSWORD );
         executeCommand( "neoctrl-start", HOME_DIR );
         debug( "Server started." );
     }
