@@ -864,6 +864,7 @@ public class SessionIT
     @Test( timeout = 20_000 )
     public void resetShouldStopQueryWaitingForALock() throws Exception
     {
+        assumeServerIs31OrLater();
         testResetOfQueryWaitingForLock( new NodeIdUpdater()
         {
             @Override
@@ -884,6 +885,7 @@ public class SessionIT
     @Test( timeout = 20_000 )
     public void resetShouldStopTransactionWaitingForALock() throws Exception
     {
+        assumeServerIs31OrLater();
         testResetOfQueryWaitingForLock( new NodeIdUpdater()
         {
             @Override
@@ -905,6 +907,7 @@ public class SessionIT
     @Test( timeout = 20_000 )
     public void resetShouldStopWriteTransactionWaitingForALock() throws Exception
     {
+        assumeServerIs31OrLater();
         final AtomicInteger invocationsOfWork = new AtomicInteger();
 
         testResetOfQueryWaitingForLock( new NodeIdUpdater()
@@ -1116,6 +1119,13 @@ public class SessionIT
             // tx with retries was successful and created an additional node
             assertEquals( 1, countNodesWithId( nodeId3 ) );
         }
+    }
+
+    private void assumeServerIs31OrLater()
+    {
+        ServerVersion serverVersion = ServerVersion.version( neo4j.driver() );
+        assumeTrue( "Ignored on `" + serverVersion + "`",
+                serverVersion.greaterThanOrEqual( v3_1_0 ) );
     }
 
     private void testExecuteReadTx( AccessMode sessionMode )
