@@ -26,6 +26,14 @@ import org.junit.rules.ExpectedException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.driver.internal.DriverFactory;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
@@ -39,15 +47,19 @@ import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.StatementRunner;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.TransactionWork;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.util.ServerVersion;
+import org.neo4j.driver.v1.exceptions.TransientException;
+import org.neo4j.driver.v1.util.DaemonThreadFactory;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static java.lang.String.format;
+import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -849,6 +861,263 @@ public class SessionIT
         }
     }
 
+    @Test( timeout = 20_000 )
+    public void resetShouldStopQueryWaitingForALock() throws Exception
+    {
+        testResetOfQueryWaitingForLock( new NodeIdUpdater()
+        {
+            @Override
+            void performUpdate( Driver driver, int nodeId, int newNodeId,
+                    AtomicReference<Session> usedSessionRef, CountDownLatch latchToWait ) throws Exception
+            {
+                try ( Session session = driver.session() )
+                {
+                    usedSessionRef.set( session );
+                    latchToWait.await();
+                    StatementResult result = updateNodeId( session, nodeId, newNodeId );
+                    result.consume();
+                }
+            }
+        } );
+    }
+
+    @Test( timeout = 20_000 )
+    public void resetShouldStopTransactionWaitingForALock() throws Exception
+    {
+        testResetOfQueryWaitingForLock( new NodeIdUpdater()
+        {
+            @Override
+            public void performUpdate( Driver driver, int nodeId, int newNodeId,
+                    AtomicReference<Session> usedSessionRef, CountDownLatch latchToWait ) throws Exception
+            {
+                try ( Session session = neo4j.driver().session();
+                      Transaction tx = session.beginTransaction() )
+                {
+                    usedSessionRef.set( session );
+                    latchToWait.await();
+                    StatementResult result = updateNodeId( tx, nodeId, newNodeId );
+                    result.consume();
+                }
+            }
+        } );
+    }
+
+    @Test( timeout = 20_000 )
+    public void resetShouldStopWriteTransactionWaitingForALock() throws Exception
+    {
+        final AtomicInteger invocationsOfWork = new AtomicInteger();
+
+        testResetOfQueryWaitingForLock( new NodeIdUpdater()
+        {
+            @Override
+            public void performUpdate( Driver driver, final int nodeId, final int newNodeId,
+                    AtomicReference<Session> usedSessionRef, CountDownLatch latchToWait ) throws Exception
+            {
+                try ( Session session = driver.session() )
+                {
+                    usedSessionRef.set( session );
+                    latchToWait.await();
+
+                    session.writeTransaction( new TransactionWork<Void>()
+                    {
+                        @Override
+                        public Void execute( Transaction tx )
+                        {
+                            invocationsOfWork.incrementAndGet();
+                            StatementResult result = updateNodeId( tx, nodeId, newNodeId );
+                            result.consume();
+                            return null;
+                        }
+                    } );
+                }
+            }
+        } );
+
+        assertEquals( 1, invocationsOfWork.get() );
+    }
+
+    @Test( timeout = 20_000 )
+    public void transactionRunShouldFailOnDeadlocks() throws Exception
+    {
+        final int nodeId1 = 42;
+        final int nodeId2 = 4242;
+        final int newNodeId1 = 1;
+        final int newNodeId2 = 2;
+
+        createNodeWithId( nodeId1 );
+        createNodeWithId( nodeId2 );
+
+        final CountDownLatch latch1 = new CountDownLatch( 1 );
+        final CountDownLatch latch2 = new CountDownLatch( 1 );
+
+        try ( final Driver driver = GraphDatabase.driver( neo4j.uri() ) )
+        {
+            Future<Void> result1 = executeInDifferentThread( new Callable<Void>()
+            {
+                @Override
+                public Void call() throws Exception
+                {
+                    try ( Session session = driver.session();
+                          Transaction tx = session.beginTransaction() )
+                    {
+                        // lock first node
+                        updateNodeId( tx, nodeId1, newNodeId1 ).consume();
+
+                        latch1.await();
+                        latch2.countDown();
+
+                        // lock second node
+                        updateNodeId( tx, nodeId2, newNodeId1 ).consume();
+
+                        tx.success();
+                    }
+                    return null;
+                }
+            } );
+
+            Future<Void> result2 = executeInDifferentThread( new Callable<Void>()
+            {
+                @Override
+                public Void call() throws Exception
+                {
+                    try ( Session session = driver.session();
+                          Transaction tx = session.beginTransaction() )
+                    {
+                        // lock second node
+                        updateNodeId( tx, nodeId2, newNodeId2 ).consume();
+
+                        latch1.countDown();
+                        latch2.await();
+
+                        // lock first node
+                        updateNodeId( tx, nodeId1, newNodeId2 ).consume();
+
+                        tx.success();
+                    }
+                    return null;
+                }
+            } );
+
+            boolean firstResultFailed = assertOneOfTwoFuturesFailWithDeadlock( result1, result2 );
+            if ( firstResultFailed )
+            {
+                assertEquals( 0, countNodesWithId( newNodeId1 ) );
+                assertEquals( 2, countNodesWithId( newNodeId2 ) );
+            }
+            else
+            {
+                assertEquals( 2, countNodesWithId( newNodeId1 ) );
+                assertEquals( 0, countNodesWithId( newNodeId2 ) );
+            }
+        }
+    }
+
+    @Test( timeout = 20_000 )
+    public void writeTransactionFunctionShouldRetryDeadlocks() throws Exception
+    {
+        final int nodeId1 = 42;
+        final int nodeId2 = 4242;
+        final int nodeId3 = 424242;
+        final int newNodeId1 = 1;
+        final int newNodeId2 = 2;
+
+        createNodeWithId( nodeId1 );
+        createNodeWithId( nodeId2 );
+
+        final CountDownLatch latch1 = new CountDownLatch( 1 );
+        final CountDownLatch latch2 = new CountDownLatch( 1 );
+
+        try ( final Driver driver = GraphDatabase.driver( neo4j.uri() ) )
+        {
+            Future<Void> result1 = executeInDifferentThread( new Callable<Void>()
+            {
+                @Override
+                public Void call() throws Exception
+                {
+                    try ( Session session = driver.session();
+                          Transaction tx = session.beginTransaction() )
+                    {
+                        // lock first node
+                        updateNodeId( tx, nodeId1, newNodeId1 ).consume();
+
+                        latch1.await();
+                        latch2.countDown();
+
+                        // lock second node
+                        updateNodeId( tx, nodeId2, newNodeId1 ).consume();
+
+                        tx.success();
+                    }
+                    return null;
+                }
+            } );
+
+            Future<Void> result2 = executeInDifferentThread( new Callable<Void>()
+            {
+                @Override
+                public Void call() throws Exception
+                {
+                    try ( Session session = driver.session() )
+                    {
+                        session.writeTransaction( new TransactionWork<Void>()
+                        {
+                            @Override
+                            public Void execute( Transaction tx )
+                            {
+                                // lock second node
+                                updateNodeId( tx, nodeId2, newNodeId2 ).consume();
+
+                                latch1.countDown();
+                                await( latch2 );
+
+                                // lock first node
+                                updateNodeId( tx, nodeId1, newNodeId2 ).consume();
+
+                                createNodeWithId( nodeId3 );
+
+                                return null;
+                            }
+                        } );
+                    }
+                    return null;
+                }
+            } );
+
+            boolean firstResultFailed = false;
+            try
+            {
+                // first future may:
+                // 1) succeed, when it's tx was able to grab both locks and tx in other future was
+                //    terminated because of a deadlock
+                // 2) fail, when it's tx was terminated because of a deadlock
+                assertNull( result1.get( 20, TimeUnit.SECONDS ) );
+            }
+            catch ( ExecutionException e )
+            {
+                firstResultFailed = true;
+            }
+
+            // second future can't fail because deadlocks are retried
+            assertNull( result2.get( 20, TimeUnit.SECONDS ) );
+
+            if ( firstResultFailed )
+            {
+                // tx with retries was successful and updated ids
+                assertEquals( 0, countNodesWithId( newNodeId1 ) );
+                assertEquals( 2, countNodesWithId( newNodeId2 ) );
+            }
+            else
+            {
+                // tx without retries was successful and updated ids
+                // tx with retries did not manage to find nodes because their ids were updated
+                assertEquals( 2, countNodesWithId( newNodeId1 ) );
+                assertEquals( 0, countNodesWithId( newNodeId2 ) );
+            }
+            // tx with retries was successful and created an additional node
+            assertEquals( 1, countNodesWithId( nodeId3 ) );
+        }
+    }
+
     private void testExecuteReadTx( AccessMode sessionMode )
     {
         Driver driver = neo4j.driver();
@@ -971,6 +1240,153 @@ public class SessionIT
         ServerVersion serverVersion = ServerVersion.version( driver );
         assumeTrue( format( "Server version `%s` does not support bookmark", serverVersion ),
                 serverVersion.greaterThanOrEqual( v3_1_0 ) );
+    }
+
+    @SuppressWarnings( "deprecation" )
+    private void testResetOfQueryWaitingForLock( NodeIdUpdater nodeIdUpdater ) throws Exception
+    {
+        int nodeId = 42;
+        int newNodeId1 = 4242;
+        int newNodeId2 = 424242;
+
+        createNodeWithId( nodeId );
+
+        CountDownLatch nodeLocked = new CountDownLatch( 1 );
+        AtomicReference<Session> otherSessionRef = new AtomicReference<>();
+
+        try ( Driver driver = GraphDatabase.driver( neo4j.uri() );
+              Session session = driver.session();
+              Transaction tx = session.beginTransaction() )
+        {
+            Future<Void> txResult = nodeIdUpdater.update( driver, nodeId, newNodeId1, otherSessionRef, nodeLocked );
+
+            StatementResult result = updateNodeId( tx, nodeId, newNodeId2 );
+            result.consume();
+            tx.success();
+
+            nodeLocked.countDown();
+            // give separate thread some time to block on a lock
+            Thread.sleep( 2_000 );
+            otherSessionRef.get().reset();
+
+            assertTransactionTerminated( txResult );
+        }
+
+        try ( Session session = neo4j.driver().session() )
+        {
+            StatementResult result = session.run( "MATCH (n) RETURN n.id AS id" );
+            int value = result.single().get( "id" ).asInt();
+            assertEquals( newNodeId2, value );
+        }
+    }
+
+    private int countNodesWithId( int id )
+    {
+        try ( Session session = neo4j.driver().session() )
+        {
+            StatementResult result = session.run( "MATCH (n {id: {id}}) RETURN count(n)", parameters( "id", id ) );
+            return result.single().get( 0 ).asInt();
+        }
+    }
+
+    private void createNodeWithId( int id )
+    {
+        try ( Session session = neo4j.driver().session() )
+        {
+            session.run( "CREATE (n {id: {id}})", parameters( "id", id ) );
+        }
+    }
+
+    private static StatementResult updateNodeId( StatementRunner statementRunner, int currentId, int newId )
+    {
+        return statementRunner.run( "MATCH (n {id: {currentId}}) SET n.id = {newId}",
+                parameters( "currentId", currentId, "newId", newId ) );
+    }
+
+    private static void assertTransactionTerminated( Future<Void> work ) throws Exception
+    {
+        try
+        {
+            work.get( 20, TimeUnit.SECONDS );
+            fail( "Exception expected" );
+        }
+        catch ( ExecutionException e )
+        {
+            assertThat( e.getCause(), instanceOf( TransientException.class ) );
+            assertThat( e.getCause().getMessage(), startsWith( "The transaction has been terminated" ) );
+        }
+    }
+
+    private static boolean assertOneOfTwoFuturesFailWithDeadlock( Future<Void> future1, Future<Void> future2 )
+            throws Exception
+    {
+        boolean firstFailed = false;
+        try
+        {
+            assertNull( future1.get( 20, TimeUnit.SECONDS ) );
+        }
+        catch ( ExecutionException e )
+        {
+            assertDeadlockDetectedError( e );
+            firstFailed = true;
+        }
+
+        try
+        {
+            assertNull( future2.get( 20, TimeUnit.SECONDS ) );
+        }
+        catch ( ExecutionException e )
+        {
+            assertFalse( "Both futures failed, ", firstFailed );
+            assertDeadlockDetectedError( e );
+        }
+        return firstFailed;
+    }
+
+    private static void assertDeadlockDetectedError( ExecutionException e )
+    {
+        assertThat( e.getCause(), instanceOf( TransientException.class ) );
+        String errorCode = ((TransientException) e.getCause()).code();
+        assertEquals( "Neo.TransientError.Transaction.DeadlockDetected", errorCode );
+    }
+
+    private static <T> Future<T> executeInDifferentThread( Callable<T> callable )
+    {
+        ExecutorService executor = newSingleThreadExecutor( new DaemonThreadFactory( "test-thread-" ) );
+        return executor.submit( callable );
+    }
+
+    private static void await( CountDownLatch latch )
+    {
+        try
+        {
+            latch.await();
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException( e );
+        }
+    }
+
+    private static abstract class NodeIdUpdater
+    {
+        final Future<Void> update( final Driver driver, final int nodeId, final int newNodeId,
+                final AtomicReference<Session> usedSessionRef, final CountDownLatch latchToWait )
+        {
+            return executeInDifferentThread( new Callable<Void>()
+            {
+                @Override
+                public Void call() throws Exception
+                {
+                    performUpdate( driver, nodeId, newNodeId, usedSessionRef, latchToWait );
+                    return null;
+                }
+            } );
+        }
+
+        abstract void performUpdate( Driver driver, int nodeId, int newNodeId,
+                AtomicReference<Session> usedSessionRef, CountDownLatch latchToWait ) throws Exception;
     }
 
     private static class ThrowingWork implements TransactionWork<Record>
