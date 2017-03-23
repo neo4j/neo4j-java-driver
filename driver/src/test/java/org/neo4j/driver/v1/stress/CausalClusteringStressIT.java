@@ -50,8 +50,8 @@ import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.v1.exceptions.AuthenticationException;
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.exceptions.SecurityException;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.util.DaemonThreadFactory;
 import org.neo4j.driver.v1.util.cc.LocalOrRemoteClusterRule;
@@ -489,7 +489,7 @@ public class CausalClusteringStressIT
             }
             catch ( Exception e )
             {
-                assertThat( e, instanceOf( SecurityException.class ) );
+                assertThat( e, instanceOf( AuthenticationException.class ) );
                 assertThat( e.getMessage(), containsString( "authentication failure" ) );
 
                 ArgumentCaptor<Throwable> captor = ArgumentCaptor.forClass( Throwable.class );

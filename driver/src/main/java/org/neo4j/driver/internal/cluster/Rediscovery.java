@@ -26,6 +26,7 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.Logger;
+import org.neo4j.driver.v1.exceptions.AuthenticationException;
 import org.neo4j.driver.v1.exceptions.SecurityException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
@@ -124,9 +125,9 @@ public class Rediscovery
         {
             response = provider.getClusterComposition( connection );
         }
-        catch ( SecurityException e )
+        catch ( AuthenticationException | SecurityException e )
         {
-            // auth error happened, terminate the discovery procedure immediately
+            // auth error or TLS error happened, terminate the discovery procedure immediately
             throw e;
         }
         catch ( Throwable t )

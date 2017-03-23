@@ -107,7 +107,7 @@ public class TLSSocketChannelTest
     }
 
     @Test
-    public void shouldThrowUnauthorizedIfFailedToHandshake() throws Throwable
+    public void shouldThrowTLSExceptionIfFailedToHandshake() throws Throwable
     {
         // Given
         ByteChannel mockedChannel = mock( ByteChannel.class );

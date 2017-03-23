@@ -25,7 +25,7 @@ package org.neo4j.driver.v1.exceptions;
  *
  * @since 1.1
  */
-public class AuthenticationException extends SecurityException
+public class AuthenticationException extends ClientException
 {
     public AuthenticationException( String code, String message )
     {
