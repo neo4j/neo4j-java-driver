@@ -53,7 +53,7 @@ public class Examples
         Driver driver = GraphDatabase.driver(
                 "bolt://localhost:7687",
                 AuthTokens.basic( "neo4j", "neo4j" ),
-                Config.build().withMaxSessions( 10 ).toConfig() );
+                Config.build().toConfig() );
         // end::configuration[]
 
         return driver;
@@ -264,6 +264,7 @@ public class Examples
         return driver;
     }
 
+    // TODO: remove this example now that TOFU is deprecated
     public static Driver trustOnFirstUse() throws Exception
     {
         // tag::tls-trust-on-first-use[]

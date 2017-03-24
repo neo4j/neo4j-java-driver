@@ -101,6 +101,7 @@ public class TestNeo4jSession extends TestNeo4j implements Session
         return realSession.beginTransaction();
     }
 
+    @Deprecated
     @Override
     public Transaction beginTransaction( String bookmark )
     {
@@ -125,6 +126,7 @@ public class TestNeo4jSession extends TestNeo4j implements Session
         return realSession.lastBookmark();
     }
 
+    @Deprecated
     @Override
     public void reset()
     {

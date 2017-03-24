@@ -36,10 +36,10 @@ import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
-import static junit.framework.Assert.assertNull;
-import static junit.framework.TestCase.assertNotNull;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.driver.v1.tck.Environment.driver;
 
@@ -225,6 +225,7 @@ public class ErrorReportingSteps
         }
     }
 
+    @SuppressWarnings( "deprecation" )
     @Given( "^I have a driver with fixed pool size of (\\d+)$" )
     public void iHaveADriverWithFixedPoolSizeOf( int poolSize ) throws Throwable
     {

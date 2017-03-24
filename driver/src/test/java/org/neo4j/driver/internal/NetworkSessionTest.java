@@ -301,6 +301,7 @@ public class NetworkSessionTest
         verify( connection ).close();
     }
 
+    @SuppressWarnings( "deprecation" )
     @Test
     public void resetDoesNothingWhenNoTransactionAndNoConnection()
     {
@@ -541,8 +542,9 @@ public class NetworkSessionTest
         PooledConnection connection = mock( PooledConnection.class );
         when( connectionProvider.acquireConnection( READ ) ).thenReturn( connection );
         NetworkSession session = newSession( connectionProvider, READ );
+        session.setBookmark(bookmark);
 
-        try ( Transaction ignore = session.beginTransaction( bookmark ) )
+        try ( Transaction ignore = session.beginTransaction() )
         {
             verifyBeginTx( connection, bookmark );
         }
@@ -595,34 +597,34 @@ public class NetworkSessionTest
     {
         NetworkSession session = newSession( mock( ConnectionProvider.class ), WRITE );
 
-        session.setLastBookmark( "TheBookmark" );
+        session.setBookmark( "TheBookmark" );
 
         assertEquals( "TheBookmark", session.lastBookmark() );
     }
 
     @Test
-    public void possibleToOverwriteBookmarkWithNull()
-    {
-        NetworkSession session = newSession( mock( ConnectionProvider.class ), WRITE );
-        session.setLastBookmark( "TheBookmark" );
-
-        session.setLastBookmark( null );
-
-        assertNull( session.lastBookmark() );
-    }
-
-    @Test
-    public void allowsToStartTransactionWithNullBookmark()
+    public void testPassingNoBookmarkShouldRetainBookmark()
     {
         ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
         PooledConnection connection = openConnectionMock();
         when( connectionProvider.acquireConnection( READ ) ).thenReturn( connection );
         NetworkSession session = newSession( connectionProvider, READ );
-        session.setLastBookmark( "SomeUndesiredBookmark" );
+        session.setBookmark( "X" );
+        session.beginTransaction();
+        assertThat( session.lastBookmark(), equalTo( "X" ) );
+    }
 
+    @SuppressWarnings( "deprecation" )
+    @Test
+    public void testPassingNullBookmarkShouldRetainBookmark()
+    {
+        ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
+        PooledConnection connection = openConnectionMock();
+        when( connectionProvider.acquireConnection( READ ) ).thenReturn( connection );
+        NetworkSession session = newSession( connectionProvider, READ );
+        session.setBookmark( "X" );
         session.beginTransaction( null );
-
-        assertNull( session.lastBookmark() );
+        assertThat( session.lastBookmark(), equalTo( "X" ) );
     }
 
     @Test
@@ -1096,7 +1098,7 @@ public class NetworkSessionTest
             RetryLogic<RetryDecision> retryLogic, String bookmark )
     {
         NetworkSession session = new NetworkSession( connectionProvider, mode, retryLogic, DEV_NULL_LOGGING );
-        session.setLastBookmark( bookmark );
+        session.setBookmark( bookmark );
         return session;
     }
 

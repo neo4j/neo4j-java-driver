@@ -51,6 +51,7 @@ public class ConfigTest
         assertEquals( authConfig.strategy(), Config.TrustStrategy.Strategy.TRUST_ALL_CERTIFICATES );
     }
 
+    @SuppressWarnings( "deprecation" )
     @Test
     public void shouldChangeToNewKnownCerts()
     {
