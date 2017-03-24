@@ -198,6 +198,9 @@ public class NetworkSession implements Session, SessionResourcesHandler
         return transaction( AccessMode.WRITE, work );
     }
 
+    // Internal method for setting the bookmark explicitly, mainly for testing.
+    // This method does not prevent setting the bookmark to null since that
+    // is a valid requirement for some test scenarios.
     void setBookmark( String bookmark )
     {
         this.bookmark = bookmark;
