@@ -126,7 +126,7 @@ public class NetworkSession implements Session, SessionResourcesHandler
         if ( currentTransaction != null )
         {
             currentTransaction.markToClose();
-            updateLastBookmarkFrom( currentTransaction );
+            setBookmark( currentTransaction.bookmark() );
             currentTransaction = null;
         }
         if ( currentConnection != null )
@@ -179,10 +179,7 @@ public class NetworkSession implements Session, SessionResourcesHandler
     @Override
     public synchronized Transaction beginTransaction( String bookmark )
     {
-        if ( bookmark != null )
-        {
-            setBookmark( bookmark );
-        }
+        setBookmark( bookmark );
         return beginTransaction();
     }
 
@@ -203,7 +200,10 @@ public class NetworkSession implements Session, SessionResourcesHandler
     // is a valid requirement for some test scenarios.
     void setBookmark( String bookmark )
     {
-        this.bookmark = bookmark;
+        if( bookmark != null )
+        {
+            this.bookmark = bookmark;
+        }
     }
 
     @Override
@@ -230,7 +230,7 @@ public class NetworkSession implements Session, SessionResourcesHandler
         if ( currentTransaction != null && currentTransaction == tx )
         {
             closeCurrentConnection();
-            updateLastBookmarkFrom( currentTransaction );
+            setBookmark( currentTransaction.bookmark() );
             currentTransaction = null;
         }
     }
@@ -392,14 +392,6 @@ public class NetworkSession implements Session, SessionResourcesHandler
         {
             connection.close();
             logger.debug( "Released connection " + connection.hashCode() );
-        }
-    }
-
-    private void updateLastBookmarkFrom( ExplicitTransaction tx )
-    {
-        if ( tx.bookmark() != null )
-        {
-            bookmark = tx.bookmark();
         }
     }
 
