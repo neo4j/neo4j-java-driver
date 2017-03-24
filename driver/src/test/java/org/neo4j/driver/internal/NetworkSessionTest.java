@@ -603,17 +603,6 @@ public class NetworkSessionTest
     }
 
     @Test
-    public void possibleToOverwriteBookmarkWithNull()
-    {
-        NetworkSession session = newSession( mock( ConnectionProvider.class ), WRITE );
-        session.setBookmark( "TheBookmark" );
-
-        session.setBookmark( null );
-
-        assertNull( session.lastBookmark() );
-    }
-
-    @Test
     public void testPassingNoBookmarkShouldRetainBookmark()
     {
         ConnectionProvider connectionProvider = mock( ConnectionProvider.class );

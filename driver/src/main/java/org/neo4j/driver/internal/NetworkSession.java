@@ -181,7 +181,7 @@ public class NetworkSession implements Session, SessionResourcesHandler
     {
         if ( bookmark != null )
         {
-            this.bookmark = bookmark;
+            setBookmark( bookmark );
         }
         return beginTransaction();
     }
@@ -198,7 +198,7 @@ public class NetworkSession implements Session, SessionResourcesHandler
         return transaction( AccessMode.WRITE, work );
     }
 
-    void setBookmark(String bookmark )
+    void setBookmark( String bookmark )
     {
         this.bookmark = bookmark;
     }
