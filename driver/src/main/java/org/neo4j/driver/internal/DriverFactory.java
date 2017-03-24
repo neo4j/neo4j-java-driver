@@ -221,6 +221,7 @@ public class DriverFactory
      * Establish a complete SecurityPlan based on the details provided for
      * driver construction.
      */
+    @SuppressWarnings( "deprecation" )
     private static SecurityPlan createSecurityPlanImpl( BoltServerAddress address, Config config )
             throws GeneralSecurityException, IOException
     {

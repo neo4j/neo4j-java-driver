@@ -177,6 +177,7 @@ public class TLSSocketChannelIT
         }
     }
 
+    @SuppressWarnings( "deprecation" )
     @Test
     public void shouldFailTLSHandshakeDueToWrongCertInKnownCertsFile() throws Throwable
     {
@@ -308,6 +309,7 @@ public class TLSSocketChannelIT
         }
     }
 
+    @SuppressWarnings( "deprecation" )
     @Test
     public void shouldWarnIfUsingDeprecatedTLSOption() throws Throwable
     {
@@ -339,6 +341,7 @@ public class TLSSocketChannelIT
                        "`TRUST_CUSTOM_CA_SIGNED_CERTIFICATES` instead." );
     }
 
+    @SuppressWarnings( "deprecation" )
     private void performTLSHandshakeUsingKnownCerts( File knownCerts ) throws Throwable
     {
         // Given

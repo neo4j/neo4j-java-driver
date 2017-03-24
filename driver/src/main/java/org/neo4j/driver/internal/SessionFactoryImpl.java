@@ -53,7 +53,7 @@ public class SessionFactoryImpl implements SessionFactory
         {
             session = new NetworkSession( connectionProvider, mode, retryLogic, logging );
         }
-        session.setLastBookmark( bookmark );
+        session.setBookmark( bookmark );
         return session;
     }
 

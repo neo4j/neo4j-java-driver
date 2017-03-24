@@ -69,6 +69,7 @@ public class GraphDatabaseTest
         assertThat( server.exitStatus(), equalTo( 0 ) );
     }
 
+    @SuppressWarnings( "deprecation" )
     @Test
     public void boltPlusDiscoverySchemeShouldNotSupportTrustOnFirstUse()
     {

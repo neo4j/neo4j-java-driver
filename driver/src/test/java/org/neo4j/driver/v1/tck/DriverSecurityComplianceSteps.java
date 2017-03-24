@@ -39,10 +39,10 @@ import org.neo4j.driver.v1.util.CertificateToolTest.SelfSignedCertificateGenerat
 import org.neo4j.driver.v1.util.Neo4jRunner;
 
 import static java.io.File.createTempFile;
-import static junit.framework.Assert.assertEquals;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.driver.internal.util.CertificateTool.saveX509Cert;
 import static org.neo4j.driver.v1.Config.TrustStrategy.trustCustomCertificateSignedBy;
@@ -65,6 +65,7 @@ public class DriverSecurityComplianceSteps
     {
     }
 
+    @SuppressWarnings( "deprecation" )
     @When( "I connect via a TLS-enabled transport for the first time for the given hostname and port$" )
     public void firstUseConnect() throws Throwable
     {
@@ -94,6 +95,7 @@ public class DriverSecurityComplianceSteps
         sessionsShouldSimplyWork();
     }
 
+    @SuppressWarnings( "deprecation" )
     @When( "^I connect via a TLS-enabled transport again$" )
     public void iConnectViaATlsEnabledTransportAgain() throws Throwable
     {
@@ -154,6 +156,7 @@ public class DriverSecurityComplianceSteps
     @Given( "^two drivers" )
     public void twoDrivers() {}
 
+    @SuppressWarnings( "deprecation" )
     @When("^I configure one of them to use a different location for its known hosts storage$")
     public void twoDriversWithDifferentKnownHostsFiles() throws Throwable
     {
