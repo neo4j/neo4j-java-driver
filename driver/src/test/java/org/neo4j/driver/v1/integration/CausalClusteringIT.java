@@ -136,8 +136,8 @@ public class CausalClusteringIT
 
             assertNotNull( bookmark );
 
-            try ( Session session = driver.session();
-                  Transaction tx = session.beginTransaction( bookmark ) )
+            try ( Session session = driver.session( bookmark );
+                  Transaction tx = session.beginTransaction() )
             {
                 Record record = tx.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
                 assertEquals( 1, record.get( "count" ).asInt() );
@@ -154,7 +154,7 @@ public class CausalClusteringIT
 
         try ( Driver driver = createDriver( leader.getBoltUri() ) )
         {
-            inExpirableSession( driver, createWritableSession(), new Function<Session,Void>()
+            inExpirableSession( driver, createWritableSession( null ), new Function<Session,Void>()
             {
                 @Override
                 public Void apply( Session session )
@@ -178,12 +178,12 @@ public class CausalClusteringIT
 
             assertNotNull( bookmark );
 
-            inExpirableSession( driver, createWritableSession(), new Function<Session,Void>()
+            inExpirableSession( driver, createWritableSession( bookmark ), new Function<Session,Void>()
             {
                 @Override
                 public Void apply( Session session )
                 {
-                    try ( Transaction tx = session.beginTransaction( bookmark ) )
+                    try ( Transaction tx = session.beginTransaction() )
                     {
                         tx.run( "CREATE (p:Person {name: {name} })", Values.parameters( "name", "Alistair" ) );
                         tx.success();
@@ -250,11 +250,11 @@ public class CausalClusteringIT
         ClusterMember leader = clusterRule.getCluster().leader();
 
         try ( Driver driver = createDriver( leader.getBoltUri() );
-              Session session = driver.session() )
+              Session session = driver.session( invalidBookmark ) )
         {
             try
             {
-                session.beginTransaction( invalidBookmark );
+                session.beginTransaction();
                 fail( "Exception expected" );
             }
             catch ( Exception e )
@@ -265,6 +265,7 @@ public class CausalClusteringIT
         }
     }
 
+    @SuppressWarnings( "deprecation" )
     @Test
     public void beginTransactionThrowsForUnreachableBookmark()
     {
@@ -333,8 +334,8 @@ public class CausalClusteringIT
                 }
             } );
 
-            try ( Session session2 = driver.session( AccessMode.READ );
-                  Transaction tx2 = session2.beginTransaction( bookmark ) )
+            try ( Session session2 = driver.session( AccessMode.READ, bookmark );
+                  Transaction tx2 = session2.beginTransaction() )
             {
                 Record record = tx2.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
                 tx2.success();
@@ -347,7 +348,7 @@ public class CausalClusteringIT
     {
         try ( Driver driver = createDriver( member.getRoutingUri() ) )
         {
-            return inExpirableSession( driver, createWritableSession(), executeWriteAndRead() );
+            return inExpirableSession( driver, createWritableSession( null ), executeWriteAndRead() );
         }
     }
 
@@ -363,14 +364,14 @@ public class CausalClusteringIT
         };
     }
 
-    private Function<Driver,Session> createWritableSession()
+    private Function<Driver,Session> createWritableSession( final String bookmark )
     {
         return new Function<Driver,Session>()
         {
             @Override
             public Session apply( Driver driver )
             {
-                return driver.session( AccessMode.WRITE );
+                return driver.session( AccessMode.WRITE, bookmark );
             }
         };
     }
