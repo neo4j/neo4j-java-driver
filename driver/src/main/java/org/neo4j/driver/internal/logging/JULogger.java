@@ -55,6 +55,12 @@ public class JULogger implements Logger
     }
 
     @Override
+    public void warn( String message, Throwable cause )
+    {
+        delegate.log( Level.WARNING, message, cause );
+    }
+
+    @Override
     public void debug( String format, Object... params )
     {
         if( debugEnabled )

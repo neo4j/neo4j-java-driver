@@ -160,8 +160,7 @@ public class NetworkSession implements Session, SessionResourcesHandler
                 }
                 catch ( Throwable e )
                 {
-                    // Best-effort
-                    logger.warn( "WARNING: Failed to close tx due to error: " + e.toString() );
+                    logger.warn( "Failed to close transaction", e );
                 }
             }
         }
