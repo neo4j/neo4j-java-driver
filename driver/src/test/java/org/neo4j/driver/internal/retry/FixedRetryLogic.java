@@ -18,7 +18,34 @@
  */
 package org.neo4j.driver.internal.retry;
 
-public interface RetryDecision
+import org.neo4j.driver.internal.util.Supplier;
+
+public class FixedRetryLogic implements RetryLogic
 {
-    boolean shouldRetry();
+    private final int retryCount;
+    private int invokedWork;
+
+    public FixedRetryLogic( int retryCount )
+    {
+        this.retryCount = retryCount;
+    }
+
+    @Override
+    public <T> T retry( Supplier<T> work )
+    {
+        while ( true )
+        {
+            try
+            {
+                return work.get();
+            }
+            catch ( Throwable error )
+            {
+                if ( invokedWork++ >= retryCount )
+                {
+                    throw error;
+                }
+            }
+        }
+    }
 }

@@ -32,6 +32,7 @@ import java.util.Map;
 import org.neo4j.driver.internal.cluster.LoadBalancer;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.retry.FixedRetryLogic;
 import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
@@ -62,7 +63,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.cluster.ClusterCompositionProviderTest.serverInfo;
-import static org.neo4j.driver.internal.retry.ExponentialBackoff.defaultRetryLogic;
 import static org.neo4j.driver.internal.security.SecurityPlan.insecure;
 import static org.neo4j.driver.v1.Values.value;
 
@@ -434,7 +434,7 @@ public class RoutingDriverTest
     {
         NetworkSessionWithAddressFactory( ConnectionProvider connectionProvider, Config config )
         {
-            super( connectionProvider, defaultRetryLogic(), config );
+            super( connectionProvider, new FixedRetryLogic( 0 ), config );
         }
 
         @Override
@@ -452,7 +452,7 @@ public class RoutingDriverTest
 
         NetworkSessionWithAddress( ConnectionProvider connectionProvider, AccessMode mode, Logging logging )
         {
-            super( connectionProvider, mode, defaultRetryLogic(), logging );
+            super( connectionProvider, mode, new FixedRetryLogic( 0 ), logging );
             try ( PooledConnection connection = connectionProvider.acquireConnection( mode ) )
             {
                 this.address = connection.boltServerAddress();

@@ -18,19 +18,21 @@
  */
 package org.neo4j.driver.internal.retry;
 
-import java.util.Objects;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.driver.internal.util.Clock;
+import org.neo4j.driver.internal.util.Supplier;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 import org.neo4j.driver.v1.exceptions.TransientException;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class ExponentialBackoff implements RetryLogic<ExponentialBackoffDecision>
+public class ExponentialBackoffRetryLogic implements RetryLogic
 {
-    public static final long DEFAULT_MAX_RETRY_TIME_MS = SECONDS.toMillis( 30 );
+    static final long DEFAULT_MAX_RETRY_TIME_MS = SECONDS.toMillis( 30 );
 
     private static final long INITIAL_RETRY_DELAY_MS = SECONDS.toMillis( 1 );
     private static final double RETRY_DELAY_MULTIPLIER = 2.0;
@@ -42,8 +44,14 @@ public class ExponentialBackoff implements RetryLogic<ExponentialBackoffDecision
     private final double jitterFactor;
     private final Clock clock;
 
-    ExponentialBackoff( long maxRetryTimeMs, long initialRetryDelayMs, double multiplier, double jitterFactor,
-            Clock clock )
+    public ExponentialBackoffRetryLogic( RetrySettings settings, Clock clock )
+    {
+        this( settings.maxRetryTimeMs(), INITIAL_RETRY_DELAY_MS, RETRY_DELAY_MULTIPLIER, RETRY_DELAY_JITTER_FACTOR,
+                clock );
+    }
+
+    ExponentialBackoffRetryLogic( long maxRetryTimeMs, long initialRetryDelayMs, double multiplier,
+            double jitterFactor, Clock clock )
     {
         this.maxRetryTimeMs = maxRetryTimeMs;
         this.initialRetryDelayMs = initialRetryDelayMs;
@@ -54,45 +62,43 @@ public class ExponentialBackoff implements RetryLogic<ExponentialBackoffDecision
         verifyAfterConstruction();
     }
 
-    public static RetryLogic<RetryDecision> defaultRetryLogic()
-    {
-        return create( RetrySettings.DEFAULT, Clock.SYSTEM );
-    }
-
-    public static RetryLogic<RetryDecision> noRetries()
-    {
-        return create( new RetrySettings( 0 ), Clock.SYSTEM );
-    }
-
-    @SuppressWarnings( "unchecked" )
-    public static RetryLogic<RetryDecision> create( RetrySettings settings, Clock clock )
-    {
-        return (RetryLogic) new ExponentialBackoff( settings.maxRetryTimeMs(), INITIAL_RETRY_DELAY_MS,
-                RETRY_DELAY_MULTIPLIER, RETRY_DELAY_JITTER_FACTOR, clock );
-    }
-
     @Override
-    public ExponentialBackoffDecision apply( Throwable error, ExponentialBackoffDecision previousDecision )
+    public <T> T retry( Supplier<T> work )
     {
-        Objects.requireNonNull( error );
-        ExponentialBackoffDecision decision = decision( previousDecision );
+        List<Throwable> errors = null;
+        long startTime = -1;
+        long nextDelayMs = initialRetryDelayMs;
 
-        long elapsedTimeMs = clock.millis() - decision.startTimestamp();
-        if ( elapsedTimeMs > maxRetryTimeMs || !canRetryOn( error ) )
+        while ( true )
         {
-            return decision.stopRetrying();
+            try
+            {
+                return work.get();
+            }
+            catch ( Throwable error )
+            {
+                if ( canRetryOn( error ) )
+                {
+                    long currentTime = clock.millis();
+                    if ( startTime == -1 )
+                    {
+                        startTime = currentTime;
+                    }
+
+                    long elapsedTime = currentTime - startTime;
+                    if ( elapsedTime < maxRetryTimeMs )
+                    {
+                        long delayWithJitterMs = computeDelayWithJitter( nextDelayMs );
+                        sleep( delayWithJitterMs );
+                        nextDelayMs = (long) (nextDelayMs * multiplier);
+                        errors = recordError( error, errors );
+                        continue;
+                    }
+                }
+                addSuppressed( error, errors );
+                throw error;
+            }
         }
-
-        long delayWithJitterMs = computeDelayWithJitter( decision.delay() );
-        sleep( delayWithJitterMs );
-
-        long nextDelayWithoutJitterMs = (long) (decision.delay() * multiplier);
-        return decision.withDelay( nextDelayWithoutJitterMs );
-    }
-
-    private ExponentialBackoffDecision decision( ExponentialBackoffDecision previous )
-    {
-        return previous == null ? new ExponentialBackoffDecision( clock.millis(), initialRetryDelayMs ) : previous;
     }
 
     private long computeDelayWithJitter( long delayMs )
@@ -100,12 +106,6 @@ public class ExponentialBackoff implements RetryLogic<ExponentialBackoffDecision
         long jitter = (long) (delayMs * jitterFactor);
         long min = delayMs - jitter;
         long max = delayMs + jitter;
-        if ( max < 0 )
-        {
-            // overflow detected, truncate min and max values
-            min -= 1;
-            max = min;
-        }
         return ThreadLocalRandom.current().nextLong( min, max + 1 );
     }
 
@@ -170,5 +170,29 @@ public class ExponentialBackoff implements RetryLogic<ExponentialBackoffDecision
             return true;
         }
         return false;
+    }
+
+    private static List<Throwable> recordError( Throwable error, List<Throwable> errors )
+    {
+        if ( errors == null )
+        {
+            errors = new ArrayList<>();
+        }
+        errors.add( error );
+        return errors;
+    }
+
+    private static void addSuppressed( Throwable error, List<Throwable> suppressedErrors )
+    {
+        if ( suppressedErrors != null )
+        {
+            for ( Throwable suppressedError : suppressedErrors )
+            {
+                if ( error != suppressedError )
+                {
+                    error.addSuppressed( suppressedError );
+                }
+            }
+        }
     }
 }

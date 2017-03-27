@@ -29,9 +29,13 @@ import org.neo4j.driver.internal.ExplicitTransaction;
 import org.neo4j.driver.internal.NetworkSession;
 import org.neo4j.driver.internal.SessionResourcesHandler;
 import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.retry.ExponentialBackoffRetryLogic;
+import org.neo4j.driver.internal.retry.RetryLogic;
+import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.PooledConnection;
+import org.neo4j.driver.internal.util.SleeplessClock;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Transaction;
@@ -55,7 +59,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
-import static org.neo4j.driver.internal.retry.ExponentialBackoff.defaultRetryLogic;
 import static org.neo4j.driver.v1.AccessMode.READ;
 import static org.neo4j.driver.v1.AccessMode.WRITE;
 
@@ -210,7 +213,8 @@ public class LoadBalancerTest
 
     private static Session newSession( LoadBalancer loadBalancer )
     {
-        return new NetworkSession( loadBalancer, AccessMode.WRITE, defaultRetryLogic(), DEV_NULL_LOGGING );
+        RetryLogic retryLogic = new ExponentialBackoffRetryLogic( RetrySettings.DEFAULT, new SleeplessClock() );
+        return new NetworkSession( loadBalancer, AccessMode.WRITE, retryLogic, DEV_NULL_LOGGING );
     }
 
     private static PooledConnection newConnectionWithFailingSync( BoltServerAddress address )

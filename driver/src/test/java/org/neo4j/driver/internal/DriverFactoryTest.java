@@ -31,7 +31,6 @@ import java.util.List;
 import org.neo4j.driver.internal.cluster.LoadBalancer;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.internal.retry.RetryDecision;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.SecurityPlan;
@@ -160,7 +159,7 @@ public class DriverFactoryTest
 
         @Override
         protected Driver createRoutingDriver( BoltServerAddress address, ConnectionPool connectionPool, Config config,
-                RoutingSettings routingSettings, SecurityPlan securityPlan, RetryLogic<RetryDecision> retryLogic )
+                RoutingSettings routingSettings, SecurityPlan securityPlan, RetryLogic retryLogic )
         {
             throw new UnsupportedOperationException( "Can't create routing driver" );
         }
@@ -191,7 +190,7 @@ public class DriverFactoryTest
 
         @Override
         protected SessionFactory createSessionFactory( ConnectionProvider connectionProvider,
-                RetryLogic<RetryDecision> retryLogic, Config config )
+                RetryLogic retryLogic, Config config )
         {
             SessionFactory sessionFactory = super.createSessionFactory( connectionProvider, retryLogic, config );
             capturedSessionFactory = sessionFactory;

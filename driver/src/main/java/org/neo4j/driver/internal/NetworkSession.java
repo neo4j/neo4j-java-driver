@@ -23,12 +23,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.driver.internal.retry.RetryDecision;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
+import org.neo4j.driver.internal.util.Supplier;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
@@ -49,7 +49,7 @@ public class NetworkSession implements Session, SessionResourcesHandler
 {
     private final ConnectionProvider connectionProvider;
     private final AccessMode mode;
-    private final RetryLogic<RetryDecision> retryLogic;
+    private final RetryLogic retryLogic;
     protected final Logger logger;
 
     private String bookmark;
@@ -58,7 +58,7 @@ public class NetworkSession implements Session, SessionResourcesHandler
 
     private final AtomicBoolean isOpen = new AtomicBoolean( true );
 
-    public NetworkSession( ConnectionProvider connectionProvider, AccessMode mode, RetryLogic<RetryDecision> retryLogic,
+    public NetworkSession( ConnectionProvider connectionProvider, AccessMode mode, RetryLogic retryLogic,
             Logging logging )
     {
         this.connectionProvider = connectionProvider;
@@ -252,46 +252,31 @@ public class NetworkSession implements Session, SessionResourcesHandler
         }
     }
 
-    private <T> T transaction( AccessMode mode, TransactionWork<T> work )
+    private <T> T transaction( final AccessMode mode, final TransactionWork<T> work )
     {
-        RetryDecision decision = null;
-        List<Throwable> errors = null;
-
-        while ( true )
+        return retryLogic.retry( new Supplier<T>()
         {
-            try ( Transaction tx = beginTransaction( mode ) )
+            @Override
+            public T get()
             {
-                T result;
-                try
+                try ( Transaction tx = beginTransaction( mode ) )
                 {
-                    result = work.execute( tx );
-                }
-                catch ( Throwable t )
-                {
-                    // mark transaction for failure if the given unit of work threw exception
-                    // this will override any success marks that were made by the unit of work
-                    tx.failure();
-                    throw t;
-                }
-                // given unit of work completed successfully, mark transaction for commit
-                tx.success();
-                return result;
-            }
-            catch ( Throwable newError )
-            {
-                decision = retryLogic.apply( newError, decision );
-
-                if ( decision.shouldRetry() )
-                {
-                    errors = recordError( newError, errors );
-                }
-                else
-                {
-                    addSuppressed( newError, errors );
-                    throw newError;
+                    try
+                    {
+                        T result = work.execute( tx );
+                        tx.success();
+                        return result;
+                    }
+                    catch ( Throwable t )
+                    {
+                        // mark transaction for failure if the given unit of work threw exception
+                        // this will override any success marks that were made by the unit of work
+                        tx.failure();
+                        throw t;
+                    }
                 }
             }
-        }
+        } );
     }
 
     private synchronized Transaction beginTransaction( AccessMode mode )

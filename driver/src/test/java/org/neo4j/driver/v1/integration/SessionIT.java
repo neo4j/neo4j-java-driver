@@ -42,6 +42,7 @@ import org.neo4j.driver.internal.util.DriverFactoryWithFixedRetryLogic;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.AuthTokens;
+import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Record;
@@ -66,7 +67,9 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.emptyArray;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -529,7 +532,6 @@ public class SessionIT
                 catch ( Exception e )
                 {
                     assertThat( e, instanceOf( ServiceUnavailableException.class ) );
-                    assertEquals( retries, e.getSuppressed().length );
                 }
             }
 
@@ -555,7 +557,6 @@ public class SessionIT
                 catch ( Exception e )
                 {
                     assertThat( e, instanceOf( ServiceUnavailableException.class ) );
-                    assertEquals( retries, e.getSuppressed().length );
                 }
             }
 
@@ -566,6 +567,64 @@ public class SessionIT
             }
 
             verify( work, times( failures ) ).execute( any( Transaction.class ) );
+        }
+    }
+
+    @Test
+    public void writeTxRetryErrorsAreCollected()
+    {
+        try ( Driver driver = newDriverWithLimitedRetries( 5, TimeUnit.SECONDS ) )
+        {
+            ThrowingWork work = newThrowingWorkSpy( "CREATE (:Person {name: 'Ronan'})", Integer.MAX_VALUE );
+            int suppressedErrors = 0;
+            try ( Session session = driver.session() )
+            {
+                try
+                {
+                    session.writeTransaction( work );
+                    fail( "Exception expected" );
+                }
+                catch ( Exception e )
+                {
+                    assertThat( e, instanceOf( ServiceUnavailableException.class ) );
+                    assertThat( e.getSuppressed(), not( emptyArray() ) );
+                    suppressedErrors = e.getSuppressed().length;
+                }
+            }
+
+            try ( Session session = driver.session() )
+            {
+                StatementResult result = session.run( "MATCH (p:Person {name: 'Ronan'}) RETURN count(p)" );
+                assertEquals( 0, result.single().get( 0 ).asInt() );
+            }
+
+            verify( work, times( suppressedErrors + 1 ) ).execute( any( Transaction.class ) );
+        }
+    }
+
+    @Test
+    public void readTxRetryErrorsAreCollected()
+    {
+        try ( Driver driver = newDriverWithLimitedRetries( 4, TimeUnit.SECONDS ) )
+        {
+            ThrowingWork work = newThrowingWorkSpy( "MATCH (n) RETURN n.name", Integer.MAX_VALUE );
+            int suppressedErrors = 0;
+            try ( Session session = driver.session() )
+            {
+                try
+                {
+                    session.readTransaction( work );
+                    fail( "Exception expected" );
+                }
+                catch ( Exception e )
+                {
+                    assertThat( e, instanceOf( ServiceUnavailableException.class ) );
+                    assertThat( e.getSuppressed(), not( emptyArray() ) );
+                    suppressedErrors = e.getSuppressed().length;
+                }
+            }
+
+            verify( work, times( suppressedErrors + 1 ) ).execute( any( Transaction.class ) );
         }
     }
 
@@ -1246,6 +1305,12 @@ public class SessionIT
         RoutingSettings routingConf = new RoutingSettings( 1, 1 );
         AuthToken auth = AuthTokens.none();
         return driverFactory.newInstance( neo4j.uri(), auth, routingConf, RetrySettings.DEFAULT, defaultConfig() );
+    }
+
+    private Driver newDriverWithLimitedRetries( int maxTxRetryTime, TimeUnit unit )
+    {
+        Config config = Config.build().withMaxTransactionRetryTime( maxTxRetryTime, unit ).toConfig();
+        return GraphDatabase.driver( neo4j.uri(), config );
     }
 
     private static ThrowingWork newThrowingWorkSpy( String query, int failures )

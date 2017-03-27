@@ -28,8 +28,7 @@ import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.net.SocketConnector;
 import org.neo4j.driver.internal.net.pooling.PoolSettings;
 import org.neo4j.driver.internal.net.pooling.SocketConnectionPool;
-import org.neo4j.driver.internal.retry.ExponentialBackoff;
-import org.neo4j.driver.internal.retry.RetryDecision;
+import org.neo4j.driver.internal.retry.ExponentialBackoffRetryLogic;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.SecurityPlan;
@@ -57,7 +56,7 @@ public class DriverFactory
         BoltServerAddress address = BoltServerAddress.from( uri );
         SecurityPlan securityPlan = createSecurityPlan( address, config );
         ConnectionPool connectionPool = createConnectionPool( authToken, securityPlan, config );
-        RetryLogic<RetryDecision> retryLogic = createRetryLogic( retrySettings );
+        RetryLogic retryLogic = createRetryLogic( retrySettings );
 
         try
         {
@@ -80,8 +79,7 @@ public class DriverFactory
     }
 
     private Driver createDriver( BoltServerAddress address, String scheme, ConnectionPool connectionPool,
-            Config config, RoutingSettings routingSettings, SecurityPlan securityPlan,
-            RetryLogic<RetryDecision> retryLogic )
+            Config config, RoutingSettings routingSettings, SecurityPlan securityPlan, RetryLogic retryLogic )
     {
         switch ( scheme.toLowerCase() )
         {
@@ -100,7 +98,7 @@ public class DriverFactory
      * <b>This method is protected only for testing</b>
      */
     protected Driver createDirectDriver( BoltServerAddress address, ConnectionPool connectionPool, Config config,
-            SecurityPlan securityPlan, RetryLogic<RetryDecision> retryLogic )
+            SecurityPlan securityPlan, RetryLogic retryLogic )
     {
         ConnectionProvider connectionProvider = new DirectConnectionProvider( address, connectionPool );
         SessionFactory sessionFactory = createSessionFactory( connectionProvider, retryLogic, config );
@@ -113,8 +111,7 @@ public class DriverFactory
      * <b>This method is protected only for testing</b>
      */
     protected Driver createRoutingDriver( BoltServerAddress address, ConnectionPool connectionPool,
-            Config config, RoutingSettings routingSettings, SecurityPlan securityPlan,
-            RetryLogic<RetryDecision> retryLogic )
+            Config config, RoutingSettings routingSettings, SecurityPlan securityPlan, RetryLogic retryLogic )
     {
         if ( !securityPlan.isRoutingCompatible() )
         {
@@ -190,19 +187,19 @@ public class DriverFactory
      * <b>This method is protected only for testing</b>
      */
     protected SessionFactory createSessionFactory( ConnectionProvider connectionProvider,
-            RetryLogic<RetryDecision> retryLogic, Config config )
+            RetryLogic retryLogic, Config config )
     {
         return new SessionFactoryImpl( connectionProvider, retryLogic, config );
     }
 
     /**
-     * Creates new {@link RetryLogic<RetryDecision>}.
+     * Creates new {@link RetryLogic >}.
      * <p>
      * <b>This method is protected only for testing</b>
      */
-    protected RetryLogic<RetryDecision> createRetryLogic( RetrySettings settings )
+    protected RetryLogic createRetryLogic( RetrySettings settings )
     {
-        return ExponentialBackoff.create( settings, createClock() );
+        return new ExponentialBackoffRetryLogic( settings, createClock() );
     }
 
     private static SecurityPlan createSecurityPlan( BoltServerAddress address, Config config )
