@@ -63,7 +63,7 @@ public class RoutingDriverBoltKitTest
     public ExpectedException exception = ExpectedException.none();
 
     private static final Config config = Config.build()
-            .withEncryptionLevel( Config.EncryptionLevel.NONE )
+            .withoutEncryption()
             .withLogging( new ConsoleLogging( Level.INFO ) ).toConfig();
 
     @Test

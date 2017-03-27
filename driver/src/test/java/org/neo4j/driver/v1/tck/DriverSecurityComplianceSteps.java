@@ -205,7 +205,7 @@ public class DriverSecurityComplianceSteps
         // give root certificate to driver
         driver = GraphDatabase.driver(
                 Neo4jRunner.DEFAULT_URI,
-                Config.build().withEncryptionLevel( EncryptionLevel.REQUIRED )
+                Config.build().withEncryption()
                         .withTrustStrategy( trustCustomCertificateSignedBy( rootCert ) ).toConfig() );
 
         // generate certificate signing request and get a certificate signed by the root private key
@@ -229,7 +229,7 @@ public class DriverSecurityComplianceSteps
     {
         driver = GraphDatabase.driver(
                 Neo4jRunner.DEFAULT_URI,
-                Config.build().withEncryptionLevel( EncryptionLevel.REQUIRED )
+                Config.build().withEncryption()
                         .withTrustStrategy( trustCustomCertificateSignedBy(
                                 new File( HOME_DIR, DEFAULT_TLS_CERT_PATH ) ) )
                         .toConfig() );
@@ -245,7 +245,7 @@ public class DriverSecurityComplianceSteps
         // give root certificate to driver
         driver = GraphDatabase.driver(
                 Neo4jRunner.DEFAULT_URI,
-                Config.build().withEncryptionLevel( EncryptionLevel.REQUIRED )
+                Config.build().withEncryption()
                         .withTrustStrategy( trustCustomCertificateSignedBy( cert ) ).toConfig() );
     }
 

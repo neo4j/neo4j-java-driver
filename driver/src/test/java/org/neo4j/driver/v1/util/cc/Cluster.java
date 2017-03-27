@@ -392,7 +392,7 @@ public class Cluster
         // try to build config for a very lightweight driver
         return Config.build()
                 .withTrustStrategy( trustAllCertificates() )
-                .withEncryptionLevel( Config.EncryptionLevel.NONE )
+                .withEncryption()
                 .withMaxIdleSessions( 1 )
                 .withConnectionLivenessCheckTimeout( 1, TimeUnit.HOURS )
                 .toConfig();

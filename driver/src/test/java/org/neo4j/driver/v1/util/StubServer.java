@@ -39,7 +39,7 @@ public class StubServer
     private static final int SOCKET_CONNECT_ATTEMPTS = 20;
 
     public static final Config INSECURE_CONFIG = Config.build()
-            .withEncryptionLevel( Config.EncryptionLevel.NONE ).toConfig();
+            .withoutEncryption().toConfig();
 
     // This may be thrown if the driver has not been closed properly
     public static class ForceKilled extends Exception {}

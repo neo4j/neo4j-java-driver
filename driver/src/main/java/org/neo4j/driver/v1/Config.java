@@ -65,8 +65,8 @@ public class Config
      */
     private final long idleTimeBeforeConnectionTest;
 
-    /** Level of encryption we need to adhere to */
-    private final EncryptionLevel encryptionLevel;
+    /** Indicator for encrypted traffic */
+    private final boolean encrypted;
 
     /** Strategy for how to trust encryption certificate */
     private final TrustStrategy trustStrategy;
@@ -86,7 +86,7 @@ public class Config
         this.idleTimeBeforeConnectionTest = builder.idleTimeBeforeConnectionTest;
         this.maxIdleConnectionPoolSize = builder.maxIdleConnectionPoolSize;
 
-        this.encryptionLevel = builder.encryptionLevel;
+        this.encrypted = builder.encrypted;
         this.trustStrategy = builder.trustStrategy;
         this.routingFailureLimit = builder.routingFailureLimit;
         this.routingRetryDelayMillis = builder.routingRetryDelayMillis;
@@ -156,9 +156,18 @@ public class Config
     /**
      * @return the level of encryption required for all connections.
      */
+    @Deprecated
     public EncryptionLevel encryptionLevel()
     {
-        return encryptionLevel;
+        return encrypted ? EncryptionLevel.REQUIRED : EncryptionLevel.NONE;
+    }
+
+    /**
+     * @return indicator for encrypted communication.
+     */
+    public boolean encrypted()
+    {
+        return encrypted;
     }
 
     /**
@@ -205,7 +214,7 @@ public class Config
         private boolean logLeakedSessions;
         private int maxIdleConnectionPoolSize = PoolSettings.DEFAULT_MAX_IDLE_CONNECTION_POOL_SIZE;
         private long idleTimeBeforeConnectionTest = PoolSettings.DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST;
-        private EncryptionLevel encryptionLevel = EncryptionLevel.REQUIRED;
+        private boolean encrypted = true;
         private TrustStrategy trustStrategy = trustAllCertificates();
         private int routingFailureLimit = 1;
         private long routingRetryDelayMillis = TimeUnit.SECONDS.toMillis( 5 );
@@ -328,9 +337,30 @@ public class Config
          * @param level the TLS level to use
          * @return this builder
          */
+        @Deprecated
         public ConfigBuilder withEncryptionLevel( EncryptionLevel level )
         {
-            this.encryptionLevel = level;
+            this.encrypted = level == EncryptionLevel.REQUIRED;
+            return this;
+        }
+
+        /**
+         * Set to use encrypted traffic.
+         * @return this builder
+         */
+        public ConfigBuilder withEncryption()
+        {
+            this.encrypted = true;
+            return this;
+        }
+
+        /**
+         * Set to use unencrypted traffic.
+         * @return this builder
+         */
+        public ConfigBuilder withoutEncryption()
+        {
+            this.encrypted = false;
             return this;
         }
 

@@ -225,10 +225,7 @@ public class DriverFactory
     private static SecurityPlan createSecurityPlanImpl( BoltServerAddress address, Config config )
             throws GeneralSecurityException, IOException
     {
-        Config.EncryptionLevel encryptionLevel = config.encryptionLevel();
-        boolean requiresEncryption = encryptionLevel.equals( REQUIRED );
-
-        if ( requiresEncryption )
+        if ( config.encrypted() )
         {
             Logger logger = config.logging().getLog( "session" );
             switch ( config.trustStrategy().strategy() )

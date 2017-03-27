@@ -211,7 +211,7 @@ public class CausalClusteringIT
 
         Config config = Config.build()
                 .withConnectionLivenessCheckTimeout( livenessCheckTimeoutMinutes, TimeUnit.MINUTES )
-                .withEncryptionLevel( Config.EncryptionLevel.NONE )
+                .withoutEncryption()
                 .toConfig();
 
         FakeClock clock = new FakeClock();
