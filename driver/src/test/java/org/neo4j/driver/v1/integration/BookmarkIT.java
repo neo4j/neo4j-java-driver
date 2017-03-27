@@ -85,6 +85,21 @@ public class BookmarkIT
     }
 
     @Test
+    public void shouldConnectIPv6Uri()
+    {
+        // Given
+        try( Driver driver =  GraphDatabase.driver( "bolt://[::1]:7687" );
+             Session session = driver.session() )
+        {
+            // When
+            StatementResult result = session.run( "RETURN 1" );
+
+            // Then
+            assertThat( result.single().get( 0 ).asInt(), equalTo( 1 ) );
+        }
+    }
+
+    @Test
     public void shouldReceiveBookmarkOnSuccessfulCommit() throws Throwable
     {
         // Given
