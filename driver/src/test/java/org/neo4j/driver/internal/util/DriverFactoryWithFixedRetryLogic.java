@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.util;
 import org.neo4j.driver.internal.retry.FixedRetryLogic;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.retry.RetrySettings;
+import org.neo4j.driver.v1.Logging;
 
 public class DriverFactoryWithFixedRetryLogic extends DriverFactoryWithClock
 {
@@ -33,7 +34,7 @@ public class DriverFactoryWithFixedRetryLogic extends DriverFactoryWithClock
     }
 
     @Override
-    protected RetryLogic createRetryLogic( RetrySettings settings )
+    protected RetryLogic createRetryLogic( RetrySettings settings, Logging logging )
     {
         return new FixedRetryLogic( retryCount );
     }

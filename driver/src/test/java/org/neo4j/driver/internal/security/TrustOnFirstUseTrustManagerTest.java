@@ -123,7 +123,7 @@ public class TrustOnFirstUseTrustManagerTest
         manager.checkServerTrusted( new X509Certificate[]{knownCertificate}, null );
 
         // Then no exception should've been thrown, and we should've logged that we now trust this certificate
-        verify(logger).warn( "Adding %s as known and trusted certificate for %s.", fingerprint, "1.2.3.4:200" );
+        verify( logger ).info( "Adding %s as known and trusted certificate for %s.", fingerprint, "1.2.3.4:200" );
 
         // And the file should contain the right info
         Scanner reader = new Scanner( knownCertsFile );

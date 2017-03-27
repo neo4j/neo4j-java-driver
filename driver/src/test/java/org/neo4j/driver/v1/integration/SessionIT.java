@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.driver.internal.DriverFactory;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
+import org.neo4j.driver.internal.logging.DevNullLogging;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.util.DriverFactoryWithFixedRetryLogic;
 import org.neo4j.driver.v1.AccessMode;
@@ -82,7 +83,6 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.driver.v1.Config.defaultConfig;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.util.ServerVersion.v3_1_0;
 
@@ -98,7 +98,7 @@ public class SessionIT
     public void shouldKnowSessionIsClosed() throws Throwable
     {
         // Given
-        try( Driver driver =  GraphDatabase.driver( neo4j.uri() ) )
+        try ( Driver driver = newDriver() )
         {
             Session session = driver.session();
 
@@ -149,7 +149,7 @@ public class SessionIT
     {
         neo4j.ensureProcedures( "longRunningStatement.jar" );
         // Given
-        Driver driver = GraphDatabase.driver( neo4j.uri() );
+        Driver driver = newDriver();
 
         int executionTimeout = 10; // 10s
         final int killTimeout = 1; // 1s
@@ -187,7 +187,7 @@ public class SessionIT
     {
         neo4j.ensureProcedures( "longRunningStatement.jar" );
         // Given
-        Driver driver = GraphDatabase.driver( neo4j.uri() );
+        Driver driver = newDriver();
 
         int executionTimeout = 10; // 10s
         final int killTimeout = 1; // 1s
@@ -229,7 +229,7 @@ public class SessionIT
     {
         // Given
         neo4j.ensureProcedures( "longRunningStatement.jar" );
-        Driver driver = GraphDatabase.driver( neo4j.uri() );
+        Driver driver = newDriver();
 
         try( Session session = driver.session() )
         {
@@ -256,7 +256,7 @@ public class SessionIT
     {
         // Given
         neo4j.ensureProcedures( "longRunningStatement.jar" );
-        Driver driver = GraphDatabase.driver( neo4j.uri() );
+        Driver driver = newDriver();
 
         Session session = driver.session();
         session.run( "CALL test.driver.longRunningStatement({seconds})",
@@ -278,7 +278,7 @@ public class SessionIT
     {
         // Given
         neo4j.ensureProcedures( "longRunningStatement.jar" );
-        Driver driver = GraphDatabase.driver( neo4j.uri() );
+        Driver driver = newDriver();
 
         try( Session session = driver.session() )
         {
@@ -345,8 +345,8 @@ public class SessionIT
     public void shouldAllowMoreStatementAfterSessionReset()
     {
         // Given
-        try( Driver driver =  GraphDatabase.driver( neo4j.uri() );
-             Session session = driver.session() )
+        try ( Driver driver = newDriver();
+              Session session = driver.session() )
         {
 
             session.run( "Return 1" ).consume();
@@ -364,8 +364,8 @@ public class SessionIT
     public void shouldAllowMoreTxAfterSessionReset()
     {
         // Given
-        try( Driver driver =  GraphDatabase.driver( neo4j.uri() );
-             Session session = driver.session() )
+        try ( Driver driver = newDriver();
+              Session session = driver.session() )
         {
             try( Transaction tx = session.beginTransaction() )
             {
@@ -390,8 +390,8 @@ public class SessionIT
     public void shouldMarkTxAsFailedAndDisallowRunAfterSessionReset()
     {
         // Given
-        try( Driver driver =  GraphDatabase.driver( neo4j.uri() );
-             Session session = driver.session() )
+        try ( Driver driver = newDriver();
+              Session session = driver.session() )
         {
             try( Transaction tx = session.beginTransaction() )
             {
@@ -413,8 +413,8 @@ public class SessionIT
     public void shouldAllowMoreTxAfterSessionResetInTx()
     {
         // Given
-        try( Driver driver =  GraphDatabase.driver( neo4j.uri() );
-             Session session = driver.session() )
+        try ( Driver driver = newDriver();
+              Session session = driver.session() )
         {
             try( Transaction tx = session.beginTransaction() )
             {
@@ -1020,7 +1020,7 @@ public class SessionIT
         final CountDownLatch latch1 = new CountDownLatch( 1 );
         final CountDownLatch latch2 = new CountDownLatch( 1 );
 
-        try ( final Driver driver = GraphDatabase.driver( neo4j.uri() ) )
+        try ( final Driver driver = newDriver() )
         {
             Future<Void> result1 = executeInDifferentThread( new Callable<Void>()
             {
@@ -1097,7 +1097,7 @@ public class SessionIT
         final CountDownLatch latch1 = new CountDownLatch( 1 );
         final CountDownLatch latch2 = new CountDownLatch( 1 );
 
-        try ( final Driver driver = GraphDatabase.driver( neo4j.uri() ) )
+        try ( final Driver driver = newDriver() )
         {
             Future<Void> result1 = executeInDifferentThread( new Callable<Void>()
             {
@@ -1294,37 +1294,6 @@ public class SessionIT
         }
     }
 
-    private Driver newDriverWithoutRetries()
-    {
-        return newDriverWithFixedRetries( 0 );
-    }
-
-    private Driver newDriverWithFixedRetries( int maxRetriesCount )
-    {
-        DriverFactory driverFactory = new DriverFactoryWithFixedRetryLogic( maxRetriesCount );
-        RoutingSettings routingConf = new RoutingSettings( 1, 1 );
-        AuthToken auth = AuthTokens.none();
-        return driverFactory.newInstance( neo4j.uri(), auth, routingConf, RetrySettings.DEFAULT, defaultConfig() );
-    }
-
-    private Driver newDriverWithLimitedRetries( int maxTxRetryTime, TimeUnit unit )
-    {
-        Config config = Config.build().withMaxTransactionRetryTime( maxTxRetryTime, unit ).toConfig();
-        return GraphDatabase.driver( neo4j.uri(), config );
-    }
-
-    private static ThrowingWork newThrowingWorkSpy( String query, int failures )
-    {
-        return spy( new ThrowingWork( query, failures ) );
-    }
-
-    private static void assumeBookmarkSupport( Driver driver )
-    {
-        ServerVersion serverVersion = ServerVersion.version( driver );
-        assumeTrue( format( "Server version `%s` does not support bookmark", serverVersion ),
-                serverVersion.greaterThanOrEqual( v3_1_0 ) );
-    }
-
     @SuppressWarnings( "deprecation" )
     private void testResetOfQueryWaitingForLock( NodeIdUpdater nodeIdUpdater ) throws Exception
     {
@@ -1337,7 +1306,7 @@ public class SessionIT
         CountDownLatch nodeLocked = new CountDownLatch( 1 );
         AtomicReference<Session> otherSessionRef = new AtomicReference<>();
 
-        try ( Driver driver = GraphDatabase.driver( neo4j.uri() );
+        try ( Driver driver = newDriver();
               Session session = driver.session();
               Transaction tx = session.beginTransaction() )
         {
@@ -1361,6 +1330,50 @@ public class SessionIT
             int value = result.single().get( "id" ).asInt();
             assertEquals( newNodeId2, value );
         }
+    }
+
+    private Driver newDriverWithoutRetries()
+    {
+        return newDriverWithFixedRetries( 0 );
+    }
+
+    private Driver newDriverWithFixedRetries( int maxRetriesCount )
+    {
+        DriverFactory driverFactory = new DriverFactoryWithFixedRetryLogic( maxRetriesCount );
+        RoutingSettings routingConf = new RoutingSettings( 1, 1 );
+        AuthToken auth = AuthTokens.none();
+        return driverFactory.newInstance( neo4j.uri(), auth, routingConf, RetrySettings.DEFAULT, noLoggingConfig() );
+    }
+
+    private Driver newDriver()
+    {
+        return GraphDatabase.driver( neo4j.uri(), noLoggingConfig() );
+    }
+
+    private Driver newDriverWithLimitedRetries( int maxTxRetryTime, TimeUnit unit )
+    {
+        Config config = Config.build()
+                .withLogging( DevNullLogging.DEV_NULL_LOGGING )
+                .withMaxTransactionRetryTime( maxTxRetryTime, unit )
+                .toConfig();
+        return GraphDatabase.driver( neo4j.uri(), config );
+    }
+
+    private static Config noLoggingConfig()
+    {
+        return Config.build().withLogging( DevNullLogging.DEV_NULL_LOGGING ).toConfig();
+    }
+
+    private static ThrowingWork newThrowingWorkSpy( String query, int failures )
+    {
+        return spy( new ThrowingWork( query, failures ) );
+    }
+
+    private static void assumeBookmarkSupport( Driver driver )
+    {
+        ServerVersion serverVersion = ServerVersion.version( driver );
+        assumeTrue( format( "Server version `%s` does not support bookmark", serverVersion ),
+                serverVersion.greaterThanOrEqual( v3_1_0 ) );
     }
 
     private int countNodesWithId( int id )

@@ -56,7 +56,7 @@ public class DriverFactory
         BoltServerAddress address = BoltServerAddress.from( uri );
         SecurityPlan securityPlan = createSecurityPlan( address, config );
         ConnectionPool connectionPool = createConnectionPool( authToken, securityPlan, config );
-        RetryLogic retryLogic = createRetryLogic( retrySettings );
+        RetryLogic retryLogic = createRetryLogic( retrySettings, config.logging() );
 
         try
         {
@@ -197,9 +197,9 @@ public class DriverFactory
      * <p>
      * <b>This method is protected only for testing</b>
      */
-    protected RetryLogic createRetryLogic( RetrySettings settings )
+    protected RetryLogic createRetryLogic( RetrySettings settings, Logging logging )
     {
-        return new ExponentialBackoffRetryLogic( settings, createClock() );
+        return new ExponentialBackoffRetryLogic( settings, createClock(), logging );
     }
 
     private static SecurityPlan createSecurityPlan( BoltServerAddress address, Config config )
@@ -227,7 +227,7 @@ public class DriverFactory
 
         if ( requiresEncryption )
         {
-            Logger logger = config.logging().getLog( "session" );
+            Logger logger = config.logging().getLog( "SecurityPlan" );
             switch ( config.trustStrategy().strategy() )
             {
 

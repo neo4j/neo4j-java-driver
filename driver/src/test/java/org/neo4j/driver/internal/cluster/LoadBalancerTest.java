@@ -213,7 +213,8 @@ public class LoadBalancerTest
 
     private static Session newSession( LoadBalancer loadBalancer )
     {
-        RetryLogic retryLogic = new ExponentialBackoffRetryLogic( RetrySettings.DEFAULT, new SleeplessClock() );
+        SleeplessClock clock = new SleeplessClock();
+        RetryLogic retryLogic = new ExponentialBackoffRetryLogic( RetrySettings.DEFAULT, clock, DEV_NULL_LOGGING );
         return new NetworkSession( loadBalancer, AccessMode.WRITE, retryLogic, DEV_NULL_LOGGING );
     }
 

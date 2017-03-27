@@ -24,6 +24,8 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Supplier;
+import org.neo4j.driver.v1.Logger;
+import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 import org.neo4j.driver.v1.exceptions.TransientException;
@@ -32,6 +34,8 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class ExponentialBackoffRetryLogic implements RetryLogic
 {
+    private final static String RETRY_LOGIC_LOG_NAME = "RetryLogic";
+
     static final long DEFAULT_MAX_RETRY_TIME_MS = SECONDS.toMillis( 30 );
 
     private static final long INITIAL_RETRY_DELAY_MS = SECONDS.toMillis( 1 );
@@ -43,21 +47,23 @@ public class ExponentialBackoffRetryLogic implements RetryLogic
     private final double multiplier;
     private final double jitterFactor;
     private final Clock clock;
+    private final Logger log;
 
-    public ExponentialBackoffRetryLogic( RetrySettings settings, Clock clock )
+    public ExponentialBackoffRetryLogic( RetrySettings settings, Clock clock, Logging logging )
     {
         this( settings.maxRetryTimeMs(), INITIAL_RETRY_DELAY_MS, RETRY_DELAY_MULTIPLIER, RETRY_DELAY_JITTER_FACTOR,
-                clock );
+                clock, logging );
     }
 
     ExponentialBackoffRetryLogic( long maxRetryTimeMs, long initialRetryDelayMs, double multiplier,
-            double jitterFactor, Clock clock )
+            double jitterFactor, Clock clock, Logging logging )
     {
         this.maxRetryTimeMs = maxRetryTimeMs;
         this.initialRetryDelayMs = initialRetryDelayMs;
         this.multiplier = multiplier;
         this.jitterFactor = jitterFactor;
         this.clock = clock;
+        this.log = logging.getLog( RETRY_LOGIC_LOG_NAME );
 
         verifyAfterConstruction();
     }
@@ -89,6 +95,8 @@ public class ExponentialBackoffRetryLogic implements RetryLogic
                     if ( elapsedTime < maxRetryTimeMs )
                     {
                         long delayWithJitterMs = computeDelayWithJitter( nextDelayMs );
+                        log.warn( "Transaction failed and will be retried in " + delayWithJitterMs + "ms", error );
+
                         sleep( delayWithJitterMs );
                         nextDelayMs = (long) (nextDelayMs * multiplier);
                         errors = recordError( error, errors );

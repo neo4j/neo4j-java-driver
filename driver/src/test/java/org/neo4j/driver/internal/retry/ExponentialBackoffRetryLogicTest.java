@@ -24,8 +24,11 @@ import org.mockito.ArgumentCaptor;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.driver.internal.logging.DevNullLogging;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Supplier;
+import org.neo4j.driver.v1.Logger;
+import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 import org.neo4j.driver.v1.exceptions.TransientException;
@@ -38,7 +41,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.startsWith;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -428,6 +434,24 @@ public class ExponentialBackoffRetryLogicTest
         verify( clock ).sleep( initialDelay * multiplier );
     }
 
+    @Test
+    public void eachRetryIsLogged()
+    {
+        int retries = 9;
+        Clock clock = mock( Clock.class );
+        Logging logging = mock( Logging.class );
+        Logger logger = mock( Logger.class );
+        when( logging.getLog( anyString() ) ).thenReturn( logger );
+        ExponentialBackoffRetryLogic logic = new ExponentialBackoffRetryLogic( RetrySettings.DEFAULT, clock, logging );
+
+        retry( logic, retries );
+
+        verify( logger, times( retries ) ).warn(
+                startsWith( "Transaction failed and will be retried" ),
+                any( ServiceUnavailableException.class )
+        );
+    }
+
     private static void retry( ExponentialBackoffRetryLogic retryLogic, final int times )
     {
         retryLogic.retry( new Supplier<Void>()
@@ -470,7 +494,8 @@ public class ExponentialBackoffRetryLogicTest
     private static ExponentialBackoffRetryLogic newRetryLogic( long maxRetryTimeMs, long initialRetryDelayMs,
             double multiplier, double jitterFactor, Clock clock )
     {
-        return new ExponentialBackoffRetryLogic( maxRetryTimeMs, initialRetryDelayMs, multiplier, jitterFactor, clock );
+        return new ExponentialBackoffRetryLogic( maxRetryTimeMs, initialRetryDelayMs, multiplier, jitterFactor, clock,
+                DevNullLogging.DEV_NULL_LOGGING );
     }
 
     private static ServiceUnavailableException serviceUnavailable()
