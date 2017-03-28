@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.v1;
 
+import java.io.PrintWriter;
 import java.util.Iterator;
 import java.util.List;
 
@@ -143,4 +144,10 @@ public interface StatementResult extends Iterator<Record>
      * @return a summary for the whole query result
      */
     ResultSummary consume();
+
+    /**
+     * Dumps the contents of this result to a human readable ascii-table view
+     * also includes statistics information.
+     */
+    void dumpToString(PrintWriter writer);
 }

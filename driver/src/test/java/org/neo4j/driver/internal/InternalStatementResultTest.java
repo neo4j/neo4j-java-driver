@@ -19,6 +19,8 @@
 package org.neo4j.driver.internal;
 
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -40,6 +42,7 @@ import org.neo4j.driver.v1.util.Pair;
 
 import static java.util.Arrays.asList;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.junit.Assert.assertFalse;
@@ -384,6 +387,23 @@ public class InternalStatementResultTest
 
         // WHEN
         Record future = result.peek();
+    }
+    @Test
+    public void shouldFormatResultAsTable()
+    {
+        // GIVEN
+        StatementResult result = createResult( 2 );
+
+        // WHEN
+        StringWriter writer = new StringWriter();
+        result.dumpToString(new PrintWriter(writer));
+
+        // THEN
+        System.out.println("writer = " + writer);
+        assertThat(writer.toString(), containsString("| k1     | k2     |"));
+        assertThat(writer.toString(), containsString("| \"v1-1\" | \"v2-1\" |"));
+        assertThat(writer.toString(), containsString("| \"v1-2\" | \"v2-2\" |"));
+        assertThat(writer.toString(), containsString("2 rows"));
     }
 
     private StatementResult createResult( int numberOfRecords )

@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal;
 
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -263,6 +264,11 @@ public class InternalStatementResult implements StatementResult
         }
 
         return summary;
+    }
+
+    public void dumpToString( PrintWriter writer )
+    {
+        TableFormatter.getInstance().format( writer, this );
     }
 
     @Override
