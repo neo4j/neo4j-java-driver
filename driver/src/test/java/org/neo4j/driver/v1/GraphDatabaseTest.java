@@ -90,4 +90,18 @@ public class GraphDatabaseTest
             assertThat( e, instanceOf( IllegalArgumentException.class ) );
         }
     }
+
+    @Test
+    public void throwsWhenBoltSchemeUsedWithRoutingParams()
+    {
+        try
+        {
+            GraphDatabase.driver( "bolt://localhost:7687/?policy=my_policy" );
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( IllegalArgumentException.class ) );
+        }
+    }
 }

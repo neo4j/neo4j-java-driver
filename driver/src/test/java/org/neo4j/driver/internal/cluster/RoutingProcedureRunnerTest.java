@@ -20,33 +20,33 @@ package org.neo4j.driver.internal.cluster;
 
 import org.junit.Test;
 
-import java.util.HashMap;
+import java.net.URI;
 import java.util.List;
-import java.util.Map;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.summary.InternalServerInfo;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
+import org.neo4j.driver.v1.Value;
 
 import static java.util.Collections.EMPTY_MAP;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.driver.internal.cluster.GetServersProcedureRunner.GET_ROUTING_TABLE;
-import static org.neo4j.driver.internal.cluster.GetServersProcedureRunner.GET_ROUTING_TABLE_PARAM;
-import static org.neo4j.driver.internal.cluster.GetServersProcedureRunner.GET_SERVERS;
+import static org.neo4j.driver.internal.cluster.RoutingProcedureRunner.GET_ROUTING_TABLE;
+import static org.neo4j.driver.internal.cluster.RoutingProcedureRunner.GET_ROUTING_TABLE_PARAM;
+import static org.neo4j.driver.internal.cluster.RoutingProcedureRunner.GET_SERVERS;
 import static org.neo4j.driver.v1.Values.parameters;
 
-public class GetServersProcedureRunnerTest
+public class RoutingProcedureRunnerTest
 {
     @Test
     public void shouldCallGetRoutingTableWithEmptyMap() throws Throwable
     {
         // Given
-        GetServersProcedureRunner runner = new TestGetServersProcedureRunner( EMPTY_MAP );
+        RoutingProcedureRunner runner = new TestRoutingProcedureRunner( RoutingContext.EMPTY );
         Connection mock = mock( Connection.class );
         when( mock.server() ).thenReturn(
                 new InternalServerInfo( new BoltServerAddress( "123:45" ), "Neo4j/3.2.1" ) );
@@ -54,7 +54,7 @@ public class GetServersProcedureRunnerTest
         runner.run( mock );
 
         // Then
-        assertThat( runner.procedureCalled(), equalTo(
+        assertThat( runner.invokedProcedure(), equalTo(
                 new Statement( "CALL " + GET_ROUTING_TABLE, parameters( GET_ROUTING_TABLE_PARAM, EMPTY_MAP ) ) ) );
     }
 
@@ -62,10 +62,9 @@ public class GetServersProcedureRunnerTest
     public void shouldCallGetRoutingTableWithParam() throws Throwable
     {
         // Given
-        HashMap<String,String> param = new HashMap<>();
-        param.put( "key1", "value1" );
-        param.put( "key2", "value2" );
-        GetServersProcedureRunner runner = new TestGetServersProcedureRunner( param );
+        URI uri = URI.create( "bolt+routing://localhost/?key1=value1&key2=value2" );
+        RoutingContext context = new RoutingContext( uri );
+        RoutingProcedureRunner runner = new TestRoutingProcedureRunner( context );
         Connection mock = mock( Connection.class );
         when( mock.server() ).thenReturn(
                 new InternalServerInfo( new BoltServerAddress( "123:45" ), "Neo4j/3.2.1" ) );
@@ -73,18 +72,18 @@ public class GetServersProcedureRunnerTest
         runner.run( mock );
 
         // Then
-        assertThat( runner.procedureCalled(), equalTo(
-                new Statement( "CALL " + GET_ROUTING_TABLE, parameters( GET_ROUTING_TABLE_PARAM, param ) ) ) );
+        Value expectedParams = parameters( GET_ROUTING_TABLE_PARAM, context.asMap() );
+        assertThat( runner.invokedProcedure(), equalTo(
+                new Statement( "CALL " + GET_ROUTING_TABLE, expectedParams ) ) );
     }
 
     @Test
     public void shouldCallGetServers() throws Throwable
     {
         // Given
-        HashMap<String,String> param = new HashMap<>();
-        param.put( "key1", "value1" );
-        param.put( "key2", "value2" );
-        GetServersProcedureRunner runner = new TestGetServersProcedureRunner( param );
+        URI uri = URI.create( "bolt+routing://localhost/?key1=value1&key2=value2" );
+        RoutingContext context = new RoutingContext( uri );
+        RoutingProcedureRunner runner = new TestRoutingProcedureRunner( context );
         Connection mock = mock( Connection.class );
         when( mock.server() ).thenReturn(
                 new InternalServerInfo( new BoltServerAddress( "123:45" ), "Neo4j/3.1.8" ) );
@@ -92,16 +91,15 @@ public class GetServersProcedureRunnerTest
         runner.run( mock );
 
         // Then
-        assertThat( runner.procedureCalled(), equalTo(
+        assertThat( runner.invokedProcedure(), equalTo(
                 new Statement( "CALL " + GET_SERVERS ) ) );
     }
 
-    private static class TestGetServersProcedureRunner extends GetServersProcedureRunner
+    private static class TestRoutingProcedureRunner extends RoutingProcedureRunner
     {
-
-        TestGetServersProcedureRunner( Map<String, String> parameters )
+        TestRoutingProcedureRunner( RoutingContext context )
         {
-            super( parameters );
+            super( context );
         }
 
         @Override

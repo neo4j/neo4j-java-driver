@@ -23,7 +23,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -37,6 +36,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.driver.internal.DriverFactory;
+import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.logging.DevNullLogging;
 import org.neo4j.driver.internal.retry.RetrySettings;
@@ -1341,7 +1341,7 @@ public class SessionIT
     private Driver newDriverWithFixedRetries( int maxRetriesCount )
     {
         DriverFactory driverFactory = new DriverFactoryWithFixedRetryLogic( maxRetriesCount );
-        RoutingSettings routingConf = new RoutingSettings( 1, 1, Collections.<String,String>emptyMap() );
+        RoutingSettings routingConf = new RoutingSettings( 1, 1, RoutingContext.EMPTY );
         AuthToken auth = AuthTokens.none();
         return driverFactory.newInstance( neo4j.uri(), auth, routingConf, RetrySettings.DEFAULT, noLoggingConfig() );
     }

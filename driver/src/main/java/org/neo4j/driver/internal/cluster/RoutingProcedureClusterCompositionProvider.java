@@ -24,6 +24,7 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ProtocolException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
@@ -31,21 +32,20 @@ import org.neo4j.driver.v1.exceptions.value.ValueException;
 
 import static java.lang.String.format;
 
-public class GetServersProcedureClusterCompositionProvider implements ClusterCompositionProvider
+public class RoutingProcedureClusterCompositionProvider implements ClusterCompositionProvider
 {
-
-    private final String PROTOCOL_ERROR_MESSAGE = "Failed to parse `%s' result received from server due to ";
+    private static final String PROTOCOL_ERROR_MESSAGE = "Failed to parse '%s' result received from server due to ";
 
     private final Clock clock;
     private final Logger log;
-    private final GetServersProcedureRunner getServersRunner;
+    private final RoutingProcedureRunner getServersRunner;
 
-    public GetServersProcedureClusterCompositionProvider( Clock clock, Logger log, RoutingSettings settings )
+    public RoutingProcedureClusterCompositionProvider( Clock clock, Logger log, RoutingSettings settings )
     {
-        this( clock, log, new GetServersProcedureRunner( settings.routingParameters ) );
+        this( clock, log, new RoutingProcedureRunner( settings.routingContext() ) );
     }
 
-    GetServersProcedureClusterCompositionProvider( Clock clock, Logger log, GetServersProcedureRunner getServersRunner )
+    RoutingProcedureClusterCompositionProvider( Clock clock, Logger log, RoutingProcedureRunner getServersRunner )
     {
         this.clock = clock;
         this.log = log;
@@ -67,7 +67,7 @@ public class GetServersProcedureClusterCompositionProvider implements ClusterCom
             return new ClusterCompositionResponse.Failure( new ServiceUnavailableException( format(
                     "Failed to run '%s' on server. " +
                     "Please make sure that there is a Neo4j 3.1+ causal cluster up running.",
-                    getServersRunner.procedureCalled() ), e
+                    invokedProcedureString() ), e
             ) );
         }
 
@@ -78,9 +78,8 @@ public class GetServersProcedureClusterCompositionProvider implements ClusterCom
         if ( records.size() != 1 )
         {
             return new ClusterCompositionResponse.Failure( new ProtocolException( format(
-                    PROTOCOL_ERROR_MESSAGE +
-                    "records received '%s' is too few or too many.", getServersRunner.procedureCalled(),
-                    records.size() ) ) );
+                    PROTOCOL_ERROR_MESSAGE + "records received '%s' is too few or too many.",
+                    invokedProcedureString(), records.size() ) ) );
         }
 
         // failed to parse the record
@@ -92,19 +91,25 @@ public class GetServersProcedureClusterCompositionProvider implements ClusterCom
         catch ( ValueException e )
         {
             return new ClusterCompositionResponse.Failure( new ProtocolException( format(
-                    PROTOCOL_ERROR_MESSAGE +
-                    "unparsable record received.", getServersRunner.procedureCalled() ), e ) );
+                    PROTOCOL_ERROR_MESSAGE + "unparsable record received.",
+                    invokedProcedureString() ), e ) );
         }
 
         // the cluster result is not a legal reply
         if ( !cluster.hasRoutersAndReaders() )
         {
             return new ClusterCompositionResponse.Failure( new ProtocolException( format(
-                    PROTOCOL_ERROR_MESSAGE +
-                    "no router or reader found in response.", getServersRunner.procedureCalled() ) ) );
+                    PROTOCOL_ERROR_MESSAGE + "no router or reader found in response.",
+                    invokedProcedureString() ) ) );
         }
 
         // all good
         return new ClusterCompositionResponse.Success( cluster );
+    }
+
+    private String invokedProcedureString()
+    {
+        Statement statement = getServersRunner.invokedProcedure();
+        return statement.text() + " " + statement.parameters();
     }
 }

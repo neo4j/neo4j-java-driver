@@ -23,6 +23,7 @@ import java.net.URI;
 import java.security.GeneralSecurityException;
 
 import org.neo4j.driver.internal.cluster.LoadBalancer;
+import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.net.SocketConnector;
@@ -54,14 +55,14 @@ public class DriverFactory
             RetrySettings retrySettings, Config config )
     {
         BoltServerAddress address = BoltServerAddress.from( uri );
+        RoutingSettings newRoutingSettings = routingSettings.withRoutingContext( new RoutingContext( uri ) );
         SecurityPlan securityPlan = createSecurityPlan( address, config );
         ConnectionPool connectionPool = createConnectionPool( authToken, securityPlan, config );
         RetryLogic retryLogic = createRetryLogic( retrySettings, config.logging() );
 
         try
         {
-            return createDriver( address, uri.getScheme(), connectionPool, config, routingSettings, securityPlan,
-                    retryLogic );
+            return createDriver( uri, address, connectionPool, config, newRoutingSettings, securityPlan, retryLogic );
         }
         catch ( Throwable driverError )
         {
@@ -78,12 +79,15 @@ public class DriverFactory
         }
     }
 
-    private Driver createDriver( BoltServerAddress address, String scheme, ConnectionPool connectionPool,
-            Config config, RoutingSettings routingSettings, SecurityPlan securityPlan, RetryLogic retryLogic )
+    private Driver createDriver( URI uri, BoltServerAddress address, ConnectionPool connectionPool,
+            Config config, RoutingSettings routingSettings, SecurityPlan securityPlan,
+            RetryLogic retryLogic )
     {
-        switch ( scheme.toLowerCase() )
+        String scheme = uri.getScheme().toLowerCase();
+        switch ( scheme )
         {
         case "bolt":
+            assertNoRoutingContext( uri, routingSettings );
             return createDirectDriver( address, connectionPool, config, securityPlan, retryLogic );
         case "bolt+routing":
             return createRoutingDriver( address, connectionPool, config, routingSettings, securityPlan, retryLogic );
@@ -258,6 +262,16 @@ public class DriverFactory
         else
         {
             return insecure();
+        }
+    }
+
+    private static void assertNoRoutingContext( URI uri, RoutingSettings routingSettings )
+    {
+        RoutingContext routingContext = routingSettings.routingContext();
+        if ( routingContext.isDefined() )
+        {
+            throw new IllegalArgumentException(
+                    "Routing parameters are not supported with scheme 'bolt'. Given URI: '" + uri + "'" );
         }
     }
 }

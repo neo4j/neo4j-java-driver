@@ -149,8 +149,8 @@ public class RoutingDriverTest
         // Then
         catch ( ServiceUnavailableException e )
         {
-            assertThat( e.getMessage(), containsString( "Failed to run " +
-                    "'Statement{text='CALL dbms.cluster.routing.getServers', parameters={}}' on server." ) );
+            assertThat( e.getMessage(),
+                    containsString( "Failed to run 'CALL dbms.cluster.routing.getServers {}' on server." ) );
         }
     }
 
