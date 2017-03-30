@@ -31,8 +31,8 @@ import java.security.cert.X509Certificate;
 import javax.net.ssl.X509TrustManager;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.internal.util.BytePrinter;
+import org.neo4j.driver.v1.Logger;
 
 import static java.lang.String.format;
 import static org.neo4j.driver.internal.util.CertificateTool.X509CertToString;
@@ -108,7 +108,7 @@ public class TrustOnFirstUseTrustManager implements X509TrustManager
     {
         this.fingerprint = fingerprint;
 
-        logger.warn( "Adding %s as known and trusted certificate for %s.", fingerprint, serverId );
+        logger.info( "Adding %s as known and trusted certificate for %s.", fingerprint, serverId );
         createKnownCertFileIfNotExists();
 
         assertKnownHostFileWritable();
