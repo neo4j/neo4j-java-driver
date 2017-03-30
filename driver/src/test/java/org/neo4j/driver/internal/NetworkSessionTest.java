@@ -29,12 +29,12 @@ import org.mockito.verification.VerificationMode;
 
 import java.util.Map;
 
-import org.neo4j.driver.internal.retry.RetryDecision;
+import org.neo4j.driver.internal.retry.FixedRetryLogic;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.spi.PooledConnection;
-import org.neo4j.driver.internal.util.FixedRetryLogic;
+import org.neo4j.driver.internal.util.Supplier;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Transaction;
@@ -69,7 +69,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
-import static org.neo4j.driver.internal.retry.ExponentialBackoff.noRetries;
 import static org.neo4j.driver.internal.spi.Collector.NO_OP;
 import static org.neo4j.driver.v1.AccessMode.READ;
 import static org.neo4j.driver.v1.AccessMode.WRITE;
@@ -735,30 +734,6 @@ public class NetworkSessionTest
         testTxIsRetriedUntilFailureWhenTxCloseThrows( WRITE );
     }
 
-    @Test
-    public void readTxErrorsAreCombined()
-    {
-        testRetryErrorsAreCombined( READ );
-    }
-
-    @Test
-    public void writeTxErrorsAreCombined()
-    {
-        testRetryErrorsAreCombined( WRITE );
-    }
-
-    @Test
-    public void readTxErrorsAreNotCombinedWhenSameErrorIsThrown()
-    {
-        testRetryErrorsAreNotCombinedWhenSameErrorIsThrown( READ );
-    }
-
-    @Test
-    public void writeTxErrorsAreNotCombinedWhenSameErrorIsThrown()
-    {
-        testRetryErrorsAreNotCombinedWhenSameErrorIsThrown( WRITE );
-    }
-
     private static void testConnectionAcquisition( AccessMode sessionMode, AccessMode transactionMode )
     {
         ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
@@ -766,15 +741,7 @@ public class NetworkSessionTest
         when( connectionProvider.acquireConnection( transactionMode ) ).thenReturn( connection );
         NetworkSession session = newSession( connectionProvider, sessionMode );
 
-        TransactionWork<Integer> work = new TransactionWork<Integer>()
-        {
-            @Override
-            public Integer execute( Transaction tx )
-            {
-                tx.success();
-                return 42;
-            }
-        };
+        TxWork work = new TxWork( 42 );
 
         int result = executeTransaction( session, transactionMode, work );
 
@@ -859,206 +826,94 @@ public class NetworkSessionTest
 
     private static void testTxIsRetriedUntilSuccessWhenFunctionThrows( AccessMode mode )
     {
-        final int failures = 4;
-        RetryLogic<RetryDecision> retryLogic = fixedRetryLogicSpy( failures + 1 );
+        int failures = 12;
+        int retries = failures + 1;
+
+        RetryLogic retryLogic = new FixedRetryLogic( retries );
         ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
         PooledConnection connection = openConnectionMock();
         when( connectionProvider.acquireConnection( mode ) ).thenReturn( connection );
         NetworkSession session = newSession( connectionProvider, retryLogic );
 
-        int answer = executeTransaction( session, mode, new TransactionWork<Integer>()
-        {
-            int invoked;
-
-            @Override
-            public Integer execute( Transaction tx )
-            {
-                if ( invoked++ < failures )
-                {
-                    throw new SessionExpiredException( "" );
-                }
-                tx.success();
-                return 42;
-            }
-        } );
+        TxWork work = spy( new TxWork( 42, failures, new SessionExpiredException( "" ) ) );
+        int answer = executeTransaction( session, mode, work );
 
         assertEquals( 42, answer );
-        verifyRetryCount( retryLogic, failures );
+        verifyInvocationCount( work, failures + 1 );
         verifyCommitTx( connection, times( 1 ) );
+        verifyRollbackTx( connection, times( failures ) );
     }
 
     private static void testTxIsRetriedUntilSuccessWhenTxCloseThrows( AccessMode mode )
     {
-        final int failures = 6;
-        final int retries = failures + 1;
+        int failures = 13;
+        int retries = failures + 1;
 
-        RetryLogic<RetryDecision> retryLogic = fixedRetryLogicSpy( retries );
+        RetryLogic retryLogic = new FixedRetryLogic( retries );
         ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
         PooledConnection connection = connectionWithFailingCommit( failures );
         when( connectionProvider.acquireConnection( mode ) ).thenReturn( connection );
         NetworkSession session = newSession( connectionProvider, retryLogic );
 
-        int answer = executeTransaction( session, mode, new TransactionWork<Integer>()
-        {
-            @Override
-            public Integer execute( Transaction tx )
-            {
-                tx.success();
-                return 43;
-            }
-        } );
+        TxWork work = spy( new TxWork( 43 ) );
+        int answer = executeTransaction( session, mode, work );
 
         assertEquals( 43, answer );
-        verifyRetryCount( retryLogic, failures );
+        verifyInvocationCount( work, failures + 1 );
         verifyCommitTx( connection, times( retries ) );
         verifyRollbackTx( connection, times( failures ) );
     }
 
     private static void testTxIsRetriedUntilFailureWhenFunctionThrows( AccessMode mode )
     {
-        final int failures = 4;
-        final int retries = failures - 1;
+        int failures = 14;
+        int retries = failures - 1;
 
-        RetryLogic<RetryDecision> retryLogic = fixedRetryLogicSpy( retries );
+        RetryLogic retryLogic = new FixedRetryLogic( retries );
         ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
-        PooledConnection connection = connectionWithFailingCommit( failures );
+        PooledConnection connection = openConnectionMock();
         when( connectionProvider.acquireConnection( mode ) ).thenReturn( connection );
         NetworkSession session = newSession( connectionProvider, retryLogic );
 
+        TxWork work = spy( new TxWork( 42, failures, new SessionExpiredException( "Oh!" ) ) );
         try
         {
-            executeTransaction( session, mode, new TransactionWork<Integer>()
-            {
-                int invoked;
-
-                @Override
-                public Integer execute( Transaction tx )
-                {
-                    if ( invoked++ < failures )
-                    {
-                        throw new SessionExpiredException( "Oh!" );
-                    }
-                    return 42;
-                }
-            } );
+            executeTransaction( session, mode, work );
             fail( "Exception expected" );
         }
         catch ( Exception e )
         {
             assertThat( e, instanceOf( SessionExpiredException.class ) );
             assertEquals( "Oh!", e.getMessage() );
-            verifyRetryCount( retryLogic, failures );
+            verifyInvocationCount( work, failures );
+            verifyCommitTx( connection, never() );
             verifyRollbackTx( connection, times( failures ) );
         }
     }
 
     private static void testTxIsRetriedUntilFailureWhenTxCloseThrows( AccessMode mode )
     {
-        final int failures = 7;
-        final int retries = failures - 1;
+        int failures = 17;
+        int retries = failures - 1;
 
-        RetryLogic<RetryDecision> retryLogic = fixedRetryLogicSpy( retries );
+        RetryLogic retryLogic = new FixedRetryLogic( retries );
         ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
         PooledConnection connection = connectionWithFailingCommit( failures );
         when( connectionProvider.acquireConnection( mode ) ).thenReturn( connection );
         NetworkSession session = newSession( connectionProvider, retryLogic );
 
+        TxWork work = spy( new TxWork( 42 ) );
         try
         {
-            executeTransaction( session, mode, new TransactionWork<Integer>()
-            {
-                @Override
-                public Integer execute( Transaction tx )
-                {
-                    tx.success();
-                    return 42;
-                }
-            } );
+            executeTransaction( session, mode, work );
             fail( "Exception expected" );
         }
         catch ( Exception e )
         {
             assertThat( e, instanceOf( ServiceUnavailableException.class ) );
-            verifyRetryCount( retryLogic, failures );
+            verifyInvocationCount( work, failures );
+            verifyCommitTx( connection, times( failures ) );
             verifyRollbackTx( connection, times( failures ) );
-        }
-    }
-
-    private static void testRetryErrorsAreCombined( AccessMode mode )
-    {
-        final int failures = 7;
-        final int retries = failures - 1;
-
-        RetryLogic<RetryDecision> retryLogic = fixedRetryLogicSpy( retries );
-        NetworkSession session = newSession( mock( ConnectionProvider.class, RETURNS_MOCKS ), retryLogic );
-
-        try
-        {
-            executeTransaction( session, mode, new TransactionWork<Integer>()
-            {
-                int invoked;
-
-                @Override
-                public Integer execute( Transaction tx )
-                {
-                    if ( invoked++ < failures )
-                    {
-                        throw new ServiceUnavailableException( "Oh!" );
-                    }
-                    return 42;
-                }
-            } );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( ServiceUnavailableException.class ) );
-            assertEquals( "Oh!", e.getMessage() );
-            Throwable[] suppressed = e.getSuppressed();
-            assertEquals( retries, suppressed.length );
-            for ( Throwable error : suppressed )
-            {
-                assertThat( error, instanceOf( ServiceUnavailableException.class ) );
-                assertEquals( "Oh!", error.getMessage() );
-            }
-            verifyRetryCount( retryLogic, failures );
-        }
-    }
-
-    private static void testRetryErrorsAreNotCombinedWhenSameErrorIsThrown( AccessMode mode )
-    {
-        final int failures = 7;
-        final int retries = failures - 1;
-
-        RetryLogic<RetryDecision> retryLogic = fixedRetryLogicSpy( retries );
-        NetworkSession session = newSession( mock( ConnectionProvider.class, RETURNS_MOCKS ), retryLogic );
-
-        // same instance of the exception is thrown, can't be suppressed
-        final ServiceUnavailableException error = new ServiceUnavailableException( "Oh!" );
-        try
-        {
-            executeTransaction( session, mode, new TransactionWork<Integer>()
-            {
-                int invoked;
-
-                @Override
-                public Integer execute( Transaction tx )
-                {
-                    if ( invoked++ < failures )
-                    {
-                        throw error;
-                    }
-                    return 42;
-                }
-            } );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( ServiceUnavailableException.class ) );
-            assertEquals( "Oh!", e.getMessage() );
-            assertEquals( 0, e.getSuppressed().length );
-            verifyRetryCount( retryLogic, failures );
         }
     }
 
@@ -1083,19 +938,18 @@ public class NetworkSessionTest
         return newSession( connectionProvider, mode, null );
     }
 
-    private static NetworkSession newSession( ConnectionProvider connectionProvider,
-            RetryLogic<RetryDecision> retryLogic )
+    private static NetworkSession newSession( ConnectionProvider connectionProvider, RetryLogic retryLogic )
     {
         return newSession( connectionProvider, WRITE, retryLogic, null );
     }
 
     private static NetworkSession newSession( ConnectionProvider connectionProvider, AccessMode mode, String bookmark )
     {
-        return newSession( connectionProvider, mode, noRetries(), bookmark );
+        return newSession( connectionProvider, mode, new FixedRetryLogic( 0 ), bookmark );
     }
 
     private static NetworkSession newSession( ConnectionProvider connectionProvider, AccessMode mode,
-            RetryLogic<RetryDecision> retryLogic, String bookmark )
+            RetryLogic retryLogic, String bookmark )
     {
         NetworkSession session = new NetworkSession( connectionProvider, mode, retryLogic, DEV_NULL_LOGGING );
         session.setBookmark( bookmark );
@@ -1107,11 +961,6 @@ public class NetworkSessionTest
         PooledConnection connection = mock( PooledConnection.class );
         when( connection.isOpen() ).thenReturn( true );
         return connection;
-    }
-
-    private static RetryLogic<RetryDecision> fixedRetryLogicSpy( final int failures )
-    {
-        return spy( new FixedRetryLogic( failures ) );
     }
 
     private static PooledConnection connectionWithFailingCommit( final int times )
@@ -1136,10 +985,9 @@ public class NetworkSessionTest
         return connection;
     }
 
-    private static void verifyRetryCount( RetryLogic<RetryDecision> retryLogicMock, int expectedRetryCount )
+    private static void verifyInvocationCount( TransactionWork<?> workSpy, int expectedInvocationCount )
     {
-        verify( retryLogicMock, times( expectedRetryCount ) )
-                .apply( any( Throwable.class ), any( RetryDecision.class ) );
+        verify( workSpy, times( expectedInvocationCount ) ).execute( any( Transaction.class ) );
     }
 
     private static void verifyBeginTx( PooledConnection connectionMock, VerificationMode mode )
@@ -1180,5 +1028,52 @@ public class NetworkSessionTest
     private static void setBookmark( Transaction tx, String bookmark )
     {
         ((ExplicitTransaction) tx).setBookmark( bookmark );
+    }
+
+    private static class TxWork implements TransactionWork<Integer>
+    {
+        final int result;
+        final int timesToThrow;
+        final Supplier<RuntimeException> errorSupplier;
+
+        int invoked;
+
+        @SuppressWarnings( "unchecked" )
+        TxWork( int result )
+        {
+            this( result, 0, (Supplier) null );
+        }
+
+        TxWork( int result, int timesToThrow, final RuntimeException error )
+        {
+            this.result = result;
+            this.timesToThrow = timesToThrow;
+            this.errorSupplier = new Supplier<RuntimeException>()
+            {
+                @Override
+                public RuntimeException get()
+                {
+                    return error;
+                }
+            };
+        }
+
+        TxWork( int result, int timesToThrow, Supplier<RuntimeException> errorSupplier )
+        {
+            this.result = result;
+            this.timesToThrow = timesToThrow;
+            this.errorSupplier = errorSupplier;
+        }
+
+        @Override
+        public Integer execute( Transaction tx )
+        {
+            if ( timesToThrow > 0 && invoked++ < timesToThrow )
+            {
+                throw errorSupplier.get();
+            }
+            tx.success();
+            return result;
+        }
     }
 }

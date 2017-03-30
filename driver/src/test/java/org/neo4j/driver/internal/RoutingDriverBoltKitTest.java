@@ -731,9 +731,6 @@ public class RoutingDriverBoltKitTest
             catch ( Exception e )
             {
                 assertThat( e, instanceOf( SessionExpiredException.class ) );
-                Throwable[] suppressed = e.getSuppressed();
-                assertEquals( 1, suppressed.length );
-                assertThat( suppressed[0], instanceOf( SessionExpiredException.class ) );
             }
             assertEquals( 2, invocations.get() );
         }
@@ -764,9 +761,6 @@ public class RoutingDriverBoltKitTest
             catch ( Exception e )
             {
                 assertThat( e, instanceOf( SessionExpiredException.class ) );
-                Throwable[] suppressed = e.getSuppressed();
-                assertEquals( 1, suppressed.length );
-                assertThat( suppressed[0], instanceOf( SessionExpiredException.class ) );
             }
             assertEquals( 2, invocations.get() );
         }

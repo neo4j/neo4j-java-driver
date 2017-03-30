@@ -18,7 +18,9 @@
  */
 package org.neo4j.driver.internal.retry;
 
-public interface RetryLogic<T extends RetryDecision>
+import org.neo4j.driver.internal.util.Supplier;
+
+public interface RetryLogic
 {
-    T apply( Throwable error, T previousDecision );
+    <T> T retry( Supplier<T> work );
 }

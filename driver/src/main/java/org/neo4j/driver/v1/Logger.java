@@ -29,6 +29,8 @@ public interface Logger
 
     void warn( String message, Object... params );
 
+    void warn( String message, Throwable cause );
+
     void debug( String message, Object... params );
 
     void trace( String message, Object... params );

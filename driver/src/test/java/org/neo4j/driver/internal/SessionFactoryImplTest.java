@@ -20,6 +20,7 @@ package org.neo4j.driver.internal;
 
 import org.junit.Test;
 
+import org.neo4j.driver.internal.retry.FixedRetryLogic;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Config;
@@ -29,7 +30,6 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
-import static org.neo4j.driver.internal.retry.ExponentialBackoff.defaultRetryLogic;
 
 public class SessionFactoryImplTest
 {
@@ -61,6 +61,6 @@ public class SessionFactoryImplTest
 
     private static SessionFactory newSessionFactory( Config config )
     {
-        return new SessionFactoryImpl( mock( ConnectionProvider.class ), defaultRetryLogic(), config );
+        return new SessionFactoryImpl( mock( ConnectionProvider.class ), new FixedRetryLogic( 0 ), config );
     }
 }

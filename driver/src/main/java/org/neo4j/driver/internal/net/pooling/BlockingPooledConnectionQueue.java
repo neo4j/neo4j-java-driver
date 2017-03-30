@@ -162,6 +162,6 @@ public class BlockingPooledConnectionQueue
 
     private static Logger createLogger( BoltServerAddress address, Logging logging )
     {
-        return logging.getLog( "connectionQueue[" + address + "]" );
+        return logging.getLog( "ConnectionQueue[" + address + "]" );
     }
 }
