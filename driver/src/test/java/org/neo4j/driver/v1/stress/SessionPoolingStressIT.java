@@ -22,8 +22,11 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -45,10 +48,34 @@ import static org.neo4j.driver.v1.GraphDatabase.driver;
 public class SessionPoolingStressIT
 {
     @Rule
-    public TestNeo4j neo4j = new TestNeo4j();
+    public final TestNeo4j neo4j = new TestNeo4j();
+
+    @Rule
+    public final TestWatcher testWatcher = new TestWatcher()
+    {
+        @Override
+        protected void failed( Throwable e, Description description )
+        {
+            super.failed( e, description );
+
+            StringBuilder sb = new StringBuilder();
+            Map<Thread,StackTraceElement[]> allStackTraces = Thread.getAllStackTraces();
+            for ( Map.Entry<Thread,StackTraceElement[]> entry : allStackTraces.entrySet() )
+            {
+                Thread thread = entry.getKey();
+                sb.append( thread ).append( " -- " ).append( thread.getState() ).append( System.lineSeparator() );
+                for ( StackTraceElement element : entry.getValue() )
+                {
+                    sb.append( "    " ).append( element ).append( System.lineSeparator() );
+                }
+            }
+
+            System.out.println( sb.toString() );
+        }
+    };
 
     private static final int N_THREADS = 50;
-    private static final int MAX_TIME = 10000;
+    private static final int TEST_TIME = 10000;
 
     private static final List<String> QUERIES = asList(
             "RETURN 1295 + 42", "UNWIND range(1,10000) AS x CREATE (n {prop:x}) DELETE n " );
@@ -90,11 +117,11 @@ public class SessionPoolingStressIT
 
         doWork( stop, failureReference );
 
-        Thread.sleep( MAX_TIME );
+        Thread.sleep( TEST_TIME );
 
         stop.set( true );
         executor.shutdown();
-        assertTrue( executor.awaitTermination( MAX_TIME, TimeUnit.MILLISECONDS ) );
+        assertTrue( executor.awaitTermination( 20, TimeUnit.SECONDS ) );
 
         Throwable failure = failureReference.get();
         if ( failure != null )
