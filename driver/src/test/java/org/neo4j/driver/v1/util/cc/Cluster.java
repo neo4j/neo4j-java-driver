@@ -19,6 +19,7 @@
 package org.neo4j.driver.v1.util.cc;
 
 import java.net.URI;
+import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashSet;
@@ -27,6 +28,7 @@ import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.util.Consumer;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.AuthTokens;
@@ -203,11 +205,11 @@ public class Cluster
             {
                 if ( role == extractRole( record ) )
                 {
-                    URI boltUri = extractBoltUri( record );
-                    ClusterMember member = findByBoltUri( boltUri, members );
+                    BoltServerAddress boltAddress = extractBoltAddress( record );
+                    ClusterMember member = findByBoltAddress( boltAddress, members );
                     if ( member == null )
                     {
-                        throw new IllegalStateException( "Unknown cluster member: '" + boltUri + "'\n" + this );
+                        throw new IllegalStateException( "Unknown cluster member: '" + boltAddress + "'\n" + this );
                     }
                     membersWithRole.add( member );
                 }
@@ -242,22 +244,22 @@ public class Cluster
             throw new IllegalArgumentException( "No members to wait for" );
         }
 
-        Set<URI> expectedOnlineUris = extractBoltUris( members );
-        Set<URI> actualOnlineUris = Collections.emptySet();
+        Set<BoltServerAddress> expectedOnlineAddresses = extractBoltAddresses( members );
+        Set<BoltServerAddress> actualOnlineAddresses = Collections.emptySet();
 
         long deadline = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis( STARTUP_TIMEOUT_SECONDS );
         Throwable error = null;
 
-        while ( !expectedOnlineUris.equals( actualOnlineUris ) )
+        while ( !expectedOnlineAddresses.equals( actualOnlineAddresses ) )
         {
             sleep( ONLINE_MEMBERS_CHECK_SLEEP_MS );
-            assertDeadlineNotReached( deadline, expectedOnlineUris, actualOnlineUris, error );
+            assertDeadlineNotReached( deadline, expectedOnlineAddresses, actualOnlineAddresses, error );
 
             try ( Driver driver = createDriver( members, password );
                   Session session = driver.session( AccessMode.READ ) )
             {
                 List<Record> records = findClusterOverview( session );
-                actualOnlineUris = extractBoltUris( records );
+                actualOnlineAddresses = extractBoltAddresses( records );
             }
             catch ( Throwable t )
             {
@@ -315,16 +317,16 @@ public class Cluster
         return role != ClusterMemberRole.READ_REPLICA;
     }
 
-    private static void assertDeadlineNotReached( long deadline, Set<URI> expectedUris, Set<URI> actualUris,
+    private static void assertDeadlineNotReached( long deadline, Set<?> expectedAddresses, Set<?> actualAddresses,
             Throwable error ) throws ClusterUnavailableException
     {
         if ( System.currentTimeMillis() > deadline )
         {
             String baseMessage = "Cluster did not become available in " + STARTUP_TIMEOUT_SECONDS + " seconds.\n";
             String errorMessage = error == null ? "" : "There were errors checking cluster members.\n";
-            String expectedUrisMessage = "Expected online URIs: " + expectedUris + "\n";
-            String actualUrisMessage = "Actual last seen online URIs: " + actualUris + "\n";
-            String message = baseMessage + errorMessage + expectedUrisMessage + actualUrisMessage;
+            String expectedAddressesMessage = "Expected online addresses: " + expectedAddresses + "\n";
+            String actualAddressesMessage = "Actual last seen online addresses: " + actualAddresses + "\n";
+            String message = baseMessage + errorMessage + expectedAddressesMessage + actualAddressesMessage;
 
             ClusterUnavailableException clusterUnavailable = new ClusterUnavailableException( message );
 
@@ -337,31 +339,45 @@ public class Cluster
         }
     }
 
-    private static Set<URI> extractBoltUris( Set<ClusterMember> members )
+    private static Set<BoltServerAddress> extractBoltAddresses( Set<ClusterMember> members )
     {
-        Set<URI> uris = new HashSet<>();
+        Set<BoltServerAddress> addresses = new HashSet<>();
         for ( ClusterMember member : members )
         {
-            uris.add( member.getBoltUri() );
+            addresses.add( member.getBoltAddress() );
         }
-        return uris;
+        return addresses;
     }
 
-    private static Set<URI> extractBoltUris( List<Record> records )
+    private static Set<BoltServerAddress> extractBoltAddresses( List<Record> records )
     {
-        Set<URI> uris = new HashSet<>();
+        Set<BoltServerAddress> addresses = new HashSet<>();
         for ( Record record : records )
         {
-            uris.add( extractBoltUri( record ) );
+            BoltServerAddress boltAddress = extractBoltAddress( record );
+            addresses.add( boltAddress );
         }
-        return uris;
+        return addresses;
     }
 
-    private static URI extractBoltUri( Record record )
+    private static BoltServerAddress extractBoltAddress( Record record )
     {
         List<Object> addresses = record.get( "addresses" ).asList();
         String boltUriString = (String) addresses.get( 0 );
-        return URI.create( boltUriString );
+        URI boltUri = URI.create( boltUriString );
+        return newBoltServerAddress( boltUri );
+    }
+
+    private static BoltServerAddress newBoltServerAddress( URI uri )
+    {
+        try
+        {
+            return BoltServerAddress.from( uri ).resolve();
+        }
+        catch ( UnknownHostException e )
+        {
+            throw new RuntimeException( "Unable to resolve host to IP in URI: '" + uri + "'" );
+        }
     }
 
     private static ClusterMemberRole extractRole( Record record )
@@ -370,11 +386,11 @@ public class Cluster
         return ClusterMemberRole.valueOf( roleString.toUpperCase() );
     }
 
-    private static ClusterMember findByBoltUri( URI boltUri, Set<ClusterMember> members )
+    private static ClusterMember findByBoltAddress( BoltServerAddress boltAddress, Set<ClusterMember> members )
     {
         for ( ClusterMember member : members )
         {
-            if ( member.getBoltUri().equals( boltUri ) )
+            if ( member.getBoltAddress().equals( boltAddress ) )
             {
                 return member;
             }
