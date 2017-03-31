@@ -1341,13 +1341,13 @@ public class SessionIT
     {
         DriverFactory driverFactory = new DriverFactoryWithFixedRetryLogic( maxRetriesCount );
         RoutingSettings routingConf = new RoutingSettings( 1, 1 );
-        AuthToken auth = AuthTokens.none();
+        AuthToken auth = AuthTokens.basic(TestNeo4j.USER, TestNeo4j.PASSWORD);
         return driverFactory.newInstance( neo4j.uri(), auth, routingConf, RetrySettings.DEFAULT, noLoggingConfig() );
     }
 
     private Driver newDriver()
     {
-        return GraphDatabase.driver( neo4j.uri(), noLoggingConfig() );
+        return GraphDatabase.driver( neo4j.uri(), AuthTokens.basic(TestNeo4j.USER, TestNeo4j.PASSWORD), noLoggingConfig() );
     }
 
     private Driver newDriverWithLimitedRetries( int maxTxRetryTime, TimeUnit unit )
@@ -1356,7 +1356,7 @@ public class SessionIT
                 .withLogging( DevNullLogging.DEV_NULL_LOGGING )
                 .withMaxTransactionRetryTime( maxTxRetryTime, unit )
                 .toConfig();
-        return GraphDatabase.driver( neo4j.uri(), config );
+        return GraphDatabase.driver( neo4j.uri(), AuthTokens.basic(TestNeo4j.USER, TestNeo4j.PASSWORD), config );
     }
 
     private static Config noLoggingConfig()

@@ -26,6 +26,7 @@ import org.junit.rules.ExpectedException;
 import java.util.HashSet;
 
 import org.neo4j.driver.v1.AccessMode;
+import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
@@ -34,6 +35,7 @@ import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.TransientException;
 import org.neo4j.driver.v1.util.ServerVersion;
+import org.neo4j.driver.v1.util.TestNeo4j;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
 import static java.util.Arrays.asList;
@@ -73,8 +75,8 @@ public class BookmarkIT
     public void shouldConnectIPv6Uri()
     {
         // Given
-        try( Driver driver =  GraphDatabase.driver( "bolt://[::1]:7687" );
-             Session session = driver.session() )
+        try(Driver driver =  GraphDatabase.driver( "bolt://[::1]:7687", AuthTokens.basic(TestNeo4j.USER, TestNeo4j.PASSWORD) );
+            Session session = driver.session() )
         {
             // When
             StatementResult result = session.run( "RETURN 1" );

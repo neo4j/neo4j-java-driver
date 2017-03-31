@@ -29,15 +29,20 @@ import java.net.URI;
 import java.net.URL;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.v1.AuthToken;
+import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Session;
 
+import static org.neo4j.driver.v1.AuthTokens.basic;
 import static org.neo4j.driver.v1.util.Neo4jRunner.*;
 import static org.neo4j.driver.v1.util.Neo4jSettings.DEFAULT_TLS_CERT_PATH;
 import static org.neo4j.driver.v1.util.Neo4jSettings.DEFAULT_TLS_KEY_PATH;
 
 public class TestNeo4j implements TestRule
 {
+    public static final String USER = "neo4j";
+    public static final String PASSWORD = "password";
     public static final String TEST_RESOURCE_FOLDER_PATH = "src/test/resources";
     private final Neo4jSettings settings;
     private Neo4jRunner runner;
@@ -107,6 +112,11 @@ public class TestNeo4j implements TestRule
         return DEFAULT_URI;
     }
 
+    public AuthToken authToken()
+    {
+        return AuthTokens.basic(USER, PASSWORD);
+    }
+
     public BoltServerAddress address()
     {
         return DEFAULT_ADDRESS;
@@ -147,5 +157,15 @@ public class TestNeo4j implements TestRule
             debug( "Added a new procedure `%s`", jarName );
             runner.forceToRestart(); // needs to force to restart as no configuration changed
         }
+    }
+
+    public void start() throws IOException
+    {
+        runner.startNeo4j();
+    }
+
+    public void stop() throws IOException
+    {
+        runner.stopNeo4j();
     }
 }

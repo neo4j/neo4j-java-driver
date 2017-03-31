@@ -1,318 +1,260 @@
-/**
- * Copyright (c) 2002-2017 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
- *
- * This file is part of Neo4j.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package org.neo4j.docs.driver;
 
-import org.junit.Rule;
+import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.neo4j.driver.v1.Driver;
-import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
-import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.util.StdIOCapture;
+import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
-import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.List;
 
 import static java.util.Arrays.asList;
-import static junit.framework.TestCase.assertEquals;
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.neo4j.driver.v1.Values.parameters;
 
-/**
- * The tests below are examples that get pulled into the Driver Manual using the tags inside the tests.
- *
- * DO NOT add tests to this file that are not for that exact purpose.
- * DO NOT modify these tests without ensuring they remain consistent with the equivalent examples in other drivers
- */
 public class ExamplesIT
 {
-    @Rule
-    public TestNeo4j neo4j = new TestNeo4j();
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
+    @ClassRule
+    public static TestNeo4j neo4j = new TestNeo4j();
 
-    @Test
-    public void minimalWorkingExample() throws Throwable
+    private int readInt(final String statement, final Value parameters)
     {
-        StdIOCapture stdIO = new StdIOCapture();
-        try ( AutoCloseable captured = stdIO.capture() )
+        try (Session session = neo4j.driver().session())
         {
-            MinimalWorkingExample.minimalWorkingExample();
-        }
-
-        // Then
-        assertThat( stdIO.stdout(), equalTo( asList( "King Arthur" ) ) );
-    }
-
-    @Test
-    public void constructDriver() throws Throwable
-    {
-        Driver driver = Examples.constructDriver();
-
-        // Then
-        assertNotNull( driver );
-        driver.close();
-    }
-
-    @Test
-    public void configuration() throws Throwable
-    {
-        Driver driver = Examples.configuration();
-
-        // Then
-        assertNotNull( driver );
-    }
-
-    @Test
-    public void statement() throws Throwable
-    {
-        StdIOCapture stdIO = new StdIOCapture();
-        try ( AutoCloseable captured = stdIO.capture();
-                Driver driver = GraphDatabase.driver( "bolt://localhost:7687" );
-                Session session = driver.session() )
-        {
-            Examples.statement( session );
-        }
-
-        // Then
-        assertThat( stdIO.stdout(), equalTo( asList( "There were 1 the ones created." ) ) );
-    }
-
-    @Test
-    public void statementWithoutParameters() throws Throwable
-    {
-        StdIOCapture stdIO = new StdIOCapture();
-        try ( AutoCloseable captured = stdIO.capture();
-                Driver driver = GraphDatabase.driver( "bolt://localhost:7687" );
-                Session session = driver.session() )
-        {
-            Examples.statementWithoutParameters( session );
-        }
-
-        // Then
-        assertThat( stdIO.stdout(), equalTo( asList( "There were 1 the ones created." ) ) );
-    }
-
-    @Test
-    public void resultTraversal() throws Throwable
-    {
-        StdIOCapture stdIO = new StdIOCapture();
-        try ( AutoCloseable captured = stdIO.capture();
-                Driver driver = GraphDatabase.driver( "bolt://localhost:7687" );
-                Session session = driver.session() )
-        {
-            session.run( "MATCH (n) DETACH DELETE n" );
-            session.run( "CREATE (weapon:Weapon { name: 'Sword in the stone' })" );
-
-            Examples.resultTraversal( session );
-        }
-
-        // Then
-        assertThat( stdIO.stdout(), equalTo( asList( "List of weapons called Sword:", "Sword in the stone" ) ) );
-    }
-
-    @Test
-    public void accessRecord() throws Throwable
-    {
-        StdIOCapture stdIO = new StdIOCapture();
-        try ( AutoCloseable captured = stdIO.capture();
-              Driver driver = GraphDatabase.driver( "bolt://localhost:7687" );
-              Session session = driver.session() )
-        {
-            session.run( "MATCH (n) DETACH DELETE n" );
-            session.run( "CREATE (weapon:Weapon { name: 'Sword in the stone', owner: 'Arthur', material: 'Stone', size: 'Huge' })" );
-
-            Examples.accessRecord( session );
-        }
-
-        // Then
-        assertThat( stdIO.stdout(), equalTo( asList( "List of weapons owned by Arthur:", "[weapon.name: \"Sword in the stone\", weapon.material: \"Stone\", weapon.size: \"Huge\"]" ) ) );
-    }
-
-    @Test
-    public void retainResultsForNestedQuerying() throws Throwable
-    {
-        StdIOCapture stdIO = new StdIOCapture();
-        try ( AutoCloseable captured = stdIO.capture();
-                Driver driver = GraphDatabase.driver( "bolt://localhost:7687" );
-                Session session = driver.session() )
-        {
-            session.run( "MATCH (n) DETACH DELETE n" );
-            session.run( "CREATE (knight:Person:Knight { name: 'Lancelot', castle: 'Camelot' })" );
-            session.run( "CREATE (knight:Person { name: 'Arthur', title: 'King' })" );
-
-            Examples.retainResultsForNestedQuerying( session );
-
-            // Then
-            int theOnes = session.run( "MATCH (:Knight)-[:DEFENDS]->() RETURN count(*)" ).peek().get( 0 ).asInt();
-            assertEquals( 1, theOnes );
+            return session.writeTransaction((tx) -> tx.run(statement, parameters).single().get(0).asInt());
         }
     }
 
-    @Test
-    public void retainResultsForLaterProcessing() throws Throwable
+    private int readInt(final String statement)
     {
-        StdIOCapture stdIO = new StdIOCapture();
-        try ( AutoCloseable captured = stdIO.capture();
-                Driver driver = GraphDatabase.driver( "bolt://localhost:7687" ) )
+        return readInt(statement, parameters());
+    }
+
+    private void write(final String statement, final Value parameters)
+    {
+        try (Session session = neo4j.driver().session())
         {
-            try ( Session setup = driver.session() )
+            session.readTransaction((tx) ->
             {
-                setup.run( "MATCH (n) DETACH DELETE n" );
-                setup.run( "CREATE (knight:Person:Knight { name: 'Lancelot', castle: 'Camelot' })" );
-            }
-
-            Examples.retainResultsForLaterProcessing( driver );
+                tx.run(statement, parameters);
+                return null;
+            });
         }
+    }
+
+    private void write(String statement)
+    {
+        write(statement, parameters());
+    }
+
+    private void clean()
+    {
+        write("MATCH (a) DETACH DELETE a");
+    }
+
+    private int personCount(String name)
+    {
+        return readInt("MATCH (a:Person {name: $name}) RETURN count(a)", parameters("name", name));
+    }
+
+    @Before
+    public void setUp()
+    {
+        clean();
+    }
+
+    @Test
+    public void testShouldRunAutocommitTransactionExample()
+    {
+        // Given
+        AutocommitTransactionExample example = new AutocommitTransactionExample(neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD);
+
+        // When
+        example.addPerson("Alice");
 
         // Then
-        assertThat( stdIO.stdout(), equalTo( asList( "Lancelot is a knight of Camelot" ) ) );
+        assert personCount("Alice") > 0;
     }
 
     @Test
-    public void handleCypherError() throws Throwable
+    public void testShouldRunBasicAuthExample()
     {
-        StdIOCapture stdIO = new StdIOCapture();
-        try ( AutoCloseable captured = stdIO.capture();
-              Driver driver = GraphDatabase.driver( "bolt://localhost:7687" );
-              Session session = driver.session() )
-        {
-            exception.expect(RuntimeException.class);
-            Examples.handleCypherError( session );
-        }
-    }
-
-    @Test
-    public void transactionCommit() throws Throwable
-    {
-        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:7687" );
-                Session session = driver.session() )
-        {
-            session.run( "MATCH (n) DETACH DELETE n" );
-
-            Examples.transactionCommit( session );
-
-            // Then
-            assertThat( session.run( "MATCH (p:Person) RETURN count(p)" ).peek().get( 0 ).asInt(), equalTo( 1 ) );
-        }
-    }
-
-    @Test
-    public void transactionRollback() throws Throwable
-    {
-        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:7687" );
-                Session session = driver.session() )
-        {
-            session.run( "MATCH (n) DETACH DELETE n" );
-
-            Examples.transactionRollback( session );
-
-            // Then
-            assertThat( session.run( "MATCH (p:Person) RETURN count(p)" ).peek().get( 0 ).asInt(), equalTo( 0 ) );
-        }
-    }
-
-    @SuppressWarnings( "unchecked" )
-    @Test
-    public void resultSummary() throws Throwable
-    {
-        StdIOCapture stdIO = new StdIOCapture();
-        try ( AutoCloseable captured = stdIO.capture();
-                Driver driver = GraphDatabase.driver( "bolt://localhost:7687" );
-                Session session = driver.session() )
-        {
-            Examples.resultSummary( session );
-        }
-
-        assertThat( stdIO.stdout(), contains(
-            equalTo( "READ_ONLY" ),
-            containsString( "operatorType" )
-        ));
-    }
-
-    @Test
-    public void notifications() throws Throwable
-    {
-        StdIOCapture stdIO = new StdIOCapture();
-        try ( AutoCloseable captured = stdIO.capture();
-                Driver driver = GraphDatabase.driver( "bolt://localhost:7687" );
-                Session session = driver.session() )
-        {
-            Examples.notifications( session );
-        }
-
-        assertThat( stdIO.stdout(), contains(
-                containsString( "title=This query builds a cartesian product between disconnected patterns" )
-        ));
-    }
-
-    @Test
-    public void requireEncryption() throws Throwable
-    {
-        Driver driver = Examples.requireEncryption();
+        // Given
+        BasicAuthExample example = new BasicAuthExample(neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD);
 
         // Then
-        assertNotNull( driver );
-        driver.close();
+        assert example.canConnect();
     }
 
     @Test
-    public void trustOnFirstUse() throws Throwable
+    public void testShouldRunConfigConnectionTimeoutExample()
     {
-        Driver driver = Examples.trustOnFirstUse();
+        // Given
+        ConfigConnectionTimeoutExample example = new ConfigConnectionTimeoutExample(neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD);
 
         // Then
-        assertNotNull( driver );
-        driver.close();
+        assertThat(example, instanceOf(ConfigConnectionTimeoutExample.class));
     }
 
     @Test
-    public void trustSignedCertificates() throws Throwable
+    public void testShouldRunConfigMaxRetryTimeExample()
     {
+        // Given
+        ConfigMaxRetryTimeExample example = new ConfigMaxRetryTimeExample(neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD);
+
+        // Then
+        assertThat(example, instanceOf(ConfigMaxRetryTimeExample.class));
+    }
+
+    @Test
+    public void testShouldRunConfigTrustExample()
+    {
+        // Given
+        ConfigTrustExample example = new ConfigTrustExample(neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD);
+
+        // Then
+        assertThat(example, instanceOf(ConfigTrustExample.class));
+    }
+
+    @Test
+    public void testShouldRunConfigUnencryptedExample()
+    {
+        // Given
+        ConfigUnencryptedExample example = new ConfigUnencryptedExample(neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD);
+
+        // Then
+        assertThat(example, instanceOf(ConfigUnencryptedExample.class));
+    }
+
+    @Test
+    public void testShouldRunCypherErrorExample()
+    {
+        // Given
+        CypherErrorExample example = new CypherErrorExample(neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD);
+
+        // When
+        int employeeNumber = example.getEmployeeNumber("Alice");
+
+        // Then
+        assertThat(employeeNumber, equalTo(-1));
+    }
+
+    @Test
+    public void testShouldRunDriverLifecycleExample()
+    {
+        // Given
+        DriverLifecycleExample example = new DriverLifecycleExample(neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD);
+
+        // Then
+        assertThat(example, instanceOf(DriverLifecycleExample.class));
+    }
+
+    @Test
+    public void testShouldRunHelloWorld()
+    {
+        // Given
+        HelloWorld greeter = new HelloWorld(neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD);
+
+        // When
+        greeter.printGreeting("hello, world");
+
+        // Then
+        // TODO
+    }
+
+    @Test
+    public void testShouldRunReadWriteTransactionExample()
+    {
+        // Given
+        ReadWriteTransactionExample example = new ReadWriteTransactionExample(neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD);
+
+        // When
+        long nodeID = example.addPerson("Alice");
+
+        // Then
+        assertThat(nodeID, greaterThanOrEqualTo(0L));
+    }
+
+    @Test
+    public void testShouldRunResultConsumeExample()
+    {
+        // Given
+        write("CREATE (a:Person {name: 'Alice'})");
+        write("CREATE (a:Person {name: 'Bob'})");
+        ResultConsumeExample example = new ResultConsumeExample(neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD);
+
+        // When
+        List<String> names = example.getPeople();
+
+        // Then
+        assertThat(names, equalTo(asList("Alice", "Bob")));
+    }
+
+    @Test
+    public void testShouldRunResultRetainExample()
+    {
+        // Given
+        write("CREATE (a:Person {name: 'Alice'})");
+        write("CREATE (a:Person {name: 'Bob'})");
+        ResultRetainExample example = new ResultRetainExample(neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD);
+
+        // When
+        example.addEmployees("Acme");
+
+        // Then
+        int employeeCount = readInt("MATCH (emp:Person)-[WORKS_FOR]->(com:Company) WHERE com.name = 'Acme' RETURN count(emp)");
+        assertThat(employeeCount, equalTo(2));
+    }
+
+    @Test
+    public void testShouldRunServiceUnavailableExample() throws IOException
+    {
+        // Given
+        ServiceUnavailableExample example = new ServiceUnavailableExample(neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD);
+
         try
         {
-            Driver driver = Examples.trustSignedCertificates();
+            // When
+            neo4j.stop();
+
+            // Then
+            assertThat(example.addItem(), equalTo(false));
         }
-        catch ( ClientException ex )
+        finally
         {
-            // This will ultimately fail as it can't find "/path/to/ca-certificate.pem"
-            // We'll check for that error specifically and OK it, but die for everything
-            // else. Previously, this was not evaluated on driver construction so never
-            // occurred.
-            // TODO: find a way to mock this properly
-            assertThat( ex.getMessage(), equalTo( "Unable to establish SSL parameters" ) );
-            Throwable cause = ex.getCause();
-            assertThat( cause, instanceOf( FileNotFoundException.class ) );
-            assertThat( cause.getMessage(), equalTo( "/path/to/ca-certificate.pem (No such file or directory)" ) );
+            neo4j.start();
         }
     }
 
     @Test
-    public void connectWithAuthDisabled() throws Throwable
+    public void testShouldRunSessionExample()
     {
-        Driver driver = Examples.connectWithAuthDisabled();
+        // Given
+        SessionExample example = new SessionExample(neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD);
+
+        // When
+        example.doWork();
 
         // Then
-        assertNotNull( driver );
-        driver.close();
+        assertThat(example, instanceOf(SessionExample.class));
+    }
+
+    @Test
+    public void testShouldRunTransactionFunctionExample()
+    {
+        // Given
+        TransactionFunctionExample example = new TransactionFunctionExample(neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD);
+
+        // When
+        example.addPerson("Alice");
+
+        // Then
+        assert personCount("Alice") > 0;
     }
 
 }

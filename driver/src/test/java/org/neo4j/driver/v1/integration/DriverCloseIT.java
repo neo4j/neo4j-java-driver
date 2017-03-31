@@ -30,6 +30,7 @@ import java.util.logging.Level;
 
 import org.neo4j.driver.internal.logging.ConsoleLogging;
 import org.neo4j.driver.v1.AccessMode;
+import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
@@ -123,7 +124,7 @@ public class DriverCloseIT
         @Override
         protected Driver createDriver()
         {
-            return GraphDatabase.driver( neo4j.uri() );
+            return GraphDatabase.driver( neo4j.uri(), neo4j.authToken() );
         }
 
         @Test
@@ -173,7 +174,7 @@ public class DriverCloseIT
                     .withLogging( new ConsoleLogging( Level.OFF ) )
                     .toConfig();
 
-            return GraphDatabase.driver( "bolt+routing://127.0.0.1:9001", config );
+            return GraphDatabase.driver( "bolt+routing://127.0.0.1:9001", AuthTokens.basic(TestNeo4j.USER, TestNeo4j.PASSWORD), config );
         }
 
         @Test
