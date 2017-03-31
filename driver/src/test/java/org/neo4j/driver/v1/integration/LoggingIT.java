@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.net.URI;
 
+import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
@@ -52,6 +53,7 @@ public class LoggingIT
 
         try( Driver driver = GraphDatabase.driver(
                 Neo4jRunner.DEFAULT_URI,
+                AuthTokens.basic(TestNeo4j.USER, TestNeo4j.PASSWORD),
                 Config.build().withLogging( logging ).toConfig() ) )
         {
             // When

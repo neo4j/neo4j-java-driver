@@ -29,9 +29,12 @@ import java.net.URI;
 import java.net.URL;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.v1.AuthToken;
+import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Session;
 
+import static org.neo4j.driver.v1.AuthTokens.basic;
 import static org.neo4j.driver.v1.util.Neo4jRunner.*;
 import static org.neo4j.driver.v1.util.Neo4jSettings.DEFAULT_TLS_CERT_PATH;
 import static org.neo4j.driver.v1.util.Neo4jSettings.DEFAULT_TLS_KEY_PATH;
@@ -107,6 +110,11 @@ public class TestNeo4j implements TestRule
     public URI uri()
     {
         return DEFAULT_URI;
+    }
+
+    public AuthToken authToken()
+    {
+        return AuthTokens.basic(USER, PASSWORD);
     }
 
     public BoltServerAddress address()

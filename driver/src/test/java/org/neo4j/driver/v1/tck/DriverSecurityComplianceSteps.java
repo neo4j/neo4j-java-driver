@@ -27,6 +27,7 @@ import cucumber.api.java.en.When;
 import java.io.File;
 import java.security.cert.X509Certificate;
 
+import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Config.EncryptionLevel;
 import org.neo4j.driver.v1.Driver;
@@ -37,6 +38,7 @@ import org.neo4j.driver.v1.exceptions.SecurityException;
 import org.neo4j.driver.v1.util.CertificateToolTest.CertificateSigningRequestGenerator;
 import org.neo4j.driver.v1.util.CertificateToolTest.SelfSignedCertificateGenerator;
 import org.neo4j.driver.v1.util.Neo4jRunner;
+import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static java.io.File.createTempFile;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -72,6 +74,7 @@ public class DriverSecurityComplianceSteps
         knownHostsFile = tempFile( "known_hosts", ".tmp" );
         driver = GraphDatabase.driver(
                 Neo4jRunner.DEFAULT_URI,
+                Neo4jRunner.DEFAULT_AUTH_TOKEN,
                 Config.build().withEncryptionLevel( EncryptionLevel.REQUIRED )
                         .withTrustStrategy( trustOnFirstUse( knownHostsFile ) ).toConfig() );
 
@@ -101,6 +104,7 @@ public class DriverSecurityComplianceSteps
     {
         driver = GraphDatabase.driver(
                 Neo4jRunner.DEFAULT_URI,
+                AuthTokens.basic(TestNeo4j.USER, TestNeo4j.PASSWORD),
                 Config.build().withEncryptionLevel( EncryptionLevel.REQUIRED )
                         .withTrustStrategy( trustOnFirstUse( knownHostsFile ) ).toConfig() );
     }
@@ -166,6 +170,7 @@ public class DriverSecurityComplianceSteps
         File tempFile = tempFile( "known_hosts", ".tmp" );
         driverKitten = GraphDatabase.driver(
                 Neo4jRunner.DEFAULT_URI,
+                AuthTokens.basic(TestNeo4j.USER, TestNeo4j.PASSWORD),
                 Config.build().withEncryptionLevel( EncryptionLevel.REQUIRED )
                         .withTrustStrategy( trustOnFirstUse( tempFile ) ).toConfig() );
     }

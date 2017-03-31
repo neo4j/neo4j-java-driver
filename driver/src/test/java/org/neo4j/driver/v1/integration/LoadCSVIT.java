@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
+import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
@@ -43,8 +44,8 @@ public class LoadCSVIT
     @Test
     public void shouldLoadCSV() throws Throwable
     {
-        try( Driver driver =  GraphDatabase.driver( neo4j.uri() );
-             Session session = driver.session() )
+        try( Driver driver =  GraphDatabase.driver( neo4j.uri(), AuthTokens.basic(TestNeo4j.USER, TestNeo4j.PASSWORD) );
+            Session session = driver.session() )
         {
             String csvFileUrl = createLocalIrisData( session );
 
