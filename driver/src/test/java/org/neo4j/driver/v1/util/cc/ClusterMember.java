@@ -19,7 +19,10 @@
 package org.neo4j.driver.v1.util.cc;
 
 import java.net.URI;
+import java.net.UnknownHostException;
 import java.nio.file.Path;
+
+import org.neo4j.driver.internal.net.BoltServerAddress;
 
 import static java.util.Objects.requireNonNull;
 
@@ -29,11 +32,13 @@ public class ClusterMember
     private static final String ROUTING_SCHEME = "bolt+routing://";
 
     private final URI boltUri;
+    private final BoltServerAddress boltAddress;
     private final Path path;
 
     public ClusterMember( URI boltUri, Path path )
     {
         this.boltUri = requireNonNull( boltUri );
+        this.boltAddress = newBoltServerAddress( boltUri );
         this.path = requireNonNull( path );
     }
 
@@ -45,6 +50,11 @@ public class ClusterMember
     public URI getRoutingUri()
     {
         return URI.create( boltUri.toString().replace( SIMPLE_SCHEME, ROUTING_SCHEME ) );
+    }
+
+    public BoltServerAddress getBoltAddress()
+    {
+        return boltAddress;
     }
 
     public Path getPath()
@@ -59,5 +69,17 @@ public class ClusterMember
                "boltUri=" + boltUri +
                ", path=" + path +
                "}";
+    }
+
+    private static BoltServerAddress newBoltServerAddress( URI uri )
+    {
+        try
+        {
+            return BoltServerAddress.from( uri ).resolve();
+        }
+        catch ( UnknownHostException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 }
