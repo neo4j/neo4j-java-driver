@@ -19,7 +19,6 @@
 package org.neo4j.driver.v1;
 
 import java.io.File;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
@@ -33,7 +32,6 @@ import org.neo4j.driver.v1.exceptions.TransientException;
 import org.neo4j.driver.v1.util.Immutable;
 import org.neo4j.driver.v1.util.Resource;
 
-import static java.util.Collections.EMPTY_MAP;
 import static org.neo4j.driver.v1.Config.TrustStrategy.trustAllCertificates;
 
 /**
@@ -76,8 +74,6 @@ public class Config
     private final int connectionTimeoutMillis;
     private final RetrySettings retrySettings;
 
-    private final Map<String, String> routingContext;
-
     private Config( ConfigBuilder builder)
     {
         this.logging = builder.logging;
@@ -92,8 +88,6 @@ public class Config
         this.routingRetryDelayMillis = builder.routingRetryDelayMillis;
         this.connectionTimeoutMillis = builder.connectionTimeoutMillis;
         this.retrySettings = builder.retrySettings;
-
-        this.routingContext = builder.routingContext;
     }
 
     /**
@@ -188,7 +182,7 @@ public class Config
 
     RoutingSettings routingSettings()
     {
-        return new RoutingSettings( routingFailureLimit, routingRetryDelayMillis, routingContext );
+        return new RoutingSettings( routingFailureLimit, routingRetryDelayMillis );
     }
 
     RetrySettings retrySettings()
@@ -211,7 +205,6 @@ public class Config
         private long routingRetryDelayMillis = TimeUnit.SECONDS.toMillis( 5 );
         private int connectionTimeoutMillis = (int) TimeUnit.SECONDS.toMillis( 5 );
         private RetrySettings retrySettings = RetrySettings.DEFAULT;
-        private Map<String,String> routingContext = EMPTY_MAP;
 
         private ConfigBuilder() {}
 
@@ -477,21 +470,6 @@ public class Config
                         "The max retry time may not be smaller than 0, but was %d %s.", value, unit ) );
             }
             this.retrySettings = new RetrySettings( maxRetryTimeMs );
-            return this;
-        }
-
-        /**
-         * Specify routing context that would be passed to server in getRoutingTable Procedure call for customized
-         * routing table reply.
-         * This parameter is only valid for the routing driver, a.k.a. the driver created use bolt+routing in URI
-         * scheme with 3.2+ Neo4j Casual Cluster servers.
-         * @param context The routing context to pass to getRoutingTable Procedure
-         * @since 1.3
-         * @return this builder
-         */
-        public ConfigBuilder withRoutingContext( Map<String, String> context )
-        {
-            this.routingContext = context;
             return this;
         }
 

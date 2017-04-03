@@ -20,7 +20,6 @@
 package org.neo4j.driver.internal.cluster;
 
 import java.util.List;
-import java.util.Map;
 
 import org.neo4j.driver.internal.NetworkSession;
 import org.neo4j.driver.internal.spi.Connection;
@@ -32,33 +31,33 @@ import static org.neo4j.driver.internal.util.ServerVersion.v3_2_0;
 import static org.neo4j.driver.internal.util.ServerVersion.version;
 import static org.neo4j.driver.v1.Values.parameters;
 
-public class GetServersProcedureRunner
+public class RoutingProcedureRunner
 {
     static final String GET_SERVERS = "dbms.cluster.routing.getServers";
     static final String GET_ROUTING_TABLE_PARAM = "context";
     static final String GET_ROUTING_TABLE = "dbms.cluster.routing.getRoutingTable({" + GET_ROUTING_TABLE_PARAM + "})";
 
-    private final Map<String, String> routingContext;
-    private Statement procedureCalled;
+    private final RoutingContext context;
+    private Statement invokedProcedure;
 
-    public GetServersProcedureRunner( Map<String, String> context )
+    public RoutingProcedureRunner( RoutingContext context )
     {
-        this.routingContext = context;
+        this.context = context;
     }
 
     public List<Record> run( Connection connection )
     {
         if( version( connection.server().version() ).greaterThanOrEqual( v3_2_0 ) )
         {
-            procedureCalled = new Statement( "CALL " + GET_ROUTING_TABLE,
-                    parameters(GET_ROUTING_TABLE_PARAM, routingContext ) );
+            invokedProcedure = new Statement( "CALL " + GET_ROUTING_TABLE,
+                    parameters( GET_ROUTING_TABLE_PARAM, context.asMap() ) );
         }
         else
         {
-            procedureCalled = new Statement("CALL " + GET_SERVERS );
+            invokedProcedure = new Statement( "CALL " + GET_SERVERS );
         }
 
-        return runProcedure( connection, procedureCalled );
+        return runProcedure( connection, invokedProcedure );
     }
 
     List<Record> runProcedure( Connection connection, Statement procedure )
@@ -66,8 +65,8 @@ public class GetServersProcedureRunner
         return NetworkSession.run( connection, procedure, NO_OP ).list();
     }
 
-    Statement procedureCalled()
+    Statement invokedProcedure()
     {
-        return procedureCalled;
+        return invokedProcedure;
     }
 }

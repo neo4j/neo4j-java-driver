@@ -31,6 +31,7 @@ import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.value.StringValue;
 import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ProtocolException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
@@ -53,8 +54,8 @@ public class ClusterCompositionProviderTest
     public void shouldProtocolErrorWhenNoRecord() throws Throwable
     {
         // Given
-        GetServersProcedureRunner mockedRunner = mock( GetServersProcedureRunner.class );
-        ClusterCompositionProvider provider = new GetServersProcedureClusterCompositionProvider( mock( Clock.class ),
+        RoutingProcedureRunner mockedRunner = newProcedureRunnerMock();
+        ClusterCompositionProvider provider = new RoutingProcedureClusterCompositionProvider( mock( Clock.class ),
                 DEV_NULL_LOGGER, mockedRunner );
 
         PooledConnection mockedConn = mock( PooledConnection.class );
@@ -82,8 +83,8 @@ public class ClusterCompositionProviderTest
     public void shouldProtocolErrorWhenMoreThanOneRecord() throws Throwable
     {
         // Given
-        GetServersProcedureRunner mockedRunner = mock( GetServersProcedureRunner.class );
-        ClusterCompositionProvider provider = new GetServersProcedureClusterCompositionProvider( mock( Clock.class ),
+        RoutingProcedureRunner mockedRunner = newProcedureRunnerMock();
+        ClusterCompositionProvider provider = new RoutingProcedureClusterCompositionProvider( mock( Clock.class ),
                 DEV_NULL_LOGGER, mockedRunner );
 
         PooledConnection mockedConn = mock( PooledConnection.class );
@@ -111,8 +112,8 @@ public class ClusterCompositionProviderTest
     public void shouldProtocolErrorWhenUnparsableRecord() throws Throwable
     {
         // Given
-        GetServersProcedureRunner mockedRunner = mock( GetServersProcedureRunner.class );
-        ClusterCompositionProvider provider = new GetServersProcedureClusterCompositionProvider( mock( Clock.class ),
+        RoutingProcedureRunner mockedRunner = newProcedureRunnerMock();
+        ClusterCompositionProvider provider = new RoutingProcedureClusterCompositionProvider( mock( Clock.class ),
                 DEV_NULL_LOGGER, mockedRunner );
 
         PooledConnection mockedConn = mock( PooledConnection.class );
@@ -140,9 +141,9 @@ public class ClusterCompositionProviderTest
     public void shouldProtocolErrorWhenNoRouters() throws Throwable
     {
         // Given
-        GetServersProcedureRunner mockedRunner = mock( GetServersProcedureRunner.class );
+        RoutingProcedureRunner mockedRunner = newProcedureRunnerMock();
         Clock mockedClock = mock( Clock.class );
-        ClusterCompositionProvider provider = new GetServersProcedureClusterCompositionProvider( mockedClock,
+        ClusterCompositionProvider provider = new RoutingProcedureClusterCompositionProvider( mockedClock,
                 DEV_NULL_LOGGER, mockedRunner );
 
         PooledConnection mockedConn = mock( PooledConnection.class );
@@ -175,9 +176,9 @@ public class ClusterCompositionProviderTest
     public void shouldProtocolErrorWhenNoReaders() throws Throwable
     {
         // Given
-        GetServersProcedureRunner mockedRunner = mock( GetServersProcedureRunner.class );
+        RoutingProcedureRunner mockedRunner = newProcedureRunnerMock();
         Clock mockedClock = mock( Clock.class );
-        ClusterCompositionProvider provider = new GetServersProcedureClusterCompositionProvider( mockedClock,
+        ClusterCompositionProvider provider = new RoutingProcedureClusterCompositionProvider( mockedClock,
                 DEV_NULL_LOGGER, mockedRunner );
 
         PooledConnection mockedConn = mock( PooledConnection.class );
@@ -211,8 +212,8 @@ public class ClusterCompositionProviderTest
     public void shouldPropagateConnectionFailureExceptions() throws Exception
     {
         // Given
-        GetServersProcedureRunner mockedRunner = mock( GetServersProcedureRunner.class );
-        ClusterCompositionProvider provider = new GetServersProcedureClusterCompositionProvider( mock( Clock.class ),
+        RoutingProcedureRunner mockedRunner = newProcedureRunnerMock();
+        ClusterCompositionProvider provider = new RoutingProcedureClusterCompositionProvider( mock( Clock.class ),
                 DEV_NULL_LOGGER, mockedRunner );
 
         PooledConnection mockedConn = mock( PooledConnection.class );
@@ -242,8 +243,8 @@ public class ClusterCompositionProviderTest
     {
         // Given
         Clock mockedClock = mock( Clock.class );
-        GetServersProcedureRunner mockedRunner = mock( GetServersProcedureRunner.class );
-        ClusterCompositionProvider provider = new GetServersProcedureClusterCompositionProvider( mockedClock,
+        RoutingProcedureRunner mockedRunner = newProcedureRunnerMock();
+        ClusterCompositionProvider provider = new RoutingProcedureClusterCompositionProvider( mockedClock,
                 DEV_NULL_LOGGER, mockedRunner );
 
         PooledConnection mockedConn = mock( PooledConnection.class );
@@ -286,4 +287,10 @@ public class ClusterCompositionProviderTest
         return result;
     }
 
+    private static RoutingProcedureRunner newProcedureRunnerMock()
+    {
+        RoutingProcedureRunner mock = mock( RoutingProcedureRunner.class );
+        when( mock.invokedProcedure() ).thenReturn( new Statement( "procedure" ) );
+        return mock;
+    }
 }

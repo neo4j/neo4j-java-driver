@@ -59,7 +59,7 @@ public class Rediscovery
     {
         int failures = 0;
 
-        for ( long start = clock.millis(), delay = 0; ; delay = Math.max( settings.retryTimeoutDelay, delay * 2 ) )
+        for ( long start = clock.millis(), delay = 0; ; delay = Math.max( settings.retryTimeoutDelay(), delay * 2 ) )
         {
             long waitTime = start + delay - clock.millis();
             sleep( waitTime );
@@ -71,7 +71,7 @@ public class Rediscovery
                 return composition;
             }
 
-            if ( ++failures >= settings.maxRoutingFailures )
+            if ( ++failures >= settings.maxRoutingFailures() )
             {
                 throw new ServiceUnavailableException( NO_ROUTERS_AVAILABLE );
             }

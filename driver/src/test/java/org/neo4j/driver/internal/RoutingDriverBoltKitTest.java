@@ -852,6 +852,69 @@ public class RoutingDriverBoltKitTest
         assertEquals( 0, router.exitStatus() );
     }
 
+    @Test
+    public void shouldInvokeProcedureGetRoutingTableWhenServerVersionPermits() throws Exception
+    {
+        // stub server is both a router and reader
+        StubServer server = StubServer.start( "get_routing_table.script", 9001 );
+
+        try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9001", config );
+              Session session = driver.session() )
+        {
+            List<Record> records = session.run( "MATCH (n) RETURN n.name AS name" ).list();
+            assertEquals( 3, records.size() );
+            assertEquals( "Alice", records.get( 0 ).get( "name" ).asString() );
+            assertEquals( "Bob", records.get( 1 ).get( "name" ).asString() );
+            assertEquals( "Eve", records.get( 2 ).get( "name" ).asString() );
+        }
+        finally
+        {
+            assertEquals( 0, server.exitStatus() );
+        }
+    }
+
+    @Test
+    public void shouldSendRoutingContextToServer() throws Exception
+    {
+        // stub server is both a router and reader
+        StubServer server = StubServer.start( "get_routing_table_with_context.script", 9001 );
+
+        URI uri = URI.create( "bolt+routing://127.0.0.1:9001/?policy=my_policy&region=china" );
+        try ( Driver driver = GraphDatabase.driver( uri, config );
+              Session session = driver.session() )
+        {
+            List<Record> records = session.run( "MATCH (n) RETURN n.name AS name" ).list();
+            assertEquals( 2, records.size() );
+            assertEquals( "Alice", records.get( 0 ).get( "name" ).asString() );
+            assertEquals( "Bob", records.get( 1 ).get( "name" ).asString() );
+        }
+        finally
+        {
+            assertEquals( 0, server.exitStatus() );
+        }
+    }
+
+    @Test
+    public void shouldIgnoreRoutingContextWhenServerDoesNotSupportIt() throws Exception
+    {
+        // stub server is both a router and reader
+        StubServer server = StubServer.start( "rediscover_and_read_with_init.script", 9001 );
+
+        URI uri = URI.create( "bolt+routing://127.0.0.1:9001/?policy=my_policy" );
+        try ( Driver driver = GraphDatabase.driver( uri, config );
+              Session session = driver.session() )
+        {
+            List<Record> records = session.run( "MATCH (n) RETURN n.name" ).list();
+            assertEquals( 2, records.size() );
+            assertEquals( "Bob", records.get( 0 ).get( 0 ).asString() );
+            assertEquals( "Tina", records.get( 1 ).get( 0 ).asString() );
+        }
+        finally
+        {
+            assertEquals( 0, server.exitStatus() );
+        }
+    }
+
     private static Driver newDriverWithSleeplessClock( String uriString )
     {
         DriverFactory driverFactory = new DriverFactoryWithClock( new SleeplessClock() );

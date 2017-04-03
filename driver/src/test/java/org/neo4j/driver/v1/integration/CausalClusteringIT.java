@@ -105,8 +105,7 @@ public class CausalClusteringIT
         }
         catch ( ServiceUnavailableException ex )
         {
-            assertThat( ex.getMessage(), containsString(
-                    "Failed to run 'Statement{text='CALL dbms.cluster.routing." ) );
+            assertThat( ex.getMessage(), containsString( "Failed to run 'CALL dbms.cluster.routing" ) );
         }
     }
 
