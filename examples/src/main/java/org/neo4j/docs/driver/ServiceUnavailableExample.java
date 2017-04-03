@@ -37,10 +37,10 @@ public class ServiceUnavailableExample implements AutoCloseable
 {
     protected final Driver driver;
 
-    public ServiceUnavailableExample(String uri, String user, String password)
+    public ServiceUnavailableExample( String uri, String user, String password )
     {
-        driver = GraphDatabase.driver(uri, AuthTokens.basic(user, password), Config.build()
-                .withMaxTransactionRetryTime(3, SECONDS).withLogging( DEV_NULL_LOGGING ).toConfig());
+        driver = GraphDatabase.driver( uri, AuthTokens.basic( user, password ), Config.build()
+                .withMaxTransactionRetryTime( 3, SECONDS ).withLogging( DEV_NULL_LOGGING ).toConfig() );
     }
 
     @Override
@@ -52,7 +52,7 @@ public class ServiceUnavailableExample implements AutoCloseable
     // tag::service-unavailable[]
     public boolean addItem()
     {
-        try (Session session = driver.session())
+        try ( Session session = driver.session() )
         {
             return session.writeTransaction( new TransactionWork<Boolean>()
             {
@@ -64,7 +64,7 @@ public class ServiceUnavailableExample implements AutoCloseable
                 }
             } );
         }
-        catch (ServiceUnavailableException ex)
+        catch ( ServiceUnavailableException ex )
         {
             return false;
         }

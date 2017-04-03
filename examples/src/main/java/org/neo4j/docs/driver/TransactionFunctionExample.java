@@ -29,15 +29,15 @@ import static org.neo4j.driver.v1.Values.parameters;
 
 public class TransactionFunctionExample extends BaseApplication
 {
-    public TransactionFunctionExample(String uri, String user, String password)
+    public TransactionFunctionExample( String uri, String user, String password )
     {
-        super(uri, user, password);
+        super( uri, user, password );
     }
 
     // tag::transaction-function[]
-    public void addPerson(final String name)
+    public void addPerson( final String name )
     {
-        try (Session session = driver.session())
+        try ( Session session = driver.session() )
         {
             session.writeTransaction( new TransactionWork<Integer>()
             {
@@ -49,9 +49,10 @@ public class TransactionFunctionExample extends BaseApplication
             } );
         }
     }
-    private int createPersonNode(Transaction tx, String name)
+
+    private int createPersonNode( Transaction tx, String name )
     {
-        tx.run("CREATE (a:Person {name: $name})", parameters("name", name));
+        tx.run( "CREATE (a:Person {name: $name})", parameters( "name", name ) );
         return 1;
     }
     // end::transaction-function[]

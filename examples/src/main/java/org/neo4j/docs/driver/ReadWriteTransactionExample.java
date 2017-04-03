@@ -30,15 +30,15 @@ import static org.neo4j.driver.v1.Values.parameters;
 
 public class ReadWriteTransactionExample extends BaseApplication
 {
-    public ReadWriteTransactionExample(String uri, String user, String password)
+    public ReadWriteTransactionExample( String uri, String user, String password )
     {
-        super(uri, user, password);
+        super( uri, user, password );
     }
 
     // tag::read-write-transaction[]
-    public long addPerson(final String name)
+    public long addPerson( final String name )
     {
-        try (Session session = driver.session())
+        try ( Session session = driver.session() )
         {
             session.writeTransaction( new TransactionWork<Void>()
             {
@@ -59,16 +59,16 @@ public class ReadWriteTransactionExample extends BaseApplication
         }
     }
 
-    private Void createPersonNode(Transaction tx, String name)
+    private Void createPersonNode( Transaction tx, String name )
     {
-        tx.run("CREATE (a:Person {name: $name})", parameters("name", name));
+        tx.run( "CREATE (a:Person {name: $name})", parameters( "name", name ) );
         return null;
     }
 
-    private long matchPersonNode(Transaction tx, String name)
+    private long matchPersonNode( Transaction tx, String name )
     {
-        StatementResult result = tx.run("MATCH (a:Person {name: $name}) RETURN id(a)", parameters("name", name));
-        return result.single().get(0).asLong();
+        StatementResult result = tx.run( "MATCH (a:Person {name: $name}) RETURN id(a)", parameters( "name", name ) );
+        return result.single().get( 0 ).asLong();
     }
     // end::read-write-transaction[]
 

@@ -33,10 +33,10 @@ public class ConfigMaxRetryTimeExample implements AutoCloseable
     private final Driver driver;
 
     // tag::config-max-retry-time[]
-    public ConfigMaxRetryTimeExample(String uri, String user, String password)
+    public ConfigMaxRetryTimeExample( String uri, String user, String password )
     {
-        driver = GraphDatabase.driver(uri, AuthTokens.basic(user, password), 
-                Config.build().withMaxTransactionRetryTime(15, SECONDS).toConfig());
+        driver = GraphDatabase.driver( uri, AuthTokens.basic( user, password ),
+                Config.build().withMaxTransactionRetryTime( 15, SECONDS ).toConfig() );
     }
     // end::config-max-retry-time[]
 

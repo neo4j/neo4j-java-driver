@@ -25,15 +25,15 @@ import org.neo4j.driver.v1.Session;
 
 public class SessionExample extends BaseApplication
 {
-    public SessionExample(String uri, String user, String password)
+    public SessionExample( String uri, String user, String password )
     {
-        super(uri, user, password);
+        super( uri, user, password );
     }
 
     // tag::session[]
     public void doWork()
     {
-        try (Session session = driver.session())
+        try ( Session session = driver.session() )
         {
             // TODO: something with the Session
         }

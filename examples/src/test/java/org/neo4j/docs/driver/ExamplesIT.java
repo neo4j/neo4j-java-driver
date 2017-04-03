@@ -45,9 +45,9 @@ public class ExamplesIT
     @ClassRule
     public static TestNeo4j neo4j = new TestNeo4j();
 
-    private int readInt(final String statement, final Value parameters)
+    private int readInt( final String statement, final Value parameters )
     {
-        try (Session session = neo4j.driver().session())
+        try ( Session session = neo4j.driver().session() )
         {
             return session.writeTransaction( new TransactionWork<Integer>()
             {
@@ -60,14 +60,14 @@ public class ExamplesIT
         }
     }
 
-    private int readInt(final String statement)
+    private int readInt( final String statement )
     {
-        return readInt(statement, parameters());
+        return readInt( statement, parameters() );
     }
 
-    private void write(final String statement, final Value parameters)
+    private void write( final String statement, final Value parameters )
     {
-        try (Session session = neo4j.driver().session())
+        try ( Session session = neo4j.driver().session() )
         {
             session.readTransaction( new TransactionWork<Object>()
             {
@@ -81,19 +81,19 @@ public class ExamplesIT
         }
     }
 
-    private void write(String statement)
+    private void write( String statement )
     {
-        write(statement, parameters());
+        write( statement, parameters() );
     }
 
     private void clean()
     {
-        write("MATCH (a) DETACH DELETE a");
+        write( "MATCH (a) DETACH DELETE a" );
     }
 
-    private int personCount(String name)
+    private int personCount( String name )
     {
-        return readInt("MATCH (a:Person {name: $name}) RETURN count(a)", parameters("name", name));
+        return readInt( "MATCH (a:Person {name: $name}) RETURN count(a)", parameters( "name", name ) );
     }
 
     @Before
@@ -106,20 +106,21 @@ public class ExamplesIT
     public void testShouldRunAutocommitTransactionExample()
     {
         // Given
-        AutocommitTransactionExample example = new AutocommitTransactionExample(neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD);
+        AutocommitTransactionExample example =
+                new AutocommitTransactionExample( neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD );
 
         // When
-        example.addPerson("Alice");
+        example.addPerson( "Alice" );
 
         // Then
-        assert personCount("Alice") > 0;
+        assert personCount( "Alice" ) > 0;
     }
 
     @Test
     public void testShouldRunBasicAuthExample()
     {
         // Given
-        BasicAuthExample example = new BasicAuthExample(neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD);
+        BasicAuthExample example = new BasicAuthExample( neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD );
 
         // Then
         assert example.canConnect();
@@ -129,47 +130,52 @@ public class ExamplesIT
     public void testShouldRunConfigConnectionTimeoutExample()
     {
         // Given
-        ConfigConnectionTimeoutExample example = new ConfigConnectionTimeoutExample(neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD);
+        ConfigConnectionTimeoutExample example =
+                new ConfigConnectionTimeoutExample( neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD );
 
         // Then
-        assertThat(example, instanceOf(ConfigConnectionTimeoutExample.class));
+        assertThat( example, instanceOf( ConfigConnectionTimeoutExample.class ) );
     }
 
     @Test
     public void testShouldRunConfigMaxRetryTimeExample()
     {
         // Given
-        ConfigMaxRetryTimeExample example = new ConfigMaxRetryTimeExample(neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD);
+        ConfigMaxRetryTimeExample example =
+                new ConfigMaxRetryTimeExample( neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD );
 
         // Then
-        assertThat(example, instanceOf(ConfigMaxRetryTimeExample.class));
+        assertThat( example, instanceOf( ConfigMaxRetryTimeExample.class ) );
     }
 
     @Test
     public void testShouldRunConfigTrustExample()
     {
         // Given
-        ConfigTrustExample example = new ConfigTrustExample(neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD);
+        ConfigTrustExample example =
+                new ConfigTrustExample( neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD );
 
         // Then
-        assertThat(example, instanceOf(ConfigTrustExample.class));
+        assertThat( example, instanceOf( ConfigTrustExample.class ) );
     }
 
     @Test
     public void testShouldRunConfigUnencryptedExample()
     {
         // Given
-        ConfigUnencryptedExample example = new ConfigUnencryptedExample(neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD);
+        ConfigUnencryptedExample example =
+                new ConfigUnencryptedExample( neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD );
 
         // Then
-        assertThat(example, instanceOf(ConfigUnencryptedExample.class));
+        assertThat( example, instanceOf( ConfigUnencryptedExample.class ) );
     }
 
     @Test
     public void testShouldRunCypherErrorExample() throws Exception
     {
         // Given
-        CypherErrorExample example = new CypherErrorExample(neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD);
+        CypherErrorExample example =
+                new CypherErrorExample( neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD );
 
         // When & Then
         StdIOCapture stdIO = new StdIOCapture();
@@ -177,7 +183,7 @@ public class ExamplesIT
         {
             int employeeNumber = example.getEmployeeNumber( "Alice" );
 
-            assertThat(employeeNumber, equalTo(-1));
+            assertThat( employeeNumber, equalTo( -1 ) );
         }
         assertThat( stdIO.stderr(), equalTo( asList(
                 "Invalid input 'L': expected 't/T' (line 1, column 3 (offset: 2))",
@@ -189,24 +195,25 @@ public class ExamplesIT
     public void testShouldRunDriverLifecycleExample()
     {
         // Given
-        DriverLifecycleExample example = new DriverLifecycleExample(neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD);
+        DriverLifecycleExample example =
+                new DriverLifecycleExample( neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD );
 
         // Then
-        assertThat(example, instanceOf(DriverLifecycleExample.class));
+        assertThat( example, instanceOf( DriverLifecycleExample.class ) );
     }
 
     @Test
     public void testShouldRunHelloWorld() throws Exception
     {
         // Given
-        HelloWorld greeter = new HelloWorld(neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD);
+        HelloWorld greeter = new HelloWorld( neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD );
 
         // When
         StdIOCapture stdIO = new StdIOCapture();
 
         try ( AutoCloseable ignored = stdIO.capture() )
         {
-            greeter.printGreeting("hello, world");
+            greeter.printGreeting( "hello, world" );
         }
 
         // Then
@@ -218,51 +225,56 @@ public class ExamplesIT
     public void testShouldRunReadWriteTransactionExample()
     {
         // Given
-        ReadWriteTransactionExample example = new ReadWriteTransactionExample(neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD);
+        ReadWriteTransactionExample example =
+                new ReadWriteTransactionExample( neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD );
 
         // When
-        long nodeID = example.addPerson("Alice");
+        long nodeID = example.addPerson( "Alice" );
 
         // Then
-        assertThat(nodeID, greaterThanOrEqualTo(0L));
+        assertThat( nodeID, greaterThanOrEqualTo( 0L ) );
     }
 
     @Test
     public void testShouldRunResultConsumeExample()
     {
         // Given
-        write("CREATE (a:Person {name: 'Alice'})");
-        write("CREATE (a:Person {name: 'Bob'})");
-        ResultConsumeExample example = new ResultConsumeExample(neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD);
+        write( "CREATE (a:Person {name: 'Alice'})" );
+        write( "CREATE (a:Person {name: 'Bob'})" );
+        ResultConsumeExample example =
+                new ResultConsumeExample( neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD );
 
         // When
         List<String> names = example.getPeople();
 
         // Then
-        assertThat(names, equalTo(asList("Alice", "Bob")));
+        assertThat( names, equalTo( asList( "Alice", "Bob" ) ) );
     }
 
     @Test
     public void testShouldRunResultRetainExample()
     {
         // Given
-        write("CREATE (a:Person {name: 'Alice'})");
-        write("CREATE (a:Person {name: 'Bob'})");
-        ResultRetainExample example = new ResultRetainExample(neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD);
+        write( "CREATE (a:Person {name: 'Alice'})" );
+        write( "CREATE (a:Person {name: 'Bob'})" );
+        ResultRetainExample example =
+                new ResultRetainExample( neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD );
 
         // When
-        example.addEmployees("Acme");
+        example.addEmployees( "Acme" );
 
         // Then
-        int employeeCount = readInt("MATCH (emp:Person)-[WORKS_FOR]->(com:Company) WHERE com.name = 'Acme' RETURN count(emp)");
-        assertThat(employeeCount, equalTo(2));
+        int employeeCount =
+                readInt( "MATCH (emp:Person)-[WORKS_FOR]->(com:Company) WHERE com.name = 'Acme' RETURN count(emp)" );
+        assertThat( employeeCount, equalTo( 2 ) );
     }
 
     @Test
     public void testShouldRunServiceUnavailableExample() throws IOException
     {
         // Given
-        ServiceUnavailableExample example = new ServiceUnavailableExample(neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD);
+        ServiceUnavailableExample example =
+                new ServiceUnavailableExample( neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD );
 
         try
         {
@@ -270,7 +282,7 @@ public class ExamplesIT
             neo4j.stop();
 
             // Then
-            assertThat(example.addItem(), equalTo(false));
+            assertThat( example.addItem(), equalTo( false ) );
         }
         finally
         {
@@ -282,26 +294,27 @@ public class ExamplesIT
     public void testShouldRunSessionExample()
     {
         // Given
-        SessionExample example = new SessionExample(neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD);
+        SessionExample example = new SessionExample( neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD );
 
         // When
         example.doWork();
 
         // Then
-        assertThat(example, instanceOf(SessionExample.class));
+        assertThat( example, instanceOf( SessionExample.class ) );
     }
 
     @Test
     public void testShouldRunTransactionFunctionExample()
     {
         // Given
-        TransactionFunctionExample example = new TransactionFunctionExample(neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD);
+        TransactionFunctionExample example =
+                new TransactionFunctionExample( neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD );
 
         // When
-        example.addPerson("Alice");
+        example.addPerson( "Alice" );
 
         // Then
-        assert personCount("Alice") > 0;
+        assert personCount( "Alice" ) > 0;
     }
 
 }

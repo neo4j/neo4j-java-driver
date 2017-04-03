@@ -75,7 +75,8 @@ public class BookmarkIT
     public void shouldConnectIPv6Uri()
     {
         // Given
-        try(Driver driver =  GraphDatabase.driver( "bolt://[::1]:7687", AuthTokens.basic(TestNeo4j.USER, TestNeo4j.PASSWORD) );
+        try(Driver driver =  GraphDatabase.driver( "bolt://[::1]:7687",
+                AuthTokens.basic( TestNeo4j.USER, TestNeo4j.PASSWORD ) );
             Session session = driver.session() )
         {
             // When

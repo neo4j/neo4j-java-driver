@@ -34,8 +34,11 @@ import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Session;
 
-import static org.neo4j.driver.v1.AuthTokens.basic;
-import static org.neo4j.driver.v1.util.Neo4jRunner.*;
+import static org.neo4j.driver.v1.util.Neo4jRunner.DEFAULT_ADDRESS;
+import static org.neo4j.driver.v1.util.Neo4jRunner.DEFAULT_URI;
+import static org.neo4j.driver.v1.util.Neo4jRunner.HOME_DIR;
+import static org.neo4j.driver.v1.util.Neo4jRunner.debug;
+import static org.neo4j.driver.v1.util.Neo4jRunner.getOrCreateGlobalRunner;
 import static org.neo4j.driver.v1.util.Neo4jSettings.DEFAULT_TLS_CERT_PATH;
 import static org.neo4j.driver.v1.util.Neo4jSettings.DEFAULT_TLS_KEY_PATH;
 
@@ -91,7 +94,7 @@ public class TestNeo4j implements TestRule
         runner.forceToRestart();
     }
 
-    public void restart(Neo4jSettings neo4jSettings) throws Exception
+    public void restart( Neo4jSettings neo4jSettings ) throws Exception
     {
         runner.restartNeo4j( neo4jSettings );
     }
@@ -114,7 +117,7 @@ public class TestNeo4j implements TestRule
 
     public AuthToken authToken()
     {
-        return AuthTokens.basic(USER, PASSWORD);
+        return AuthTokens.basic( USER, PASSWORD );
     }
 
     public BoltServerAddress address()
@@ -151,7 +154,7 @@ public class TestNeo4j implements TestRule
     public void ensureProcedures( String jarName ) throws IOException
     {
         File procedureJar = new File( HOME_DIR, "plugins/" + jarName );
-        if( !procedureJar.exists() )
+        if ( !procedureJar.exists() )
         {
             FileTools.copyFile( new File( TEST_RESOURCE_FOLDER_PATH, jarName ), procedureJar );
             debug( "Added a new procedure `%s`", jarName );

@@ -33,10 +33,10 @@ public class ConfigConnectionTimeoutExample implements AutoCloseable
     private final Driver driver;
 
     // tag::config-connection-timeout[]
-    public ConfigConnectionTimeoutExample(String uri, String user, String password)
+    public ConfigConnectionTimeoutExample( String uri, String user, String password )
     {
-        driver = GraphDatabase.driver(uri, AuthTokens.basic(user, password), 
-                Config.build().withConnectionTimeout(15, SECONDS).toConfig());
+        driver = GraphDatabase.driver( uri, AuthTokens.basic( user, password ),
+                Config.build().withConnectionTimeout( 15, SECONDS ).toConfig() );
     }
     // end::config-connection-timeout[]
 

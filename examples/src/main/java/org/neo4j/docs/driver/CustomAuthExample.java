@@ -19,6 +19,7 @@
 package org.neo4j.docs.driver;
 
 // tag::custom-auth-import[]
+
 import java.util.Map;
 
 import org.neo4j.driver.v1.AuthTokens;
@@ -31,9 +32,10 @@ public class CustomAuthExample implements AutoCloseable
     private final Driver driver;
 
     // tag::custom-auth[]
-    public CustomAuthExample(String uri, String principal, String credentials, String realm, String scheme, Map<String, Object> parameters)
+    public CustomAuthExample( String uri, String principal, String credentials, String realm, String scheme,
+            Map<String,Object> parameters )
     {
-        driver = GraphDatabase.driver(uri, AuthTokens.custom(principal, credentials, realm, scheme, parameters));
+        driver = GraphDatabase.driver( uri, AuthTokens.custom( principal, credentials, realm, scheme, parameters ) );
     }
     // end::custom-auth[]
 

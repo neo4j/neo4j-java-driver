@@ -32,15 +32,15 @@ import static org.neo4j.driver.v1.Values.parameters;
 
 public class ResultRetainExample extends BaseApplication
 {
-    public ResultRetainExample(String uri, String user, String password)
+    public ResultRetainExample( String uri, String user, String password )
     {
-        super(uri, user, password);
+        super( uri, user, password );
     }
 
     // tag::result-retain[]
-    public int addEmployees(final String companyName)
+    public int addEmployees( final String companyName )
     {
-        try (Session session = driver.session())
+        try ( Session session = driver.session() )
         {
             int employees = 0;
             for ( final Record person : session.readTransaction( new TransactionWork<List<Record>>()
@@ -50,7 +50,7 @@ public class ResultRetainExample extends BaseApplication
                 {
                     return ResultRetainExample.this.matchPersonNodes( tx );
                 }
-            } ))
+            } ) )
             {
                 employees += session.writeTransaction( new TransactionWork<Integer>()
                 {
@@ -70,9 +70,9 @@ public class ResultRetainExample extends BaseApplication
         }
     }
 
-    private List<Record> matchPersonNodes(Transaction tx)
+    private List<Record> matchPersonNodes( Transaction tx )
     {
-        return tx.run("MATCH (a:Person) RETURN a.name AS name").list();
+        return tx.run( "MATCH (a:Person) RETURN a.name AS name" ).list();
     }
 
     // end::result-retain[]

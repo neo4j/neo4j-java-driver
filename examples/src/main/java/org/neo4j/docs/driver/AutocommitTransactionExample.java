@@ -27,17 +27,17 @@ import static org.neo4j.driver.v1.Values.parameters;
 
 public class AutocommitTransactionExample extends BaseApplication
 {
-    public AutocommitTransactionExample(String uri, String user, String password)
+    public AutocommitTransactionExample( String uri, String user, String password )
     {
-        super(uri, user, password);
+        super( uri, user, password );
     }
 
     // tag::autocommit-transaction[]
-    public void addPerson(String name)
+    public void addPerson( String name )
     {
-        try (Session session = driver.session())
+        try ( Session session = driver.session() )
         {
-            session.run("CREATE (a:Person {name: $name})", parameters("name", name));
+            session.run( "CREATE (a:Person {name: $name})", parameters( "name", name ) );
         }
     }
     // end::autocommit-transaction[]

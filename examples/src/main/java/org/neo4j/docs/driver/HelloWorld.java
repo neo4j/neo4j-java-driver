@@ -36,9 +36,15 @@ public class HelloWorld implements AutoCloseable
 {
     private final Driver driver;
 
-    public HelloWorld(String uri, String user, String password)
+    public HelloWorld( String uri, String user, String password )
     {
-        driver = GraphDatabase.driver(uri, AuthTokens.basic(user, password));
+        driver = GraphDatabase.driver( uri, AuthTokens.basic( user, password ) );
+    }
+
+    public static void main( String... args ) throws Exception
+    {
+        HelloWorld greeter = new HelloWorld( "bolt://localhost:7687", "neo4j", "password" );
+        greeter.printGreeting( "hello, world" );
     }
 
     @Override
@@ -47,9 +53,9 @@ public class HelloWorld implements AutoCloseable
         driver.close();
     }
 
-    public void printGreeting(final String message)
+    public void printGreeting( final String message )
     {
-        try (Session session = driver.session())
+        try ( Session session = driver.session() )
         {
             String greeting = session.writeTransaction( new TransactionWork<String>()
             {
@@ -63,14 +69,8 @@ public class HelloWorld implements AutoCloseable
                     return result.single().get( 0 ).asString();
                 }
             } );
-            System.out.println(greeting);
+            System.out.println( greeting );
         }
-    }
-
-    public static void main(String... args) throws Exception
-    {
-        HelloWorld greeter = new HelloWorld("bolt://localhost:7687", "neo4j", "password");
-        greeter.printGreeting("hello, world");
     }
 }
 // end::hello-world[]

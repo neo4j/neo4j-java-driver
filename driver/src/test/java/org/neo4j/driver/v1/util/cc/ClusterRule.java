@@ -27,7 +27,6 @@ import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.util.Neo4jRunner;
 import org.neo4j.driver.v1.util.ServerVersion;
-import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static org.junit.Assume.assumeTrue;
 import static org.neo4j.driver.v1.util.Neo4jRunner.TARGET_DIR;

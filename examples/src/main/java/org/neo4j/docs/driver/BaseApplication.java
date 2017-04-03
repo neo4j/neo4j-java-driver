@@ -27,9 +27,9 @@ public abstract class BaseApplication implements AutoCloseable
 {
     protected final Driver driver;
 
-    public BaseApplication(String uri, String user, String password)
+    public BaseApplication( String uri, String user, String password )
     {
-        driver = GraphDatabase.driver(uri, AuthTokens.basic(user, password));
+        driver = GraphDatabase.driver( uri, AuthTokens.basic( user, password ) );
     }
 
     @Override

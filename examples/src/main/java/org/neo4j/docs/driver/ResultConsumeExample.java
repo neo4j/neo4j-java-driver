@@ -31,15 +31,15 @@ import org.neo4j.driver.v1.TransactionWork;
 
 public class ResultConsumeExample extends BaseApplication
 {
-    public ResultConsumeExample(String uri, String user, String password)
+    public ResultConsumeExample( String uri, String user, String password )
     {
-        super(uri, user, password);
+        super( uri, user, password );
     }
 
     // tag::result-consume[]
     public List<String> getPeople()
     {
-        try (Session session = driver.session())
+        try ( Session session = driver.session() )
         {
             return session.readTransaction( new TransactionWork<List<String>>()
             {
@@ -52,13 +52,13 @@ public class ResultConsumeExample extends BaseApplication
         }
     }
 
-    private List<String> matchPersonNodes(Transaction tx)
+    private List<String> matchPersonNodes( Transaction tx )
     {
         List<String> names = new ArrayList<>();
-        StatementResult result = tx.run("MATCH (a:Person) RETURN a.name ORDER BY a.name");
-        while (result.hasNext())
+        StatementResult result = tx.run( "MATCH (a:Person) RETURN a.name ORDER BY a.name" );
+        while ( result.hasNext() )
         {
-            names.add(result.next().get(0).asString());
+            names.add( result.next().get( 0 ).asString() );
         }
         return names;
     }

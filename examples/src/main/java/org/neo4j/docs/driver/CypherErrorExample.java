@@ -31,15 +31,15 @@ import static org.neo4j.driver.v1.Values.parameters;
 
 public class CypherErrorExample extends BaseApplication
 {
-    public CypherErrorExample(String uri, String user, String password)
+    public CypherErrorExample( String uri, String user, String password )
     {
-        super(uri, user, password);
+        super( uri, user, password );
     }
 
     // tag::cypher-error[]
-    public int getEmployeeNumber(final String name)
+    public int getEmployeeNumber( final String name )
     {
-        try (Session session = driver.session())
+        try ( Session session = driver.session() )
         {
             return session.readTransaction( new TransactionWork<Integer>()
             {
@@ -52,16 +52,16 @@ public class CypherErrorExample extends BaseApplication
         }
     }
 
-    private int selectEmployee(Transaction tx, String name)
+    private int selectEmployee( Transaction tx, String name )
     {
         try
         {
-            StatementResult result = tx.run("SELECT * FROM Employees WHERE name = $name", parameters("name", name));
-            return result.single().get("employee_number").asInt();
+            StatementResult result = tx.run( "SELECT * FROM Employees WHERE name = $name", parameters( "name", name ) );
+            return result.single().get( "employee_number" ).asInt();
         }
-        catch (ClientException ex)
+        catch ( ClientException ex )
         {
-            System.err.println(ex.getMessage());
+            System.err.println( ex.getMessage() );
             return -1;
         }
     }
