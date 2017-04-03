@@ -29,10 +29,12 @@ import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.TransactionWork;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.util.StdIOCapture;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
@@ -164,16 +166,23 @@ public class ExamplesIT
     }
 
     @Test
-    public void testShouldRunCypherErrorExample()
+    public void testShouldRunCypherErrorExample() throws Exception
     {
         // Given
         CypherErrorExample example = new CypherErrorExample(neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD);
 
-        // When
-        int employeeNumber = example.getEmployeeNumber("Alice");
+        // When & Then
+        StdIOCapture stdIO = new StdIOCapture();
+        try ( AutoCloseable ignored = stdIO.capture() )
+        {
+            int employeeNumber = example.getEmployeeNumber( "Alice" );
 
-        // Then
-        assertThat(employeeNumber, equalTo(-1));
+            assertThat(employeeNumber, equalTo(-1));
+        }
+        assertThat( stdIO.stderr(), equalTo( asList(
+                "Invalid input 'L': expected 't/T' (line 1, column 3 (offset: 2))",
+                "\"SELECT * FROM Employees WHERE name = $name\"",
+                "   ^" ) ) );
     }
 
     @Test
@@ -187,16 +196,22 @@ public class ExamplesIT
     }
 
     @Test
-    public void testShouldRunHelloWorld()
+    public void testShouldRunHelloWorld() throws Exception
     {
         // Given
         HelloWorld greeter = new HelloWorld(neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD);
 
         // When
-        greeter.printGreeting("hello, world");
+        StdIOCapture stdIO = new StdIOCapture();
+
+        try ( AutoCloseable ignored = stdIO.capture() )
+        {
+            greeter.printGreeting("hello, world");
+        }
 
         // Then
-        // TODO
+        assertThat( stdIO.stdout().size(), equalTo( 1 ) );
+        assertThat( stdIO.stdout().get( 0 ), containsString( "hello, world" ) );
     }
 
     @Test
