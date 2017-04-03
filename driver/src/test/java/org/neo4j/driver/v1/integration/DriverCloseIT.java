@@ -169,7 +169,7 @@ public class DriverCloseIT
         protected Driver createDriver()
         {
             Config config = Config.build()
-                    .withEncryptionLevel( Config.EncryptionLevel.NONE )
+                    .withoutEncryption()
                     .withLogging( new ConsoleLogging( Level.OFF ) )
                     .toConfig();
 

@@ -160,7 +160,7 @@ public class ErrorIT
         // Given
         //the http server needs some time to start up
         Thread.sleep( 2000 );
-        Config config = Config.build().withEncryptionLevel( Config.EncryptionLevel.NONE ).toConfig();
+        Config config = Config.build().withoutEncryption().toConfig();
         try ( Driver driver = GraphDatabase.driver( "bolt://localhost:7474", config );
               Session session = driver.session() )
         {

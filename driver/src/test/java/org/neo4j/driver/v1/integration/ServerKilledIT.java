@@ -62,26 +62,24 @@ public class ServerKilledIT
     @Parameters(name = "{0} connections")
     public static Collection<Object[]> data() {
         return Arrays.asList(new Object[][] {
-                { "plaintext", Config.EncryptionLevel.NONE },
-                { "tls encrypted", Config.EncryptionLevel.REQUIRED }
+                { "plaintext", Config.build().withoutEncryption() },
+                { "tls encrypted", Config.build().withEncryption() }
         });
     }
 
-    private Config.EncryptionLevel encryptionLevel;
+    private Config.ConfigBuilder config;
 
-    public ServerKilledIT( String testName, Config.EncryptionLevel encryptionLevel )
+    public ServerKilledIT( String testName, Config.ConfigBuilder config )
     {
-        this.encryptionLevel = encryptionLevel;
+        this.config = config;
     }
 
     @Test
     public void shouldRecoverFromServerRestart() throws Throwable
     {
-        // Given
-        // config with sessionLivenessCheckTimeout not set, i.e. turned off
-        Config config = Config.build().withEncryptionLevel( encryptionLevel ).toConfig();
+        // Given config with sessionLivenessCheckTimeout not set, i.e. turned off
 
-        try ( Driver driver = GraphDatabase.driver( Neo4jRunner.DEFAULT_URI, config ) )
+        try ( Driver driver = GraphDatabase.driver( Neo4jRunner.DEFAULT_URI, config.toConfig() ) )
         {
             acquireAndReleaseConnections( 4, driver );
 
@@ -118,13 +116,11 @@ public class ServerKilledIT
     {
         // config with set liveness check timeout
         int livenessCheckTimeoutMinutes = 10;
-        Config config = Config.build().withEncryptionLevel( encryptionLevel )
-                .withConnectionLivenessCheckTimeout( livenessCheckTimeoutMinutes, TimeUnit.MINUTES )
-                .toConfig();
+        config.withConnectionLivenessCheckTimeout( livenessCheckTimeoutMinutes, TimeUnit.MINUTES );
 
         FakeClock clock = new FakeClock();
 
-        try ( Driver driver = createDriver( clock, config ) )
+        try ( Driver driver = createDriver( clock, config.toConfig() ) )
         {
             acquireAndReleaseConnections( 5, driver );
 

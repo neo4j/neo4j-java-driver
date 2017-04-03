@@ -298,7 +298,7 @@ public class TLSSocketChannelIT
     public void shouldEstablishTLSConnection() throws Throwable
     {
 
-        Config config = Config.build().withEncryptionLevel( Config.EncryptionLevel.REQUIRED ).toConfig();
+        Config config = Config.build().withEncryption().toConfig();
 
         try( Driver driver = GraphDatabase.driver( Neo4jRunner.DEFAULT_URI, config );
              Session session = driver.session() )

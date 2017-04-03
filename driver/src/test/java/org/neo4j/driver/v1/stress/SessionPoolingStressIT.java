@@ -107,7 +107,7 @@ public class SessionPoolingStressIT
     public void shouldWorkFine() throws Throwable
     {
         Config config = Config.build()
-                .withEncryptionLevel( Config.EncryptionLevel.NONE )
+                .withoutEncryption()
                 .toConfig();
 
         driver = driver( neo4j.uri(), config );
