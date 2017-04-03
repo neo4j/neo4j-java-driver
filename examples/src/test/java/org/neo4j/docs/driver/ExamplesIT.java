@@ -1,14 +1,35 @@
+/*
+ * Copyright (c) 2002-2017 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.neo4j.docs.driver;
 
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.neo4j.driver.v1.Session;
-import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.util.TestNeo4j;
 
 import java.io.IOException;
 import java.util.List;
+
+import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.v1.TransactionWork;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -26,7 +47,14 @@ public class ExamplesIT
     {
         try (Session session = neo4j.driver().session())
         {
-            return session.writeTransaction((tx) -> tx.run(statement, parameters).single().get(0).asInt());
+            return session.writeTransaction( new TransactionWork<Integer>()
+            {
+                @Override
+                public Integer execute( Transaction tx )
+                {
+                    return tx.run( statement, parameters ).single().get( 0 ).asInt();
+                }
+            } );
         }
     }
 
@@ -39,11 +67,15 @@ public class ExamplesIT
     {
         try (Session session = neo4j.driver().session())
         {
-            session.readTransaction((tx) ->
+            session.readTransaction( new TransactionWork<Object>()
             {
-                tx.run(statement, parameters);
-                return null;
-            });
+                @Override
+                public Object execute( Transaction tx )
+                {
+                    tx.run( statement, parameters );
+                    return null;
+                }
+            } );
         }
     }
 
