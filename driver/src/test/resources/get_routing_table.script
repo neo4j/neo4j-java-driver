@@ -1,7 +1,7 @@
+!: AUTO INIT
 !: AUTO RESET
 !: AUTO PULL_ALL
 
-C: INIT "neo4j-java/dev"
 S: SUCCESS {"server": "Neo4j/3.2.2"}
 C: RUN "CALL dbms.cluster.routing.getRoutingTable({context})" {"context": {}}
    PULL_ALL
