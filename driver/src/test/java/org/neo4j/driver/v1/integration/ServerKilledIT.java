@@ -35,19 +35,18 @@ import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.DriverFactoryWithClock;
 import org.neo4j.driver.internal.util.FakeClock;
-import org.neo4j.driver.v1.AuthToken;
-import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.v1.util.Neo4jRunner;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.neo4j.driver.v1.util.Neo4jRunner.DEFAULT_AUTH_TOKEN;
+import static org.neo4j.driver.v1.util.Neo4jRunner.DEFAULT_URI;
 
 /**
  * Mainly concerned about the connection pool - we want to make sure that bad connections are evacuated from the
@@ -81,8 +80,7 @@ public class ServerKilledIT
         // config with sessionLivenessCheckTimeout not set, i.e. turned off
         Config config = Config.build().withEncryptionLevel( encryptionLevel ).toConfig();
 
-        try ( Driver driver = GraphDatabase.driver( Neo4jRunner.DEFAULT_URI,
-                AuthTokens.basic( TestNeo4j.USER, TestNeo4j.PASSWORD ), config ) )
+        try ( Driver driver = GraphDatabase.driver( DEFAULT_URI, DEFAULT_AUTH_TOKEN, config ) )
         {
             acquireAndReleaseConnections( 4, driver );
 
@@ -159,9 +157,8 @@ public class ServerKilledIT
     private static Driver createDriver( Clock clock, Config config )
     {
         DriverFactory factory = new DriverFactoryWithClock( clock );
-        AuthToken auth = AuthTokens.basic( TestNeo4j.USER, TestNeo4j.PASSWORD );
         RoutingSettings routingSettings = new RoutingSettings( 1, 1 );
         RetrySettings retrySettings = RetrySettings.DEFAULT;
-        return factory.newInstance( Neo4jRunner.DEFAULT_URI, auth, routingSettings, retrySettings, config );
+        return factory.newInstance( DEFAULT_URI, DEFAULT_AUTH_TOKEN, routingSettings, retrySettings, config );
     }
 }
