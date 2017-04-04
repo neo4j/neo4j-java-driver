@@ -114,7 +114,7 @@ public class SessionIT
     public void shouldHandleNullConfig() throws Throwable
     {
         // Given
-        try( Driver driver = GraphDatabase.driver( neo4j.uri(), AuthTokens.none(), null ) )
+        try ( Driver driver = GraphDatabase.driver( neo4j.uri(), AuthTokens.none(), null ) )
         {
             Session session = driver.session();
 
@@ -132,7 +132,7 @@ public class SessionIT
     {
         // Given
         AuthToken token = null;
-        try ( Driver driver = GraphDatabase.driver( neo4j.uri(), token) )
+        try ( Driver driver = GraphDatabase.driver( neo4j.uri(), token ) )
         {
             Session session = driver.session();
 
@@ -194,7 +194,7 @@ public class SessionIT
         long startTime = -1, endTime;
         int recordCount = 0;
 
-        try( final Session session = driver.session() )
+        try ( final Session session = driver.session() )
         {
             StatementResult result = session.run( "CALL test.driver.longStreamingResult({seconds})",
                     parameters( "seconds", executionTimeout ) );
@@ -203,19 +203,19 @@ public class SessionIT
 
             // When
             startTime = System.currentTimeMillis();
-            while( result.hasNext() )
+            while ( result.hasNext() )
             {
                 result.next();
                 recordCount++;
             }
 
-            fail("Should have got an exception about streaming get killed.");
+            fail( "Should have got an exception about streaming get killed." );
         }
-        catch( ClientException e )
+        catch ( ClientException e )
         {
             endTime = System.currentTimeMillis();
-            assertThat( e.code(), equalTo("Neo.ClientError.Procedure.ProcedureCallFailed") );
-            assertThat( recordCount, greaterThan(1) );
+            assertThat( e.code(), equalTo( "Neo.ClientError.Procedure.ProcedureCallFailed" ) );
+            assertThat( recordCount, greaterThan( 1 ) );
 
             assertTrue( startTime > 0 );
             assertTrue( endTime - startTime > killTimeout * 1000 ); // get reset by session.reset
@@ -231,11 +231,11 @@ public class SessionIT
         neo4j.ensureProcedures( "longRunningStatement.jar" );
         Driver driver = newDriver();
 
-        try( Session session = driver.session() )
+        try ( Session session = driver.session() )
         {
             Transaction tx = session.beginTransaction();
 
-            tx.run("CALL test.driver.longRunningStatement({seconds})",
+            tx.run( "CALL test.driver.longRunningStatement({seconds})",
                     parameters( "seconds", 10 ) );
             Thread.sleep( 1000 );
             session.reset();
@@ -280,11 +280,11 @@ public class SessionIT
         neo4j.ensureProcedures( "longRunningStatement.jar" );
         Driver driver = newDriver();
 
-        try( Session session = driver.session() )
+        try ( Session session = driver.session() )
         {
             Transaction tx = session.beginTransaction();
 
-            StatementResult procedureResult = tx.run("CALL test.driver.longRunningStatement({seconds})",
+            StatementResult procedureResult = tx.run( "CALL test.driver.longRunningStatement({seconds})",
                     parameters( "seconds", 10 ) );
             Thread.sleep( 1000 );
             session.reset();
@@ -367,9 +367,9 @@ public class SessionIT
         try ( Driver driver = newDriver();
               Session session = driver.session() )
         {
-            try( Transaction tx = session.beginTransaction() )
+            try ( Transaction tx = session.beginTransaction() )
             {
-                tx.run("Return 1");
+                tx.run( "Return 1" );
                 tx.success();
             }
 
@@ -377,9 +377,9 @@ public class SessionIT
             session.reset();
 
             // Then can run more Tx
-            try( Transaction tx = session.beginTransaction() )
+            try ( Transaction tx = session.beginTransaction() )
             {
-                tx.run("Return 2");
+                tx.run( "Return 2" );
                 tx.success();
             }
         }
@@ -393,15 +393,15 @@ public class SessionIT
         try ( Driver driver = newDriver();
               Session session = driver.session() )
         {
-            try( Transaction tx = session.beginTransaction() )
+            try ( Transaction tx = session.beginTransaction() )
             {
                 // When reset the state of this session
                 session.reset();
-                 // Then
+                // Then
                 tx.run( "Return 1" );
                 fail( "Should not allow tx run as tx is already failed." );
             }
-            catch( Exception e )
+            catch ( Exception e )
             {
                 assertThat( e.getMessage(), startsWith( "Cannot run more statements in this transaction" ) );
             }
@@ -416,16 +416,16 @@ public class SessionIT
         try ( Driver driver = newDriver();
               Session session = driver.session() )
         {
-            try( Transaction tx = session.beginTransaction() )
+            try ( Transaction tx = session.beginTransaction() )
             {
                 // When reset the state of this session
                 session.reset();
             }
 
             // Then can run more Tx
-            try( Transaction tx = session.beginTransaction() )
+            try ( Transaction tx = session.beginTransaction() )
             {
-                tx.run("Return 2");
+                tx.run( "Return 2" );
                 tx.success();
             }
         }
@@ -1341,13 +1341,14 @@ public class SessionIT
     {
         DriverFactory driverFactory = new DriverFactoryWithFixedRetryLogic( maxRetriesCount );
         RoutingSettings routingConf = new RoutingSettings( 1, 1 );
-        AuthToken auth = AuthTokens.none();
+        AuthToken auth = AuthTokens.basic( TestNeo4j.USER, TestNeo4j.PASSWORD );
         return driverFactory.newInstance( neo4j.uri(), auth, routingConf, RetrySettings.DEFAULT, noLoggingConfig() );
     }
 
     private Driver newDriver()
     {
-        return GraphDatabase.driver( neo4j.uri(), noLoggingConfig() );
+        return GraphDatabase
+                .driver( neo4j.uri(), AuthTokens.basic( TestNeo4j.USER, TestNeo4j.PASSWORD ), noLoggingConfig() );
     }
 
     private Driver newDriverWithLimitedRetries( int maxTxRetryTime, TimeUnit unit )
@@ -1356,7 +1357,7 @@ public class SessionIT
                 .withLogging( DevNullLogging.DEV_NULL_LOGGING )
                 .withMaxTransactionRetryTime( maxTxRetryTime, unit )
                 .toConfig();
-        return GraphDatabase.driver( neo4j.uri(), config );
+        return GraphDatabase.driver( neo4j.uri(), AuthTokens.basic( TestNeo4j.USER, TestNeo4j.PASSWORD ), config );
     }
 
     private static Config noLoggingConfig()

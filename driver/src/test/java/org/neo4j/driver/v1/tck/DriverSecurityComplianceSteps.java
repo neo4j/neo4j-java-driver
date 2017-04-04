@@ -72,6 +72,7 @@ public class DriverSecurityComplianceSteps
         knownHostsFile = tempFile( "known_hosts", ".tmp" );
         driver = GraphDatabase.driver(
                 Neo4jRunner.DEFAULT_URI,
+                Neo4jRunner.DEFAULT_AUTH_TOKEN,
                 Config.build().withEncryptionLevel( EncryptionLevel.REQUIRED )
                         .withTrustStrategy( trustOnFirstUse( knownHostsFile ) ).toConfig() );
 
@@ -101,6 +102,7 @@ public class DriverSecurityComplianceSteps
     {
         driver = GraphDatabase.driver(
                 Neo4jRunner.DEFAULT_URI,
+                Neo4jRunner.DEFAULT_AUTH_TOKEN,
                 Config.build().withEncryptionLevel( EncryptionLevel.REQUIRED )
                         .withTrustStrategy( trustOnFirstUse( knownHostsFile ) ).toConfig() );
     }
@@ -143,21 +145,24 @@ public class DriverSecurityComplianceSteps
         assertThat( exception, instanceOf( SecurityException.class ) );
         Throwable rootCause = getRootCause( exception );
         assertThat( rootCause.toString(), containsString(
-                "Unable to connect to neo4j at `localhost:7687`, because the certificate the server uses has changed. " +
-                "This is a security feature to protect against man-in-the-middle attacks.") );
+                "Unable to connect to neo4j at `localhost:7687`, " +
+                "because the certificate the server uses has changed. " +
+                "This is a security feature to protect against man-in-the-middle attacks." ) );
         assertThat( rootCause.toString(), containsString(
                 "If you trust the certificate the server uses now, simply remove the line that starts with " +
                 "`localhost:7687` in the file" ) );
-        assertThat( rootCause.toString(), containsString( "The old certificate saved in file is:" ));
-        assertThat( rootCause.toString(), containsString( "The New certificate received is:" ));
+        assertThat( rootCause.toString(), containsString( "The old certificate saved in file is:" ) );
+        assertThat( rootCause.toString(), containsString( "The New certificate received is:" ) );
     }
 
     // modified trusted certificate file location
     @Given( "^two drivers" )
-    public void twoDrivers() {}
+    public void twoDrivers()
+    {
+    }
 
     @SuppressWarnings( "deprecation" )
-    @When("^I configure one of them to use a different location for its known hosts storage$")
+    @When( "^I configure one of them to use a different location for its known hosts storage$" )
     public void twoDriversWithDifferentKnownHostsFiles() throws Throwable
     {
         firstUseConnect();
@@ -166,11 +171,12 @@ public class DriverSecurityComplianceSteps
         File tempFile = tempFile( "known_hosts", ".tmp" );
         driverKitten = GraphDatabase.driver(
                 Neo4jRunner.DEFAULT_URI,
+                Neo4jRunner.DEFAULT_AUTH_TOKEN,
                 Config.build().withEncryptionLevel( EncryptionLevel.REQUIRED )
                         .withTrustStrategy( trustOnFirstUse( tempFile ) ).toConfig() );
     }
 
-    @Then("^the two drivers should not interfere with one another's known hosts files$")
+    @Then( "^the two drivers should not interfere with one another's known hosts files$" )
     public void twoDriversShouldNotInterfereWithEachOther() throws Throwable
     {
         // if I change the cert of the server, as driver has already connected, so driver will fall to connect
@@ -188,8 +194,10 @@ public class DriverSecurityComplianceSteps
     }
 
     // signed certificate
-    @Given("^a driver configured to use a trusted certificate$")
-    public void aDriverConfiguredToUseATrustedCertificate() throws Throwable {}
+    @Given( "^a driver configured to use a trusted certificate$" )
+    public void aDriverConfiguredToUseATrustedCertificate() throws Throwable
+    {
+    }
 
     @And( "^a running Neo4j Database using a certificate signed by the same trusted certificate$" )
     public void aRunningNeo4jDatabaseUsingACertificateSignedByTheSameTrustedCertificate() throws Throwable
@@ -205,6 +213,7 @@ public class DriverSecurityComplianceSteps
         // give root certificate to driver
         driver = GraphDatabase.driver(
                 Neo4jRunner.DEFAULT_URI,
+                Neo4jRunner.DEFAULT_AUTH_TOKEN,
                 Config.build().withEncryptionLevel( EncryptionLevel.REQUIRED )
                         .withTrustStrategy( trustCustomCertificateSignedBy( rootCert ) ).toConfig() );
 
@@ -221,7 +230,9 @@ public class DriverSecurityComplianceSteps
     }
 
     @When( "^I connect via a TLS-enabled transport$" )
-    public void iConnectViaATlsEnabledTransport() {}
+    public void iConnectViaATlsEnabledTransport()
+    {
+    }
 
     // same certificate
     @And( "^a running Neo4j Database using that exact trusted certificate$" )
@@ -229,6 +240,7 @@ public class DriverSecurityComplianceSteps
     {
         driver = GraphDatabase.driver(
                 Neo4jRunner.DEFAULT_URI,
+                Neo4jRunner.DEFAULT_AUTH_TOKEN,
                 Config.build().withEncryptionLevel( EncryptionLevel.REQUIRED )
                         .withTrustStrategy( trustCustomCertificateSignedBy(
                                 new File( HOME_DIR, DEFAULT_TLS_CERT_PATH ) ) )
@@ -236,7 +248,7 @@ public class DriverSecurityComplianceSteps
     }
 
     // invalid cert
-    @And("^a running Neo4j Database using a certificate not signed by the trusted certificate$")
+    @And( "^a running Neo4j Database using a certificate not signed by the trusted certificate$" )
     public void aRunningNeo4jDatabaseUsingACertNotSignedByTheTrustedCertificates() throws Throwable
     {
         File cert = tempFile( "temp_cert", ".cert" );
@@ -245,6 +257,7 @@ public class DriverSecurityComplianceSteps
         // give root certificate to driver
         driver = GraphDatabase.driver(
                 Neo4jRunner.DEFAULT_URI,
+                Neo4jRunner.DEFAULT_AUTH_TOKEN,
                 Config.build().withEncryptionLevel( EncryptionLevel.REQUIRED )
                         .withTrustStrategy( trustCustomCertificateSignedBy( cert ) ).toConfig() );
     }
@@ -255,10 +268,10 @@ public class DriverSecurityComplianceSteps
         assertThat( exception, notNullValue() );
         assertThat( exception, instanceOf( SecurityException.class ) );
         Throwable rootCause = getRootCause( exception );
-        assertThat( rootCause.toString(), containsString( "Signature does not match.") );
+        assertThat( rootCause.toString(), containsString( "Signature does not match." ) );
     }
 
-    @After("@tls")
+    @After( "@tls" )
     public void clearAfterEachScenario() throws Throwable
     {
         driver.close();
@@ -267,29 +280,30 @@ public class DriverSecurityComplianceSteps
         knownHostsFile = null;
         exception = null;
 
-        if( driverKitten != null )
+        if ( driverKitten != null )
         {
             driverKitten.close();
             driverKitten = null;
         }
     }
 
-    @After("@modifies_db_config")
+    @After( "@modifies_db_config" )
     public void resetDbWithDefaultSettings() throws Throwable
     {
         neo4j.restart();
     }
 
-    private File tempFile(String prefix, String suffix) throws Throwable
+    private File tempFile( String prefix, String suffix ) throws Throwable
     {
         File file = createTempFile( prefix, suffix );
         file.deleteOnExit();
         return file;
     }
 
-    private Throwable getRootCause(Throwable th) {
+    private Throwable getRootCause( Throwable th )
+    {
         Throwable cause = th;
-        while(cause.getCause() != null )
+        while ( cause.getCause() != null )
         {
             cause = cause.getCause();
         }

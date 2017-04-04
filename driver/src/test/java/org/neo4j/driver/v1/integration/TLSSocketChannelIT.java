@@ -35,6 +35,7 @@ import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.security.TLSSocketChannel;
 import org.neo4j.driver.internal.util.CertificateTool;
+import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
@@ -153,8 +154,8 @@ public class TLSSocketChannelIT
             TLSSocketChannel sslChannel = null;
             try
             {
-                 sslChannel = TLSSocketChannel.create(address, securityPlan, channel, logger);
-                 fail( "Should have thrown exception" );
+                sslChannel = TLSSocketChannel.create( address, securityPlan, channel, logger );
+                fail( "Should have thrown exception" );
             }
             catch ( SecurityException e )
             {
@@ -164,7 +165,7 @@ public class TLSSocketChannelIT
             }
             finally
             {
-                if( sslChannel != null )
+                if ( sslChannel != null )
                 {
                     sslChannel.close();
                 }
@@ -220,7 +221,7 @@ public class TLSSocketChannelIT
         String serverId = address.toString();
 
         X509Certificate cert = CertificateToolTest.generateSelfSignedCertificate();
-        String certStr = fingerprint(cert);
+        String certStr = fingerprint( cert );
 
         BufferedWriter writer = new BufferedWriter( new FileWriter( knownCerts, true ) );
         writer.write( serverId + " " + certStr );
@@ -233,8 +234,8 @@ public class TLSSocketChannelIT
     {
         // Given
         neo4j.restart( Neo4jSettings.TEST_SETTINGS.updateWith(
-                        Neo4jSettings.CERT_DIR,
-                        folder.getRoot().getAbsolutePath().replace( "\\", "/" ) ) );
+                Neo4jSettings.CERT_DIR,
+                folder.getRoot().getAbsolutePath().replace( "\\", "/" ) ) );
         SocketChannel channel = SocketChannel.open();
         channel.connect( neo4j.address().toSocketAddress() );
         File trustedCertFile = folder.newFile( "neo4j_trusted_cert.tmp" );
@@ -273,7 +274,7 @@ public class TLSSocketChannelIT
             parentError = error.getCause();
 
         }
-        while( parentError != null );
+        while ( parentError != null );
         return error;
     }
 
@@ -300,8 +301,9 @@ public class TLSSocketChannelIT
 
         Config config = Config.build().withEncryptionLevel( Config.EncryptionLevel.REQUIRED ).toConfig();
 
-        try( Driver driver = GraphDatabase.driver( Neo4jRunner.DEFAULT_URI, config );
-             Session session = driver.session() )
+        try ( Driver driver = GraphDatabase
+                .driver( Neo4jRunner.DEFAULT_URI, AuthTokens.basic( TestNeo4j.USER, TestNeo4j.PASSWORD ), config );
+              Session session = driver.session() )
         {
             StatementResult result = session.run( "RETURN 1" );
             assertEquals( 1, result.next().get( 0 ).asInt() );
@@ -316,7 +318,7 @@ public class TLSSocketChannelIT
 
         Logger logger = mock( Logger.class );
         Logging logging = mock( Logging.class );
-        when(logging.getLog( anyString() )).thenReturn( logger );
+        when( logging.getLog( anyString() ) ).thenReturn( logger );
 
         SocketChannel channel = SocketChannel.open();
         channel.connect( new InetSocketAddress( "localhost", 7687 ) );
@@ -328,7 +330,8 @@ public class TLSSocketChannelIT
                 .toConfig();
 
         // When
-        try ( Driver driver = GraphDatabase.driver( Neo4jRunner.DEFAULT_URI, config );
+        try ( Driver driver = GraphDatabase
+                .driver( Neo4jRunner.DEFAULT_URI, AuthTokens.basic( TestNeo4j.USER, TestNeo4j.PASSWORD ), config );
               Session session = driver.session() )
         {
             session.run( "RETURN 1" ).consume();

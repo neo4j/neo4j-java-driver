@@ -50,7 +50,7 @@ public class Neo4jSettings
             CERT_DIR, DEFAULT_CERT_DIR,
             DATA_DIR, DEFAULT_DATA_DIR,
             IMPORT_DIR, DEFAULT_IMPORT_DIR,
-            AUTH_ENABLED, "false",
+            AUTH_ENABLED, "true",
             LISTEN_ADDR, IPV6_ENABLED_ADDR ), Collections.<String>emptySet() );
 
     private Neo4jSettings( Map<String, String> settings, Set<String> excludes )

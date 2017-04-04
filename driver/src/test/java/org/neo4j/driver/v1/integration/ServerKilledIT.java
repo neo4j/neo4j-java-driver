@@ -81,7 +81,8 @@ public class ServerKilledIT
         // config with sessionLivenessCheckTimeout not set, i.e. turned off
         Config config = Config.build().withEncryptionLevel( encryptionLevel ).toConfig();
 
-        try ( Driver driver = GraphDatabase.driver( Neo4jRunner.DEFAULT_URI, config ) )
+        try ( Driver driver = GraphDatabase.driver( Neo4jRunner.DEFAULT_URI,
+                AuthTokens.basic( TestNeo4j.USER, TestNeo4j.PASSWORD ), config ) )
         {
             acquireAndReleaseConnections( 4, driver );
 
@@ -158,7 +159,7 @@ public class ServerKilledIT
     private static Driver createDriver( Clock clock, Config config )
     {
         DriverFactory factory = new DriverFactoryWithClock( clock );
-        AuthToken auth = AuthTokens.none();
+        AuthToken auth = AuthTokens.basic( TestNeo4j.USER, TestNeo4j.PASSWORD );
         RoutingSettings routingSettings = new RoutingSettings( 1, 1 );
         RetrySettings retrySettings = RetrySettings.DEFAULT;
         return factory.newInstance( Neo4jRunner.DEFAULT_URI, auth, routingSettings, retrySettings, config );
