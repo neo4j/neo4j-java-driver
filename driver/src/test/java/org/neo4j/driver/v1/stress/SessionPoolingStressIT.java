@@ -35,6 +35,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Session;
@@ -110,7 +111,7 @@ public class SessionPoolingStressIT
                 .withoutEncryption()
                 .toConfig();
 
-        driver = driver( neo4j.uri(), config );
+        driver = driver( neo4j.uri(), neo4j.authToken(), config );
 
         AtomicBoolean stop = new AtomicBoolean();
         AtomicReference<Throwable> failureReference = new AtomicReference<>();

@@ -43,11 +43,12 @@ import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.v1.util.Neo4jRunner;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.neo4j.driver.v1.util.Neo4jRunner.DEFAULT_AUTH_TOKEN;
+import static org.neo4j.driver.v1.util.Neo4jRunner.DEFAULT_URI;
 
 /**
  * Mainly concerned about the connection pool - we want to make sure that bad connections are evacuated from the
@@ -78,8 +79,7 @@ public class ServerKilledIT
     public void shouldRecoverFromServerRestart() throws Throwable
     {
         // Given config with sessionLivenessCheckTimeout not set, i.e. turned off
-
-        try ( Driver driver = GraphDatabase.driver( Neo4jRunner.DEFAULT_URI, config.toConfig() ) )
+        try ( Driver driver = GraphDatabase.driver( DEFAULT_URI, DEFAULT_AUTH_TOKEN, config.toConfig() ) )
         {
             acquireAndReleaseConnections( 4, driver );
 
@@ -154,9 +154,9 @@ public class ServerKilledIT
     private static Driver createDriver( Clock clock, Config config )
     {
         DriverFactory factory = new DriverFactoryWithClock( clock );
-        AuthToken auth = AuthTokens.none();
+        AuthToken auth = AuthTokens.basic( TestNeo4j.USER, TestNeo4j.PASSWORD );
         RoutingSettings routingSettings = new RoutingSettings( 1, 1, null );
         RetrySettings retrySettings = RetrySettings.DEFAULT;
-        return factory.newInstance( Neo4jRunner.DEFAULT_URI, auth, routingSettings, retrySettings, config );
+        return factory.newInstance( DEFAULT_URI, auth, routingSettings, retrySettings, config );
     }
 }

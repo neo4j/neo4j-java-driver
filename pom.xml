@@ -82,6 +82,9 @@
         <version>2.11</version>
         <configuration>
           <header>driver/src/main/resources/license-header.txt</header>
+          <mapping>
+            <java>SLASHSTAR_STYLE</java>
+          </mapping>
           <properties>
             <thisYear>2017</thisYear>
           </properties>

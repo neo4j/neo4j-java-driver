@@ -28,11 +28,13 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assume.assumeTrue;
+import static org.neo4j.driver.v1.AuthTokens.basic;
 import static org.neo4j.driver.v1.ConfigTest.deleteDefaultKnownCertFileIfExists;
 import static org.neo4j.driver.v1.util.FileTools.moveFile;
 import static org.neo4j.driver.v1.util.FileTools.updateProperties;
@@ -52,6 +54,7 @@ public class Neo4jRunner
     private static final String DEFAULT_NEOCTRL_ARGS = "-e 3.1.2";
     public static final String NEOCTRL_ARGS = System.getProperty( "neoctrl.args", DEFAULT_NEOCTRL_ARGS );
     public static final URI DEFAULT_URI = URI.create( "bolt://localhost:7687" );
+    public static final AuthToken DEFAULT_AUTH_TOKEN = basic( TestNeo4j.USER, TestNeo4j.PASSWORD );
     public static final BoltServerAddress DEFAULT_ADDRESS = BoltServerAddress.from( DEFAULT_URI );
     private Driver driver;
     private Neo4jSettings currentSettings = Neo4jSettings.TEST_SETTINGS;
@@ -104,7 +107,7 @@ public class Neo4jRunner
     {
         if ( driver == null )
         {
-            driver = GraphDatabase.driver( DEFAULT_URI );
+            driver = GraphDatabase.driver( DEFAULT_URI, DEFAULT_AUTH_TOKEN );
         }
         return driver;
     }
@@ -137,10 +140,10 @@ public class Neo4jRunner
         updateServerSettingsFile();
     }
 
-    private void startNeo4j() throws IOException
+    public void startNeo4j() throws IOException
     {
         debug( "Starting server..." );
-        executeCommand( "neoctrl-create-user", HOME_DIR, "neo4j", "neo4j" );
+        executeCommand( "neoctrl-create-user", HOME_DIR, TestNeo4j.USER, TestNeo4j.PASSWORD );
         executeCommand( "neoctrl-start", HOME_DIR );
         debug( "Server started." );
     }

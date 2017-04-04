@@ -37,7 +37,8 @@ public class EncryptionIT
     public void shouldOperateWithNoEncryption() throws Exception
     {
         // Given
-        Driver driver = GraphDatabase.driver( neo4j.uri(), Config.build().withoutEncryption().toConfig() );
+        Driver driver = GraphDatabase.driver( neo4j.uri(), neo4j.authToken(),
+                Config.build().withoutEncryption().toConfig() );
 
         // Then
         assertThat( driver.isEncrypted(), equalTo( false ) );
@@ -60,7 +61,8 @@ public class EncryptionIT
     public void shouldOperateWithRequiredEncryption() throws Exception
     {
         // Given
-        Driver driver = GraphDatabase.driver( neo4j.uri(), Config.build().withEncryption().toConfig() );
+        Driver driver = GraphDatabase.driver( neo4j.uri(), neo4j.authToken(),
+                Config.build().withEncryption().toConfig() );
 
         // Then
         assertThat( driver.isEncrypted(), equalTo( true ) );
