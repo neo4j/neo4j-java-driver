@@ -364,7 +364,15 @@ public class Config
          * @param routingFailureLimit
          *         the number of times to retry each server in the list of routing servers
          * @return this builder
+         * @deprecated in 1.2 because driver memorizes seed URI used during construction and falls back to it at
+         * runtime when all other known router servers failed to respond. Driver is also able to perform DNS lookup
+         * for the seed URI during rediscovery. This means updates of cluster members will be picked up if they are
+         * reflected in a DNS record. This configuration allowed driver to retry rediscovery procedure and postpone
+         * failure. Currently there exists a better way of doing retries via
+         * {@link Session#readTransaction(TransactionWork)} and {@link Session#writeTransaction(TransactionWork)}.
+         * <b>Method will be removed in the next major release.</b>
          */
+        @Deprecated
         public ConfigBuilder withRoutingFailureLimit( int routingFailureLimit )
         {
             if ( routingFailureLimit < 1 )
@@ -398,7 +406,15 @@ public class Config
          * @param unit
          *         the unit in which the duration is given
          * @return this builder
+         * @deprecated in 1.2 because driver memorizes seed URI used during construction and falls back to it at
+         * runtime when all other known router servers failed to respond. Driver is also able to perform DNS lookup
+         * for the seed URI during rediscovery. This means updates of cluster members will be picked up if they are
+         * reflected in a DNS record. This configuration allowed driver to retry rediscovery procedure and postpone
+         * failure. Currently there exists a better way of doing retries via
+         * {@link Session#readTransaction(TransactionWork)} and {@link Session#writeTransaction(TransactionWork)}.
+         * <b>Method will be removed in the next major release.</b>
          */
+        @Deprecated
         public ConfigBuilder withRoutingRetryDelay( long delay, TimeUnit unit )
         {
             long routingRetryDelayMillis = unit.toMillis( delay );
