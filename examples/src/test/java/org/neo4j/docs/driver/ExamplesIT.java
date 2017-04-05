@@ -203,10 +203,10 @@ public class ExamplesIT
     }
 
     @Test
-    public void testShouldRunHelloWorld() throws Exception
+    public void testShouldRunHelloWorldExample() throws Exception
     {
         // Given
-        HelloWorld greeter = new HelloWorld( neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD );
+        HelloWorldExample greeter = new HelloWorldExample( neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD );
 
         // When
         StdIOCapture stdIO = new StdIOCapture();
