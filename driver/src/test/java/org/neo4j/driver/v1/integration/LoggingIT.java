@@ -21,14 +21,12 @@ package org.neo4j.driver.v1.integration;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Session;
-import org.neo4j.driver.v1.util.Neo4jRunner;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static org.mockito.Matchers.anyString;
@@ -40,7 +38,7 @@ import static org.mockito.Mockito.when;
 public class LoggingIT
 {
     @Rule
-    public TestNeo4j server = new TestNeo4j();
+    public TestNeo4j neo4j = new TestNeo4j();
 
     @Test
     public void logShouldRecordDebugAndTraceInfo() throws Exception
@@ -49,9 +47,7 @@ public class LoggingIT
         Logging logging = mock( Logging.class );
         Logger logger = mock( Logger.class );
 
-        try( Driver driver = GraphDatabase.driver(
-                Neo4jRunner.DEFAULT_URI,
-                AuthTokens.basic( TestNeo4j.USER, TestNeo4j.PASSWORD ),
+        try( Driver driver = GraphDatabase.driver( neo4j.uri(), neo4j.authToken(),
                 Config.build().withLogging( logging ).toConfig() ) )
         {
             // When
