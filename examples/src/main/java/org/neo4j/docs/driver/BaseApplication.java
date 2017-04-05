@@ -18,7 +18,6 @@
  */
 package org.neo4j.docs.driver;
 
-
 import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
