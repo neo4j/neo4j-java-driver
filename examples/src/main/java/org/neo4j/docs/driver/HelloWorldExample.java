@@ -32,18 +32,18 @@ import static org.neo4j.driver.v1.Values.parameters;
 // end::hello-world-import[]
 
 // tag::hello-world[]
-public class HelloWorld implements AutoCloseable
+public class HelloWorldExample implements AutoCloseable
 {
     private final Driver driver;
 
-    public HelloWorld( String uri, String user, String password )
+    public HelloWorldExample( String uri, String user, String password )
     {
         driver = GraphDatabase.driver( uri, AuthTokens.basic( user, password ) );
     }
 
     public static void main( String... args ) throws Exception
     {
-        HelloWorld greeter = new HelloWorld( "bolt://localhost:7687", "neo4j", "password" );
+        HelloWorldExample greeter = new HelloWorldExample( "bolt://localhost:7687", "neo4j", "password" );
         greeter.printGreeting( "hello, world" );
     }
 
