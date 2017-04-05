@@ -86,6 +86,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.driver.internal.util.ServerVersion.v3_1_0;
 import static org.neo4j.driver.v1.Values.parameters;
+import static org.neo4j.driver.v1.util.Neo4jRunner.DEFAULT_AUTH_TOKEN;
 
 public class SessionIT
 {
@@ -1342,14 +1343,13 @@ public class SessionIT
     {
         DriverFactory driverFactory = new DriverFactoryWithFixedRetryLogic( maxRetriesCount );
         RoutingSettings routingConf = new RoutingSettings( 1, 1, RoutingContext.EMPTY );
-        AuthToken auth = AuthTokens.basic( TestNeo4j.USER, TestNeo4j.PASSWORD );
+        AuthToken auth = DEFAULT_AUTH_TOKEN;
         return driverFactory.newInstance( neo4j.uri(), auth, routingConf, RetrySettings.DEFAULT, noLoggingConfig() );
     }
 
     private Driver newDriver()
     {
-        return GraphDatabase
-                .driver( neo4j.uri(), AuthTokens.basic( TestNeo4j.USER, TestNeo4j.PASSWORD ), noLoggingConfig() );
+        return GraphDatabase.driver( neo4j.uri(), neo4j.authToken(), noLoggingConfig() );
     }
 
     private Driver newDriverWithLimitedRetries( int maxTxRetryTime, TimeUnit unit )
@@ -1358,7 +1358,7 @@ public class SessionIT
                 .withLogging( DevNullLogging.DEV_NULL_LOGGING )
                 .withMaxTransactionRetryTime( maxTxRetryTime, unit )
                 .toConfig();
-        return GraphDatabase.driver( neo4j.uri(), AuthTokens.basic( TestNeo4j.USER, TestNeo4j.PASSWORD ), config );
+        return GraphDatabase.driver( neo4j.uri(), neo4j.authToken(), config );
     }
 
     private static Config noLoggingConfig()

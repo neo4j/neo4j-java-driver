@@ -54,14 +54,19 @@ public class Neo4jRunner
     private static final String DEFAULT_NEOCTRL_ARGS = "-e 3.1.2";
     public static final String NEOCTRL_ARGS = System.getProperty( "neoctrl.args", DEFAULT_NEOCTRL_ARGS );
     public static final URI DEFAULT_URI = URI.create( "bolt://localhost:7687" );
-    public static final AuthToken DEFAULT_AUTH_TOKEN = basic( TestNeo4j.USER, TestNeo4j.PASSWORD );
     public static final BoltServerAddress DEFAULT_ADDRESS = BoltServerAddress.from( DEFAULT_URI );
-    private Driver driver;
+
+    public static final String USER = "neo4j";
+    public static final String PASSWORD = "password";
+    public static final AuthToken DEFAULT_AUTH_TOKEN = basic( USER, PASSWORD );
+
     private Neo4jSettings currentSettings = Neo4jSettings.TEST_SETTINGS;
 
     public static final String TARGET_DIR = new File( "../target" ).getAbsolutePath();
-    private static final String NEO4J_DIR = new File(  TARGET_DIR, "test-server" ).getAbsolutePath();
+    private static final String NEO4J_DIR = new File( TARGET_DIR, "test-server" ).getAbsolutePath();
     public static final String HOME_DIR = new File( NEO4J_DIR, "neo4jHome" ).getAbsolutePath();
+
+    private Driver driver;
 
     /** Global runner controlling a single server, used to avoid having to restart the server between tests */
     public static synchronized Neo4jRunner getOrCreateGlobalRunner() throws IOException
@@ -143,7 +148,7 @@ public class Neo4jRunner
     public void startNeo4j() throws IOException
     {
         debug( "Starting server..." );
-        executeCommand( "neoctrl-create-user", HOME_DIR, TestNeo4j.USER, TestNeo4j.PASSWORD );
+        executeCommand( "neoctrl-create-user", HOME_DIR, USER, PASSWORD );
         executeCommand( "neoctrl-start", HOME_DIR );
         debug( "Server started." );
     }

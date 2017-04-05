@@ -41,6 +41,8 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.driver.v1.Values.parameters;
+import static org.neo4j.driver.v1.util.Neo4jRunner.PASSWORD;
+import static org.neo4j.driver.v1.util.Neo4jRunner.USER;
 
 public class ExamplesIT
 {
@@ -108,8 +110,7 @@ public class ExamplesIT
     public void testShouldRunAutocommitTransactionExample()
     {
         // Given
-        AutocommitTransactionExample example =
-                new AutocommitTransactionExample( neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD );
+        AutocommitTransactionExample example = new AutocommitTransactionExample( neo4j.uri().toString(), USER, PASSWORD );
 
         // When
         example.addPerson( "Alice" );
@@ -122,7 +123,7 @@ public class ExamplesIT
     public void testShouldRunBasicAuthExample()
     {
         // Given
-        BasicAuthExample example = new BasicAuthExample( neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD );
+        BasicAuthExample example = new BasicAuthExample( neo4j.uri().toString(), USER, PASSWORD );
 
         // Then
         assertTrue( example.canConnect() );
@@ -133,7 +134,7 @@ public class ExamplesIT
     {
         // Given
         ConfigConnectionTimeoutExample example =
-                new ConfigConnectionTimeoutExample( neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD );
+                new ConfigConnectionTimeoutExample( neo4j.uri().toString(), USER, PASSWORD );
 
         // Then
         assertThat( example, instanceOf( ConfigConnectionTimeoutExample.class ) );
@@ -144,7 +145,7 @@ public class ExamplesIT
     {
         // Given
         ConfigMaxRetryTimeExample example =
-                new ConfigMaxRetryTimeExample( neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD );
+                new ConfigMaxRetryTimeExample( neo4j.uri().toString(), USER, PASSWORD );
 
         // Then
         assertThat( example, instanceOf( ConfigMaxRetryTimeExample.class ) );
@@ -155,7 +156,7 @@ public class ExamplesIT
     {
         // Given
         ConfigTrustExample example =
-                new ConfigTrustExample( neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD );
+                new ConfigTrustExample( neo4j.uri().toString(), USER, PASSWORD );
 
         // Then
         assertThat( example, instanceOf( ConfigTrustExample.class ) );
@@ -166,7 +167,7 @@ public class ExamplesIT
     {
         // Given
         ConfigUnencryptedExample example =
-                new ConfigUnencryptedExample( neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD );
+                new ConfigUnencryptedExample( neo4j.uri().toString(), USER, PASSWORD );
 
         // Then
         assertThat( example, instanceOf( ConfigUnencryptedExample.class ) );
@@ -177,7 +178,7 @@ public class ExamplesIT
     {
         // Given
         CypherErrorExample example =
-                new CypherErrorExample( neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD );
+                new CypherErrorExample( neo4j.uri().toString(), USER, PASSWORD );
 
         // When & Then
         StdIOCapture stdIO = new StdIOCapture();
@@ -198,7 +199,7 @@ public class ExamplesIT
     {
         // Given
         DriverLifecycleExample example =
-                new DriverLifecycleExample( neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD );
+                new DriverLifecycleExample( neo4j.uri().toString(), USER, PASSWORD );
 
         // Then
         assertThat( example, instanceOf( DriverLifecycleExample.class ) );
@@ -208,7 +209,7 @@ public class ExamplesIT
     public void testShouldRunHelloWorld() throws Exception
     {
         // Given
-        HelloWorld greeter = new HelloWorld( neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD );
+        HelloWorld greeter = new HelloWorld( neo4j.uri().toString(), USER, PASSWORD );
 
         // When
         StdIOCapture stdIO = new StdIOCapture();
@@ -228,7 +229,7 @@ public class ExamplesIT
     {
         // Given
         ReadWriteTransactionExample example =
-                new ReadWriteTransactionExample( neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD );
+                new ReadWriteTransactionExample( neo4j.uri().toString(), USER, PASSWORD );
 
         // When
         long nodeID = example.addPerson( "Alice" );
@@ -244,7 +245,7 @@ public class ExamplesIT
         write( "CREATE (a:Person {name: 'Alice'})" );
         write( "CREATE (a:Person {name: 'Bob'})" );
         ResultConsumeExample example =
-                new ResultConsumeExample( neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD );
+                new ResultConsumeExample( neo4j.uri().toString(), USER, PASSWORD );
 
         // When
         List<String> names = example.getPeople();
@@ -260,7 +261,7 @@ public class ExamplesIT
         write( "CREATE (a:Person {name: 'Alice'})" );
         write( "CREATE (a:Person {name: 'Bob'})" );
         ResultRetainExample example =
-                new ResultRetainExample( neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD );
+                new ResultRetainExample( neo4j.uri().toString(), USER, PASSWORD );
 
         // When
         example.addEmployees( "Acme" );
@@ -276,7 +277,7 @@ public class ExamplesIT
     {
         // Given
         ServiceUnavailableExample example =
-                new ServiceUnavailableExample( neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD );
+                new ServiceUnavailableExample( neo4j.uri().toString(), USER, PASSWORD );
 
         try
         {
@@ -296,7 +297,7 @@ public class ExamplesIT
     public void testShouldRunSessionExample()
     {
         // Given
-        SessionExample example = new SessionExample( neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD );
+        SessionExample example = new SessionExample( neo4j.uri().toString(), USER, PASSWORD );
 
         // When
         example.doWork();
@@ -310,7 +311,7 @@ public class ExamplesIT
     {
         // Given
         TransactionFunctionExample example =
-                new TransactionFunctionExample( neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD );
+                new TransactionFunctionExample( neo4j.uri().toString(), USER, PASSWORD );
 
         // When
         example.addPerson( "Alice" );

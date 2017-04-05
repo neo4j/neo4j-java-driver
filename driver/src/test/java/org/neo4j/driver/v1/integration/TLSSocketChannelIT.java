@@ -35,7 +35,6 @@ import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.security.TLSSocketChannel;
 import org.neo4j.driver.internal.util.CertificateTool;
-import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
@@ -45,7 +44,6 @@ import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.exceptions.SecurityException;
 import org.neo4j.driver.v1.util.CertificateToolTest;
-import org.neo4j.driver.v1.util.Neo4jRunner;
 import org.neo4j.driver.v1.util.Neo4jSettings;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
@@ -301,8 +299,7 @@ public class TLSSocketChannelIT
 
         Config config = Config.build().withEncryption().toConfig();
 
-        try ( Driver driver = GraphDatabase
-                .driver( Neo4jRunner.DEFAULT_URI, AuthTokens.basic( TestNeo4j.USER, TestNeo4j.PASSWORD ), config );
+        try ( Driver driver = GraphDatabase.driver( neo4j.uri(), neo4j.authToken(), config );
               Session session = driver.session() )
         {
             StatementResult result = session.run( "RETURN 1" );
@@ -330,8 +327,7 @@ public class TLSSocketChannelIT
                 .toConfig();
 
         // When
-        try ( Driver driver = GraphDatabase
-                .driver( Neo4jRunner.DEFAULT_URI, AuthTokens.basic( TestNeo4j.USER, TestNeo4j.PASSWORD ), config );
+        try ( Driver driver = GraphDatabase.driver( neo4j.uri(), neo4j.authToken(), config );
               Session session = driver.session() )
         {
             session.run( "RETURN 1" ).consume();

@@ -35,8 +35,6 @@ import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.DriverFactoryWithClock;
 import org.neo4j.driver.internal.util.FakeClock;
-import org.neo4j.driver.v1.AuthToken;
-import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
@@ -154,9 +152,8 @@ public class ServerKilledIT
     private static Driver createDriver( Clock clock, Config config )
     {
         DriverFactory factory = new DriverFactoryWithClock( clock );
-        AuthToken auth = AuthTokens.basic( TestNeo4j.USER, TestNeo4j.PASSWORD );
         RoutingSettings routingSettings = new RoutingSettings( 1, 1, null );
         RetrySettings retrySettings = RetrySettings.DEFAULT;
-        return factory.newInstance( DEFAULT_URI, auth, routingSettings, retrySettings, config );
+        return factory.newInstance( DEFAULT_URI, DEFAULT_AUTH_TOKEN, routingSettings, retrySettings, config );
     }
 }
