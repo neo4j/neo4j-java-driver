@@ -46,13 +46,13 @@ public class ResultConsumeExample extends BaseApplication
                 @Override
                 public List<String> execute( Transaction tx )
                 {
-                    return ResultConsumeExample.this.matchPersonNodes( tx );
+                    return matchPersonNodes( tx );
                 }
             } );
         }
     }
 
-    private List<String> matchPersonNodes( Transaction tx )
+    private static List<String> matchPersonNodes( Transaction tx )
     {
         List<String> names = new ArrayList<>();
         StatementResult result = tx.run( "MATCH (a:Person) RETURN a.name ORDER BY a.name" );

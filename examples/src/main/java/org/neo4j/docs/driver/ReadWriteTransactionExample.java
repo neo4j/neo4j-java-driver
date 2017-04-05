@@ -45,7 +45,7 @@ public class ReadWriteTransactionExample extends BaseApplication
                 @Override
                 public Void execute( Transaction tx )
                 {
-                    return ReadWriteTransactionExample.this.createPersonNode( tx, name );
+                    return createPersonNode( tx, name );
                 }
             } );
             return session.readTransaction( new TransactionWork<Long>()
@@ -53,19 +53,19 @@ public class ReadWriteTransactionExample extends BaseApplication
                 @Override
                 public Long execute( Transaction tx )
                 {
-                    return ReadWriteTransactionExample.this.matchPersonNode( tx, name );
+                    return matchPersonNode( tx, name );
                 }
             } );
         }
     }
 
-    private Void createPersonNode( Transaction tx, String name )
+    private static Void createPersonNode( Transaction tx, String name )
     {
         tx.run( "CREATE (a:Person {name: $name})", parameters( "name", name ) );
         return null;
     }
 
-    private long matchPersonNode( Transaction tx, String name )
+    private static long matchPersonNode( Transaction tx, String name )
     {
         StatementResult result = tx.run( "MATCH (a:Person {name: $name}) RETURN id(a)", parameters( "name", name ) );
         return result.single().get( 0 ).asLong();

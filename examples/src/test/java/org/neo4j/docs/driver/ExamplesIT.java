@@ -33,11 +33,13 @@ import org.neo4j.driver.v1.util.StdIOCapture;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static java.util.Arrays.asList;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.driver.v1.Values.parameters;
 
 public class ExamplesIT
@@ -49,7 +51,7 @@ public class ExamplesIT
     {
         try ( Session session = neo4j.driver().session() )
         {
-            return session.writeTransaction( new TransactionWork<Integer>()
+            return session.readTransaction( new TransactionWork<Integer>()
             {
                 @Override
                 public Integer execute( Transaction tx )
@@ -69,7 +71,7 @@ public class ExamplesIT
     {
         try ( Session session = neo4j.driver().session() )
         {
-            session.readTransaction( new TransactionWork<Object>()
+            session.writeTransaction( new TransactionWork<Object>()
             {
                 @Override
                 public Object execute( Transaction tx )
@@ -113,7 +115,7 @@ public class ExamplesIT
         example.addPerson( "Alice" );
 
         // Then
-        assert personCount( "Alice" ) > 0;
+        assertThat( personCount( "Alice" ), greaterThan( 0 ) );
     }
 
     @Test
@@ -123,7 +125,7 @@ public class ExamplesIT
         BasicAuthExample example = new BasicAuthExample( neo4j.uri().toString(), TestNeo4j.USER, TestNeo4j.PASSWORD );
 
         // Then
-        assert example.canConnect();
+        assertTrue( example.canConnect() );
     }
 
     @Test
@@ -314,7 +316,7 @@ public class ExamplesIT
         example.addPerson( "Alice" );
 
         // Then
-        assert personCount( "Alice" ) > 0;
+        assertThat( personCount( "Alice" ), greaterThan( 0 ) );
     }
 
 }

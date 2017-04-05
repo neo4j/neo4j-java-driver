@@ -44,13 +44,13 @@ public class TransactionFunctionExample extends BaseApplication
                 @Override
                 public Integer execute( Transaction tx )
                 {
-                    return TransactionFunctionExample.this.createPersonNode( tx, name );
+                    return createPersonNode( tx, name );
                 }
             } );
         }
     }
 
-    private int createPersonNode( Transaction tx, String name )
+    private static int createPersonNode( Transaction tx, String name )
     {
         tx.run( "CREATE (a:Person {name: $name})", parameters( "name", name ) );
         return 1;

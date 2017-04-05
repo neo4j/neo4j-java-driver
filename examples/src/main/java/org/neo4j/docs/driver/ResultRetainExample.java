@@ -43,14 +43,15 @@ public class ResultRetainExample extends BaseApplication
         try ( Session session = driver.session() )
         {
             int employees = 0;
-            for ( final Record person : session.readTransaction( new TransactionWork<List<Record>>()
+            List<Record> persons = session.readTransaction( new TransactionWork<List<Record>>()
             {
                 @Override
                 public List<Record> execute( Transaction tx )
                 {
-                    return ResultRetainExample.this.matchPersonNodes( tx );
+                    return matchPersonNodes( tx );
                 }
-            } ) )
+            } );
+            for ( final Record person : persons )
             {
                 employees += session.writeTransaction( new TransactionWork<Integer>()
                 {
@@ -70,7 +71,7 @@ public class ResultRetainExample extends BaseApplication
         }
     }
 
-    private List<Record> matchPersonNodes( Transaction tx )
+    private static List<Record> matchPersonNodes( Transaction tx )
     {
         return tx.run( "MATCH (a:Person) RETURN a.name AS name" ).list();
     }

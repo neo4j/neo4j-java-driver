@@ -46,13 +46,13 @@ public class CypherErrorExample extends BaseApplication
                 @Override
                 public Integer execute( Transaction tx )
                 {
-                    return CypherErrorExample.this.selectEmployee( tx, name );
+                    return selectEmployee( tx, name );
                 }
             } );
         }
     }
 
-    private int selectEmployee( Transaction tx, String name )
+    private static int selectEmployee( Transaction tx, String name )
     {
         try
         {
