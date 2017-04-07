@@ -41,12 +41,6 @@ public class HelloWorldExample implements AutoCloseable
         driver = GraphDatabase.driver( uri, AuthTokens.basic( user, password ) );
     }
 
-    public static void main( String... args ) throws Exception
-    {
-        HelloWorldExample greeter = new HelloWorldExample( "bolt://localhost:7687", "neo4j", "password" );
-        greeter.printGreeting( "hello, world" );
-    }
-
     @Override
     public void close() throws Exception
     {
@@ -70,6 +64,14 @@ public class HelloWorldExample implements AutoCloseable
                 }
             } );
             System.out.println( greeting );
+        }
+    }
+
+    public static void main( String... args ) throws Exception
+    {
+        try ( HelloWorldExample greeter = new HelloWorldExample( "bolt://localhost:7687", "neo4j", "password" ) )
+        {
+            greeter.printGreeting( "hello, world" );
         }
     }
 }
