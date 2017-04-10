@@ -65,6 +65,19 @@ public class AuthTokens
                 "realm", realm).asMap( Values.ofValue() ) );
     }
 
+    /**
+     * The kerberos authentication scheme, using a base64 encoded ticket
+     * @param base64EncodedTicket a base64 encoded service ticket
+     * @return an authentication token that can be used to connect to Neo4j
+     * @see GraphDatabase#driver(String, AuthToken)
+     * @since 1.3
+     */
+    public static AuthToken kerberos( String base64EncodedTicket )
+    {
+        return new InternalAuthToken( parameters(
+                "scheme", "kerberos",
+                "credentials", base64EncodedTicket).asMap( Values.ofValue() ) );
+    }
 
     /**
      * A custom authentication token used for doing custom authentication on the server side.
@@ -73,7 +86,7 @@ public class AuthTokens
      * @param realm this is the "realm:, specifying the authentication provider.
      * @param scheme this it the authentication scheme, specifying what kind of authentication that should be used
      * @return an authentication token that can be used to connect to Neo4j
-     * * @see GraphDatabase#driver(String, AuthToken)
+     * @see GraphDatabase#driver(String, AuthToken)
      */
     public static AuthToken custom( String principal, String credentials, String realm, String scheme)
     {
@@ -92,7 +105,7 @@ public class AuthTokens
      * @param scheme this it the authentication scheme, specifying what kind of authentication that shoud be used
      * @param parameters extra parameters to be sent along the authentication provider.
      * @return an authentication token that can be used to connect to Neo4j
-     * * @see GraphDatabase#driver(String, AuthToken)
+     * @see GraphDatabase#driver(String, AuthToken)
      */
     public static AuthToken custom( String principal, String credentials, String realm, String scheme, Map<String, Object> parameters)
     {
