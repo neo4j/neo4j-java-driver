@@ -19,7 +19,6 @@
 package org.neo4j.driver.v1.tck;
 
 import cucumber.api.CucumberOptions;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
@@ -27,12 +26,7 @@ import org.junit.runner.RunWith;
 
 import java.io.IOException;
 
-import org.neo4j.driver.internal.util.ServerVersion;
-import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.util.TestNeo4j;
-
-import static org.junit.Assume.assumeTrue;
-import static org.neo4j.driver.internal.util.ServerVersion.v3_2_0;
 
 /**
  * The base class to run all cucumber tests
@@ -52,11 +46,4 @@ public class DriverComplianceIT
     {
     }
 
-    @BeforeClass
-    public static void muteAfter32()
-    {
-        Driver driver = neo4j.driver();
-        ServerVersion serverVersion = ServerVersion.version( driver );
-        assumeTrue( "Tck tests muted on 3.2+ server", serverVersion.lessThan( v3_2_0 ) );
-    }
 }
