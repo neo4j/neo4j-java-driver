@@ -87,6 +87,8 @@ public class ClusterRule extends ExternalResource
                 addShutdownHookToStopCluster();
             }
         }
+
+        getCluster().deleteData();
     }
 
     @Override

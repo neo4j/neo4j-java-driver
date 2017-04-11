@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal.cluster;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -42,6 +43,8 @@ public class Rediscovery
     private final ClusterCompositionProvider provider;
     private final HostNameResolver hostNameResolver;
 
+    private boolean useInitialRouter;
+
     public Rediscovery( BoltServerAddress initialRouter, RoutingSettings settings, Clock clock, Logger logger,
             ClusterCompositionProvider provider, HostNameResolver hostNameResolver )
     {
@@ -53,9 +56,15 @@ public class Rediscovery
         this.hostNameResolver = hostNameResolver;
     }
 
-    // Given the current routing table and connection pool, use the connection composition provider to fetch a new
-    // cluster composition, which would be used to update the routing table and connection pool
-    public ClusterComposition lookupClusterComposition( ConnectionPool connections, RoutingTable routingTable )
+    /**
+     * Given the current routing table and connection pool, use the connection composition provider to fetch a new
+     * cluster composition, which would be used to update the routing table and connection pool.
+     *
+     * @param routingTable current routing table.
+     * @param connections connection pool.
+     * @return new cluster composition.
+     */
+    public ClusterComposition lookupClusterComposition( RoutingTable routingTable, ConnectionPool connections )
     {
         int failures = 0;
 
@@ -65,7 +74,7 @@ public class Rediscovery
             sleep( waitTime );
             start = clock.millis();
 
-            ClusterComposition composition = lookupClusterCompositionOnKnownRouters( connections, routingTable );
+            ClusterComposition composition = lookup( routingTable, connections );
             if ( composition != null )
             {
                 return composition;
@@ -78,11 +87,56 @@ public class Rediscovery
         }
     }
 
-    private ClusterComposition lookupClusterCompositionOnKnownRouters( ConnectionPool connections,
-            RoutingTable routingTable )
+    private ClusterComposition lookup( RoutingTable routingTable, ConnectionPool connections )
+    {
+        ClusterComposition composition;
+
+        if ( useInitialRouter )
+        {
+            composition = lookupOnInitialRouterThenOnKnownRouters( routingTable, connections );
+            useInitialRouter = false;
+        }
+        else
+        {
+            composition = lookupOnKnownRoutersThenOnInitialRouter( routingTable, connections );
+        }
+
+        if ( composition != null && !composition.hasWriters() )
+        {
+            useInitialRouter = true;
+        }
+
+        return composition;
+    }
+
+    private ClusterComposition lookupOnKnownRoutersThenOnInitialRouter( RoutingTable routingTable,
+            ConnectionPool connections )
+    {
+        Set<BoltServerAddress> seenServers = new HashSet<>();
+        ClusterComposition composition = lookupOnKnownRouters( routingTable, connections, seenServers );
+        if ( composition == null )
+        {
+            return lookupOnInitialRouter( routingTable, connections, seenServers );
+        }
+        return composition;
+    }
+
+    private ClusterComposition lookupOnInitialRouterThenOnKnownRouters( RoutingTable routingTable,
+            ConnectionPool connections )
+    {
+        Set<BoltServerAddress> seenServers = Collections.emptySet();
+        ClusterComposition composition = lookupOnInitialRouter( routingTable, connections, seenServers );
+        if ( composition == null )
+        {
+            return lookupOnKnownRouters( routingTable, connections, new HashSet<BoltServerAddress>() );
+        }
+        return composition;
+    }
+
+    private ClusterComposition lookupOnKnownRouters( RoutingTable routingTable, ConnectionPool connections,
+            Set<BoltServerAddress> seenServers )
     {
         int size = routingTable.routerSize();
-        Set<BoltServerAddress> triedServers = new HashSet<>();
         for ( int i = 0; i < size; i++ )
         {
             BoltServerAddress address = routingTable.nextRouter();
@@ -91,22 +145,28 @@ public class Rediscovery
                 break;
             }
 
-            ClusterComposition composition = lookupClusterCompositionOnRouter( address, connections, routingTable );
+            ClusterComposition composition = lookupOnRouter( address, routingTable, connections );
             if ( composition != null )
             {
                 return composition;
             }
             else
             {
-                triedServers.add( address );
+                seenServers.add( address );
             }
         }
 
+        return null;
+    }
+
+    private ClusterComposition lookupOnInitialRouter( RoutingTable routingTable,
+            ConnectionPool connections, Set<BoltServerAddress> triedServers )
+    {
         Set<BoltServerAddress> ips = hostNameResolver.resolve( initialRouter );
         ips.removeAll( triedServers );
         for ( BoltServerAddress address : ips )
         {
-            ClusterComposition composition = lookupClusterCompositionOnRouter( address, connections, routingTable );
+            ClusterComposition composition = lookupOnRouter( address, routingTable, connections );
             if ( composition != null )
             {
                 return composition;
@@ -116,8 +176,8 @@ public class Rediscovery
         return null;
     }
 
-    private ClusterComposition lookupClusterCompositionOnRouter( BoltServerAddress routerAddress,
-            ConnectionPool connections, RoutingTable routingTable )
+    private ClusterComposition lookupOnRouter( BoltServerAddress routerAddress, RoutingTable routingTable,
+            ConnectionPool connections )
     {
         ClusterCompositionResponse response;
         try ( Connection connection = connections.acquire( routerAddress ) )
@@ -139,11 +199,7 @@ public class Rediscovery
 
         ClusterComposition cluster = response.clusterComposition();
         logger.info( "Got cluster composition %s", cluster );
-        if ( cluster.hasWriters() )
-        {
-            return cluster;
-        }
-        return null;
+        return cluster;
     }
 
     private void sleep( long millis )

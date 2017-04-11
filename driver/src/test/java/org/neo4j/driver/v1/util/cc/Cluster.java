@@ -39,6 +39,7 @@ import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 
+import static java.util.Collections.unmodifiableSet;
 import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.v1.Config.TrustStrategy.trustAllCertificates;
 
@@ -101,6 +102,11 @@ public class Cluster
         return leader;
     }
 
+    public Set<ClusterMember> members()
+    {
+        return unmodifiableSet( members );
+    }
+
     public ClusterMember leader()
     {
         Set<ClusterMember> leaders = membersWithRole( ClusterMemberRole.LEADER );
@@ -139,7 +145,9 @@ public class Cluster
 
     public void startOfflineMembers()
     {
-        for ( ClusterMember member : offlineMembers )
+        // copy offline members to avoid ConcurrentModificationException
+        Set<ClusterMember> currentlyOfflineMembers = new HashSet<>( offlineMembers );
+        for ( ClusterMember member : currentlyOfflineMembers )
         {
             startNoWait( member );
         }
