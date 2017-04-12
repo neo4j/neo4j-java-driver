@@ -26,6 +26,7 @@ import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.util.FakeClock;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -180,5 +181,20 @@ public class ClusterRoutingTableTest
         assertEquals( C, routingTable.readers().next() );
         assertEquals( D, routingTable.readers().next() );
         assertEquals( B, routingTable.readers().next() );
+    }
+
+    @Test
+    public void shouldTreatOneRouterAsValid()
+    {
+        ClusterRoutingTable routingTable = new ClusterRoutingTable( new FakeClock() );
+
+        List<BoltServerAddress> routers = singletonList( A );
+        List<BoltServerAddress> writers = asList( B, C );
+        List<BoltServerAddress> readers = asList( D, E );
+
+        routingTable.update( createClusterComposition( routers, writers, readers ) );
+
+        assertFalse( routingTable.isStaleFor( READ ) );
+        assertFalse( routingTable.isStaleFor( WRITE ) );
     }
 }
