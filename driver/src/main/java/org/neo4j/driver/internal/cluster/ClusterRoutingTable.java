@@ -60,7 +60,7 @@ public class ClusterRoutingTable implements RoutingTable
     public boolean isStaleFor( AccessMode mode )
     {
         return expirationTimeout < clock.millis() ||
-               routers.size() <= MIN_ROUTERS ||
+               routers.size() < MIN_ROUTERS ||
                mode == AccessMode.READ && readers.size() == 0 ||
                mode == AccessMode.WRITE && writers.size() == 0;
     }

@@ -963,22 +963,7 @@ public class RoutingDriverBoltKitTest
             // start another router which knows about writes, use same address as the initial router
             router2 = StubServer.start( "acquire_endpoints.script", 9010 );
 
-            List<String> names = session.readTransaction( new TransactionWork<List<String>>()
-            {
-                @Override
-                public List<String> execute( Transaction tx )
-                {
-                    List<Record> records = tx.run( "MATCH (n) RETURN n.name" ).list();
-                    List<String> names = new ArrayList<>( records.size() );
-                    for ( Record record : records )
-                    {
-                        names.add( record.get( 0 ).asString() );
-                    }
-                    return names;
-                }
-            } );
-
-            assertEquals( asList( "Bob", "Alice", "Tina" ), names );
+            assertEquals( asList( "Bob", "Alice", "Tina" ), readStrings( "MATCH (n) RETURN n.name", session ) );
 
             StatementResult createResult = session.run( "CREATE (n {name:'Bob'})" );
             assertFalse( createResult.hasNext() );
@@ -990,6 +975,35 @@ public class RoutingDriverBoltKitTest
             assertEquals( 0, router2.exitStatus() );
             assertEquals( 0, reader.exitStatus() );
             assertEquals( 0, writer.exitStatus() );
+        }
+    }
+
+    @Test
+    public void shouldTreatRoutingTableWithSingleRouterAsValid() throws Exception
+    {
+        StubServer router = StubServer.start( "discover_one_router.script", 9010 );
+        StubServer reader1 = StubServer.start( "read_server.script", 9003 );
+        StubServer reader2 = StubServer.start( "read_server.script", 9004 );
+
+        try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9010", config );
+              Session session = driver.session( AccessMode.READ ) )
+        {
+            // returned routing table contains only one router, this should be fine and we should be able to
+            // read multiple times without additional rediscovery
+
+            StatementResult readResult1 = session.run( "MATCH (n) RETURN n.name" );
+            assertEquals( "127.0.0.1:9003", readResult1.summary().server().address() );
+            assertEquals( 3, readResult1.list().size() );
+
+            StatementResult readResult2 = session.run( "MATCH (n) RETURN n.name" );
+            assertEquals( "127.0.0.1:9004", readResult2.summary().server().address() );
+            assertEquals( 3, readResult2.list().size() );
+        }
+        finally
+        {
+            assertEquals( 0, router.exitStatus() );
+            assertEquals( 0, reader1.exitStatus() );
+            assertEquals( 0, reader2.exitStatus() );
         }
     }
 
