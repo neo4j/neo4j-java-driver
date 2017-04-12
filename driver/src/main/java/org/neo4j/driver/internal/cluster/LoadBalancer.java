@@ -29,8 +29,8 @@ import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
-import org.neo4j.driver.v1.exceptions.ProtocolException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 
 public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, AutoCloseable
 {
@@ -61,15 +61,14 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
         this.rediscovery = rediscovery;
         this.log = log;
 
-        // initialize the routing table
-        ensureRouting();
+        refreshRoutingTable();
     }
 
     @Override
     public PooledConnection acquireConnection( AccessMode mode )
     {
         RoundRobinAddressSet addressSet = addressSetFor( mode );
-        PooledConnection connection = acquireConnection( addressSet );
+        PooledConnection connection = acquireConnection( mode, addressSet );
         return new RoutingPooledConnection( connection, this, mode );
     }
 
@@ -91,26 +90,23 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
         connections.close();
     }
 
-    private PooledConnection acquireConnection( RoundRobinAddressSet servers ) throws ServiceUnavailableException
+    private PooledConnection acquireConnection( AccessMode mode, RoundRobinAddressSet servers )
     {
-        for ( ; ; )
+        ensureRouting( mode );
+        for ( BoltServerAddress address; (address = servers.next()) != null; )
         {
-            // refresh the routing table if needed
-            ensureRouting();
-            for ( BoltServerAddress address; (address = servers.next()) != null; )
+            try
             {
-                try
-                {
-                    return connections.acquire( address );
-                }
-                catch ( ServiceUnavailableException e )
-                {
-                    log.error( "Failed to obtain a connection towards address " + address, e );
-                    forget( address );
-                }
+                return connections.acquire( address );
             }
-            // if we get here, we failed to connect to any server, so we will rebuild the routing table
+            catch ( ServiceUnavailableException e )
+            {
+                log.error( "Failed to obtain a connection towards address " + address, e );
+                forget( address );
+            }
         }
+        throw new SessionExpiredException(
+                "Failed to obtain connection towards " + mode + " server. Known routing table is: " + routingTable );
     }
 
     private synchronized void forget( BoltServerAddress address )
@@ -121,23 +117,28 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
         connections.purge( address );
     }
 
-    synchronized void ensureRouting() throws ServiceUnavailableException, ProtocolException
+    synchronized void ensureRouting( AccessMode mode )
     {
-        if ( routingTable.isStale() )
+        if ( routingTable.isStaleFor( mode ) )
         {
-            log.info( "Routing information is stale. %s", routingTable );
-
-            // get a new routing table
-            ClusterComposition cluster = rediscovery.lookupClusterComposition( connections, routingTable );
-            Set<BoltServerAddress> removed = routingTable.update( cluster );
-            // purge connections to removed addresses
-            for ( BoltServerAddress address : removed )
-            {
-                connections.purge( address );
-            }
-
-            log.info( "Refreshed routing information. %s", routingTable );
+            refreshRoutingTable();
         }
+    }
+
+    synchronized void refreshRoutingTable()
+    {
+        log.info( "Routing information is stale. %s", routingTable );
+
+        // get a new routing table
+        ClusterComposition cluster = rediscovery.lookupClusterComposition( routingTable, connections );
+        Set<BoltServerAddress> removed = routingTable.update( cluster );
+        // purge connections to removed addresses
+        for ( BoltServerAddress address : removed )
+        {
+            connections.purge( address );
+        }
+
+        log.info( "Refreshed routing information. %s", routingTable );
     }
 
     private RoundRobinAddressSet addressSetFor( AccessMode mode )

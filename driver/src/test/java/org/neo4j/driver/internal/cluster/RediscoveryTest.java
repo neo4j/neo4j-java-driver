@@ -26,7 +26,6 @@ import org.junit.runners.Parameterized.Parameters;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -36,6 +35,7 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.util.Clock;
+import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.exceptions.ProtocolException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
@@ -59,8 +59,8 @@ import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.B;
 import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.C;
 import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.D;
 import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.E;
+import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.EMPTY;
 import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.F;
-import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.INVALID_CLUSTER_COMPOSITION;
 import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.VALID_CLUSTER_COMPOSITION;
 import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.createClusterComposition;
 import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
@@ -102,15 +102,14 @@ public class RediscoveryTest
             RoutingTable routingTable = new TestRoutingTable( A );
 
             ClusterCompositionProvider mockedProvider = mock( ClusterCompositionProvider.class );
-            when( mockedProvider.getClusterComposition( any( Connection.class ) ) )
-                    .thenReturn( success( INVALID_CLUSTER_COMPOSITION ) );
+            when( mockedProvider.getClusterComposition( any( Connection.class ) ) ).thenThrow( new RuntimeException() );
 
             Rediscovery rediscovery = new Rediscovery( A, settings, clock, DEV_NULL_LOGGER, mockedProvider, directMapProvider );
 
             // when
             try
             {
-                rediscovery.lookupClusterComposition( mock( ConnectionPool.class ), routingTable );
+                rediscovery.lookupClusterComposition( routingTable, mock( ConnectionPool.class ) );
                 fail("Should fail as failed to discovery");
             }
             catch( ServiceUnavailableException e )
@@ -191,10 +190,10 @@ public class RediscoveryTest
         @Parameters(name = "Rediscovery result: {0}")
         public static Collection<Object[]> data() {
             return asList(new Object[][] {
-                    { "([A], [C], [])", createClusterComposition( asList( A ), ClusterCompositionUtil.EMPTY, asList( C ) ) },
-                    { "([A], [CD], [])", createClusterComposition( asList( A ), ClusterCompositionUtil.EMPTY, asList( C, D ) ) },
-                    { "([AB], [C], [])", createClusterComposition( asList( A, B ), ClusterCompositionUtil.EMPTY, asList( C ) ) },
-                    { "([AB], [CD], [])", createClusterComposition( asList( A, B ), ClusterCompositionUtil.EMPTY, asList( C, D ) )}
+                    {"([A], [C], [])", createClusterComposition( asList( A ), EMPTY, asList( C ) )},
+                    {"([A], [CD], [])", createClusterComposition( asList( A ), EMPTY, asList( C, D ) )},
+                    {"([AB], [C], [])", createClusterComposition( asList( A, B ), EMPTY, asList( C ) )},
+                    {"([AB], [CD], [])", createClusterComposition( asList( A, B ), EMPTY, asList( C, D ) )}
             });
         }
 
@@ -206,32 +205,7 @@ public class RediscoveryTest
         }
 
         @Test
-        public void shouldTryNextRouterWhenNoWriters() throws Throwable
-        {
-            // Given
-            RoutingTable routingTable = new TestRoutingTable( A, B );
-
-            PooledConnection noWriterConn = mock( PooledConnection.class );
-            PooledConnection healthyConn = mock( PooledConnection.class );
-            ConnectionPool mockedConnections = mock( ConnectionPool.class );
-            when( mockedConnections.acquire( A ) ).thenReturn( noWriterConn );
-            when( mockedConnections.acquire( B ) ).thenReturn( healthyConn );
-
-            ClusterCompositionProvider
-                    mockedProvider = mock( ClusterCompositionProvider.class );
-            when( mockedProvider.getClusterComposition( noWriterConn ) ).thenReturn( success( noWriters ) );
-            when( mockedProvider.getClusterComposition( healthyConn ) )
-                    .thenReturn( success( VALID_CLUSTER_COMPOSITION ) );
-
-            // When
-            ClusterComposition clusterComposition = rediscover( mockedConnections, routingTable, mockedProvider );
-
-            // Then
-            assertThat( clusterComposition, equalTo( VALID_CLUSTER_COMPOSITION ) );
-        }
-
-        @Test
-        public void shouldThrowServiceUnavailableWhenNoNextRouter() throws Throwable
+        public void shouldAcceptTableWithoutWriters() throws Throwable
         {
             // Given
             RoutingTable routingTable = new TestRoutingTable( A );
@@ -240,21 +214,45 @@ public class RediscoveryTest
             ConnectionPool mockedConnections = mock( ConnectionPool.class );
             when( mockedConnections.acquire( A ) ).thenReturn( noWriterConn );
 
-            ClusterCompositionProvider
-                    mockedProvider = mock( ClusterCompositionProvider.class );
+            ClusterCompositionProvider mockedProvider = mock( ClusterCompositionProvider.class );
             when( mockedProvider.getClusterComposition( noWriterConn ) ).thenReturn( success( noWriters ) );
 
-            // When & THen
-            try
-            {
-                rediscover( A, mockedConnections, routingTable, mockedProvider );
-                fail( "Expecting a failure but not triggered." );
-            }
-            catch( Exception e )
-            {
-                assertThat( e, instanceOf( ServiceUnavailableException.class ) );
-                assertThat( e.getMessage(), startsWith( "Could not perform discovery. No routing servers available." ) );
-            }
+            // When
+            ClusterComposition clusterComposition = rediscover( mockedConnections, routingTable, mockedProvider );
+
+            // Then
+            assertThat( clusterComposition, equalTo( noWriters ) );
+        }
+
+        @Test
+        public void shouldUseInitialRouterWhenRediscoveringAfterNoWriters() throws Throwable
+        {
+            // Given
+            RoutingTable routingTable = new TestRoutingTable( A, B, C );
+
+            PooledConnection noWriterConn = mock( PooledConnection.class );
+            PooledConnection initialRouterConn = mock( PooledConnection.class );
+            ConnectionPool mockedConnections = mock( ConnectionPool.class );
+            when( mockedConnections.acquire( A ) ).thenReturn( noWriterConn );
+            when( mockedConnections.acquire( B ) ).thenReturn( noWriterConn );
+            when( mockedConnections.acquire( C ) ).thenReturn( noWriterConn );
+            when( mockedConnections.acquire( F ) ).thenReturn( initialRouterConn );
+
+            ClusterCompositionProvider mockedProvider = mock( ClusterCompositionProvider.class );
+            when( mockedProvider.getClusterComposition( noWriterConn ) ).thenReturn( success( noWriters ) );
+            when( mockedProvider.getClusterComposition( initialRouterConn ) )
+                    .thenReturn( success( VALID_CLUSTER_COMPOSITION ) );
+
+            Rediscovery rediscovery = new Rediscovery( F, new RoutingSettings( 1, 0 ), new FakeClock(),
+                    DEV_NULL_LOGGER, mockedProvider, directMapProvider );
+
+            // first rediscovery should accept table with no writers
+            ClusterComposition composition1 = rediscovery.lookupClusterComposition( routingTable, mockedConnections );
+            // second rediscovery should ask initial router because previous routing table had no writers
+            ClusterComposition composition2 = rediscovery.lookupClusterComposition( routingTable, mockedConnections );
+
+            assertEquals( noWriters, composition1 );
+            assertEquals( VALID_CLUSTER_COMPOSITION, composition2 );
         }
     }
 
@@ -307,7 +305,7 @@ public class RediscoveryTest
     public static class IllegalResponseTest
     {
         @Test
-        public void shouldProtocolErrorWhenFailedToPaseClusterCompositin() throws Throwable
+        public void shouldProtocolErrorWhenFailedToParseClusterComposition() throws Throwable
         {
             // Given
             RoutingTable routingTable = new TestRoutingTable( A );
@@ -468,7 +466,7 @@ public class RediscoveryTest
 
         Rediscovery rediscovery = new Rediscovery( initialRouter, settings, mockedClock, mockedLogger, provider,
                 directMapProvider );
-        return rediscovery.lookupClusterComposition( connections, routingTable );
+        return rediscovery.lookupClusterComposition( routingTable, connections );
     }
 
     private static class TestRoutingTable extends ClusterRoutingTable

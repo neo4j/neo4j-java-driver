@@ -97,9 +97,10 @@ public class RoutingPooledConnectionErrorHandlingTest
     {
         ServiceUnavailableException serviceUnavailable = new ServiceUnavailableException( "Oh!" );
         Connector connector = newConnectorWithThrowingConnections( serviceUnavailable );
-        RoutingTable routingTable = newRoutingTable( ADDRESS1, ADDRESS2, ADDRESS3 );
+        ClusterComposition clusterComposition = newClusterComposition( ADDRESS1, ADDRESS2, ADDRESS3 );
+        RoutingTable routingTable = newRoutingTable( clusterComposition );
         ConnectionPool connectionPool = newConnectionPool( connector, ADDRESS1, ADDRESS2, ADDRESS3 );
-        LoadBalancer loadBalancer = newLoadBalancer( routingTable, connectionPool );
+        LoadBalancer loadBalancer = newLoadBalancer( clusterComposition, routingTable, connectionPool );
 
         Connection readConnection = loadBalancer.acquireConnection( READ );
         verifyServiceUnavailableHandling( readConnection, routingTable, connectionPool );
@@ -141,9 +142,10 @@ public class RoutingPooledConnectionErrorHandlingTest
     private void testHandleFailureToWriteWithWriteConnection( ClientException error )
     {
         Connector connector = newConnectorWithThrowingConnections( error );
-        RoutingTable routingTable = newRoutingTable( ADDRESS1, ADDRESS2, ADDRESS3 );
+        ClusterComposition clusterComposition = newClusterComposition( ADDRESS1, ADDRESS2, ADDRESS3 );
+        RoutingTable routingTable = newRoutingTable( clusterComposition );
         ConnectionPool connectionPool = newConnectionPool( connector, ADDRESS1, ADDRESS2, ADDRESS3 );
-        LoadBalancer loadBalancer = newLoadBalancer( routingTable, connectionPool );
+        LoadBalancer loadBalancer = newLoadBalancer( clusterComposition, routingTable, connectionPool );
 
         Connection readConnection = loadBalancer.acquireConnection( READ );
         try
@@ -169,9 +171,10 @@ public class RoutingPooledConnectionErrorHandlingTest
     private void testHandleFailureToWrite( ClientException error )
     {
         Connector connector = newConnectorWithThrowingConnections( error );
-        RoutingTable routingTable = newRoutingTable( ADDRESS1, ADDRESS2, ADDRESS3 );
+        ClusterComposition clusterComposition = newClusterComposition( ADDRESS1, ADDRESS2, ADDRESS3 );
+        RoutingTable routingTable = newRoutingTable( clusterComposition );
         ConnectionPool connectionPool = newConnectionPool( connector, ADDRESS1, ADDRESS2, ADDRESS3 );
-        LoadBalancer loadBalancer = newLoadBalancer( routingTable, connectionPool );
+        LoadBalancer loadBalancer = newLoadBalancer( clusterComposition, routingTable, connectionPool );
 
         Connection readConnection = loadBalancer.acquireConnection( WRITE );
         try
@@ -197,9 +200,10 @@ public class RoutingPooledConnectionErrorHandlingTest
     private void testThrowablePropagation( Throwable error )
     {
         Connector connector = newConnectorWithThrowingConnections( error );
-        RoutingTable routingTable = newRoutingTable( ADDRESS1, ADDRESS2, ADDRESS3 );
+        ClusterComposition clusterComposition = newClusterComposition( ADDRESS1, ADDRESS2, ADDRESS3 );
+        RoutingTable routingTable = newRoutingTable( clusterComposition );
         ConnectionPool connectionPool = newConnectionPool( connector, ADDRESS1, ADDRESS2, ADDRESS3 );
-        LoadBalancer loadBalancer = newLoadBalancer( routingTable, connectionPool );
+        LoadBalancer loadBalancer = newLoadBalancer( clusterComposition, routingTable, connectionPool );
 
         Connection readConnection = loadBalancer.acquireConnection( READ );
         verifyThrowablePropagation( readConnection, routingTable, connectionPool, error.getClass() );
@@ -276,17 +280,19 @@ public class RoutingPooledConnectionErrorHandlingTest
         return connection;
     }
 
-    private static RoutingTable newRoutingTable( BoltServerAddress... addresses )
+    private static ClusterComposition newClusterComposition( BoltServerAddress... addresses )
     {
-        ClusterComposition clusterComposition = new ClusterComposition(
+        return new ClusterComposition(
                 Long.MAX_VALUE,
                 new HashSet<>( asList( addresses ) ),
                 new HashSet<>( asList( addresses ) ),
                 new HashSet<>( asList( addresses ) ) );
+    }
 
+    private static RoutingTable newRoutingTable( ClusterComposition clusterComposition )
+    {
         RoutingTable routingTable = new ClusterRoutingTable( Clock.SYSTEM );
         routingTable.update( clusterComposition );
-
         return routingTable;
     }
 
@@ -313,9 +319,12 @@ public class RoutingPooledConnectionErrorHandlingTest
         return pool;
     }
 
-    private static LoadBalancer newLoadBalancer( RoutingTable routingTable, ConnectionPool connectionPool )
+    private static LoadBalancer newLoadBalancer( ClusterComposition clusterComposition, RoutingTable routingTable,
+            ConnectionPool connectionPool )
     {
-        return new LoadBalancer( connectionPool, routingTable, mock( Rediscovery.class ), DEV_NULL_LOGGER );
+        Rediscovery rediscovery = mock( Rediscovery.class );
+        when( rediscovery.lookupClusterComposition( routingTable, connectionPool ) ).thenReturn( clusterComposition );
+        return new LoadBalancer( connectionPool, routingTable, rediscovery, DEV_NULL_LOGGER );
     }
 
     private interface ConnectionMethod

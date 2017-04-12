@@ -25,6 +25,7 @@ import java.util.Set;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.util.Clock;
+import org.neo4j.driver.v1.AccessMode;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
@@ -34,7 +35,7 @@ public class ClusterRoutingTable implements RoutingTable
     private static final int MIN_ROUTERS = 1;
 
     private final Clock clock;
-    private long expirationTimeout;
+    private volatile long expirationTimeout;
     private final RoundRobinAddressSet readers;
     private final RoundRobinAddressSet writers;
     private final RoundRobinAddressSet routers;
@@ -56,12 +57,12 @@ public class ClusterRoutingTable implements RoutingTable
     }
 
     @Override
-    public boolean isStale()
+    public boolean isStaleFor( AccessMode mode )
     {
-        return expirationTimeout < clock.millis() || // the expiration timeout has been reached
-               routers.size() <= MIN_ROUTERS || // we need to discover more routing servers
-               readers.size() == 0 || // we need to discover more read servers
-               writers.size() == 0; // we need to discover more write servers
+        return expirationTimeout < clock.millis() ||
+               routers.size() <= MIN_ROUTERS ||
+               mode == AccessMode.READ && readers.size() == 0 ||
+               mode == AccessMode.WRITE && writers.size() == 0;
     }
 
     @Override
@@ -115,7 +116,7 @@ public class ClusterRoutingTable implements RoutingTable
 
 
     @Override
-    public String toString()
+    public synchronized String toString()
     {
         return format( "Ttl %s, currentTime %s, routers %s, writers %s, readers %s",
                 expirationTimeout, clock.millis(), routers, writers, readers );

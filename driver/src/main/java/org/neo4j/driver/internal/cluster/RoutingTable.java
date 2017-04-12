@@ -21,10 +21,11 @@ package org.neo4j.driver.internal.cluster;
 import java.util.Set;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.v1.AccessMode;
 
 public interface RoutingTable
 {
-    boolean isStale();
+    boolean isStaleFor( AccessMode mode );
 
     Set<BoltServerAddress> update( ClusterComposition cluster );
 

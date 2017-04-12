@@ -20,7 +20,7 @@
 package org.neo4j.driver.internal.cluster;
 
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -60,9 +60,9 @@ public final class ClusterCompositionUtil
     public static ClusterComposition createClusterComposition( long expirationTimestamp, List<BoltServerAddress>...
             servers )
     {
-        Set<BoltServerAddress> routers = new HashSet<>();
-        Set<BoltServerAddress> writers = new HashSet<>();
-        Set<BoltServerAddress> readers = new HashSet<>();
+        Set<BoltServerAddress> routers = new LinkedHashSet<>();
+        Set<BoltServerAddress> writers = new LinkedHashSet<>();
+        Set<BoltServerAddress> readers = new LinkedHashSet<>();
 
         switch( servers.length )
         {

@@ -24,7 +24,7 @@ import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
@@ -43,6 +43,7 @@ import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.TransactionWork;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
@@ -50,9 +51,12 @@ import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.util.StubServer;
 
+import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -87,7 +91,7 @@ public class RoutingDriverBoltKitTest
                 }
             } );
 
-            assertThat( result, equalTo( Arrays.asList( "Bob", "Alice", "Tina" ) ) );
+            assertThat( result, equalTo( asList( "Bob", "Alice", "Tina" ) ) );
 
         }
         // Finally
@@ -118,7 +122,7 @@ public class RoutingDriverBoltKitTest
                 }
             } );
 
-            assertThat( result, equalTo( Arrays.asList( "Bob", "Alice", "Tina" ) ) );
+            assertThat( result, equalTo( asList( "Bob", "Alice", "Tina" ) ) );
 
         }
         // Finally
@@ -150,7 +154,7 @@ public class RoutingDriverBoltKitTest
                         {
                             return record.get( "n.name" ).asString();
                         }
-                    } ), equalTo( Arrays.asList( "Bob", "Alice", "Tina" ) ) );
+                    } ), equalTo( asList( "Bob", "Alice", "Tina" ) ) );
                 }
             }
         }
@@ -186,7 +190,7 @@ public class RoutingDriverBoltKitTest
                         {
                             return record.get( "n.name" ).asString();
                         }
-                    } ), equalTo( Arrays.asList( "Bob", "Alice", "Tina" ) ) );
+                    } ), equalTo( asList( "Bob", "Alice", "Tina" ) ) );
                 }
             }
         }
@@ -842,10 +846,8 @@ public class RoutingDriverBoltKitTest
                 assertEquals( 0, router.exitStatus() );
                 router = StubServer.start( "rediscover_using_initial_router.script", 9010 );
 
-                List<Record> records = session.run( "MATCH (n) RETURN n.name AS name" ).list();
-                assertEquals( 2, records.size() );
-                assertEquals( "Bob", records.get( 0 ).get( "name" ).asString() );
-                assertEquals( "Alice", records.get( 1 ).get( "name" ).asString() );
+                List<String> names = readStrings( "MATCH (n) RETURN n.name AS name", session );
+                assertEquals( asList( "Bob", "Alice" ), names );
             }
         }
 
@@ -915,6 +917,82 @@ public class RoutingDriverBoltKitTest
         }
     }
 
+    @Test
+    public void shouldServeReadsButFailWritesWhenNoWritersAvailable() throws Exception
+    {
+        StubServer router1 = StubServer.start( "discover_no_writers.script", 9010 );
+        StubServer router2 = StubServer.start( "discover_no_writers.script", 9004 );
+        StubServer reader = StubServer.start( "read_server.script", 9003 );
+
+        try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9010", config );
+              Session session = driver.session() )
+        {
+            assertEquals( asList( "Bob", "Alice", "Tina" ), readStrings( "MATCH (n) RETURN n.name", session ) );
+
+            try
+            {
+                session.run( "CREATE (n {name:'Bob'})" ).consume();
+                fail( "Exception expected" );
+            }
+            catch ( Exception e )
+            {
+                assertThat( e, instanceOf( SessionExpiredException.class ) );
+            }
+        }
+        finally
+        {
+            assertEquals( 0, router1.exitStatus() );
+            assertEquals( 0, router2.exitStatus() );
+            assertEquals( 0, reader.exitStatus() );
+        }
+    }
+
+    @Test
+    public void shouldAcceptRoutingTableWithoutWritersAndThenRediscover() throws Exception
+    {
+        // first router does not have itself in the resulting routing table so connection
+        // towards it will be closed after rediscovery
+        StubServer router1 = StubServer.start( "discover_no_writers.script", 9010 );
+        StubServer router2 = null;
+        StubServer reader = StubServer.start( "read_server.script", 9003 );
+        StubServer writer = StubServer.start( "write_server.script", 9007 );
+
+        try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9010", config );
+              Session session = driver.session() )
+        {
+            // start another router which knows about writes, use same address as the initial router
+            router2 = StubServer.start( "acquire_endpoints.script", 9010 );
+
+            List<String> names = session.readTransaction( new TransactionWork<List<String>>()
+            {
+                @Override
+                public List<String> execute( Transaction tx )
+                {
+                    List<Record> records = tx.run( "MATCH (n) RETURN n.name" ).list();
+                    List<String> names = new ArrayList<>( records.size() );
+                    for ( Record record : records )
+                    {
+                        names.add( record.get( 0 ).asString() );
+                    }
+                    return names;
+                }
+            } );
+
+            assertEquals( asList( "Bob", "Alice", "Tina" ), names );
+
+            StatementResult createResult = session.run( "CREATE (n {name:'Bob'})" );
+            assertFalse( createResult.hasNext() );
+        }
+        finally
+        {
+            assertEquals( 0, router1.exitStatus() );
+            assertNotNull( router2 );
+            assertEquals( 0, router2.exitStatus() );
+            assertEquals( 0, reader.exitStatus() );
+            assertEquals( 0, writer.exitStatus() );
+        }
+    }
+
     private static Driver newDriverWithSleeplessClock( String uriString )
     {
         DriverFactory driverFactory = new DriverFactoryWithClock( new SleeplessClock() );
@@ -946,5 +1024,23 @@ public class RoutingDriverBoltKitTest
                 return tx.run( query ).list();
             }
         };
+    }
+
+    private static List<String> readStrings( final String query, Session session )
+    {
+        return session.readTransaction( new TransactionWork<List<String>>()
+        {
+            @Override
+            public List<String> execute( Transaction tx )
+            {
+                List<Record> records = tx.run( query ).list();
+                List<String> names = new ArrayList<>( records.size() );
+                for ( Record record : records )
+                {
+                    names.add( record.get( 0 ).asString() );
+                }
+                return names;
+            }
+        } );
     }
 }

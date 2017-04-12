@@ -19,6 +19,7 @@
 package org.neo4j.driver.v1.util.cc;
 
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashSet;
@@ -55,7 +56,7 @@ final class SharedCluster
     static void install( String neo4jVersion, int cores, int readReplicas, String password, int port, Path path )
     {
         assertClusterDoesNotExist();
-        if( path.toFile().exists() )
+        if ( Files.isDirectory( path ) )
         {
             debug( "Found and using cluster installed at `%s`.", path );
         }

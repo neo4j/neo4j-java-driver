@@ -1,6 +1,9 @@
 !: AUTO INIT
 !: AUTO RESET
 !: AUTO PULL_ALL
+!: AUTO RUN "BEGIN" {}
+!: AUTO RUN "COMMIT" {}
+!: AUTO RUN "ROLLBACK" {}
 
 C: RUN "CALL dbms.cluster.routing.getServers" {}
    PULL_ALL

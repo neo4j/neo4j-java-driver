@@ -69,7 +69,7 @@ public class SocketConnectionPool implements ConnectionPool
     }
 
     @Override
-    public PooledConnection acquire( final BoltServerAddress address )
+    public PooledConnection acquire( BoltServerAddress address )
     {
         assertNotClosed();
         BlockingPooledConnectionQueue connectionQueue = pool( address );

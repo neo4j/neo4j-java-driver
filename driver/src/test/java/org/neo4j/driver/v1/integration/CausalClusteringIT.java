@@ -44,7 +44,9 @@ import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.v1.TransactionWork;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
@@ -53,6 +55,7 @@ import org.neo4j.driver.v1.exceptions.TransientException;
 import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.util.cc.Cluster;
 import org.neo4j.driver.v1.util.cc.ClusterMember;
+import org.neo4j.driver.v1.util.cc.ClusterMemberRole;
 import org.neo4j.driver.v1.util.cc.ClusterRule;
 
 import static org.hamcrest.Matchers.containsString;
@@ -343,6 +346,98 @@ public class CausalClusteringIT
         }
     }
 
+    @Test
+    public void shouldNotServeWritesWhenMajorityOfCoresAreDead() throws Exception
+    {
+        Cluster cluster = clusterRule.getCluster();
+        ClusterMember leader = cluster.leader();
+
+        try ( Driver driver = createDriver( leader.getRoutingUri() ) )
+        {
+            for ( ClusterMember follower : cluster.followers() )
+            {
+                cluster.kill( follower );
+            }
+            awaitLeaderToStepDown( driver );
+
+            // now we should be unable to write because majority of cores is down
+            for ( int i = 0; i < 10; i++ )
+            {
+                try ( Session session = driver.session( AccessMode.WRITE ) )
+                {
+                    session.run( "CREATE (p:Person {name: 'Gamora'})" ).consume();
+                    fail( "Exception expected" );
+                }
+                catch ( Exception e )
+                {
+                    assertThat( e, instanceOf( SessionExpiredException.class ) );
+                }
+            }
+        }
+    }
+
+    @Test
+    public void shouldServeReadsWhenMajorityOfCoresAreDead() throws Exception
+    {
+        Cluster cluster = clusterRule.getCluster();
+        ClusterMember leader = cluster.leader();
+
+        try ( Driver driver = createDriver( leader.getRoutingUri() ) )
+        {
+            String bookmark;
+            try ( Session session = driver.session() )
+            {
+                int writeResult = session.writeTransaction( new TransactionWork<Integer>()
+                {
+                    @Override
+                    public Integer execute( Transaction tx )
+                    {
+                        StatementResult result = tx.run( "CREATE (:Person {name: 'Star Lord'}) RETURN 42" );
+                        return result.single().get( 0 ).asInt();
+                    }
+                } );
+
+                assertEquals( 42, writeResult );
+                bookmark = session.lastBookmark();
+            }
+
+            ensureNodeVisible( cluster, "Star Lord", bookmark );
+
+            for ( ClusterMember follower : cluster.followers() )
+            {
+                cluster.kill( follower );
+            }
+            awaitLeaderToStepDown( driver );
+
+            // now we should be unable to write because majority of cores is down
+            try ( Session session = driver.session( AccessMode.WRITE ) )
+            {
+                session.run( "CREATE (p:Person {name: 'Gamora'})" ).consume();
+                fail( "Exception expected" );
+            }
+            catch ( Exception e )
+            {
+                assertThat( e, instanceOf( SessionExpiredException.class ) );
+            }
+
+            // but we should be able to read from the remaining core or read replicas
+            try ( Session session = driver.session() )
+            {
+                int count = session.readTransaction( new TransactionWork<Integer>()
+                {
+                    @Override
+                    public Integer execute( Transaction tx )
+                    {
+                        StatementResult result = tx.run( "MATCH (:Person {name: 'Star Lord'}) RETURN count(*)" );
+                        return result.single().get( 0 ).asInt();
+                    }
+                } );
+
+                assertEquals( 1, count );
+            }
+        }
+    }
+
     private int executeWriteAndReadThroughBolt( ClusterMember member ) throws TimeoutException, InterruptedException
     {
         try ( Driver driver = createDriver( member.getRoutingUri() ) )
@@ -410,6 +505,73 @@ public class CausalClusteringIT
         while ( System.currentTimeMillis() < endTime );
 
         throw new TimeoutException( "Transaction did not succeed in time" );
+    }
+
+    private void ensureNodeVisible( Cluster cluster, String name, String bookmark )
+    {
+        for ( ClusterMember member : cluster.members() )
+        {
+            int count = countNodesUsingDirectDriver( member.getBoltUri(), name, bookmark );
+            assertEquals( 1, count );
+        }
+    }
+
+    private int countNodesUsingDirectDriver( URI boltUri, final String name, String bookmark )
+    {
+        try ( Driver driver = createDriver( boltUri );
+              Session session = driver.session( bookmark ) )
+        {
+            return session.readTransaction( new TransactionWork<Integer>()
+            {
+                @Override
+                public Integer execute( Transaction tx )
+                {
+                    StatementResult result = tx.run( "MATCH (:Person {name: {name}}) RETURN count(*)",
+                            parameters( "name", name ) );
+                    return result.single().get( 0 ).asInt();
+                }
+            } );
+        }
+    }
+
+    private void awaitLeaderToStepDown( Driver driver )
+    {
+        int leadersCount;
+        int followersCount;
+        int readReplicasCount;
+        do
+        {
+            try ( Session session = driver.session() )
+            {
+                int newLeadersCount = 0;
+                int newFollowersCount = 0;
+                int newReadReplicasCount = 0;
+                for ( Record record : session.run( "CALL dbms.cluster.overview" ).list() )
+                {
+                    ClusterMemberRole role = ClusterMemberRole.valueOf( record.get( "role" ).asString() );
+                    if ( role == ClusterMemberRole.LEADER )
+                    {
+                        newLeadersCount++;
+                    }
+                    else if ( role == ClusterMemberRole.FOLLOWER )
+                    {
+                        newFollowersCount++;
+                    }
+                    else if ( role == ClusterMemberRole.READ_REPLICA )
+                    {
+                        newReadReplicasCount++;
+                    }
+                    else
+                    {
+                        throw new AssertionError( "Unknown role: " + role );
+                    }
+                }
+                leadersCount = newLeadersCount;
+                followersCount = newFollowersCount;
+                readReplicasCount = newReadReplicasCount;
+            }
+        }
+        while ( !(leadersCount == 0 && followersCount == 1 && readReplicasCount == 2) );
     }
 
     private Driver createDriver( URI boltUri )
