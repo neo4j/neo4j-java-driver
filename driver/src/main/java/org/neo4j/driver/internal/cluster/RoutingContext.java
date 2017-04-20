@@ -51,6 +51,12 @@ public class RoutingContext
         return context;
     }
 
+    @Override
+    public String toString()
+    {
+        return "RoutingContext" + context;
+    }
+
     private static Map<String,String> parseParameters( URI uri )
     {
         String query = uri.getQuery();
@@ -71,8 +77,12 @@ public class RoutingContext
                         "Invalid parameters: '" + pair + "' in URI '" + uri + "'" );
             }
 
-            String key = keyValue[0];
-            String value = keyValue[1];
+            String key = trimAndVerify( keyValue[0], "key", uri );
+            String value = trimAndVerify( keyValue[1], "value", uri );
+            if ( value.isEmpty() )
+            {
+                throw new IllegalArgumentException( "Illegal empty value in URI query '" + uri + "'" );
+            }
             String previousValue = parameters.put( key, value );
 
             if ( previousValue != null )
@@ -82,5 +92,15 @@ public class RoutingContext
             }
         }
         return parameters;
+    }
+
+    private static String trimAndVerify( String string, String name, URI uri )
+    {
+        String result = string.trim();
+        if ( result.isEmpty() )
+        {
+            throw new IllegalArgumentException( "Illegal empty " + name + " in URI query '" + uri + "'" );
+        }
+        return result;
     }
 }
