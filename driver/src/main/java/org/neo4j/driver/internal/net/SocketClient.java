@@ -203,7 +203,7 @@ public class SocketClient
             }
             else
             {
-                logger.warn( "Unable to close socket connection properly: '" + e.getMessage() + "'", e );
+                logger.error( "Unable to close socket connection properly", e );
             }
         }
     }
