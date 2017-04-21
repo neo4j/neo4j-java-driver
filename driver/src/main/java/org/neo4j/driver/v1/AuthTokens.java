@@ -76,6 +76,7 @@ public class AuthTokens
     {
         return new InternalAuthToken( parameters(
                 "scheme", "kerberos",
+                "principal", "", //This empty string is required for backwards compatibility.
                 "credentials", base64EncodedTicket).asMap( Values.ofValue() ) );
     }
 
