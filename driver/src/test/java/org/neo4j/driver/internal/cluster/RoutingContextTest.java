@@ -49,11 +49,14 @@ public class RoutingContextTest
     @Test
     public void uriWithoutQueryIsParsedToEmptyContext()
     {
-        URI uri = URI.create( "bolt+routing://localhost:7687/" );
-        RoutingContext context = new RoutingContext( uri );
+        testEmptyRoutingContext( URI.create( "bolt+routing://localhost:7687/" ) );
+    }
 
-        assertFalse( context.isDefined() );
-        assertTrue( context.asMap().isEmpty() );
+    @Test
+    public void uriWithEmptyQueryIsParsedToEmptyContext()
+    {
+        testEmptyRoutingContext( URI.create( "bolt+routing://localhost:7687?" ) );
+        testEmptyRoutingContext( URI.create( "bolt+routing://localhost:7687/?" ) );
     }
 
     @Test
@@ -73,33 +76,25 @@ public class RoutingContextTest
     @Test
     public void throwsForInvalidUriQuery()
     {
-        URI uri = URI.create( "bolt+routing://localhost:7687/?justKey" );
+        testIllegalUri( URI.create( "bolt+routing://localhost:7687/?justKey" ) );
+    }
 
-        try
-        {
-            new RoutingContext( uri );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( IllegalArgumentException.class ) );
-        }
+    @Test
+    public void throwsForInvalidUriQueryKey()
+    {
+        testIllegalUri( URI.create( "bolt+routing://localhost:7687/?=value1&key2=value2" ) );
+    }
+
+    @Test
+    public void throwsForInvalidUriQueryValue()
+    {
+        testIllegalUri( URI.create( "bolt+routing://localhost:7687/key1?=value1&key2=" ) );
     }
 
     @Test
     public void throwsForDuplicatedUriQueryParameters()
     {
-        URI uri = URI.create( "bolt+routing://localhost:7687/?key1=value1&key2=value2&key1=value2" );
-
-        try
-        {
-            new RoutingContext( uri );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( IllegalArgumentException.class ) );
-        }
+        testIllegalUri( URI.create( "bolt+routing://localhost:7687/?key1=value1&key2=value2&key1=value2" ) );
     }
 
     @Test
@@ -121,5 +116,26 @@ public class RoutingContextTest
         }
 
         assertEquals( singletonMap( "key1", "value1" ), context.asMap() );
+    }
+
+    private static void testIllegalUri( URI uri )
+    {
+        try
+        {
+            new RoutingContext( uri );
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( IllegalArgumentException.class ) );
+        }
+    }
+
+    private static void testEmptyRoutingContext( URI uri )
+    {
+        RoutingContext context = new RoutingContext( uri );
+
+        assertFalse( context.isDefined() );
+        assertTrue( context.asMap().isEmpty() );
     }
 }
