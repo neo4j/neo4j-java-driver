@@ -98,4 +98,16 @@ public class AuthTokensTest
         assertThat( map.get( "realm" ), equalTo( (Value) new StringValue( "baz" ) ) );
         assertThat( map.get( "parameters" ), equalTo( (Value) new MapValue( expectedParameters ) ) );
     }
+
+    @Test
+    public void basicKerberosAuthWithRealm()
+    {
+        InternalAuthToken token = (InternalAuthToken) AuthTokens.kerberos( "base64" );
+        Map<String,Value> map = token.toMap();
+
+        assertThat( map.size(), equalTo( 3 ) );
+        assertThat( map.get( "scheme" ), equalTo( (Value) new StringValue( "kerberos" ) ) );
+        assertThat( map.get( "principal" ), equalTo( (Value) new StringValue( "" ) ) );
+        assertThat( map.get( "credentials" ), equalTo( (Value) new StringValue( "base64" ) ) );
+    }
 }
