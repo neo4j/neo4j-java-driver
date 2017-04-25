@@ -79,12 +79,8 @@ public class RoutingContext
 
             String key = trimAndVerify( keyValue[0], "key", uri );
             String value = trimAndVerify( keyValue[1], "value", uri );
-            if ( value.isEmpty() )
-            {
-                throw new IllegalArgumentException( "Illegal empty value in URI query '" + uri + "'" );
-            }
-            String previousValue = parameters.put( key, value );
 
+            String previousValue = parameters.put( key, value );
             if ( previousValue != null )
             {
                 throw new IllegalArgumentException(
