@@ -446,7 +446,7 @@ public class ExponentialBackoffRetryLogicTest
 
         retry( logic, retries );
 
-        verify( logger, times( retries ) ).warn(
+        verify( logger, times( retries ) ).error(
                 startsWith( "Transaction failed and will be retried" ),
                 any( ServiceUnavailableException.class )
         );

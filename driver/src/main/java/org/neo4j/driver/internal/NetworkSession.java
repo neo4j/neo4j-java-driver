@@ -160,7 +160,7 @@ public class NetworkSession implements Session, SessionResourcesHandler
                 }
                 catch ( Throwable e )
                 {
-                    logger.warn( "Failed to close transaction", e );
+                    logger.error( "Failed to close transaction", e );
                 }
             }
         }

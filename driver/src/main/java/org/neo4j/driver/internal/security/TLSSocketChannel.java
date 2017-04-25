@@ -28,11 +28,11 @@ import javax.net.ssl.SSLEngineResult.Status;
 import javax.net.ssl.SSLHandshakeException;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.internal.util.BytePrinter;
+import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SecurityException;
+import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
 import static java.lang.String.format;
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.FINISHED;
@@ -474,7 +474,7 @@ public class TLSSocketChannel implements ByteChannel
         catch ( IOException e )
         {
             // Treat this as ok - the connection is closed, even if the TLS session did not exit cleanly.
-            logger.warn( "TLS socket could not be closed cleanly: '" + e.getMessage() + "'", e );
+            logger.error( "TLS socket could not be closed cleanly", e );
         }
     }
 
