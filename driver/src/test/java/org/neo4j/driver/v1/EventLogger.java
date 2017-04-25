@@ -111,12 +111,6 @@ public class EventLogger implements Logger
     }
 
     @Override
-    public void warn( String message, Throwable cause )
-    {
-        events.log( name, Level.WARN, cause, message );
-    }
-
-    @Override
     public void debug( String message, Object... params )
     {
         events.log( name, Level.DEBUG, null, message, params );
