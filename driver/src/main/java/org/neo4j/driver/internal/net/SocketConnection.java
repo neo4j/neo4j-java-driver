@@ -57,7 +57,7 @@ public class SocketConnection implements Connection
 
     SocketConnection( BoltServerAddress address, SecurityPlan securityPlan, int timeoutMillis, Logging logging )
     {
-        Logger logger = logging.getLog( "Connection-" + hashCode() );
+        Logger logger = logging.getLog( Connection.class.getName() );
         this.socket = new SocketClient( address, securityPlan, timeoutMillis, logger );
         this.responseHandler = createResponseHandler( logger );
 

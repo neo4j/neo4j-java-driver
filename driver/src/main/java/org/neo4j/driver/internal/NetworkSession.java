@@ -64,7 +64,7 @@ public class NetworkSession implements Session, SessionResourcesHandler
         this.connectionProvider = connectionProvider;
         this.mode = mode;
         this.retryLogic = retryLogic;
-        this.logger = logging.getLog( "Session-" + hashCode() );
+        this.logger = logging.getLog(Session.class.getName());
     }
 
     @Override
