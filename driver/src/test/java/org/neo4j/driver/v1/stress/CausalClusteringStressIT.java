@@ -22,15 +22,17 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.ArgumentCaptor;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -39,6 +41,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.neo4j.driver.internal.logging.DevNullLogger;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.Config;
@@ -56,7 +59,9 @@ import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.util.DaemonThreadFactory;
 import org.neo4j.driver.v1.util.cc.LocalOrRemoteClusterRule;
 
+import static java.util.Collections.newSetFromMap;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
@@ -64,12 +69,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.startsWith;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.v1.AuthTokens.basic;
 
@@ -81,15 +80,18 @@ public class CausalClusteringStressIT
     @Rule
     public final LocalOrRemoteClusterRule clusterRule = new LocalOrRemoteClusterRule();
 
+    private TrackingDevNullLogging logging;
     private ExecutorService executor;
     private Driver driver;
 
     @Before
     public void setUp() throws Exception
     {
+        logging = new TrackingDevNullLogging();
+
         URI clusterUri = clusterRule.getClusterUri();
         AuthToken authToken = clusterRule.getAuthToken();
-        Config config = Config.build().withLogging( DEV_NULL_LOGGING ).withMaxIdleSessions( THREAD_COUNT ).toConfig();
+        Config config = Config.build().withLogging( logging ).withMaxIdleSessions( THREAD_COUNT ).toConfig();
         driver = GraphDatabase.driver( clusterUri, authToken, config );
 
         ThreadFactory threadFactory = new DaemonThreadFactory( getClass().getSimpleName() + "-worker-" );
@@ -112,7 +114,7 @@ public class CausalClusteringStressIT
         Context context = new Context();
         List<Future<?>> resultFutures = launchWorkerThreads( context );
 
-        long openFileDescriptors = sleepAndGetOpenFileDescriptorCount();
+        ResourcesInfo resourcesInfo = sleepAndGetResourcesInfo();
         context.stop();
 
         Throwable firstError = null;
@@ -133,7 +135,8 @@ public class CausalClusteringStressIT
             throw firstError;
         }
 
-        assertNoFileDescriptorLeak( openFileDescriptors );
+        assertNoFileDescriptorLeak( resourcesInfo.openFileDescriptorCount );
+        assertNoLoggersLeak( resourcesInfo.acquiredLoggerNames );
         assertExpectedNumberOfNodesCreated( context.getCreatedNodesCount() );
     }
 
@@ -167,7 +170,7 @@ public class CausalClusteringStressIT
         commands.add( new WriteQueryUsingReadSession( driver, true ) );
         commands.add( new WriteQueryUsingReadSessionInTx( driver, false ) );
         commands.add( new WriteQueryUsingReadSessionInTx( driver, true ) );
-        commands.add( new FailedAuth( clusterRule.getClusterUri() ) );
+        commands.add( new FailedAuth( clusterRule.getClusterUri(), logging ) );
 
         return commands;
     }
@@ -193,13 +196,15 @@ public class CausalClusteringStressIT
         } );
     }
 
-    private static long sleepAndGetOpenFileDescriptorCount() throws InterruptedException
+    private ResourcesInfo sleepAndGetResourcesInfo() throws InterruptedException
     {
         int halfSleepSeconds = Math.max( 1, EXECUTION_TIME_SECONDS / 2 );
         TimeUnit.SECONDS.sleep( halfSleepSeconds );
         long openFileDescriptorCount = getOpenFileDescriptorCount();
+        Set<String> acquiredLoggerNames = logging.getAcquiredLoggerNames();
+        ResourcesInfo resourcesInfo = new ResourcesInfo( openFileDescriptorCount, acquiredLoggerNames );
         TimeUnit.SECONDS.sleep( halfSleepSeconds );
-        return openFileDescriptorCount;
+        return resourcesInfo;
     }
 
     private void assertNoFileDescriptorLeak( long previousOpenFileDescriptors )
@@ -209,6 +214,13 @@ public class CausalClusteringStressIT
         long currentOpenFileDescriptorCount = getOpenFileDescriptorCount();
         assertThat( "Unexpectedly high number of open file descriptors",
                 currentOpenFileDescriptorCount, lessThanOrEqualTo( maxOpenFileDescriptors ) );
+    }
+
+    private void assertNoLoggersLeak( Set<String> previousAcquiredLoggerNames )
+    {
+        Set<String> currentAcquiredLoggerNames = logging.getAcquiredLoggerNames();
+        assertThat( "Unexpected amount of logger instances",
+                currentAcquiredLoggerNames, equalTo( previousAcquiredLoggerNames ) );
     }
 
     private void assertExpectedNumberOfNodesCreated( long expectedCount )
@@ -468,18 +480,17 @@ public class CausalClusteringStressIT
     private static class FailedAuth implements Command
     {
         final URI clusterUri;
+        final Logging logging;
 
-        FailedAuth( URI clusterUri )
+        FailedAuth( URI clusterUri, Logging logging )
         {
             this.clusterUri = clusterUri;
+            this.logging = logging;
         }
 
         @Override
         public void execute( Context context )
         {
-            Logger logger = mock( Logger.class );
-            Logging logging = mock( Logging.class );
-            when( logging.getLog( anyString() ) ).thenReturn( logger );
             Config config = Config.build().withLogging( logging ).toConfig();
 
             try
@@ -491,11 +502,36 @@ public class CausalClusteringStressIT
             {
                 assertThat( e, instanceOf( SecurityException.class ) );
                 assertThat( e.getMessage(), containsString( "authentication failure" ) );
-
-                ArgumentCaptor<Throwable> captor = ArgumentCaptor.forClass( Throwable.class );
-                verify( logger ).debug( startsWith( "~~ [CLOSED SECURE CHANNEL]" ), captor.capture() );
-                verify( logger ).debug( startsWith( "~~ [DISCONNECT]" ), captor.capture() );
             }
+        }
+    }
+
+    private static class ResourcesInfo
+    {
+        final long openFileDescriptorCount;
+        final Set<String> acquiredLoggerNames;
+
+        ResourcesInfo( long openFileDescriptorCount, Set<String> acquiredLoggerNames )
+        {
+            this.openFileDescriptorCount = openFileDescriptorCount;
+            this.acquiredLoggerNames = acquiredLoggerNames;
+        }
+    }
+
+    private static class TrackingDevNullLogging implements Logging
+    {
+        private final Set<String> acquiredLoggerNames = newSetFromMap( new ConcurrentHashMap<String,Boolean>() );
+
+        @Override
+        public Logger getLog( String name )
+        {
+            acquiredLoggerNames.add( name );
+            return DevNullLogger.DEV_NULL_LOGGER;
+        }
+
+        public Set<String> getAcquiredLoggerNames()
+        {
+            return new HashSet<>( acquiredLoggerNames );
         }
     }
 }

@@ -18,11 +18,10 @@
  */
 package org.neo4j.driver.internal;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.driver.internal.logging.DelegatingLogger;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
@@ -47,6 +46,8 @@ import static org.neo4j.driver.v1.Values.value;
 
 public class NetworkSession implements Session, SessionResourcesHandler
 {
+    private static final String LOG_NAME = "Session";
+
     private final ConnectionProvider connectionProvider;
     private final AccessMode mode;
     private final RetryLogic retryLogic;
@@ -64,7 +65,7 @@ public class NetworkSession implements Session, SessionResourcesHandler
         this.connectionProvider = connectionProvider;
         this.mode = mode;
         this.retryLogic = retryLogic;
-        this.logger = logging.getLog( "Session-" + hashCode() );
+        this.logger = new DelegatingLogger( logging.getLog( LOG_NAME ), String.valueOf( hashCode() ) );
     }
 
     @Override
@@ -376,30 +377,6 @@ public class NetworkSession implements Session, SessionResourcesHandler
         {
             connection.close();
             logger.debug( "Released connection " + connection.hashCode() );
-        }
-    }
-
-    private static List<Throwable> recordError( Throwable error, List<Throwable> errors )
-    {
-        if ( errors == null )
-        {
-            errors = new ArrayList<>();
-        }
-        errors.add( error );
-        return errors;
-    }
-
-    private static void addSuppressed( Throwable error, List<Throwable> suppressedErrors )
-    {
-        if ( suppressedErrors != null )
-        {
-            for ( Throwable suppressedError : suppressedErrors )
-            {
-                if ( error != suppressedError )
-                {
-                    error.addSuppressed( suppressedError );
-                }
-            }
         }
     }
 }
