@@ -36,7 +36,6 @@ import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Session;
 
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
@@ -83,7 +82,7 @@ public class LeakLoggingNetworkSessionTest
         assertEquals( 1, messageCaptor.getAllValues().size() );
 
         String loggedMessage = messageCaptor.getValue();
-        assertThat( loggedMessage, startsWith( "Neo4j Session object leaked" ) );
+        assertThat( loggedMessage, containsString( "Neo4j Session object leaked" ) );
         assertThat( loggedMessage, containsString( "Session was create at" ) );
         assertThat( loggedMessage, containsString(
                 getClass().getSimpleName() + "." + testName.getMethodName() )
