@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.driver.internal.logging.DelegatingLogger;
 import org.neo4j.driver.internal.messaging.InitMessage;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.RunMessage;
@@ -47,6 +48,8 @@ import static org.neo4j.driver.internal.messaging.ResetMessage.RESET;
 
 public class SocketConnection implements Connection
 {
+    private static final String LOG_NAME = "Connection";
+
     private final Queue<Message> pendingMessages = new LinkedList<>();
     private final SocketResponseHandler responseHandler;
     private final AtomicBoolean isInterrupted = new AtomicBoolean( false );
@@ -57,7 +60,7 @@ public class SocketConnection implements Connection
 
     SocketConnection( BoltServerAddress address, SecurityPlan securityPlan, int timeoutMillis, Logging logging )
     {
-        Logger logger = logging.getLog( "Connection-" + hashCode() );
+        Logger logger = new DelegatingLogger( logging.getLog( LOG_NAME ), String.valueOf( hashCode() ) );
         this.socket = new SocketClient( address, securityPlan, timeoutMillis, logger );
         this.responseHandler = createResponseHandler( logger );
 

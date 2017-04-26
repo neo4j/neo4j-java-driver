@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.driver.internal.logging.DelegatingLogger;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.util.Supplier;
@@ -39,6 +40,8 @@ import org.neo4j.driver.v1.Logging;
  */
 public class BlockingPooledConnectionQueue
 {
+    public static final String LOG_NAME = "ConnectionQueue";
+
     /** The backing queue, keeps track of connections currently in queue */
     private final BlockingQueue<PooledConnection> queue;
     private final Logger logger;
@@ -162,6 +165,6 @@ public class BlockingPooledConnectionQueue
 
     private static Logger createLogger( BoltServerAddress address, Logging logging )
     {
-        return logging.getLog( "ConnectionQueue[" + address + "]" );
+        return new DelegatingLogger( logging.getLog( LOG_NAME ), address.toString() );
     }
 }
