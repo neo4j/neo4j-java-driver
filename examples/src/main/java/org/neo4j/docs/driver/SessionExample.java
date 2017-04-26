@@ -21,6 +21,8 @@ package org.neo4j.docs.driver;
 // tag::session-import[]
 
 import org.neo4j.driver.v1.Session;
+
+import static org.neo4j.driver.v1.Values.parameters;
 // end::session-import[]
 
 public class SessionExample extends BaseApplication
@@ -31,11 +33,11 @@ public class SessionExample extends BaseApplication
     }
 
     // tag::session[]
-    public void doWork()
+    public void addPerson(String name)
     {
         try ( Session session = driver.session() )
         {
-            // TODO: something with the Session
+            session.run("CREATE (a:Person {name: $name})", parameters( "name", name ) );
         }
     }
     // end::session[]
