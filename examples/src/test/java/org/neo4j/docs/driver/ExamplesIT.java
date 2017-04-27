@@ -300,10 +300,11 @@ public class ExamplesIT
         SessionExample example = new SessionExample( neo4j.uri().toString(), USER, PASSWORD );
 
         // When
-        example.doWork();
+        example.addPerson( "Alice" );
 
         // Then
         assertThat( example, instanceOf( SessionExample.class ) );
+        assertThat( personCount( "Alice" ), greaterThan( 0 ));
     }
 
     @Test
