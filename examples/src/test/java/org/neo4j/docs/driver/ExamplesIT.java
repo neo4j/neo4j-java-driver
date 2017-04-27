@@ -36,6 +36,7 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.neo4j.driver.v1.Values.parameters;
@@ -298,10 +299,11 @@ public class ExamplesIT
         SessionExample example = new SessionExample( neo4j.uri().toString(), USER, PASSWORD );
 
         // When
-        example.doWork();
+        example.addPerson( "Alice" );
 
         // Then
         assertThat( example, instanceOf( SessionExample.class ) );
+        assertThat( personCount( "Alice" ), greaterThan( 0 ));
     }
 
     @Test
@@ -315,7 +317,7 @@ public class ExamplesIT
         example.addPerson( "Alice" );
 
         // Then
-        assert personCount( "Alice" ) > 0;
+        assertThat( personCount( "Alice" ), greaterThan( 0 ));
     }
 
 }
