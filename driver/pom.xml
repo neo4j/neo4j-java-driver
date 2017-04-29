@@ -102,6 +102,15 @@
         </configuration>
       </plugin>
       <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>clirr-maven-plugin</artifactId>
+        <configuration>
+          <comparisonVersion>1.2.0</comparisonVersion>
+          <includes>org/neo4j/driver/v1/**</includes>
+          <ignoredDifferencesFile>clirr-ignored-differences.xml</ignoredDifferencesFile>
+        </configuration>
+      </plugin>
+      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-source-plugin</artifactId>
         <executions>
@@ -112,12 +121,12 @@
             </goals>
             <configuration>
               <archive>
-                  <manifestEntries>
-                      <Bundle-Name>${project.name} (Source)</Bundle-Name>
-                      <Bundle-SymbolicName>${bundle.name}.source</Bundle-SymbolicName>
-                      <Bundle-Version>${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}.${build.timestamp}</Bundle-Version>
-                      <Eclipse-SourceBundle>${bundle.name};version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}.${build.timestamp}";roots:="."</Eclipse-SourceBundle>
-                  </manifestEntries>
+                <manifestEntries>
+                  <Bundle-Name>${project.name} (Source)</Bundle-Name>
+                  <Bundle-SymbolicName>${bundle.name}.source</Bundle-SymbolicName>
+                  <Bundle-Version>${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}.${build.timestamp}</Bundle-Version>
+                  <Eclipse-SourceBundle>${bundle.name};version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}.${build.timestamp}";roots:="."</Eclipse-SourceBundle>
+                </manifestEntries>
               </archive>
             </configuration>
           </execution>

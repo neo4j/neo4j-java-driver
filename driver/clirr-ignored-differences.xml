@@ -1,0 +1,38 @@
+<differences>
+
+    <difference>
+        <!-- Method Added to Interface -->
+        <differenceType>7012</differenceType>
+        <className>org/neo4j/driver/v1/**</className>
+        <method>*</method>
+        <justification>
+            Allow addition of methods to interfaces.
+            Most interfaces are not expected to be implemented by users and expose driver APIs.
+        </justification>
+    </difference>
+
+    <difference>
+        <!-- Method Argument Type changed -->
+        <differenceType>7005</differenceType>
+        <className>org/neo4j/driver/v1/Config$ConfigBuilder</className>
+        <method>org.neo4j.driver.v1.Config$ConfigBuilder withLogging(org.neo4j.driver.internal.spi.Logging)</method>
+        <to>org.neo4j.driver.v1.Config$ConfigBuilder withLogging(org.neo4j.driver.v1.Logging)</to>
+        <justification>
+            Logging interface initially lived in a private package but was exposed as part of public API.
+            It was later moved to the correct public package.
+        </justification>
+    </difference>
+
+    <difference>
+        <!-- Method Return Type changed -->
+        <differenceType>7006</differenceType>
+        <className>org/neo4j/driver/v1/Config</className>
+        <method>org.neo4j.driver.internal.spi.Logging logging()</method>
+        <to>org.neo4j.driver.v1.Logging</to>
+        <justification>
+            Logging interface initially lived in a private package but was exposed as part of public API.
+            It was later moved to the correct public package.
+        </justification>
+    </difference>
+
+</differences>
