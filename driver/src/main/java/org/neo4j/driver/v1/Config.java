@@ -303,7 +303,8 @@ public class Config
          * application seeing connection problems, and performance.
          * <p>
          * You normally should not need to tune this parameter.
-         * This feature is turned off by default. Value {@code 0} means connections will always be tested for
+         * No connection liveliness check is done by default.
+         * Value {@code 0} means connections will always be tested for
          * validity and negative values mean connections will never be tested.
          *
          * @param value the minimum idle time in milliseconds
@@ -516,6 +517,9 @@ public class Config
      */
     public static class TrustStrategy
     {
+        /**
+         * The trust strategy that the driver supports
+         */
         public enum Strategy
         {
             @Deprecated
