@@ -27,12 +27,7 @@ package org.neo4j.driver.v1.exceptions;
  */
 public class SecurityException extends Neo4jException
 {
-    public SecurityException( String code, String message )
-    {
-        super( code, message );
-    }
-
-    public SecurityException( String message, Throwable t )
+    public SecurityException(String message, Throwable t )
     {
         super( message, t );
     }
