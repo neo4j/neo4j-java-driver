@@ -23,17 +23,56 @@ package org.neo4j.driver.v1;
  */
 public interface Logger
 {
+    /**
+     * Logs errors from this driver
+     * @param message the error message
+     * @param cause the cause of the error
+     */
     void error( String message, Throwable cause );
 
+    /**
+     * Logs information from the driver
+     * @param message the information message
+     * @param params parameters used in the information message
+     */
     void info( String message, Object... params );
 
+    /**
+     * Logs warnings that happened during using the driver
+     * @param message the warning message
+     * @param params parameters used in the warning message
+     */
     void warn( String message, Object... params );
 
+    /**
+     * Logs bolt messages sent and received by this driver.
+     * It is only enabled when {@link Logger#isDebugEnabled()} returns {@code True}.
+     * This logging level generates a lot of log entries.
+     * @param message the bolt message
+     * @param params parameters used in generating the bolt message
+     */
     void debug( String message, Object... params );
 
+    /**
+     * Logs binary sent and received by this driver.
+     * It is only enabled when {@link Logger#isTraceEnabled()} returns {@code True}.
+     * This logging level generates huge amount of log entries.
+     * @param message the bolt message in hex
+     * @param params parameters used in generating the hex message
+     */
     void trace( String message, Object... params );
 
+    /**
+     * Return true if the trace logging level is enabled.
+     * @see Logger#trace(String, Object...)
+     * @return true if the trace logging level is enabled.
+     */
     boolean isTraceEnabled();
 
+    /**
+     * Return true if the debug level is enabled.
+     * @see Logger#debug(String, Object...)
+     * @return true if the debug level is enabled.
+     */
     boolean isDebugEnabled();
 }
