@@ -44,6 +44,14 @@ public enum TypeConstructor
         }
     },
 
+    BYTES_TyCon {
+        @Override
+        public String typeName()
+        {
+            return "BYTES";
+        }
+    },
+
     STRING_TyCon {
         @Override
         public String typeName()

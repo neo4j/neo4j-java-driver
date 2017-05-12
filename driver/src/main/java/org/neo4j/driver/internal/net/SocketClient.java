@@ -27,6 +27,7 @@ import java.util.Queue;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.security.SecurityPlan;
+import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.BytePrinter;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.exceptions.ClientException;
@@ -43,6 +44,7 @@ public class SocketClient
     private static final int NO_VERSION = 0;
     private static final int[] SUPPORTED_VERSIONS = new int[]{VERSION1, NO_VERSION, NO_VERSION, NO_VERSION};
 
+    private final Connection connection;
     private final BoltServerAddress address;
     private final SecurityPlan securityPlan;
     private final int timeoutMillis;
@@ -54,8 +56,9 @@ public class SocketClient
 
     private ByteChannel channel;
 
-    public SocketClient( BoltServerAddress address, SecurityPlan securityPlan, int timeoutMillis, Logger logger )
+    public SocketClient( Connection connection, BoltServerAddress address, SecurityPlan securityPlan, int timeoutMillis, Logger logger )
     {
+        this.connection = connection;
         this.address = address;
         this.securityPlan = securityPlan;
         this.timeoutMillis = timeoutMillis;
@@ -255,7 +258,7 @@ public class SocketClient
         {
         case VERSION1:
             logger.debug( "S: [HANDSHAKE] -> 1" );
-            return new SocketProtocolV1( channel );
+            return new SocketProtocolV1( connection, channel );
         case NO_VERSION:
             throw new ClientException( "The server does not support any of the protocol versions supported by " +
                                        "this driver. Ensure that you are using driver and server versions that " +

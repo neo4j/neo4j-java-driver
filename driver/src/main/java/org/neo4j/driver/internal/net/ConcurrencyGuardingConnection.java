@@ -223,4 +223,10 @@ public class ConcurrencyGuardingConnection implements Connection
     {
         return delegate.boltServerAddress();
     }
+
+    @Override
+    public boolean supportsBytes()
+    {
+        return delegate.supportsBytes();
+    }
 }

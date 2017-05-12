@@ -150,7 +150,7 @@ public class FragmentedMessageDeliveryTest
 
             final ByteArrayOutputStream out = new ByteArrayOutputStream( 128 );
 
-        ChunkedOutput output = new ChunkedOutput(  chunkSize + 2 /* for chunk header */, Channels.newChannel( out ) );
+        ChunkedOutput output = new ChunkedOutput(  chunkSize + 2 /* for chunk header */, Channels.newChannel( out ), null );
 
         PackStreamMessageFormatV1.Writer writer =
                 new PackStreamMessageFormatV1.Writer( output, output.messageBoundaryHook() );

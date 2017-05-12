@@ -151,6 +151,12 @@ public abstract class ValueAdapter extends InternalMapAccessorWithDefaultValue i
     }
 
     @Override
+    public byte[] asByteArray()
+    {
+        throw new Uncoercible( type().name(), "Byte array" );
+    }
+
+    @Override
     public Number asNumber()
     {
         throw new Uncoercible( type().name(), "Java Number" );
