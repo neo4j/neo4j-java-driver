@@ -25,6 +25,7 @@ import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.MessageFormat.Reader;
 import org.neo4j.driver.internal.messaging.MessageFormat.Writer;
 import org.neo4j.driver.internal.messaging.PackStreamMessageFormatV1;
+import org.neo4j.driver.internal.spi.Connection;
 
 public class SocketProtocolV1 implements SocketProtocol
 {
@@ -32,11 +33,11 @@ public class SocketProtocolV1 implements SocketProtocol
     private final Reader reader;
     private final Writer writer;
 
-    public SocketProtocolV1( ByteChannel channel ) throws IOException
+    public SocketProtocolV1( Connection connection, ByteChannel channel ) throws IOException
     {
         messageFormat = new PackStreamMessageFormatV1();
 
-        ChunkedOutput output = new ChunkedOutput( channel );
+        ChunkedOutput output = new ChunkedOutput(channel, connection);
         BufferingChunkedInput input = new BufferingChunkedInput( channel );
 
         this.writer = new PackStreamMessageFormatV1.Writer( output, output.messageBoundaryHook() );

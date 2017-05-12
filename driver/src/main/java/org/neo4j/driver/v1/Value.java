@@ -194,6 +194,12 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue
     boolean asBoolean();
 
     /**
+     *  @return the value as a Java byte array, if possible.
+     *  @throws Uncoercible if value types are incompatible.
+     */
+    byte[] asByteArray();
+
+    /**
      *  @return the value as a Java String, if possible.
      *  @throws Uncoercible if value types are incompatible.
      */

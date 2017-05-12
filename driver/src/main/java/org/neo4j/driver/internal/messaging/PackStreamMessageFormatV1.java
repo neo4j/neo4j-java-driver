@@ -37,6 +37,7 @@ import org.neo4j.driver.internal.packstream.PackInput;
 import org.neo4j.driver.internal.packstream.PackOutput;
 import org.neo4j.driver.internal.packstream.PackStream;
 import org.neo4j.driver.internal.packstream.PackType;
+import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Iterables;
 import org.neo4j.driver.internal.value.InternalValue;
 import org.neo4j.driver.internal.value.ListValue;
@@ -79,10 +80,16 @@ public class PackStreamMessageFormatV1 implements MessageFormat
     private static final Map<String,Value> EMPTY_STRING_VALUE_MAP = new HashMap<>( 0 );
 
     @Override
+    public MessageFormat.Writer newWriter( WritableByteChannel ch, Connection connection )
+    {
+        ChunkedOutput output = new ChunkedOutput(ch, connection);
+        return new Writer( output, output.messageBoundaryHook() );
+    }
+
+    @Override
     public MessageFormat.Writer newWriter( WritableByteChannel ch )
     {
-        ChunkedOutput output = new ChunkedOutput( ch );
-        return new Writer( output, output.messageBoundaryHook() );
+        return newWriter( ch, null );
     }
 
     @Override
@@ -221,6 +228,10 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             {
                 case NULL_TyCon:
                     packer.packNull();
+                    break;
+
+                case BYTES_TyCon:
+                    packer.pack( value.asByteArray() );
                     break;
 
                 case STRING_TyCon:
@@ -502,8 +513,6 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             PackType type = unpacker.peekNextType();
             switch ( type )
             {
-            case BYTES:
-                break;
             case NULL:
                 return value( unpacker.unpackNull() );
             case BOOLEAN:
@@ -512,6 +521,8 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                 return value( unpacker.unpackLong() );
             case FLOAT:
                 return value( unpacker.unpackDouble() );
+            case BYTES:
+                return value( unpacker.unpackBytes() );
             case STRING:
                 return value( unpacker.unpackString() );
             case MAP:

@@ -33,6 +33,8 @@ public interface TypeSystem
 
     Type BOOLEAN();
 
+    Type BYTES();
+
     Type STRING();
 
     Type NUMBER();
