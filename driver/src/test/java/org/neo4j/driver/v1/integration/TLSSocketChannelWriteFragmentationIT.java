@@ -18,24 +18,22 @@
  */
 package org.neo4j.driver.v1.integration;
 
-import org.junit.Before;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
-import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.SocketChannel;
-import java.security.GeneralSecurityException;
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLServerSocketFactory;
 
 import org.neo4j.driver.internal.security.TLSSocketChannel;
 
 import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
 
@@ -43,96 +41,75 @@ import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
  * This tests that the TLSSocketChannel handles every combination of network buffer sizes that we
  * can reasonably expect to see in the wild. It exhaustively tests power-of-two sizes up to 2^16
  * for the following variables:
- *
+ * <p>
  * - Network frame size
  * - Bolt message size
  * - write buffer size
- *
+ * <p>
  * It tests every possible combination, and it does this currently only for the read path, expanding
  * to the write path as well would be useful. For each size, it sets up a TLS server and tests the
  * handshake, transferring the data, and verifying the data is correct after decryption.
  */
-public class TLSSocketWriteChannelFragmentationIT extends TLSSocketChannelFragmentation
+public class TLSSocketChannelWriteFragmentationIT extends TLSSocketChannelFragmentation
 {
-    private ServerSocket server;
-
-    @Before
-    public void setup() throws Throwable
+    @Override
+    protected void testForBufferSizes( byte[] blobOfData, int networkFrameSize, int userBufferSize ) throws Exception
     {
-        createSSLContext();
-        createServer();
-    }
-
-    private byte[] blobOfDataSize( int dataBlobSize )
-    {
-        byte[] blob = new byte[dataBlobSize];
-        // If the blob is all zeros, we'd miss data corruption problems in assertions, so
-        // fill the data blob with different values.
-        for ( int i = 0; i < blob.length; i++ )
-        {
-            blob[i] = (byte) (i % 128);
-        }
-
-        return blob;
-    }
-
-    protected void testForBufferSizes( int blobOfDataSize, int networkFrameSize, int userBufferSize ) throws IOException, GeneralSecurityException
-    {
-        byte[] blob = blobOfDataSize(blobOfDataSize);
         SSLEngine engine = sslCtx.createSSLEngine();
         engine.setUseClientMode( true );
-        ByteChannel ch = SocketChannel.open( new InetSocketAddress( server.getInetAddress(), server.getLocalPort() ) );
-        ch = new LittleAtATimeChannel( ch, networkFrameSize );
+        SocketAddress address = new InetSocketAddress( serverSocket.getInetAddress(), serverSocket.getLocalPort() );
+        ByteChannel ch = new LittleAtATimeChannel( SocketChannel.open( address ), networkFrameSize );
 
         try ( TLSSocketChannel channel = TLSSocketChannel.create( ch, DEV_NULL_LOGGER, engine ) )
         {
-            ByteBuffer writeBuffer = ByteBuffer.wrap( blob );
+            ByteBuffer writeBuffer = ByteBuffer.wrap( blobOfData );
             while ( writeBuffer.position() < writeBuffer.capacity() )
             {
                 writeBuffer.limit( Math.min( writeBuffer.capacity(), writeBuffer.position() + userBufferSize ) );
-                channel.write( writeBuffer );
+                int remainingBytes = writeBuffer.remaining();
+                assertEquals( remainingBytes, channel.write( writeBuffer ) );
             }
-
         }
     }
 
-    protected void createServer() throws IOException
+    @Override
+    protected Runnable createServerRunnable( SSLContext sslContext ) throws IOException
     {
-        SSLServerSocketFactory ssf = sslCtx.getServerSocketFactory();
-        server = ssf.createServerSocket(0);
-
-        new Thread(new Runnable()
+        return new Runnable()
         {
             @Override
             public void run()
             {
                 try
                 {
-                    //noinspection InfiniteLoopStatement
-                    while(true)
+                    // noinspection InfiniteLoopStatement
+                    while ( true )
                     {
-                        Socket client = server.accept();
-
+                        Socket client = accept( serverSocket );
+                        if ( client == null )
+                        {
+                            return;
+                        }
 
                         InputStream inputStream = client.getInputStream();
                         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
                         int read;
-                        while ((read = inputStream.read()) != -1)
+                        while ( (read = inputStream.read()) != -1 )
                         {
                             baos.write( read );
                         }
 
-                        assertThat( blobOfDataSize( baos.size() ), equalTo( baos.toByteArray() ));
+                        assertThat( blobOfData( baos.size() ), equalTo( baos.toByteArray() ) );
 
-                        // client.close(); // TODO: Uncomment this, fix resulting error handling CLOSED event
+                        client.close();
                     }
                 }
                 catch ( IOException e )
                 {
-                    e.printStackTrace();
+                    throw new RuntimeException( e );
                 }
             }
-        }).start();
+        };
     }
 }
