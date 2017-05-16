@@ -58,7 +58,6 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.TransientException;
-import org.neo4j.driver.v1.util.DaemonThreadFactory;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static java.lang.String.format;
@@ -86,6 +85,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.driver.internal.util.ServerVersion.v3_1_0;
 import static org.neo4j.driver.v1.Values.parameters;
+import static org.neo4j.driver.v1.util.DaemonThreadFactory.daemon;
 import static org.neo4j.driver.v1.util.Neo4jRunner.DEFAULT_AUTH_TOKEN;
 
 public class SessionIT
@@ -1450,7 +1450,7 @@ public class SessionIT
 
     private static <T> Future<T> executeInDifferentThread( Callable<T> callable )
     {
-        ExecutorService executor = newSingleThreadExecutor( new DaemonThreadFactory( "test-thread-" ) );
+        ExecutorService executor = newSingleThreadExecutor( daemon( "test-thread-" ) );
         return executor.submit( callable );
     }
 

@@ -34,6 +34,11 @@ public class DaemonThreadFactory implements ThreadFactory
         this.threadId = new AtomicInteger();
     }
 
+    public static ThreadFactory daemon( String namePrefix )
+    {
+        return new DaemonThreadFactory( namePrefix );
+    }
+
     @Override
     public Thread newThread( Runnable runnable )
     {
