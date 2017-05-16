@@ -59,7 +59,7 @@ public class SocketClientIT
     public void setup() throws GeneralSecurityException, IOException
     {
         SecurityPlan securityPlan = SecurityPlan.insecure();
-        client = new SocketClient( null, neo4j.address(), securityPlan, 42, DEV_NULL_LOGGER );
+        client = new SocketClient( neo4j.address(), securityPlan, 42, DEV_NULL_LOGGER );
     }
 
     @After

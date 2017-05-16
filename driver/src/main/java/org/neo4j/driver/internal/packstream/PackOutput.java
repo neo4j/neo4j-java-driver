@@ -45,7 +45,4 @@ public interface PackOutput
 
     /** Produce an 8-byte IEEE 754 "double format" floating-point number */
     PackOutput writeDouble( double value ) throws IOException;
-
-    /** Return a boolean indicating whether or not this output channel supports the PackStream BYTES type. */
-    boolean supportsBytes();
 }

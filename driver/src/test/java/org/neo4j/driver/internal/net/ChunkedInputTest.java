@@ -121,7 +121,7 @@ public class ChunkedInputTest
     {
         // Given
         RecordingByteChannel ch = new RecordingByteChannel();
-        ChunkedOutput out = new ChunkedOutput( ch, null );
+        ChunkedOutput out = new ChunkedOutput( ch );
 
         // these are written in one go on purpose, to check for buffer pointer errors where writes
         // would interfere with one another, writing at the wrong offsets

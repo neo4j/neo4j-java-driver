@@ -109,7 +109,7 @@ public class MessageFormatTest
         // Given
         ByteArrayOutputStream out = new ByteArrayOutputStream( 128 );
         WritableByteChannel writable = Channels.newChannel( out );
-        PackStream.Packer packer = new PackStream.Packer( new ChunkedOutput(writable, null) );
+        PackStream.Packer packer = new PackStream.Packer( new ChunkedOutput( writable ) );
 
         packer.packStructHeader( 1, PackStreamMessageFormatV1.MSG_RECORD );
         packer.packListHeader( 1 );
@@ -135,7 +135,7 @@ public class MessageFormatTest
     {
         // Pack
         final ByteArrayOutputStream out = new ByteArrayOutputStream( 128 );
-        MessageFormat.Writer writer = format.newWriter( Channels.newChannel( out ) );
+        MessageFormat.Writer writer = format.newWriter( Channels.newChannel( out ), true );
         for ( Message message : messages )
         {
             writer.write( message );

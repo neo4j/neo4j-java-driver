@@ -118,9 +118,4 @@ public interface Connection extends AutoCloseable
      * Returns the BoltServerAddress connected to
      */
     BoltServerAddress boltServerAddress();
-
-    /**
-     * Returns true if this connection supports PackStream BYTES, false otherwise.
-     */
-    boolean supportsBytes();
 }

@@ -107,12 +107,6 @@ public class BufferedChannelOutput implements PackOutput
         return this;
     }
 
-    @Override
-    public boolean supportsBytes()
-    {
-        return true;
-    }
-
     private void ensure(int size ) throws IOException
     {
         if ( buffer.remaining() < size )

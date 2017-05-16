@@ -18,14 +18,12 @@
  */
 package org.neo4j.driver.internal.net;
 
-import java.io.IOException;
 import java.nio.channels.ByteChannel;
 
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.MessageFormat.Reader;
 import org.neo4j.driver.internal.messaging.MessageFormat.Writer;
 import org.neo4j.driver.internal.messaging.PackStreamMessageFormatV1;
-import org.neo4j.driver.internal.spi.Connection;
 
 public class SocketProtocolV1 implements SocketProtocol
 {
@@ -33,15 +31,22 @@ public class SocketProtocolV1 implements SocketProtocol
     private final Reader reader;
     private final Writer writer;
 
-    public SocketProtocolV1( Connection connection, ByteChannel channel ) throws IOException
+    public static SocketProtocol create( ByteChannel channel )
+    {
+        /*by default the byte array support is enabled*/
+        return create( channel, true );
+    }
+
+    public static SocketProtocol create( ByteChannel channel, boolean byteArraySupportEnabled )
+    {
+        return new SocketProtocolV1( channel, byteArraySupportEnabled );
+    }
+
+    public SocketProtocolV1( ByteChannel channel, boolean byteArraySupportEnabled )
     {
         messageFormat = new PackStreamMessageFormatV1();
-
-        ChunkedOutput output = new ChunkedOutput(channel, connection);
-        BufferingChunkedInput input = new BufferingChunkedInput( channel );
-
-        this.writer = new PackStreamMessageFormatV1.Writer( output, output.messageBoundaryHook() );
-        this.reader = new PackStreamMessageFormatV1.Reader( input, input.messageBoundaryHook() );
+        this.writer = messageFormat.newWriter( channel, byteArraySupportEnabled );
+        this.reader = messageFormat.newReader( channel );
     }
 
     @Override

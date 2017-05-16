@@ -16,24 +16,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1.summary;
+package org.neo4j.driver.internal.packstream;
 
-/**
- * Provides some basic information of the server where the result is obtained from.
- */
-public interface ServerInfo
+import java.io.IOException;
+
+public class ByteArrayIncompatiblePacker extends PackStream.Packer
 {
+    public ByteArrayIncompatiblePacker( PackOutput out )
+    {
+        super( out );
+    }
 
-    /**
-     * Returns a string telling the address of the server the query was executed.
-     * @return The address of the server the query was executed.
-     */
-    String address();
-
-    /**
-     * Returns a string telling which version of the server the query was executed.
-     * Supported since neo4j 3.1.
-     * @return The server version of <code>null</code> if not available.
-     */
-    String version();
+    public void packBytesHeader( int size ) throws IOException
+    {
+        throw new PackStream.UnPackable( "Packing bytes is not supported " +
+                "as the current server this driver connected to does not support unpack bytes." );
+    }
 }

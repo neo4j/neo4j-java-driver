@@ -61,7 +61,7 @@ public class SocketConnection implements Connection
     SocketConnection( BoltServerAddress address, SecurityPlan securityPlan, int timeoutMillis, Logging logging )
     {
         Logger logger = new DelegatingLogger( logging.getLog( LOG_NAME ), String.valueOf( hashCode() ) );
-        this.socket = new SocketClient( this, address, securityPlan, timeoutMillis, logger );
+        this.socket = new SocketClient( address, securityPlan, timeoutMillis, logger );
         this.responseHandler = createResponseHandler( logger );
 
         startSocketClient();
@@ -117,6 +117,7 @@ public class SocketConnection implements Connection
         queueMessage( new InitMessage( clientName, authToken ), initCollector );
         sync();
         this.serverInfo = new InternalServerInfo( socket.address(), initCollector.serverVersion() );
+        socket.updateProtocol( serverInfo.version() );
     }
 
     @Override
@@ -167,6 +168,7 @@ public class SocketConnection implements Connection
         }
         catch ( IOException e )
         {
+            close();
             throw new ServiceUnavailableException( "Unable to send messages to server: " + e.getMessage(), e );
         }
     }
@@ -302,11 +304,5 @@ public class SocketConnection implements Connection
     public BoltServerAddress boltServerAddress()
     {
         return this.serverInfo.boltServerAddress();
-    }
-
-    @Override
-    public boolean supportsBytes()
-    {
-        return this.serverInfo.atLeast("Neo4j", 3, 2);
     }
 }

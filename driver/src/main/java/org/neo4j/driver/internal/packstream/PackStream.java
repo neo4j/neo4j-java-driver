@@ -297,10 +297,6 @@ public class PackStream
 
         public void packBytesHeader( int size ) throws IOException
         {
-            if ( !out.supportsBytes() )
-            {
-                throw new BytesNotSupportedException("Output stream does not support bytes");
-            }
             if ( size <= Byte.MAX_VALUE )
             {
                 out.writeByte( BYTES_8 )
@@ -738,13 +734,4 @@ public class PackStream
             super( message );
         }
     }
-
-    public static class BytesNotSupportedException extends UnsupportedOperationException
-    {
-        public BytesNotSupportedException( String message )
-        {
-            super( message );
-        }
-    }
-
 }

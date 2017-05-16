@@ -23,7 +23,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
 
 import org.neo4j.driver.internal.packstream.PackOutput;
-import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static java.lang.Math.max;
@@ -33,7 +32,6 @@ public class ChunkedOutput implements PackOutput
     public static final short MESSAGE_BOUNDARY = 0;
     public static final int CHUNK_HEADER_SIZE = 2;
 
-    private final Connection connection;
     private final ByteBuffer buffer;
     private final WritableByteChannel channel;
 
@@ -42,14 +40,13 @@ public class ChunkedOutput implements PackOutput
     /** Are currently in the middle of writing a chunk? */
     private boolean chunkOpen = false;
 
-    public ChunkedOutput( WritableByteChannel ch, Connection connection )
+    public ChunkedOutput( WritableByteChannel ch )
     {
-        this(8192, ch, connection);
+        this( 8192, ch );
     }
 
-    public ChunkedOutput( int bufferSize, WritableByteChannel ch, Connection connection )
+    public ChunkedOutput( int bufferSize, WritableByteChannel ch )
     {
-        this.connection = connection;
         buffer = ByteBuffer.allocate(  max( 16, bufferSize ) );
         chunkOpen = false;
         channel = ch;
@@ -122,12 +119,6 @@ public class ChunkedOutput implements PackOutput
             offset += amountToWrite;
         }
         return this;
-    }
-
-    @Override
-    public boolean supportsBytes()
-    {
-        return connection != null && connection.supportsBytes();
     }
 
     private void closeChunkIfOpen()

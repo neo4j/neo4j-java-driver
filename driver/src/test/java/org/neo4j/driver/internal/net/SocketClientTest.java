@@ -106,7 +106,7 @@ public class SocketClientTest
 
     private SocketClient dummyClient( BoltServerAddress address )
     {
-        return new SocketClient( null, address, SecurityPlan.insecure(), CONNECTION_TIMEOUT, DEV_NULL_LOGGER );
+        return new SocketClient( address, SecurityPlan.insecure(), CONNECTION_TIMEOUT, DEV_NULL_LOGGER );
     }
 
     private SocketClient dummyClient()

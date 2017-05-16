@@ -221,12 +221,6 @@ class RoutingPooledConnection implements PooledConnection
     }
 
     @Override
-    public boolean supportsBytes()
-    {
-        return delegate.supportsBytes();
-    }
-
-    @Override
     public long lastUsedTimestamp()
     {
         return delegate.lastUsedTimestamp();
