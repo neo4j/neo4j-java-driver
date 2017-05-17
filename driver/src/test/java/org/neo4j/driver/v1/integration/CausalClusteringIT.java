@@ -22,6 +22,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -81,6 +82,16 @@ public class CausalClusteringIT
         Cluster cluster = clusterRule.getCluster();
 
         int count = executeWriteAndReadThroughBolt( cluster.leader() );
+
+        assertEquals( 1, count );
+    }
+
+    @Test
+    public void shouldExecuteReadAndWritesWhenRouterIsDiscovered() throws Exception
+    {
+        Cluster cluster = clusterRule.getCluster();
+
+        int count = executeWriteAndReadThroughBoltOnFirstAvailableAddress( cluster.anyReadReplica(), cluster.leader() );
 
         assertEquals( 1, count );
     }
@@ -446,6 +457,19 @@ public class CausalClusteringIT
         }
     }
 
+    private int executeWriteAndReadThroughBoltOnFirstAvailableAddress( ClusterMember... members ) throws TimeoutException, InterruptedException
+    {
+        List<String> addresses = new ArrayList<>( members.length );
+        for ( ClusterMember member : members )
+        {
+            addresses.add( member.getRoutingUri().getAuthority() );
+        }
+        try ( Driver driver = discoverDriver( addresses ) )
+        {
+            return inExpirableSession( driver, createWritableSession( null ), executeWriteAndRead() );
+        }
+    }
+
     private Function<Driver,Session> createSession()
     {
         return new Function<Driver,Session>()
@@ -590,6 +614,24 @@ public class CausalClusteringIT
                 .toConfig();
 
         return GraphDatabase.driver( boltUri, clusterRule.getDefaultAuthToken(), config );
+    }
+
+    private Driver discoverDriver( List<String> addresses )
+    {
+        Logging devNullLogging = new Logging()
+        {
+            @Override
+            public Logger getLog( String name )
+            {
+                return DevNullLogger.DEV_NULL_LOGGER;
+            }
+        };
+
+        Config config = Config.build()
+                .withLogging( devNullLogging )
+                .toConfig();
+
+        return GraphDatabase.routingDriverFromFirstAvailableAddress( addresses, clusterRule.getDefaultAuthToken(), config );
     }
 
     private static void createNodesInDifferentThreads( int count, final Driver driver ) throws Exception

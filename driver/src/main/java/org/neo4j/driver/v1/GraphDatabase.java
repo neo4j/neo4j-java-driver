@@ -19,10 +19,12 @@
 package org.neo4j.driver.v1;
 
 import java.net.URI;
+import java.util.List;
 
 import org.neo4j.driver.internal.DriverFactory;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
+import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
 /**
  * Creates {@link Driver drivers}, optionally letting you {@link #driver(URI, Config)} to configure them.
@@ -130,5 +132,45 @@ public class GraphDatabase
         RetrySettings retrySettings = config.retrySettings();
 
         return new DriverFactory().newInstance( uri, authToken, routingSettings, retrySettings, config );
+    }
+
+    /**
+     * Try to create a bolt+routing driver from the first available address.
+     * This is wrapper for the {@link #driver} method that finds the first
+     * server to respond positively.
+     *
+     * @param addresses a list of server addresses for Neo4j instances
+     * @param authToken authentication to use, see {@link AuthTokens}
+     * @param config user defined configuration
+     * @return a new driver instance
+     */
+    public static Driver routingDriverFromFirstAvailableAddress( List<String> addresses, AuthToken authToken, Config config )
+    {
+        for( String address: addresses )
+        {
+            try
+            {
+                return driver( "bolt+routing://" + address, authToken, config );
+            }
+            catch( ServiceUnavailableException e )
+            {
+                // try the next one
+            }
+        }
+        throw new ServiceUnavailableException( "Failed to discover an available server" );
+    }
+
+    /**
+     * Try to create a bolt+routing driver from the first available address.
+     * This is wrapper for the {@link #driver} method that finds the first
+     * server to respond positively.
+     *
+     * @param addresses a list of server addresses for Neo4j instances
+     * @param authToken authentication to use, see {@link AuthTokens}
+     * @return a new driver instance
+     */
+    public static Driver routingDriverFromFirstAvailableAddress( List<String> addresses, AuthToken authToken )
+    {
+        return routingDriverFromFirstAvailableAddress( addresses, authToken, Config.defaultConfig() );
     }
 }
