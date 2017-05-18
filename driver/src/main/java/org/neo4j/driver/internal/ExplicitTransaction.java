@@ -205,7 +205,7 @@ class ExplicitTransaction implements Transaction
     @Override
     public boolean isOpen()
     {
-        return state == State.ACTIVE;
+        return state != State.SUCCEEDED && state != State.ROLLED_BACK;
     }
 
     private void ensureNotFailed()

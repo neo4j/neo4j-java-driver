@@ -26,8 +26,11 @@ import java.util.Map;
 
 import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.Value;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -142,5 +145,72 @@ public class ExplicitTransactionTest
         inOrder.verify( connection ).run( "BEGIN", expectedParams, Collector.NO_OP );
         inOrder.verify( connection ).pullAll( Collector.NO_OP );
         inOrder.verify( connection ).sync();
+    }
+
+    @Test
+    public void shouldBeOpenAfterConstruction()
+    {
+        Transaction tx = new ExplicitTransaction( openConnectionMock(), mock( Runnable.class ) );
+
+        assertTrue( tx.isOpen() );
+    }
+
+    @Test
+    public void shouldBeOpenWhenMarkedForSuccess()
+    {
+        Transaction tx = new ExplicitTransaction( openConnectionMock(), mock( Runnable.class ) );
+
+        tx.success();
+
+        assertTrue( tx.isOpen() );
+    }
+
+    @Test
+    public void shouldBeOpenWhenMarkedForFailure()
+    {
+        Transaction tx = new ExplicitTransaction( openConnectionMock(), mock( Runnable.class ) );
+
+        tx.failure();
+
+        assertTrue( tx.isOpen() );
+    }
+
+    @Test
+    public void shouldBeOpenWhenMarkedToClose()
+    {
+        ExplicitTransaction tx = new ExplicitTransaction( openConnectionMock(), mock( Runnable.class ) );
+
+        tx.markToClose();
+
+        assertTrue( tx.isOpen() );
+    }
+
+    @Test
+    public void shouldBeClosedAfterCommit()
+    {
+        Transaction tx = new ExplicitTransaction( openConnectionMock(), mock( Runnable.class ) );
+
+        tx.success();
+        tx.close();
+
+        assertFalse( tx.isOpen() );
+    }
+
+    @Test
+    public void shouldBeClosedAfterRollback()
+    {
+        Transaction tx = new ExplicitTransaction( openConnectionMock(), mock( Runnable.class ) );
+
+        tx.failure();
+        tx.close();
+
+        assertFalse( tx.isOpen() );
+    }
+
+    private static Connection openConnectionMock()
+    {
+        Connection connection = mock( Connection.class );
+        when( connection.isOpen() ).thenReturn( true );
+        return connection;
     }
 }
