@@ -43,6 +43,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.driver.internal.util.CertificateTool.saveX509Cert;
 import static org.neo4j.driver.v1.Config.TrustStrategy.trustCustomCertificateSignedBy;
@@ -57,7 +58,9 @@ public class DriverSecurityComplianceSteps
     private Driver driver;
     private File knownHostsFile;
     private Throwable exception;
+    private Config driverKittenConfig;
     private Driver driverKitten; // well, just a reference to another driver
+    private File certificate;
 
     // first use
     @Given( "^a running Neo4j Database$" )
@@ -81,6 +84,7 @@ public class DriverSecurityComplianceSteps
     @Then( "sessions should simply work$" )
     public void sessionsShouldSimplyWork() throws Throwable
     {
+        assertNull( exception );
         try ( Session session = driver.session() )
         {
             StatementResult statementResult = session.run( "RETURN 1" );
@@ -100,11 +104,19 @@ public class DriverSecurityComplianceSteps
     @When( "^I connect via a TLS-enabled transport again$" )
     public void iConnectViaATlsEnabledTransportAgain() throws Throwable
     {
-        driver = GraphDatabase.driver(
-                Neo4jRunner.DEFAULT_URI,
-                Neo4jRunner.DEFAULT_AUTH_TOKEN,
-                Config.build().withEncryptionLevel( EncryptionLevel.REQUIRED )
-                        .withTrustStrategy( trustOnFirstUse( knownHostsFile ) ).toConfig() );
+        try
+        {
+            driver = GraphDatabase.driver(
+                    Neo4jRunner.DEFAULT_URI,
+                    Neo4jRunner.DEFAULT_AUTH_TOKEN,
+                    Config.build().withEncryptionLevel( EncryptionLevel.REQUIRED )
+                            .withTrustStrategy( trustOnFirstUse( knownHostsFile ) ).toConfig() );
+        }
+        catch ( Exception e )
+        {
+            driver = null;
+            exception = e;
+        }
     }
 
     // man in the middle attack
@@ -128,13 +140,16 @@ public class DriverSecurityComplianceSteps
     @Then( "^creating sessions should fail$" )
     public void creatingSessionsShouldFail() throws Throwable
     {
-        try ( Session session = driver.session() )
+        if ( driver != null )
         {
-            session.run( "RETURN 1" );
-        }
-        catch ( Exception e )
-        {
-            exception = e;
+            try ( Session session = driver.session() )
+            {
+                session.run( "RETURN 1" );
+            }
+            catch ( Exception e )
+            {
+                exception = e;
+            }
         }
     }
 
@@ -169,11 +184,10 @@ public class DriverSecurityComplianceSteps
         sessionsShouldSimplyWork();
 
         File tempFile = tempFile( "known_hosts", ".tmp" );
-        driverKitten = GraphDatabase.driver(
-                Neo4jRunner.DEFAULT_URI,
-                Neo4jRunner.DEFAULT_AUTH_TOKEN,
-                Config.build().withEncryptionLevel( EncryptionLevel.REQUIRED )
-                        .withTrustStrategy( trustOnFirstUse( tempFile ) ).toConfig() );
+        driverKittenConfig = Config.build()
+                .withEncryptionLevel( EncryptionLevel.REQUIRED )
+                .withTrustStrategy( trustOnFirstUse( tempFile ) )
+                .toConfig();
     }
 
     @Then( "^the two drivers should not interfere with one another's known hosts files$" )
@@ -186,6 +200,9 @@ public class DriverSecurityComplianceSteps
         iShouldGetAHelpfulErrorExplainingThatCertificateChanged( "nah" );
 
         // However as driverKitten has not connected to the server, so driverKitten should just simply connect!
+        driverKitten = GraphDatabase.driver( Neo4jRunner.DEFAULT_URI, Neo4jRunner.DEFAULT_AUTH_TOKEN,
+                driverKittenConfig );
+
         try ( Session session = driverKitten.session() )
         {
             StatementResult statementResult = session.run( "RETURN 1" );
@@ -203,19 +220,12 @@ public class DriverSecurityComplianceSteps
     public void aRunningNeo4jDatabaseUsingACertificateSignedByTheSameTrustedCertificate() throws Throwable
     {
         // create new root certificate
-        File rootCert = tempFile( "temp_root_cert", ".cert" );
+        certificate = tempFile( "temp_root_cert", ".cert" );
         File rootKey = tempFile( "temp_root_key", ".key" );
 
         SelfSignedCertificateGenerator certGenerator = new SelfSignedCertificateGenerator();
-        certGenerator.saveSelfSignedCertificate( rootCert );
+        certGenerator.saveSelfSignedCertificate( certificate );
         certGenerator.savePrivateKey( rootKey );
-
-        // give root certificate to driver
-        driver = GraphDatabase.driver(
-                Neo4jRunner.DEFAULT_URI,
-                Neo4jRunner.DEFAULT_AUTH_TOKEN,
-                Config.build().withEncryption()
-                        .withTrustStrategy( trustCustomCertificateSignedBy( rootCert ) ).toConfig() );
 
         // generate certificate signing request and get a certificate signed by the root private key
         File cert = tempFile( "temp_cert", ".cert" );
@@ -232,34 +242,35 @@ public class DriverSecurityComplianceSteps
     @When( "^I connect via a TLS-enabled transport$" )
     public void iConnectViaATlsEnabledTransport()
     {
+        try
+        {
+            // give root certificate to driver
+            driver = GraphDatabase.driver(
+                    Neo4jRunner.DEFAULT_URI,
+                    Neo4jRunner.DEFAULT_AUTH_TOKEN,
+                    Config.build().withEncryption()
+                            .withTrustStrategy( trustCustomCertificateSignedBy( certificate ) ).toConfig() );
+        }
+        catch ( Exception e )
+        {
+            driver = null;
+            exception = e;
+        }
     }
 
     // same certificate
     @And( "^a running Neo4j Database using that exact trusted certificate$" )
     public void aRunningNeo4jDatabaseUsingThatExactTrustedCertificate()
     {
-        driver = GraphDatabase.driver(
-                Neo4jRunner.DEFAULT_URI,
-                Neo4jRunner.DEFAULT_AUTH_TOKEN,
-                Config.build().withEncryption()
-                        .withTrustStrategy( trustCustomCertificateSignedBy(
-                                new File( HOME_DIR, DEFAULT_TLS_CERT_PATH ) ) )
-                        .toConfig() );
+        certificate = new File( HOME_DIR, DEFAULT_TLS_CERT_PATH );
     }
 
     // invalid cert
     @And( "^a running Neo4j Database using a certificate not signed by the trusted certificate$" )
     public void aRunningNeo4jDatabaseUsingACertNotSignedByTheTrustedCertificates() throws Throwable
     {
-        File cert = tempFile( "temp_cert", ".cert" );
-        saveX509Cert( generateSelfSignedCertificate(), cert );
-
-        // give root certificate to driver
-        driver = GraphDatabase.driver(
-                Neo4jRunner.DEFAULT_URI,
-                Neo4jRunner.DEFAULT_AUTH_TOKEN,
-                Config.build().withEncryption()
-                        .withTrustStrategy( trustCustomCertificateSignedBy( cert ) ).toConfig() );
+        certificate = tempFile( "temp_cert", ".cert" );
+        saveX509Cert( generateSelfSignedCertificate(), certificate );
     }
 
     @And( "^I should get a helpful error explaining that no trusted certificate found$" )
@@ -274,7 +285,10 @@ public class DriverSecurityComplianceSteps
     @After( "@tls" )
     public void clearAfterEachScenario() throws Throwable
     {
-        driver.close();
+        if ( driver != null )
+        {
+            driver.close();
+        }
 
         driver = null;
         knownHostsFile = null;

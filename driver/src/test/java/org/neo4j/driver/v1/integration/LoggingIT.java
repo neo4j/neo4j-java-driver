@@ -47,15 +47,15 @@ public class LoggingIT
         Logging logging = mock( Logging.class );
         Logger logger = mock( Logger.class );
 
-        try( Driver driver = GraphDatabase.driver( neo4j.uri(), neo4j.authToken(),
+        when( logging.getLog( anyString() ) ).thenReturn( logger );
+        when( logger.isDebugEnabled() ).thenReturn( true );
+        when( logger.isTraceEnabled() ).thenReturn( true );
+
+        try ( Driver driver = GraphDatabase.driver( neo4j.uri(), neo4j.authToken(),
                 Config.build().withLogging( logging ).toConfig() ) )
         {
             // When
-            when( logging.getLog( anyString() ) ).thenReturn( logger );
-            when( logger.isDebugEnabled() ).thenReturn( true );
-            when( logger.isTraceEnabled() ).thenReturn( true );
-
-            try( Session session = driver.session() )
+            try ( Session session = driver.session() )
             {
                 session.run( "CREATE (a {name:'Cat'})" );
             }

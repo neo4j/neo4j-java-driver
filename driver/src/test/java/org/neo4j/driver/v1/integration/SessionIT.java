@@ -44,7 +44,6 @@ import org.neo4j.driver.internal.util.DriverFactoryWithFixedRetryLogic;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.AuthToken;
-import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
@@ -54,6 +53,7 @@ import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.StatementRunner;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.TransactionWork;
+import org.neo4j.driver.v1.exceptions.AuthenticationException;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
@@ -116,7 +116,7 @@ public class SessionIT
     public void shouldHandleNullConfig() throws Throwable
     {
         // Given
-        try ( Driver driver = GraphDatabase.driver( neo4j.uri(), AuthTokens.none(), null ) )
+        try ( Driver driver = GraphDatabase.driver( neo4j.uri(), neo4j.authToken(), null ) )
         {
             Session session = driver.session();
 
@@ -132,18 +132,13 @@ public class SessionIT
     @Test
     public void shouldHandleNullAuthToken() throws Throwable
     {
-        // Given
         AuthToken token = null;
-        try ( Driver driver = GraphDatabase.driver( neo4j.uri(), token ) )
-        {
-            Session session = driver.session();
 
-            // When
-            session.close();
+        exception.expect( AuthenticationException.class );
 
-            // Then
-            assertFalse( session.isOpen() );
-        }
+        // null auth token should be interpreted as AuthTokens.none() and fail driver creation
+        // because server expects basic auth
+        GraphDatabase.driver( neo4j.uri(), token );
     }
 
     @Test

@@ -40,7 +40,6 @@ import org.neo4j.driver.internal.spi.Connector;
 import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.AuthToken;
-import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Logging;
@@ -85,6 +84,7 @@ public class ConnectionHandlingIT
         RetrySettings retrySettings = RetrySettings.DEFAULT;
         driver = driverFactory.newInstance( neo4j.uri(), auth, routingSettings, retrySettings, defaultConfig() );
         connectionPool = driverFactory.connectionPool;
+        connectionPool.startMemorizing(); // start memorizing connections after driver creation
     }
 
     @After
@@ -370,23 +370,34 @@ public class ConnectionHandlingIT
     private static class MemorizingConnectionPool extends SocketConnectionPool
     {
         PooledConnection lastAcquiredConnectionSpy;
+        boolean memorize;
 
         MemorizingConnectionPool( PoolSettings poolSettings, Connector connector, Clock clock, Logging logging )
         {
             super( poolSettings, connector, clock, logging );
         }
 
+        void startMemorizing()
+        {
+            memorize = true;
+        }
+
         @Override
         public PooledConnection acquire( BoltServerAddress address )
         {
             PooledConnection connection = super.acquire( address );
-            // this connection pool returns spies so spies will be returned to the pool
-            // prevent spying on spies...
-            if ( !Mockito.mockingDetails( connection ).isSpy() )
+
+            if ( memorize )
             {
-                connection = spy( connection );
+                // this connection pool returns spies so spies will be returned to the pool
+                // prevent spying on spies...
+                if ( !Mockito.mockingDetails( connection ).isSpy() )
+                {
+                    connection = spy( connection );
+                }
+                lastAcquiredConnectionSpy = connection;
             }
-            lastAcquiredConnectionSpy = connection;
+
             return connection;
         }
     }

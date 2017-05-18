@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.internal;
 
+import org.junit.After;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.net.URI;
@@ -28,6 +30,7 @@ import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.util.StubServer;
+import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -40,6 +43,20 @@ import static org.neo4j.driver.v1.util.StubServer.INSECURE_CONFIG;
 
 public class DirectDriverTest
 {
+    @ClassRule
+    public static final TestNeo4j neo4j = new TestNeo4j();
+
+    private Driver driver;
+
+    @After
+    public void closeDriver() throws Exception
+    {
+        if ( driver != null )
+        {
+            driver.close();
+        }
+    }
+
     @Test
     public void shouldUseDefaultPortIfMissing()
     {
@@ -47,7 +64,7 @@ public class DirectDriverTest
         URI uri = URI.create( "bolt://localhost" );
 
         // When
-        Driver driver = GraphDatabase.driver( uri );
+        driver = GraphDatabase.driver( uri, neo4j.authToken() );
 
         // Then
         assertThat( driver, is( directDriverWithAddress( LOCAL_DEFAULT ) ) );
@@ -61,7 +78,7 @@ public class DirectDriverTest
         BoltServerAddress address = BoltServerAddress.from( uri );
 
         // When
-        Driver driver = GraphDatabase.driver( uri );
+        driver = GraphDatabase.driver( uri, neo4j.authToken() );
 
         // Then
         assertThat( driver, is( directDriverWithAddress( address ) ) );
@@ -76,7 +93,7 @@ public class DirectDriverTest
         // When & Then
         try
         {
-            Driver driver = GraphDatabase.driver( uri );
+            driver = GraphDatabase.driver( uri, neo4j.authToken() );
             fail("Expecting error for wrong uri");
         }
         catch( IllegalArgumentException e )
@@ -93,7 +110,7 @@ public class DirectDriverTest
         BoltServerAddress address = BoltServerAddress.from( uri );
 
         // When
-        Driver driver = GraphDatabase.driver( uri );
+        driver = GraphDatabase.driver( uri, neo4j.authToken() );
 
         // Then
         assertThat( driver, is( directDriverWithAddress( address ) ) );

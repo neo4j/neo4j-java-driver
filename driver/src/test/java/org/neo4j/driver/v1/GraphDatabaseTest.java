@@ -39,16 +39,18 @@ import static org.neo4j.driver.v1.util.StubServer.INSECURE_CONFIG;
 public class GraphDatabaseTest
 {
     @Test
-    public void boltSchemeShouldInstantiateDirectDriver()
+    public void boltSchemeShouldInstantiateDirectDriver() throws Exception
     {
         // Given
-        URI uri = URI.create( "bolt://localhost:7687" );
+        StubServer server = StubServer.start( "dummy_connection.script", 9001 );
+        URI uri = URI.create( "bolt://localhost:9001" );
 
         // When
-        Driver driver = GraphDatabase.driver( uri );
+        Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG );
 
         // Then
         assertThat( driver, is( directDriver() ) );
+        server.exit();
     }
 
     @Test

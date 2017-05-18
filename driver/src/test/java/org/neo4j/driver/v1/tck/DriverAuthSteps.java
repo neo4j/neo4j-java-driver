@@ -35,16 +35,18 @@ import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.util.Neo4jSettings;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.CoreMatchers.startsWith;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 import static org.neo4j.driver.v1.Values.ofValue;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.tck.DriverComplianceIT.neo4j;
 
 public class DriverAuthSteps
 {
-    Driver driver = null;
-    File tempDir = null;
+    private Driver driver;
+    private File tempDir;
+    private Exception driverCreationError;
 
     @Before( "@auth" )
     public void setUp() throws IOException
@@ -92,27 +94,44 @@ public class DriverAuthSteps
     {
         driver = configureCredentials( "neo4j", "neo4j", "password" );
         driver.close();
-        driver = GraphDatabase.driver( neo4j.uri(), new InternalAuthToken(
-                parameters(
-                        "scheme", "basic",
-                        "principal", "neo4j",
-                        "credentials", "wrong" ).asMap( ofValue() ) ) );
+
+        try
+        {
+            driver = GraphDatabase.driver( neo4j.uri(), new InternalAuthToken(
+                    parameters(
+                            "scheme", "basic",
+                            "principal", "neo4j",
+                            "credentials", "wrong" ).asMap( ofValue() ) ) );
+        }
+        catch ( Exception e )
+        {
+            driver = null;
+            driverCreationError = e;
+        }
     }
 
     @Then( "^reading and writing to the database should not be possible$" )
     public void readingAndWritingToTheDatabaseShouldNotBePossible() throws Throwable
     {
-        try(Session session = driver.session())
+        Exception error = null;
+        if ( driver != null )
         {
-            session.run( "CREATE (:label1)" ).consume();
+            try ( Session session = driver.session() )
+            {
+                session.run( "CREATE (:label1)" ).consume();
+            }
+            catch ( Exception e )
+            {
+                error = e;
+            }
         }
-        catch ( Exception e )
+        else
         {
-            assertThat(e.getMessage().startsWith( "The client is unauthorized due to authentication failure" ),
-                    equalTo(true));
-            return;
+            error = driverCreationError;
         }
-        throw new RuntimeException( "Exception should have been thrown" );
+
+        assertNotNull( "Exception should have been thrown", error );
+        assertThat( error.getMessage(), startsWith( "The client is unauthorized due to authentication failure" ) );
     }
 
     @And( "^a `Protocol Error` is raised$" )
