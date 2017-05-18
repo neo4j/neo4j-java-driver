@@ -74,10 +74,15 @@ public class StubServer
         catch ( IllegalThreadStateException ex )
         {
             // not exited yet
-            process.destroy();
-            process.waitFor();
+            exit();
             throw new ForceKilled();
         }
+    }
+
+    public void exit() throws InterruptedException
+    {
+        process.destroy();
+        process.waitFor();
     }
 
     private static String resource( String fileName )

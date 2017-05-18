@@ -37,6 +37,8 @@ public class DirectConnectionProvider implements ConnectionProvider
     {
         this.address = address;
         this.pool = pool;
+
+        verifyConnectivity();
     }
 
     @Override
@@ -54,5 +56,14 @@ public class DirectConnectionProvider implements ConnectionProvider
     public BoltServerAddress getAddress()
     {
         return address;
+    }
+
+    /**
+     * Acquires and releases a connection to verify connectivity so this connection provider fails fast. This is
+     * especially valuable when driver was created with incorrect credentials.
+     */
+    private void verifyConnectivity()
+    {
+        acquireConnection( AccessMode.READ ).close();
     }
 }

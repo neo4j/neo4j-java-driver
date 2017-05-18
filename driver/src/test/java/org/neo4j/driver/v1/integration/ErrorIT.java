@@ -25,9 +25,7 @@ import org.junit.rules.ExpectedException;
 import java.util.UUID;
 
 import org.neo4j.driver.v1.Config;
-import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
-import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
@@ -114,18 +112,11 @@ public class ErrorIT
     @Test
     public void shouldExplainConnectionError() throws Throwable
     {
-        // Given
-        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:7777" );
-              Session session = driver.session() )
-        {
-            // Expect
-            exception.expect( ServiceUnavailableException.class );
-            exception.expectMessage( "Unable to connect to localhost:7777, ensure the database is running " +
-                                     "and that there is a working network connection to it." );
+        exception.expect( ServiceUnavailableException.class );
+        exception.expectMessage( "Unable to connect to localhost:7777, ensure the database is running " +
+                                 "and that there is a working network connection to it." );
 
-            // When
-            session.run( "RETURN 1" );
-        }
+        GraphDatabase.driver( "bolt://localhost:7777" );
     }
 
     @Test
@@ -157,22 +148,17 @@ public class ErrorIT
     @Test
     public void shouldGetHelpfulErrorWhenTryingToConnectToHttpPort() throws Throwable
     {
-        // Given
         //the http server needs some time to start up
         Thread.sleep( 2000 );
-        Config config = Config.build().withoutEncryption().toConfig();
-        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:7474", config );
-              Session session = driver.session() )
-        {
-            // Expect
-            exception.expect( ClientException.class );
-            exception.expectMessage(
-                    "Server responded HTTP. Make sure you are not trying to connect to the http endpoint " +
-                    "(HTTP defaults to port 7474 whereas BOLT defaults to port 7687)" );
 
-            // When
-            session.run( "RETURN 1" );
-        }
+        Config config = Config.build().withoutEncryption().toConfig();
+
+        exception.expect( ClientException.class );
+        exception.expectMessage(
+                "Server responded HTTP. Make sure you are not trying to connect to the http endpoint " +
+                "(HTTP defaults to port 7474 whereas BOLT defaults to port 7687)" );
+
+        GraphDatabase.driver( "bolt://localhost:7474", config );
     }
 
 }

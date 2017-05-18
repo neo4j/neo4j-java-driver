@@ -25,10 +25,13 @@ import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.PooledConnection;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.RETURNS_MOCKS;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.only;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.v1.AccessMode.READ;
@@ -42,7 +45,7 @@ public class DirectConnectionProviderTest
         ConnectionPool pool = mock( ConnectionPool.class );
         PooledConnection connection1 = mock( PooledConnection.class );
         PooledConnection connection2 = mock( PooledConnection.class );
-        when( pool.acquire( any( BoltServerAddress.class ) ) ).thenReturn( connection1 ).thenReturn( connection2 );
+        when( pool.acquire( any( BoltServerAddress.class ) ) ).thenReturn( connection1, connection1, connection2 );
 
         DirectConnectionProvider provider = newConnectionProvider( pool );
 
@@ -53,12 +56,12 @@ public class DirectConnectionProviderTest
     @Test
     public void closesPool() throws Exception
     {
-        ConnectionPool pool = mock( ConnectionPool.class );
+        ConnectionPool pool = mock( ConnectionPool.class, RETURNS_MOCKS );
         DirectConnectionProvider provider = newConnectionProvider( pool );
 
         provider.close();
 
-        verify( pool, only() ).close();
+        verify( pool ).close();
     }
 
     @Test
@@ -71,9 +74,42 @@ public class DirectConnectionProviderTest
         assertEquals( address, provider.getAddress() );
     }
 
+    @Test
+    public void testsConnectivityOnCreation()
+    {
+        ConnectionPool pool = mock( ConnectionPool.class );
+        PooledConnection connection = mock( PooledConnection.class );
+        when( pool.acquire( any( BoltServerAddress.class ) ) ).thenReturn( connection );
+
+        assertNotNull( newConnectionProvider( pool ) );
+
+        verify( pool ).acquire( BoltServerAddress.LOCAL_DEFAULT );
+        verify( connection ).close();
+    }
+
+    @Test
+    public void throwsWhenTestConnectionThrows()
+    {
+        ConnectionPool pool = mock( ConnectionPool.class );
+        PooledConnection connection = mock( PooledConnection.class );
+        RuntimeException error = new RuntimeException();
+        doThrow( error ).when( connection ).close();
+        when( pool.acquire( any( BoltServerAddress.class ) ) ).thenReturn( connection );
+
+        try
+        {
+            newConnectionProvider( pool );
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertSame( error, e );
+        }
+    }
+
     private static DirectConnectionProvider newConnectionProvider( BoltServerAddress address )
     {
-        return new DirectConnectionProvider( address, mock( ConnectionPool.class ) );
+        return new DirectConnectionProvider( address, mock( ConnectionPool.class, RETURNS_MOCKS ) );
     }
 
     private static DirectConnectionProvider newConnectionProvider( ConnectionPool pool )
