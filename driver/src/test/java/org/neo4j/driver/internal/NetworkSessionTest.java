@@ -30,7 +30,9 @@ import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import static junit.framework.Assert.fail;
 import static junit.framework.TestCase.assertNotNull;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -163,5 +165,39 @@ public class NetworkSessionTest
         {
            assertThat( e.getMessage(), equalTo("This session has already been closed." ));
         }
+    }
+
+    @Test
+    public void transactionShouldBeOpenAfterSessionReset()
+    {
+        NetworkSession session = new NetworkSession( openConnectionMock() );
+        Transaction tx = session.beginTransaction();
+
+        assertTrue( tx.isOpen() );
+
+        session.reset();
+        assertTrue( tx.isOpen() );
+    }
+
+    @Test
+    public void transactionShouldBeClosedAfterSessionResetAndClose()
+    {
+        NetworkSession session = new NetworkSession( openConnectionMock() );
+        Transaction tx = session.beginTransaction();
+
+        assertTrue( tx.isOpen() );
+
+        session.reset();
+        assertTrue( tx.isOpen() );
+
+        tx.close();
+        assertFalse( tx.isOpen() );
+    }
+
+    private static Connection openConnectionMock()
+    {
+        Connection connection = mock( Connection.class );
+        when( connection.isOpen() ).thenReturn( true );
+        return connection;
     }
 }
