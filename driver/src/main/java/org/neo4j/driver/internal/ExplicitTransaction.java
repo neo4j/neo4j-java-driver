@@ -135,6 +135,12 @@ public class ExplicitTransaction implements Transaction
                 {
                     rollbackTx();
                 }
+                else if ( state == State.FAILED )
+                {
+                    // unrecoverable error happened, transaction should've been rolled back on the server
+                    // update state so that this transaction does not remain open
+                    state = State.ROLLED_BACK;
+                }
             }
         }
         finally
@@ -206,7 +212,7 @@ public class ExplicitTransaction implements Transaction
     @Override
     public boolean isOpen()
     {
-        return state == State.ACTIVE;
+        return state != State.SUCCEEDED && state != State.ROLLED_BACK;
     }
 
     private void ensureNotFailed()

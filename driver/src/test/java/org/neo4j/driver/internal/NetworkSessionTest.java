@@ -734,6 +734,37 @@ public class NetworkSessionTest
         testTxIsRetriedUntilFailureWhenTxCloseThrows( WRITE );
     }
 
+    @Test
+    public void transactionShouldBeOpenAfterSessionReset()
+    {
+        ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
+        when( connectionProvider.acquireConnection( READ ) ).thenReturn( openConnectionMock() );
+        NetworkSession session = newSession( connectionProvider, READ );
+        Transaction tx = session.beginTransaction();
+
+        assertTrue( tx.isOpen() );
+
+        session.reset();
+        assertTrue( tx.isOpen() );
+    }
+
+    @Test
+    public void transactionShouldBeClosedAfterSessionResetAndClose()
+    {
+        ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
+        when( connectionProvider.acquireConnection( READ ) ).thenReturn( openConnectionMock() );
+        NetworkSession session = newSession( connectionProvider, READ );
+        Transaction tx = session.beginTransaction();
+
+        assertTrue( tx.isOpen() );
+
+        session.reset();
+        assertTrue( tx.isOpen() );
+
+        tx.close();
+        assertFalse( tx.isOpen() );
+    }
+
     private static void testConnectionAcquisition( AccessMode sessionMode, AccessMode transactionMode )
     {
         ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
