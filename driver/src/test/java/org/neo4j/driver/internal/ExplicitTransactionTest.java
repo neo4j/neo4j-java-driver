@@ -207,6 +207,17 @@ public class ExplicitTransactionTest
         assertFalse( tx.isOpen() );
     }
 
+    @Test
+    public void shouldBeClosedWhenMarkedToCloseAndClosed()
+    {
+        ExplicitTransaction tx = new ExplicitTransaction( openConnectionMock(), mock( Runnable.class ) );
+
+        tx.markToClose();
+        tx.close();
+
+        assertFalse( tx.isOpen() );
+    }
+
     private static Connection openConnectionMock()
     {
         Connection connection = mock( Connection.class );

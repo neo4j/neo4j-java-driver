@@ -135,6 +135,12 @@ class ExplicitTransaction implements Transaction
                 {
                     rollbackTx();
                 }
+                else if ( state == State.FAILED )
+                {
+                    // unrecoverable error happened, transaction should've been rolled back on the server
+                    // update state so that this transaction does not remain open
+                    state = State.ROLLED_BACK;
+                }
             }
         }
         finally
