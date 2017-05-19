@@ -479,7 +479,7 @@ public class NetworkSessionTest
 
         session.onConnectionError( true );
 
-        assertFalse( tx.isOpen() );
+        assertTrue( tx.isOpen() );
     }
 
     @Test
@@ -495,7 +495,7 @@ public class NetworkSessionTest
 
         session.onConnectionError( false );
 
-        assertFalse( tx.isOpen() );
+        assertTrue( tx.isOpen() );
     }
 
     @Test
@@ -738,7 +738,8 @@ public class NetworkSessionTest
     public void transactionShouldBeOpenAfterSessionReset()
     {
         ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
-        when( connectionProvider.acquireConnection( READ ) ).thenReturn( openConnectionMock() );
+        PooledConnection connection = openConnectionMock();
+        when( connectionProvider.acquireConnection( READ ) ).thenReturn( connection );
         NetworkSession session = newSession( connectionProvider, READ );
         Transaction tx = session.beginTransaction();
 
@@ -752,7 +753,8 @@ public class NetworkSessionTest
     public void transactionShouldBeClosedAfterSessionResetAndClose()
     {
         ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
-        when( connectionProvider.acquireConnection( READ ) ).thenReturn( openConnectionMock() );
+        PooledConnection connection = openConnectionMock();
+        when( connectionProvider.acquireConnection( READ ) ).thenReturn( connection );
         NetworkSession session = newSession( connectionProvider, READ );
         Transaction tx = session.beginTransaction();
 

@@ -151,7 +151,7 @@ public class ExplicitTransactionTest
     @Test
     public void shouldBeOpenAfterConstruction()
     {
-        Transaction tx = new ExplicitTransaction( openConnectionMock(), mock( Runnable.class ) );
+        Transaction tx = new ExplicitTransaction( openConnectionMock(), mock( SessionResourcesHandler.class ) );
 
         assertTrue( tx.isOpen() );
     }
@@ -159,7 +159,7 @@ public class ExplicitTransactionTest
     @Test
     public void shouldBeOpenWhenMarkedForSuccess()
     {
-        Transaction tx = new ExplicitTransaction( openConnectionMock(), mock( Runnable.class ) );
+        Transaction tx = new ExplicitTransaction( openConnectionMock(), mock( SessionResourcesHandler.class ) );
 
         tx.success();
 
@@ -169,7 +169,7 @@ public class ExplicitTransactionTest
     @Test
     public void shouldBeOpenWhenMarkedForFailure()
     {
-        Transaction tx = new ExplicitTransaction( openConnectionMock(), mock( Runnable.class ) );
+        Transaction tx = new ExplicitTransaction( openConnectionMock(), mock( SessionResourcesHandler.class ) );
 
         tx.failure();
 
@@ -179,7 +179,7 @@ public class ExplicitTransactionTest
     @Test
     public void shouldBeOpenWhenMarkedToClose()
     {
-        ExplicitTransaction tx = new ExplicitTransaction( openConnectionMock(), mock( Runnable.class ) );
+        ExplicitTransaction tx = new ExplicitTransaction( openConnectionMock(), mock( SessionResourcesHandler.class ) );
 
         tx.markToClose();
 
@@ -189,7 +189,7 @@ public class ExplicitTransactionTest
     @Test
     public void shouldBeClosedAfterCommit()
     {
-        Transaction tx = new ExplicitTransaction( openConnectionMock(), mock( Runnable.class ) );
+        Transaction tx = new ExplicitTransaction( openConnectionMock(), mock( SessionResourcesHandler.class ) );
 
         tx.success();
         tx.close();
@@ -200,7 +200,7 @@ public class ExplicitTransactionTest
     @Test
     public void shouldBeClosedAfterRollback()
     {
-        Transaction tx = new ExplicitTransaction( openConnectionMock(), mock( Runnable.class ) );
+        Transaction tx = new ExplicitTransaction( openConnectionMock(), mock( SessionResourcesHandler.class ) );
 
         tx.failure();
         tx.close();
@@ -211,7 +211,7 @@ public class ExplicitTransactionTest
     @Test
     public void shouldBeClosedWhenMarkedToCloseAndClosed()
     {
-        ExplicitTransaction tx = new ExplicitTransaction( openConnectionMock(), mock( Runnable.class ) );
+        ExplicitTransaction tx = new ExplicitTransaction( openConnectionMock(), mock( SessionResourcesHandler.class ) );
 
         tx.markToClose();
         tx.close();
