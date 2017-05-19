@@ -479,7 +479,7 @@ public class NetworkSessionTest
 
         session.onConnectionError( true );
 
-        assertFalse( tx.isOpen() );
+        assertTrue( tx.isOpen() );
     }
 
     @Test
@@ -495,7 +495,7 @@ public class NetworkSessionTest
 
         session.onConnectionError( false );
 
-        assertFalse( tx.isOpen() );
+        assertTrue( tx.isOpen() );
     }
 
     @Test
@@ -732,6 +732,39 @@ public class NetworkSessionTest
     public void writeTxRetriedUntilFailureWhenTxCloseThrows()
     {
         testTxIsRetriedUntilFailureWhenTxCloseThrows( WRITE );
+    }
+
+    @Test
+    public void transactionShouldBeOpenAfterSessionReset()
+    {
+        ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
+        PooledConnection connection = openConnectionMock();
+        when( connectionProvider.acquireConnection( READ ) ).thenReturn( connection );
+        NetworkSession session = newSession( connectionProvider, READ );
+        Transaction tx = session.beginTransaction();
+
+        assertTrue( tx.isOpen() );
+
+        session.reset();
+        assertTrue( tx.isOpen() );
+    }
+
+    @Test
+    public void transactionShouldBeClosedAfterSessionResetAndClose()
+    {
+        ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
+        PooledConnection connection = openConnectionMock();
+        when( connectionProvider.acquireConnection( READ ) ).thenReturn( connection );
+        NetworkSession session = newSession( connectionProvider, READ );
+        Transaction tx = session.beginTransaction();
+
+        assertTrue( tx.isOpen() );
+
+        session.reset();
+        assertTrue( tx.isOpen() );
+
+        tx.close();
+        assertFalse( tx.isOpen() );
     }
 
     private static void testConnectionAcquisition( AccessMode sessionMode, AccessMode transactionMode )
