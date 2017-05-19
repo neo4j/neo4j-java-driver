@@ -143,7 +143,7 @@ public class SocketClient
     {
         if( version( serverVersion ).lessThan( v3_2_0 ) )
         {
-            setProtocol( SocketProtocolV1.create( channel, false ) );
+            setProtocol( SocketProtocolV1.createWithoutByteArraySupport( channel ) );
         }
     }
 

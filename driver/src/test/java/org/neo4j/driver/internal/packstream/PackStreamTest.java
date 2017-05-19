@@ -344,7 +344,7 @@ public class PackStreamTest
 
             // Then
             assertThat( packType, equalTo( PackType.BYTES ) );
-            assertArrayEquals( array, unpacker.unpackRawBytes() );
+            assertArrayEquals( array, unpacker.unpackBytes() );
         }
     }
 
@@ -391,7 +391,7 @@ public class PackStreamTest
 
         // Then
         assertThat( packType, equalTo( PackType.BYTES ) );
-        assertArrayEquals( "ABCDEFGHIJ".getBytes(), unpacker.unpackRawBytes() );
+        assertArrayEquals( "ABCDEFGHIJ".getBytes(), unpacker.unpackBytes() );
 
     }
 

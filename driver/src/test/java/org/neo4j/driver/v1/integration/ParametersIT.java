@@ -40,6 +40,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
+import static org.neo4j.driver.internal.util.ServerVersion.version;
 import static org.neo4j.driver.v1.Values.ofValue;
 import static org.neo4j.driver.v1.Values.parameters;
 
@@ -151,7 +152,8 @@ public class ParametersIT
 
     private boolean supportsBytes()
     {
-        return ServerVersion.version( session ).greaterThanOrEqual( ServerVersion.v3_2_0 );
+        String versionString = session.run( "RETURN 1" ).consume().server().version();
+        return version( versionString ).greaterThanOrEqual( ServerVersion.v3_2_0 );
     }
 
     @Test

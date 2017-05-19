@@ -34,15 +34,15 @@ public class SocketProtocolV1 implements SocketProtocol
     public static SocketProtocol create( ByteChannel channel )
     {
         /*by default the byte array support is enabled*/
-        return create( channel, true );
+        return new SocketProtocolV1( channel, true );
     }
 
-    public static SocketProtocol create( ByteChannel channel, boolean byteArraySupportEnabled )
+    public static SocketProtocol createWithoutByteArraySupport( ByteChannel channel )
     {
-        return new SocketProtocolV1( channel, byteArraySupportEnabled );
+        return new SocketProtocolV1( channel, false );
     }
 
-    public SocketProtocolV1( ByteChannel channel, boolean byteArraySupportEnabled )
+    private SocketProtocolV1( ByteChannel channel, boolean byteArraySupportEnabled )
     {
         messageFormat = new PackStreamMessageFormatV1();
         this.writer = messageFormat.newWriter( channel, byteArraySupportEnabled );

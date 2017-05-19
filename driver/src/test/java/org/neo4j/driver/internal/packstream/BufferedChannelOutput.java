@@ -107,7 +107,7 @@ public class BufferedChannelOutput implements PackOutput
         return this;
     }
 
-    private void ensure(int size ) throws IOException
+    private void ensure( int size ) throws IOException
     {
         if ( buffer.remaining() < size )
         {

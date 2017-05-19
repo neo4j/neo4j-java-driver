@@ -535,30 +535,6 @@ public class PackStream
             return new String(unpackUtf8(markerByte), UTF_8);
         }
 
-        public byte[] unpackRawBytes() throws IOException
-        {
-            final byte markerByte = in.readByte();
-
-            switch(markerByte)
-            {
-                case BYTES_8: return unpackRawBytes( unpackUINT8() );
-                case BYTES_16: return unpackRawBytes( unpackUINT16() );
-                case BYTES_32:
-                {
-                    long size = unpackUINT32();
-                    if ( size <= Integer.MAX_VALUE )
-                    {
-                        return unpackRawBytes( (int) size );
-                    }
-                    else
-                    {
-                        throw new Overflow( "BYTES_32 too long for Java" );
-                    }
-                }
-                default: throw new Unexpected( "Expected binary data, but got: 0x" + toHexString( markerByte & 0xFF ));
-            }
-        }
-
         /**
          * This may seem confusing. This method exists to move forward the internal pointer when encountering
          * a null value. The idiomatic usage would be someone using {@link #peekNextType()} to detect a null type,

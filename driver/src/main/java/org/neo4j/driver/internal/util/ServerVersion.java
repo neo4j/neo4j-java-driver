@@ -54,12 +54,6 @@ public class ServerVersion
         }
     }
 
-    public static ServerVersion version( Session session )
-    {
-            String versionString = session.run( "RETURN 1" ).consume().server().version();
-            return version( versionString );
-    }
-
     public static ServerVersion version( String server )
     {
         if ( server == null )

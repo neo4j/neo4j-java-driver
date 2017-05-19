@@ -85,7 +85,7 @@ public abstract class Values
         if ( value instanceof Iterable<?> ) { return value( (Iterable<Object>) value ); }
         if ( value instanceof Iterator<?> ) { return value( (Iterator<Object>) value ); }
 
-        if ( value instanceof byte[] ) { return new BytesValue( (byte[]) value ); }
+        if ( value instanceof byte[] ) { return value( (byte[]) value ); }
         if ( value instanceof boolean[] ) { return value( (boolean[]) value ); }
         if ( value instanceof String[] ) { return value( (String[]) value ); }
         if ( value instanceof long[] ) { return value( (long[]) value ); }
@@ -97,6 +97,7 @@ public abstract class Values
 
         throw new ClientException( "Unable to convert " + value.getClass().getName() + " to Neo4j Value." );
     }
+
 
     public static Value[] values( final Object... input )
     {
@@ -116,7 +117,7 @@ public abstract class Values
         return new ListValue( values );
     }
 
-    private static Value bytesValue( byte[] input )
+    public static BytesValue value( byte... input )
     {
         return new BytesValue( input );
     }
