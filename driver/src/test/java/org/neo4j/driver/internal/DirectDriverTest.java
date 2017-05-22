@@ -25,6 +25,7 @@ import org.junit.Test;
 import java.net.URI;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Record;
@@ -36,6 +37,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 import static org.neo4j.driver.internal.net.BoltServerAddress.LOCAL_DEFAULT;
 import static org.neo4j.driver.internal.util.Matchers.directDriverWithAddress;
 import static org.neo4j.driver.v1.Values.parameters;
@@ -73,6 +75,8 @@ public class DirectDriverTest
     @Test
     public void shouldAllowIPv6Address()
     {
+        assumeTrue( supportsListenAddressConfiguration( neo4j ) );
+
         // Given
         URI uri = URI.create( "bolt://[::1]" );
         BoltServerAddress address = BoltServerAddress.from( uri );
@@ -139,5 +143,18 @@ public class DirectDriverTest
 
         // Finally
         assertThat( server.exitStatus(), equalTo( 0 ) );
+    }
+
+    /**
+     * Check if running test neo4j instance supports {@value org.neo4j.driver.v1.util.Neo4jSettings#LISTEN_ADDR}
+     * configuration option. Only 3.1+ versions support it.
+     *
+     * @param neo4j the test neo4j instance to check.
+     * @return {@code true} if given test neo4j supports config option, {@code false} otherwise.
+     */
+    private static boolean supportsListenAddressConfiguration( TestNeo4j neo4j )
+    {
+        ServerVersion version = ServerVersion.version( neo4j.driver() );
+        return version.greaterThanOrEqual( ServerVersion.v3_1_0 );
     }
 }
