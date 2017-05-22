@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal;
 
+import java.util.Collection;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.internal.security.SecurityPlan;
@@ -62,7 +63,7 @@ public class InternalDriver implements Driver
     @Override
     public final Session session( AccessMode mode )
     {
-        return session( mode, null );
+        return newSession( mode, Bookmark.empty() );
     }
 
     @Override
@@ -73,6 +74,23 @@ public class InternalDriver implements Driver
 
     @Override
     public final Session session( AccessMode mode, String bookmark )
+    {
+        return newSession( mode, Bookmark.from( bookmark ) );
+    }
+
+    @Override
+    public Session session( Iterable<String> bookmarks )
+    {
+        return session( AccessMode.WRITE, bookmarks );
+    }
+
+    @Override
+    public Session session( AccessMode mode, Iterable<String> bookmarks )
+    {
+        return newSession( mode, Bookmark.from( bookmarks ) );
+    }
+
+    private Session newSession( AccessMode mode, Bookmark bookmark )
     {
         assertOpen();
         Session session = sessionFactory.newInstance( mode, bookmark );

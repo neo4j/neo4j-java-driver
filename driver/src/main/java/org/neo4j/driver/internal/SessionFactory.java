@@ -23,5 +23,5 @@ import org.neo4j.driver.v1.Session;
 
 public interface SessionFactory extends AutoCloseable
 {
-    Session newInstance( AccessMode mode, String bookmark );
+    Session newInstance( AccessMode mode, Bookmark bookmark );
 }

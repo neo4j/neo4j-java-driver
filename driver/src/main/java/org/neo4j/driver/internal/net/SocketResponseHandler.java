@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import org.neo4j.driver.v1.exceptions.AuthenticationException;
+import org.neo4j.driver.internal.Bookmark;
 import org.neo4j.driver.internal.messaging.MessageHandler;
 import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.summary.InternalNotification;
@@ -30,6 +30,7 @@ import org.neo4j.driver.internal.summary.InternalPlan;
 import org.neo4j.driver.internal.summary.InternalProfiledPlan;
 import org.neo4j.driver.internal.summary.InternalSummaryCounters;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.exceptions.AuthenticationException;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.DatabaseException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
@@ -206,7 +207,7 @@ public class SocketResponseHandler implements MessageHandler
     {
         if ( bookmark != null )
         {
-            collector.bookmark( bookmark.asString() );
+            collector.bookmark( Bookmark.from( bookmark.asString() ) );
         }
     }
 

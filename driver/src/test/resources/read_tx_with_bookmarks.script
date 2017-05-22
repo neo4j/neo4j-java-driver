@@ -2,7 +2,7 @@
 !: AUTO RESET
 !: AUTO PULL_ALL
 
-C: RUN "BEGIN" {"bookmark": "OldBookmark"}
+C: RUN "BEGIN" {"bookmark": "OldBookmark", "bookmarks": ["OldBookmark"]}
    PULL_ALL
 S: SUCCESS {}
    SUCCESS {}

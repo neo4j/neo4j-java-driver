@@ -25,6 +25,7 @@ import org.junit.rules.ExpectedException;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
@@ -1004,6 +1005,34 @@ public class RoutingDriverBoltKitTest
             assertEquals( 0, router.exitStatus() );
             assertEquals( 0, reader1.exitStatus() );
             assertEquals( 0, reader2.exitStatus() );
+        }
+    }
+
+    @Test
+    public void shouldSendMultipleBookmarks() throws Exception
+    {
+        StubServer router = StubServer.start( "acquire_endpoints.script", 9001 );
+        StubServer writer = StubServer.start( "multiple_bookmarks.script", 9007 );
+
+        List<String> bookmarks = Arrays.asList( "neo4j:bookmark:v1:tx5", "neo4j:bookmark:v1:tx29",
+                "neo4j:bookmark:v1:tx94", "neo4j:bookmark:v1:tx56", "neo4j:bookmark:v1:tx16",
+                "neo4j:bookmark:v1:tx68" );
+
+        try ( Driver driver = GraphDatabase.driver( "bolt+routing://localhost:9001", config );
+              Session session = driver.session( bookmarks ) )
+        {
+            try ( Transaction tx = session.beginTransaction() )
+            {
+                tx.run( "CREATE (n {name:'Bob'})" );
+                tx.success();
+            }
+
+            assertEquals( "neo4j:bookmark:v1:tx95", session.lastBookmark() );
+        }
+        finally
+        {
+            assertEquals( 0, router.exitStatus() );
+            assertEquals( 0, writer.exitStatus() );
         }
     }
 

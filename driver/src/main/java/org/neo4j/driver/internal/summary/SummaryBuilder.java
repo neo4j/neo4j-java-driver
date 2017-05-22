@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.driver.internal.Bookmark;
 import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Value;
@@ -131,7 +132,7 @@ public class SummaryBuilder implements Collector
     }
 
     @Override
-    public void bookmark( String bookmark )
+    public void bookmark( Bookmark bookmark )
     {
         // intentionally empty
     }

@@ -77,7 +77,7 @@ public interface Driver extends AutoCloseable
      * Alias to {@code session(mode, null)}.
      *
      * @param mode the type of access required by units of work in this session,
-     * e.g. {@link AccessMode#READ read access}.
+     * e.g. {@link AccessMode#READ read access} or {@link AccessMode#WRITE write access}.
      * @return a new {@link Session} object.
      */
     Session session( AccessMode mode );
@@ -101,12 +101,40 @@ public interface Driver extends AutoCloseable
      * transaction referenced by the supplied <em>bookmark</em>.
      *
      * @param mode the type of access required by units of work in this session,
-     * e.g. {@link AccessMode#READ read access}.
+     * e.g. {@link AccessMode#READ read access} or {@link AccessMode#WRITE write access}.
      * @param bookmark the initial reference to some previous transaction. A {@code null} value is permitted, and
      * indicates that the bookmark does not exist or is unknown.
      * @return a new {@link Session} object.
      */
     Session session( AccessMode mode, String bookmark );
+
+    /**
+     * Create a new {@link AccessMode#WRITE write} {@link Session} with specified initial bookmarks.
+     * First transaction in the created session will ensure that server hosting is at least as up-to-date as the
+     * latest transaction referenced by the supplied iterable of bookmarks.
+     * <p>
+     * Alias to {@code session(AccessMode.WRITE, bookmarks)}.
+     *
+     * @param bookmarks initial references to some previous transactions. Both {@code null} value and empty iterable
+     * are permitted, and indicate that the bookmarks do not exist or are unknown.
+     * @return a new {@link Session} object.
+     */
+    Session session( Iterable<String> bookmarks );
+
+    /**
+     * Create a new {@link AccessMode#WRITE write} {@link Session} with specified initial bookmarks.
+     * First transaction in the created session will ensure that server hosting is at least as up-to-date as the
+     * latest transaction referenced by the supplied iterable of bookmarks.
+     * <p>
+     * Alias to {@code session(AccessMode.WRITE, bookmarks)}.
+     *
+     * @param mode the type of access required by units of work in this session,
+     * e.g. {@link AccessMode#READ read access} or {@link AccessMode#WRITE write access}.
+     * @param bookmarks initial references to some previous transactions. Both {@code null} value and empty iterable
+     * are permitted, and indicate that the bookmarks do not exist or are unknown.
+     * @return a new {@link Session} object.
+     */
+    Session session( AccessMode mode, Iterable<String> bookmarks );
 
     /**
      * Close all the resources assigned to this driver, including any open connections.
