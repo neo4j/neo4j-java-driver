@@ -79,7 +79,7 @@ public class StubServer
         }
     }
 
-    public void exit() throws InterruptedException
+    private void exit() throws InterruptedException
     {
         process.destroy();
         process.waitFor();
