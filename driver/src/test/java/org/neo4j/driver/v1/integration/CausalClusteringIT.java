@@ -67,6 +67,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.v1.Values.parameters;
 
 public class CausalClusteringIT
@@ -459,10 +460,10 @@ public class CausalClusteringIT
 
     private int executeWriteAndReadThroughBoltOnFirstAvailableAddress( ClusterMember... members ) throws TimeoutException, InterruptedException
     {
-        List<String> addresses = new ArrayList<>( members.length );
+        List<URI> addresses = new ArrayList<>( members.length );
         for ( ClusterMember member : members )
         {
-            addresses.add( member.getRoutingUri().getAuthority() );
+            addresses.add( member.getRoutingUri() );
         }
         try ( Driver driver = discoverDriver( addresses ) )
         {
@@ -616,22 +617,13 @@ public class CausalClusteringIT
         return GraphDatabase.driver( boltUri, clusterRule.getDefaultAuthToken(), config );
     }
 
-    private Driver discoverDriver( List<String> addresses )
+    private Driver discoverDriver( List<URI> routingUris )
     {
-        Logging devNullLogging = new Logging()
-        {
-            @Override
-            public Logger getLog( String name )
-            {
-                return DevNullLogger.DEV_NULL_LOGGER;
-            }
-        };
-
         Config config = Config.build()
-                .withLogging( devNullLogging )
+                .withLogging( DEV_NULL_LOGGING )
                 .toConfig();
 
-        return GraphDatabase.routingDriverFromFirstAvailableAddress( addresses, clusterRule.getDefaultAuthToken(), config );
+        return GraphDatabase.routingDriver( routingUris, clusterRule.getDefaultAuthToken(), config );
     }
 
     private static void createNodesInDifferentThreads( int count, final Driver driver ) throws Exception

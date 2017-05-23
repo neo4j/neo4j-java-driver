@@ -19,12 +19,13 @@
 package org.neo4j.driver.v1;
 
 import java.net.URI;
-import java.util.List;
 
 import org.neo4j.driver.internal.DriverFactory;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
+
+import static org.neo4j.driver.internal.DriverFactory.BOLT_ROUTING_URI_SCHEME;
 
 /**
  * Creates {@link Driver drivers}, optionally letting you {@link #driver(URI, Config)} to configure them.
@@ -135,42 +136,44 @@ public class GraphDatabase
     }
 
     /**
-     * Try to create a bolt+routing driver from the first available address.
-     * This is wrapper for the {@link #driver} method that finds the first
+     * Try to create a bolt+routing driver from the <b>first</b> available address.
+     * This is wrapper for the {@link #driver} method that finds the <b>first</b>
      * server to respond positively.
      *
-     * @param addresses a list of server addresses for Neo4j instances
+     * @param routingUris an {@link Iterable} of server {@link URI}s for Neo4j instances. All given URIs should
+     * have 'bolt+routing' scheme.
      * @param authToken authentication to use, see {@link AuthTokens}
      * @param config user defined configuration
      * @return a new driver instance
      */
-    public static Driver routingDriverFromFirstAvailableAddress( List<String> addresses, AuthToken authToken, Config config )
+    public static Driver routingDriver( Iterable<URI> routingUris, AuthToken authToken, Config config )
     {
-        for( String address: addresses )
+        assertRoutingUris( routingUris );
+
+        for ( URI uri : routingUris )
         {
             try
             {
-                return driver( "bolt+routing://" + address, authToken, config );
+                return driver( uri, authToken, config );
             }
-            catch( ServiceUnavailableException e )
+            catch ( ServiceUnavailableException e )
             {
                 // try the next one
             }
         }
+
         throw new ServiceUnavailableException( "Failed to discover an available server" );
     }
 
-    /**
-     * Try to create a bolt+routing driver from the first available address.
-     * This is wrapper for the {@link #driver} method that finds the first
-     * server to respond positively.
-     *
-     * @param addresses a list of server addresses for Neo4j instances
-     * @param authToken authentication to use, see {@link AuthTokens}
-     * @return a new driver instance
-     */
-    public static Driver routingDriverFromFirstAvailableAddress( List<String> addresses, AuthToken authToken )
+    private static void assertRoutingUris( Iterable<URI> uris )
     {
-        return routingDriverFromFirstAvailableAddress( addresses, authToken, Config.defaultConfig() );
+        for ( URI uri : uris )
+        {
+            if ( !BOLT_ROUTING_URI_SCHEME.equals( uri.getScheme() ) )
+            {
+                throw new IllegalArgumentException(
+                        "Illegal URI scheme, expected '" + BOLT_ROUTING_URI_SCHEME + "' in '" + uri + "'" );
+            }
+        }
     }
 }

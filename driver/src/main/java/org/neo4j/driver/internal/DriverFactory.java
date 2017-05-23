@@ -47,10 +47,12 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static java.lang.String.format;
 import static org.neo4j.driver.internal.security.SecurityPlan.insecure;
-import static org.neo4j.driver.v1.Config.EncryptionLevel.REQUIRED;
 
 public class DriverFactory
 {
+    public static final String BOLT_URI_SCHEME = "bolt";
+    public static final String BOLT_ROUTING_URI_SCHEME = "bolt+routing";
+
     public final Driver newInstance( URI uri, AuthToken authToken, RoutingSettings routingSettings,
             RetrySettings retrySettings, Config config )
     {
@@ -86,10 +88,10 @@ public class DriverFactory
         String scheme = uri.getScheme().toLowerCase();
         switch ( scheme )
         {
-        case "bolt":
+        case BOLT_URI_SCHEME:
             assertNoRoutingContext( uri, routingSettings );
             return createDirectDriver( address, connectionPool, config, securityPlan, retryLogic );
-        case "bolt+routing":
+        case BOLT_ROUTING_URI_SCHEME:
             return createRoutingDriver( address, connectionPool, config, routingSettings, securityPlan, retryLogic );
         default:
             throw new ClientException( format( "Unsupported URI scheme: %s", scheme ) );
