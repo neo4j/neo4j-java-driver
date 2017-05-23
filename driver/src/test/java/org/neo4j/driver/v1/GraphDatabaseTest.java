@@ -50,7 +50,10 @@ public class GraphDatabaseTest
 
         // Then
         assertThat( driver, is( directDriver() ) );
-        server.exit();
+
+        // Finally
+        driver.close();
+        assertThat( server.exitStatus(), equalTo( 0 ) );
     }
 
     @Test
