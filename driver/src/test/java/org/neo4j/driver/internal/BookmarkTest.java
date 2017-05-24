@@ -22,6 +22,7 @@ import org.junit.Test;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.neo4j.driver.v1.Value;
@@ -44,17 +45,17 @@ public class BookmarkTest
     }
 
     @Test
-    public void asStringForEmptyBookmark()
+    public void maxBookmarkAsStringForEmptyBookmark()
     {
         Bookmark bookmark = Bookmark.empty();
-        assertNull( bookmark.asString() );
+        assertNull( bookmark.maxBookmarkAsString() );
     }
 
     @Test
-    public void asParametersForEmptyBookmark()
+    public void asBeginTransactionParametersForEmptyBookmark()
     {
         Bookmark bookmark = Bookmark.empty();
-        assertEquals( emptyMap(), bookmark.asParameters() );
+        assertEquals( emptyMap(), bookmark.asBeginTransactionParameters() );
     }
 
     @Test
@@ -65,14 +66,14 @@ public class BookmarkTest
     }
 
     @Test
-    public void asStringForNonEmptyBookmark()
+    public void maxBookmarkAsStringForNonEmptyBookmark()
     {
         Bookmark bookmark = Bookmark.from( "SomeBookmark" );
-        assertEquals( "SomeBookmark", bookmark.asString() );
+        assertEquals( "SomeBookmark", bookmark.maxBookmarkAsString() );
     }
 
     @Test
-    public void asParametersForNonEmptyBookmark()
+    public void asBeginTransactionParametersForNonEmptyBookmark()
     {
         Bookmark bookmark = Bookmark.from( "SomeBookmark" );
         verifyParameters( bookmark, "SomeBookmark", "SomeBookmark" );
@@ -82,7 +83,7 @@ public class BookmarkTest
     public void bookmarkFromString()
     {
         Bookmark bookmark = Bookmark.from( "Cat" );
-        assertEquals( "Cat", bookmark.asString() );
+        assertEquals( "Cat", bookmark.maxBookmarkAsString() );
         verifyParameters( bookmark, "Cat", "Cat" );
     }
 
@@ -98,7 +99,7 @@ public class BookmarkTest
     {
         Bookmark bookmark = Bookmark.from( asList(
                 "neo4j:bookmark:v1:tx42", "neo4j:bookmark:v1:tx10", "neo4j:bookmark:v1:tx12" ) );
-        assertEquals( "neo4j:bookmark:v1:tx42", bookmark.asString() );
+        assertEquals( "neo4j:bookmark:v1:tx42", bookmark.maxBookmarkAsString() );
         verifyParameters( bookmark,
                 "neo4j:bookmark:v1:tx42",
                 "neo4j:bookmark:v1:tx42", "neo4j:bookmark:v1:tx10", "neo4j:bookmark:v1:tx12" );
@@ -119,21 +120,46 @@ public class BookmarkTest
     }
 
     @Test
-    public void asParametersForBookmarkWithInvalidValue()
+    public void asBeginTransactionParametersForBookmarkWithInvalidValue()
     {
         Bookmark bookmark = Bookmark.from( asList(
                 "neo4j:bookmark:v1:tx1", "neo4j:bookmark:v1:txcat", "neo4j:bookmark:v1:tx3" ) );
-        assertEquals( "neo4j:bookmark:v1:tx3", bookmark.asString() );
+        assertEquals( "neo4j:bookmark:v1:tx3", bookmark.maxBookmarkAsString() );
         verifyParameters( bookmark,
                 "neo4j:bookmark:v1:tx3",
                 "neo4j:bookmark:v1:tx1", "neo4j:bookmark:v1:txcat", "neo4j:bookmark:v1:tx3" );
     }
 
-    private static void verifyParameters( Bookmark bookmark, String bookmarkValue, String... bookmarkValues )
+    @Test
+    public void asBeginTransactionParametersForBookmarkWithEmptyStringValue()
+    {
+        Bookmark bookmark = Bookmark.from( asList( "neo4j:bookmark:v1:tx9", "", "neo4j:bookmark:v1:tx3" ) );
+        assertEquals( "neo4j:bookmark:v1:tx9", bookmark.maxBookmarkAsString() );
+        verifyParameters( bookmark,
+                "neo4j:bookmark:v1:tx9",
+                "neo4j:bookmark:v1:tx9", "", "neo4j:bookmark:v1:tx3" );
+    }
+
+    @Test
+    public void asBeginTransactionParametersForBookmarkWithNullValue()
+    {
+        Bookmark bookmark = Bookmark.from( asList( "neo4j:bookmark:v1:tx41", null, "neo4j:bookmark:v1:tx42" ) );
+        assertEquals( "neo4j:bookmark:v1:tx42", bookmark.maxBookmarkAsString() );
+        verifyParameters( bookmark,
+                "neo4j:bookmark:v1:tx42",
+                asList( "neo4j:bookmark:v1:tx41", null, "neo4j:bookmark:v1:tx42" ) );
+    }
+
+    private static void verifyParameters( Bookmark bookmark, String expectedMaxValue, String... expectedValues )
+    {
+        verifyParameters( bookmark, expectedMaxValue, asList( expectedValues ) );
+    }
+
+    private static void verifyParameters( Bookmark bookmark, String expectedMaxValue, List<String> expectedValues )
     {
         Map<String,Value> expectedParameters = new HashMap<>();
-        expectedParameters.put( "bookmark", value( bookmarkValue ) );
-        expectedParameters.put( "bookmarks", value( bookmarkValues ) );
-        assertEquals( expectedParameters, bookmark.asParameters() );
+        expectedParameters.put( "bookmark", value( expectedMaxValue ) );
+        expectedParameters.put( "bookmarks", value( expectedValues ) );
+        assertEquals( expectedParameters, bookmark.asBeginTransactionParameters() );
     }
 }

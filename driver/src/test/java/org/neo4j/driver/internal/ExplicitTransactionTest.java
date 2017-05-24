@@ -140,7 +140,7 @@ public class ExplicitTransactionTest
 
         new ExplicitTransaction( connection, mock( SessionResourcesHandler.class ), bookmark );
 
-        Map<String,Value> expectedParams = bookmark.asParameters();
+        Map<String,Value> expectedParams = bookmark.asBeginTransactionParameters();
 
         InOrder inOrder = inOrder( connection );
         inOrder.verify( connection ).run( "BEGIN", expectedParams, Collector.NO_OP );
@@ -239,9 +239,9 @@ public class ExplicitTransactionTest
     {
         ExplicitTransaction tx = new ExplicitTransaction( openConnectionMock(), mock( SessionResourcesHandler.class ) );
         tx.setBookmark( Bookmark.from( "Cat" ) );
-        assertEquals( "Cat", tx.bookmark().asString() );
+        assertEquals( "Cat", tx.bookmark().maxBookmarkAsString() );
         tx.setBookmark( null );
-        assertEquals( "Cat", tx.bookmark().asString() );
+        assertEquals( "Cat", tx.bookmark().maxBookmarkAsString() );
     }
 
     @Test
@@ -249,9 +249,9 @@ public class ExplicitTransactionTest
     {
         ExplicitTransaction tx = new ExplicitTransaction( openConnectionMock(), mock( SessionResourcesHandler.class ) );
         tx.setBookmark( Bookmark.from( "Cat" ) );
-        assertEquals( "Cat", tx.bookmark().asString() );
+        assertEquals( "Cat", tx.bookmark().maxBookmarkAsString() );
         tx.setBookmark( Bookmark.empty() );
-        assertEquals( "Cat", tx.bookmark().asString() );
+        assertEquals( "Cat", tx.bookmark().maxBookmarkAsString() );
     }
 
     private static Connection openConnectionMock()

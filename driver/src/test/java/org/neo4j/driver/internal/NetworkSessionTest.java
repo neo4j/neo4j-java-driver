@@ -563,7 +563,7 @@ public class NetworkSessionTest
             setBookmark( tx, bookmark1 );
         }
 
-        assertEquals( bookmark1.asString(), session.lastBookmark() );
+        assertEquals( bookmark1.maxBookmarkAsString(), session.lastBookmark() );
 
         try ( Transaction tx = session.beginTransaction() )
         {
@@ -572,7 +572,7 @@ public class NetworkSessionTest
             setBookmark( tx, bookmark2 );
         }
 
-        assertEquals( bookmark2.asString(), session.lastBookmark() );
+        assertEquals( bookmark2.maxBookmarkAsString(), session.lastBookmark() );
     }
 
     @Test
@@ -1056,7 +1056,7 @@ public class NetworkSessionTest
 
     private static void verifyBeginTx( PooledConnection connectionMock, Bookmark bookmark )
     {
-        verify( connectionMock ).run( "BEGIN", bookmark.asParameters(), NO_OP );
+        verify( connectionMock ).run( "BEGIN", bookmark.asBeginTransactionParameters(), NO_OP );
     }
 
     private static void verifyCommitTx( PooledConnection connectionMock, VerificationMode mode )

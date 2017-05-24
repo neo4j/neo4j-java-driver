@@ -252,7 +252,7 @@ public class ExplicitTransaction implements Transaction
     private static void runBeginStatement( Connection connection, Bookmark bookmark )
     {
         Bookmark initialBookmark = bookmark == null ? Bookmark.empty() : bookmark;
-        Map<String,Value> parameters = initialBookmark.asParameters();
+        Map<String,Value> parameters = initialBookmark.asBeginTransactionParameters();
 
         connection.run( "BEGIN", parameters, Collector.NO_OP );
         connection.pullAll( Collector.NO_OP );

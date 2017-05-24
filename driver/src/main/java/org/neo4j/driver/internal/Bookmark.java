@@ -76,12 +76,12 @@ public final class Bookmark
         return maxValue == null;
     }
 
-    public String asString()
+    public String maxBookmarkAsString()
     {
         return maxValue;
     }
 
-    public Map<String,Value> asParameters()
+    public Map<String,Value> asBeginTransactionParameters()
     {
         if ( isEmpty() )
         {
@@ -138,7 +138,7 @@ public final class Bookmark
 
     private static long bookmarkValue( String value )
     {
-        if ( value.startsWith( BOOKMARK_PREFIX ) )
+        if ( value != null && value.startsWith( BOOKMARK_PREFIX ) )
         {
             try
             {

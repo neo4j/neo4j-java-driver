@@ -206,7 +206,7 @@ public class NetworkSession implements Session, SessionResourcesHandler
     @Override
     public String lastBookmark()
     {
-        return bookmark == null ? null : bookmark.asString();
+        return bookmark == null ? null : bookmark.maxBookmarkAsString();
     }
 
     @Override
