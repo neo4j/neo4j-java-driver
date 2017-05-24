@@ -34,8 +34,6 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.types.TypeSystem;
 
-import static java.util.Collections.emptyMap;
-import static java.util.Collections.singletonMap;
 import static org.neo4j.driver.v1.Values.ofValue;
 import static org.neo4j.driver.v1.Values.value;
 
@@ -68,19 +66,19 @@ public class ExplicitTransaction implements Transaction
     private final SessionResourcesHandler resourcesHandler;
     private final Connection conn;
 
-    private String bookmark = null;
+    private Bookmark bookmark = Bookmark.empty();
     private State state = State.ACTIVE;
 
     public ExplicitTransaction( Connection conn, SessionResourcesHandler resourcesHandler )
     {
-        this( conn, resourcesHandler, null );
+        this( conn, resourcesHandler, Bookmark.empty() );
     }
 
-    ExplicitTransaction( Connection conn, SessionResourcesHandler resourcesHandler, String bookmark )
+    ExplicitTransaction( Connection conn, SessionResourcesHandler resourcesHandler, Bookmark initialBookmark )
     {
         this.conn = conn;
         this.resourcesHandler = resourcesHandler;
-        runBeginStatement( conn, bookmark );
+        runBeginStatement( conn, initialBookmark );
     }
 
     @Override
@@ -238,32 +236,28 @@ public class ExplicitTransaction implements Transaction
         state = State.FAILED;
     }
 
-    public String bookmark()
+    public Bookmark bookmark()
     {
         return bookmark;
     }
 
-    void setBookmark( String bookmark )
+    void setBookmark( Bookmark bookmark )
     {
-        this.bookmark = bookmark;
+        if ( bookmark != null && !bookmark.isEmpty() )
+        {
+            this.bookmark = bookmark;
+        }
     }
 
-    private static void runBeginStatement( Connection connection, String bookmark )
+    private static void runBeginStatement( Connection connection, Bookmark bookmark )
     {
-        Map<String,Value> parameters;
-        if ( bookmark != null )
-        {
-            parameters = singletonMap( "bookmark", value( bookmark ) );
-        }
-        else
-        {
-            parameters = emptyMap();
-        }
+        Bookmark initialBookmark = bookmark == null ? Bookmark.empty() : bookmark;
+        Map<String,Value> parameters = initialBookmark.asBeginTransactionParameters();
 
         connection.run( "BEGIN", parameters, Collector.NO_OP );
         connection.pullAll( Collector.NO_OP );
 
-        if ( bookmark != null )
+        if ( !initialBookmark.isEmpty() )
         {
             connection.sync();
         }

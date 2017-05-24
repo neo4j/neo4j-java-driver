@@ -23,6 +23,8 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.net.URI;
+import java.util.Arrays;
+import java.util.List;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.util.ServerVersion;
@@ -30,11 +32,13 @@ import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.util.StubServer;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
@@ -98,9 +102,9 @@ public class DirectDriverTest
         try
         {
             driver = GraphDatabase.driver( uri, neo4j.authToken() );
-            fail("Expecting error for wrong uri");
+            fail( "Expecting error for wrong uri" );
         }
-        catch( IllegalArgumentException e )
+        catch ( IllegalArgumentException e )
         {
             assertThat( e.getMessage(), equalTo( "Invalid URI format `*`" ) );
         }
@@ -143,6 +147,32 @@ public class DirectDriverTest
 
         // Finally
         assertThat( server.exitStatus(), equalTo( 0 ) );
+    }
+
+    @Test
+    public void shouldSendMultipleBookmarks() throws Exception
+    {
+        StubServer server = StubServer.start( "multiple_bookmarks.script", 9001 );
+
+        List<String> bookmarks = Arrays.asList( "neo4j:bookmark:v1:tx5", "neo4j:bookmark:v1:tx29",
+                "neo4j:bookmark:v1:tx94", "neo4j:bookmark:v1:tx56", "neo4j:bookmark:v1:tx16",
+                "neo4j:bookmark:v1:tx68" );
+
+        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG );
+              Session session = driver.session( bookmarks ) )
+        {
+            try ( Transaction tx = session.beginTransaction() )
+            {
+                tx.run( "CREATE (n {name:'Bob'})" );
+                tx.success();
+            }
+
+            assertEquals( "neo4j:bookmark:v1:tx95", session.lastBookmark() );
+        }
+        finally
+        {
+            assertEquals( 0, server.exitStatus() );
+        }
     }
 
     /**

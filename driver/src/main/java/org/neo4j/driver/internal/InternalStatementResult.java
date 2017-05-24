@@ -138,7 +138,7 @@ public class InternalStatementResult implements StatementResult
             }
 
             @Override
-            public void bookmark( String bookmark )
+            public void bookmark( Bookmark bookmark )
             {
                 if ( transaction != null )
                 {

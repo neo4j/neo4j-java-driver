@@ -53,7 +53,7 @@ public class NetworkSession implements Session, SessionResourcesHandler
     private final RetryLogic retryLogic;
     protected final Logger logger;
 
-    private String bookmark;
+    private Bookmark bookmark = Bookmark.empty();
     private PooledConnection currentConnection;
     private ExplicitTransaction currentTransaction;
 
@@ -179,7 +179,7 @@ public class NetworkSession implements Session, SessionResourcesHandler
     @Override
     public synchronized Transaction beginTransaction( String bookmark )
     {
-        setBookmark( bookmark );
+        setBookmark( Bookmark.from( bookmark ) );
         return beginTransaction();
     }
 
@@ -195,12 +195,9 @@ public class NetworkSession implements Session, SessionResourcesHandler
         return transaction( AccessMode.WRITE, work );
     }
 
-    // Internal method for setting the bookmark explicitly, mainly for testing.
-    // This method does not prevent setting the bookmark to null since that
-    // is a valid requirement for some test scenarios.
-    void setBookmark( String bookmark )
+    void setBookmark( Bookmark bookmark )
     {
-        if( bookmark != null )
+        if ( bookmark != null && !bookmark.isEmpty() )
         {
             this.bookmark = bookmark;
         }
@@ -209,7 +206,7 @@ public class NetworkSession implements Session, SessionResourcesHandler
     @Override
     public String lastBookmark()
     {
-        return bookmark;
+        return bookmark == null ? null : bookmark.maxBookmarkAsString();
     }
 
     @Override

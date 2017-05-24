@@ -33,6 +33,7 @@ import org.neo4j.driver.internal.cluster.LoadBalancer;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.retry.FixedRetryLogic;
+import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
@@ -45,7 +46,6 @@ import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.EventLogger;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Logging;
-import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ProtocolException;
@@ -440,11 +440,10 @@ public class RoutingDriverTest
         }
 
         @Override
-        public Session newInstance( AccessMode mode, String bookmark )
+        protected NetworkSession createSession( ConnectionProvider connectionProvider, RetryLogic retryLogic,
+                AccessMode mode, Logging logging )
         {
-            NetworkSessionWithAddress session = new NetworkSessionWithAddress( connectionProvider, mode, logging );
-            session.setBookmark( bookmark );
-            return session;
+            return new NetworkSessionWithAddress( connectionProvider, mode, logging );
         }
     }
 

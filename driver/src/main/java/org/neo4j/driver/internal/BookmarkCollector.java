@@ -30,7 +30,7 @@ class BookmarkCollector extends NoOperationCollector
     }
 
     @Override
-    public void bookmark( String bookmark )
+    public void bookmark( Bookmark bookmark )
     {
         transaction.setBookmark( bookmark );
     }

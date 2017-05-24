@@ -27,10 +27,10 @@ import org.neo4j.driver.v1.Session;
 
 public class SessionFactoryImpl implements SessionFactory
 {
-    protected final ConnectionProvider connectionProvider;
-    protected final RetryLogic retryLogic;
-    protected final Logging logging;
-    protected final boolean leakedSessionsLoggingEnabled;
+    private final ConnectionProvider connectionProvider;
+    private final RetryLogic retryLogic;
+    private final Logging logging;
+    private final boolean leakedSessionsLoggingEnabled;
 
     SessionFactoryImpl( ConnectionProvider connectionProvider, RetryLogic retryLogic, Config config )
     {
@@ -41,23 +41,23 @@ public class SessionFactoryImpl implements SessionFactory
     }
 
     @Override
-    public Session newInstance( AccessMode mode, String bookmark )
+    public final Session newInstance( AccessMode mode, Bookmark bookmark )
     {
-        NetworkSession session;
-        if ( leakedSessionsLoggingEnabled )
-        {
-            session = new LeakLoggingNetworkSession( connectionProvider, mode, retryLogic, logging );
-        }
-        else
-        {
-            session = new NetworkSession( connectionProvider, mode, retryLogic, logging );
-        }
+        NetworkSession session = createSession( connectionProvider, retryLogic, mode, logging );
         session.setBookmark( bookmark );
         return session;
     }
 
+    protected NetworkSession createSession( ConnectionProvider connectionProvider, RetryLogic retryLogic,
+            AccessMode mode, Logging logging )
+    {
+        return leakedSessionsLoggingEnabled ?
+               new LeakLoggingNetworkSession( connectionProvider, mode, retryLogic, logging ) :
+               new NetworkSession( connectionProvider, mode, retryLogic, logging );
+    }
+
     @Override
-    public void close() throws Exception
+    public final void close() throws Exception
     {
         connectionProvider.close();
     }
@@ -69,7 +69,7 @@ public class SessionFactoryImpl implements SessionFactory
      *
      * @return the connection provider used by this factory.
      */
-    public ConnectionProvider getConnectionProvider()
+    public final ConnectionProvider getConnectionProvider()
     {
         return connectionProvider;
     }

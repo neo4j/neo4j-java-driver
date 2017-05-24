@@ -44,7 +44,6 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 
-import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -72,7 +71,6 @@ import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.spi.Collector.NO_OP;
 import static org.neo4j.driver.v1.AccessMode.READ;
 import static org.neo4j.driver.v1.AccessMode.WRITE;
-import static org.neo4j.driver.v1.Values.value;
 
 public class NetworkSessionTest
 {
@@ -362,7 +360,7 @@ public class NetworkSessionTest
         NetworkSession session = newSession( connectionProvider, READ );
 
         Transaction tx = session.beginTransaction();
-        setBookmark( tx, "TheBookmark" );
+        setBookmark( tx, Bookmark.from( "TheBookmark" ) );
 
         assertNull( session.lastBookmark() );
 
@@ -519,7 +517,7 @@ public class NetworkSessionTest
     @Test
     public void bookmarkIsPropagatedFromSession()
     {
-        String bookmark = "Bookmark";
+        Bookmark bookmark = Bookmark.from( "Bookmark" );
 
         ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
         PooledConnection connection = mock( PooledConnection.class );
@@ -535,7 +533,7 @@ public class NetworkSessionTest
     @Test
     public void bookmarkIsPropagatedInBeginTransaction()
     {
-        String bookmark = "Bookmark";
+        Bookmark bookmark = Bookmark.from( "Bookmark" );
 
         ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
         PooledConnection connection = mock( PooledConnection.class );
@@ -552,8 +550,8 @@ public class NetworkSessionTest
     @Test
     public void bookmarkIsPropagatedBetweenTransactions()
     {
-        String bookmark1 = "Bookmark1";
-        String bookmark2 = "Bookmark2";
+        Bookmark bookmark1 = Bookmark.from( "Bookmark1" );
+        Bookmark bookmark2 = Bookmark.from( "Bookmark2" );
 
         ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
         PooledConnection connection = mock( PooledConnection.class );
@@ -565,16 +563,16 @@ public class NetworkSessionTest
             setBookmark( tx, bookmark1 );
         }
 
-        assertEquals( bookmark1, session.lastBookmark() );
+        assertEquals( bookmark1.maxBookmarkAsString(), session.lastBookmark() );
 
         try ( Transaction tx = session.beginTransaction() )
         {
             verifyBeginTx( connection, bookmark1 );
-            assertNull( getBookmark( tx ) );
+            assertTrue( getBookmark( tx ).isEmpty() );
             setBookmark( tx, bookmark2 );
         }
 
-        assertEquals( bookmark2, session.lastBookmark() );
+        assertEquals( bookmark2.maxBookmarkAsString(), session.lastBookmark() );
     }
 
     @Test
@@ -596,7 +594,7 @@ public class NetworkSessionTest
     {
         NetworkSession session = newSession( mock( ConnectionProvider.class ), WRITE );
 
-        session.setBookmark( "TheBookmark" );
+        session.setBookmark( Bookmark.from( "TheBookmark" ) );
 
         assertEquals( "TheBookmark", session.lastBookmark() );
     }
@@ -608,7 +606,7 @@ public class NetworkSessionTest
         PooledConnection connection = openConnectionMock();
         when( connectionProvider.acquireConnection( READ ) ).thenReturn( connection );
         NetworkSession session = newSession( connectionProvider, READ );
-        session.setBookmark( "X" );
+        session.setBookmark( Bookmark.from( "X" ) );
         session.beginTransaction();
         assertThat( session.lastBookmark(), equalTo( "X" ) );
     }
@@ -621,7 +619,7 @@ public class NetworkSessionTest
         PooledConnection connection = openConnectionMock();
         when( connectionProvider.acquireConnection( READ ) ).thenReturn( connection );
         NetworkSession session = newSession( connectionProvider, READ );
-        session.setBookmark( "X" );
+        session.setBookmark( Bookmark.from( "X" ) );
         session.beginTransaction( null );
         assertThat( session.lastBookmark(), equalTo( "X" ) );
     }
@@ -735,6 +733,7 @@ public class NetworkSessionTest
     }
 
     @Test
+    @SuppressWarnings( "deprecation" )
     public void transactionShouldBeOpenAfterSessionReset()
     {
         ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
@@ -750,6 +749,7 @@ public class NetworkSessionTest
     }
 
     @Test
+    @SuppressWarnings( "deprecation" )
     public void transactionShouldBeClosedAfterSessionResetAndClose()
     {
         ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
@@ -765,6 +765,31 @@ public class NetworkSessionTest
 
         tx.close();
         assertFalse( tx.isOpen() );
+    }
+
+    @Test
+    public void shouldHaveNullLastBookmarkInitially()
+    {
+        NetworkSession session = newSession( mock( ConnectionProvider.class ), READ );
+        assertNull( session.lastBookmark() );
+    }
+
+    @Test
+    public void shouldNotOverwriteBookmarkWithNull()
+    {
+        NetworkSession session = newSession( mock( ConnectionProvider.class ), READ, Bookmark.from( "Cat" ) );
+        assertEquals( "Cat", session.lastBookmark() );
+        session.setBookmark( null );
+        assertEquals( "Cat", session.lastBookmark() );
+    }
+
+    @Test
+    public void shouldNotOverwriteBookmarkWithEmptyBookmark()
+    {
+        NetworkSession session = newSession( mock( ConnectionProvider.class ), READ, Bookmark.from( "Cat" ) );
+        assertEquals( "Cat", session.lastBookmark() );
+        session.setBookmark( Bookmark.empty() );
+        assertEquals( "Cat", session.lastBookmark() );
     }
 
     private static void testConnectionAcquisition( AccessMode sessionMode, AccessMode transactionMode )
@@ -968,21 +993,22 @@ public class NetworkSessionTest
 
     private static NetworkSession newSession( ConnectionProvider connectionProvider, AccessMode mode )
     {
-        return newSession( connectionProvider, mode, null );
+        return newSession( connectionProvider, mode, Bookmark.empty() );
     }
 
     private static NetworkSession newSession( ConnectionProvider connectionProvider, RetryLogic retryLogic )
     {
-        return newSession( connectionProvider, WRITE, retryLogic, null );
+        return newSession( connectionProvider, WRITE, retryLogic, Bookmark.empty() );
     }
 
-    private static NetworkSession newSession( ConnectionProvider connectionProvider, AccessMode mode, String bookmark )
+    private static NetworkSession newSession( ConnectionProvider connectionProvider, AccessMode mode,
+            Bookmark bookmark )
     {
         return newSession( connectionProvider, mode, new FixedRetryLogic( 0 ), bookmark );
     }
 
     private static NetworkSession newSession( ConnectionProvider connectionProvider, AccessMode mode,
-            RetryLogic retryLogic, String bookmark )
+            RetryLogic retryLogic, Bookmark bookmark )
     {
         NetworkSession session = new NetworkSession( connectionProvider, mode, retryLogic, DEV_NULL_LOGGING );
         session.setBookmark( bookmark );
@@ -1028,9 +1054,9 @@ public class NetworkSessionTest
         verifyRun( connectionMock, "BEGIN", mode );
     }
 
-    private static void verifyBeginTx( PooledConnection connectionMock, String bookmark )
+    private static void verifyBeginTx( PooledConnection connectionMock, Bookmark bookmark )
     {
-        verify( connectionMock ).run( "BEGIN", singletonMap( "bookmark", value( bookmark ) ), NO_OP );
+        verify( connectionMock ).run( "BEGIN", bookmark.asBeginTransactionParameters(), NO_OP );
     }
 
     private static void verifyCommitTx( PooledConnection connectionMock, VerificationMode mode )
@@ -1053,12 +1079,12 @@ public class NetworkSessionTest
         return anyMapOf( String.class, Value.class );
     }
 
-    private static String getBookmark( Transaction tx )
+    private static Bookmark getBookmark( Transaction tx )
     {
         return ((ExplicitTransaction) tx).bookmark();
     }
 
-    private static void setBookmark( Transaction tx, String bookmark )
+    private static void setBookmark( Transaction tx, Bookmark bookmark )
     {
         ((ExplicitTransaction) tx).setBookmark( bookmark );
     }

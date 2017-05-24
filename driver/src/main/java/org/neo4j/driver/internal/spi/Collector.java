@@ -20,6 +20,7 @@ package org.neo4j.driver.internal.spi;
 
 import java.util.List;
 
+import org.neo4j.driver.internal.Bookmark;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
@@ -130,7 +131,9 @@ public interface Collector
         public void notifications( List<Notification> notifications ) {}
 
         @Override
-        public void bookmark( String bookmark ) {}
+        public void bookmark( Bookmark bookmark )
+        {
+        }
 
         @Override
         public void done() {}
@@ -179,7 +182,7 @@ public interface Collector
 
     void notifications( List<Notification> notifications );
 
-    void bookmark( String bookmark );
+    void bookmark( Bookmark bookmark );
 
     void done();
 

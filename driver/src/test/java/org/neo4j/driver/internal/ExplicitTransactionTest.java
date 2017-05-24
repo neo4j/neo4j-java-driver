@@ -29,6 +29,7 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.Value;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
@@ -39,7 +40,6 @@ import static org.mockito.Mockito.only;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.neo4j.driver.v1.Values.value;
 
 public class ExplicitTransactionTest
 {
@@ -135,12 +135,12 @@ public class ExplicitTransactionTest
     @Test
     public void shouldSyncWhenBookmarkGiven()
     {
-        String bookmark = "hi, I'm bookmark";
+        Bookmark bookmark = Bookmark.from( "hi, I'm bookmark" );
         Connection connection = mock( Connection.class );
 
         new ExplicitTransaction( connection, mock( SessionResourcesHandler.class ), bookmark );
 
-        Map<String,Value> expectedParams = Collections.singletonMap( "bookmark", value( bookmark ) );
+        Map<String,Value> expectedParams = bookmark.asBeginTransactionParameters();
 
         InOrder inOrder = inOrder( connection );
         inOrder.verify( connection ).run( "BEGIN", expectedParams, Collector.NO_OP );
@@ -217,6 +217,41 @@ public class ExplicitTransactionTest
         tx.close();
 
         assertFalse( tx.isOpen() );
+    }
+
+    @Test
+    public void shouldHaveEmptyBookmarkInitially()
+    {
+        ExplicitTransaction tx = new ExplicitTransaction( openConnectionMock(), mock( SessionResourcesHandler.class ) );
+        assertTrue( tx.bookmark().isEmpty() );
+    }
+
+    @Test
+    public void shouldNotKeepInitialBookmark()
+    {
+        ExplicitTransaction tx = new ExplicitTransaction( openConnectionMock(), mock( SessionResourcesHandler.class ),
+                Bookmark.from( "Dog" ) );
+        assertTrue( tx.bookmark().isEmpty() );
+    }
+
+    @Test
+    public void shouldNotOverwriteBookmarkWithNull()
+    {
+        ExplicitTransaction tx = new ExplicitTransaction( openConnectionMock(), mock( SessionResourcesHandler.class ) );
+        tx.setBookmark( Bookmark.from( "Cat" ) );
+        assertEquals( "Cat", tx.bookmark().maxBookmarkAsString() );
+        tx.setBookmark( null );
+        assertEquals( "Cat", tx.bookmark().maxBookmarkAsString() );
+    }
+
+    @Test
+    public void shouldNotOverwriteBookmarkWithEmptyBookmark()
+    {
+        ExplicitTransaction tx = new ExplicitTransaction( openConnectionMock(), mock( SessionResourcesHandler.class ) );
+        tx.setBookmark( Bookmark.from( "Cat" ) );
+        assertEquals( "Cat", tx.bookmark().maxBookmarkAsString() );
+        tx.setBookmark( Bookmark.empty() );
+        assertEquals( "Cat", tx.bookmark().maxBookmarkAsString() );
     }
 
     private static Connection openConnectionMock()
