@@ -18,8 +18,6 @@
  */
 package org.neo4j.driver.v1;
 
-import java.util.Collection;
-
 import org.neo4j.driver.v1.util.Resource;
 
 /**
@@ -77,7 +75,7 @@ public interface Session extends Resource, StatementRunner
      *
      * @param bookmark a reference to a previous transaction
      * @return a new {@link Transaction}
-     * @deprecated This method is deprecated in favour of {@link Driver#session(Collection)} that accepts an initial
+     * @deprecated This method is deprecated in favour of {@link Driver#session(Iterable)} that accepts an initial
      * bookmark. Session will ensure that all nested transactions are chained with bookmarks to guarantee
      * causal consistency. <b>This method will be removed in the next major release.</b>
      */
