@@ -22,12 +22,14 @@ import java.util.Map;
 
 import org.neo4j.driver.internal.SessionResourcesHandler;
 import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.packstream.PackStream;
 import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Consumer;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.summary.ServerInfo;
 
@@ -169,6 +171,10 @@ public class PooledSocketConnection implements PooledConnection
         {
             delegate.flush();
         }
+        catch ( PackStream.BytesNotSupportedException e )
+        {
+            throw new ClientException("PackStream BYTES are not supported by this server");
+        }
         catch ( RuntimeException e )
         {
             onDelegateException( e );
@@ -243,6 +249,12 @@ public class PooledSocketConnection implements PooledConnection
     public BoltServerAddress boltServerAddress()
     {
         return delegate.boltServerAddress();
+    }
+
+    @Override
+    public boolean supportsBytes()
+    {
+        return delegate.supportsBytes();
     }
 
     @Override

@@ -36,4 +36,12 @@ public interface ServerInfo
      * @return The server version of <code>null</code> if not available.
      */
     String version();
+
+    String product();
+
+    int major();
+
+    int minor();
+
+    boolean atLeast(String product, int major, int minor);
 }

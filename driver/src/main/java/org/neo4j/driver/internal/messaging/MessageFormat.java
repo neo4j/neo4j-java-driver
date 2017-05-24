@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.internal.messaging;
 
+import org.neo4j.driver.internal.spi.Connection;
+
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
@@ -41,6 +43,8 @@ public interface MessageFormat
         void read( MessageHandler handler ) throws IOException;
 
     }
+
+    Writer newWriter( WritableByteChannel ch, Connection connection);
 
     Writer newWriter( WritableByteChannel ch );
 

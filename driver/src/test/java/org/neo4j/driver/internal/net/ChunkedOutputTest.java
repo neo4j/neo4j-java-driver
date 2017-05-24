@@ -30,7 +30,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 public class ChunkedOutputTest
 {
     private final RecordingByteChannel channel = new RecordingByteChannel();
-    private final ChunkedOutput out = new ChunkedOutput( 16, channel );
+    private final ChunkedOutput out = new ChunkedOutput( 16, channel, null );
 
     @Test
     public void shouldChunkSingleMessage() throws Throwable

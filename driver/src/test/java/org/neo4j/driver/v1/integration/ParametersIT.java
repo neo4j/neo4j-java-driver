@@ -22,6 +22,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import org.neo4j.driver.internal.packstream.PackStream;
+import org.neo4j.driver.v1.AuthTokens;
+import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Value;
@@ -33,6 +37,7 @@ import org.neo4j.driver.v1.util.TestNeo4jSession;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assume.assumeTrue;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.Values.ofValue;
 
@@ -139,6 +144,32 @@ public class ParametersIT
             Value value = record.get( "a.value" );
             assertThat( value.hasType( session.typeSystem().FLOAT() ), equalTo( true ) );
             assertThat( value.asDouble(), equalTo( 6.28 ) );
+        }
+    }
+
+    private boolean supportsBytes()
+    {
+        return session.run("RETURN 1").summary().server().atLeast("Neo4j", 3, 2);
+    }
+
+    @Test
+    public void shouldBeAbleToSetAndReturnBytesProperty()
+    {
+        assumeTrue( supportsBytes() );
+
+        // Given
+        byte[] byteArray = "hello, world".getBytes();
+
+        // When
+        StatementResult result = session.run(
+                "CREATE (a {value:{value}}) RETURN a.value", parameters("value", byteArray));
+
+        // Then
+        for ( Record record : result.list() )
+        {
+            Value value = record.get( "a.value" );
+            assertThat( value.hasType( session.typeSystem().BYTES() ), equalTo( true ) );
+            assertThat( value.asByteArray(), equalTo( byteArray ) );
         }
     }
 

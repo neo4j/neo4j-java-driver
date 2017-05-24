@@ -29,6 +29,7 @@ import java.util.Map;
 
 import org.neo4j.driver.internal.AsValue;
 import org.neo4j.driver.internal.value.BooleanValue;
+import org.neo4j.driver.internal.value.BytesValue;
 import org.neo4j.driver.internal.value.FloatValue;
 import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.internal.value.ListValue;
@@ -84,6 +85,7 @@ public abstract class Values
         if ( value instanceof Iterable<?> ) { return value( (Iterable<Object>) value ); }
         if ( value instanceof Iterator<?> ) { return value( (Iterator<Object>) value ); }
 
+        if ( value instanceof byte[] ) { return new BytesValue( (byte[]) value ); }
         if ( value instanceof boolean[] ) { return value( (boolean[]) value ); }
         if ( value instanceof String[] ) { return value( (String[]) value ); }
         if ( value instanceof long[] ) { return value( (long[]) value ); }
@@ -112,6 +114,11 @@ public abstract class Values
         Value[] values = new Value[size];
         System.arraycopy( input, 0, values, 0, size );
         return new ListValue( values );
+    }
+
+    private static Value bytesValue( byte[] input )
+    {
+        return new BytesValue( input );
     }
 
     public static Value value( String... input )
