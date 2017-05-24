@@ -22,19 +22,27 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.types.Path;
 import org.neo4j.driver.v1.types.Relationship;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.driver.v1.Values.parameters;
+import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
+import static org.neo4j.driver.internal.util.ServerVersion.version;
 import static org.neo4j.driver.v1.Values.ofValue;
+import static org.neo4j.driver.v1.Values.parameters;
 
 public class ParametersIT
 {
@@ -139,6 +147,55 @@ public class ParametersIT
             Value value = record.get( "a.value" );
             assertThat( value.hasType( session.typeSystem().FLOAT() ), equalTo( true ) );
             assertThat( value.asDouble(), equalTo( 6.28 ) );
+        }
+    }
+
+    private boolean supportsBytes()
+    {
+        String versionString = session.run( "RETURN 1" ).consume().server().version();
+        return version( versionString ).greaterThanOrEqual( ServerVersion.v3_2_0 );
+    }
+
+    @Test
+    public void shouldBeAbleToSetAndReturnBytesProperty()
+    {
+        assumeTrue( supportsBytes() );
+
+        // Given
+        byte[] byteArray = "hello, world".getBytes();
+
+        // When
+        StatementResult result = session.run(
+                "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", byteArray ) );
+
+        // Then
+        for ( Record record : result.list() )
+        {
+            Value value = record.get( "a.value" );
+            assertThat( value.hasType( session.typeSystem().BYTES() ), equalTo( true ) );
+            assertThat( value.asByteArray(), equalTo( byteArray ) );
+        }
+    }
+
+    @Test
+    public void shouldThrowExceptionWhenServerDoesNotSupportBytes()
+    {
+        assumeFalse( supportsBytes() );
+
+        // Given
+        byte[] byteArray = "hello, world".getBytes();
+
+        // When
+        try
+        {
+            StatementResult result = session.run(
+                    "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", byteArray ) );
+            fail( "Should not be able to pack bytes" );
+        }
+        catch( Throwable e )
+        {
+            assertThat( e, instanceOf( ServiceUnavailableException.class ) );
+            assertThat( e.getMessage(), containsString( "Packing bytes is not supported" ) );
         }
     }
 

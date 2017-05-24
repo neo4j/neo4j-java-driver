@@ -40,7 +40,6 @@ public class ChunkedOutput implements PackOutput
     /** Are currently in the middle of writing a chunk? */
     private boolean chunkOpen = false;
 
-
     public ChunkedOutput( WritableByteChannel ch )
     {
         this( 8192, ch );

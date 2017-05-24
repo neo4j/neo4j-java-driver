@@ -501,6 +501,29 @@ public class PackStream
             throw new Unexpected( "Expected a double, but got: " + toHexString( markerByte ));
         }
 
+        public byte[] unpackBytes() throws IOException
+        {
+            final byte markerByte = in.readByte();
+            switch(markerByte)
+            {
+            case BYTES_8: return unpackRawBytes( unpackUINT8() );
+            case BYTES_16: return unpackRawBytes( unpackUINT16() );
+            case BYTES_32:
+            {
+                long size = unpackUINT32();
+                if ( size <= Integer.MAX_VALUE )
+                {
+                    return unpackRawBytes( (int) size );
+                }
+                else
+                {
+                    throw new Overflow( "BYTES_32 too long for Java" );
+                }
+            }
+            default: throw new Unexpected( "Expected bytes, but got: 0x" + toHexString( markerByte & 0xFF ));
+            }
+        }
+
         public String unpackString() throws IOException
         {
             final byte markerByte = in.readByte();
@@ -510,30 +533,6 @@ public class PackStream
             }
 
             return new String(unpackUtf8(markerByte), UTF_8);
-        }
-
-        public byte[] unpackBytes() throws IOException
-        {
-            final byte markerByte = in.readByte();
-
-            switch(markerByte)
-            {
-                case BYTES_8: return unpackBytes( unpackUINT8() );
-                case BYTES_16: return unpackBytes( unpackUINT16() );
-                case BYTES_32:
-                {
-                    long size = unpackUINT32();
-                    if ( size <= Integer.MAX_VALUE )
-                    {
-                        return unpackBytes( (int) size );
-                    }
-                    else
-                    {
-                        throw new Overflow( "BYTES_32 too long for Java" );
-                    }
-                }
-                default: throw new Unexpected( "Expected binary data, but got: 0x" + toHexString( markerByte & 0xFF ));
-            }
         }
 
         /**
@@ -558,17 +557,17 @@ public class PackStream
             final byte markerHighNibble = (byte) (markerByte & 0xF0);
             final byte markerLowNibble = (byte) (markerByte & 0x0F);
 
-            if ( markerHighNibble == TINY_STRING ) { return unpackBytes( markerLowNibble ); }
+            if ( markerHighNibble == TINY_STRING ) { return unpackRawBytes( markerLowNibble ); }
             switch(markerByte)
             {
-                case STRING_8: return unpackBytes( unpackUINT8() );
-                case STRING_16: return unpackBytes( unpackUINT16() );
+                case STRING_8: return unpackRawBytes( unpackUINT8() );
+                case STRING_16: return unpackRawBytes( unpackUINT16() );
                 case STRING_32:
                 {
                     long size = unpackUINT32();
                     if ( size <= Integer.MAX_VALUE )
                     {
-                        return unpackBytes( (int) size );
+                        return unpackRawBytes( (int) size );
                     }
                     else
                     {
@@ -608,7 +607,7 @@ public class PackStream
             return in.readInt() & 0xFFFFFFFFL;
         }
 
-        private byte[] unpackBytes( int size ) throws IOException
+        private byte[] unpackRawBytes(int size ) throws IOException
         {
             byte[] heapBuffer = new byte[size];
             in.readBytes( heapBuffer, 0, heapBuffer.length );
@@ -711,5 +710,4 @@ public class PackStream
             super( message );
         }
     }
-
 }

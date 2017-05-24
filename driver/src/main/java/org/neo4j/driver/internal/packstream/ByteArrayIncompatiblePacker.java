@@ -16,35 +16,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.messaging;
+package org.neo4j.driver.internal.packstream;
 
 import java.io.IOException;
-import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.WritableByteChannel;
 
-public interface MessageFormat
+public class ByteArrayIncompatiblePacker extends PackStream.Packer
 {
-    interface Writer
+    public ByteArrayIncompatiblePacker( PackOutput out )
     {
-        Writer write( Message msg ) throws IOException;
-
-        Writer flush() throws IOException;
+        super( out );
     }
 
-    interface Reader
+    public void packBytesHeader( int size ) throws IOException
     {
-        /**
-         * Return true is there is another message in the underlying buffer
-         */
-        boolean hasNext() throws IOException;
-
-        void read( MessageHandler handler ) throws IOException;
-
+        throw new PackStream.UnPackable( "Packing bytes is not supported " +
+                "as the current server this driver connected to does not support unpack bytes." );
     }
-
-    Writer newWriter( WritableByteChannel ch, boolean byteArraySupportEnabled );
-
-    Reader newReader( ReadableByteChannel ch );
-
-    int version();
 }

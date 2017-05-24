@@ -34,6 +34,8 @@ import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
 import static java.lang.String.format;
 import static java.nio.ByteOrder.BIG_ENDIAN;
+import static org.neo4j.driver.internal.util.ServerVersion.v3_2_0;
+import static org.neo4j.driver.internal.util.ServerVersion.version;
 
 public class SocketClient
 {
@@ -123,9 +125,7 @@ public class SocketClient
             {
                 setChannel( ChannelFactory.create( address, securityPlan, timeoutMillis, logger ) );
             }
-            protocol = negotiateProtocol();
-            reader = protocol.reader();
-            writer = protocol.writer();
+            setProtocol( negotiateProtocol() );
         }
         catch ( ConnectException e )
         {
@@ -137,6 +137,21 @@ public class SocketClient
         {
             throw new ServiceUnavailableException( "Unable to process request: " + e.getMessage(), e );
         }
+    }
+
+    public void updateProtocol( String serverVersion )
+    {
+        if( version( serverVersion ).lessThan( v3_2_0 ) )
+        {
+            setProtocol( SocketProtocolV1.createWithoutByteArraySupport( channel ) );
+        }
+    }
+
+    private void setProtocol( SocketProtocol protocol )
+    {
+        this.protocol = protocol;
+        this.reader = protocol.reader();
+        this.writer = protocol.writer();
     }
 
     public void send( Queue<Message> messages ) throws IOException
@@ -255,7 +270,7 @@ public class SocketClient
         {
         case VERSION1:
             logger.debug( "S: [HANDSHAKE] -> 1" );
-            return new SocketProtocolV1( channel );
+            return SocketProtocolV1.create( channel );
         case NO_VERSION:
             throw new ClientException( "The server does not support any of the protocol versions supported by " +
                                        "this driver. Ensure that you are using driver and server versions that " +

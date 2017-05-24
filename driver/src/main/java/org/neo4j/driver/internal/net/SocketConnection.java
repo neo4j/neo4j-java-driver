@@ -117,6 +117,7 @@ public class SocketConnection implements Connection
         queueMessage( new InitMessage( clientName, authToken ), initCollector );
         sync();
         this.serverInfo = new InternalServerInfo( socket.address(), initCollector.serverVersion() );
+        socket.updateProtocol( serverInfo.version() );
     }
 
     @Override
@@ -167,6 +168,7 @@ public class SocketConnection implements Connection
         }
         catch ( IOException e )
         {
+            close();
             throw new ServiceUnavailableException( "Unable to send messages to server: " + e.getMessage(), e );
         }
     }

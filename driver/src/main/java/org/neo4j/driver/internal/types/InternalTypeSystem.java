@@ -33,6 +33,7 @@ import static org.neo4j.driver.internal.types.TypeConstructor.NULL_TyCon;
 import static org.neo4j.driver.internal.types.TypeConstructor.NUMBER_TyCon;
 import static org.neo4j.driver.internal.types.TypeConstructor.PATH_TyCon;
 import static org.neo4j.driver.internal.types.TypeConstructor.RELATIONSHIP_TyCon;
+import static org.neo4j.driver.internal.types.TypeConstructor.BYTES_TyCon;
 import static org.neo4j.driver.internal.types.TypeConstructor.STRING_TyCon;
 
 /**
@@ -47,6 +48,7 @@ public class InternalTypeSystem implements TypeSystem
 
     private final TypeRepresentation anyType = constructType( ANY_TyCon );
     private final TypeRepresentation booleanType = constructType( BOOLEAN_TyCon );
+    private final TypeRepresentation bytesType = constructType( BYTES_TyCon );
     private final TypeRepresentation stringType = constructType( STRING_TyCon );
     private final TypeRepresentation numberType = constructType( NUMBER_TyCon );
     private final TypeRepresentation integerType = constructType( INTEGER_TyCon );
@@ -74,6 +76,13 @@ public class InternalTypeSystem implements TypeSystem
     public Type BOOLEAN()
     {
         return booleanType;
+    }
+
+    /** the Cypher type BYTES */
+    @Override
+    public Type BYTES()
+    {
+        return bytesType;
     }
 
     /** the Cypher type STRING */
