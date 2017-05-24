@@ -22,6 +22,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -66,6 +67,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.v1.Values.parameters;
 
 public class CausalClusteringIT
@@ -81,6 +83,16 @@ public class CausalClusteringIT
         Cluster cluster = clusterRule.getCluster();
 
         int count = executeWriteAndReadThroughBolt( cluster.leader() );
+
+        assertEquals( 1, count );
+    }
+
+    @Test
+    public void shouldExecuteReadAndWritesWhenRouterIsDiscovered() throws Exception
+    {
+        Cluster cluster = clusterRule.getCluster();
+
+        int count = executeWriteAndReadThroughBoltOnFirstAvailableAddress( cluster.anyReadReplica(), cluster.leader() );
 
         assertEquals( 1, count );
     }
@@ -446,6 +458,19 @@ public class CausalClusteringIT
         }
     }
 
+    private int executeWriteAndReadThroughBoltOnFirstAvailableAddress( ClusterMember... members ) throws TimeoutException, InterruptedException
+    {
+        List<URI> addresses = new ArrayList<>( members.length );
+        for ( ClusterMember member : members )
+        {
+            addresses.add( member.getRoutingUri() );
+        }
+        try ( Driver driver = discoverDriver( addresses ) )
+        {
+            return inExpirableSession( driver, createWritableSession( null ), executeWriteAndRead() );
+        }
+    }
+
     private Function<Driver,Session> createSession()
     {
         return new Function<Driver,Session>()
@@ -590,6 +615,15 @@ public class CausalClusteringIT
                 .toConfig();
 
         return GraphDatabase.driver( boltUri, clusterRule.getDefaultAuthToken(), config );
+    }
+
+    private Driver discoverDriver( List<URI> routingUris )
+    {
+        Config config = Config.build()
+                .withLogging( DEV_NULL_LOGGING )
+                .toConfig();
+
+        return GraphDatabase.routingDriver( routingUris, clusterRule.getDefaultAuthToken(), config );
     }
 
     private static void createNodesInDifferentThreads( int count, final Driver driver ) throws Exception

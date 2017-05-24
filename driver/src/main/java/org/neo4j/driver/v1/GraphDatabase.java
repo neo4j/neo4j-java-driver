@@ -23,6 +23,9 @@ import java.net.URI;
 import org.neo4j.driver.internal.DriverFactory;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
+import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
+
+import static org.neo4j.driver.internal.DriverFactory.BOLT_ROUTING_URI_SCHEME;
 
 /**
  * Creates {@link Driver drivers}, optionally letting you {@link #driver(URI, Config)} to configure them.
@@ -130,5 +133,47 @@ public class GraphDatabase
         RetrySettings retrySettings = config.retrySettings();
 
         return new DriverFactory().newInstance( uri, authToken, routingSettings, retrySettings, config );
+    }
+
+    /**
+     * Try to create a bolt+routing driver from the <b>first</b> available address.
+     * This is wrapper for the {@link #driver} method that finds the <b>first</b>
+     * server to respond positively.
+     *
+     * @param routingUris an {@link Iterable} of server {@link URI}s for Neo4j instances. All given URIs should
+     * have 'bolt+routing' scheme.
+     * @param authToken authentication to use, see {@link AuthTokens}
+     * @param config user defined configuration
+     * @return a new driver instance
+     */
+    public static Driver routingDriver( Iterable<URI> routingUris, AuthToken authToken, Config config )
+    {
+        assertRoutingUris( routingUris );
+
+        for ( URI uri : routingUris )
+        {
+            try
+            {
+                return driver( uri, authToken, config );
+            }
+            catch ( ServiceUnavailableException e )
+            {
+                // try the next one
+            }
+        }
+
+        throw new ServiceUnavailableException( "Failed to discover an available server" );
+    }
+
+    private static void assertRoutingUris( Iterable<URI> uris )
+    {
+        for ( URI uri : uris )
+        {
+            if ( !BOLT_ROUTING_URI_SCHEME.equals( uri.getScheme() ) )
+            {
+                throw new IllegalArgumentException(
+                        "Illegal URI scheme, expected '" + BOLT_ROUTING_URI_SCHEME + "' in '" + uri + "'" );
+            }
+        }
     }
 }
