@@ -28,6 +28,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -59,6 +60,7 @@ import org.neo4j.driver.v1.util.cc.ClusterMember;
 import org.neo4j.driver.v1.util.cc.ClusterMemberRole;
 import org.neo4j.driver.v1.util.cc.ClusterRule;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.startsWith;
@@ -233,7 +235,7 @@ public class CausalClusteringIT
 
         URI routingUri = cluster.leader().getRoutingUri();
         AuthToken auth = clusterRule.getDefaultAuthToken();
-        RoutingSettings routingSettings = new RoutingSettings( 1, TimeUnit.SECONDS.toMillis( 5 ), null );
+        RoutingSettings routingSettings = new RoutingSettings( 1, SECONDS.toMillis( 5 ), null );
         RetrySettings retrySettings = RetrySettings.DEFAULT;
 
         try ( Driver driver = driverFactory.newInstance( routingUri, auth, routingSettings, retrySettings, config ) )
@@ -450,6 +452,43 @@ public class CausalClusteringIT
         }
     }
 
+    @Test
+    public void shouldAcceptMultipleBookmarks() throws Exception
+    {
+        int threadCount = 5;
+        String label = "Person";
+        String property = "name";
+        String value = "Alice";
+
+        Cluster cluster = clusterRule.getCluster();
+        ClusterMember leader = cluster.leader();
+        ExecutorService executor = Executors.newCachedThreadPool();
+
+        try ( Driver driver = createDriver( leader.getRoutingUri() ) )
+        {
+            List<Future<String>> futures = new ArrayList<>();
+            for ( int i = 0; i < threadCount; i++ )
+            {
+                futures.add( executor.submit( createNodeAndGetBookmark( driver, label, property, value ) ) );
+            }
+
+            List<String> bookmarks = new ArrayList<>();
+            for ( Future<String> future : futures )
+            {
+                bookmarks.add( future.get( 10, SECONDS ) );
+            }
+
+            executor.shutdown();
+            assertTrue( executor.awaitTermination( 5, SECONDS ) );
+
+            try ( Session session = driver.session( AccessMode.READ, bookmarks ) )
+            {
+                int count = countNodes( session, label, property, value );
+                assertEquals( count, threadCount );
+            }
+        }
+    }
+
     private int executeWriteAndReadThroughBolt( ClusterMember member ) throws TimeoutException, InterruptedException
     {
         try ( Driver driver = createDriver( member.getRoutingUri() ) )
@@ -571,7 +610,7 @@ public class CausalClusteringIT
                 int newLeadersCount = 0;
                 int newFollowersCount = 0;
                 int newReadReplicasCount = 0;
-                for ( Record record : session.run( "CALL dbms.cluster.overview" ).list() )
+                for ( Record record : session.run( "CALL dbms.cluster.overview()" ).list() )
                 {
                     ClusterMemberRole role = ClusterMemberRole.valueOf( record.get( "role" ).asString() );
                     if ( role == ClusterMemberRole.LEADER )
@@ -668,5 +707,45 @@ public class CausalClusteringIT
         {
             assertThat( e, instanceOf( exceptionClass ) );
         }
+    }
+
+    private static int countNodes( Session session, final String label, final String property, final String value )
+    {
+        return session.readTransaction( new TransactionWork<Integer>()
+        {
+            @Override
+            public Integer execute( Transaction tx )
+            {
+                StatementResult result = tx.run( "MATCH (n:" + label + " {" + property + ": $value}) RETURN count(n)",
+                        parameters( "value", value ) );
+                return result.single().get( 0 ).asInt();
+            }
+        } );
+    }
+
+    private static Callable<String> createNodeAndGetBookmark( final Driver driver, final String label,
+            final String property, final String value )
+    {
+        return new Callable<String>()
+        {
+            @Override
+            public String call()
+            {
+                try ( Session session = driver.session() )
+                {
+                    session.writeTransaction( new TransactionWork<Void>()
+                    {
+                        @Override
+                        public Void execute( Transaction tx )
+                        {
+                            tx.run( "CREATE (n:" + label + ") SET n." + property + " = $value",
+                                    parameters( "value", value ) );
+                            return null;
+                        }
+                    } );
+                    return session.lastBookmark();
+                }
+            }
+        };
     }
 }
