@@ -21,8 +21,6 @@ package org.neo4j.driver.internal.types;
 import org.neo4j.driver.v1.types.Type;
 import org.neo4j.driver.v1.Value;
 
-import static org.neo4j.driver.internal.types.TypeConstructor.LIST_TyCon;
-
 public class TypeRepresentation implements Type
 {
     private final TypeConstructor tyCon;
@@ -41,11 +39,6 @@ public class TypeRepresentation implements Type
     @Override
     public String name()
     {
-        if (tyCon == LIST_TyCon)
-        {
-            return "LIST OF ANY?";
-        }
-
         return tyCon.typeName();
     }
 
