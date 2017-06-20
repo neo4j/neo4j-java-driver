@@ -177,6 +177,11 @@ public class PackStream
             out.writeByte( value ? TRUE : FALSE );
         }
 
+        public void pack( char value ) throws IOException
+        {
+            pack( String.valueOf(value) );
+        }
+
         public void pack( long value ) throws IOException
         {
             if ( value >= MINUS_2_TO_THE_4 && value < PLUS_2_TO_THE_7)

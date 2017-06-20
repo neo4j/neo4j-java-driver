@@ -207,6 +207,8 @@ public abstract class Values
         return new ListValue( values.toArray( new Value[values.size()] ) );
     }
 
+    public static Value value (final char val ) { return new StringValue( String.valueOf(val) ); }
+
     public static Value value( final String val )
     {
         return new StringValue( val );

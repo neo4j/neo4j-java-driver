@@ -118,6 +118,9 @@ public class ValuesTest
         assertNotEquals( value( "Hello" ), value( "hello" ) );
         assertNotEquals( value( "This åäö string ?? contains strange " ),
                 value( "This åäö string ?? contains strange Ü" ) );
+
+        assertEquals( value ( 'A' ), value( 'A' ));
+        assertEquals( value ( 'A' ), value( "A" ));
     }
 
     @Test
