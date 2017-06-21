@@ -80,6 +80,9 @@ public class ValuesTest
         assertThat( value( new boolean[]{true, false, true} ),
                 equalTo( (Value) new ListValue( values( true, false, true ) ) ) );
 
+        assertThat( value( new char[]{'a', 'b', 'c'} ),
+                equalTo( (Value) new ListValue( values( 'a', 'b', 'c' ) ) ) );
+
         assertThat( value( new String[]{"a", "b", "c"} ),
                 equalTo( (Value) new ListValue( values( "a", "b", "c" ) ) ) );
     }
