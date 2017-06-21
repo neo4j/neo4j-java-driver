@@ -141,6 +141,17 @@ public abstract class Values
         }
         return new ListValue( values );
     }
+
+    public static Value value( char... input )
+    {
+        Value[] values = new Value[input.length];
+        for ( int i = 0; i < input.length; i++ )
+        {
+            values[i] = value( input[i] );
+        }
+        return new ListValue( values );
+    }
+
     public static Value value( long... input )
     {
         Value[] values = new Value[input.length];
@@ -206,6 +217,8 @@ public abstract class Values
         }
         return new ListValue( values.toArray( new Value[values.size()] ) );
     }
+
+    public static Value value (final char val ) { return new StringValue( String.valueOf( val ) ); }
 
     public static Value value( final String val )
     {

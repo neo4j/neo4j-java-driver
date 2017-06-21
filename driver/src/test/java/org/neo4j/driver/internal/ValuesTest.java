@@ -80,6 +80,9 @@ public class ValuesTest
         assertThat( value( new boolean[]{true, false, true} ),
                 equalTo( (Value) new ListValue( values( true, false, true ) ) ) );
 
+        assertThat( value( new char[]{'a', 'b', 'c'} ),
+                equalTo( (Value) new ListValue( values( 'a', 'b', 'c' ) ) ) );
+
         assertThat( value( new String[]{"a", "b", "c"} ),
                 equalTo( (Value) new ListValue( values( "a", "b", "c" ) ) ) );
     }
@@ -118,6 +121,9 @@ public class ValuesTest
         assertNotEquals( value( "Hello" ), value( "hello" ) );
         assertNotEquals( value( "This åäö string ?? contains strange " ),
                 value( "This åäö string ?? contains strange Ü" ) );
+
+        assertEquals( value ( 'A' ), value( 'A' ));
+        assertEquals( value ( 'A' ), value( "A" ));
     }
 
     @Test

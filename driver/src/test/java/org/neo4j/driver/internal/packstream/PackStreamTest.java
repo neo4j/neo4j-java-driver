@@ -396,6 +396,26 @@ public class PackStreamTest
     }
 
     @Test
+    public void testCanPackAndUnpackChar() throws Throwable
+    {
+        // Given
+        Machine machine = new Machine();
+
+        // When
+        PackStream.Packer packer = machine.packer();
+        packer.pack( 'A' );
+        packer.flush();
+
+        // Then
+        PackStream.Unpacker unpacker = newUnpacker( machine.output() );
+        PackType packType = unpacker.peekNextType();
+
+        // Then
+        assertThat( packType, equalTo( PackType.STRING ) );
+        assertThat( unpacker.unpackString(), equalTo( "A" ));
+    }
+
+    @Test
     public void testCanPackAndUnpackString() throws Throwable
     {
         // Given
