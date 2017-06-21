@@ -103,20 +103,24 @@ public class BoltServerAddress
         return format( "%s:%d", host, port );
     }
 
+    /**
+     * Create a {@link SocketAddress} from this bolt address. This method always attempts to resolve the hostname into
+     * an {@link InetAddress}.
+     *
+     * @return new socket address.
+     * @see InetSocketAddress
+     */
     public SocketAddress toSocketAddress()
     {
-        if (socketAddress == null)
-        {
-            socketAddress = new InetSocketAddress( host, port );
-        }
-        return socketAddress;
+        return new InetSocketAddress( host, port );
     }
 
     /**
      * Resolve the host name down to an IP address, if not already resolved.
      *
      * @return this instance if already resolved, otherwise a new address instance
-     * @throws UnknownHostException
+     * @throws UnknownHostException if no IP address for the host could be found
+     * @see InetAddress#getByName(String)
      */
     public BoltServerAddress resolve() throws UnknownHostException
     {
