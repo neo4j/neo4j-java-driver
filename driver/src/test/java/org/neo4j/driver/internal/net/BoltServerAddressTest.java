@@ -19,10 +19,12 @@
 package org.neo4j.driver.internal.net;
 
 import org.junit.Test;
-import org.neo4j.driver.internal.net.BoltServerAddress;
+
+import java.net.SocketAddress;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertThat;
 
 public class BoltServerAddressTest
 {
@@ -38,4 +40,14 @@ public class BoltServerAddressTest
         assertThat( new BoltServerAddress( "localhost" ).port(), equalTo( BoltServerAddress.DEFAULT_PORT ) );
     }
 
+    @Test
+    public void shouldAlwaysResolveAddress()
+    {
+        BoltServerAddress boltAddress = new BoltServerAddress( "localhost" );
+
+        SocketAddress socketAddress1 = boltAddress.toSocketAddress();
+        SocketAddress socketAddress2 = boltAddress.toSocketAddress();
+
+        assertNotSame( socketAddress1, socketAddress2 );
+    }
 }
