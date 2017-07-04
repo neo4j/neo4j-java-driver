@@ -18,24 +18,36 @@
  */
 package org.neo4j.driver.internal.cluster;
 
-import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.v1.AccessMode;
-
-public interface RoutingTable
+public class RoundRobinArrayIndex
 {
-    boolean isStaleFor( AccessMode mode );
+    private final AtomicInteger offset;
 
-    Set<BoltServerAddress> update( ClusterComposition cluster );
+    RoundRobinArrayIndex()
+    {
+        this( 0 );
+    }
 
-    void forget( BoltServerAddress address );
+    // only for testing
+    RoundRobinArrayIndex( int initialOffset )
+    {
+        this.offset = new AtomicInteger( initialOffset );
+    }
 
-    AddressSet readers();
+    public int next( int arrayLength )
+    {
+        if ( arrayLength == 0 )
+        {
+            return -1;
+        }
 
-    AddressSet writers();
-
-    AddressSet routers();
-
-    void removeWriter( BoltServerAddress toRemove );
+        int nextOffset;
+        while ( (nextOffset = offset.getAndIncrement()) < 0 )
+        {
+            // overflow, try resetting back to zero
+            offset.compareAndSet( nextOffset + 1, 0 );
+        }
+        return nextOffset % arrayLength;
+    }
 }

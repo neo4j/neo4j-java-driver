@@ -136,15 +136,10 @@ public class Rediscovery
     private ClusterComposition lookupOnKnownRouters( RoutingTable routingTable, ConnectionPool connections,
             Set<BoltServerAddress> seenServers )
     {
-        int size = routingTable.routerSize();
-        for ( int i = 0; i < size; i++ )
-        {
-            BoltServerAddress address = routingTable.nextRouter();
-            if ( address == null )
-            {
-                break;
-            }
+        BoltServerAddress[] addresses = routingTable.routers().toArray();
 
+        for ( BoltServerAddress address : addresses )
+        {
             ClusterComposition composition = lookupOnRouter( address, routingTable, connections );
             if ( composition != null )
             {

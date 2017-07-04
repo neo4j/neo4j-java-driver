@@ -53,7 +53,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
@@ -176,9 +175,12 @@ public class LoadBalancerTest
     @Test
     public void shouldForgetAddressAndItsConnectionsOnServiceUnavailableWhileClosingSession()
     {
-        RoutingTable routingTable = mock( RoutingTable.class, RETURNS_MOCKS );
-        ConnectionPool connectionPool = mock( ConnectionPool.class );
         BoltServerAddress address = new BoltServerAddress( "host", 42 );
+        RoutingTable routingTable = mock( RoutingTable.class );
+        AddressSet addressSet = mock( AddressSet.class );
+        when( addressSet.toArray() ).thenReturn( new BoltServerAddress[]{address} );
+        when( routingTable.writers() ).thenReturn( addressSet );
+        ConnectionPool connectionPool = mock( ConnectionPool.class );
         PooledConnection connectionWithFailingSync = newConnectionWithFailingSync( address );
         when( connectionPool.acquire( any( BoltServerAddress.class ) ) ).thenReturn( connectionWithFailingSync );
         Rediscovery rediscovery = mock( Rediscovery.class );
@@ -225,8 +227,8 @@ public class LoadBalancerTest
         RoutingTable routingTable = mock( RoutingTable.class );
         when( routingTable.isStaleFor( any( AccessMode.class ) ) ).thenReturn( true );
         Rediscovery rediscovery = mock( Rediscovery.class );
-        when( routingTable.readers() ).thenReturn( new RoundRobinAddressSet() );
-        when( routingTable.writers() ).thenReturn( new RoundRobinAddressSet() );
+        when( routingTable.readers() ).thenReturn( new AddressSet() );
+        when( routingTable.writers() ).thenReturn( new AddressSet() );
 
         LoadBalancer loadBalancer = new LoadBalancer( connections, routingTable, rediscovery, DEV_NULL_LOGGER );
 
@@ -300,11 +302,11 @@ public class LoadBalancerTest
         when( connPool.acquire( writer ) ).thenReturn( writerConn );
         when( connPool.acquire( reader ) ).thenReturn( readConn );
 
-        RoundRobinAddressSet writerAddrs = mock( RoundRobinAddressSet.class );
-        when( writerAddrs.next() ).thenReturn( writer );
+        AddressSet writerAddrs = mock( AddressSet.class );
+        when( writerAddrs.toArray() ).thenReturn( new BoltServerAddress[]{writer} );
 
-        RoundRobinAddressSet readerAddrs = mock( RoundRobinAddressSet.class );
-        when( readerAddrs.next() ).thenReturn( reader );
+        AddressSet readerAddrs = mock( AddressSet.class );
+        when( readerAddrs.toArray() ).thenReturn( new BoltServerAddress[]{reader} );
 
         RoutingTable routingTable = mock( RoutingTable.class );
         when( routingTable.readers() ).thenReturn( readerAddrs );
@@ -336,7 +338,7 @@ public class LoadBalancerTest
         when( routingTable.isStaleFor( mode ) ).thenReturn( true );
         when( routingTable.update( any( ClusterComposition.class ) ) ).thenReturn( new HashSet<BoltServerAddress>() );
 
-        RoundRobinAddressSet addresses = new RoundRobinAddressSet();
+        AddressSet addresses = new AddressSet();
         addresses.update( new HashSet<>( singletonList( LOCAL_DEFAULT ) ), new HashSet<BoltServerAddress>() );
         when( routingTable.readers() ).thenReturn( addresses );
         when( routingTable.writers() ).thenReturn( addresses );

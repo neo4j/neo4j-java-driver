@@ -39,6 +39,7 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
     private final ConnectionPool connections;
     private final RoutingTable routingTable;
     private final Rediscovery rediscovery;
+    private final LoadBalancingStrategy loadBalancingStrategy;
     private final Logger log;
 
     public LoadBalancer( BoltServerAddress initialRouter, RoutingSettings settings, ConnectionPool connections,
@@ -59,6 +60,7 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
         this.connections = connections;
         this.routingTable = routingTable;
         this.rediscovery = rediscovery;
+        this.loadBalancingStrategy = new RoundRobinLoadBalancingStrategy();
         this.log = log;
 
         refreshRoutingTable();
@@ -67,7 +69,7 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
     @Override
     public PooledConnection acquireConnection( AccessMode mode )
     {
-        RoundRobinAddressSet addressSet = addressSetFor( mode );
+        AddressSet addressSet = addressSetFor( mode );
         PooledConnection connection = acquireConnection( mode, addressSet );
         return new RoutingPooledConnection( connection, this, mode );
     }
@@ -90,10 +92,10 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
         connections.close();
     }
 
-    private PooledConnection acquireConnection( AccessMode mode, RoundRobinAddressSet servers )
+    private PooledConnection acquireConnection( AccessMode mode, AddressSet servers )
     {
         ensureRouting( mode );
-        for ( BoltServerAddress address; (address = servers.next()) != null; )
+        for ( BoltServerAddress address; (address = selectAddress( mode, servers )) != null; )
         {
             try
             {
@@ -141,7 +143,7 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
         log.info( "Refreshed routing information. %s", routingTable );
     }
 
-    private RoundRobinAddressSet addressSetFor( AccessMode mode )
+    private AddressSet addressSetFor( AccessMode mode )
     {
         switch ( mode )
         {
@@ -150,7 +152,22 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
         case WRITE:
             return routingTable.writers();
         default:
-            throw new IllegalArgumentException( "Mode '" + mode + "' is not supported" );
+            throw unknownMode( mode );
+        }
+    }
+
+    private BoltServerAddress selectAddress( AccessMode mode, AddressSet servers )
+    {
+        BoltServerAddress[] addresses = servers.toArray();
+
+        switch ( mode )
+        {
+        case READ:
+            return loadBalancingStrategy.selectReader( addresses );
+        case WRITE:
+            return loadBalancingStrategy.selectWriter( addresses );
+        default:
+            throw unknownMode( mode );
         }
     }
 
@@ -160,5 +177,10 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
         ClusterCompositionProvider clusterComposition =
                 new RoutingProcedureClusterCompositionProvider( clock, log, settings );
         return new Rediscovery( initialRouter, settings, clock, log, clusterComposition, new DnsResolver( log ) );
+    }
+
+    private static RuntimeException unknownMode( AccessMode mode )
+    {
+        return new IllegalArgumentException( "Mode '" + mode + "' is not supported" );
     }
 }

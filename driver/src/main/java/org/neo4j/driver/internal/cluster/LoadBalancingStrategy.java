@@ -18,24 +18,11 @@
  */
 package org.neo4j.driver.internal.cluster;
 
-import java.util.Set;
-
 import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.v1.AccessMode;
 
-public interface RoutingTable
+public interface LoadBalancingStrategy
 {
-    boolean isStaleFor( AccessMode mode );
+    BoltServerAddress selectReader( BoltServerAddress[] knownReaders );
 
-    Set<BoltServerAddress> update( ClusterComposition cluster );
-
-    void forget( BoltServerAddress address );
-
-    AddressSet readers();
-
-    AddressSet writers();
-
-    AddressSet routers();
-
-    void removeWriter( BoltServerAddress toRemove );
+    BoltServerAddress selectWriter( BoltServerAddress[] knownWriters );
 }

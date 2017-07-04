@@ -20,39 +20,23 @@ package org.neo4j.driver.internal.cluster;
 
 import java.util.Arrays;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
 
-public class RoundRobinAddressSet
+public class AddressSet
 {
     private static final BoltServerAddress[] NONE = {};
-    private final AtomicInteger offset = new AtomicInteger();
+
     private volatile BoltServerAddress[] addresses = NONE;
+
+    public BoltServerAddress[] toArray()
+    {
+        return addresses;
+    }
 
     public int size()
     {
         return addresses.length;
-    }
-
-    public BoltServerAddress next()
-    {
-        BoltServerAddress[] addresses = this.addresses;
-        if ( addresses.length == 0 )
-        {
-            return null;
-        }
-        return addresses[next( addresses.length )];
-    }
-
-    int next( int divisor )
-    {
-        int index = offset.getAndIncrement();
-        for ( ; index == Integer.MAX_VALUE; index = offset.getAndIncrement() )
-        {
-            offset.compareAndSet( Integer.MIN_VALUE, index % divisor );
-        }
-        return index % divisor;
     }
 
     public synchronized void update( Set<BoltServerAddress> addresses, Set<BoltServerAddress> removed )
@@ -132,12 +116,6 @@ public class RoundRobinAddressSet
     @Override
     public String toString()
     {
-        return "RoundRobinAddressSet=" + Arrays.toString( addresses );
-    }
-
-    /** breaking encapsulation in order to perform white-box testing of boundary case */
-    void setOffset( int target )
-    {
-        offset.set( target );
+        return "AddressSet=" + Arrays.toString( addresses );
     }
 }

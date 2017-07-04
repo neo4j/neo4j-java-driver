@@ -28,8 +28,8 @@ import org.neo4j.driver.internal.DirectConnectionProvider;
 import org.neo4j.driver.internal.InternalDriver;
 import org.neo4j.driver.internal.SessionFactory;
 import org.neo4j.driver.internal.SessionFactoryImpl;
+import org.neo4j.driver.internal.cluster.AddressSet;
 import org.neo4j.driver.internal.cluster.LoadBalancer;
-import org.neo4j.driver.internal.cluster.RoundRobinAddressSet;
 import org.neo4j.driver.internal.cluster.RoutingTable;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
@@ -48,9 +48,11 @@ public final class Matchers
             @Override
             protected boolean matchesSafely( RoutingTable routingTable )
             {
-                for ( int i = 0; i < routingTable.routerSize(); i++ )
+                BoltServerAddress[] addresses = routingTable.routers().toArray();
+
+                for ( BoltServerAddress currentAddress : addresses )
                 {
-                    if ( routingTable.nextRouter().equals( address ) )
+                    if ( currentAddress.equals( address ) )
                     {
                         return true;
                     }
@@ -157,11 +159,12 @@ public final class Matchers
         };
     }
 
-    private static boolean contains( RoundRobinAddressSet set, BoltServerAddress address )
+    private static boolean contains( AddressSet set, BoltServerAddress address )
     {
-        for ( int i = 0; i < set.size(); i++ )
+        BoltServerAddress[] addresses = set.toArray();
+        for ( BoltServerAddress currentAddress : addresses )
         {
-            if ( set.next().equals( address ) )
+            if ( currentAddress.equals( address ) )
             {
                 return true;
             }
