@@ -52,37 +52,35 @@ public class LeastConnectedLoadBalancingStrategy implements LoadBalancingStrateg
         {
             return null;
         }
-        else
+
+        int startIndex = addressesIndex.next( size );
+        int index = startIndex;
+
+        BoltServerAddress leastConnectedAddress = null;
+        int leastActiveConnections = Integer.MAX_VALUE;
+
+        do
         {
-            int startIndex = addressesIndex.next( size );
-            int index = startIndex;
+            BoltServerAddress address = addresses[index];
+            int activeConnections = connectionPool.activeConnections( address );
 
-            BoltServerAddress leastConnectedAddress = null;
-            int leastActiveConnections = Integer.MAX_VALUE;
-
-            do
+            if ( activeConnections < leastActiveConnections )
             {
-                BoltServerAddress address = addresses[index];
-                int activeConnections = connectionPool.activeConnections( address );
-
-                if ( activeConnections < leastActiveConnections )
-                {
-                    leastConnectedAddress = address;
-                    leastActiveConnections = activeConnections;
-                }
-
-                if ( index == size - 1 )
-                {
-                    index = 0;
-                }
-                else
-                {
-                    index++;
-                }
+                leastConnectedAddress = address;
+                leastActiveConnections = activeConnections;
             }
-            while ( index != startIndex );
 
-            return leastConnectedAddress;
+            if ( index == size - 1 )
+            {
+                index = 0;
+            }
+            else
+            {
+                index++;
+            }
         }
+        while ( index != startIndex );
+
+        return leastConnectedAddress;
     }
 }

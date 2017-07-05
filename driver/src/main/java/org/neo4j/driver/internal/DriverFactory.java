@@ -150,19 +150,19 @@ public class DriverFactory
             RoutingSettings routingSettings )
     {
         return new LoadBalancer( address, routingSettings, connectionPool, createClock(), config.logging(),
-                loadBalancingStrategy( config, connectionPool ) );
+                createLoadBalancingStrategy( config, connectionPool ) );
     }
 
-    private LoadBalancingStrategy loadBalancingStrategy( Config config,
-            ConnectionPool connectionPool )
+    private LoadBalancingStrategy createLoadBalancingStrategy( Config config, ConnectionPool connectionPool )
     {
-        if ( config.loadBalancingStrategy() == Config.LoadBalancingStrategy.ROUND_ROBIN )
+        switch ( config.loadBalancingStrategy() )
         {
+        case ROUND_ROBIN:
             return new RoundRobinLoadBalancingStrategy();
-        }
-        else
-        {
+        case LEAST_CONNECTED:
             return new LeastConnectedLoadBalancingStrategy( connectionPool );
+        default:
+            throw new IllegalArgumentException( "Unknown load balancing strategy: " + config.loadBalancingStrategy() );
         }
     }
 

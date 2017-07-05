@@ -55,20 +55,18 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
     public LoadBalancer( BoltServerAddress initialRouter, RoutingSettings settings, ConnectionPool connections,
             Clock clock, Logging logging, LoadBalancingStrategy loadBalancingStrategy )
     {
-        this( initialRouter, settings, connections, new ClusterRoutingTable( clock, initialRouter ), clock,
-                logging.getLog( LOAD_BALANCER_LOG_NAME ), loadBalancingStrategy );
-    }
-
-    private LoadBalancer( BoltServerAddress initialRouter, RoutingSettings settings, ConnectionPool connections,
-            RoutingTable routingTable, Clock clock, Logger log,
-            LoadBalancingStrategy loadBalancingStrategy )
-    {
-        this( connections, routingTable, createRediscovery( initialRouter, settings, clock, log ), log,
+        this( connections, new ClusterRoutingTable( clock, initialRouter ),
+                createRediscovery( initialRouter, settings, clock, logging ), loadBalancerLogger( logging ),
                 loadBalancingStrategy );
     }
 
     // Used only in testing
-    public LoadBalancer( ConnectionPool connections, RoutingTable routingTable, Rediscovery rediscovery, Logger log,
+    public LoadBalancer( ConnectionPool connections, RoutingTable routingTable, Rediscovery rediscovery, Logger log )
+    {
+        this( connections, routingTable, rediscovery, log, new LeastConnectedLoadBalancingStrategy( connections ) );
+    }
+
+    private LoadBalancer( ConnectionPool connections, RoutingTable routingTable, Rediscovery rediscovery, Logger log,
             LoadBalancingStrategy loadBalancingStrategy )
     {
         this.connections = connections;
@@ -186,11 +184,17 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
     }
 
     private static Rediscovery createRediscovery( BoltServerAddress initialRouter, RoutingSettings settings,
-            Clock clock, Logger log )
+            Clock clock, Logging logging )
     {
+        Logger log = loadBalancerLogger( logging );
         ClusterCompositionProvider clusterComposition =
                 new RoutingProcedureClusterCompositionProvider( clock, log, settings );
         return new Rediscovery( initialRouter, settings, clock, log, clusterComposition, new DnsResolver( log ) );
+    }
+
+    private static Logger loadBalancerLogger( Logging logging )
+    {
+        return logging.getLog( LOAD_BALANCER_LOG_NAME );
     }
 
     private static RuntimeException unknownMode( AccessMode mode )

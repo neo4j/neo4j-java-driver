@@ -95,16 +95,6 @@ public class Config
     }
 
     /**
-     * Load Balancing Strategy
-     *
-     * @return load balancing strategy to use
-     */
-    public LoadBalancingStrategy loadBalancingStrategy()
-    {
-        return loadBalancingStrategy;
-    }
-
-    /**
      * Logging provider
      * @return the logging provider to use
      */
@@ -187,6 +177,17 @@ public class Config
     }
 
     /**
+     * Load balancing strategy
+     *
+     * @return the strategy to use
+     */
+    @Experimental
+    public LoadBalancingStrategy loadBalancingStrategy()
+    {
+        return loadBalancingStrategy;
+    }
+
+    /**
      * Return a {@link ConfigBuilder} instance
      * @return a {@link ConfigBuilder} instance
      */
@@ -245,11 +246,10 @@ public class Config
         }
 
         /**
-         * Provide an alternative load balancing implementation for the driver to use. By default we use
+         * Provide an alternative load balancing strategy for the routing driver to use. By default we use
          * {@link LoadBalancingStrategy#LEAST_CONNECTED}.
          * <p>
-         * We are experimnenting with different strategies before sticking to one. This could be removed in the next
-         * minor version
+         * <b>Note:</b> We are experimenting with different strategies. This could be removed in the next minor version.
          *
          * @param loadBalancingStrategy the strategy to use
          * @return this builder
