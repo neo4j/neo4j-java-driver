@@ -35,13 +35,13 @@ import org.neo4j.driver.v1.summary.ServerInfo;
 
 import static java.lang.String.format;
 
-class RoutingPooledConnection implements PooledConnection
+public class RoutingPooledConnection implements PooledConnection
 {
     private final PooledConnection delegate;
     private final RoutingErrorHandler errorHandler;
     private final AccessMode accessMode;
 
-    RoutingPooledConnection( PooledConnection delegate, RoutingErrorHandler errorHandler, AccessMode accessMode )
+    public RoutingPooledConnection( PooledConnection delegate, RoutingErrorHandler errorHandler, AccessMode accessMode )
     {
         this.delegate = delegate;
         this.errorHandler = errorHandler;

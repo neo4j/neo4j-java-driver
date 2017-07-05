@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.cluster;
+package org.neo4j.driver.internal.cluster.loadbalancing;
 
 import org.junit.Test;
 import org.mockito.InOrder;
@@ -32,6 +32,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.neo4j.driver.internal.ExplicitTransaction;
 import org.neo4j.driver.internal.NetworkSession;
 import org.neo4j.driver.internal.SessionResourcesHandler;
+import org.neo4j.driver.internal.cluster.AddressSet;
+import org.neo4j.driver.internal.cluster.ClusterComposition;
+import org.neo4j.driver.internal.cluster.Rediscovery;
+import org.neo4j.driver.internal.cluster.RoutingPooledConnection;
+import org.neo4j.driver.internal.cluster.RoutingTable;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.retry.ExponentialBackoffRetryLogic;
 import org.neo4j.driver.internal.retry.RetryLogic;

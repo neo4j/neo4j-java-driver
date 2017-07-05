@@ -16,11 +16,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.cluster;
+package org.neo4j.driver.internal.cluster.loadbalancing;
 
 import java.util.Set;
 
 import org.neo4j.driver.internal.RoutingErrorHandler;
+import org.neo4j.driver.internal.cluster.AddressSet;
+import org.neo4j.driver.internal.cluster.ClusterComposition;
+import org.neo4j.driver.internal.cluster.ClusterCompositionProvider;
+import org.neo4j.driver.internal.cluster.ClusterRoutingTable;
+import org.neo4j.driver.internal.cluster.DnsResolver;
+import org.neo4j.driver.internal.cluster.Rediscovery;
+import org.neo4j.driver.internal.cluster.RoutingPooledConnection;
+import org.neo4j.driver.internal.cluster.RoutingProcedureClusterCompositionProvider;
+import org.neo4j.driver.internal.cluster.RoutingSettings;
+import org.neo4j.driver.internal.cluster.RoutingTable;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
@@ -55,7 +65,8 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
         this( connections, routingTable, createRediscovery( initialRouter, settings, clock, log ), log );
     }
 
-    LoadBalancer( ConnectionPool connections, RoutingTable routingTable, Rediscovery rediscovery, Logger log )
+    // Used only in testing
+    public LoadBalancer( ConnectionPool connections, RoutingTable routingTable, Rediscovery rediscovery, Logger log )
     {
         this.connections = connections;
         this.routingTable = routingTable;
