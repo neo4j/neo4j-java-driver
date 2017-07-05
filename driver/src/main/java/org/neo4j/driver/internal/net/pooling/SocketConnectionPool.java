@@ -96,6 +96,13 @@ public class SocketConnectionPool implements ConnectionPool
     }
 
     @Override
+    public int activeConnections( BoltServerAddress address )
+    {
+        BlockingPooledConnectionQueue connectionQueue = pools.get( address );
+        return connectionQueue == null ? 0 : connectionQueue.activeConnections();
+    }
+
+    @Override
     public void close()
     {
         if ( closed.compareAndSet( false, true ) )

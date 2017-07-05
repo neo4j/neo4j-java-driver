@@ -26,15 +26,29 @@ public interface ConnectionPool extends AutoCloseable
      * Acquire a connection - if a live connection exists in the pool, it will
      * be used, otherwise a new connection will be created.
      *
-     * @param address The address to acquire
+     * @param address the address to acquire
      */
     PooledConnection acquire( BoltServerAddress address );
 
     /**
      * Removes all connections to a given address from the pool.
-     * @param address The address to remove.
+     * @param address the address to remove.
      */
     void purge( BoltServerAddress address );
 
+    /**
+     * Check if pool has connections for the given address.
+     *
+     * @param address the address to check connections.
+     * @return {@code true} when pool has connections towards the given address, {@code false} otherwise.
+     */
     boolean hasAddress( BoltServerAddress address );
+
+    /**
+     * Gen number of active connections pool has towards the given address.
+     *
+     * @param address the address to get connections.
+     * @return number of active (checked out of this pool) connections.
+     */
+    int activeConnections( BoltServerAddress address );
 }

@@ -20,7 +20,10 @@ package org.neo4j.driver.internal.cluster;
 
 import org.junit.Test;
 import org.mockito.InOrder;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -49,8 +52,10 @@ import static java.util.Collections.singletonList;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doReturn;
@@ -61,6 +66,9 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.A;
+import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.B;
+import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.C;
 import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.net.BoltServerAddress.LOCAL_DEFAULT;
@@ -255,6 +263,60 @@ public class LoadBalancerTest
         }
     }
 
+    @Test
+    public void shouldSelectLeastConnectedAddress()
+    {
+        ConnectionPool connectionPool = newConnectionPoolMock();
+        when( connectionPool.activeConnections( A ) ).thenReturn( 0 );
+        when( connectionPool.activeConnections( B ) ).thenReturn( 20 );
+        when( connectionPool.activeConnections( C ) ).thenReturn( 0 );
+
+        RoutingTable routingTable = mock( RoutingTable.class );
+        AddressSet readerAddresses = mock( AddressSet.class );
+        when( readerAddresses.toArray() ).thenReturn( new BoltServerAddress[]{A, B, C} );
+        when( routingTable.readers() ).thenReturn( readerAddresses );
+
+        Rediscovery rediscovery = mock( Rediscovery.class );
+
+        LoadBalancer loadBalancer = new LoadBalancer( connectionPool, routingTable, rediscovery, DEV_NULL_LOGGER );
+
+        Set<BoltServerAddress> seenAddresses = new HashSet<>();
+        for ( int i = 0; i < 10; i++ )
+        {
+            PooledConnection connection = loadBalancer.acquireConnection( READ );
+            seenAddresses.add( connection.boltServerAddress() );
+        }
+
+        // server B should never be selected because it has many active connections
+        assertEquals( 2, seenAddresses.size() );
+        assertTrue( seenAddresses.containsAll( Arrays.asList( A, C ) ) );
+    }
+
+    @Test
+    public void shouldRoundRobinWhenNoActiveConnections()
+    {
+        ConnectionPool connectionPool = newConnectionPoolMock();
+
+        RoutingTable routingTable = mock( RoutingTable.class );
+        AddressSet readerAddresses = mock( AddressSet.class );
+        when( readerAddresses.toArray() ).thenReturn( new BoltServerAddress[]{A, B, C} );
+        when( routingTable.readers() ).thenReturn( readerAddresses );
+
+        Rediscovery rediscovery = mock( Rediscovery.class );
+
+        LoadBalancer loadBalancer = new LoadBalancer( connectionPool, routingTable, rediscovery, DEV_NULL_LOGGER );
+
+        Set<BoltServerAddress> seenAddresses = new HashSet<>();
+        for ( int i = 0; i < 10; i++ )
+        {
+            PooledConnection connection = loadBalancer.acquireConnection( READ );
+            seenAddresses.add( connection.boltServerAddress() );
+        }
+
+        assertEquals( 3, seenAddresses.size() );
+        assertTrue( seenAddresses.containsAll( Arrays.asList( A, B, C ) ) );
+    }
+
     private void testRediscoveryWhenStale( AccessMode mode )
     {
         ConnectionPool connections = mock( ConnectionPool.class );
@@ -354,5 +416,22 @@ public class LoadBalancerTest
         when( rediscovery.lookupClusterComposition( any( RoutingTable.class ), any( ConnectionPool.class ) ) )
                 .thenReturn( clusterComposition );
         return rediscovery;
+    }
+
+    private static ConnectionPool newConnectionPoolMock()
+    {
+        ConnectionPool connectionPool = mock( ConnectionPool.class );
+        when( connectionPool.acquire( any( BoltServerAddress.class ) ) ).then( new Answer<PooledConnection>()
+        {
+            @Override
+            public PooledConnection answer( InvocationOnMock invocation ) throws Throwable
+            {
+                BoltServerAddress requestedAddress = invocation.getArgumentAt( 0, BoltServerAddress.class );
+                PooledConnection connection = mock( PooledConnection.class );
+                when( connection.boltServerAddress() ).thenReturn( requestedAddress );
+                return connection;
+            }
+        } );
+        return connectionPool;
     }
 }

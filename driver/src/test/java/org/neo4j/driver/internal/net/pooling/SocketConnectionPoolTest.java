@@ -47,6 +47,7 @@ import static java.util.Collections.newSetFromMap;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.isOneOf;
 import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
@@ -487,6 +488,52 @@ public class SocketConnectionPoolTest
         inOrder.verify( connection3 ).reset();
         inOrder.verify( connection4, never() ).reset();
         inOrder.verify( connection4, never() ).sync();
+    }
+
+    @Test
+    public void reportActiveConnectionsWhenEmpty()
+    {
+        SocketConnectionPool pool = newPool( newMockConnector() );
+
+        int activeConnections1 = pool.activeConnections( ADDRESS_1 );
+        int activeConnections2 = pool.activeConnections( ADDRESS_2 );
+        int activeConnections3 = pool.activeConnections( ADDRESS_3 );
+
+        assertEquals( 0, activeConnections1 );
+        assertEquals( 0, activeConnections2 );
+        assertEquals( 0, activeConnections3 );
+    }
+
+    @Test
+    public void reportActiveConnectionsWhenHasAcquiredConnections()
+    {
+        int acquiredConnections = 23;
+        SocketConnectionPool pool = newPool( newMockConnector() );
+
+        for ( int i = 0; i < acquiredConnections; i++ )
+        {
+            assertNotNull( pool.acquire( ADDRESS_1 ) );
+        }
+
+        assertEquals( acquiredConnections, pool.activeConnections( ADDRESS_1 ) );
+    }
+
+    @Test
+    public void reportActiveConnectionsWhenHasIdleConnections()
+    {
+        Connection connection = newConnectionMock( ADDRESS_1 );
+        Connector connector = newMockConnector( connection );
+        SocketConnectionPool pool = newPool( connector );
+
+        PooledConnection connection1 = pool.acquire( ADDRESS_1 );
+        PooledConnection connection2 = pool.acquire( ADDRESS_1 );
+
+        assertEquals( 2, pool.activeConnections( ADDRESS_1 ) );
+
+        connection1.close();
+        connection2.close();
+
+        assertEquals( 0, pool.activeConnections( ADDRESS_1 ) );
     }
 
     private static Answer<Connection> createConnectionAnswer( final Set<Connection> createdConnections )

@@ -120,6 +120,11 @@ public class BlockingPooledConnectionQueue
         return queue.size();
     }
 
+    public int activeConnections()
+    {
+        return acquiredConnections.size();
+    }
+
     public boolean contains( PooledConnection pooledConnection )
     {
         return queue.contains( pooledConnection );

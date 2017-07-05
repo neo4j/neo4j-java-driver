@@ -60,7 +60,7 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
         this.connections = connections;
         this.routingTable = routingTable;
         this.rediscovery = rediscovery;
-        this.loadBalancingStrategy = new RoundRobinLoadBalancingStrategy();
+        this.loadBalancingStrategy = new LeastConnectedLoadBalancingStrategy( connections );
         this.log = log;
 
         refreshRoutingTable();
