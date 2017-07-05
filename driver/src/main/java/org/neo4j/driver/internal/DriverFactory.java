@@ -24,7 +24,10 @@ import java.security.GeneralSecurityException;
 
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
+import org.neo4j.driver.internal.cluster.loadbalancing.LeastConnectedLoadBalancingStrategy;
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
+import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancingStrategy;
+import org.neo4j.driver.internal.cluster.loadbalancing.RoundRobinLoadBalancingStrategy;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.net.SocketConnector;
 import org.neo4j.driver.internal.net.pooling.PoolSettings;
@@ -146,7 +149,21 @@ public class DriverFactory
     protected LoadBalancer createLoadBalancer( BoltServerAddress address, ConnectionPool connectionPool, Config config,
             RoutingSettings routingSettings )
     {
-        return new LoadBalancer( address, routingSettings, connectionPool, createClock(), config.logging() );
+        return new LoadBalancer( address, routingSettings, connectionPool, createClock(), config.logging(),
+                loadBalancingStrategy( config, connectionPool ) );
+    }
+
+    private LoadBalancingStrategy loadBalancingStrategy( Config config,
+            ConnectionPool connectionPool )
+    {
+        if ( config.loadBalancingStrategy() == Config.LoadBalancingStrategy.ROUND_ROBIN )
+        {
+            return new RoundRobinLoadBalancingStrategy();
+        }
+        else
+        {
+            return new LeastConnectedLoadBalancingStrategy( connectionPool );
+        }
     }
 
     /**

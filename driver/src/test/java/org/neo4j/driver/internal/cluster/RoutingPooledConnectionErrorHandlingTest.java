@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
+import org.neo4j.driver.internal.cluster.loadbalancing.LeastConnectedLoadBalancingStrategy;
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.net.pooling.PoolSettings;
@@ -325,7 +326,8 @@ public class RoutingPooledConnectionErrorHandlingTest
     {
         Rediscovery rediscovery = mock( Rediscovery.class );
         when( rediscovery.lookupClusterComposition( routingTable, connectionPool ) ).thenReturn( clusterComposition );
-        return new LoadBalancer( connectionPool, routingTable, rediscovery, DEV_NULL_LOGGER );
+        return new LoadBalancer( connectionPool, routingTable, rediscovery, DEV_NULL_LOGGER,
+                new LeastConnectedLoadBalancingStrategy( connectionPool ) );
     }
 
     private interface ConnectionMethod

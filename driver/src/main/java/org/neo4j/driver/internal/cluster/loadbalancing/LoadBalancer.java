@@ -53,25 +53,28 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
     private final Logger log;
 
     public LoadBalancer( BoltServerAddress initialRouter, RoutingSettings settings, ConnectionPool connections,
-            Clock clock, Logging logging )
+            Clock clock, Logging logging, LoadBalancingStrategy loadBalancingStrategy )
     {
         this( initialRouter, settings, connections, new ClusterRoutingTable( clock, initialRouter ), clock,
-                logging.getLog( LOAD_BALANCER_LOG_NAME ) );
+                logging.getLog( LOAD_BALANCER_LOG_NAME ), loadBalancingStrategy );
     }
 
     private LoadBalancer( BoltServerAddress initialRouter, RoutingSettings settings, ConnectionPool connections,
-            RoutingTable routingTable, Clock clock, Logger log )
+            RoutingTable routingTable, Clock clock, Logger log,
+            LoadBalancingStrategy loadBalancingStrategy )
     {
-        this( connections, routingTable, createRediscovery( initialRouter, settings, clock, log ), log );
+        this( connections, routingTable, createRediscovery( initialRouter, settings, clock, log ), log,
+                loadBalancingStrategy );
     }
 
     // Used only in testing
-    public LoadBalancer( ConnectionPool connections, RoutingTable routingTable, Rediscovery rediscovery, Logger log )
+    public LoadBalancer( ConnectionPool connections, RoutingTable routingTable, Rediscovery rediscovery, Logger log,
+            LoadBalancingStrategy loadBalancingStrategy )
     {
         this.connections = connections;
         this.routingTable = routingTable;
         this.rediscovery = rediscovery;
-        this.loadBalancingStrategy = new LeastConnectedLoadBalancingStrategy( connections );
+        this.loadBalancingStrategy = loadBalancingStrategy;
         this.log = log;
 
         refreshRoutingTable();
