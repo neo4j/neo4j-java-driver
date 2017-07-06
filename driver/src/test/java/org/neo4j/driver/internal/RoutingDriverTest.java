@@ -349,7 +349,7 @@ public class RoutingDriverTest
     {
         RoutingSettings settings = new RoutingSettings( 10, 5_000, null );
         ConnectionProvider connectionProvider = new LoadBalancer( SEED, settings, pool, clock, logging,
-                new LeastConnectedLoadBalancingStrategy( pool ) );
+                new LeastConnectedLoadBalancingStrategy( pool, logging ) );
         Config config = Config.build().withLogging( logging ).toConfig();
         SessionFactory sessionFactory = new NetworkSessionWithAddressFactory( connectionProvider, config );
         return new InternalDriver( insecure(), sessionFactory, logging );

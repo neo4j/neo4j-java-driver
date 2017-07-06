@@ -74,7 +74,6 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.A;
 import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.B;
 import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.C;
-import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.net.BoltServerAddress.LOCAL_DEFAULT;
 import static org.neo4j.driver.v1.AccessMode.READ;
@@ -93,7 +92,7 @@ public class LoadBalancerTest
         when( routingTable.update( any( ClusterComposition.class ) ) ).thenReturn( set );
 
         // when
-        LoadBalancer balancer = new LoadBalancer( conns, routingTable, rediscovery, DEV_NULL_LOGGER );
+        LoadBalancer balancer = new LoadBalancer( conns, routingTable, rediscovery, DEV_NULL_LOGGING );
 
         // then
         assertNotNull( balancer );
@@ -109,7 +108,7 @@ public class LoadBalancerTest
         // given & when
         final AtomicInteger refreshRoutingTableCounter = new AtomicInteger( 0 );
         LoadBalancer balancer = new LoadBalancer( mock( ConnectionPool.class ), mock( RoutingTable.class ),
-                mock( Rediscovery.class ), DEV_NULL_LOGGER )
+                mock( Rediscovery.class ), DEV_NULL_LOGGING )
         {
             @Override
             synchronized void refreshRoutingTable()
@@ -163,7 +162,7 @@ public class LoadBalancerTest
         RoutingTable routingTable = mock( RoutingTable.class );
         ConnectionPool connectionPool = mock( ConnectionPool.class );
         Rediscovery rediscovery = mock( Rediscovery.class );
-        LoadBalancer loadBalancer = new LoadBalancer( connectionPool, routingTable, rediscovery, DEV_NULL_LOGGER );
+        LoadBalancer loadBalancer = new LoadBalancer( connectionPool, routingTable, rediscovery, DEV_NULL_LOGGING );
         BoltServerAddress address = new BoltServerAddress( "host", 42 );
 
         PooledConnection connection = newConnectionWithFailingSync( address );
@@ -197,7 +196,7 @@ public class LoadBalancerTest
         PooledConnection connectionWithFailingSync = newConnectionWithFailingSync( address );
         when( connectionPool.acquire( any( BoltServerAddress.class ) ) ).thenReturn( connectionWithFailingSync );
         Rediscovery rediscovery = mock( Rediscovery.class );
-        LoadBalancer loadBalancer = new LoadBalancer( connectionPool, routingTable, rediscovery, DEV_NULL_LOGGER );
+        LoadBalancer loadBalancer = new LoadBalancer( connectionPool, routingTable, rediscovery, DEV_NULL_LOGGING );
 
         Session session = newSession( loadBalancer );
         // begin transaction to make session obtain a connection
@@ -243,7 +242,7 @@ public class LoadBalancerTest
         when( routingTable.readers() ).thenReturn( new AddressSet() );
         when( routingTable.writers() ).thenReturn( new AddressSet() );
 
-        LoadBalancer loadBalancer = new LoadBalancer( connections, routingTable, rediscovery, DEV_NULL_LOGGER );
+        LoadBalancer loadBalancer = new LoadBalancer( connections, routingTable, rediscovery, DEV_NULL_LOGGING );
 
         try
         {
@@ -283,7 +282,7 @@ public class LoadBalancerTest
 
         Rediscovery rediscovery = mock( Rediscovery.class );
 
-        LoadBalancer loadBalancer = new LoadBalancer( connectionPool, routingTable, rediscovery, DEV_NULL_LOGGER );
+        LoadBalancer loadBalancer = new LoadBalancer( connectionPool, routingTable, rediscovery, DEV_NULL_LOGGING );
 
         Set<BoltServerAddress> seenAddresses = new HashSet<>();
         for ( int i = 0; i < 10; i++ )
@@ -309,7 +308,7 @@ public class LoadBalancerTest
 
         Rediscovery rediscovery = mock( Rediscovery.class );
 
-        LoadBalancer loadBalancer = new LoadBalancer( connectionPool, routingTable, rediscovery, DEV_NULL_LOGGER );
+        LoadBalancer loadBalancer = new LoadBalancer( connectionPool, routingTable, rediscovery, DEV_NULL_LOGGING );
 
         Set<BoltServerAddress> seenAddresses = new HashSet<>();
         for ( int i = 0; i < 10; i++ )
@@ -330,7 +329,7 @@ public class LoadBalancerTest
         RoutingTable routingTable = newStaleRoutingTableMock( mode );
         Rediscovery rediscovery = newRediscoveryMock();
 
-        LoadBalancer loadBalancer = new LoadBalancer( connections, routingTable, rediscovery, DEV_NULL_LOGGER );
+        LoadBalancer loadBalancer = new LoadBalancer( connections, routingTable, rediscovery, DEV_NULL_LOGGING );
         verify( rediscovery ).lookupClusterComposition( routingTable, connections );
 
         assertNotNull( loadBalancer.acquireConnection( mode ) );
@@ -346,7 +345,7 @@ public class LoadBalancerTest
         RoutingTable routingTable = newStaleRoutingTableMock( staleMode );
         Rediscovery rediscovery = newRediscoveryMock();
 
-        LoadBalancer loadBalancer = new LoadBalancer( connections, routingTable, rediscovery, DEV_NULL_LOGGER );
+        LoadBalancer loadBalancer = new LoadBalancer( connections, routingTable, rediscovery, DEV_NULL_LOGGING );
         verify( rediscovery ).lookupClusterComposition( routingTable, connections );
 
         assertNotNull( loadBalancer.acquireConnection( notStaleMode ) );
@@ -379,7 +378,7 @@ public class LoadBalancerTest
         when( routingTable.readers() ).thenReturn( readerAddrs );
         when( routingTable.writers() ).thenReturn( writerAddrs );
 
-        return new LoadBalancer( connPool, routingTable, rediscovery, DEV_NULL_LOGGER );
+        return new LoadBalancer( connPool, routingTable, rediscovery, DEV_NULL_LOGGING );
     }
 
     private static Session newSession( LoadBalancer loadBalancer )

@@ -55,7 +55,6 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.net.pooling.PoolSettings.DEFAULT_MAX_IDLE_CONNECTION_POOL_SIZE;
 import static org.neo4j.driver.internal.net.pooling.PoolSettings.NO_IDLE_CONNECTION_TEST;
@@ -325,7 +324,7 @@ public class RoutingPooledConnectionErrorHandlingTest
     {
         Rediscovery rediscovery = mock( Rediscovery.class );
         when( rediscovery.lookupClusterComposition( routingTable, connectionPool ) ).thenReturn( clusterComposition );
-        return new LoadBalancer( connectionPool, routingTable, rediscovery, DEV_NULL_LOGGER );
+        return new LoadBalancer( connectionPool, routingTable, rediscovery, DEV_NULL_LOGGING );
     }
 
     private interface ConnectionMethod

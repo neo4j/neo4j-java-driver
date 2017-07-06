@@ -158,9 +158,9 @@ public class DriverFactory
         switch ( config.loadBalancingStrategy() )
         {
         case ROUND_ROBIN:
-            return new RoundRobinLoadBalancingStrategy();
+            return new RoundRobinLoadBalancingStrategy( config.logging() );
         case LEAST_CONNECTED:
-            return new LeastConnectedLoadBalancingStrategy( connectionPool );
+            return new LeastConnectedLoadBalancingStrategy( connectionPool, config.logging() );
         default:
             throw new IllegalArgumentException( "Unknown load balancing strategy: " + config.loadBalancingStrategy() );
         }

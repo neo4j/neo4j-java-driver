@@ -24,11 +24,21 @@ import org.mockito.Mock;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.ConnectionPool;
+import org.neo4j.driver.v1.Logger;
+import org.neo4j.driver.v1.Logging;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Matchers.startsWith;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
+import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.A;
+import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 
 public class LeastConnectedLoadBalancingStrategyTest
 {
@@ -40,7 +50,7 @@ public class LeastConnectedLoadBalancingStrategyTest
     public void setUp() throws Exception
     {
         initMocks( this );
-        strategy = new LeastConnectedLoadBalancingStrategy( connectionPool );
+        strategy = new LeastConnectedLoadBalancingStrategy( connectionPool, DEV_NULL_LOGGING );
     }
 
     @Test
@@ -147,5 +157,39 @@ public class LeastConnectedLoadBalancingStrategyTest
 
         assertEquals( address1, strategy.selectReader( new BoltServerAddress[]{address1, address2} ) );
         assertEquals( address2, strategy.selectReader( new BoltServerAddress[]{address1, address2} ) );
+    }
+
+    @Test
+    public void shouldTraceLogWhenNoAddressSelected()
+    {
+        Logging logging = mock( Logging.class );
+        Logger logger = mock( Logger.class );
+        when( logging.getLog( anyString() ) ).thenReturn( logger );
+
+        LoadBalancingStrategy strategy = new LeastConnectedLoadBalancingStrategy( connectionPool, logging );
+
+        strategy.selectReader( new BoltServerAddress[0] );
+        strategy.selectWriter( new BoltServerAddress[0] );
+
+        verify( logger ).trace( startsWith( "Unable to select" ), eq( "reader" ) );
+        verify( logger ).trace( startsWith( "Unable to select" ), eq( "writer" ) );
+    }
+
+    @Test
+    public void shouldTraceLogSelectedAddress()
+    {
+        Logging logging = mock( Logging.class );
+        Logger logger = mock( Logger.class );
+        when( logging.getLog( anyString() ) ).thenReturn( logger );
+
+        when( connectionPool.activeConnections( any( BoltServerAddress.class ) ) ).thenReturn( 42 );
+
+        LoadBalancingStrategy strategy = new LeastConnectedLoadBalancingStrategy( connectionPool, logging );
+
+        strategy.selectReader( new BoltServerAddress[]{A} );
+        strategy.selectWriter( new BoltServerAddress[]{A} );
+
+        verify( logger ).trace( startsWith( "Selected" ), eq( "reader" ), eq( A ), eq( 42 ) );
+        verify( logger ).trace( startsWith( "Selected" ), eq( "writer" ), eq( A ), eq( 42 ) );
     }
 }

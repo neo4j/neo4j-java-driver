@@ -20,6 +20,8 @@ package org.neo4j.driver.internal.cluster.loadbalancing;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.ConnectionPool;
+import org.neo4j.driver.v1.Logger;
+import org.neo4j.driver.v1.Logging;
 
 /**
  * Load balancing strategy that finds server with least amount of active (checked out of the pool) connections from
@@ -28,33 +30,39 @@ import org.neo4j.driver.internal.spi.ConnectionPool;
  */
 public class LeastConnectedLoadBalancingStrategy implements LoadBalancingStrategy
 {
+    private static final String LOGGER_NAME = LeastConnectedLoadBalancingStrategy.class.getSimpleName();
+
     private final RoundRobinArrayIndex readersIndex = new RoundRobinArrayIndex();
     private final RoundRobinArrayIndex writersIndex = new RoundRobinArrayIndex();
 
     private final ConnectionPool connectionPool;
+    private final Logger log;
 
-    public LeastConnectedLoadBalancingStrategy( ConnectionPool connectionPool )
+    public LeastConnectedLoadBalancingStrategy( ConnectionPool connectionPool, Logging logging )
     {
         this.connectionPool = connectionPool;
+        this.log = logging.getLog( LOGGER_NAME );
     }
 
     @Override
     public BoltServerAddress selectReader( BoltServerAddress[] knownReaders )
     {
-        return select( knownReaders, readersIndex );
+        return select( knownReaders, readersIndex, "reader" );
     }
 
     @Override
     public BoltServerAddress selectWriter( BoltServerAddress[] knownWriters )
     {
-        return select( knownWriters, writersIndex );
+        return select( knownWriters, writersIndex, "writer" );
     }
 
-    private BoltServerAddress select( BoltServerAddress[] addresses, RoundRobinArrayIndex addressesIndex )
+    private BoltServerAddress select( BoltServerAddress[] addresses, RoundRobinArrayIndex addressesIndex,
+            String addressType )
     {
         int size = addresses.length;
         if ( size == 0 )
         {
+            log.trace( "Unable to select %s, no known addresses given", addressType );
             return null;
         }
 
@@ -88,6 +96,9 @@ public class LeastConnectedLoadBalancingStrategy implements LoadBalancingStrateg
             }
         }
         while ( index != startIndex );
+
+        log.trace( "Selected %s with address: '%s' and active connections: %s",
+                addressType, leastConnectedAddress, leastActiveConnections );
 
         return leastConnectedAddress;
     }

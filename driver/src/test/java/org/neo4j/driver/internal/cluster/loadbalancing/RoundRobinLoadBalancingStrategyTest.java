@@ -21,13 +21,23 @@ package org.neo4j.driver.internal.cluster.loadbalancing;
 import org.junit.Test;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.v1.Logger;
+import org.neo4j.driver.v1.Logging;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Matchers.startsWith;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.A;
+import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 
 public class RoundRobinLoadBalancingStrategyTest
 {
-    private final RoundRobinLoadBalancingStrategy strategy = new RoundRobinLoadBalancingStrategy();
+    private final RoundRobinLoadBalancingStrategy strategy = new RoundRobinLoadBalancingStrategy( DEV_NULL_LOGGING );
 
     @Test
     public void shouldHandleEmptyReadersArray()
@@ -94,5 +104,37 @@ public class RoundRobinLoadBalancingStrategyTest
         assertEquals( address1, strategy.selectWriter( writers ) );
         assertEquals( address2, strategy.selectWriter( writers ) );
         assertEquals( address3, strategy.selectWriter( writers ) );
+    }
+
+    @Test
+    public void shouldTraceLogWhenNoAddressSelected()
+    {
+        Logging logging = mock( Logging.class );
+        Logger logger = mock( Logger.class );
+        when( logging.getLog( anyString() ) ).thenReturn( logger );
+
+        RoundRobinLoadBalancingStrategy strategy = new RoundRobinLoadBalancingStrategy( logging );
+
+        strategy.selectReader( new BoltServerAddress[0] );
+        strategy.selectWriter( new BoltServerAddress[0] );
+
+        verify( logger ).trace( startsWith( "Unable to select" ), eq( "reader" ) );
+        verify( logger ).trace( startsWith( "Unable to select" ), eq( "writer" ) );
+    }
+
+    @Test
+    public void shouldTraceLogSelectedAddress()
+    {
+        Logging logging = mock( Logging.class );
+        Logger logger = mock( Logger.class );
+        when( logging.getLog( anyString() ) ).thenReturn( logger );
+
+        RoundRobinLoadBalancingStrategy strategy = new RoundRobinLoadBalancingStrategy( logging );
+
+        strategy.selectReader( new BoltServerAddress[]{A} );
+        strategy.selectWriter( new BoltServerAddress[]{A} );
+
+        verify( logger ).trace( startsWith( "Selected" ), eq( "reader" ), eq( A ) );
+        verify( logger ).trace( startsWith( "Selected" ), eq( "writer" ), eq( A ) );
     }
 }

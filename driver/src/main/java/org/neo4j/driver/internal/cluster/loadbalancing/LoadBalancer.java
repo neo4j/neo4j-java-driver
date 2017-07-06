@@ -61,9 +61,11 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
     }
 
     // Used only in testing
-    public LoadBalancer( ConnectionPool connections, RoutingTable routingTable, Rediscovery rediscovery, Logger log )
+    public LoadBalancer( ConnectionPool connections, RoutingTable routingTable, Rediscovery rediscovery,
+            Logging logging )
     {
-        this( connections, routingTable, rediscovery, log, new LeastConnectedLoadBalancingStrategy( connections ) );
+        this( connections, routingTable, rediscovery, loadBalancerLogger( logging ),
+                new LeastConnectedLoadBalancingStrategy( connections, logging ) );
     }
 
     private LoadBalancer( ConnectionPool connections, RoutingTable routingTable, Rediscovery rediscovery, Logger log,

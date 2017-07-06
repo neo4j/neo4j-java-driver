@@ -19,6 +19,8 @@
 package org.neo4j.driver.internal.cluster.loadbalancing;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.v1.Logger;
+import org.neo4j.driver.v1.Logging;
 
 /**
  * Load balancing strategy that selects addresses in round-robin fashion. It maintains separate indices for readers and
@@ -26,29 +28,43 @@ import org.neo4j.driver.internal.net.BoltServerAddress;
  */
 public class RoundRobinLoadBalancingStrategy implements LoadBalancingStrategy
 {
+    private static final String LOGGER_NAME = RoundRobinLoadBalancingStrategy.class.getSimpleName();
+
     private final RoundRobinArrayIndex readersIndex = new RoundRobinArrayIndex();
     private final RoundRobinArrayIndex writersIndex = new RoundRobinArrayIndex();
+
+    private final Logger log;
+
+    public RoundRobinLoadBalancingStrategy( Logging logging )
+    {
+        this.log = logging.getLog( LOGGER_NAME );
+    }
 
     @Override
     public BoltServerAddress selectReader( BoltServerAddress[] knownReaders )
     {
-        return select( knownReaders, readersIndex );
+        return select( knownReaders, readersIndex, "reader" );
     }
 
     @Override
     public BoltServerAddress selectWriter( BoltServerAddress[] knownWriters )
     {
-        return select( knownWriters, writersIndex );
+        return select( knownWriters, writersIndex, "writer" );
     }
 
-    private BoltServerAddress select( BoltServerAddress[] addresses, RoundRobinArrayIndex roundRobinIndex )
+    private BoltServerAddress select( BoltServerAddress[] addresses, RoundRobinArrayIndex roundRobinIndex,
+            String addressType )
     {
         int length = addresses.length;
         if ( length == 0 )
         {
+            log.trace( "Unable to select %s, no known addresses given", addressType );
             return null;
         }
+
         int index = roundRobinIndex.next( length );
-        return addresses[index];
+        BoltServerAddress address = addresses[index];
+        log.trace( "Selected %s with address: '%s'", addressType, address );
+        return address;
     }
 }
