@@ -193,7 +193,7 @@ public class BlockingPooledConnectionQueueTest
 
         queue.terminate();
 
-        verify( logger ).error( anyString(), eq( closeError ) );
+        verify( logger ).warn( anyString(), eq( closeError ) );
     }
 
     @Test
