@@ -163,7 +163,7 @@ public class BlockingPooledConnectionQueue
         }
         catch ( Throwable disposeError )
         {
-            logger.error( "Error disposing connection", disposeError );
+            logger.warn( "Error disposing connection during termination", disposeError );
         }
     }
 
