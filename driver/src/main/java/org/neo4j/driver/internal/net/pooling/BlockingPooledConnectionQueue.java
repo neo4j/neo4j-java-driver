@@ -18,9 +18,7 @@
  */
 package org.neo4j.driver.internal.net.pooling;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -40,8 +38,6 @@ import org.neo4j.driver.v1.Logging;
  */
 public class BlockingPooledConnectionQueue
 {
-    public static final String LOG_NAME = "ConnectionQueue";
-
     /** The backing queue, keeps track of connections currently in queue */
     private final BlockingQueue<PooledConnection> queue;
     private final Logger logger;
@@ -69,7 +65,9 @@ public class BlockingPooledConnectionQueue
         acquiredConnections.remove( pooledConnection );
         boolean offer = queue.offer( pooledConnection );
         // not added back to the queue, dispose of the connection
-        if (!offer) {
+        if ( !offer )
+        {
+            trace( "Queue is at capacity. Offered connection will be disposed." );
             pooledConnection.dispose();
         }
         if (isTerminating.get()) {
@@ -89,11 +87,15 @@ public class BlockingPooledConnectionQueue
      */
     public PooledConnection acquire( Supplier<PooledConnection> supplier )
     {
-
         PooledConnection connection = queue.poll();
         if ( connection == null )
         {
+            trace( "No idle connections. Creating new connection." );
             connection = supplier.get();
+        }
+        else
+        {
+            trace( "Acquired an idle connection." );
         }
         acquiredConnections.add( connection );
 
@@ -103,11 +105,6 @@ public class BlockingPooledConnectionQueue
             throw new IllegalStateException( "Pool has been closed, cannot acquire new values." );
         }
         return connection;
-    }
-
-    public List<PooledConnection> toList()
-    {
-        return new ArrayList<>( queue );
     }
 
     public boolean isEmpty()
@@ -140,6 +137,8 @@ public class BlockingPooledConnectionQueue
     {
         if ( isTerminating.compareAndSet( false, true ) )
         {
+            trace( "Initiating connection queue termination." );
+
             while ( !queue.isEmpty() )
             {
                 PooledConnection idleConnection = queue.poll();
@@ -170,6 +169,17 @@ public class BlockingPooledConnectionQueue
 
     private static Logger createLogger( BoltServerAddress address, Logging logging )
     {
-        return new DelegatingLogger( logging.getLog( LOG_NAME ), address.toString() );
+        Logger log = logging.getLog( BlockingPooledConnectionQueue.class.getSimpleName() );
+        return new DelegatingLogger( log, address.toString() );
+    }
+
+    private void trace( String message )
+    {
+        // Call to activeConnections is costly. This if block is to avoid that.
+        if ( logger.isTraceEnabled() )
+        {
+            logger.trace( "%s ActiveConnections %s IdleConnections %s",
+                    message, activeConnections(), queue.size() );
+        }
     }
 }
