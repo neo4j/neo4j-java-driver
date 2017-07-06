@@ -21,6 +21,11 @@ package org.neo4j.driver.internal.cluster.loadbalancing;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 
+/**
+ * Load balancing strategy that finds server with least amount of active (checked out of the pool) connections from
+ * given readers or writers. It finds a start index for iteration in a round-robin fashion. This is done to prevent
+ * choosing same first address over and over when all addresses have same amount of active connections.
+ */
 public class LeastConnectedLoadBalancingStrategy implements LoadBalancingStrategy
 {
     private final RoundRobinArrayIndex readersIndex = new RoundRobinArrayIndex();
@@ -53,12 +58,14 @@ public class LeastConnectedLoadBalancingStrategy implements LoadBalancingStrateg
             return null;
         }
 
+        // choose start index for iteration in round-rodin fashion
         int startIndex = addressesIndex.next( size );
         int index = startIndex;
 
         BoltServerAddress leastConnectedAddress = null;
         int leastActiveConnections = Integer.MAX_VALUE;
 
+        // iterate over the array to find least connected address
         do
         {
             BoltServerAddress address = addresses[index];
@@ -70,6 +77,7 @@ public class LeastConnectedLoadBalancingStrategy implements LoadBalancingStrateg
                 leastActiveConnections = activeConnections;
             }
 
+            // loop over to the start of the array when end is reached
             if ( index == size - 1 )
             {
                 index = 0;

@@ -20,6 +20,10 @@ package org.neo4j.driver.internal.cluster.loadbalancing;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
 
+/**
+ * Load balancing strategy that selects addresses in round-robin fashion. It maintains separate indices for readers and
+ * writers.
+ */
 public class RoundRobinLoadBalancingStrategy implements LoadBalancingStrategy
 {
     private final RoundRobinArrayIndex readersIndex = new RoundRobinArrayIndex();
