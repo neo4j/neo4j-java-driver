@@ -105,9 +105,15 @@ public class BlockingPooledConnectionQueue
         return connection;
     }
 
-    public List<PooledConnection> toList()
+    public int activeConnections()
     {
-        return new ArrayList<>( queue );
+        return acquiredConnections.size();
+    }
+
+    void disposeBroken( PooledConnection connection )
+    {
+        acquiredConnections.remove( connection );
+        disposeSafely( connection );
     }
 
     public boolean isEmpty()

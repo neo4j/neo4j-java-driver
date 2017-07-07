@@ -239,6 +239,67 @@ public class BlockingPooledConnectionQueueTest
         verify( connection4 ).dispose();
     }
 
+    @Test
+    public void shouldReportZeroActiveConnectionsWhenEmpty()
+    {
+        BlockingPooledConnectionQueue queue = newConnectionQueue( 5 );
+
+        assertEquals( 0, queue.activeConnections() );
+    }
+
+    @Test
+    public void shouldReportZeroActiveConnectionsWhenHasOnlyIdleConnections()
+    {
+        BlockingPooledConnectionQueue queue = newConnectionQueue( 5 );
+
+        queue.offer( mock( PooledConnection.class ) );
+        queue.offer( mock( PooledConnection.class ) );
+
+        assertEquals( 0, queue.activeConnections() );
+    }
+
+    @Test
+    @SuppressWarnings( "unchecked" )
+    public void shouldReportActiveConnections()
+    {
+        BlockingPooledConnectionQueue queue = newConnectionQueue( 5 );
+
+        PooledConnection connection1 = mock( PooledConnection.class );
+        PooledConnection connection2 = mock( PooledConnection.class );
+        PooledConnection connection3 = mock( PooledConnection.class );
+
+        queue.offer( connection1 );
+        queue.offer( connection2 );
+        queue.offer( connection3 );
+
+        queue.acquire( mock( Supplier.class ) );
+        queue.acquire( mock( Supplier.class ) );
+        queue.acquire( mock( Supplier.class ) );
+
+        assertEquals( 3, queue.activeConnections() );
+
+        queue.offer( connection1 );
+        queue.offer( connection2 );
+        queue.offer( connection3 );
+
+        assertEquals( 0, queue.activeConnections() );
+    }
+
+    @Test
+    @SuppressWarnings( "unchecked" )
+    public void shouldDisposeBrokenConnections()
+    {
+        BlockingPooledConnectionQueue queue = newConnectionQueue( 5 );
+
+        queue.offer( mock( PooledConnection.class ) );
+        PooledConnection connection = queue.acquire( mock( Supplier.class ) );
+        assertEquals( 1, queue.activeConnections() );
+
+        queue.disposeBroken( connection );
+        assertEquals( 0, queue.activeConnections() );
+        verify( connection ).dispose();
+    }
+
     private static BlockingPooledConnectionQueue newConnectionQueue( int capacity )
     {
         return newConnectionQueue( capacity, mock( Logging.class, RETURNS_MOCKS ) );
