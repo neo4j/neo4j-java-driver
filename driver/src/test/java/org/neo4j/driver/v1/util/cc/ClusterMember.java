@@ -28,8 +28,8 @@ import static java.util.Objects.requireNonNull;
 
 public class ClusterMember
 {
-    private static final String SIMPLE_SCHEME = "bolt://";
-    private static final String ROUTING_SCHEME = "bolt+routing://";
+    public static final String SIMPLE_SCHEME = "bolt://";
+    public static final String ROUTING_SCHEME = "bolt+routing://";
 
     private final URI boltUri;
     private final BoltServerAddress boltAddress;
