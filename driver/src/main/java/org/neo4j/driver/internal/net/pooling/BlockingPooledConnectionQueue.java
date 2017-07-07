@@ -107,6 +107,12 @@ public class BlockingPooledConnectionQueue
         return connection;
     }
 
+    void disposeBroken( PooledConnection connection )
+    {
+        acquiredConnections.remove( connection );
+        disposeSafely( connection );
+    }
+
     public boolean isEmpty()
     {
         return queue.isEmpty();
@@ -163,7 +169,7 @@ public class BlockingPooledConnectionQueue
         }
         catch ( Throwable disposeError )
         {
-            logger.warn( "Error disposing connection during termination", disposeError );
+            logger.warn( "Error disposing connection", disposeError );
         }
     }
 

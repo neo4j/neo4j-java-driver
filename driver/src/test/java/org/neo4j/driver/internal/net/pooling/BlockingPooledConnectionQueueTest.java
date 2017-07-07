@@ -285,6 +285,21 @@ public class BlockingPooledConnectionQueueTest
         assertEquals( 0, queue.activeConnections() );
     }
 
+    @Test
+    @SuppressWarnings( "unchecked" )
+    public void shouldDisposeBrokenConnections()
+    {
+        BlockingPooledConnectionQueue queue = newConnectionQueue( 5 );
+
+        queue.offer( mock( PooledConnection.class ) );
+        PooledConnection connection = queue.acquire( mock( Supplier.class ) );
+        assertEquals( 1, queue.activeConnections() );
+
+        queue.disposeBroken( connection );
+        assertEquals( 0, queue.activeConnections() );
+        verify( connection ).dispose();
+    }
+
     private static BlockingPooledConnectionQueue newConnectionQueue( int capacity )
     {
         return newConnectionQueue( capacity, mock( Logging.class, RETURNS_MOCKS ) );

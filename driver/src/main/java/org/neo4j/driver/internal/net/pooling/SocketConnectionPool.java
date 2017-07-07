@@ -142,10 +142,16 @@ public class SocketConnectionPool implements ConnectionPool
     {
         ConnectionSupplier connectionSupplier = new ConnectionSupplier( connectionQueue, address );
 
-        PooledConnection connection;
+        PooledConnection connection = null;
         boolean connectionCreated;
         do
         {
+            // dispose previous connection that can't be acquired
+            if ( connection != null )
+            {
+                connectionQueue.disposeBroken( connection );
+            }
+
             connection = connectionQueue.acquire( connectionSupplier );
             connectionCreated = connectionSupplier.connectionCreated();
         }
