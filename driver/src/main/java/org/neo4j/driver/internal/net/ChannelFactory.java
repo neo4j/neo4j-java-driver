@@ -44,7 +44,22 @@ class ChannelFactory
 
         if ( securityPlan.requiresEncryption() )
         {
-            channel = TLSSocketChannel.create( address, securityPlan, soChannel, log );
+            try
+            {
+                channel = TLSSocketChannel.create( address, securityPlan, soChannel, log );
+            }
+            catch ( Exception e )
+            {
+                try
+                {
+                    channel.close();
+                }
+                catch( IOException e2 )
+                {
+                    // best effort
+                }
+                throw e;
+            }
         }
 
         if ( log.isTraceEnabled() )
