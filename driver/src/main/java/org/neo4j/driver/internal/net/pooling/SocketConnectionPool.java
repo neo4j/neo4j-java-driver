@@ -30,6 +30,7 @@ import org.neo4j.driver.internal.spi.Connector;
 import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Supplier;
+import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 
 /**
@@ -58,6 +59,7 @@ public class SocketConnectionPool implements ConnectionPool
     private final ConnectionValidator<PooledConnection> connectionValidator;
     private final Clock clock;
     private final Logging logging;
+    private final Logger logger;
 
     public SocketConnectionPool( PoolSettings poolSettings, Connector connector, Clock clock, Logging logging )
     {
@@ -66,6 +68,7 @@ public class SocketConnectionPool implements ConnectionPool
         this.connectionValidator = new PooledConnectionValidator( this );
         this.clock = clock;
         this.logging = logging;
+        this.logger = logging.getLog( SocketConnectionPool.class.getSimpleName() );
     }
 
     @Override
@@ -85,6 +88,7 @@ public class SocketConnectionPool implements ConnectionPool
         BlockingPooledConnectionQueue connections = pools.remove( address );
         if ( connections != null )
         {
+            logger.trace( "Purging pool for address %s", address );
             connections.terminate();
         }
     }
@@ -96,10 +100,18 @@ public class SocketConnectionPool implements ConnectionPool
     }
 
     @Override
+    public int activeConnections( BoltServerAddress address )
+    {
+        BlockingPooledConnectionQueue connectionQueue = pools.get( address );
+        return connectionQueue == null ? 0 : connectionQueue.activeConnections();
+    }
+
+    @Override
     public void close()
     {
         if ( closed.compareAndSet( false, true ) )
         {
+            logger.trace( "Initiating connection pool termination" );
             for ( BlockingPooledConnectionQueue pool : pools.values() )
             {
                 pool.terminate();
@@ -130,10 +142,16 @@ public class SocketConnectionPool implements ConnectionPool
     {
         ConnectionSupplier connectionSupplier = new ConnectionSupplier( connectionQueue, address );
 
-        PooledConnection connection;
+        PooledConnection connection = null;
         boolean connectionCreated;
         do
         {
+            // dispose previous connection that can't be acquired
+            if ( connection != null )
+            {
+                connectionQueue.disposeBroken( connection );
+            }
+
             connection = connectionQueue.acquire( connectionSupplier );
             connectionCreated = connectionSupplier.connectionCreated();
         }

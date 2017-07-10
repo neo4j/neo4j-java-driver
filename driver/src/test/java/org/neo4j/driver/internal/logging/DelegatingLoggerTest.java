@@ -138,6 +138,18 @@ public class DelegatingLoggerTest
     }
 
     @Test
+    public void shouldDelegateWarnMessageWithoutErrorWhenNoPrefix()
+    {
+        Logger delegate = newLoggerMock();
+        DelegatingLogger logger = new DelegatingLogger( delegate );
+
+        Exception cause = new Exception();
+        logger.warn( MESSAGE, cause );
+
+        verify( delegate ).warn( MESSAGE, cause );
+    }
+
+    @Test
     public void shouldDelegateDebugMessageWhenNoPrefix()
     {
         Logger delegate = newLoggerMock( true, false );
@@ -190,6 +202,18 @@ public class DelegatingLoggerTest
         logger.warn( MESSAGE );
 
         verify( delegate ).warn( "[Output] Hello World!" );
+    }
+
+    @Test
+    public void shouldDelegateWarnMessageWithErrorWithPrefix()
+    {
+        Logger delegate = newLoggerMock();
+        DelegatingLogger logger = new DelegatingLogger( delegate, PREFIX );
+
+        Exception cause = new Exception();
+        logger.warn( MESSAGE, cause );
+
+        verify( delegate ).warn( "[Output] Hello World!", cause );
     }
 
     @Test

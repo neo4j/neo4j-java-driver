@@ -31,13 +31,11 @@ public interface RoutingTable
 
     void forget( BoltServerAddress address );
 
-    RoundRobinAddressSet readers();
+    AddressSet readers();
 
-    RoundRobinAddressSet writers();
+    AddressSet writers();
 
-    BoltServerAddress nextRouter();
-
-    int routerSize();
+    AddressSet routers();
 
     void removeWriter( BoltServerAddress toRemove );
 }

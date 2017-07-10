@@ -29,6 +29,7 @@ import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 import org.neo4j.driver.v1.exceptions.TransientException;
+import org.neo4j.driver.v1.util.Experimental;
 import org.neo4j.driver.v1.util.Immutable;
 import org.neo4j.driver.v1.util.Resource;
 
@@ -74,6 +75,8 @@ public class Config
     private final int connectionTimeoutMillis;
     private final RetrySettings retrySettings;
 
+    private final LoadBalancingStrategy loadBalancingStrategy;
+
     private Config( ConfigBuilder builder)
     {
         this.logging = builder.logging;
@@ -88,6 +91,7 @@ public class Config
         this.routingRetryDelayMillis = builder.routingRetryDelayMillis;
         this.connectionTimeoutMillis = builder.connectionTimeoutMillis;
         this.retrySettings = builder.retrySettings;
+        this.loadBalancingStrategy = builder.loadBalancingStrategy;
     }
 
     /**
@@ -173,6 +177,17 @@ public class Config
     }
 
     /**
+     * Load balancing strategy
+     *
+     * @return the strategy to use
+     */
+    @Experimental
+    public LoadBalancingStrategy loadBalancingStrategy()
+    {
+        return loadBalancingStrategy;
+    }
+
+    /**
      * Return a {@link ConfigBuilder} instance
      * @return a {@link ConfigBuilder} instance
      */
@@ -210,6 +225,7 @@ public class Config
         private long idleTimeBeforeConnectionTest = PoolSettings.DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST;
         private boolean encrypted = true;
         private TrustStrategy trustStrategy = trustAllCertificates();
+        private LoadBalancingStrategy loadBalancingStrategy = LoadBalancingStrategy.LEAST_CONNECTED;
         private int routingFailureLimit = 1;
         private long routingRetryDelayMillis = TimeUnit.SECONDS.toMillis( 5 );
         private int connectionTimeoutMillis = (int) TimeUnit.SECONDS.toMillis( 5 );
@@ -226,6 +242,22 @@ public class Config
         public ConfigBuilder withLogging( Logging logging )
         {
             this.logging = logging;
+            return this;
+        }
+
+        /**
+         * Provide an alternative load balancing strategy for the routing driver to use. By default we use
+         * {@link LoadBalancingStrategy#LEAST_CONNECTED}.
+         * <p>
+         * <b>Note:</b> We are experimenting with different strategies. This could be removed in the next minor version.
+         *
+         * @param loadBalancingStrategy the strategy to use
+         * @return this builder
+         */
+        @Experimental
+        public ConfigBuilder withLoadBalancingStrategy( LoadBalancingStrategy loadBalancingStrategy )
+        {
+            this.loadBalancingStrategy = loadBalancingStrategy;
             return this;
         }
 
@@ -540,6 +572,13 @@ public class Config
 
         /** With this level, the driver will only connect to the server it if can do it with encryption. */
         REQUIRED
+    }
+
+    @Experimental
+    public enum LoadBalancingStrategy
+    {
+        ROUND_ROBIN,
+        LEAST_CONNECTED
     }
 
     /**

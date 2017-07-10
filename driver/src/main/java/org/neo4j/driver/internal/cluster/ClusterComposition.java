@@ -26,7 +26,7 @@ import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.util.Function;
 
-final class ClusterComposition
+public final class ClusterComposition
 {
     private static final long MAX_TTL = Long.MAX_VALUE / 1000L;
     private static final Function<Value,BoltServerAddress> OF_BoltServerAddress =
@@ -53,7 +53,7 @@ final class ClusterComposition
     }
 
     /** For testing */
-    ClusterComposition(
+    public ClusterComposition(
             long expirationTimestamp,
             Set<BoltServerAddress> readers,
             Set<BoltServerAddress> writers,

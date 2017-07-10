@@ -808,11 +808,11 @@ public class RoutingDriverBoltKitTest
     @Test
     public void shouldRetryWriteTransactionAndPerformRediscoveryUntilSuccess() throws Exception
     {
-        StubServer router1 = StubServer.start( "acquire_endpoints.script", 9010 );
-        StubServer brokenWriter1 = StubServer.start( "dead_write_server.script", 9007 );
+        StubServer router1 = StubServer.start( "discover_servers.script", 9010 );
+        StubServer brokenWriter1 = StubServer.start( "dead_write_server.script", 9001 );
+        StubServer router2 = StubServer.start( "acquire_endpoints.script", 9002 );
         StubServer brokenWriter2 = StubServer.start( "dead_write_server.script", 9008 );
-        StubServer router2 = StubServer.start( "discover_servers.script", 9002 );
-        StubServer writer = StubServer.start( "write_server.script", 9001 );
+        StubServer writer = StubServer.start( "write_server.script", 9007 );
 
         try ( Driver driver = newDriverWithSleeplessClock( "bolt+routing://127.0.0.1:9010" );
               Session session = driver.session() )
@@ -827,9 +827,9 @@ public class RoutingDriverBoltKitTest
         {
             assertEquals( 0, router1.exitStatus() );
             assertEquals( 0, brokenWriter1.exitStatus() );
-            assertEquals( 0, brokenWriter2.exitStatus() );
             assertEquals( 0, router2.exitStatus() );
             assertEquals( 0, writer.exitStatus() );
+            assertEquals( 0, brokenWriter2.exitStatus() );
         }
     }
 

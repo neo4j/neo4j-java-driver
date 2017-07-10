@@ -36,9 +36,9 @@ public class ClusterRoutingTable implements RoutingTable
 
     private final Clock clock;
     private volatile long expirationTimeout;
-    private final RoundRobinAddressSet readers;
-    private final RoundRobinAddressSet writers;
-    private final RoundRobinAddressSet routers;
+    private final AddressSet readers;
+    private final AddressSet writers;
+    private final AddressSet routers;
 
     public ClusterRoutingTable( Clock clock, BoltServerAddress... routingAddresses )
     {
@@ -51,9 +51,9 @@ public class ClusterRoutingTable implements RoutingTable
         this.clock = clock;
         this.expirationTimeout = clock.millis() - 1;
 
-        this.readers = new RoundRobinAddressSet();
-        this.writers = new RoundRobinAddressSet();
-        this.routers = new RoundRobinAddressSet();
+        this.readers = new AddressSet();
+        this.writers = new AddressSet();
+        this.routers = new AddressSet();
     }
 
     @Override
@@ -85,27 +85,21 @@ public class ClusterRoutingTable implements RoutingTable
     }
 
     @Override
-    public RoundRobinAddressSet readers()
+    public AddressSet readers()
     {
         return readers;
     }
 
     @Override
-    public RoundRobinAddressSet writers()
+    public AddressSet writers()
     {
         return writers;
     }
 
     @Override
-    public BoltServerAddress nextRouter()
+    public AddressSet routers()
     {
-        return routers.next();
-    }
-
-    @Override
-    public int routerSize()
-    {
-        return routers.size();
+        return routers;
     }
 
     @Override

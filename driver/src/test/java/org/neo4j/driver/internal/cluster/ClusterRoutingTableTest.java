@@ -27,7 +27,7 @@ import org.neo4j.driver.internal.util.FakeClock;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.A;
@@ -142,13 +142,7 @@ public class ClusterRoutingTableTest
 
         routingTable.update( createClusterComposition( routers, EMPTY, EMPTY ) );
 
-        assertEquals( A, routingTable.nextRouter() );
-        assertEquals( C, routingTable.nextRouter() );
-        assertEquals( D, routingTable.nextRouter() );
-        assertEquals( F, routingTable.nextRouter() );
-        assertEquals( B, routingTable.nextRouter() );
-        assertEquals( E, routingTable.nextRouter() );
-        assertEquals( A, routingTable.nextRouter() );
+        assertArrayEquals( new BoltServerAddress[]{A, C, D, F, B, E}, routingTable.routers().toArray() );
     }
 
     @Test
@@ -159,12 +153,7 @@ public class ClusterRoutingTableTest
 
         routingTable.update( createClusterComposition( EMPTY, writers, EMPTY ) );
 
-        assertEquals( D, routingTable.writers().next() );
-        assertEquals( F, routingTable.writers().next() );
-        assertEquals( A, routingTable.writers().next() );
-        assertEquals( C, routingTable.writers().next() );
-        assertEquals( E, routingTable.writers().next() );
-        assertEquals( D, routingTable.writers().next() );
+        assertArrayEquals( new BoltServerAddress[]{D, F, A, C, E}, routingTable.writers().toArray() );
     }
 
     @Test
@@ -175,12 +164,7 @@ public class ClusterRoutingTableTest
 
         routingTable.update( createClusterComposition( EMPTY, EMPTY, readers ) );
 
-        assertEquals( B, routingTable.readers().next() );
-        assertEquals( A, routingTable.readers().next() );
-        assertEquals( F, routingTable.readers().next() );
-        assertEquals( C, routingTable.readers().next() );
-        assertEquals( D, routingTable.readers().next() );
-        assertEquals( B, routingTable.readers().next() );
+        assertArrayEquals( new BoltServerAddress[]{B, A, F, C, D}, routingTable.readers().toArray() );
     }
 
     @Test

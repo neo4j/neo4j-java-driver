@@ -29,8 +29,9 @@ import java.io.File;
 import java.util.Collections;
 import java.util.Map;
 
-import org.neo4j.driver.internal.cluster.LoadBalancer;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
+import org.neo4j.driver.internal.cluster.loadbalancing.LeastConnectedLoadBalancingStrategy;
+import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.retry.FixedRetryLogic;
 import org.neo4j.driver.internal.retry.RetryLogic;
@@ -43,7 +44,6 @@ import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
-import org.neo4j.driver.v1.EventLogger;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Value;
@@ -64,6 +64,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.cluster.ClusterCompositionProviderTest.serverInfo;
+import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.security.SecurityPlan.insecure;
 import static org.neo4j.driver.v1.Values.value;
 
@@ -73,9 +74,7 @@ public class RoutingDriverTest
     public ExpectedException exception = ExpectedException.none();
     private static final BoltServerAddress SEED = new BoltServerAddress( "localhost", 7687 );
     private static final String GET_SERVERS = "CALL dbms.cluster.routing.getServers";
-    private final EventHandler events = new EventHandler();
-    private final FakeClock clock = new FakeClock( events, true );
-    private final Logging logging = EventLogger.provider( events, EventLogger.Level.TRACE );
+    private final FakeClock clock = new FakeClock();
 
     @Test
     public void shouldDiscoveryOnInitialization()
@@ -346,8 +345,10 @@ public class RoutingDriverTest
 
     private Driver driverWithPool( ConnectionPool pool )
     {
+        Logging logging = DEV_NULL_LOGGING;
         RoutingSettings settings = new RoutingSettings( 10, 5_000, null );
-        ConnectionProvider connectionProvider = new LoadBalancer( SEED, settings, pool, clock, logging );
+        ConnectionProvider connectionProvider = new LoadBalancer( SEED, settings, pool, clock, logging,
+                new LeastConnectedLoadBalancingStrategy( pool, logging ) );
         Config config = Config.build().withLogging( logging ).toConfig();
         SessionFactory sessionFactory = new NetworkSessionWithAddressFactory( connectionProvider, config );
         return new InternalDriver( insecure(), sessionFactory, logging );

@@ -57,6 +57,12 @@ public class DelegatingLogger implements Logger
     }
 
     @Override
+    public void warn( String message, Throwable cause )
+    {
+        delegate.warn( messageWithPrefix( message ), cause );
+    }
+
+    @Override
     public void debug( String message, Object... params )
     {
         if ( isDebugEnabled() )

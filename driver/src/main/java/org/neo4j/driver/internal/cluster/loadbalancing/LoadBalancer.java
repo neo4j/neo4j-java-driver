@@ -16,11 +16,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.cluster;
+package org.neo4j.driver.internal.cluster.loadbalancing;
 
 import java.util.Set;
 
 import org.neo4j.driver.internal.RoutingErrorHandler;
+import org.neo4j.driver.internal.cluster.AddressSet;
+import org.neo4j.driver.internal.cluster.ClusterComposition;
+import org.neo4j.driver.internal.cluster.ClusterCompositionProvider;
+import org.neo4j.driver.internal.cluster.ClusterRoutingTable;
+import org.neo4j.driver.internal.cluster.DnsResolver;
+import org.neo4j.driver.internal.cluster.Rediscovery;
+import org.neo4j.driver.internal.cluster.RoutingPooledConnection;
+import org.neo4j.driver.internal.cluster.RoutingProcedureClusterCompositionProvider;
+import org.neo4j.driver.internal.cluster.RoutingSettings;
+import org.neo4j.driver.internal.cluster.RoutingTable;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
@@ -39,26 +49,32 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
     private final ConnectionPool connections;
     private final RoutingTable routingTable;
     private final Rediscovery rediscovery;
+    private final LoadBalancingStrategy loadBalancingStrategy;
     private final Logger log;
 
     public LoadBalancer( BoltServerAddress initialRouter, RoutingSettings settings, ConnectionPool connections,
-            Clock clock, Logging logging )
+            Clock clock, Logging logging, LoadBalancingStrategy loadBalancingStrategy )
     {
-        this( initialRouter, settings, connections, new ClusterRoutingTable( clock, initialRouter ), clock,
-                logging.getLog( LOAD_BALANCER_LOG_NAME ) );
+        this( connections, new ClusterRoutingTable( clock, initialRouter ),
+                createRediscovery( initialRouter, settings, clock, logging ), loadBalancerLogger( logging ),
+                loadBalancingStrategy );
     }
 
-    private LoadBalancer( BoltServerAddress initialRouter, RoutingSettings settings, ConnectionPool connections,
-            RoutingTable routingTable, Clock clock, Logger log )
+    // Used only in testing
+    public LoadBalancer( ConnectionPool connections, RoutingTable routingTable, Rediscovery rediscovery,
+            Logging logging )
     {
-        this( connections, routingTable, createRediscovery( initialRouter, settings, clock, log ), log );
+        this( connections, routingTable, rediscovery, loadBalancerLogger( logging ),
+                new LeastConnectedLoadBalancingStrategy( connections, logging ) );
     }
 
-    LoadBalancer( ConnectionPool connections, RoutingTable routingTable, Rediscovery rediscovery, Logger log )
+    private LoadBalancer( ConnectionPool connections, RoutingTable routingTable, Rediscovery rediscovery, Logger log,
+            LoadBalancingStrategy loadBalancingStrategy )
     {
         this.connections = connections;
         this.routingTable = routingTable;
         this.rediscovery = rediscovery;
+        this.loadBalancingStrategy = loadBalancingStrategy;
         this.log = log;
 
         refreshRoutingTable();
@@ -67,7 +83,7 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
     @Override
     public PooledConnection acquireConnection( AccessMode mode )
     {
-        RoundRobinAddressSet addressSet = addressSetFor( mode );
+        AddressSet addressSet = addressSetFor( mode );
         PooledConnection connection = acquireConnection( mode, addressSet );
         return new RoutingPooledConnection( connection, this, mode );
     }
@@ -90,10 +106,10 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
         connections.close();
     }
 
-    private PooledConnection acquireConnection( AccessMode mode, RoundRobinAddressSet servers )
+    private PooledConnection acquireConnection( AccessMode mode, AddressSet servers )
     {
         ensureRouting( mode );
-        for ( BoltServerAddress address; (address = servers.next()) != null; )
+        for ( BoltServerAddress address; (address = selectAddress( mode, servers )) != null; )
         {
             try
             {
@@ -141,7 +157,7 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
         log.info( "Refreshed routing information. %s", routingTable );
     }
 
-    private RoundRobinAddressSet addressSetFor( AccessMode mode )
+    private AddressSet addressSetFor( AccessMode mode )
     {
         switch ( mode )
         {
@@ -150,15 +166,41 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
         case WRITE:
             return routingTable.writers();
         default:
-            throw new IllegalArgumentException( "Mode '" + mode + "' is not supported" );
+            throw unknownMode( mode );
+        }
+    }
+
+    private BoltServerAddress selectAddress( AccessMode mode, AddressSet servers )
+    {
+        BoltServerAddress[] addresses = servers.toArray();
+
+        switch ( mode )
+        {
+        case READ:
+            return loadBalancingStrategy.selectReader( addresses );
+        case WRITE:
+            return loadBalancingStrategy.selectWriter( addresses );
+        default:
+            throw unknownMode( mode );
         }
     }
 
     private static Rediscovery createRediscovery( BoltServerAddress initialRouter, RoutingSettings settings,
-            Clock clock, Logger log )
+            Clock clock, Logging logging )
     {
+        Logger log = loadBalancerLogger( logging );
         ClusterCompositionProvider clusterComposition =
                 new RoutingProcedureClusterCompositionProvider( clock, log, settings );
         return new Rediscovery( initialRouter, settings, clock, log, clusterComposition, new DnsResolver( log ) );
+    }
+
+    private static Logger loadBalancerLogger( Logging logging )
+    {
+        return logging.getLog( LOAD_BALANCER_LOG_NAME );
+    }
+
+    private static RuntimeException unknownMode( AccessMode mode )
+    {
+        return new IllegalArgumentException( "Mode '" + mode + "' is not supported" );
     }
 }

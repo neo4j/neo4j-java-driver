@@ -23,6 +23,7 @@ import org.junit.experimental.runners.Enclosed;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+import org.mockito.InOrder;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -49,6 +50,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -448,6 +450,52 @@ public class RediscoveryTest
             verify( clusterComposition ).getClusterComposition( brokenConnection2 );
             verify( connections ).acquire( A );
             verify( connections ).acquire( B );
+        }
+    }
+
+    public static class KnownRoutersTest
+    {
+        @Test
+        public void shouldProbeAllKnownRoutersInOrder()
+        {
+            PooledConnection brokenConnection1 = mock( PooledConnection.class );
+            PooledConnection goodConnection = mock( PooledConnection.class );
+            PooledConnection brokenConnection2 = mock( PooledConnection.class );
+
+            ConnectionPool connections = mock( ConnectionPool.class );
+            when( connections.acquire( A ) ).thenReturn( brokenConnection1 );
+            when( connections.acquire( B ) ).thenReturn( goodConnection );
+            when( connections.acquire( C ) ).thenReturn( brokenConnection2 );
+
+            ClusterCompositionProvider clusterComposition = mock( ClusterCompositionProvider.class );
+            when( clusterComposition.getClusterComposition( brokenConnection1 ) )
+                    .thenThrow( new ServiceUnavailableException( "Can't connect" ) );
+            when( clusterComposition.getClusterComposition( goodConnection ) )
+                    .thenReturn( success( VALID_CLUSTER_COMPOSITION ) );
+            when( clusterComposition.getClusterComposition( brokenConnection2 ) )
+                    .thenThrow( new ServiceUnavailableException( "Can't connect" ) );
+
+            RoutingTable routingTable = new TestRoutingTable( A, B, C );
+
+            RoutingSettings settings = new RoutingSettings( 1, 0, null );
+            Clock mockedClock = mock( Clock.class );
+            Logger mockedLogger = mock( Logger.class );
+
+            Rediscovery rediscovery = new Rediscovery( A, settings, mockedClock, mockedLogger, clusterComposition,
+                    directMapProvider );
+
+            ClusterComposition composition1 = rediscovery.lookupClusterComposition( routingTable, connections );
+            assertEquals( VALID_CLUSTER_COMPOSITION, composition1 );
+
+            ClusterComposition composition2 = rediscovery.lookupClusterComposition( routingTable, connections );
+            assertEquals( VALID_CLUSTER_COMPOSITION, composition2 );
+
+            // server A should've been removed after an unsuccessful attempt
+            InOrder inOrder = inOrder( clusterComposition );
+            inOrder.verify( clusterComposition ).getClusterComposition( brokenConnection1 );
+            inOrder.verify( clusterComposition, times( 2 ) ).getClusterComposition( goodConnection );
+
+            verify( clusterComposition, never() ).getClusterComposition( brokenConnection2 );
         }
     }
 

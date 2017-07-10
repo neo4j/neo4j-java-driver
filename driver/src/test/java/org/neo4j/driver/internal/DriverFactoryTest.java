@@ -28,8 +28,8 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 
-import org.neo4j.driver.internal.cluster.LoadBalancer;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
+import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.retry.RetrySettings;
