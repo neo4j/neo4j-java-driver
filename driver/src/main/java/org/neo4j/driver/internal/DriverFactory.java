@@ -153,7 +153,7 @@ public class DriverFactory
                 createLoadBalancingStrategy( config, connectionPool ) );
     }
 
-    private LoadBalancingStrategy createLoadBalancingStrategy( Config config, ConnectionPool connectionPool )
+    private static LoadBalancingStrategy createLoadBalancingStrategy( Config config, ConnectionPool connectionPool )
     {
         switch ( config.loadBalancingStrategy() )
         {
