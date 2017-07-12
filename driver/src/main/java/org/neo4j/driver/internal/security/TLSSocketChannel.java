@@ -345,18 +345,22 @@ public class TLSSocketChannel implements ByteChannel
             }
             else
             {
+                logger.debug( "Network output buffer doesn't need enlarging, flushing data to the channel instead to open up space on the buffer." );
                 // flush as much data as possible
                 cipherOut.flip();
-                if ( channelWrite( cipherOut ) == 0 )
-                {
-                    throw new ClientException( format(
-                                    "Failed to enlarge network buffer from %s to %s. This is either because the " +
-                                    "new size is however less than the old size, or because the application " +
-                                    "buffer size %s is so big that the application data still cannot fit into the " +
-                                    "new network buffer.", curNetSize, netSize, buffer.capacity() ) );
+                while ( cipherOut.hasRemaining() ) {
+                    int written = channelWrite( cipherOut );
+
+                    if (written > 0) {
+                        break;
+                    }
+
+                    logger.debug( "having difficulty flushing data (network contention on local computer?). will continue trying after yielding execution." );
+                    Thread.yield();
+
+                    logger.debug( "nothing written to the underlying channel (network output buffer is full?), will try till we can." );
                 }
                 cipherOut.compact();
-                logger.debug( "Network output buffer couldn't be enlarged, flushing data to the channel instead." );
             }
             break;
         default:
