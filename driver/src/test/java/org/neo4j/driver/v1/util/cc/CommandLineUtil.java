@@ -23,14 +23,23 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
+import org.neo4j.driver.v1.util.DaemonThreadFactory;
 import org.neo4j.driver.v1.util.ProcessEnvConfigurator;
 
 import static java.lang.System.lineSeparator;
 import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class CommandLineUtil
 {
+    private static final ExecutorService executor = Executors.newCachedThreadPool(
+            new DaemonThreadFactory( "command-line-thread-" ) );
+
     public static boolean boltKitAvailable()
     {
         try
@@ -59,8 +68,7 @@ public class CommandLineUtil
         catch ( InterruptedException e )
         {
             Thread.currentThread().interrupt();
-            throw new CommandLineException( "Interrupted while waiting for command " +
-                                            commands, e );
+            throw new CommandLineException( "Interrupted while waiting for command " + commands, e );
         }
     }
 
@@ -73,9 +81,11 @@ public class CommandLineUtil
             throws IOException, InterruptedException
     {
         Process process = processBuilder.start();
+        Future<String> stdOutFuture = read( process.getInputStream() );
+        Future<String> stdErrFuture = read( process.getErrorStream() );
         int exitCode = process.waitFor();
-        String stdOut = asString( process.getInputStream() );
-        String stdErr = asString( process.getErrorStream() );
+        String stdOut = get( stdOutFuture );
+        String stdErr = get( stdErrFuture );
         if ( exitCode != 0 )
         {
             throw new CommandLineException( "Non-zero exit code\nSTDOUT:\n" + stdOut + "\nSTDERR:\n" + stdErr );
@@ -83,7 +93,19 @@ public class CommandLineUtil
         return stdOut;
     }
 
-    private static String asString( InputStream input )
+    private static Future<String> read( final InputStream input )
+    {
+        return executor.submit( new Callable<String>()
+        {
+            @Override
+            public String call() throws Exception
+            {
+                return readToString( input );
+            }
+        } );
+    }
+
+    private static String readToString( InputStream input )
     {
         StringBuilder result = new StringBuilder();
         try ( BufferedReader reader = new BufferedReader( new InputStreamReader( input ) ) )
@@ -99,5 +121,17 @@ public class CommandLineUtil
             throw new CommandLineException( "Unable to read from stream", e );
         }
         return result.toString();
+    }
+
+    private static <T> T get( Future<T> future )
+    {
+        try
+        {
+            return future.get( 10, MINUTES );
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 }
