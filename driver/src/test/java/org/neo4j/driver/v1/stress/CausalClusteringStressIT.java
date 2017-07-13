@@ -28,11 +28,14 @@ import java.lang.management.OperatingSystemMXBean;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -42,6 +45,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.driver.internal.logging.DevNullLogger;
+import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.Config;
@@ -57,11 +61,15 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.SecurityException;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.util.DaemonThreadFactory;
+import org.neo4j.driver.v1.util.cc.ClusterMemberRole;
 import org.neo4j.driver.v1.util.cc.LocalOrRemoteClusterRule;
 
 import static java.util.Collections.newSetFromMap;
+import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
@@ -71,6 +79,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.v1.AuthTokens.basic;
+import static org.neo4j.driver.v1.util.cc.ClusterMember.SIMPLE_SCHEME;
 
 public class CausalClusteringStressIT
 {
@@ -138,6 +147,7 @@ public class CausalClusteringStressIT
         assertNoFileDescriptorLeak( resourcesInfo.openFileDescriptorCount );
         assertNoLoggersLeak( resourcesInfo.acquiredLoggerNames );
         assertExpectedNumberOfNodesCreated( context.getCreatedNodesCount() );
+        assertGoodReadQueryDistribution( context.getReadQueriesByServer() );
     }
 
     private List<Future<?>> launchWorkerThreads( Context context )
@@ -235,6 +245,96 @@ public class CausalClusteringStressIT
         }
     }
 
+    private void assertGoodReadQueryDistribution( Map<String,Long> readQueriesByServer )
+    {
+        ClusterAddresses clusterAddresses = fetchClusterAddresses( driver );
+
+        // before 3.2.0 only read replicas serve reads
+        boolean readsOnFollowersEnabled = ServerVersion.version( driver ).greaterThanOrEqual( ServerVersion.v3_2_0 );
+
+        if ( readsOnFollowersEnabled )
+        {
+            // expect all followers to serve more than zero read queries
+            assertAllAddressesServedReadQueries( "Follower", clusterAddresses.followers, readQueriesByServer );
+        }
+
+        // expect all read replicas to serve more than zero read queries
+        assertAllAddressesServedReadQueries( "Read replica", clusterAddresses.readReplicas, readQueriesByServer );
+
+        if ( readsOnFollowersEnabled )
+        {
+            // expect all followers to serve same order of magnitude read queries
+            assertAllAddressesServedSimilarAmountOfReadQueries( "Followers", clusterAddresses.followers,
+                    readQueriesByServer, clusterAddresses );
+        }
+
+        // expect all read replicas to serve same order of magnitude read queries
+        assertAllAddressesServedSimilarAmountOfReadQueries( "Read replicas", clusterAddresses.readReplicas,
+                readQueriesByServer, clusterAddresses );
+    }
+
+    private static ClusterAddresses fetchClusterAddresses( Driver driver )
+    {
+        Set<String> followers = new HashSet<>();
+        Set<String> readReplicas = new HashSet<>();
+
+        try ( Session session = driver.session() )
+        {
+            List<Record> records = session.run( "CALL dbms.cluster.overview()" ).list();
+            for ( Record record : records )
+            {
+                List<Object> addresses = record.get( "addresses" ).asList();
+                String boltAddress = ((String) addresses.get( 0 )).replace( SIMPLE_SCHEME, "" );
+
+                ClusterMemberRole role = ClusterMemberRole.valueOf( record.get( "role" ).asString() );
+                if ( role == ClusterMemberRole.FOLLOWER )
+                {
+                    followers.add( boltAddress );
+                }
+                else if ( role == ClusterMemberRole.READ_REPLICA )
+                {
+                    readReplicas.add( boltAddress );
+                }
+            }
+        }
+
+        return new ClusterAddresses( followers, readReplicas );
+    }
+
+    private static void assertAllAddressesServedReadQueries( String addressType, Set<String> addresses,
+            Map<String,Long> readQueriesByServer )
+    {
+        for ( String address : addresses )
+        {
+            Long queries = readQueriesByServer.get( address );
+            assertThat( addressType + " did not serve any read queries", queries, greaterThan( 0L ) );
+        }
+    }
+
+    private static void assertAllAddressesServedSimilarAmountOfReadQueries( String addressesType, Set<String> addresses,
+            Map<String,Long> readQueriesByServer, ClusterAddresses allAddresses )
+    {
+        long expectedOrderOfMagnitude = -1;
+        for ( String address : addresses )
+        {
+            long queries = readQueriesByServer.get( address );
+            long orderOfMagnitude = orderOfMagnitude( queries );
+            if ( expectedOrderOfMagnitude == -1 )
+            {
+                expectedOrderOfMagnitude = orderOfMagnitude;
+            }
+            else
+            {
+                assertThat( addressesType + " are expected to serve similar amount of queries. " +
+                            "Addresses: " + allAddresses + ", " +
+                            "read queries served: " + readQueriesByServer,
+                        orderOfMagnitude,
+                        both( greaterThanOrEqualTo( expectedOrderOfMagnitude - 1 ) )
+                                .and( lessThanOrEqualTo( expectedOrderOfMagnitude + 1 ) ) );
+            }
+        }
+    }
+
     private static long getOpenFileDescriptorCount()
     {
         try
@@ -260,11 +360,23 @@ public class CausalClusteringStressIT
         return firstError;
     }
 
+    private static long orderOfMagnitude( long number )
+    {
+        long result = 1;
+        while ( number >= 10 )
+        {
+            number /= 10;
+            result++;
+        }
+        return result;
+    }
+
     private static class Context
     {
         volatile boolean stopped;
         volatile String bookmark;
         final AtomicLong createdNodesCount = new AtomicLong();
+        final ConcurrentMap<String,AtomicLong> readQueriesByServer = new ConcurrentHashMap<>();
 
         boolean isStopped()
         {
@@ -294,6 +406,33 @@ public class CausalClusteringStressIT
         long getCreatedNodesCount()
         {
             return createdNodesCount.get();
+        }
+
+        void readCompleted( StatementResult result )
+        {
+            String serverAddress = result.summary().server().address();
+
+            AtomicLong count = readQueriesByServer.get( serverAddress );
+            if ( count == null )
+            {
+                count = new AtomicLong();
+                AtomicLong existingCounter = readQueriesByServer.putIfAbsent( serverAddress, count );
+                if ( existingCounter != null )
+                {
+                    count = existingCounter;
+                }
+            }
+            count.incrementAndGet();
+        }
+
+        Map<String,Long> getReadQueriesByServer()
+        {
+            Map<String,Long> result = new HashMap<>();
+            for ( Map.Entry<String,AtomicLong> entry : readQueriesByServer.entrySet() )
+            {
+                result.put( entry.getKey(), entry.getValue().get() );
+            }
+            return result;
         }
     }
 
@@ -343,6 +482,8 @@ public class CausalClusteringStressIT
                     Node node = record.get( 0 ).asNode();
                     assertNotNull( node );
                 }
+
+                context.readCompleted( result );
             }
         }
     }
@@ -368,6 +509,8 @@ public class CausalClusteringStressIT
                     Node node = record.get( 0 ).asNode();
                     assertNotNull( node );
                 }
+
+                context.readCompleted( result );
                 tx.success();
             }
         }
@@ -529,9 +672,30 @@ public class CausalClusteringStressIT
             return DevNullLogger.DEV_NULL_LOGGER;
         }
 
-        public Set<String> getAcquiredLoggerNames()
+        Set<String> getAcquiredLoggerNames()
         {
             return new HashSet<>( acquiredLoggerNames );
+        }
+    }
+
+    private static class ClusterAddresses
+    {
+        final Set<String> followers;
+        final Set<String> readReplicas;
+
+        ClusterAddresses( Set<String> followers, Set<String> readReplicas )
+        {
+            this.followers = followers;
+            this.readReplicas = readReplicas;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "ClusterAddresses{" +
+                   "followers=" + followers +
+                   ", readReplicas=" + readReplicas +
+                   '}';
         }
     }
 }
