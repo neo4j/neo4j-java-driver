@@ -26,6 +26,7 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLSession;
 
+import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SecurityException;
 
@@ -40,6 +41,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
+import static org.neo4j.driver.internal.net.BoltServerAddress.LOCAL_DEFAULT;
 import static org.neo4j.driver.internal.security.TLSSocketChannel.create;
 
 public class TLSSocketChannelTest
@@ -59,7 +61,7 @@ public class TLSSocketChannelTest
         when( mockedSslSession.getPacketBufferSize() ).thenReturn( 10 );
 
         // When
-        TLSSocketChannel channel = new TLSSocketChannel( mockedChannel, DEV_NULL_LOGGER, mockedSslEngine );
+        TLSSocketChannel channel = new TLSSocketChannel( mockedChannel, DEV_NULL_LOGGER, mockedSslEngine, LOCAL_DEFAULT );
 
         try
         {
@@ -69,7 +71,8 @@ public class TLSSocketChannelTest
         catch( Exception e )
         {
             assertThat( e, instanceOf( ServiceUnavailableException.class ) );
-            assertThat( e.getMessage(), startsWith( "SSL Connection terminated while receiving data. " ) );
+            assertThat( e.getMessage(), startsWith( "Failed to receive any data from the connected address " +
+                    "localhost:7687. Please ensure a working connection to the database." ) );
         }
         // Then
         verify( mockedChannel ).close();
@@ -89,7 +92,7 @@ public class TLSSocketChannelTest
         when( mockedSslSession.getPacketBufferSize() ).thenReturn( 10 );
 
         // When
-        TLSSocketChannel channel = new TLSSocketChannel( mockedChannel, DEV_NULL_LOGGER, mockedSslEngine );
+        TLSSocketChannel channel = new TLSSocketChannel( mockedChannel, DEV_NULL_LOGGER, mockedSslEngine, LOCAL_DEFAULT );
 
         try
         {
@@ -99,7 +102,8 @@ public class TLSSocketChannelTest
         catch( Exception e )
         {
             assertThat( e, instanceOf( ServiceUnavailableException.class ) );
-            assertThat( e.getMessage(), startsWith( "SSL Connection terminated while writing data. " ) );
+            assertThat( e.getMessage(), startsWith( "Failed to send any data to the connected address localhost:7687. " +
+                    "Please ensure a working connection to the database." ) );
         }
 
         // Then
@@ -123,7 +127,7 @@ public class TLSSocketChannelTest
         // When & Then
         try
         {
-            create( mockedChannel, DEV_NULL_LOGGER, mockedSslEngine );
+            create( mockedChannel, DEV_NULL_LOGGER, mockedSslEngine, LOCAL_DEFAULT );
             fail( "Should fail to run handshake" );
         }
         catch( Exception e )

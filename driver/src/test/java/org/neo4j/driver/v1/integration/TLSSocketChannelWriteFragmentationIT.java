@@ -30,12 +30,14 @@ import java.nio.channels.SocketChannel;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 
+import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.security.TLSSocketChannel;
 
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
+import static org.neo4j.driver.internal.net.BoltServerAddress.LOCAL_DEFAULT;
 
 /**
  * This tests that the TLSSocketChannel handles every combination of network buffer sizes that we
@@ -60,7 +62,7 @@ public class TLSSocketChannelWriteFragmentationIT extends TLSSocketChannelFragme
         SocketAddress address = new InetSocketAddress( serverSocket.getInetAddress(), serverSocket.getLocalPort() );
         ByteChannel ch = new LittleAtATimeChannel( SocketChannel.open( address ), networkFrameSize );
 
-        try ( TLSSocketChannel channel = TLSSocketChannel.create( ch, DEV_NULL_LOGGER, engine ) )
+        try ( TLSSocketChannel channel = TLSSocketChannel.create( ch, DEV_NULL_LOGGER, engine, LOCAL_DEFAULT ) )
         {
             ByteBuffer writeBuffer = ByteBuffer.wrap( blobOfData );
             while ( writeBuffer.position() < writeBuffer.capacity() )
