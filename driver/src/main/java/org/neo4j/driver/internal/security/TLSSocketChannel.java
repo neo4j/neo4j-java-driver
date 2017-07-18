@@ -53,6 +53,7 @@ public class TLSSocketChannel implements ByteChannel
 {
     private final ByteChannel channel;      // The real channel the data is sent to and read from
     private final Logger logger;
+    private final BoltServerAddress address;
 
     private SSLEngine sslEngine;
 
@@ -65,17 +66,20 @@ public class TLSSocketChannel implements ByteChannel
 
     private static final ByteBuffer DUMMY_BUFFER = ByteBuffer.allocate( 0 );
 
-    public static TLSSocketChannel create( BoltServerAddress address, SecurityPlan securityPlan, ByteChannel channel, Logger logger )
+    public static TLSSocketChannel create( BoltServerAddress address, SecurityPlan securityPlan,
+                                           ByteChannel channel, Logger logger )
             throws IOException
     {
         SSLEngine sslEngine = securityPlan.sslContext().createSSLEngine( address.host(), address.port() );
         sslEngine.setUseClientMode( true );
-        return create( channel, logger, sslEngine );
+        return create( channel, logger, sslEngine, address );
     }
 
-    public static TLSSocketChannel create( ByteChannel channel, Logger logger, SSLEngine sslEngine ) throws IOException
+    public static TLSSocketChannel create( ByteChannel channel, Logger logger, SSLEngine sslEngine,
+                                           BoltServerAddress address ) throws IOException
     {
-        TLSSocketChannel tlsChannel = new TLSSocketChannel( channel, logger, sslEngine );
+
+        TLSSocketChannel tlsChannel = new TLSSocketChannel( channel, logger, sslEngine, address );
         try
         {
             tlsChannel.runHandshake();
@@ -87,9 +91,10 @@ public class TLSSocketChannel implements ByteChannel
         return tlsChannel;
     }
 
-    TLSSocketChannel( ByteChannel channel, Logger logger, SSLEngine sslEngine )
+    TLSSocketChannel( ByteChannel channel, Logger logger, SSLEngine sslEngine, BoltServerAddress address )
             throws IOException
     {
+        this.address = address;
         this.logger = logger;
         this.channel = channel;
         this.sslEngine = sslEngine;
@@ -167,9 +172,10 @@ public class TLSSocketChannel implements ByteChannel
             {
                 // best effort
             }
+
             throw new ServiceUnavailableException(
-                    "SSL Connection terminated while receiving data. " +
-                    "This can happen due to network instabilities, or due to restarts of the database." );
+                    "Failed to receive any data from the connected address " + address + ". " +
+                            "Please ensure a working connection to the database." );
         }
         return read;
     }
@@ -193,8 +199,8 @@ public class TLSSocketChannel implements ByteChannel
                 // best effort
             }
             throw new ServiceUnavailableException(
-                    "SSL Connection terminated while writing data. " +
-                    "This can happen due to network instabilities, or due to restarts of the database." );
+                    "Failed to send any data to the connected address " + address + ". " +
+                            "Please ensure a working connection to the database." );
         }
         return written;
     }
