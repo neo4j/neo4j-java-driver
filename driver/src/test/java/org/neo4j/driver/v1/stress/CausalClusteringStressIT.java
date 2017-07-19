@@ -60,6 +60,7 @@ import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.SecurityException;
+import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 import org.neo4j.driver.v1.exceptions.TransientException;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.util.DaemonThreadFactory;
@@ -449,10 +450,16 @@ public class CausalClusteringStressIT
     private static class Errors
     {
         final AtomicInteger bookmarkFailures = new AtomicInteger();
+        final AtomicInteger leaderSwitches = new AtomicInteger();
 
         void bookmarkFailed()
         {
             bookmarkFailures.incrementAndGet();
+        }
+
+        void leaderSwitch()
+        {
+            leaderSwitches.incrementAndGet();
         }
 
         @Override
@@ -460,6 +467,7 @@ public class CausalClusteringStressIT
         {
             return "Errors{" +
                    "bookmarkFailures=" + bookmarkFailures +
+                   ", leaderSwitches=" + leaderSwitches +
                    '}';
         }
     }
@@ -507,6 +515,19 @@ public class CausalClusteringStressIT
             }
 
             return session.beginTransaction();
+        }
+
+        void handleWriteFailure( SessionExpiredException e, Context context )
+        {
+            boolean isLeaderSwitch = e.getMessage().endsWith( "no longer accepts writes" );
+            if ( isLeaderSwitch )
+            {
+                context.getErrors().leaderSwitch();
+            }
+            else
+            {
+                throw e;
+            }
         }
     }
 
@@ -574,13 +595,22 @@ public class CausalClusteringStressIT
         @Override
         public void execute( Context context )
         {
-            StatementResult result;
+            StatementResult result = null;
+
             try ( Session session = newSession( AccessMode.WRITE, context ) )
             {
                 result = session.run( "CREATE ()" );
             }
-            assertEquals( 1, result.summary().counters().nodesCreated() );
-            context.nodeCreated();
+            catch ( SessionExpiredException e )
+            {
+                handleWriteFailure( e, context );
+            }
+
+            if ( result != null )
+            {
+                assertEquals( 1, result.summary().counters().nodesCreated() );
+                context.nodeCreated();
+            }
         }
     }
 
@@ -594,7 +624,8 @@ public class CausalClusteringStressIT
         @Override
         public void execute( Context context )
         {
-            StatementResult result;
+            StatementResult result = null;
+
             try ( Session session = newSession( AccessMode.WRITE, context ) )
             {
                 try ( Transaction tx = beginTransaction( session, context ) )
@@ -605,8 +636,16 @@ public class CausalClusteringStressIT
 
                 context.setBookmark( session.lastBookmark() );
             }
-            assertEquals( 1, result.summary().counters().nodesCreated() );
-            context.nodeCreated();
+            catch ( SessionExpiredException e )
+            {
+                handleWriteFailure( e, context );
+            }
+
+            if ( result != null )
+            {
+                assertEquals( 1, result.summary().counters().nodesCreated() );
+                context.nodeCreated();
+            }
         }
     }
 
