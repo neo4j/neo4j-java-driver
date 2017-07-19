@@ -63,7 +63,7 @@ public class SocketConnectionTest
         SocketClient socket = mock( SocketClient.class );
         SocketConnection conn = new SocketConnection( socket, SERVER_INFO, DEV_NULL_LOGGER );
 
-        when( socket.address() ).thenReturn( BoltServerAddress.from( URI.create( "http://neo4j.com:9000" ) ) );
+        when( socket.address() ).thenReturn( new BoltServerAddress( URI.create( "http://neo4j.com:9000" ) ) );
 
         // set up response messages
         ArrayList<Message> serverResponses = new ArrayList<>();

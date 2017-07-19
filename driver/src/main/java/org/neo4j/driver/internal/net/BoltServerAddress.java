@@ -34,46 +34,23 @@ public class BoltServerAddress
     public static final int DEFAULT_PORT = 7687;
     public static final BoltServerAddress LOCAL_DEFAULT = new BoltServerAddress( "localhost", DEFAULT_PORT );
 
-    public static BoltServerAddress from( URI uri )
-    {
-        int port = uri.getPort();
-        if ( port == -1 )
-        {
-            port = DEFAULT_PORT;
-        }
-
-        if( uri.getHost() == null )
-        {
-            throw new IllegalArgumentException( "Invalid URI format `" + uri.toString() + "`");
-        }
-
-        return new BoltServerAddress( uri.getHost(), port );
-    }
-
     private final String host;
     private final int port;
 
-    private SocketAddress socketAddress = null;  // created lazily if required
+    public BoltServerAddress( String address )
+    {
+        this( uriFrom( address ) );
+    }
+
+    public BoltServerAddress( URI uri )
+    {
+        this( hostFrom( uri ), portFrom( uri ) );
+    }
 
     public BoltServerAddress( String host, int port )
     {
         this.host = host;
         this.port = port;
-    }
-
-    public BoltServerAddress( String host )
-    {
-        int colon = host.indexOf( ':' );
-        if ( colon >= 0 )
-        {
-            this.port = Integer.parseInt( host.substring( colon + 1 ) );
-            this.host = host.substring( 0, colon );
-        }
-        else
-        {
-            this.host = host;
-            this.port = DEFAULT_PORT;
-        }
     }
 
     @Override
@@ -145,4 +122,27 @@ public class BoltServerAddress
         return port;
     }
 
+    private static String hostFrom( URI uri )
+    {
+        String host = uri.getHost();
+        if ( host == null )
+        {
+            throw new IllegalArgumentException( "Invalid URI format `" + uri.toString() + "`" );
+        }
+        return host;
+    }
+
+    private static int portFrom( URI uri )
+    {
+        int port = uri.getPort();
+        return port == -1 ? DEFAULT_PORT : port;
+    }
+
+    private static URI uriFrom( String address )
+    {
+        // URI can't parse addresses without scheme, prepend fake "bolt://" to reuse the parsing facility
+        boolean hasScheme = address.contains( "://" );
+        String addressWithScheme = hasScheme ? address : "bolt://" + address;
+        return URI.create( addressWithScheme );
+    }
 }

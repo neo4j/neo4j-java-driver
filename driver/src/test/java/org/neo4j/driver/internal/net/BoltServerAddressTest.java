@@ -23,6 +23,7 @@ import org.junit.Test;
 import java.net.SocketAddress;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertThat;
 
@@ -49,5 +50,38 @@ public class BoltServerAddressTest
         SocketAddress socketAddress2 = boltAddress.toSocketAddress();
 
         assertNotSame( socketAddress1, socketAddress2 );
+    }
+
+    @Test
+    public void shouldParseIPv4Addresses()
+    {
+        BoltServerAddress address1 = new BoltServerAddress( "127.0.0.1:1234" );
+        assertEquals( "127.0.0.1", address1.host() );
+        assertEquals( 1234, address1.port() );
+
+        BoltServerAddress address2 = new BoltServerAddress( "8.8.8.8:8080" );
+        assertEquals( "8.8.8.8", address2.host() );
+        assertEquals( 8080, address2.port() );
+    }
+
+    @Test
+    public void shouldParseIPv6Addresses()
+    {
+        BoltServerAddress address1 = new BoltServerAddress( "[::1]:7688" );
+        assertEquals( "[::1]", address1.host() );
+        assertEquals( 7688, address1.port() );
+
+        BoltServerAddress address2 = new BoltServerAddress( "[1afc:0:a33:85a3::ff2f]:9001" );
+        assertEquals( "[1afc:0:a33:85a3::ff2f]", address2.host() );
+        assertEquals( 9001, address2.port() );
+    }
+
+    @Test
+    public void shouldParseBoltAddresses()
+    {
+        BoltServerAddress address = new BoltServerAddress( "bolt://host:6565" );
+
+        assertEquals( "host", address.host() );
+        assertEquals( 6565, address.port() );
     }
 }
