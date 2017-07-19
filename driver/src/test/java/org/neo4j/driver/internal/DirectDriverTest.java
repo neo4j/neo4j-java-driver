@@ -106,7 +106,7 @@ public class DirectDriverTest
         }
         catch ( IllegalArgumentException e )
         {
-            assertThat( e.getMessage(), equalTo( "Invalid URI format `*`" ) );
+            assertThat( e.getMessage(), equalTo( "Invalid address format `*`" ) );
         }
     }
 
