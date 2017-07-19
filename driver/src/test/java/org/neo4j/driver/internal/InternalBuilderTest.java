@@ -20,8 +20,6 @@ package org.neo4j.driver.internal;
 
 import org.junit.Test;
 
-import java.net.URI;
-
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.summary.InternalServerInfo;
 import org.neo4j.driver.internal.summary.InternalSummaryCounters;
@@ -89,9 +87,8 @@ public class InternalBuilderTest
     public void shouldObtainStatementAndServerInfoFromSummaryBuilder() throws Throwable
     {
         // Given
-        SummaryBuilder builder = new SummaryBuilder( new Statement( "This is a test statement"), new
-                InternalServerInfo( new BoltServerAddress( URI.create( "http://neo4j.com" ) ),
-                "super-awesome" ) );
+        SummaryBuilder builder = new SummaryBuilder( new Statement( "This is a test statement" ),
+                new InternalServerInfo( new BoltServerAddress( "neo4j.com" ), "super-awesome" ) );
 
         // When
         ResultSummary summary = builder.build();

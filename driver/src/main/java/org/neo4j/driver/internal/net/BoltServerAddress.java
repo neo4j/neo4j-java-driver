@@ -127,7 +127,7 @@ public class BoltServerAddress
         String host = uri.getHost();
         if ( host == null )
         {
-            throw new IllegalArgumentException( "Invalid URI format `" + uri.toString() + "`" );
+            throw invalidAddressFormat( uri );
         }
         return host;
     }
@@ -140,9 +140,56 @@ public class BoltServerAddress
 
     private static URI uriFrom( String address )
     {
-        // URI can't parse addresses without scheme, prepend fake "bolt://" to reuse the parsing facility
-        boolean hasScheme = address.contains( "://" );
-        String addressWithScheme = hasScheme ? address : "bolt://" + address;
-        return URI.create( addressWithScheme );
+        String scheme;
+        String hostPort;
+
+        String[] schemeSplit = address.split( "://" );
+        if ( schemeSplit.length == 1 )
+        {
+            // URI can't parse addresses without scheme, prepend fake "bolt://" to reuse the parsing facility
+            scheme = "bolt://";
+            hostPort = hostPortFrom( schemeSplit[0] );
+        }
+        else if ( schemeSplit.length == 2 )
+        {
+            scheme = schemeSplit[0] + "://";
+            hostPort = hostPortFrom( schemeSplit[1] );
+        }
+        else
+        {
+            throw invalidAddressFormat( address );
+        }
+
+        return URI.create( scheme + hostPort );
+    }
+
+    private static String hostPortFrom( String address )
+    {
+        if ( address.startsWith( "[" ) )
+        {
+            // expected to be an IPv6 address like [::1] or [::1]:7687
+            return address;
+        }
+
+        boolean containsSingleColon = address.indexOf( ":" ) == address.lastIndexOf( ":" );
+        if ( containsSingleColon )
+        {
+            // expected to be an IPv4 address with or without port like 127.0.0.1 or 127.0.0.1:7687
+            return address;
+        }
+
+        // address contains multiple colons and does not start with '['
+        // expected to be an IPv6 address without brackets
+        return "[" + address + "]";
+    }
+
+    private static RuntimeException invalidAddressFormat( URI uri )
+    {
+        return invalidAddressFormat( uri.toString() );
+    }
+
+    private static RuntimeException invalidAddressFormat( String address )
+    {
+        return new IllegalArgumentException( "Invalid address format `" + address + "`" );
     }
 }
