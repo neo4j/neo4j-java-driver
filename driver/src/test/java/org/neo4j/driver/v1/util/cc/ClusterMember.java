@@ -75,7 +75,7 @@ public class ClusterMember
     {
         try
         {
-            return BoltServerAddress.from( uri ).resolve();
+            return new BoltServerAddress( uri ).resolve();
         }
         catch ( UnknownHostException e )
         {

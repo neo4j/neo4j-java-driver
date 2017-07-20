@@ -34,46 +34,23 @@ public class BoltServerAddress
     public static final int DEFAULT_PORT = 7687;
     public static final BoltServerAddress LOCAL_DEFAULT = new BoltServerAddress( "localhost", DEFAULT_PORT );
 
-    public static BoltServerAddress from( URI uri )
-    {
-        int port = uri.getPort();
-        if ( port == -1 )
-        {
-            port = DEFAULT_PORT;
-        }
-
-        if( uri.getHost() == null )
-        {
-            throw new IllegalArgumentException( "Invalid URI format `" + uri.toString() + "`");
-        }
-
-        return new BoltServerAddress( uri.getHost(), port );
-    }
-
     private final String host;
     private final int port;
 
-    private SocketAddress socketAddress = null;  // created lazily if required
+    public BoltServerAddress( String address )
+    {
+        this( uriFrom( address ) );
+    }
+
+    public BoltServerAddress( URI uri )
+    {
+        this( hostFrom( uri ), portFrom( uri ) );
+    }
 
     public BoltServerAddress( String host, int port )
     {
         this.host = host;
         this.port = port;
-    }
-
-    public BoltServerAddress( String host )
-    {
-        int colon = host.indexOf( ':' );
-        if ( colon >= 0 )
-        {
-            this.port = Integer.parseInt( host.substring( colon + 1 ) );
-            this.host = host.substring( 0, colon );
-        }
-        else
-        {
-            this.host = host;
-            this.port = DEFAULT_PORT;
-        }
     }
 
     @Override
@@ -145,4 +122,74 @@ public class BoltServerAddress
         return port;
     }
 
+    private static String hostFrom( URI uri )
+    {
+        String host = uri.getHost();
+        if ( host == null )
+        {
+            throw invalidAddressFormat( uri );
+        }
+        return host;
+    }
+
+    private static int portFrom( URI uri )
+    {
+        int port = uri.getPort();
+        return port == -1 ? DEFAULT_PORT : port;
+    }
+
+    private static URI uriFrom( String address )
+    {
+        String scheme;
+        String hostPort;
+
+        String[] schemeSplit = address.split( "://" );
+        if ( schemeSplit.length == 1 )
+        {
+            // URI can't parse addresses without scheme, prepend fake "bolt://" to reuse the parsing facility
+            scheme = "bolt://";
+            hostPort = hostPortFrom( schemeSplit[0] );
+        }
+        else if ( schemeSplit.length == 2 )
+        {
+            scheme = schemeSplit[0] + "://";
+            hostPort = hostPortFrom( schemeSplit[1] );
+        }
+        else
+        {
+            throw invalidAddressFormat( address );
+        }
+
+        return URI.create( scheme + hostPort );
+    }
+
+    private static String hostPortFrom( String address )
+    {
+        if ( address.startsWith( "[" ) )
+        {
+            // expected to be an IPv6 address like [::1] or [::1]:7687
+            return address;
+        }
+
+        boolean containsSingleColon = address.indexOf( ":" ) == address.lastIndexOf( ":" );
+        if ( containsSingleColon )
+        {
+            // expected to be an IPv4 address with or without port like 127.0.0.1 or 127.0.0.1:7687
+            return address;
+        }
+
+        // address contains multiple colons and does not start with '['
+        // expected to be an IPv6 address without brackets
+        return "[" + address + "]";
+    }
+
+    private static RuntimeException invalidAddressFormat( URI uri )
+    {
+        return invalidAddressFormat( uri.toString() );
+    }
+
+    private static RuntimeException invalidAddressFormat( String address )
+    {
+        return new IllegalArgumentException( "Invalid address format `" + address + "`" );
+    }
 }

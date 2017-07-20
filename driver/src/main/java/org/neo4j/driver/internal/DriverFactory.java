@@ -59,7 +59,7 @@ public class DriverFactory
     public final Driver newInstance( URI uri, AuthToken authToken, RoutingSettings routingSettings,
             RetrySettings retrySettings, Config config )
     {
-        BoltServerAddress address = BoltServerAddress.from( uri );
+        BoltServerAddress address = new BoltServerAddress( uri );
         RoutingSettings newRoutingSettings = routingSettings.withRoutingContext( new RoutingContext( uri ) );
         SecurityPlan securityPlan = createSecurityPlan( address, config );
         ConnectionPool connectionPool = createConnectionPool( authToken, securityPlan, config );
