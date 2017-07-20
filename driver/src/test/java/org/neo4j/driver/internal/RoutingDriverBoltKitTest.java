@@ -53,6 +53,7 @@ import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.util.StubServer;
 
 import static java.util.Arrays.asList;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
@@ -1033,6 +1034,37 @@ public class RoutingDriverBoltKitTest
         {
             assertEquals( 0, router.exitStatus() );
             assertEquals( 0, writer.exitStatus() );
+        }
+    }
+
+    @Test
+    public void shouldForgetAddressOnDatabaseUnavailableError() throws Exception
+    {
+        // perform initial discovery using router1
+        StubServer router1 = StubServer.start( "discover_servers.script", 9010 );
+        // attempt to write using writer1 which fails with 'Neo.TransientError.General.DatabaseUnavailable'
+        // it should then be forgotten and trigger new rediscovery
+        StubServer writer1 = StubServer.start( "writer_unavailable.script", 9001 );
+        // perform rediscovery using router2, it should return a valid writer2
+        StubServer router2 = StubServer.start( "acquire_endpoints.script", 9002 );
+        // write on writer2 should be successful
+        StubServer writer2 = StubServer.start( "write_server.script", 9007 );
+
+        try ( Driver driver = newDriverWithSleeplessClock( "bolt+routing://localhost:9010" );
+              Session session = driver.session() )
+        {
+            AtomicInteger invocations = new AtomicInteger();
+            List<Record> records = session.writeTransaction( queryWork( "CREATE (n {name:'Bob'})", invocations ) );
+
+            assertThat( records, hasSize( 0 ) );
+            assertEquals( 2, invocations.get() );
+        }
+        finally
+        {
+            assertEquals( router1.exitStatus(), 0 );
+            assertEquals( writer1.exitStatus(), 0 );
+            assertEquals( router2.exitStatus(), 0 );
+            assertEquals( writer2.exitStatus(), 0 );
         }
     }
 

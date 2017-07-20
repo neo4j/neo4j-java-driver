@@ -31,6 +31,7 @@ import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
+import org.neo4j.driver.v1.exceptions.TransientException;
 import org.neo4j.driver.v1.summary.ServerInfo;
 
 import static java.lang.String.format;
@@ -242,6 +243,10 @@ public class RoutingPooledConnection implements PooledConnection
         {
             return handledClientException( ((ClientException) e) );
         }
+        else if ( e instanceof TransientException )
+        {
+            return handledTransientException( ((TransientException) e) );
+        }
         else
         {
             return e;
@@ -253,6 +258,17 @@ public class RoutingPooledConnection implements PooledConnection
         BoltServerAddress address = boltServerAddress();
         errorHandler.onConnectionFailure( address );
         return new SessionExpiredException( format( "Server at %s is no longer available", address ), e );
+    }
+
+    private RuntimeException handledTransientException( TransientException e )
+    {
+        String errorCode = e.code();
+        if ( Objects.equals( errorCode, "Neo.TransientError.General.DatabaseUnavailable" ) )
+        {
+            BoltServerAddress address = boltServerAddress();
+            errorHandler.onConnectionFailure( address );
+        }
+        return e;
     }
 
     private RuntimeException handledClientException( ClientException e )
