@@ -25,13 +25,14 @@ import java.net.SocketAddress;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.driver.internal.net.BoltServerAddress.DEFAULT_PORT;
 
 public class BoltServerAddressTest
 {
     @Test
     public void defaultPortShouldBe7687()
     {
-        assertThat( BoltServerAddress.DEFAULT_PORT, equalTo( 7687 ) );
+        assertThat( DEFAULT_PORT, equalTo( 7687 ) );
     }
 
     @Test

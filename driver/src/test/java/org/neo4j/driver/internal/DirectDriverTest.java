@@ -83,7 +83,7 @@ public class DirectDriverTest
 
         // Given
         URI uri = URI.create( "bolt://[::1]" );
-        BoltServerAddress address = BoltServerAddress.from( uri );
+        BoltServerAddress address = new BoltServerAddress( uri );
 
         // When
         driver = GraphDatabase.driver( uri, neo4j.authToken() );
@@ -106,7 +106,7 @@ public class DirectDriverTest
         }
         catch ( IllegalArgumentException e )
         {
-            assertThat( e.getMessage(), equalTo( "Invalid URI format `*`" ) );
+            assertThat( e.getMessage(), equalTo( "Invalid address format `*`" ) );
         }
     }
 
@@ -115,7 +115,7 @@ public class DirectDriverTest
     {
         // Given
         URI uri = URI.create( "bolt://localhost:7687" );
-        BoltServerAddress address = BoltServerAddress.from( uri );
+        BoltServerAddress address = new BoltServerAddress( uri );
 
         // When
         driver = GraphDatabase.driver( uri, neo4j.authToken() );
