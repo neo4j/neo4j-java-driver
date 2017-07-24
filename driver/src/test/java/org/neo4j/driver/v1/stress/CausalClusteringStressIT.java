@@ -42,6 +42,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.driver.internal.logging.DevNullLogger;
@@ -59,6 +60,8 @@ import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.SecurityException;
+import org.neo4j.driver.v1.exceptions.SessionExpiredException;
+import org.neo4j.driver.v1.exceptions.TransientException;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.util.DaemonThreadFactory;
 import org.neo4j.driver.v1.util.cc.ClusterMemberRole;
@@ -148,6 +151,8 @@ public class CausalClusteringStressIT
         assertNoLoggersLeak( resourcesInfo.acquiredLoggerNames );
         assertExpectedNumberOfNodesCreated( context.getCreatedNodesCount() );
         assertGoodReadQueryDistribution( context.getReadQueriesByServer() );
+
+        System.out.println( context.getErrors() );
     }
 
     private List<Future<?>> launchWorkerThreads( Context context )
@@ -377,6 +382,7 @@ public class CausalClusteringStressIT
         volatile String bookmark;
         final AtomicLong createdNodesCount = new AtomicLong();
         final ConcurrentMap<String,AtomicLong> readQueriesByServer = new ConcurrentHashMap<>();
+        final Errors errors = new Errors();
 
         boolean isStopped()
         {
@@ -434,6 +440,36 @@ public class CausalClusteringStressIT
             }
             return result;
         }
+
+        Errors getErrors()
+        {
+            return errors;
+        }
+    }
+
+    private static class Errors
+    {
+        final AtomicInteger bookmarkFailures = new AtomicInteger();
+        final AtomicInteger leaderSwitches = new AtomicInteger();
+
+        void bookmarkFailed()
+        {
+            bookmarkFailures.incrementAndGet();
+        }
+
+        void leaderSwitch()
+        {
+            leaderSwitches.incrementAndGet();
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Errors{" +
+                   "bookmarkFailures=" + bookmarkFailures +
+                   ", leaderSwitches=" + leaderSwitches +
+                   '}';
+        }
     }
 
     private interface Command
@@ -459,6 +495,39 @@ public class CausalClusteringStressIT
                 return driver.session( mode, context.getBookmark() );
             }
             return driver.session( mode );
+        }
+
+        Transaction beginTransaction( Session session, Context context )
+        {
+            if ( useBookmark )
+            {
+                while ( true )
+                {
+                    try
+                    {
+                        return session.beginTransaction();
+                    }
+                    catch ( TransientException e )
+                    {
+                        context.getErrors().bookmarkFailed();
+                    }
+                }
+            }
+
+            return session.beginTransaction();
+        }
+
+        void handleWriteFailure( SessionExpiredException e, Context context )
+        {
+            boolean isLeaderSwitch = e.getMessage().endsWith( "no longer accepts writes" );
+            if ( isLeaderSwitch )
+            {
+                context.getErrors().leaderSwitch();
+            }
+            else
+            {
+                throw e;
+            }
         }
     }
 
@@ -499,7 +568,7 @@ public class CausalClusteringStressIT
         public void execute( Context context )
         {
             try ( Session session = newSession( AccessMode.READ, context );
-                  Transaction tx = session.beginTransaction() )
+                  Transaction tx = beginTransaction( session, context ) )
             {
                 StatementResult result = tx.run( "MATCH (n) RETURN n LIMIT 1" );
                 List<Record> records = result.list();
@@ -526,13 +595,22 @@ public class CausalClusteringStressIT
         @Override
         public void execute( Context context )
         {
-            StatementResult result;
+            StatementResult result = null;
+
             try ( Session session = newSession( AccessMode.WRITE, context ) )
             {
                 result = session.run( "CREATE ()" );
             }
-            assertEquals( 1, result.summary().counters().nodesCreated() );
-            context.nodeCreated();
+            catch ( SessionExpiredException e )
+            {
+                handleWriteFailure( e, context );
+            }
+
+            if ( result != null )
+            {
+                assertEquals( 1, result.summary().counters().nodesCreated() );
+                context.nodeCreated();
+            }
         }
     }
 
@@ -546,10 +624,11 @@ public class CausalClusteringStressIT
         @Override
         public void execute( Context context )
         {
-            StatementResult result;
+            StatementResult result = null;
+
             try ( Session session = newSession( AccessMode.WRITE, context ) )
             {
-                try ( Transaction tx = session.beginTransaction() )
+                try ( Transaction tx = beginTransaction( session, context ) )
                 {
                     result = tx.run( "CREATE ()" );
                     tx.success();
@@ -557,8 +636,16 @@ public class CausalClusteringStressIT
 
                 context.setBookmark( session.lastBookmark() );
             }
-            assertEquals( 1, result.summary().counters().nodesCreated() );
-            context.nodeCreated();
+            catch ( SessionExpiredException e )
+            {
+                handleWriteFailure( e, context );
+            }
+
+            if ( result != null )
+            {
+                assertEquals( 1, result.summary().counters().nodesCreated() );
+                context.nodeCreated();
+            }
         }
     }
 
@@ -604,7 +691,7 @@ public class CausalClusteringStressIT
             try
             {
                 try ( Session session = newSession( AccessMode.READ, context );
-                      Transaction tx = session.beginTransaction() )
+                      Transaction tx = beginTransaction( session, context ) )
                 {
                     result = tx.run( "CREATE ()" );
                     tx.success();
