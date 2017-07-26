@@ -42,11 +42,13 @@ import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
+import org.neo4j.driver.v1.exceptions.TransientException;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonMap;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -139,6 +141,20 @@ public class RoutingPooledConnectionErrorHandlingTest
         testThrowablePropagation( new ClientException( null, "Message" ) );
     }
 
+    @Test
+    public void shouldHandleTransientException()
+    {
+        TransientException error = new TransientException( "Neo.TransientError.Transaction.DeadlockDetected", "" );
+        testTransientErrorHandling( error, false );
+    }
+
+    @Test
+    public void shouldHandleTransientDatabaseUnavailableException()
+    {
+        TransientException error = new TransientException( "Neo.TransientError.General.DatabaseUnavailable", "" );
+        testTransientErrorHandling( error, true );
+    }
+
     private void testHandleFailureToWriteWithWriteConnection( ClientException error )
     {
         Connector connector = newConnectorWithThrowingConnections( error );
@@ -213,6 +229,42 @@ public class RoutingPooledConnectionErrorHandlingTest
 
         assertThat( routingTable, containsRouter( ADDRESS3 ) );
         assertTrue( connectionPool.hasAddress( ADDRESS3 ) );
+    }
+
+    private void testTransientErrorHandling( TransientException error, boolean shouldRemoveFromRoutingTable )
+    {
+        Connector connector = newConnectorWithThrowingConnections( error );
+        ClusterComposition clusterComposition = newClusterComposition( ADDRESS1, ADDRESS2, ADDRESS3 );
+        RoutingTable routingTable = newRoutingTable( clusterComposition );
+        ConnectionPool connectionPool = newConnectionPool( connector, ADDRESS1, ADDRESS2, ADDRESS3 );
+        LoadBalancer loadBalancer = newLoadBalancer( clusterComposition, routingTable, connectionPool );
+
+        Connection connection = loadBalancer.acquireConnection( READ );
+        try
+        {
+            method.invoke( connection );
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertEquals( error, e );
+
+            BoltServerAddress address = connection.boltServerAddress();
+            if ( shouldRemoveFromRoutingTable )
+            {
+                assertThat( routingTable, not( containsRouter( address ) ) );
+                assertThat( routingTable, not( containsReader( address ) ) );
+                assertThat( routingTable, not( containsWriter( address ) ) );
+                assertFalse( connectionPool.hasAddress( address ) );
+            }
+            else
+            {
+                assertThat( routingTable, containsRouter( address ) );
+                assertThat( routingTable, containsReader( address ) );
+                assertThat( routingTable, containsWriter( address ) );
+                assertTrue( connectionPool.hasAddress( address ) );
+            }
+        }
     }
 
     private void verifyServiceUnavailableHandling( Connection connection, RoutingTable routingTable,
