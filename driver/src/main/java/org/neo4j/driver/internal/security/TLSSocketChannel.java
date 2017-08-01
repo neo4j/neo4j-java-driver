@@ -133,11 +133,11 @@ public class TLSSocketChannel implements ByteChannel
                 handshakeStatus = runDelegatedTasks();
                 break;
             case NEED_UNWRAP:
-                // Unwrap the ssl packet to value ssl handshake information
+                // Unwrap the ssl packet to obtain ssl handshake status. The content of the message is not needed.
                 handshakeStatus = unwrap( DUMMY_BUFFER );
                 break;
             case NEED_WRAP:
-                // Wrap the app packet into an ssl packet to add ssl handshake information
+                // Wrap the app packet into an ssl packet to send ssl handshake to server
                 handshakeStatus = wrap( plainOut );
                 break;
             }
@@ -248,7 +248,7 @@ public class TLSSocketChannel implements ByteChannel
             /* In normal situations, enlarging buffers should happen very very rarely, as usually,
              the initial size for application buffer and network buffer is greater than 1024 * 10,
              and by using ChunkedInput and ChunkedOutput, the chunks are limited to 8192.
-             So we should not value any enlarging buffer request in most cases. */
+             So we should not have any buffer enlarging request in most cases. */
             switch ( status )
             {
             case OK:
@@ -258,54 +258,20 @@ public class TLSSocketChannel implements ByteChannel
                 handshakeStatus = runDelegatedTasks();
                 break;
             case BUFFER_OVERFLOW:
-                plainIn.flip();
-                // Could attempt to drain the plainIn buffer of any already obtained
-                // data, but we'll just increase it to the size needed.
-                int curAppSize = plainIn.capacity();
-                int appSize = sslEngine.getSession().getApplicationBufferSize();
-                int newAppSize = appSize + plainIn.remaining();
-                if ( newAppSize > appSize * 2 )
-                {
-                    throw new ClientException(
-                            format( "Failed ro enlarge application input buffer from %s to %s, as the maximum " +
-                                           "buffer size allowed is %s. The content in the buffer is: %s\n",
-                                    curAppSize, newAppSize, appSize * 2, BytePrinter.hex( plainIn ) ) );
-                }
-                ByteBuffer newPlainIn = ByteBuffer.allocate( newAppSize );
-                newPlainIn.put( plainIn );
-                plainIn = newPlainIn;
-                logger.debug( "Enlarged application input buffer from %s to %s. " +
-                              "This operation should be a rare operation.", curAppSize, newAppSize );
-                // retry the operation.
-                break;
+                enlargeApplicationInputBuffer();
+                break; // retry the operation.
             case BUFFER_UNDERFLOW:
-                int curNetSize = cipherIn.capacity();
-                int netSize = sslEngine.getSession().getPacketBufferSize();
-                // Resize buffer if needed.
-                if ( netSize > curNetSize )
-                {
-                    ByteBuffer newCipherIn = ByteBuffer.allocate( netSize );
-                    newCipherIn.put( cipherIn );
-                    cipherIn = newCipherIn;
-                    logger.debug( "Enlarged network input buffer from %s to %s. " +
-                                  "This operation should be a rare operation.", curNetSize, netSize );
-                }
-                else
-                {
-                    // Otherwise, make room for reading more data from channel
-                    cipherIn.compact();
-                }
-                return handshakeStatus; // old status
+                enlargeNetworkInputBuffer();
+                return handshakeStatus; // return directly and require read more bytes from network channel to continue
             case CLOSED:
                 // RFC 2246 #7.2.1 requires us to stop accepting input.
                 sslEngine.closeInbound();
                 break;
             default:
-                throw new ClientException( "Got unexpected status " + status + ", " + unwrapResult );
+                throw new ClientException( "Got unexpected status " + status + " while reading encrypted data.");
             }
         }
-        while ( cipherIn.hasRemaining() ); /* Remember we are doing blocking reading.
-        We expect we should first handle all the data we've got and then decide what to do next. */
+        while ( cipherIn.hasRemaining() );
 
         cipherIn.compact();
         return handshakeStatus;
@@ -339,38 +305,13 @@ public class TLSSocketChannel implements ByteChannel
             cipherOut.clear();
             break;
         case BUFFER_OVERFLOW:
-            // Enlarge the buffer and return the old status
-            int curNetSize = cipherOut.capacity();
-            int netSize = sslEngine.getSession().getPacketBufferSize();
-            if ( netSize > curNetSize )
-            {
-                // enlarge the peer application data buffer
-                cipherOut = ByteBuffer.allocate( netSize );
-                logger.debug( "Enlarged network output buffer from %s to %s. " +
-                              "This operation should be a rare operation.", curNetSize, netSize );
-            }
-            else
-            {
-                logger.debug( "Network output buffer doesn't need enlarging, flushing data to the channel instead to open up space on the buffer." );
-                // flush as much data as possible
-                cipherOut.flip();
-                while ( cipherOut.hasRemaining() ) {
-                    int written = channelWrite( cipherOut );
-
-                    if (written > 0) {
-                        break;
-                    }
-
-                    logger.debug( "having difficulty flushing data (network contention on local computer?). will continue trying after yielding execution." );
-                    Thread.yield();
-
-                    logger.debug( "nothing written to the underlying channel (network output buffer is full?), will try till we can." );
-                }
-                cipherOut.compact();
-            }
+            enlargeNetworkOutBuffer();
             break;
+        case CLOSED:
+            sslEngine.closeOutbound();
+            throw new ServiceUnavailableException( "Encrypted connection closed while writing encrypted data." );
         default:
-            throw new ClientException( "Got unexpected status " + status );
+            throw new ClientException( "Got unexpected status " + status + " while writing encrypted data." );
         }
         return handshakeStatus;
     }
@@ -407,7 +348,10 @@ public class TLSSocketChannel implements ByteChannel
         return maxTransfer;
     }
 
+
     @Override
+    // try to read and return how many bytes have been read
+    // throw exception when failed to continue read more while expecting more to read
     public int read( ByteBuffer dst ) throws IOException
     {
         /**
@@ -485,6 +429,81 @@ public class TLSSocketChannel implements ByteChannel
         {
             // Treat this as ok - the connection is closed, even if the TLS session did not exit cleanly.
             logger.error( "TLS socket could not be closed cleanly", e );
+        }
+    }
+
+    private void enlargeNetworkInputBuffer()
+    {
+        int curNetSize = cipherIn.capacity();
+        int netSize = sslEngine.getSession().getPacketBufferSize();
+        // Resize buffer if needed.
+        if ( netSize > curNetSize )
+        {
+            ByteBuffer newCipherIn = ByteBuffer.allocate( netSize );
+            newCipherIn.put( cipherIn );
+            cipherIn = newCipherIn;
+            logger.debug( "Enlarged network input buffer from %s to %s. " +
+                          "This operation should be a rare operation.", curNetSize, netSize );
+        }
+        else
+        {
+            // Otherwise, make room for reading more data from channel
+            cipherIn.compact();
+        }
+    }
+
+    private void enlargeApplicationInputBuffer()
+    {
+        plainIn.flip();
+        // Could attempt to drain the plainIn buffer of any already obtained
+        // data, but we'll just increase it to the size needed.
+        int curAppSize = plainIn.capacity();
+        int appSize = sslEngine.getSession().getApplicationBufferSize();
+        int newAppSize = appSize + plainIn.remaining();
+        if ( newAppSize > appSize * 2 )
+        {
+            throw new ClientException(
+                    format( "Failed ro enlarge application input buffer from %s to %s, as the maximum " +
+                            "buffer size allowed is %s. The content in the buffer is: %s\n",
+                            curAppSize, newAppSize, appSize * 2, BytePrinter.hex( plainIn ) ) );
+        }
+        ByteBuffer newPlainIn = ByteBuffer.allocate( newAppSize );
+        newPlainIn.put( plainIn );
+        plainIn = newPlainIn;
+        logger.debug( "Enlarged application input buffer from %s to %s. " +
+                      "This operation should be a rare operation.", curAppSize, newAppSize );
+    }
+
+    private void enlargeNetworkOutBuffer() throws IOException
+    {
+        // Enlarge the buffer and return the old status
+        int curNetSize = cipherOut.capacity();
+        int netSize = sslEngine.getSession().getPacketBufferSize();
+        if ( netSize > curNetSize )
+        {
+            // enlarge the peer application data buffer
+            cipherOut = ByteBuffer.allocate( netSize );
+            logger.debug( "Enlarged network output buffer from %s to %s. " +
+                          "This operation should be a rare operation.", curNetSize, netSize );
+        }
+        else
+        {
+            logger.debug( "Network output buffer doesn't need enlarging, flushing data to the channel instead to open up space on the buffer." );
+            // flush as much data as possible
+            cipherOut.flip();
+            while ( cipherOut.hasRemaining() ) {
+                int written = channelWrite( cipherOut );
+
+                if (written > 0) {
+                    break;
+                }
+
+                logger.debug( "having difficulty flushing data (network contention on local computer?). will continue trying after yielding execution." );
+                Thread.yield();
+
+                logger.debug( "nothing written to the underlying channel (network output buffer is full?), will try till we can." );
+            }
+            cipherOut.compact();
         }
     }
 

@@ -95,7 +95,6 @@ public abstract class TLSSocketChannelFragmentation
         for ( int dataBlobMagnitude = 1; dataBlobMagnitude < 16; dataBlobMagnitude += 2 )
         {
             blobOfDataSize = (int) Math.pow( 2, dataBlobMagnitude );
-            blobOfData = blobOfData( blobOfDataSize );
 
             for ( int frameSizeMagnitude = 1; frameSizeMagnitude < 16; frameSizeMagnitude += 2 )
             {
@@ -103,6 +102,7 @@ public abstract class TLSSocketChannelFragmentation
                 for ( int userBufferMagnitude = 1; userBufferMagnitude < 16; userBufferMagnitude += 2 )
                 {
                     userBufferSize = (int) Math.pow( 2, userBufferMagnitude );
+                    blobOfData = blobOfData( blobOfDataSize );
                     testForBufferSizes( blobOfData, networkFrameSize, userBufferSize );
                 }
             }
@@ -168,7 +168,7 @@ public abstract class TLSSocketChannelFragmentation
         // fill the data blob with different values.
         for ( int i = 0; i < blobOfData.length; i++ )
         {
-            blobOfData[i] = (byte) (i % 128);
+            blobOfData[i] = (byte) ((System.currentTimeMillis() + i) % 128);
         }
 
         return blobOfData;
