@@ -28,6 +28,7 @@ import static java.lang.Integer.compare;
 
 public class ServerVersion
 {
+    private static final String NEO4J_IN_DEV_VERSION_STRING = "Neo4j/dev";
     private final int major;
     private final int minor;
     private final int patch;
@@ -44,6 +45,7 @@ public class ServerVersion
     public static final ServerVersion v3_2_0 = new ServerVersion(3, 2, 0);
     public static final ServerVersion v3_1_0 = new ServerVersion(3, 1, 0);
     public static final ServerVersion v3_0_0 = new ServerVersion(3, 0, 0);
+    public static final ServerVersion vInDev = new ServerVersion(0, 0, 0);
 
     public static ServerVersion version( Driver driver )
     {
@@ -74,6 +76,10 @@ public class ServerVersion
                     patch = Integer.valueOf( patchString );
                 }
                 return new ServerVersion( major, minor, patch );
+            }
+            else if ( server.equalsIgnoreCase( NEO4J_IN_DEV_VERSION_STRING ) )
+            {
+                return vInDev;
             }
             else
             {
