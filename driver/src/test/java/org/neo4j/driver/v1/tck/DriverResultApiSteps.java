@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.summary.InputPosition;
@@ -45,6 +46,8 @@ import org.neo4j.driver.v1.tck.tck.util.runners.CypherStatementRunner;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertNotNull;
+import static org.neo4j.driver.v1.tck.Environment.driver;
 import static org.neo4j.driver.v1.tck.Environment.runners;
 import static org.neo4j.driver.v1.tck.tck.util.ResultParser.getJavaValueIntAsLong;
 import static org.neo4j.driver.v1.tck.tck.util.ResultParser.getJavaValueNormalInts;
@@ -262,28 +265,33 @@ public class DriverResultApiSteps
                 case "position":
                     Map<String,Object> expectedPosition = (Map<String,Object>) expected.get( key );
                     InputPosition position = notification.position();
-                    for ( String positionKey : expectedPosition.keySet() )
+
+                    if ( ServerVersion.version( driver ).greaterThanOrEqual( ServerVersion.v3_2_0 ) )
                     {
-                        switch ( positionKey )
+                        assertNotNull( position );
+                    }
+                    else
+                    {
+                        for ( String positionKey : expectedPosition.keySet() )
                         {
-                        case "offset":
-                            compareNotificationValue( position.offset(), expectedPosition.get( positionKey ) );
-                            break;
-                        case "line":
-                            compareNotificationValue( position.line(), expectedPosition.get( positionKey ) );
-                            break;
-                        case "column":
-                            compareNotificationValue( position.column(), expectedPosition.get( positionKey ) );
-                            break;
+                            switch ( positionKey )
+                            {
+                            case "offset":
+                                compareNotificationValue( position.offset(), expectedPosition.get( positionKey ) );
+                                break;
+                            case "line":
+                                compareNotificationValue( position.line(), expectedPosition.get( positionKey ) );
+                                break;
+                            case "column":
+                                compareNotificationValue( position.column(), expectedPosition.get( positionKey ) );
+                                break;
+                            }
                         }
                     }
                     break;
                 default:
                     throw new IllegalArgumentException( "No case for " + key );
                 }
-
-
-
             }
         }
     }
