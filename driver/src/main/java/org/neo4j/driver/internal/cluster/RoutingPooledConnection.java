@@ -222,6 +222,12 @@ public class RoutingPooledConnection implements PooledConnection
     }
 
     @Override
+    public long creationTimestamp()
+    {
+        return delegate.creationTimestamp();
+    }
+
+    @Override
     public long lastUsedTimestamp()
     {
         return delegate.lastUsedTimestamp();

@@ -149,7 +149,7 @@ public class SocketConnectionPool implements ConnectionPool
             // dispose previous connection that can't be acquired
             if ( connection != null )
             {
-                connectionQueue.disposeBroken( connection );
+                connectionQueue.dispose( connection );
             }
 
             connection = connectionQueue.acquire( connectionSupplier );
@@ -162,18 +162,27 @@ public class SocketConnectionPool implements ConnectionPool
 
     private boolean canBeAcquired( PooledConnection connection, boolean connectionCreated )
     {
+        if ( connectionCreated )
+        {
+            return true;
+        }
+
+        if ( poolSettings.maxConnectionLifetimeConfigured() )
+        {
+            if ( isTooOld( connection ) )
+            {
+                return false;
+            }
+        }
+
         if ( poolSettings.idleTimeBeforeConnectionTestConfigured() )
         {
-            if ( connectionCreated )
-            {
-                return true;
-            }
-
             if ( hasBeenIdleForTooLong( connection ) )
             {
                 return connectionValidator.isConnected( connection );
             }
         }
+
         return true;
     }
 
@@ -181,6 +190,12 @@ public class SocketConnectionPool implements ConnectionPool
     {
         long idleTime = clock.millis() - connection.lastUsedTimestamp();
         return idleTime > poolSettings.idleTimeBeforeConnectionTest();
+    }
+
+    private boolean isTooOld( PooledConnection connection )
+    {
+        long lifetime = clock.millis() - connection.creationTimestamp();
+        return lifetime > poolSettings.maxConnectionLifetime();
     }
 
     private void assertNotClosed( BoltServerAddress address, BlockingPooledConnectionQueue connections )

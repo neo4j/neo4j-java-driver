@@ -177,7 +177,7 @@ public class DriverFactory
 
         ConnectionSettings connectionSettings = new ConnectionSettings( authToken, config.connectionTimeoutMillis() );
         PoolSettings poolSettings = new PoolSettings( config.maxIdleConnectionPoolSize(),
-                config.idleTimeBeforeConnectionTest() );
+                config.idleTimeBeforeConnectionTest(), config.maxConnectionLifetime() );
         Connector connector = createConnector( connectionSettings, securityPlan, config.logging() );
 
         return new SocketConnectionPool( poolSettings, connector, createClock(), config.logging() );

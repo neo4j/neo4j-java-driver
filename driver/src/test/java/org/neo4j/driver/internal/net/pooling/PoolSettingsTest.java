@@ -31,7 +31,7 @@ public class PoolSettingsTest
     @Test
     public void idleTimeBeforeConnectionTestWhenConfigured()
     {
-        PoolSettings settings = new PoolSettings( 10, 42 );
+        PoolSettings settings = new PoolSettings( 10, 42, 10 );
         assertTrue( settings.idleTimeBeforeConnectionTestConfigured() );
         assertEquals( 42, settings.idleTimeBeforeConnectionTest() );
     }
@@ -39,7 +39,7 @@ public class PoolSettingsTest
     @Test
     public void idleTimeBeforeConnectionTestWhenSetToZero()
     {
-        PoolSettings settings = new PoolSettings( 10, 0 );
+        PoolSettings settings = new PoolSettings( 10, 0, 10 );
         assertTrue( settings.idleTimeBeforeConnectionTestConfigured() );
         assertEquals( 0, settings.idleTimeBeforeConnectionTest() );
     }
@@ -47,20 +47,53 @@ public class PoolSettingsTest
     @Test
     public void idleTimeBeforeConnectionTestWhenSetToNegativeValue()
     {
-        testWithIllegalValue( -1 );
-        testWithIllegalValue( -42 );
-        testWithIllegalValue( Integer.MIN_VALUE );
+        testIdleTimeBeforeConnectionTestWithIllegalValue( -1 );
+        testIdleTimeBeforeConnectionTestWithIllegalValue( -42 );
+        testIdleTimeBeforeConnectionTestWithIllegalValue( Integer.MIN_VALUE );
     }
 
-    private static void testWithIllegalValue( int value )
+    @Test
+    public void maxConnectionLifetimeWhenConfigured()
     {
-        PoolSettings settings = new PoolSettings( 10, value );
+        PoolSettings settings = new PoolSettings( 10, 10, 42 );
+        assertTrue( settings.maxConnectionLifetimeConfigured() );
+        assertEquals( 42, settings.maxConnectionLifetime() );
+    }
+
+    @Test
+    public void maxConnectionLifetimeWhenSetToZeroOrNegativeValue()
+    {
+        testMaxConnectionLifetimeWithIllegalValue( 0 );
+        testMaxConnectionLifetimeWithIllegalValue( -1 );
+        testMaxConnectionLifetimeWithIllegalValue( -42 );
+        testMaxConnectionLifetimeWithIllegalValue( Integer.MIN_VALUE );
+    }
+
+    private static void testIdleTimeBeforeConnectionTestWithIllegalValue( int value )
+    {
+        PoolSettings settings = new PoolSettings( 10, value, 10 );
 
         assertFalse( settings.idleTimeBeforeConnectionTestConfigured() );
 
         try
         {
             settings.idleTimeBeforeConnectionTest();
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( IllegalStateException.class ) );
+        }
+    }
+
+    private static void testMaxConnectionLifetimeWithIllegalValue( int value )
+    {
+        PoolSettings settings = new PoolSettings( 10, 10, value );
+
+        assertFalse( settings.maxConnectionLifetimeConfigured() );
+
+        try
+        {
+            settings.maxConnectionLifetime();
         }
         catch ( Exception e )
         {

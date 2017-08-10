@@ -41,6 +41,13 @@ public interface PooledConnection extends Connection
     boolean hasUnrecoverableErrors();
 
     /**
+     * Timestamp of when this connection was created. This timestamp should never change.
+     *
+     * @return timestamp as returned by {@link Clock#millis()}.
+     */
+    long creationTimestamp();
+
+    /**
      * Timestamp of when this connection was used. This timestamp is updated when connection is returned to the pool.
      *
      * @return timestamp as returned by {@link Clock#millis()}.

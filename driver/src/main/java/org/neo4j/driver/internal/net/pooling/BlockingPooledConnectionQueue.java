@@ -107,7 +107,7 @@ public class BlockingPooledConnectionQueue
         return connection;
     }
 
-    void disposeBroken( PooledConnection connection )
+    void dispose( PooledConnection connection )
     {
         acquiredConnections.remove( connection );
         disposeSafely( connection );

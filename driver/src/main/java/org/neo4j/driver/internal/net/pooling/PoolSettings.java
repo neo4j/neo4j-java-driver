@@ -21,17 +21,21 @@ package org.neo4j.driver.internal.net.pooling;
 public class PoolSettings
 {
     public static final int NO_IDLE_CONNECTION_TEST = -1;
+    public static final int INFINITE_CONNECTION_LIFETIME = -1;
 
     public static final int DEFAULT_MAX_IDLE_CONNECTION_POOL_SIZE = 10;
     public static final int DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST = NO_IDLE_CONNECTION_TEST;
+    public static final int DEFAULT_MAX_CONNECTION_LIFETIME = INFINITE_CONNECTION_LIFETIME;
 
     private final int maxIdleConnectionPoolSize;
     private final long idleTimeBeforeConnectionTest;
+    private final long maxConnectionLifetime;
 
-    public PoolSettings( int maxIdleConnectionPoolSize, long idleTimeBeforeConnectionTest )
+    public PoolSettings( int maxIdleConnectionPoolSize, long idleTimeBeforeConnectionTest, long maxConnectionLifetime )
     {
         this.maxIdleConnectionPoolSize = maxIdleConnectionPoolSize;
         this.idleTimeBeforeConnectionTest = idleTimeBeforeConnectionTest;
+        this.maxConnectionLifetime = maxConnectionLifetime;
     }
 
     public int maxIdleConnectionPoolSize()
@@ -52,5 +56,20 @@ public class PoolSettings
     public boolean idleTimeBeforeConnectionTestConfigured()
     {
         return idleTimeBeforeConnectionTest >= 0;
+    }
+
+    public long maxConnectionLifetime()
+    {
+        if ( !maxConnectionLifetimeConfigured() )
+        {
+            throw new IllegalStateException(
+                    "Max connection lifetime is not configured: " + maxConnectionLifetime );
+        }
+        return maxConnectionLifetime;
+    }
+
+    public boolean maxConnectionLifetimeConfigured()
+    {
+        return maxConnectionLifetime > 0;
     }
 }

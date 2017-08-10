@@ -47,7 +47,7 @@ class PooledConnectionReleaseConsumer implements Consumer<PooledConnection>
         }
         else
         {
-            connections.disposeBroken( pooledConnection );
+            connections.dispose( pooledConnection );
         }
     }
 }

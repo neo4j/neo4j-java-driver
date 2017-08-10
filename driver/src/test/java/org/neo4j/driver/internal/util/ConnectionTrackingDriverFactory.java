@@ -18,9 +18,9 @@
  */
 package org.neo4j.driver.internal.util;
 
-import java.util.Collections;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.security.SecurityPlan;
@@ -30,8 +30,7 @@ import org.neo4j.driver.v1.Logging;
 
 public class ConnectionTrackingDriverFactory extends DriverFactoryWithClock
 {
-    private final Set<Connection> connections =
-            Collections.newSetFromMap( new ConcurrentHashMap<Connection,Boolean>() );
+    private final List<Connection> connections = new CopyOnWriteArrayList<>();
 
     public ConnectionTrackingDriverFactory( Clock clock )
     {
@@ -44,6 +43,11 @@ public class ConnectionTrackingDriverFactory extends DriverFactoryWithClock
     {
         Connector connector = super.createConnector( connectionSettings, securityPlan, logging );
         return new ConnectionTrackingConnector( connector, connections );
+    }
+
+    public List<Connection> connections()
+    {
+        return new ArrayList<>( connections );
     }
 
     public void closeConnections()

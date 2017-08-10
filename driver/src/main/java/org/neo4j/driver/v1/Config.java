@@ -58,11 +58,8 @@ public class Config
 
     private final int maxIdleConnectionPoolSize;
 
-    /**
-     * Connections that have been idle in the pool longer than this threshold will
-     * be tested for validity before being returned to the user.
-     */
     private final long idleTimeBeforeConnectionTest;
+    private final long maxConnectionLifetime;
 
     /** Indicator for encrypted traffic */
     private final boolean encrypted;
@@ -83,6 +80,7 @@ public class Config
         this.logLeakedSessions = builder.logLeakedSessions;
 
         this.idleTimeBeforeConnectionTest = builder.idleTimeBeforeConnectionTest;
+        this.maxConnectionLifetime = builder.maxConnectionLifetime;
         this.maxIdleConnectionPoolSize = builder.maxIdleConnectionPoolSize;
 
         this.encrypted = builder.encrypted;
@@ -141,6 +139,16 @@ public class Config
     public long idleTimeBeforeConnectionTest()
     {
         return idleTimeBeforeConnectionTest;
+    }
+
+    /**
+     * Pooled connections older than this threshold will be closed and removed from the pool.
+     *
+     * @return maximum lifetime in milliseconds
+     */
+    public long maxConnectionLifetime()
+    {
+        return maxConnectionLifetime;
     }
 
     /**
@@ -223,6 +231,7 @@ public class Config
         private boolean logLeakedSessions;
         private int maxIdleConnectionPoolSize = PoolSettings.DEFAULT_MAX_IDLE_CONNECTION_POOL_SIZE;
         private long idleTimeBeforeConnectionTest = PoolSettings.DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST;
+        private long maxConnectionLifetime = PoolSettings.DEFAULT_MAX_CONNECTION_LIFETIME;
         private boolean encrypted = true;
         private TrustStrategy trustStrategy = trustAllCertificates();
         private LoadBalancingStrategy loadBalancingStrategy = LoadBalancingStrategy.LEAST_CONNECTED;
@@ -348,13 +357,39 @@ public class Config
          * Value {@code 0} means connections will always be tested for
          * validity and negative values mean connections will never be tested.
          *
-         * @param value the minimum idle time in milliseconds
+         * @param value the minimum idle time
          * @param unit the unit in which the duration is given
          * @return this builder
          */
         public ConfigBuilder withConnectionLivenessCheckTimeout( long value, TimeUnit unit )
         {
             this.idleTimeBeforeConnectionTest = unit.toMillis( value );
+            return this;
+        }
+
+        /**
+         * Pooled connections older than this threshold will be closed and removed from the pool. Such discarding
+         * happens during connection acquisition so that new session is never backed by an old connection.
+         * <p>
+         * Setting this option to a low value will cause a high connection churn and might result in a performance hit.
+         * <p>
+         * It is recommended to set maximum lifetime to a slightly smaller value than the one configured in network
+         * equipment (load balancer, proxy, firewall, etc. can also limit maximum connection lifetime).
+         * <p>
+         * Setting can also be used in combination with {@link #withConnectionLivenessCheckTimeout(long, TimeUnit)}. In
+         * this case, it is recommended to set liveness check to a value smaller than network equipment has and maximum
+         * lifetime to a reasonably large value to "renew" connections once in a while.
+         * <p>
+         * No maximum lifetime limit is imposed by default. Zero and negative values result in lifetime not being
+         * checked.
+         *
+         * @param value the maximum connection lifetime
+         * @param unit the unit in which the duration is given
+         * @return this builder
+         */
+        public ConfigBuilder withMaxConnectionLifetime( long value, TimeUnit unit )
+        {
+            this.maxConnectionLifetime = unit.toMillis( value );
             return this;
         }
 
