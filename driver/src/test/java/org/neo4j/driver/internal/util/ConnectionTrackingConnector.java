@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal.util;
 
-import java.util.Set;
+import java.util.List;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Connection;
@@ -27,9 +27,9 @@ import org.neo4j.driver.internal.spi.Connector;
 public class ConnectionTrackingConnector implements Connector
 {
     private final Connector realConnector;
-    private final Set<Connection> connections;
+    private final List<Connection> connections;
 
-    public ConnectionTrackingConnector( Connector realConnector, Set<Connection> connections )
+    public ConnectionTrackingConnector( Connector realConnector, List<Connection> connections )
     {
         this.realConnector = realConnector;
         this.connections = connections;

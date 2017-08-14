@@ -364,7 +364,7 @@ public class PooledSocketConnectionTest
     {
         PooledConnectionReleaseConsumer releaseConsumer = mock( PooledConnectionReleaseConsumer.class );
         Clock clock = when( mock( Clock.class ).millis() )
-                .thenReturn( 42L ).thenReturn( 4242L ).thenReturn( 424242L ).getMock();
+                .thenReturn( 42L ).thenReturn( 42L ).thenReturn( 4242L ).thenReturn( 424242L ).getMock();
 
         PooledConnection connection = new PooledSocketConnection( mock( Connection.class ), releaseConsumer, clock );
 
@@ -375,6 +375,42 @@ public class PooledSocketConnectionTest
 
         connection.close();
         assertEquals( 424242, connection.lastUsedTimestamp() );
+    }
+
+    @Test
+    public void shouldHaveCreationTimestampAfterConstruction()
+    {
+        Clock clock = mock( Clock.class );
+        when( clock.millis() ).thenReturn( 424242L ).thenReturn( -1L );
+
+        PooledSocketConnection connection = new PooledSocketConnection( mock( Connection.class ),
+                mock( PooledConnectionReleaseConsumer.class ), clock );
+
+        long timestamp = connection.creationTimestamp();
+
+        assertEquals( 424242L, timestamp );
+    }
+
+    @Test
+    public void shouldNotChangeCreationTimestampAfterClose()
+    {
+        Clock clock = mock( Clock.class );
+        when( clock.millis() ).thenReturn( 424242L ).thenReturn( -1L );
+
+        PooledSocketConnection connection = new PooledSocketConnection( mock( Connection.class ),
+                mock( PooledConnectionReleaseConsumer.class ), clock );
+
+        long timestamp1 = connection.creationTimestamp();
+
+        connection.close();
+        long timestamp2 = connection.creationTimestamp();
+
+        connection.close();
+        long timestamp3 = connection.creationTimestamp();
+
+        assertEquals( 424242L, timestamp1 );
+        assertEquals( timestamp1, timestamp2 );
+        assertEquals( timestamp1, timestamp3 );
     }
 
     private static BlockingPooledConnectionQueue newConnectionQueue( int capacity )

@@ -60,6 +60,8 @@ public class PooledSocketConnection implements PooledConnection
     private boolean unrecoverableErrorsOccurred = false;
     private SessionResourcesHandler resourcesHandler;
     private final Clock clock;
+
+    private final long creationTimestamp;
     private long lastUsedTimestamp;
 
     public PooledSocketConnection( Connection delegate, Consumer<PooledConnection> release, Clock clock )
@@ -67,6 +69,7 @@ public class PooledSocketConnection implements PooledConnection
         this.delegate = delegate;
         this.release = release;
         this.clock = clock;
+        this.creationTimestamp = clock.millis();
         updateLastUsedTimestamp();
     }
 
@@ -281,6 +284,12 @@ public class PooledSocketConnection implements PooledConnection
     }
 
     @Override
+    public long creationTimestamp()
+    {
+        return creationTimestamp;
+    }
+
+    @Override
     public long lastUsedTimestamp()
     {
         return lastUsedTimestamp;
@@ -315,6 +324,6 @@ public class PooledSocketConnection implements PooledConnection
 
     private void updateLastUsedTimestamp()
     {
-        this.lastUsedTimestamp = clock.millis();
+        lastUsedTimestamp = clock.millis();
     }
 }

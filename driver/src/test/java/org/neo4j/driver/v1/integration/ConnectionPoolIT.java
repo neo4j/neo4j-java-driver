@@ -19,28 +19,40 @@
 package org.neo4j.driver.v1.integration;
 
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.driver.internal.cluster.RoutingSettings;
+import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.util.ConnectionTrackingDriverFactory;
+import org.neo4j.driver.internal.util.FakeClock;
+import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.DatabaseException;
+import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static junit.framework.TestCase.fail;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.driver.internal.retry.RetrySettings.DEFAULT;
 
-@Ignore // TODO: re-enable this test when detecting a started server becomes more predictable
 public class ConnectionPoolIT
 {
     @Rule
-    public TestNeo4j neo4j = new TestNeo4j();
+    public final TestNeo4j neo4j = new TestNeo4j();
+
     private Driver driver;
     private SessionGrabber sessionGrabber;
 
@@ -48,7 +60,7 @@ public class ConnectionPoolIT
     public void shouldRecoverFromDownedServer() throws Throwable
     {
         // Given a driver
-        driver = GraphDatabase.driver( neo4j.uri() );
+        driver = GraphDatabase.driver( neo4j.uri(), neo4j.authToken() );
 
         // and given I'm heavily using it to acquire and release sessions
         sessionGrabber = new SessionGrabber( driver );
@@ -61,11 +73,82 @@ public class ConnectionPoolIT
         sessionGrabber.assertSessionsAvailableWithin( 60 );
     }
 
+    @Test
+    public void shouldDisposeConnectionsBasedOnMaxLifetime()
+    {
+        FakeClock clock = new FakeClock();
+        ConnectionTrackingDriverFactory driverFactory = new ConnectionTrackingDriverFactory( clock );
+
+        int maxConnLifetimeHours = 3;
+        Config config = Config.build().withMaxConnectionLifetime( maxConnLifetimeHours, TimeUnit.HOURS ).toConfig();
+        RoutingSettings routingSettings = new RoutingSettings( 1, 1 );
+        driver = driverFactory.newInstance( neo4j.uri(), neo4j.authToken(), routingSettings, DEFAULT, config );
+
+        // force driver create two connections and return them to the connection pool
+        startAndCloseSessions( driver, 3 );
+
+        // verify that two connections were created, they should be open and idle in the pool
+        List<Connection> connections1 = driverFactory.connections();
+        assertEquals( 3, connections1.size() );
+        assertTrue( connections1.get( 0 ).isOpen() );
+        assertTrue( connections1.get( 1 ).isOpen() );
+        assertTrue( connections1.get( 2 ).isOpen() );
+
+        // move the clock forward so that two idle connections seem too old
+        clock.progress( TimeUnit.HOURS.toMillis( maxConnLifetimeHours + 1 ) );
+
+        // force driver to acquire new connection and put it back to the pool
+        startAndCloseSessions( driver, 1 );
+
+        // all existing connections should be closed because they are too old, new connection was created
+        List<Connection> connections2 = driverFactory.connections();
+        assertEquals( 4, connections2.size() );
+        assertFalse( connections2.get( 0 ).isOpen() );
+        assertFalse( connections2.get( 1 ).isOpen() );
+        assertFalse( connections2.get( 2 ).isOpen() );
+        assertTrue( connections2.get( 3 ).isOpen() );
+    }
+
     @After
     public void cleanup() throws Exception
     {
-        sessionGrabber.stop();
-        driver.close();
+        if ( driver != null )
+        {
+            driver.close();
+        }
+
+        if ( sessionGrabber != null )
+        {
+            sessionGrabber.stop();
+        }
+    }
+
+    private static void startAndCloseSessions( Driver driver, int sessionCount )
+    {
+        List<Session> sessions = new ArrayList<>( sessionCount );
+        List<StatementResult> results = new ArrayList<>( sessionCount );
+        try
+        {
+            for ( int i = 0; i < sessionCount; i++ )
+            {
+                Session session = driver.session();
+                sessions.add( session );
+
+                StatementResult result = session.run( "RETURN 1" );
+                results.add( result );
+            }
+        }
+        finally
+        {
+            for ( StatementResult result : results )
+            {
+                result.consume();
+            }
+            for ( Session session : sessions )
+            {
+                session.close();
+            }
+        }
     }
 
     /**
@@ -81,8 +164,6 @@ public class ConnectionPoolIT
         private volatile boolean sessionsAreAvailable = false;
         private volatile boolean run = true;
         private volatile Throwable lastExceptionFromDriver;
-
-
 
         public SessionGrabber( Driver driver )
         {
@@ -109,7 +190,8 @@ public class ConnectionPoolIT
                         // Success! We created 8 sessions without failures
                         sessionsAreAvailable = true;
                     }
-                    catch ( ClientException | DatabaseException e )
+                    catch ( ClientException | DatabaseException | SessionExpiredException |
+                            ServiceUnavailableException e )
                     {
                         lastExceptionFromDriver = e;
                         sessionsAreAvailable = false;
@@ -124,27 +206,6 @@ public class ConnectionPoolIT
             } finally
             {
                 stopped.countDown();
-            }
-        }
-
-        private void startAndCloseSessions( Driver driver, int sessionCount )
-        {
-            LinkedList<Session> sessions = new LinkedList<>();
-            try
-            {
-                for ( int i = 0; i < sessionCount; i++ )
-                {
-                    Session s = driver.session();
-                    sessions.add( s );
-                    s.run( "RETURN 1" ).consume();
-                }
-            }
-            finally
-            {
-                for ( Session session : sessions )
-                {
-                    session.close();
-                }
             }
         }
 

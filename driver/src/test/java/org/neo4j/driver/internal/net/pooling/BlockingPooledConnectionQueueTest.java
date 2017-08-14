@@ -287,7 +287,7 @@ public class BlockingPooledConnectionQueueTest
 
     @Test
     @SuppressWarnings( "unchecked" )
-    public void shouldDisposeBrokenConnections()
+    public void shouldDisposeConnections()
     {
         BlockingPooledConnectionQueue queue = newConnectionQueue( 5 );
 
@@ -295,7 +295,25 @@ public class BlockingPooledConnectionQueueTest
         PooledConnection connection = queue.acquire( mock( Supplier.class ) );
         assertEquals( 1, queue.activeConnections() );
 
-        queue.disposeBroken( connection );
+        queue.dispose( connection );
+        assertEquals( 0, queue.activeConnections() );
+        verify( connection ).dispose();
+    }
+
+    @Test
+    @SuppressWarnings( "unchecked" )
+    public void shouldDisposeConnectionsThatThrowOnDisposal()
+    {
+        BlockingPooledConnectionQueue queue = newConnectionQueue( 5 );
+
+        PooledConnection pooledConnection = mock( PooledConnection.class );
+        doThrow( new RuntimeException() ).when( pooledConnection ).dispose();
+
+        queue.offer( pooledConnection );
+        PooledConnection connection = queue.acquire( mock( Supplier.class ) );
+        assertEquals( 1, queue.activeConnections() );
+
+        queue.dispose( connection );
         assertEquals( 0, queue.activeConnections() );
         verify( connection ).dispose();
     }

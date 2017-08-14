@@ -20,6 +20,7 @@ package org.neo4j.driver.internal.net.pooling;
 
 import org.junit.Test;
 import org.mockito.InOrder;
+import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
@@ -41,6 +42,7 @@ import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.Connector;
 import org.neo4j.driver.internal.spi.PooledConnection;
+import org.neo4j.driver.internal.summary.InternalServerInfo;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.v1.Logging;
@@ -69,6 +71,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.net.BoltServerAddress.DEFAULT_PORT;
 import static org.neo4j.driver.internal.net.BoltServerAddress.LOCAL_DEFAULT;
+import static org.neo4j.driver.internal.net.pooling.PoolSettings.INFINITE_CONNECTION_LIFETIME;
+import static org.neo4j.driver.internal.net.pooling.PoolSettings.NO_IDLE_CONNECTION_TEST;
 import static org.neo4j.driver.v1.Values.value;
 
 public class SocketConnectionPoolTest
@@ -355,7 +359,7 @@ public class SocketConnectionPoolTest
     public void connectionThatWasIdleForALongTimeIsNotValidatedDuringAcquisitionWhenTimeoutNotConfigured()
     {
         Connection connection = newConnectionMock( ADDRESS_1 );
-        long idleTimeBeforeConnectionTest = PoolSettings.NO_IDLE_CONNECTION_TEST;
+        long idleTimeBeforeConnectionTest = NO_IDLE_CONNECTION_TEST;
         FakeClock clock = new FakeClock();
 
         SocketConnectionPool pool = newPool( newMockConnector( connection ), clock, idleTimeBeforeConnectionTest );
@@ -455,7 +459,7 @@ public class SocketConnectionPoolTest
     }
 
     @Test
-    public void acquireRetriesUntilAConnectionIsCreated()
+    public void acquireWithIdleConnectionTestRetriesUntilAConnectionIsCreated()
     {
         Connection connection1 = newConnectionMock( ADDRESS_1 );
         Connection connection2 = newConnectionMock( ADDRESS_1 );
@@ -493,6 +497,145 @@ public class SocketConnectionPoolTest
         inOrder.verify( connection3 ).reset();
         inOrder.verify( connection4, never() ).reset();
         inOrder.verify( connection4, never() ).sync();
+    }
+
+    @Test
+    public void shouldSkipOldConnectionsDuringAcquisitionWhenMaxLifetimeConfigured()
+    {
+        Connection connection1 = newConnectionMock( ADDRESS_1 );
+        when( connection1.server() ).thenReturn( new InternalServerInfo( ADDRESS_1, "connection1" ) );
+        Connection connection2 = newConnectionMock( ADDRESS_1 );
+        when( connection2.server() ).thenReturn( new InternalServerInfo( ADDRESS_1, "connection2" ) );
+
+        long maxConnectionLifetime = 100;
+        Clock clock = mock( Clock.class );
+        // connection1 should get 42 as it's creation timestamp and connection2 should get 84
+        when( clock.millis() ).thenReturn( 42L ).thenReturn( 84L );
+        Connector connector = newMockConnector( connection1, connection2 );
+        SocketConnectionPool pool = newPool( connector, clock, NO_IDLE_CONNECTION_TEST, maxConnectionLifetime );
+
+        // acquire and release connections to make them stay idle in the pool
+        PooledConnection pooledConnection1 = pool.acquire( ADDRESS_1 );
+        PooledConnection pooledConnection2 = pool.acquire( ADDRESS_1 );
+        pooledConnection1.close();
+        pooledConnection2.close();
+
+        // move clock forward to make connection1 appear too old
+        when( clock.millis() ).thenReturn( 42 + maxConnectionLifetime + 10 );
+
+        // acquired pooled connection should be backed by connection2
+        PooledConnection pooledConnection3 = pool.acquire( ADDRESS_1 );
+        assertEquals( "connection2", pooledConnection3.server().version() );
+
+        // too old connection1 should've been closed
+        verify( connection1 ).close();
+        verify( connection2, never() ).close();
+    }
+
+    @Test
+    public void shouldNotSkipOldConnectionsDuringAcquisitionWhenMaxLifetimeIsNotConfigured()
+    {
+        Connection connection1 = newConnectionMock( ADDRESS_1 );
+        when( connection1.server() ).thenReturn( new InternalServerInfo( ADDRESS_1, "connection1" ) );
+        Connection connection2 = newConnectionMock( ADDRESS_1 );
+        when( connection2.server() ).thenReturn( new InternalServerInfo( ADDRESS_1, "connection2" ) );
+
+        Clock clock = mock( Clock.class );
+        // connection1 should get 42 as it's creation timestamp and connection2 should get 84
+        when( clock.millis() ).thenReturn( 42L ).thenReturn( 84L );
+        Connector connector = newMockConnector( connection1, connection2 );
+        SocketConnectionPool pool = newPool( connector, clock, NO_IDLE_CONNECTION_TEST, INFINITE_CONNECTION_LIFETIME );
+
+        // acquire and release connections to make them stay idle in the pool
+        PooledConnection pooledConnection1 = pool.acquire( ADDRESS_1 );
+        PooledConnection pooledConnection2 = pool.acquire( ADDRESS_1 );
+        pooledConnection1.close();
+        pooledConnection2.close();
+
+        // move clock forward to make connection1 appear too old
+        when( clock.millis() ).thenReturn( Long.MAX_VALUE );
+
+        // acquired pooled connection should be backed by connection1 because max lifetime check is off
+        PooledConnection pooledConnection3 = pool.acquire( ADDRESS_1 );
+        assertEquals( "connection1", pooledConnection3.server().version() );
+
+        // both connections should remain open
+        verify( connection1, never() ).close();
+        verify( connection2, never() ).close();
+    }
+
+    @Test
+    public void shouldNotSkipCreatedConnectionWhenMaxLifetimeIsVeryLow()
+    {
+        final long maxConnectionLifetime = 100;
+        Clock clock = mock( Clock.class );
+        // make every created connection seem too old by advancing the timestamp right away
+        when( clock.millis() ).then( new Answer<Long>()
+        {
+            long nextTimestamp;
+
+            @Override
+            public Long answer( InvocationOnMock invocation ) throws Throwable
+            {
+                long result = nextTimestamp;
+                nextTimestamp += maxConnectionLifetime + 1;
+                return result;
+            }
+        } );
+
+        Connection connection = newConnectionMock( ADDRESS_1 );
+        when( connection.server() ).thenReturn( new InternalServerInfo( ADDRESS_1, "connection" ) );
+        Connector connector = newMockConnector( connection );
+        SocketConnectionPool pool = newPool( connector, clock, NO_IDLE_CONNECTION_TEST, maxConnectionLifetime );
+
+        // pool should return connection that has just been created despite it being too old
+        PooledConnection pooledConnection = pool.acquire( ADDRESS_1 );
+        assertEquals( "connection", pooledConnection.server().version() );
+
+        verify( connection, never() ).close();
+    }
+
+    @Test
+    public void shouldNotTestOldConnectionsWhenBothMaxLifetimeAndTestTimeoutConfigured()
+    {
+        Connection connection1 = newConnectionMock( ADDRESS_1 );
+        Connection connection2 = newConnectionMock( ADDRESS_1 );
+
+        long idleTimeBeforeConnectionTest = 0; // always test on checkout
+        long maxConnectionLifetime = 100;
+
+        Clock clock = mock( Clock.class );
+        // connection1 should get 42 as it's creation timestamp and connection2 should get 84
+        when( clock.millis() ).thenReturn( 42L ).thenReturn( 84L );
+        Connector connector = newMockConnector( connection1, connection2 );
+        SocketConnectionPool pool = newPool( connector, clock, idleTimeBeforeConnectionTest, maxConnectionLifetime );
+
+        // acquire and release connections to make them stay idle in the pool
+        PooledConnection pooledConnection1 = pool.acquire( ADDRESS_1 );
+        PooledConnection pooledConnection2 = pool.acquire( ADDRESS_1 );
+        pooledConnection1.close();
+        pooledConnection2.close();
+
+        // forget all interactions
+        Mockito.reset( connection1, connection2 );
+        when( connection2.server() ).thenReturn( new InternalServerInfo( ADDRESS_1, "connection2" ) );
+
+        // move clock forward to make connection1 appear too old
+        when( clock.millis() ).thenReturn( 42 + maxConnectionLifetime + 10 );
+
+        // acquired pooled connection should be backed by connection2
+        PooledConnection pooledConnection3 = pool.acquire( ADDRESS_1 );
+        assertEquals( "connection2", pooledConnection3.server().version() );
+
+        // connection1 is too old, it was disposed and not checked for validity
+        verify( connection1 ).close();
+        verify( connection1, never() ).reset();
+        verify( connection1, never() ).sync();
+
+        // connection2 is not too old, it was checked for validity and then returned
+        verify( connection2, never() ).close();
+        verify( connection2 ).reset();
+        verify( connection2 ).sync();
     }
 
     @Test
@@ -637,7 +780,13 @@ public class SocketConnectionPoolTest
 
     private static SocketConnectionPool newPool( Connector connector, Clock clock, long idleTimeBeforeConnectionTest )
     {
-        PoolSettings poolSettings = new PoolSettings( 42, idleTimeBeforeConnectionTest );
+        return newPool( connector, clock, idleTimeBeforeConnectionTest, INFINITE_CONNECTION_LIFETIME );
+    }
+
+    private static SocketConnectionPool newPool( Connector connector, Clock clock, long idleTimeBeforeConnectionTest,
+            long maxConnectionLifetime )
+    {
+        PoolSettings poolSettings = new PoolSettings( 42, idleTimeBeforeConnectionTest, maxConnectionLifetime );
         Logging logging = mock( Logging.class, RETURNS_MOCKS );
         return new SocketConnectionPool( poolSettings, connector, clock, logging );
     }

@@ -360,7 +360,7 @@ public class ConnectionHandlingIT
         protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Config config )
         {
             ConnectionSettings connectionSettings = new ConnectionSettings( authToken, 1000 );
-            PoolSettings poolSettings = new PoolSettings( 10, 0 );
+            PoolSettings poolSettings = new PoolSettings( 10, 0, 0 );
             Connector connector = createConnector( connectionSettings, securityPlan, config.logging() );
             connectionPool = new MemorizingConnectionPool( poolSettings, connector, createClock(), config.logging() );
             return connectionPool;

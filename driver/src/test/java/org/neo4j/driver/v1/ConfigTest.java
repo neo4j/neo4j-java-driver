@@ -107,6 +107,30 @@ public class ConfigTest
     }
 
     @Test
+    public void shouldSupportMaxConnectionLifetimeSetting() throws Throwable
+    {
+        Config config = Config.build().withMaxConnectionLifetime( 42, TimeUnit.SECONDS ).toConfig();
+
+        assertEquals( TimeUnit.SECONDS.toMillis( 42 ), config.maxConnectionLifetime() );
+    }
+
+    @Test
+    public void shouldAllowZeroConnectionMaxConnectionLifetime() throws Throwable
+    {
+        Config config = Config.build().withMaxConnectionLifetime( 0, TimeUnit.SECONDS ).toConfig();
+
+        assertEquals( 0, config.maxConnectionLifetime() );
+    }
+
+    @Test
+    public void shouldAllowNegativeConnectionMaxConnectionLifetime() throws Throwable
+    {
+        Config config = Config.build().withMaxConnectionLifetime( -42, TimeUnit.SECONDS ).toConfig();
+
+        assertEquals( TimeUnit.SECONDS.toMillis( -42 ), config.maxConnectionLifetime() );
+    }
+
+    @Test
     public void shouldTurnOnLeakedSessionsLogging()
     {
         // leaked sessions logging is turned off by default
