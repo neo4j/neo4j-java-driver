@@ -33,6 +33,7 @@ import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 public class ErrorIT
@@ -48,7 +49,7 @@ public class ErrorIT
     {
         // Expect
         exception.expect( ClientException.class );
-        exception.expectMessage( "Invalid input" );
+        exception.expectMessage( startsWith( "Invalid input") );
 
         // When
         StatementResult result = session.run( "invalid statement" );
