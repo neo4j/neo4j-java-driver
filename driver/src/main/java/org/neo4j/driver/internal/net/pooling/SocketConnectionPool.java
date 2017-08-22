@@ -167,7 +167,7 @@ public class SocketConnectionPool implements ConnectionPool
             return true;
         }
 
-        if ( poolSettings.maxConnectionLifetimeConfigured() )
+        if ( poolSettings.maxConnectionLifetimeEnabled() )
         {
             if ( isTooOld( connection ) )
             {
@@ -175,7 +175,7 @@ public class SocketConnectionPool implements ConnectionPool
             }
         }
 
-        if ( poolSettings.idleTimeBeforeConnectionTestConfigured() )
+        if ( poolSettings.idleTimeBeforeConnectionTestEnabled() )
         {
             if ( hasBeenIdleForTooLong( connection ) )
             {

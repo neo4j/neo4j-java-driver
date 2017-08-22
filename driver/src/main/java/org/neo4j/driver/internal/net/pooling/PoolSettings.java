@@ -45,30 +45,20 @@ public class PoolSettings
 
     public long idleTimeBeforeConnectionTest()
     {
-        if ( !idleTimeBeforeConnectionTestConfigured() )
-        {
-            throw new IllegalStateException(
-                    "Idle time before connection test is not configured: " + idleTimeBeforeConnectionTest );
-        }
         return idleTimeBeforeConnectionTest;
     }
 
-    public boolean idleTimeBeforeConnectionTestConfigured()
+    public boolean idleTimeBeforeConnectionTestEnabled()
     {
         return idleTimeBeforeConnectionTest >= 0;
     }
 
     public long maxConnectionLifetime()
     {
-        if ( !maxConnectionLifetimeConfigured() )
-        {
-            throw new IllegalStateException(
-                    "Max connection lifetime is not configured: " + maxConnectionLifetime );
-        }
         return maxConnectionLifetime;
     }
 
-    public boolean maxConnectionLifetimeConfigured()
+    public boolean maxConnectionLifetimeEnabled()
     {
         return maxConnectionLifetime > 0;
     }
