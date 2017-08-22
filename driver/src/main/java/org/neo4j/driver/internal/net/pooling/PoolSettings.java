@@ -48,7 +48,7 @@ public class PoolSettings
         return idleTimeBeforeConnectionTest;
     }
 
-    public boolean idleTimeBeforeConnectionTestConfigured()
+    public boolean idleTimeBeforeConnectionTestEnabled()
     {
         return idleTimeBeforeConnectionTest >= 0;
     }
@@ -58,7 +58,7 @@ public class PoolSettings
         return maxConnectionLifetime;
     }
 
-    public boolean maxConnectionLifetimeConfigured()
+    public boolean maxConnectionLifetimeEnabled()
     {
         return maxConnectionLifetime > 0;
     }
