@@ -8,6 +8,7 @@
     <build.revision></build.revision>
     <bundle.name>${project.groupId}.${project.artifactId}</bundle.name>
     <maven.build.timestamp.format>'v'yyyyMMdd-HHmm</maven.build.timestamp.format>
+      <netty.version>4.1.14.Final</netty.version>
   </properties>
 
   <parent>
@@ -32,7 +33,13 @@
   </licenses>
 
   <dependencies>
-    <!-- Test dependencies -->
+      <dependency>
+          <groupId>io.netty</groupId>
+          <artifactId>netty-all</artifactId>
+          <version>${netty.version}</version>
+      </dependency>
+
+      <!-- Test dependencies -->
     <dependency>
       <groupId>org.hamcrest</groupId>
       <artifactId>hamcrest-library</artifactId>
