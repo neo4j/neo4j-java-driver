@@ -20,7 +20,7 @@ package org.neo4j.driver.internal.netty;
 
 import io.netty.channel.ChannelPromise;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -116,16 +116,16 @@ public class Main
         PARAMS.put( "itemList", value( Collections.singletonList( tmp ) ) );
     }
 
-    private static final String HOST = "localhost";
+    private static final String HOST = "ec2-34-253-134-245.eu-west-1.compute.amazonaws.com";
     private static final int PORT = 7687;
 
     public static void main( String[] args ) throws Throwable
     {
-        testDriver();
+//        testDriver();
 //        System.out.println( "----------------------" );
-//        testNetty();
+        testNetty();
 //        System.out.println( "----------------------" );
-//        testSocket();
+        testSocket();
     }
 
     private static void testDriver()
@@ -146,6 +146,7 @@ public class Main
         AuthToken authToken = AuthTokens.basic( "neo4j", "test" );
         Map<String,Value> authTokenMap = ((InternalAuthToken) authToken).toMap();
 
+        List<Long> timings = new ArrayList<>();
         try ( Connector bootstrap = new Connector( "Tester", authTokenMap ) )
         {
             AsyncConnection connection = bootstrap.connect( new BoltServerAddress( HOST, PORT ) );
@@ -168,7 +169,7 @@ public class Main
                     @Override
                     public void onRecord( Value[] fields )
                     {
-                        System.out.println( "Received records: " + Arrays.toString( fields ) );
+//                        System.out.println( "Received records: " + Arrays.toString( fields ) );
                     }
 
                     @Override
@@ -186,11 +187,12 @@ public class Main
                 }
 
                 long end = System.nanoTime();
-                System.out.println( "Query took: " + TimeUnit.NANOSECONDS.toMillis( end - start ) + "ms" );
-            }
 
-            System.out.println();
+                timings.add( TimeUnit.NANOSECONDS.toMillis( end - start ) );
+            }
         }
+
+        System.out.println( "Query via Netty took: " + avg( timings ) + "ms on average" );
     }
 
     private static void testSocket()
@@ -205,6 +207,7 @@ public class Main
 
         connection.init( "Tester", map );
 
+        List<Long> timings = new ArrayList<>();
         for ( int i = 0; i < 100; i++ )
         {
             long start = System.nanoTime();
@@ -214,12 +217,25 @@ public class Main
                 @Override
                 public void record( Value[] fields )
                 {
-                    System.out.println( "Received records: " + Arrays.toString( fields ) );
+//                    System.out.println( "Received records: " + Arrays.toString( fields ) );
                 }
             } );
             connection.sync();
             long end = System.nanoTime();
-            System.out.println( "Query took: " + TimeUnit.NANOSECONDS.toMillis( end - start ) + "ms" );
+
+            timings.add( TimeUnit.NANOSECONDS.toMillis( end - start ) );
         }
+
+        System.out.println( "Query via Socket took: " + avg( timings ) + "ms on average" );
+    }
+
+    private static long avg( List<Long> timings )
+    {
+        long sum = 0;
+        for ( Long timing : timings )
+        {
+            sum += timing;
+        }
+        return sum / timings.size();
     }
 }
