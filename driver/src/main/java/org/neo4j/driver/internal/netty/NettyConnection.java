@@ -21,12 +21,16 @@ package org.neo4j.driver.internal.netty;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 
-import org.neo4j.driver.internal.messaging.Message;
+import java.util.Map;
 
-public class NettyConnection
+import org.neo4j.driver.internal.messaging.Message;
+import org.neo4j.driver.internal.messaging.PullAllMessage;
+import org.neo4j.driver.internal.messaging.RunMessage;
+import org.neo4j.driver.v1.Value;
+
+public class NettyConnection implements AsyncConnection
 {
     private final ChannelFuture channelFuture;
 
@@ -35,23 +39,22 @@ public class NettyConnection
         this.channelFuture = channelFuture;
     }
 
-    public ChannelPromise newPromise()
+    @Override
+    public void run( String statement, Map<String,Value> parameters, ResponseHandler handler )
     {
-        return channelFuture.channel().newPromise();
+        send( new RunMessage( statement, parameters ), handler );
     }
 
-    public void send( Message message, ResponseHandler handler )
+    @Override
+    public void pullAll( ResponseHandler handler )
     {
-        send( message, handler, false );
+        send( PullAllMessage.PULL_ALL, handler );
     }
 
-    public void sendAndFlush( Message message, ResponseHandler handler )
+    @Override
+    public void flush()
     {
-        send( message, handler, true );
-    }
-
-    private void send( final Message message, final ResponseHandler handler, final boolean flush )
-    {
+        // todo: it is possible to check future for completion and use channel directly
         channelFuture.addListener( new ChannelFutureListener()
         {
             @Override
@@ -59,24 +62,51 @@ public class NettyConnection
             {
                 if ( future.isSuccess() )
                 {
-                    Channel channel = channelFuture.channel();
-                    ChannelPipeline pipeline = channel.pipeline();
+                    future.channel().flush();
+                }
+            }
+        } );
+    }
 
-                    InboundMessageHandler messageHandler = pipeline.get( InboundMessageHandler.class );
-                    messageHandler.addHandler( handler );
+    @Override
+    public ChannelPromise newPromise()
+    {
+        return channel().newPromise();
+    }
 
-                    if ( flush )
-                    {
-                        channel.writeAndFlush( message );
-                    }
-                    else
-                    {
-                        channel.write( message );
-                    }
+    @Override
+    public boolean isOpen()
+    {
+        return channel().isActive();
+    }
+
+    @Override
+    public void close()
+    {
+        // todo: is it ok to block like this???
+        channel().close().syncUninterruptibly();
+    }
+
+    private Channel channel()
+    {
+        return channelFuture.channel();
+    }
+
+    private void send( final Message message, final ResponseHandler handler )
+    {
+        // todo: it is possible to check future for completion and use channel directly
+        channelFuture.addListener( new ChannelFutureListener()
+        {
+            @Override
+            public void operationComplete( ChannelFuture future ) throws Exception
+            {
+                if ( future.isSuccess() )
+                {
+                    ChannelWriter.write( channel(), message, handler, false );
                 }
                 else
                 {
-                    // todo: not sure how to handle this error
+                    handler.onFailure( future.cause() );
                 }
             }
         } );

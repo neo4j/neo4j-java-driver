@@ -198,9 +198,22 @@ public class DriverFactory
      * <p>
      * <b>This method is protected only for testing</b>
      */
-    protected Connector createConnector( ConnectionSettings connectionSettings, SecurityPlan securityPlan,
+    protected Connector createConnector( final ConnectionSettings connectionSettings, SecurityPlan securityPlan,
             Logging logging )
     {
+//        return new Connector()
+//        {
+//            final org.neo4j.driver.internal.netty.Connector c = new org.neo4j.driver.internal.netty.Connector(
+// connectionSettings.userAgent(),
+//                    ((InternalAuthToken) connectionSettings.authToken()).toMap() );
+//
+//            @Override
+//            public Connection connect( BoltServerAddress address )
+//            {
+//                return new SyncOverAsyncConnection( c.connect( address ) );
+//            }
+//        };
+
         return new SocketConnector( connectionSettings, securityPlan, logging );
     }
 

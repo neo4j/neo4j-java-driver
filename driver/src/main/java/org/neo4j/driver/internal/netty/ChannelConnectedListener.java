@@ -23,6 +23,7 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelPromise;
 
+import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
 import static java.lang.String.format;
@@ -31,11 +32,13 @@ import static org.neo4j.driver.internal.netty.ProtocolConstants.HANDSHAKE_BUF;
 
 public class ChannelConnectedListener implements ChannelFutureListener
 {
-    private final ChannelPromise channelInitializedPromise;
+    private final BoltServerAddress address;
+    private final ChannelPromise handshakeCompletedPromise;
 
-    public ChannelConnectedListener( ChannelPromise channelInitializedPromise )
+    public ChannelConnectedListener( BoltServerAddress address, ChannelPromise handshakeCompletedPromise )
     {
-        this.channelInitializedPromise = requireNonNull( channelInitializedPromise );
+        this.address = address;
+        this.handshakeCompletedPromise = requireNonNull( handshakeCompletedPromise );
     }
 
     @Override
@@ -45,7 +48,7 @@ public class ChannelConnectedListener implements ChannelFutureListener
 
         if ( future.isSuccess() )
         {
-            channel.pipeline().addLast( new HandshakeResponseHandler( channelInitializedPromise ) );
+            channel.pipeline().addLast( new HandshakeResponseHandler( handshakeCompletedPromise ) );
             ChannelFuture handshakeFuture = channel.writeAndFlush( HANDSHAKE_BUF );
 
             handshakeFuture.addListener( new ChannelFutureListener()
@@ -55,21 +58,21 @@ public class ChannelConnectedListener implements ChannelFutureListener
                 {
                     if ( !future.isSuccess() )
                     {
-                        channelInitializedPromise.setFailure( future.cause() );
+                        handshakeCompletedPromise.setFailure( future.cause() );
                     }
                 }
             } );
         }
         else
         {
-            channelInitializedPromise.setFailure( databaseUnavailableError( channel ) );
+            handshakeCompletedPromise.setFailure( databaseUnavailableError( address ) );
         }
     }
 
-    private static Throwable databaseUnavailableError( Channel channel )
+    private static Throwable databaseUnavailableError( BoltServerAddress address )
     {
         return new ServiceUnavailableException( format(
                 "Unable to connect to %s, ensure the database is running and that there " +
-                "is a working network connection to it.", channel.remoteAddress() ) );
+                "is a working network connection to it.", address ) );
     }
 }

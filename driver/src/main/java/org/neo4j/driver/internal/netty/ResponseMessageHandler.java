@@ -24,6 +24,7 @@ import java.util.Queue;
 
 import org.neo4j.driver.internal.messaging.MessageHandler;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.exceptions.Neo4jException;
 
 public class ResponseMessageHandler implements MessageHandler
 {
@@ -88,7 +89,8 @@ public class ResponseMessageHandler implements MessageHandler
     public void handleFailureMessage( String code, String message ) throws IOException
     {
         ResponseHandler handler = handlers.remove();
-        handler.onFailure( code, message );
+        Neo4jException error = ErrorCreator.create( code, message );
+        handler.onFailure( error );
     }
 
     @Override

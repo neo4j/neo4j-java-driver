@@ -21,21 +21,23 @@ package org.neo4j.driver.internal.netty;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelPromise;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+
+import org.neo4j.driver.internal.net.BoltServerAddress;
 
 public class ChannelBootstrap implements AutoCloseable
 {
     private final Bootstrap bootstrap;
 
+    // todo: take SSLEngine as input and use it to install SSL handler in the pipeline, if needed
     public ChannelBootstrap()
     {
         this.bootstrap = createBootstrap();
     }
 
-    public NettyConnection connect( String host, int port )
+    public ChannelFuture connect( BoltServerAddress address )
     {
         bootstrap.handler( new ChannelInitializer<SocketChannel>()
         {
@@ -46,12 +48,7 @@ public class ChannelBootstrap implements AutoCloseable
             }
         } );
 
-        ChannelFuture channelConnectedFuture = bootstrap.connect( host, port );
-        ChannelPromise handshakeCompletedPromise = channelConnectedFuture.channel().newPromise();
-
-        channelConnectedFuture.addListener( new ChannelConnectedListener( handshakeCompletedPromise ) );
-
-        return new NettyConnection( handshakeCompletedPromise );
+        return bootstrap.connect( address.toSocketAddress() );
     }
 
     @Override

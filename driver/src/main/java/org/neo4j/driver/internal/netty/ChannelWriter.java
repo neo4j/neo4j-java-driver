@@ -18,25 +18,33 @@
  */
 package org.neo4j.driver.internal.netty;
 
-import java.util.Map;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelPipeline;
 
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.internal.messaging.Message;
 
-public class VoidResponseHandler implements ResponseHandler
+public final class ChannelWriter
 {
-    @Override
-    public void onSuccess( Map<String,Value> metadata )
+    private ChannelWriter()
     {
     }
 
-    @Override
-    public void onFailure( Throwable error )
+    public static void write( Channel channel, Message message, ResponseHandler handler, boolean flush )
     {
-        System.out.println();
-    }
+        ChannelPipeline pipeline = channel.pipeline();
 
-    @Override
-    public void onRecord( Value[] fields )
-    {
+        InboundMessageHandler messageHandler = pipeline.get( InboundMessageHandler.class );
+        messageHandler.addHandler( handler );
+
+        if ( flush )
+        {
+            // todo: add any kind of listener???
+            channel.writeAndFlush( message );
+        }
+        else
+        {
+            // todo: add any kind of listener???
+            channel.write( message );
+        }
     }
 }

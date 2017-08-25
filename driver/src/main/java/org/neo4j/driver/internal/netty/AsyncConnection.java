@@ -18,15 +18,25 @@
  */
 package org.neo4j.driver.internal.netty;
 
+import io.netty.channel.ChannelPromise;
+
 import java.util.Map;
 
 import org.neo4j.driver.v1.Value;
 
-public interface ResponseHandler
+public interface AsyncConnection
 {
-    void onSuccess( Map<String,Value> metadata );
+    void run( String statement, Map<String,Value> parameters, ResponseHandler handler );
 
-    void onFailure( Throwable error );
+    void pullAll( ResponseHandler handler );
 
-    void onRecord( Value[] fields );
+    void flush();
+
+    // todo: create promise who's callbacks are executed in this channel's event loop
+    // todo: do we need this???
+    ChannelPromise newPromise();
+
+    boolean isOpen();
+
+    void close();
 }

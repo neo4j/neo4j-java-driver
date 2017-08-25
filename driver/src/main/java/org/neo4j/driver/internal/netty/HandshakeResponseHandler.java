@@ -34,11 +34,11 @@ import static org.neo4j.driver.internal.netty.ProtocolConstants.PROTOCOL_VERSION
 
 public class HandshakeResponseHandler extends ReplayingDecoder<Void>
 {
-    private final ChannelPromise channelInitializedPromise;
+    private final ChannelPromise handshakeCompletedPromise;
 
-    public HandshakeResponseHandler( ChannelPromise channelInitializedPromise )
+    public HandshakeResponseHandler( ChannelPromise handshakeCompletedPromise )
     {
-        this.channelInitializedPromise = requireNonNull( channelInitializedPromise );
+        this.handshakeCompletedPromise = requireNonNull( handshakeCompletedPromise );
     }
 
     @Override
@@ -65,7 +65,7 @@ public class HandshakeResponseHandler extends ReplayingDecoder<Void>
             // outbound handlers
             ctx.pipeline().addLast( new OutboundMessageHandler() );
 
-            channelInitializedPromise.setSuccess();
+            handshakeCompletedPromise.setSuccess();
 
             break;
         case NO_PROTOCOL_VERSION:
@@ -83,7 +83,7 @@ public class HandshakeResponseHandler extends ReplayingDecoder<Void>
     private void fail( ChannelHandlerContext ctx, Throwable error )
     {
         ctx.close();
-        channelInitializedPromise.setFailure( error );
+        handshakeCompletedPromise.setFailure( error );
     }
 
     private static Throwable protocolNoSupportedByServerError()

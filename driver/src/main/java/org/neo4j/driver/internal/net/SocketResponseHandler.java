@@ -25,13 +25,10 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.neo4j.driver.internal.messaging.MessageHandler;
+import org.neo4j.driver.internal.netty.ErrorCreator;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.exceptions.AuthenticationException;
-import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.exceptions.DatabaseException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
-import org.neo4j.driver.v1.exceptions.TransientException;
 
 public class SocketResponseHandler implements MessageHandler
 {
@@ -51,27 +48,7 @@ public class SocketResponseHandler implements MessageHandler
     public void handleFailureMessage( String code, String message )
     {
         ResponseHandler handler = handlers.remove();
-        String[] parts = code.split( "\\." );
-        String classification = parts[1];
-        switch ( classification )
-        {
-            case "ClientError":
-                if( code.equalsIgnoreCase( "Neo.ClientError.Security.Unauthorized" ) )
-                {
-                    error = new AuthenticationException( code, message );
-                }
-                else
-                {
-                    error = new ClientException( code, message );
-                }
-                break;
-            case "TransientError":
-                error = new TransientException( code, message );
-                break;
-            default:
-                error = new DatabaseException( code, message );
-                break;
-        }
+        error = ErrorCreator.create( code, message );
         if ( handler != null )
         {
             handler.onFailure( error );

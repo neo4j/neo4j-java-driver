@@ -23,11 +23,10 @@ import io.netty.channel.ChannelPromise;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.driver.internal.messaging.InitMessage;
-import org.neo4j.driver.internal.messaging.RunMessage;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.net.SocketClient;
 import org.neo4j.driver.internal.net.SocketConnection;
@@ -37,11 +36,14 @@ import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.summary.InternalServerInfo;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.AuthTokens;
+import org.neo4j.driver.v1.Config;
+import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.GraphDatabase;
+import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
-import static org.neo4j.driver.internal.messaging.PullAllMessage.PULL_ALL;
 import static org.neo4j.driver.v1.Values.value;
 
 public class Main
@@ -117,59 +119,48 @@ public class Main
     private static final String HOST = "localhost";
     private static final int PORT = 7687;
 
-    public static void main( String[] args ) throws Exception
+    public static void main( String[] args ) throws Throwable
     {
-        testNetty();
-        System.out.println( "----------------------" );
-        testSocket();
+        testDriver();
+//        System.out.println( "----------------------" );
+//        testNetty();
+//        System.out.println( "----------------------" );
+//        testSocket();
     }
 
-    private static void testNetty() throws Exception
+    private static void testDriver()
     {
-        try ( ChannelBootstrap bootstrap = new ChannelBootstrap() )
+        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:7687", AuthTokens.basic( "neo4j", "test" ),
+                Config.build().withoutEncryption().toConfig() ) )
         {
-            NettyConnection connection = bootstrap.connect( "localhost", PORT );
-
-            AuthToken token = AuthTokens.basic( "neo4j", "test" );
-            Map<String,Value> map = ((InternalAuthToken) token).toMap();
-            InitMessage initMessage = new InitMessage( "Tester", map );
-
-            final ChannelPromise connectionInitializedPromise = connection.newPromise();
-
-            connection.sendAndFlush( initMessage, new ResponseHandler()
+            try ( Session session = driver.session() )
             {
-                @Override
-                public void onSuccess( Map<String,Value> meta )
-                {
-                    connectionInitializedPromise.setSuccess();
-                }
+                List<Record> list = session.run( QUERY, value( PARAMS ) ).list();
+                System.out.println( list );
+            }
+        }
+    }
 
-                @Override
-                public void onFailure( String code, String message )
-                {
-                    // todo: detect proper exception type here based on error code
-                    connectionInitializedPromise.setFailure( new ClientException( code, message ) );
-                }
+    private static void testNetty() throws Throwable
+    {
+        AuthToken authToken = AuthTokens.basic( "neo4j", "test" );
+        Map<String,Value> authTokenMap = ((InternalAuthToken) authToken).toMap();
 
-                @Override
-                public void onRecord( Value[] fields )
-                {
-                    throw new UnsupportedOperationException();
-                }
-            } );
-
-            connectionInitializedPromise.await();
+        try ( Connector bootstrap = new Connector( "Tester", authTokenMap ) )
+        {
+            AsyncConnection connection = bootstrap.connect( new BoltServerAddress( HOST, PORT ) );
 
             for ( int i = 0; i < 100; i++ )
             {
                 long start = System.nanoTime();
+
                 final ChannelPromise queryPromise = connection.newPromise();
 
-                connection.send( new RunMessage( QUERY, PARAMS ), new VoidResponseHandler() );
-                connection.sendAndFlush( PULL_ALL, new ResponseHandler()
+                connection.run( QUERY, PARAMS, new VoidResponseHandler() );
+                connection.pullAll( new ResponseHandler()
                 {
                     @Override
-                    public void onSuccess( Map<String,Value> meta )
+                    public void onSuccess( Map<String,Value> metadata )
                     {
                         queryPromise.setSuccess();
                     }
@@ -181,16 +172,24 @@ public class Main
                     }
 
                     @Override
-                    public void onFailure( String code, String message )
+                    public void onFailure( Throwable error )
                     {
-                        queryPromise.setFailure( new ClientException( code, message ) );
+                        queryPromise.setFailure( error );
                     }
                 } );
+                connection.flush();
 
                 queryPromise.await();
+                if ( !queryPromise.isSuccess() )
+                {
+                    throw queryPromise.cause();
+                }
+
                 long end = System.nanoTime();
                 System.out.println( "Query took: " + TimeUnit.NANOSECONDS.toMillis( end - start ) + "ms" );
             }
+
+            System.out.println();
         }
     }
 
