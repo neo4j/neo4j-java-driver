@@ -34,6 +34,8 @@ import static org.neo4j.driver.internal.DriverFactory.BOLT_ROUTING_URI_SCHEME;
  */
 public class GraphDatabase
 {
+    private static final String LOGGER_NAME = GraphDatabase.class.getSimpleName();
+
     /**
      * Return a driver for a Neo4j instance with the default configuration settings
      *
@@ -127,8 +129,7 @@ public class GraphDatabase
      */
     public static Driver driver( URI uri, AuthToken authToken, Config config )
     {
-        // Make sure we have some configuration to play with
-        config = config == null ? Config.defaultConfig() : config;
+        config = getOrDefault( config );
         RoutingSettings routingSettings = config.routingSettings();
         RetrySettings retrySettings = config.retrySettings();
 
@@ -149,6 +150,7 @@ public class GraphDatabase
     public static Driver routingDriver( Iterable<URI> routingUris, AuthToken authToken, Config config )
     {
         assertRoutingUris( routingUris );
+        Logger log = createLogger( config );
 
         for ( URI uri : routingUris )
         {
@@ -158,7 +160,7 @@ public class GraphDatabase
             }
             catch ( ServiceUnavailableException e )
             {
-                // try the next one
+                log.warn( "Unable to create routing driver for URI: " + uri, e );
             }
         }
 
@@ -175,5 +177,16 @@ public class GraphDatabase
                         "Illegal URI scheme, expected '" + BOLT_ROUTING_URI_SCHEME + "' in '" + uri + "'" );
             }
         }
+    }
+
+    private static Logger createLogger( Config config )
+    {
+        Logging logging = getOrDefault( config ).logging();
+        return logging.getLog( LOGGER_NAME );
+    }
+
+    private static Config getOrDefault( Config config )
+    {
+        return config != null ? config : Config.defaultConfig();
     }
 }
