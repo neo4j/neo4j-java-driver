@@ -22,6 +22,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
 
 import org.neo4j.driver.internal.messaging.Message;
+import org.neo4j.driver.internal.spi.ResponseHandler;
 
 public final class ChannelWriter
 {

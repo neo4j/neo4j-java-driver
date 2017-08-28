@@ -24,27 +24,38 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.ssl.SslHandler;
+
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLException;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.security.SecurityPlan;
 
 public class ChannelBootstrap implements AutoCloseable
 {
+    private final SecurityPlan securityPlan;
     private final Bootstrap bootstrap;
 
-    // todo: take SSLEngine as input and use it to install SSL handler in the pipeline, if needed
-    public ChannelBootstrap()
+    public ChannelBootstrap( SecurityPlan securityPlan )
     {
+        this.securityPlan = securityPlan;
         this.bootstrap = createBootstrap();
     }
 
-    public ChannelFuture connect( BoltServerAddress address )
+    public ChannelFuture connect( final BoltServerAddress address )
     {
         bootstrap.handler( new ChannelInitializer<SocketChannel>()
         {
             @Override
             protected void initChannel( SocketChannel ch ) throws Exception
             {
-                // todo: good place to add ssl handler...
+                if ( securityPlan.requiresEncryption() )
+                {
+                    SSLEngine sslEngine = createSslEngine( address );
+                    ch.pipeline().addLast( new SslHandler( sslEngine ) );
+                }
             }
         } );
 
@@ -55,6 +66,14 @@ public class ChannelBootstrap implements AutoCloseable
     public void close() throws Exception
     {
         bootstrap.config().group().shutdownGracefully().sync();
+    }
+
+    private SSLEngine createSslEngine( BoltServerAddress address ) throws SSLException
+    {
+        SSLContext sslContext = securityPlan.sslContext();
+        SSLEngine sslEngine = sslContext.createSSLEngine( address.host(), address.port() );
+        sslEngine.setUseClientMode( true );
+        return sslEngine;
     }
 
     private static Bootstrap createBootstrap()

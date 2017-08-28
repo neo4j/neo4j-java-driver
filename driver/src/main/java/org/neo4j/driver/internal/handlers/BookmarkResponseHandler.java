@@ -24,7 +24,6 @@ import org.neo4j.driver.internal.Bookmark;
 import org.neo4j.driver.internal.ExplicitTransaction;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.exceptions.Neo4jException;
 
 public class BookmarkResponseHandler implements ResponseHandler
 {
@@ -46,7 +45,7 @@ public class BookmarkResponseHandler implements ResponseHandler
     }
 
     @Override
-    public void onFailure( Neo4jException error )
+    public void onFailure( Throwable error )
     {
     }
 

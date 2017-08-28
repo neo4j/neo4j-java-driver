@@ -159,7 +159,7 @@ public class SocketConnection implements Connection
             }
 
             @Override
-            public void onFailure( Neo4jException error )
+            public void onFailure( Throwable error )
             {
             }
 

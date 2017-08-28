@@ -27,6 +27,7 @@ import java.util.Queue;
 
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.PackStreamMessageFormatV1;
+import org.neo4j.driver.internal.spi.ResponseHandler;
 
 public class InboundMessageHandler extends SimpleChannelInboundHandler<ByteBuf>
 {

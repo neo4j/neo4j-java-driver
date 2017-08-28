@@ -28,7 +28,7 @@ import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
-import static org.neo4j.driver.internal.netty.ProtocolConstants.HANDSHAKE_BUF;
+import static org.neo4j.driver.internal.netty.ProtocolUtil.handshake;
 
 public class ChannelConnectedListener implements ChannelFutureListener
 {
@@ -49,7 +49,7 @@ public class ChannelConnectedListener implements ChannelFutureListener
         if ( future.isSuccess() )
         {
             channel.pipeline().addLast( new HandshakeResponseHandler( handshakeCompletedPromise ) );
-            ChannelFuture handshakeFuture = channel.writeAndFlush( HANDSHAKE_BUF );
+            ChannelFuture handshakeFuture = channel.writeAndFlush( handshake() );
 
             handshakeFuture.addListener( new ChannelFutureListener()
             {

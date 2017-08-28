@@ -28,9 +28,9 @@ import java.util.List;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static java.util.Objects.requireNonNull;
-import static org.neo4j.driver.internal.netty.ProtocolConstants.HTTP;
-import static org.neo4j.driver.internal.netty.ProtocolConstants.NO_PROTOCOL_VERSION;
-import static org.neo4j.driver.internal.netty.ProtocolConstants.PROTOCOL_VERSION_1;
+import static org.neo4j.driver.internal.netty.ProtocolUtil.HTTP;
+import static org.neo4j.driver.internal.netty.ProtocolUtil.NO_PROTOCOL_VERSION;
+import static org.neo4j.driver.internal.netty.ProtocolUtil.PROTOCOL_VERSION_1;
 
 public class HandshakeResponseHandler extends ReplayingDecoder<Void>
 {

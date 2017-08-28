@@ -19,9 +19,12 @@
 package org.neo4j.driver.internal.netty;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 
-public final class ProtocolConstants
+import static io.netty.buffer.Unpooled.copyInt;
+import static io.netty.buffer.Unpooled.copyShort;
+import static io.netty.buffer.Unpooled.unreleasableBuffer;
+
+public final class ProtocolUtil
 {
     public static final int HTTP = 1213486160; //== 0x48545450 == "HTTP"
 
@@ -29,16 +32,26 @@ public final class ProtocolConstants
     public static final int PROTOCOL_VERSION_1 = 1;
     public static final int NO_PROTOCOL_VERSION = 0;
 
-    public static final ByteBuf HANDSHAKE_BUF = Unpooled.unreleasableBuffer( Unpooled.copyInt(
+    private static final ByteBuf HANDSHAKE_BUF = unreleasableBuffer( copyInt(
             BOLT_MAGIC_PREAMBLE,
             PROTOCOL_VERSION_1,
             NO_PROTOCOL_VERSION,
             NO_PROTOCOL_VERSION,
-            NO_PROTOCOL_VERSION ) );
+            NO_PROTOCOL_VERSION ) ).asReadOnly();
 
-    public static final ByteBuf MESSAGE_BOUNDARY = Unpooled.unreleasableBuffer( Unpooled.copyShort( 0 ) );
+    private static final ByteBuf MESSAGE_BOUNDARY = unreleasableBuffer( copyShort( 0 ) ).asReadOnly();
 
-    private ProtocolConstants()
+    public static ByteBuf handshake()
+    {
+        return HANDSHAKE_BUF.duplicate();
+    }
+
+    public static ByteBuf messageBoundary()
+    {
+        return MESSAGE_BOUNDARY.duplicate();
+    }
+
+    private ProtocolUtil()
     {
     }
 }

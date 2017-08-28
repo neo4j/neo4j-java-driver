@@ -31,7 +31,7 @@ import org.neo4j.driver.internal.messaging.PackStreamMessageFormatV1;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.driver.internal.netty.ProtocolConstants.MESSAGE_BOUNDARY;
+import static org.neo4j.driver.internal.netty.ProtocolUtil.messageBoundary;
 
 public class InboundMessageHandlerTest
 {
@@ -56,7 +56,7 @@ public class InboundMessageHandlerTest
 
         ByteBuf read3 = ch.readOutbound();
         assertNotNull( read3 );
-        assertEquals( MESSAGE_BOUNDARY, read3 );
+        assertEquals( messageBoundary(), read3 );
 
         ch.writeInbound( read1, read2, read3 );
 

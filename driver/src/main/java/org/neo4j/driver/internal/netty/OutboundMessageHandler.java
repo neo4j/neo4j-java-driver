@@ -28,7 +28,7 @@ import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.PackStreamMessageFormatV1;
 
-import static org.neo4j.driver.internal.netty.ProtocolConstants.MESSAGE_BOUNDARY;
+import static org.neo4j.driver.internal.netty.ProtocolUtil.messageBoundary;
 
 public class OutboundMessageHandler extends MessageToMessageEncoder<Message>
 {
@@ -65,7 +65,7 @@ public class OutboundMessageHandler extends MessageToMessageEncoder<Message>
 
             out.add( headerBuf );
             out.add( bodyBuf );
-            out.add( MESSAGE_BOUNDARY );
+            out.add( messageBoundary() );
         }
         else
         {

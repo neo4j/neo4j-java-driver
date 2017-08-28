@@ -22,7 +22,6 @@ import java.util.Map;
 
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.exceptions.Neo4jException;
 
 public class InitResponseHandler implements ResponseHandler
 {
@@ -39,7 +38,7 @@ public class InitResponseHandler implements ResponseHandler
     }
 
     @Override
-    public void onFailure( Neo4jException error )
+    public void onFailure( Throwable error )
     {
     }
 

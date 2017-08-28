@@ -25,6 +25,7 @@ import io.netty.channel.ChannelPromise;
 import java.util.Map;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.v1.Value;
 
 import static java.util.Objects.requireNonNull;
@@ -35,11 +36,11 @@ public class Connector implements AutoCloseable
     private final Map<String,Value> authToken;
     private final ChannelBootstrap bootstrap;
 
-    public Connector( String userAgent, Map<String,Value> authToken )
+    public Connector( String userAgent, Map<String,Value> authToken, SecurityPlan securityPlan )
     {
         this.userAgent = requireNonNull( userAgent );
         this.authToken = requireNonNull( authToken );
-        this.bootstrap = new ChannelBootstrap();
+        this.bootstrap = new ChannelBootstrap( securityPlan );
     }
 
     public AsyncConnection connect( BoltServerAddress address )

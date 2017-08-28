@@ -32,7 +32,6 @@ import org.neo4j.driver.internal.summary.InternalProfiledPlan;
 import org.neo4j.driver.internal.summary.InternalSummaryCounters;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.summary.Notification;
 import org.neo4j.driver.v1.summary.Plan;
 import org.neo4j.driver.v1.summary.ProfiledPlan;
@@ -72,7 +71,7 @@ public class RecordsResponseHandler implements ResponseHandler
     }
 
     @Override
-    public void onFailure( Neo4jException error )
+    public void onFailure( Throwable error )
     {
         completed = true;
     }

@@ -21,13 +21,12 @@ package org.neo4j.driver.internal.spi;
 import java.util.Map;
 
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.exceptions.Neo4jException;
 
 public interface ResponseHandler
 {
     void onSuccess( Map<String,Value> metadata );
 
-    void onFailure( Neo4jException error );
+    void onFailure( Throwable error );
 
     void onRecord( Value[] fields );
 }

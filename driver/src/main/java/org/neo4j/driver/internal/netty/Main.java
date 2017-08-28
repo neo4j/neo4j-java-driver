@@ -27,12 +27,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.net.SocketClient;
 import org.neo4j.driver.internal.net.SocketConnection;
 import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.security.SecurityPlan;
-import org.neo4j.driver.internal.spi.Collector;
+import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.summary.InternalServerInfo;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.AuthTokens;
@@ -48,6 +49,10 @@ import static org.neo4j.driver.v1.Values.value;
 
 public class Main
 {
+    private static final int ITERATIONS = 100;
+
+    private static final String QUERY1 = "RETURN 1";
+
     private static final String QUERY =
             "MATCH (s:Sku{sku_no: {skuNo}})-[:HAS_ITEM_SOURCE]->(i:ItemSource{itemsource: {itemSource}})\n" +
             "//Get master sku for auxiliary item\n" +
@@ -104,6 +109,10 @@ public class Main
 
     private static final Map<String,Value> PARAMS = new HashMap<>();
 
+    private static final String HOST = "localhost";
+    private static final int PORT = 7687;
+    private static final SecurityPlan SECURITY_PLAN;
+
     static
     {
         PARAMS.put( "skuNo", value( 366421 ) );
@@ -114,10 +123,16 @@ public class Main
         tmp.put( "skuNo", 366421 );
         tmp.put( "itemSource", "REG" );
         PARAMS.put( "itemList", value( Collections.singletonList( tmp ) ) );
-    }
 
-    private static final String HOST = "ec2-34-253-134-245.eu-west-1.compute.amazonaws.com";
-    private static final int PORT = 7687;
+        try
+        {
+            SECURITY_PLAN = SecurityPlan.forAllCertificates();
+        }
+        catch ( Throwable t )
+        {
+            throw new RuntimeException( t );
+        }
+    }
 
     public static void main( String[] args ) throws Throwable
     {
@@ -143,21 +158,22 @@ public class Main
 
     private static void testNetty() throws Throwable
     {
+        BoltServerAddress address = new BoltServerAddress( HOST, PORT );
         AuthToken authToken = AuthTokens.basic( "neo4j", "test" );
         Map<String,Value> authTokenMap = ((InternalAuthToken) authToken).toMap();
 
         List<Long> timings = new ArrayList<>();
-        try ( Connector bootstrap = new Connector( "Tester", authTokenMap ) )
+        try ( Connector bootstrap = new Connector( "Tester", authTokenMap, SECURITY_PLAN ) )
         {
-            AsyncConnection connection = bootstrap.connect( new BoltServerAddress( HOST, PORT ) );
+            AsyncConnection connection = bootstrap.connect( address );
 
-            for ( int i = 0; i < 100; i++ )
+            for ( int i = 0; i < ITERATIONS; i++ )
             {
                 long start = System.nanoTime();
 
                 final ChannelPromise queryPromise = connection.newPromise();
 
-                connection.run( QUERY, PARAMS, new VoidResponseHandler() );
+                connection.run( QUERY, PARAMS, NoOpResponseHandler.INSTANCE );
                 connection.pullAll( new ResponseHandler()
                 {
                     @Override
@@ -192,13 +208,16 @@ public class Main
             }
         }
 
-        System.out.println( "Query via Netty took: " + avg( timings ) + "ms on average" );
+        timings = clean( timings );
+
+        System.out.println( "Netty: mean --> " + mean( timings ) + "ms, stdDev --> " + stdDev( timings ) );
+        System.out.println( "Netty: " + timings );
     }
 
     private static void testSocket()
     {
         BoltServerAddress address = new BoltServerAddress( HOST, PORT );
-        SocketClient socket = new SocketClient( address, SecurityPlan.insecure(), 10_000, DEV_NULL_LOGGER );
+        SocketClient socket = new SocketClient( address, SECURITY_PLAN, 10_000, DEV_NULL_LOGGER );
         InternalServerInfo serverInfo = new InternalServerInfo( address, "" );
         SocketConnection connection = new SocketConnection( socket, serverInfo, DEV_NULL_LOGGER );
 
@@ -208,14 +227,26 @@ public class Main
         connection.init( "Tester", map );
 
         List<Long> timings = new ArrayList<>();
-        for ( int i = 0; i < 100; i++ )
+        for ( int i = 0; i < ITERATIONS; i++ )
         {
             long start = System.nanoTime();
-            connection.run( QUERY, PARAMS, new Collector.NoOperationCollector() );
-            connection.pullAll( new Collector.NoOperationCollector()
+            connection.run( QUERY, PARAMS, NoOpResponseHandler.INSTANCE );
+            connection.pullAll( new ResponseHandler()
             {
                 @Override
-                public void record( Value[] fields )
+                public void onSuccess( Map<String,Value> metadata )
+                {
+
+                }
+
+                @Override
+                public void onFailure( Throwable error )
+                {
+
+                }
+
+                @Override
+                public void onRecord( Value[] fields )
                 {
 //                    System.out.println( "Received records: " + Arrays.toString( fields ) );
                 }
@@ -226,10 +257,19 @@ public class Main
             timings.add( TimeUnit.NANOSECONDS.toMillis( end - start ) );
         }
 
-        System.out.println( "Query via Socket took: " + avg( timings ) + "ms on average" );
+        timings = clean( timings );
+
+        System.out.println( "Socket: mean --> " + mean( timings ) + "ms, stdDev --> " + stdDev( timings ) );
+        System.out.println( "Socket: " + timings );
     }
 
-    private static long avg( List<Long> timings )
+    private static List<Long> clean( List<Long> timings )
+    {
+        int warmup = timings.size() / 10; // remove first 10% of measurements, they are just a warmup :)
+        return timings.subList( warmup, timings.size() );
+    }
+
+    private static long mean( List<Long> timings )
     {
         long sum = 0;
         for ( Long timing : timings )
@@ -237,5 +277,18 @@ public class Main
             sum += timing;
         }
         return sum / timings.size();
+    }
+
+    private static double stdDev( List<Long> timings )
+    {
+        long mean = mean( timings );
+        long sum = 0;
+        for ( Long timing : timings )
+        {
+            sum += ((timing - mean) * (timing - mean));
+        }
+
+        double squaredDiffMean = sum / timings.size();
+        return (Math.sqrt( squaredDiffMean ));
     }
 }
