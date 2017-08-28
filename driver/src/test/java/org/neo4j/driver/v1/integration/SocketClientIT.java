@@ -81,7 +81,7 @@ public class SocketClientIT
 
         SocketResponseHandler handler = mock( SocketResponseHandler.class );
         when( handler.protocolViolationErrorOccurred() ).thenReturn( true );
-        when( handler.collectorsWaiting() ).thenReturn( 2, 1, 0 );
+        when( handler.handlersWaiting() ).thenReturn( 2, 1, 0 );
         when( handler.serverFailure() ).thenReturn(
                 new ClientException( "Neo.ClientError.Request.InvalidFormat", "Hello, world!" ) );
 

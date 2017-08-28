@@ -18,50 +18,39 @@
  */
 package org.neo4j.driver.internal.net;
 
+import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import org.neo4j.driver.internal.Bookmark;
 import org.neo4j.driver.internal.messaging.MessageHandler;
-import org.neo4j.driver.internal.spi.Collector;
-import org.neo4j.driver.internal.summary.InternalNotification;
-import org.neo4j.driver.internal.summary.InternalPlan;
-import org.neo4j.driver.internal.summary.InternalProfiledPlan;
-import org.neo4j.driver.internal.summary.InternalSummaryCounters;
+import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.AuthenticationException;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.DatabaseException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.exceptions.TransientException;
-import org.neo4j.driver.v1.summary.Notification;
-import org.neo4j.driver.v1.summary.StatementType;
-import org.neo4j.driver.v1.util.Function;
 
 public class SocketResponseHandler implements MessageHandler
 {
-    private final Queue<Collector> collectors = new ConcurrentLinkedQueue<>();
+    private final Queue<ResponseHandler> handlers = new ConcurrentLinkedQueue<>();
 
     /** If a failure occurs, the error gets stored here */
     private Neo4jException error;
 
-    public int collectorsWaiting()
-    {
-        return collectors.size();
-    }
-
     @Override
     public void handleRecordMessage( Value[] fields )
     {
-        Collector collector = collectors.element();
-        collector.record( fields );
+        ResponseHandler handler = handlers.element();
+        handler.onRecord( fields );
     }
 
     @Override
     public void handleFailureMessage( String code, String message )
     {
-        Collector collector = collectors.remove();
+        ResponseHandler handler = handlers.remove();
         String[] parts = code.split( "\\." );
         String classification = parts[1];
         switch ( classification )
@@ -83,191 +72,67 @@ public class SocketResponseHandler implements MessageHandler
                 error = new DatabaseException( code, message );
                 break;
         }
-        if ( collector != null )
+        if ( handler != null )
         {
-            collector.doneFailure( error );
+            handler.onFailure( error );
         }
     }
 
     @Override
     public void handleSuccessMessage( Map<String,Value> meta )
     {
-        Collector collector = collectors.remove();
-        collectServerVersion( collector, meta.get( "server" ) );
-        collectFields( collector, meta.get( "fields" ) );
-        collectType( collector, meta.get( "type" ) );
-        collectStatistics( collector, meta.get( "stats" ) );
-        collectPlan( collector, meta.get( "plan" ) );
-        collectProfile( collector, meta.get( "profile" ) );
-        collectNotifications( collector, meta.get( "notifications" ) );
-        collectResultAvailableAfter( collector, meta.get("result_available_after") );
-        collectResultConsumedAfter( collector, meta.get("result_consumed_after") );
-        collectBookmark( collector, meta.get( "bookmark" ) );
-        collector.doneSuccess();
-    }
-
-    private void collectServerVersion( Collector collector, Value serverVersion )
-    {
-        if ( serverVersion != null )
-        {
-            collector.serverVersion( serverVersion.asString() );
-        }
-    }
-
-    private void collectResultAvailableAfter( Collector collector, Value resultAvailableAfter )
-    {
-        if (resultAvailableAfter != null)
-        {
-            collector.resultAvailableAfter(resultAvailableAfter.asLong());
-        }
-    }
-
-    private void collectResultConsumedAfter( Collector collector, Value resultConsumedAfter )
-    {
-        if (resultConsumedAfter != null)
-        {
-            collector.resultConsumedAfter(resultConsumedAfter.asLong());
-        }
-    }
-
-    private void collectNotifications( Collector collector, Value notifications )
-    {
-        if ( notifications != null )
-        {
-            Function<Value,Notification> notification = InternalNotification
-                    .VALUE_TO_NOTIFICATION;
-            collector.notifications( notifications.asList( notification ) );
-        }
-    }
-
-    private void collectPlan( Collector collector, Value plan )
-    {
-        if ( plan != null )
-        {
-            collector.plan( InternalPlan.EXPLAIN_PLAN_FROM_VALUE.apply( plan ) );
-        }
-    }
-
-    private void collectProfile( Collector collector, Value plan )
-    {
-        if ( plan != null )
-        {
-            collector.profile( InternalProfiledPlan.PROFILED_PLAN_FROM_VALUE.apply( plan ) );
-        }
-    }
-
-    private void collectFields( Collector collector, Value fieldValue )
-    {
-        if ( fieldValue != null )
-        {
-            if ( !fieldValue.isEmpty() )
-            {
-                String[] fields = new String[fieldValue.size()];
-                int idx = 0;
-                for ( Value value : fieldValue.values() )
-                {
-                    fields[idx++] = value.asString();
-                }
-                collector.keys( fields );
-            }
-        }
-    }
-
-    private void collectType( Collector collector, Value type )
-    {
-        if ( type != null )
-        {
-            collector.statementType( StatementType.fromCode( type.asString() ) );
-        }
-    }
-
-    private void collectStatistics( Collector collector, Value stats )
-    {
-        if ( stats != null )
-        {
-            collector.statementStatistics(
-                    new InternalSummaryCounters(
-                            statsValue( stats, "nodes-created" ),
-                            statsValue( stats, "nodes-deleted" ),
-                            statsValue( stats, "relationships-created" ),
-                            statsValue( stats, "relationships-deleted" ),
-                            statsValue( stats, "properties-set" ),
-                            statsValue( stats, "labels-added" ),
-                            statsValue( stats, "labels-removed" ),
-                            statsValue( stats, "indexes-added" ),
-                            statsValue( stats, "indexes-removed" ),
-                            statsValue( stats, "constraints-added" ),
-                            statsValue( stats, "constraints-removed" )
-                    )
-            );
-        }
-    }
-
-    private void collectBookmark( Collector collector, Value bookmark )
-    {
-        if ( bookmark != null )
-        {
-            collector.bookmark( Bookmark.from( bookmark.asString() ) );
-        }
-    }
-
-    private int statsValue( Value stats, String name )
-    {
-        Value value = stats.get( name );
-        return value.isNull() ? 0 : value.asInt();
+        ResponseHandler handler = handlers.remove();
+        handler.onSuccess( meta );
     }
 
     @Override
     public void handleIgnoredMessage()
     {
-        Collector collector = collectors.remove();
-        if (collector != null)
-        {
-            collector.doneIgnored();
-        }
+        // todo: this is really fucking strange!
+        // todo: IGNORED used to mark handler as completed, which is needed for ISResult
+        ResponseHandler handler = handlers.remove();
+        handler.onSuccess( Collections.<String,Value>emptyMap() );
     }
 
     @Override
     public void handleDiscardAllMessage()
     {
-
     }
 
     @Override
     public void handleResetMessage()
     {
-
     }
 
     @Override
     public void handleAckFailureMessage()
     {
-
     }
 
     @Override
     public void handlePullAllMessage()
     {
-
     }
 
     @Override
     public void handleInitMessage( String clientNameAndVersion, Map<String,Value> authToken )
     {
-
     }
 
     @Override
     public void handleRunMessage( String statement, Map<String,Value> parameters )
     {
-
     }
 
-    public void appendResultCollector( Collector collector )
+    public void appendResponseHandler( ResponseHandler handler )
     {
-        assert collector != null;
+        Objects.requireNonNull( handler );
+        handlers.add( handler );
+    }
 
-        collectors.add( collector );
+    public int handlersWaiting()
+    {
+        return handlers.size();
     }
 
     public boolean protocolViolationErrorOccurred()

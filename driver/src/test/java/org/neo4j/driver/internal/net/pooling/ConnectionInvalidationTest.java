@@ -24,11 +24,12 @@ import org.mockito.Mockito;
 import java.io.IOException;
 import java.util.HashMap;
 
+import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
 import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.PooledConnection;
+import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Consumers;
 import org.neo4j.driver.v1.Value;
@@ -66,7 +67,7 @@ public class ConnectionInvalidationTest
     {
         // Given a connection that's broken
         Mockito.doThrow( new ClientException( "That didn't work" ) )
-                .when( delegate ).run( anyString(), anyMap(), any( Collector.class ) );
+                .when( delegate ).run( anyString(), anyMap(), any( ResponseHandler.class ) );
         PooledConnection conn = new PooledSocketConnection( delegate, Consumers.<PooledConnection>noOp(), clock );
         PooledConnectionValidator validator = new PooledConnectionValidator( pool( true ) );
 
@@ -137,12 +138,12 @@ public class ConnectionInvalidationTest
     private void assertUnrecoverable( Neo4jException exception )
     {
         doThrow( exception ).when( delegate )
-                .run( eq( "assert unrecoverable" ), anyMap(), any( Collector.class ) );
+                .run( eq( "assert unrecoverable" ), anyMap(), any( ResponseHandler.class ) );
 
         // When
         try
         {
-            conn.run( "assert unrecoverable", new HashMap<String,Value>(), Collector.NO_OP );
+            conn.run( "assert unrecoverable", new HashMap<String,Value>(), NoOpResponseHandler.INSTANCE );
             fail( "Should've rethrown exception" );
         }
         catch ( Neo4jException e )
@@ -165,12 +166,12 @@ public class ConnectionInvalidationTest
     @SuppressWarnings( "unchecked" )
     private void assertRecoverable( Neo4jException exception )
     {
-        doThrow( exception ).when( delegate ).run( eq( "assert recoverable" ), anyMap(), any( Collector.class ) );
+        doThrow( exception ).when( delegate ).run( eq( "assert recoverable" ), anyMap(), any( ResponseHandler.class ) );
 
         // When
         try
         {
-            conn.run( "assert recoverable", new HashMap<String,Value>(), Collector.NO_OP );
+            conn.run( "assert recoverable", new HashMap<String,Value>(), NoOpResponseHandler.INSTANCE );
             fail( "Should've rethrown exception" );
         }
         catch ( Neo4jException e )

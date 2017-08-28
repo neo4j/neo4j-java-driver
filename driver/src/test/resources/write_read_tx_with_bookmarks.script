@@ -9,11 +9,11 @@ S: SUCCESS {}
 C: RUN "CREATE (n {name:'Bob'})" {}
    PULL_ALL
 S: SUCCESS {}
-   SUCCESS {"bookmark": "BookmarkB"}
+   SUCCESS {}
 C: RUN "COMMIT" {}
    PULL_ALL
 S: SUCCESS {}
-   SUCCESS {}
+   SUCCESS {"bookmark": "BookmarkB"}
 C: RUN "BEGIN" {"bookmark": "BookmarkB", "bookmarks": ["BookmarkB"]}
    PULL_ALL
 S: SUCCESS {}
@@ -22,8 +22,8 @@ C: RUN "MATCH (n) RETURN n.name AS name" {}
    PULL_ALL
 S: SUCCESS {"fields": ["name"]}
    RECORD ["Bob"]
-   SUCCESS {"bookmark": "BookmarkC"}
+   SUCCESS {}
 C: RUN "COMMIT" {}
    PULL_ALL
 S: SUCCESS {}
-   SUCCESS {}
+   SUCCESS {"bookmark": "BookmarkC"}

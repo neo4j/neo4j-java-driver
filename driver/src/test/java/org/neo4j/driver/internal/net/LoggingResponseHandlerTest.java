@@ -27,6 +27,7 @@ import org.mockito.stubbing.Answer;
 import java.util.Arrays;
 import java.util.HashMap;
 
+import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
 import org.neo4j.driver.internal.messaging.DiscardAllMessage;
 import org.neo4j.driver.internal.messaging.FailureMessage;
 import org.neo4j.driver.internal.messaging.IgnoredMessage;
@@ -37,7 +38,6 @@ import org.neo4j.driver.internal.messaging.RecordMessage;
 import org.neo4j.driver.internal.messaging.ResetMessage;
 import org.neo4j.driver.internal.messaging.RunMessage;
 import org.neo4j.driver.internal.messaging.SuccessMessage;
-import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Value;
 
@@ -120,7 +120,7 @@ public class LoggingResponseHandlerTest
     public void shouldLogSuccessMessage() throws Throwable
     {
         // When
-        handler.appendResultCollector( Collector.NO_OP );
+        handler.appendResponseHandler( NoOpResponseHandler.INSTANCE );
         handler.handleSuccessMessage( new HashMap<String,Value>() );
 
         // Then
@@ -132,7 +132,7 @@ public class LoggingResponseHandlerTest
     public void shouldLogRecordMessage() throws Throwable
     {
         // When
-        handler.appendResultCollector( Collector.NO_OP );
+        handler.appendResponseHandler( NoOpResponseHandler.INSTANCE );
         handler.handleRecordMessage( new Value[]{} );
 
         // Then
@@ -144,7 +144,7 @@ public class LoggingResponseHandlerTest
     public void shouldLogFailureMessage() throws Throwable
     {
         // When
-        handler.appendResultCollector( Collector.NO_OP );
+        handler.appendResponseHandler( NoOpResponseHandler.INSTANCE );
         handler.handleFailureMessage( "code.error", "message" );
 
         // Then
@@ -156,7 +156,7 @@ public class LoggingResponseHandlerTest
     public void shouldLogIgnoredMessage() throws Throwable
     {
         // When
-        handler.appendResultCollector( Collector.NO_OP );
+        handler.appendResponseHandler( NoOpResponseHandler.INSTANCE );
         handler.handleIgnoredMessage();
 
         // Then

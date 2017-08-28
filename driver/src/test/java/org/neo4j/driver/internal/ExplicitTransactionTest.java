@@ -24,8 +24,10 @@ import org.mockito.InOrder;
 import java.util.Collections;
 import java.util.Map;
 
-import org.neo4j.driver.internal.spi.Collector;
+import org.neo4j.driver.internal.handlers.BookmarkResponseHandler;
+import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.Value;
 
@@ -57,11 +59,11 @@ public class ExplicitTransactionTest
 
         // Then
         InOrder order = inOrder( conn );
-        order.verify( conn ).run( "BEGIN", Collections.<String, Value>emptyMap(),Collector.NO_OP );
-        order.verify( conn ).pullAll( any( Collector.class ) );
+        order.verify( conn ).run( "BEGIN", Collections.<String,Value>emptyMap(), NoOpResponseHandler.INSTANCE );
+        order.verify( conn ).pullAll( any( ResponseHandler.class ) );
         order.verify( conn ).isOpen();
-        order.verify( conn ).run( "ROLLBACK", Collections.<String, Value>emptyMap(), Collector.NO_OP );
-        order.verify( conn ).pullAll( any( Collector.class ) );
+        order.verify( conn ).run( "ROLLBACK", Collections.<String,Value>emptyMap(), NoOpResponseHandler.INSTANCE );
+        order.verify( conn ).pullAll( any( ResponseHandler.class ) );
         order.verify( conn ).sync();
         verify( resourcesHandler, only() ).onTransactionClosed( tx );
         verifyNoMoreInteractions( conn, resourcesHandler );
@@ -83,11 +85,11 @@ public class ExplicitTransactionTest
 
         // Then
         InOrder order = inOrder( conn );
-        order.verify( conn ).run( "BEGIN", Collections.<String, Value>emptyMap(), Collector.NO_OP );
-        order.verify( conn ).pullAll( any( BookmarkCollector.class ) );
+        order.verify( conn ).run( "BEGIN", Collections.<String,Value>emptyMap(), NoOpResponseHandler.INSTANCE );
+        order.verify( conn ).pullAll( any( BookmarkResponseHandler.class ) );
         order.verify( conn ).isOpen();
-        order.verify( conn ).run( "ROLLBACK", Collections.<String, Value>emptyMap(), Collector.NO_OP );
-        order.verify( conn ).pullAll( any( BookmarkCollector.class ) );
+        order.verify( conn ).run( "ROLLBACK", Collections.<String,Value>emptyMap(), NoOpResponseHandler.INSTANCE );
+        order.verify( conn ).pullAll( any( BookmarkResponseHandler.class ) );
         order.verify( conn ).sync();
         verify( resourcesHandler, only() ).onTransactionClosed( tx );
         verifyNoMoreInteractions( conn, resourcesHandler );
@@ -109,11 +111,11 @@ public class ExplicitTransactionTest
         // Then
 
         InOrder order = inOrder( conn );
-        order.verify( conn ).run( "BEGIN", Collections.<String, Value>emptyMap(), Collector.NO_OP );
-        order.verify( conn ).pullAll( any( BookmarkCollector.class ) );
+        order.verify( conn ).run( "BEGIN", Collections.<String,Value>emptyMap(), NoOpResponseHandler.INSTANCE );
+        order.verify( conn ).pullAll( any( BookmarkResponseHandler.class ) );
         order.verify( conn ).isOpen();
-        order.verify( conn ).run( "COMMIT", Collections.<String, Value>emptyMap(), Collector.NO_OP );
-        order.verify( conn ).pullAll( any( BookmarkCollector.class ) );
+        order.verify( conn ).run( "COMMIT", Collections.<String,Value>emptyMap(), NoOpResponseHandler.INSTANCE );
+        order.verify( conn ).pullAll( any( BookmarkResponseHandler.class ) );
         order.verify( conn ).sync();
         verify( resourcesHandler, only() ).onTransactionClosed( tx );
         verifyNoMoreInteractions( conn, resourcesHandler );
@@ -127,8 +129,8 @@ public class ExplicitTransactionTest
         new ExplicitTransaction( connection, mock( SessionResourcesHandler.class ), null );
 
         InOrder inOrder = inOrder( connection );
-        inOrder.verify( connection ).run( "BEGIN", Collections.<String,Value>emptyMap(), Collector.NO_OP );
-        inOrder.verify( connection ).pullAll( Collector.NO_OP );
+        inOrder.verify( connection ).run( "BEGIN", Collections.<String,Value>emptyMap(), NoOpResponseHandler.INSTANCE );
+        inOrder.verify( connection ).pullAll( NoOpResponseHandler.INSTANCE );
         inOrder.verify( connection, never() ).sync();
     }
 
@@ -143,8 +145,8 @@ public class ExplicitTransactionTest
         Map<String,Value> expectedParams = bookmark.asBeginTransactionParameters();
 
         InOrder inOrder = inOrder( connection );
-        inOrder.verify( connection ).run( "BEGIN", expectedParams, Collector.NO_OP );
-        inOrder.verify( connection ).pullAll( Collector.NO_OP );
+        inOrder.verify( connection ).run( "BEGIN", expectedParams, NoOpResponseHandler.INSTANCE );
+        inOrder.verify( connection ).pullAll( NoOpResponseHandler.INSTANCE );
         inOrder.verify( connection ).sync();
     }
 

@@ -41,6 +41,7 @@ import org.neo4j.driver.v1.util.Pair;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
+import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -170,15 +171,15 @@ public class ExtractTest
         Connection connection = mock( Connection.class );
         String statement = "<unknown>";
 
-        InternalStatementResult result = new InternalStatementResult( connection, SessionResourcesHandler.NO_OP, null,
-                new Statement( statement ) );
-        result.runResponseCollector().keys( new String[]{"k1"} );
-        result.runResponseCollector().done();
-        result.pullAllResponseCollector().record( new Value[]{value( 42 )} );
-        result.pullAllResponseCollector().done();
+        InternalStatementResult result =
+                new InternalStatementResult( new Statement( statement ), connection, SessionResourcesHandler.NO_OP
+                );
+        result.runResponseHandler().onSuccess( singletonMap( "fields", value( singletonList( "k1" ) ) ) );
+        result.pullAllResponseHandler().onRecord( new Value[]{value( 42 )} );
+        result.pullAllResponseHandler().onSuccess( Collections.<String,Value>emptyMap() );
 
-        connection.run( statement, Values.EmptyMap.asMap( ofValue() ), result.runResponseCollector() );
-        connection.pullAll( result.pullAllResponseCollector() );
+        connection.run( statement, Values.EmptyMap.asMap( ofValue() ), result.runResponseHandler() );
+        connection.pullAll( result.pullAllResponseHandler() );
         connection.flush();
 
         // WHEN

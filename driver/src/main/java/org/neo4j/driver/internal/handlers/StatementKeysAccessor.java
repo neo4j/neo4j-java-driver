@@ -16,23 +16,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal;
+package org.neo4j.driver.internal.handlers;
 
-import org.neo4j.driver.internal.spi.Collector.NoOperationCollector;
+import java.util.List;
 
-class BookmarkCollector extends NoOperationCollector
+public interface StatementKeysAccessor
 {
-    private final ExplicitTransaction transaction;
-
-    BookmarkCollector( ExplicitTransaction transaction )
-    {
-        this.transaction = transaction;
-    }
-
-    @Override
-    public void bookmark( Bookmark bookmark )
-    {
-        transaction.setBookmark( bookmark );
-    }
-
+    List<String> statementKeys();
 }

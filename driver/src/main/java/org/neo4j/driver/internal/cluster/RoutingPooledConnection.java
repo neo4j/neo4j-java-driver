@@ -24,8 +24,8 @@ import java.util.Objects;
 import org.neo4j.driver.internal.RoutingErrorHandler;
 import org.neo4j.driver.internal.SessionResourcesHandler;
 import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.spi.PooledConnection;
+import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
@@ -63,11 +63,11 @@ public class RoutingPooledConnection implements PooledConnection
     }
 
     @Override
-    public void run( String statement, Map<String,Value> parameters, Collector collector )
+    public void run( String statement, Map<String,Value> parameters, ResponseHandler handler )
     {
         try
         {
-            delegate.run( statement, parameters, collector );
+            delegate.run( statement, parameters, handler );
         }
         catch ( RuntimeException e )
         {
@@ -76,11 +76,11 @@ public class RoutingPooledConnection implements PooledConnection
     }
 
     @Override
-    public void discardAll( Collector collector )
+    public void discardAll( ResponseHandler handler )
     {
         try
         {
-            delegate.discardAll( collector );
+            delegate.discardAll( handler );
         }
         catch ( RuntimeException e )
         {
@@ -89,11 +89,11 @@ public class RoutingPooledConnection implements PooledConnection
     }
 
     @Override
-    public void pullAll( Collector collector )
+    public void pullAll( ResponseHandler handler )
     {
         try
         {
-            delegate.pullAll( collector );
+            delegate.pullAll( handler );
         }
         catch ( RuntimeException e )
         {

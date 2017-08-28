@@ -18,7 +18,6 @@
  */
 package org.neo4j.driver.internal;
 
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -26,6 +25,8 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -39,6 +40,7 @@ import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
 import org.neo4j.driver.v1.util.Pair;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.junit.Assert.assertEquals;
@@ -470,8 +472,9 @@ public class InternalStatementResultTest
         Connection connection = mock( Connection.class );
         String statement = "<unknown>";
 
-        final InternalStatementResult result = new InternalStatementResult( connection, resourcesHandler, null,
-                new Statement( statement ) );
+        final InternalStatementResult result =
+                new InternalStatementResult( new Statement( statement ), connection, resourcesHandler
+                );
 
         // Each time the cursor calls `recieveOne`, we'll run one of these,
         // to emulate how messages are handed over to the cursor
@@ -504,7 +507,7 @@ public class InternalStatementResultTest
             @Override
             public void run()
             {
-                cursor.pullAllResponseCollector().done();
+                cursor.pullAllResponseHandler().onSuccess( Collections.<String,Value>emptyMap() );
             }
         };
     }
@@ -516,7 +519,7 @@ public class InternalStatementResultTest
             @Override
             public void run()
             {
-                cursor.pullAllResponseCollector().record( new Value[]{value( "v1-" + val ), value( "v2-" + val )} );
+                cursor.pullAllResponseHandler().onRecord( new Value[]{value( "v1-" + val ), value( "v2-" + val )} );
             }
         };
     }
@@ -528,8 +531,7 @@ public class InternalStatementResultTest
             @Override
             public void run()
             {
-                cursor.runResponseCollector().keys( new String[]{"k1", "k2"} );
-                cursor.runResponseCollector().done();
+                cursor.runResponseHandler().onSuccess( singletonMap( "fields", value( Arrays.asList( "k1", "k2" ) ) ) );
             }
         };
     }

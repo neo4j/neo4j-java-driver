@@ -21,8 +21,8 @@ package org.neo4j.driver.internal.net;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.summary.ServerInfo;
@@ -58,13 +58,12 @@ public class ConcurrencyGuardingConnection implements Connection
     }
 
     @Override
-    public void run( String statement, Map<String,Value> parameters,
-            Collector collector )
+    public void run( String statement, Map<String,Value> parameters, ResponseHandler handler )
     {
         try
         {
             markAsInUse();
-            delegate.run(statement, parameters, collector);
+            delegate.run( statement, parameters, handler );
         }
         finally
         {
@@ -73,12 +72,12 @@ public class ConcurrencyGuardingConnection implements Connection
     }
 
     @Override
-    public void discardAll( Collector collector )
+    public void discardAll( ResponseHandler handler )
     {
         try
         {
             markAsInUse();
-            delegate.discardAll( collector );
+            delegate.discardAll( handler );
         }
         finally
         {
@@ -87,12 +86,12 @@ public class ConcurrencyGuardingConnection implements Connection
     }
 
     @Override
-    public void pullAll( Collector collector )
+    public void pullAll( ResponseHandler handler )
     {
         try
         {
             markAsInUse();
-            delegate.pullAll(collector);
+            delegate.pullAll( handler );
         }
         finally
         {

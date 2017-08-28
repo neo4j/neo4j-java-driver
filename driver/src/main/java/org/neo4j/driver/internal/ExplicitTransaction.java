@@ -21,7 +21,8 @@ package org.neo4j.driver.internal;
 import java.util.Collections;
 import java.util.Map;
 
-import org.neo4j.driver.internal.spi.Collector;
+import org.neo4j.driver.internal.handlers.BookmarkResponseHandler;
+import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.v1.Record;
@@ -110,8 +111,8 @@ public class ExplicitTransaction implements Transaction
                 {
                     try
                     {
-                        conn.run( "COMMIT", Collections.<String,Value>emptyMap(), Collector.NO_OP );
-                        conn.pullAll( new BookmarkCollector( this ) );
+                        conn.run( "COMMIT", Collections.<String,Value>emptyMap(), NoOpResponseHandler.INSTANCE );
+                        conn.pullAll( new BookmarkResponseHandler( this ) );
                         conn.sync();
                         state = State.SUCCEEDED;
                     }
@@ -149,8 +150,8 @@ public class ExplicitTransaction implements Transaction
 
     private void rollbackTx()
     {
-        conn.run( "ROLLBACK", Collections.<String, Value>emptyMap(), Collector.NO_OP );
-        conn.pullAll( new BookmarkCollector( this ) );
+        conn.run( "ROLLBACK", Collections.<String,Value>emptyMap(), NoOpResponseHandler.INSTANCE );
+        conn.pullAll( new BookmarkResponseHandler( this ) );
         conn.sync();
         state = State.ROLLED_BACK;
     }
@@ -190,11 +191,11 @@ public class ExplicitTransaction implements Transaction
         try
         {
             InternalStatementResult result =
-                    new InternalStatementResult( conn, SessionResourcesHandler.NO_OP, this, statement );
+                    new InternalStatementResult( statement, conn, SessionResourcesHandler.NO_OP );
             conn.run( statement.text(),
                     statement.parameters().asMap( ofValue() ),
-                    result.runResponseCollector() );
-            conn.pullAll( result.pullAllResponseCollector() );
+                    result.runResponseHandler() );
+            conn.pullAll( result.pullAllResponseHandler() );
             conn.flush();
             return result;
         }
@@ -241,7 +242,7 @@ public class ExplicitTransaction implements Transaction
         return bookmark;
     }
 
-    void setBookmark( Bookmark bookmark )
+    public void setBookmark( Bookmark bookmark )
     {
         if ( bookmark != null && !bookmark.isEmpty() )
         {
@@ -254,8 +255,8 @@ public class ExplicitTransaction implements Transaction
         Bookmark initialBookmark = bookmark == null ? Bookmark.empty() : bookmark;
         Map<String,Value> parameters = initialBookmark.asBeginTransactionParameters();
 
-        connection.run( "BEGIN", parameters, Collector.NO_OP );
-        connection.pullAll( Collector.NO_OP );
+        connection.run( "BEGIN", parameters, NoOpResponseHandler.INSTANCE );
+        connection.pullAll( NoOpResponseHandler.INSTANCE );
 
         if ( !initialBookmark.isEmpty() )
         {

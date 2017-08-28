@@ -25,13 +25,16 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.driver.internal.handlers.InitResponseHandler;
+import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
+import org.neo4j.driver.internal.handlers.ResetAsyncResponseHandler;
 import org.neo4j.driver.internal.logging.DelegatingLogger;
 import org.neo4j.driver.internal.messaging.InitMessage;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.RunMessage;
 import org.neo4j.driver.internal.security.SecurityPlan;
-import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.summary.InternalServerInfo;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
@@ -113,41 +116,58 @@ public class SocketConnection implements Connection
     @Override
     public void init( String clientName, Map<String,Value> authToken )
     {
-        Collector.InitCollector initCollector = new Collector.InitCollector();
-        queueMessage( new InitMessage( clientName, authToken ), initCollector );
+        InitResponseHandler initHandler = new InitResponseHandler();
+        queueMessage( new InitMessage( clientName, authToken ), initHandler );
         sync();
-        this.serverInfo = new InternalServerInfo( socket.address(), initCollector.serverVersion() );
+        this.serverInfo = new InternalServerInfo( socket.address(), initHandler.serverVersion() );
         socket.updateProtocol( serverInfo.version() );
     }
 
     @Override
-    public void run( String statement, Map<String,Value> parameters, Collector collector )
+    public void run( String statement, Map<String,Value> parameters, ResponseHandler handler )
     {
-        queueMessage( new RunMessage( statement, parameters ), collector );
+        queueMessage( new RunMessage( statement, parameters ), handler );
     }
 
     @Override
-    public void discardAll( Collector collector )
+    public void discardAll( ResponseHandler handler )
     {
-        queueMessage( DISCARD_ALL, collector );
+        queueMessage( DISCARD_ALL, handler );
     }
 
     @Override
-    public void pullAll( Collector collector )
+    public void pullAll( ResponseHandler handler )
     {
-        queueMessage( PULL_ALL, collector );
+        queueMessage( PULL_ALL, handler );
     }
 
     @Override
     public void reset()
     {
-        queueMessage( RESET, Collector.RESET );
+        queueMessage( RESET, NoOpResponseHandler.INSTANCE );
     }
 
     @Override
     public void ackFailure()
     {
-        queueMessage( ACK_FAILURE, Collector.ACK_FAILURE );
+        queueMessage( ACK_FAILURE, new ResponseHandler()
+        {
+            @Override
+            public void onSuccess( Map<String,Value> metadata )
+            {
+                responseHandler.clearError();
+            }
+
+            @Override
+            public void onFailure( Neo4jException error )
+            {
+            }
+
+            @Override
+            public void onRecord( Value[] fields )
+            {
+            }
+        } );
     }
 
     @Override
@@ -180,7 +200,7 @@ public class SocketConnection implements Connection
             if( isInterrupted.get() )
             {
                 // receive each of it and throw error immediately
-                while ( responseHandler.collectorsWaiting() > 0 )
+                while ( responseHandler.handlersWaiting() > 0 )
                 {
                     receiveOne();
                 }
@@ -251,12 +271,12 @@ public class SocketConnection implements Connection
         }
     }
 
-    private synchronized void queueMessage( Message msg, Collector collector )
+    private synchronized void queueMessage( Message msg, ResponseHandler handler )
     {
         ensureNotInterrupted();
 
         pendingMessages.add( msg );
-        responseHandler.appendResultCollector( collector );
+        responseHandler.appendResponseHandler( handler );
     }
 
     @Override
@@ -274,7 +294,7 @@ public class SocketConnection implements Connection
     @Override
     public synchronized void resetAsync()
     {
-        queueMessage( RESET, new Collector.ResetCollector( new Runnable()
+        queueMessage( RESET, new ResetAsyncResponseHandler( new Runnable()
         {
             @Override
             public void run()

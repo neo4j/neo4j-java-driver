@@ -109,10 +109,10 @@ public class NetworkSession implements Session, SessionResourcesHandler
     public static StatementResult run( Connection connection, Statement statement,
             SessionResourcesHandler resourcesHandler )
     {
-        InternalStatementResult result = new InternalStatementResult( connection, resourcesHandler, null, statement );
+        InternalStatementResult result = new InternalStatementResult( statement, connection, resourcesHandler );
         connection.run( statement.text(), statement.parameters().asMap( Values.ofValue() ),
-                result.runResponseCollector() );
-        connection.pullAll( result.pullAllResponseCollector() );
+                result.runResponseHandler() );
+        connection.pullAll( result.pullAllResponseHandler() );
         connection.flush();
         return result;
     }

@@ -30,10 +30,10 @@ import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.net.SocketClient;
 import org.neo4j.driver.internal.net.SocketConnection;
-import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.PooledConnection;
+import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.summary.InternalServerInfo;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Consumers;
@@ -77,7 +77,7 @@ public class PooledConnectionValidatorTest
     {
         Connection connection = mock( Connection.class );
         DatabaseException runError = new DatabaseException( "", "" );
-        doThrow( runError ).when( connection ).run( anyString(), any( Map.class ), any( Collector.class ) );
+        doThrow( runError ).when( connection ).run( anyString(), any( Map.class ), any( ResponseHandler.class ) );
 
         PooledConnection pooledConnection = newPooledConnection( connection );
 

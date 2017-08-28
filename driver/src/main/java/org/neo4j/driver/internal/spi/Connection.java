@@ -38,34 +38,34 @@ public interface Connection extends AutoCloseable
     void init( String clientName, Map<String,Value> authToken );
 
     /**
-     * Queue up a run action. The collector will value called with metadata about the stream that will become available
-     * for retrieval.
+     * Queue up a run action. The result handler will be called with metadata about the stream when that becomes
+     * available for retrieval.
      * @param parameters a map value of parameters
      */
-    void run( String statement, Map<String,Value> parameters, Collector collector );
+    void run( String statement, Map<String,Value> parameters, ResponseHandler handler );
 
     /**
      * Queue a discard all action, consuming any items left in the current stream.This will
-     * close the stream once its completed, allowing another {@link #run(String, java.util.Map, Collector) run}
+     * close the stream once its completed, allowing another {@link #run(String, java.util.Map, ResponseHandler) run}
      */
-    void discardAll( Collector collector );
+    void discardAll( ResponseHandler handler );
 
     /**
-     * Queue a pull-all action, output will be handed to the collector once the pull starts. This will
-     * close the stream once its completed, allowing another {@link #run(String, java.util.Map, Collector) run}
+     * Queue a pull-all action, output will be handed to the response handler once the pull starts. This will
+     * close the stream once its completed, allowing another {@link #run(String, java.util.Map, ResponseHandler) run}
      */
-    void pullAll( Collector collector );
+    void pullAll( ResponseHandler handler );
 
     /**
-     * Queue a reset action, throw {@link org.neo4j.driver.v1.exceptions.ClientException} if an ignored message is received. This will
-     * close the stream once its completed, allowing another {@link #run(String, java.util.Map, Collector) run}
+     * Queue a reset action, throw {@link org.neo4j.driver.v1.exceptions.ClientException} if an ignored message is
+     * received. This will close the stream once its completed, allowing another
+     * {@link #run(String, java.util.Map, ResponseHandler) run}.
      */
     void reset();
 
     /**
-     * Queue a ack_failure action, valid output could only be success. Throw {@link org.neo4j.driver.v1.exceptions.ClientException} if
-     * a failure or ignored message is received. This will close the stream once it is completed, allowing another
-     * {@link #run(String, java.util.Map, Collector) run}
+     * Queue a ack_failure action, valid output could only be success. This will close the stream once it is completed,
+     * allowing another {@link #run(String, java.util.Map, ResponseHandler) run}.
      */
     void ackFailure();
 

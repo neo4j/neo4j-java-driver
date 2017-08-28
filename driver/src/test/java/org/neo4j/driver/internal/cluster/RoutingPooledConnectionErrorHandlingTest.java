@@ -31,6 +31,7 @@ import java.util.HashSet;
 import java.util.List;
 
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
+import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.net.pooling.PoolSettings;
 import org.neo4j.driver.internal.net.pooling.SocketConnectionPool;
@@ -61,7 +62,6 @@ import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.net.pooling.PoolSettings.DEFAULT_MAX_IDLE_CONNECTION_POOL_SIZE;
 import static org.neo4j.driver.internal.net.pooling.PoolSettings.INFINITE_CONNECTION_LIFETIME;
 import static org.neo4j.driver.internal.net.pooling.PoolSettings.NO_IDLE_CONNECTION_TEST;
-import static org.neo4j.driver.internal.spi.Collector.NO_OP;
 import static org.neo4j.driver.internal.util.Matchers.containsReader;
 import static org.neo4j.driver.internal.util.Matchers.containsRouter;
 import static org.neo4j.driver.internal.util.Matchers.containsWriter;
@@ -400,7 +400,8 @@ public class RoutingPooledConnectionErrorHandlingTest
         @Override
         public void invoke( Connection connection )
         {
-            connection.run( "CREATE (n:Node {name: {value}})", singletonMap( "value", value( "A" ) ), NO_OP );
+            connection.run( "CREATE (n:Node {name: {value}})", singletonMap( "value", value( "A" ) ),
+                    NoOpResponseHandler.INSTANCE );
         }
     }
 
@@ -409,7 +410,7 @@ public class RoutingPooledConnectionErrorHandlingTest
         @Override
         public void invoke( Connection connection )
         {
-            connection.discardAll( NO_OP );
+            connection.discardAll( NoOpResponseHandler.INSTANCE );
         }
     }
 
@@ -418,7 +419,7 @@ public class RoutingPooledConnectionErrorHandlingTest
         @Override
         public void invoke( Connection connection )
         {
-            connection.pullAll( NO_OP );
+            connection.pullAll( NoOpResponseHandler.INSTANCE );
         }
     }
 
