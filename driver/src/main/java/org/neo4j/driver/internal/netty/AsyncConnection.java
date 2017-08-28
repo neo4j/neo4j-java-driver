@@ -18,10 +18,11 @@
  */
 package org.neo4j.driver.internal.netty;
 
-import io.netty.channel.ChannelPromise;
+import io.netty.util.concurrent.Promise;
 
 import java.util.Map;
 
+import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Value;
 
@@ -31,13 +32,25 @@ public interface AsyncConnection
 
     void pullAll( ResponseHandler handler );
 
+    void discardAll( ResponseHandler handler );
+
+    void reset( ResponseHandler handler );
+
+    void resetAsync( ResponseHandler handler );
+
     void flush();
 
     // todo: create promise who's callbacks are executed in this channel's event loop
     // todo: do we need this???
-    ChannelPromise newPromise();
+    <T> Promise<T> newPromise();
+
+    // todo: run a command in this channel's event loop
+    // todo: do we need this???
+    void execute( Runnable command );
 
     boolean isOpen();
 
     void close();
+
+    BoltServerAddress boltServerAddress();
 }

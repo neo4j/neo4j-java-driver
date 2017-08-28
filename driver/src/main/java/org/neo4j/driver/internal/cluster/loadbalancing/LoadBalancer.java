@@ -32,6 +32,7 @@ import org.neo4j.driver.internal.cluster.RoutingProcedureClusterCompositionProvi
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.cluster.RoutingTable;
 import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.netty.AsyncConnection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.spi.PooledConnection;
@@ -86,6 +87,13 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
         AddressSet addressSet = addressSetFor( mode );
         PooledConnection connection = acquireConnection( mode, addressSet );
         return new RoutingPooledConnection( connection, this, mode );
+    }
+
+    @Override
+    public AsyncConnection acquireAsyncConnection()
+    {
+        // todo
+        throw new UnsupportedOperationException();
     }
 
     @Override

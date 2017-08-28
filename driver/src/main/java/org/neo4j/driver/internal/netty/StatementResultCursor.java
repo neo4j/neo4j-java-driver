@@ -16,24 +16,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.spi;
+package org.neo4j.driver.internal.netty;
 
-import org.neo4j.driver.internal.netty.AsyncConnection;
-import org.neo4j.driver.v1.AccessMode;
+import org.neo4j.driver.v1.Record;
 
-/**
- * Interface defines a layer used by the driver to obtain connections. It is meant to be the only component that
- * differs between "direct" and "routing" driver.
- */
-public interface ConnectionProvider extends AutoCloseable
+public interface StatementResultCursor
 {
-    /**
-     * Acquire new {@link PooledConnection pooled connection} for the given {@link AccessMode mode}.
-     *
-     * @param mode the access mode for the connection.
-     * @return free or new pooled connection.
-     */
-    PooledConnection acquireConnection( AccessMode mode );
+    ListenableFuture<Boolean> fetchAsync();
 
-    AsyncConnection acquireAsyncConnection();
+    Record current();
 }

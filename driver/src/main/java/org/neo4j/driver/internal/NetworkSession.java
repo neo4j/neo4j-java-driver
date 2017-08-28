@@ -18,10 +18,14 @@
  */
 package org.neo4j.driver.internal;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.internal.logging.DelegatingLogger;
+import org.neo4j.driver.internal.netty.AsyncConnection;
+import org.neo4j.driver.internal.netty.InternalStatementResultCursor;
+import org.neo4j.driver.internal.netty.StatementResultCursor;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
@@ -167,6 +171,25 @@ public class NetworkSession implements Session, SessionResourcesHandler
         }
 
         syncAndCloseCurrentConnection();
+    }
+
+    @Override
+    public StatementResultCursor runAsync( String statement, Map<String,Object> params )
+    {
+        AsyncConnection asyncConnection = connectionProvider.acquireAsyncConnection();
+        InternalStatementResultCursor resultCursor = new InternalStatementResultCursor( asyncConnection );
+
+        Map<String,Value> valueParams = new HashMap<>();
+        for ( Map.Entry<String,Object> entry : params.entrySet() )
+        {
+            valueParams.put( entry.getKey(), value( entry.getValue() ) );
+        }
+
+        asyncConnection.run( statement, valueParams, resultCursor.runResponseHandler() );
+        asyncConnection.pullAll( resultCursor.pullAllResponseHandler() );
+        asyncConnection.flush();
+
+        return resultCursor;
     }
 
     @Override

@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.internal.handlers;
 
+import io.netty.util.concurrent.Promise;
+
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -25,6 +27,9 @@ import java.util.Map;
 import java.util.Queue;
 
 import org.neo4j.driver.internal.InternalRecord;
+import org.neo4j.driver.internal.netty.AsyncConnection;
+import org.neo4j.driver.internal.netty.InternalListenableFuture;
+import org.neo4j.driver.internal.netty.ListenableFuture;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.summary.InternalNotification;
 import org.neo4j.driver.internal.summary.InternalPlan;
@@ -41,7 +46,10 @@ import org.neo4j.driver.v1.summary.SummaryCounters;
 public class RecordsResponseHandler implements ResponseHandler
 {
     private final StatementKeysAccessor keysAccessor;
+    private final AsyncConnection asyncConnection;
+
     private final Queue<Record> recordBuffer;
+    private Promise<Boolean> recordAvailablePromise;
 
     private StatementType statementType;
     private SummaryCounters counters;
@@ -54,7 +62,13 @@ public class RecordsResponseHandler implements ResponseHandler
 
     public RecordsResponseHandler( StatementKeysAccessor keysAccessor )
     {
+        this( keysAccessor, null );
+    }
+
+    public RecordsResponseHandler( StatementKeysAccessor keysAccessor, AsyncConnection asyncConnection )
+    {
         this.keysAccessor = keysAccessor;
+        this.asyncConnection = asyncConnection;
         this.recordBuffer = new LinkedList<>();
     }
 
@@ -68,18 +82,57 @@ public class RecordsResponseHandler implements ResponseHandler
         notifications = extractNotifications( metadata );
         resultConsumedAfter = extractResultConsumedAfter( metadata );
         completed = true;
+
+        if ( recordAvailablePromise != null )
+        {
+            recordAvailablePromise.setSuccess( true );
+            recordAvailablePromise = null;
+        }
     }
 
     @Override
     public void onFailure( Throwable error )
     {
         completed = true;
+
+        if ( recordAvailablePromise != null )
+        {
+            recordAvailablePromise.setFailure( error );
+            recordAvailablePromise = null;
+        }
     }
 
     @Override
     public void onRecord( Value[] fields )
     {
         recordBuffer.add( new InternalRecord( keysAccessor.statementKeys(), fields ) );
+    }
+
+    public ListenableFuture<Boolean> recordAvailable()
+    {
+        final Promise<Boolean> resultPromise = asyncConnection.newPromise();
+
+        asyncConnection.execute( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                if ( !recordBuffer.isEmpty() )
+                {
+                    resultPromise.setSuccess( true );
+                }
+                else if ( completed )
+                {
+                    resultPromise.setSuccess( false );
+                }
+                else
+                {
+                    recordAvailablePromise = resultPromise;
+                }
+            }
+        } );
+
+        return new InternalListenableFuture<>( resultPromise );
     }
 
     public Queue<Record> recordBuffer()

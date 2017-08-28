@@ -32,6 +32,7 @@ import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.net.SocketConnector;
 import org.neo4j.driver.internal.net.pooling.PoolSettings;
 import org.neo4j.driver.internal.net.pooling.SocketConnectionPool;
+import org.neo4j.driver.internal.netty.AsyncConnector;
 import org.neo4j.driver.internal.retry.ExponentialBackoffRetryLogic;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.retry.RetrySettings;
@@ -65,9 +66,13 @@ public class DriverFactory
         ConnectionPool connectionPool = createConnectionPool( authToken, securityPlan, config );
         RetryLogic retryLogic = createRetryLogic( retrySettings, config.logging() );
 
+        AsyncConnector asyncConnector =
+                new AsyncConnector( ConnectionSettings.DEFAULT_USER_AGENT, authToken, securityPlan );
+
         try
         {
-            return createDriver( uri, address, connectionPool, config, newRoutingSettings, securityPlan, retryLogic );
+            return createDriver( uri, address, connectionPool, config, newRoutingSettings, securityPlan, retryLogic,
+                    asyncConnector );
         }
         catch ( Throwable driverError )
         {
@@ -86,14 +91,14 @@ public class DriverFactory
 
     private Driver createDriver( URI uri, BoltServerAddress address, ConnectionPool connectionPool,
             Config config, RoutingSettings routingSettings, SecurityPlan securityPlan,
-            RetryLogic retryLogic )
+            RetryLogic retryLogic, AsyncConnector asyncConnector )
     {
         String scheme = uri.getScheme().toLowerCase();
         switch ( scheme )
         {
         case BOLT_URI_SCHEME:
             assertNoRoutingContext( uri, routingSettings );
-            return createDirectDriver( address, connectionPool, config, securityPlan, retryLogic );
+            return createDirectDriver( address, connectionPool, config, securityPlan, retryLogic, asyncConnector );
         case BOLT_ROUTING_URI_SCHEME:
             return createRoutingDriver( address, connectionPool, config, routingSettings, securityPlan, retryLogic );
         default:
@@ -107,9 +112,9 @@ public class DriverFactory
      * <b>This method is protected only for testing</b>
      */
     protected Driver createDirectDriver( BoltServerAddress address, ConnectionPool connectionPool, Config config,
-            SecurityPlan securityPlan, RetryLogic retryLogic )
+            SecurityPlan securityPlan, RetryLogic retryLogic, AsyncConnector asyncConnector )
     {
-        ConnectionProvider connectionProvider = new DirectConnectionProvider( address, connectionPool );
+        ConnectionProvider connectionProvider = new DirectConnectionProvider( address, connectionPool, asyncConnector );
         SessionFactory sessionFactory = createSessionFactory( connectionProvider, retryLogic, config );
         return createDriver( config, securityPlan, sessionFactory );
     }

@@ -29,7 +29,7 @@ import static java.lang.String.format;
  */
 public class ConnectionSettings
 {
-    private static final String DEFAULT_USER_AGENT = format( "neo4j-java/%s", driverVersion() );
+    public static final String DEFAULT_USER_AGENT = format( "neo4j-java/%s", driverVersion() );
 
     /**
      * Extracts the driver version from the driver jar MANIFEST.MF file.

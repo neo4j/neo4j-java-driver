@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal.netty;
 
-import io.netty.channel.ChannelPromise;
+import io.netty.util.concurrent.Promise;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
 import org.neo4j.driver.internal.net.BoltServerAddress;
@@ -136,23 +137,125 @@ public class Main
 
     public static void main( String[] args ) throws Throwable
     {
-//        testDriver();
-//        System.out.println( "----------------------" );
-        testNetty();
-//        System.out.println( "----------------------" );
-        testSocket();
+        testDriverFetchList();
+//        testDriverFetchOneByOne();
+
+//        testNetty();
+
+//        testSocket();
     }
 
-    private static void testDriver()
+    private static void testDriverFetchList() throws Throwable
     {
+        final AtomicReference<Object> status = new AtomicReference<>();
+
         try ( Driver driver = GraphDatabase.driver( "bolt://localhost:7687", AuthTokens.basic( "neo4j", "test" ),
                 Config.build().withoutEncryption().toConfig() ) )
         {
             try ( Session session = driver.session() )
             {
-                List<Record> list = session.run( QUERY, value( PARAMS ) ).list();
-                System.out.println( list );
+                final StatementResultCursor cursor = session.runAsync( "unwind ['a', 'b', 'c', 'd', 'e'] as c return c",
+                        Collections.<String,Object>emptyMap() );
+
+                final ListenableFuture<List<Record>> all = ((InternalStatementResultCursor) cursor).allAsync();
+                all.addListener( new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        try
+                        {
+                            List<Record> records = all.get();
+                            System.out.println( "-->> " + records );
+                            status.set( new Object() );
+                        }
+                        catch ( Throwable t )
+                        {
+                            status.set( t );
+                        }
+                    }
+                } );
             }
+
+            while ( status.get() == null )
+            {
+                Thread.sleep( 1_000 );
+            }
+
+            Object res = status.get();
+            if ( res instanceof Throwable )
+            {
+                throw ((Throwable) res);
+            }
+
+            System.out.println( "-->> done!" );
+        }
+    }
+
+    private static void testDriverFetchOneByOne() throws Throwable
+    {
+        final AtomicReference<Object> status = new AtomicReference<>();
+
+        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:7687", AuthTokens.basic( "neo4j", "test" ),
+                Config.build().withoutEncryption().toConfig() ) )
+        {
+            try ( Session session = driver.session() )
+            {
+                final StatementResultCursor cursor = session.runAsync( "unwind ['a', 'b', 'c', 'd', 'e'] as c return c",
+                        Collections.<String,Object>emptyMap() );
+
+                final ListenableFuture<Boolean> fetchAsync = cursor.fetchAsync();
+                fetchAsync.addListener( new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        try
+                        {
+                            Boolean available = fetchAsync.get();
+                            System.out.println( "-->> record available: " + available );
+                            Record record = cursor.current();
+                            System.out.println( "-->> " + record );
+
+                            final ListenableFuture<Boolean> fetchAsync1 = cursor.fetchAsync();
+                            fetchAsync1.addListener( new Runnable()
+                            {
+                                @Override
+                                public void run()
+                                {
+                                    try
+                                    {
+                                        Boolean available1 = fetchAsync1.get();
+                                        System.out.println( "-->> record available: " + available1 );
+                                        status.set( new Object() );
+                                    }
+                                    catch ( Throwable t )
+                                    {
+                                        status.set( t );
+                                    }
+                                }
+                            } );
+                        }
+                        catch ( Throwable t )
+                        {
+                            status.set( t );
+                        }
+                    }
+                } );
+            }
+
+            while ( status.get() == null )
+            {
+                Thread.sleep( 1_000 );
+            }
+
+            Object res = status.get();
+            if ( res instanceof Throwable )
+            {
+                throw ((Throwable) res);
+            }
+
+            System.out.println( "-->> done!" );
         }
     }
 
@@ -163,7 +266,7 @@ public class Main
         Map<String,Value> authTokenMap = ((InternalAuthToken) authToken).toMap();
 
         List<Long> timings = new ArrayList<>();
-        try ( Connector bootstrap = new Connector( "Tester", authTokenMap, SECURITY_PLAN ) )
+        try ( AsyncConnector bootstrap = new AsyncConnector( "Tester", authTokenMap, SECURITY_PLAN ) )
         {
             AsyncConnection connection = bootstrap.connect( address );
 
@@ -171,7 +274,7 @@ public class Main
             {
                 long start = System.nanoTime();
 
-                final ChannelPromise queryPromise = connection.newPromise();
+                final Promise<Void> queryPromise = connection.newPromise();
 
                 connection.run( QUERY, PARAMS, NoOpResponseHandler.INSTANCE );
                 connection.pullAll( new ResponseHandler()
@@ -179,7 +282,7 @@ public class Main
                     @Override
                     public void onSuccess( Map<String,Value> metadata )
                     {
-                        queryPromise.setSuccess();
+                        queryPromise.setSuccess( null );
                     }
 
                     @Override

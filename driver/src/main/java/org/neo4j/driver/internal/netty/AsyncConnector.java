@@ -25,25 +25,34 @@ import io.netty.channel.ChannelPromise;
 import java.util.Map;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.security.SecurityPlan;
+import org.neo4j.driver.v1.AuthToken;
+import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static java.util.Objects.requireNonNull;
 
-public class Connector implements AutoCloseable
+public class AsyncConnector implements AutoCloseable
 {
     private final String userAgent;
     private final Map<String,Value> authToken;
     private final ChannelBootstrap bootstrap;
 
-    public Connector( String userAgent, Map<String,Value> authToken, SecurityPlan securityPlan )
+    public AsyncConnector( String userAgent, AuthToken authToken, SecurityPlan securityPlan )
+    {
+        this( userAgent, tokenAsMap( authToken ), securityPlan );
+    }
+
+    public AsyncConnector( String userAgent, Map<String,Value> authToken, SecurityPlan securityPlan )
     {
         this.userAgent = requireNonNull( userAgent );
         this.authToken = requireNonNull( authToken );
         this.bootstrap = new ChannelBootstrap( securityPlan );
     }
 
-    public AsyncConnection connect( BoltServerAddress address )
+    public NettyConnection connect( BoltServerAddress address )
     {
         ChannelFuture channelConnected = bootstrap.connect( address );
 
@@ -54,12 +63,26 @@ public class Connector implements AutoCloseable
         channelConnected.addListener( new ChannelConnectedListener( address, handshakeCompleted ) );
         handshakeCompleted.addListener( new HandshakeCompletedListener( userAgent, authToken, connectionInitialized ) );
 
-        return new NettyConnection( connectionInitialized );
+        return new NettyConnection( address, connectionInitialized );
     }
 
     @Override
     public void close() throws Exception
     {
         bootstrap.close();
+    }
+
+    private static Map<String,Value> tokenAsMap( AuthToken token )
+    {
+        if ( token instanceof InternalAuthToken )
+        {
+            return ((InternalAuthToken) token).toMap();
+        }
+        else
+        {
+            throw new ClientException(
+                    "Unknown authentication token, `" + token + "`. Please use one of the supported " +
+                    "tokens from `" + AuthTokens.class.getSimpleName() + "`." );
+        }
     }
 }

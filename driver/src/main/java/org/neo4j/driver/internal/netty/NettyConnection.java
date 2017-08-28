@@ -21,22 +21,27 @@ package org.neo4j.driver.internal.netty;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelPromise;
+import io.netty.util.concurrent.DefaultPromise;
+import io.netty.util.concurrent.Promise;
 
 import java.util.Map;
 
+import org.neo4j.driver.internal.messaging.DiscardAllMessage;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.PullAllMessage;
 import org.neo4j.driver.internal.messaging.RunMessage;
+import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Value;
 
 public class NettyConnection implements AsyncConnection
 {
+    private final BoltServerAddress address;
     private final ChannelFuture channelFuture;
 
-    public NettyConnection( ChannelFuture channelFuture )
+    public NettyConnection( BoltServerAddress address, ChannelFuture channelFuture )
     {
+        this.address = address;
         this.channelFuture = channelFuture;
     }
 
@@ -50,6 +55,24 @@ public class NettyConnection implements AsyncConnection
     public void pullAll( ResponseHandler handler )
     {
         send( PullAllMessage.PULL_ALL, handler );
+    }
+
+    @Override
+    public void discardAll( ResponseHandler handler )
+    {
+        send( DiscardAllMessage.DISCARD_ALL, handler );
+    }
+
+    @Override
+    public void reset( ResponseHandler handler )
+    {
+
+    }
+
+    @Override
+    public void resetAsync( ResponseHandler handler )
+    {
+
     }
 
     @Override
@@ -70,9 +93,15 @@ public class NettyConnection implements AsyncConnection
     }
 
     @Override
-    public ChannelPromise newPromise()
+    public <T> Promise<T> newPromise()
     {
-        return channel().newPromise();
+        return new DefaultPromise<>( channel().eventLoop() );
+    }
+
+    @Override
+    public void execute( Runnable command )
+    {
+        channel().eventLoop().execute( command );
     }
 
     @Override
@@ -86,6 +115,12 @@ public class NettyConnection implements AsyncConnection
     {
         // todo: is it ok to block like this???
         channel().close().syncUninterruptibly();
+    }
+
+    @Override
+    public BoltServerAddress boltServerAddress()
+    {
+        return address;
     }
 
     private Channel channel()
