@@ -83,6 +83,9 @@ public class RecordsResponseHandler implements ResponseHandler
         resultConsumedAfter = extractResultConsumedAfter( metadata );
         completed = true;
 
+        // todo: this should be done in SessionResourcesHandler
+        asyncConnection.release();
+
         if ( recordAvailablePromise != null )
         {
             recordAvailablePromise.setSuccess( true );

@@ -83,7 +83,8 @@ public class InternalStatementResultCursor implements StatementResultCursor
                     Boolean available = fetch.get();
                     if ( available )
                     {
-                        result.add( current() );
+                        Record record = current();
+                        result.add( record );
                         fetchAll( result, resultPromise );
                     }
                     else

@@ -19,9 +19,10 @@
 package org.neo4j.driver.internal.netty;
 
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
 import io.netty.util.concurrent.DefaultPromise;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
+import io.netty.util.concurrent.GlobalEventExecutor;
 import io.netty.util.concurrent.Promise;
 
 import java.util.Map;
@@ -34,15 +35,18 @@ import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Value;
 
+// todo: keep state flags to prohibit interaction with released connections
 public class NettyConnection implements AsyncConnection
 {
     private final BoltServerAddress address;
-    private final ChannelFuture channelFuture;
+    private final Future<Channel> channelFuture;
+    private final NettyChannelPool channelPool;
 
-    public NettyConnection( BoltServerAddress address, ChannelFuture channelFuture )
+    public NettyConnection( BoltServerAddress address, Future<Channel> channelFuture, NettyChannelPool channelPool )
     {
         this.address = address;
         this.channelFuture = channelFuture;
+        this.channelPool = channelPool;
     }
 
     @Override
@@ -78,43 +82,106 @@ public class NettyConnection implements AsyncConnection
     @Override
     public void flush()
     {
-        // todo: it is possible to check future for completion and use channel directly
-        channelFuture.addListener( new ChannelFutureListener()
+        Channel channel = getChannelNow();
+        if ( channel != null )
         {
-            @Override
-            public void operationComplete( ChannelFuture future ) throws Exception
+            channel.flush();
+        }
+        else
+        {
+            channelFuture.addListener( new GenericFutureListener<Future<Channel>>()
             {
-                if ( future.isSuccess() )
+                @Override
+                public void operationComplete( Future<Channel> future ) throws Exception
                 {
-                    future.channel().flush();
+                    if ( future.isSuccess() )
+                    {
+                        future.getNow().flush();
+                    }
                 }
-            }
-        } );
+            } );
+        }
     }
 
     @Override
     public <T> Promise<T> newPromise()
     {
-        return new DefaultPromise<>( channel().eventLoop() );
+        Channel channel = getChannelNow();
+        if ( channel != null )
+        {
+            return new DefaultPromise<>( channel.eventLoop() );
+        }
+        else
+        {
+            return new DefaultPromise<>( GlobalEventExecutor.INSTANCE );
+        }
     }
 
     @Override
-    public void execute( Runnable command )
+    public void execute( final Runnable command )
     {
-        channel().eventLoop().execute( command );
+        Channel channel = getChannelNow();
+        if ( channel != null )
+        {
+            channel.eventLoop().execute( command );
+        }
+        else
+        {
+            channelFuture.addListener( new GenericFutureListener<Future<Channel>>()
+            {
+                @Override
+                public void operationComplete( Future<Channel> future ) throws Exception
+                {
+                    Channel channel = channelFuture.getNow();
+                    if ( channel != null )
+                    {
+                        channel.eventLoop().execute( command );
+                    }
+                }
+            } );
+        }
+    }
+
+    @Override
+    public Future<Channel> channelFuture()
+    {
+        return channelFuture;
     }
 
     @Override
     public boolean isOpen()
     {
-        return channel().isActive();
+        Channel channel = getChannelNow();
+        if ( channel != null )
+        {
+            return channel.isActive();
+        }
+        return false;
     }
 
     @Override
-    public void close()
+    public void release()
     {
-        // todo: is it ok to block like this???
-        channel().close().syncUninterruptibly();
+        Channel channel = getChannelNow();
+        if ( channel != null )
+        {
+            channelPool.release( channel );
+        }
+        else
+        {
+            channelFuture.addListener( new GenericFutureListener<Future<Channel>>()
+            {
+                @Override
+                public void operationComplete( Future<Channel> future ) throws Exception
+                {
+                    Channel channel = channelFuture.getNow();
+                    if ( channel != null )
+                    {
+                        channelPool.release( channel );
+                    }
+                }
+            } );
+        }
     }
 
     @Override
@@ -123,28 +190,39 @@ public class NettyConnection implements AsyncConnection
         return address;
     }
 
-    private Channel channel()
-    {
-        return channelFuture.channel();
-    }
-
     private void send( final Message message, final ResponseHandler handler )
     {
-        // todo: it is possible to check future for completion and use channel directly
-        channelFuture.addListener( new ChannelFutureListener()
+        Channel channel = getChannelNow();
+        if ( channel != null )
         {
-            @Override
-            public void operationComplete( ChannelFuture future ) throws Exception
+            ChannelWriter.write( channel, message, handler, false );
+        }
+        else
+        {
+            channelFuture.addListener( new GenericFutureListener<Future<Channel>>()
             {
-                if ( future.isSuccess() )
+                @Override
+                public void operationComplete( Future<Channel> future ) throws Exception
                 {
-                    ChannelWriter.write( channel(), message, handler, false );
+                    if ( future.isSuccess() )
+                    {
+                        ChannelWriter.write( future.getNow(), message, handler, false );
+                    }
+                    else
+                    {
+                        handler.onFailure( future.cause() );
+                    }
                 }
-                else
-                {
-                    handler.onFailure( future.cause() );
-                }
-            }
-        } );
+            } );
+        }
+    }
+
+    private Channel getChannelNow()
+    {
+        if ( channelFuture.isSuccess() )
+        {
+            return channelFuture.getNow();
+        }
+        return null;
     }
 }

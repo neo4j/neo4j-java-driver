@@ -18,12 +18,17 @@
  */
 package org.neo4j.driver.internal.netty;
 
-import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.ChannelFuture;
+import java.io.Closeable;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
 
-public interface AsyncConnector
+public interface AsyncConnectionPool extends Closeable
 {
-    ChannelFuture connect( BoltServerAddress address, Bootstrap bootstrap );
+    AsyncConnection acquire( BoltServerAddress address );
+
+    void purge( BoltServerAddress address );
+
+    boolean hasAddress( BoltServerAddress address );
+
+    int activeConnections( BoltServerAddress address );
 }

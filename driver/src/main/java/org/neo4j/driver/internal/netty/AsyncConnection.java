@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.internal.netty;
 
+import io.netty.channel.Channel;
+import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
 
 import java.util.Map;
@@ -48,9 +50,11 @@ public interface AsyncConnection
     // todo: do we need this???
     void execute( Runnable command );
 
+    Future<Channel> channelFuture();
+
     boolean isOpen();
 
-    void close();
+    void release();
 
     BoltServerAddress boltServerAddress();
 }

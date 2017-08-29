@@ -20,7 +20,7 @@ package org.neo4j.driver.internal;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.netty.AsyncConnection;
-import org.neo4j.driver.internal.netty.AsyncConnector;
+import org.neo4j.driver.internal.netty.AsyncConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.spi.PooledConnection;
@@ -34,18 +34,18 @@ public class DirectConnectionProvider implements ConnectionProvider
 {
     private final BoltServerAddress address;
     private final ConnectionPool pool;
-    private final AsyncConnector asyncConnector;
+    private final AsyncConnectionPool asyncPool;
 
     DirectConnectionProvider( BoltServerAddress address, ConnectionPool pool )
     {
         this( address, pool, null );
     }
 
-    DirectConnectionProvider( BoltServerAddress address, ConnectionPool pool, AsyncConnector asyncConnector )
+    DirectConnectionProvider( BoltServerAddress address, ConnectionPool pool, AsyncConnectionPool asyncPool )
     {
         this.address = address;
         this.pool = pool;
-        this.asyncConnector = asyncConnector;
+        this.asyncPool = asyncPool;
 
         verifyConnectivity();
     }
@@ -59,14 +59,14 @@ public class DirectConnectionProvider implements ConnectionProvider
     @Override
     public AsyncConnection acquireAsyncConnection()
     {
-        return asyncConnector.connect( address );
+        return asyncPool.acquire( address );
     }
 
     @Override
     public void close() throws Exception
     {
         pool.close();
-        asyncConnector.close();
+        asyncPool.close();
     }
 
     public BoltServerAddress getAddress()

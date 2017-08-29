@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.internal;
 
+import io.netty.bootstrap.Bootstrap;
+
 import java.io.IOException;
 import java.net.URI;
 import java.security.GeneralSecurityException;
@@ -32,7 +34,10 @@ import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.net.SocketConnector;
 import org.neo4j.driver.internal.net.pooling.PoolSettings;
 import org.neo4j.driver.internal.net.pooling.SocketConnectionPool;
-import org.neo4j.driver.internal.netty.AsyncConnector;
+import org.neo4j.driver.internal.netty.AsyncConnectionPool;
+import org.neo4j.driver.internal.netty.AsyncConnectionPoolImpl;
+import org.neo4j.driver.internal.netty.AsyncConnectorImpl;
+import org.neo4j.driver.internal.netty.BootstrapFactory;
 import org.neo4j.driver.internal.retry.ExponentialBackoffRetryLogic;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.retry.RetrySettings;
@@ -66,13 +71,12 @@ public class DriverFactory
         ConnectionPool connectionPool = createConnectionPool( authToken, securityPlan, config );
         RetryLogic retryLogic = createRetryLogic( retrySettings, config.logging() );
 
-        AsyncConnector asyncConnector =
-                new AsyncConnector( ConnectionSettings.DEFAULT_USER_AGENT, authToken, securityPlan );
+        AsyncConnectionPool asyncConnectionPool = createAsyncConnectionPool( authToken, securityPlan, config );
 
         try
         {
             return createDriver( uri, address, connectionPool, config, newRoutingSettings, securityPlan, retryLogic,
-                    asyncConnector );
+                    asyncConnectionPool );
         }
         catch ( Throwable driverError )
         {
@@ -89,16 +93,27 @@ public class DriverFactory
         }
     }
 
+    private AsyncConnectionPool createAsyncConnectionPool( AuthToken authToken, SecurityPlan securityPlan,
+            Config config )
+    {
+        AsyncConnectorImpl connector =
+                new AsyncConnectorImpl( ConnectionSettings.DEFAULT_USER_AGENT, authToken, securityPlan, createClock() );
+        Bootstrap bootstrap = BootstrapFactory.newBootstrap();
+        PoolSettings poolSettings = new PoolSettings( config.maxIdleConnectionPoolSize(),
+                config.idleTimeBeforeConnectionTest(), config.maxConnectionLifetime() );
+        return new AsyncConnectionPoolImpl( connector, bootstrap, poolSettings, createClock() );
+    }
+
     private Driver createDriver( URI uri, BoltServerAddress address, ConnectionPool connectionPool,
             Config config, RoutingSettings routingSettings, SecurityPlan securityPlan,
-            RetryLogic retryLogic, AsyncConnector asyncConnector )
+            RetryLogic retryLogic, AsyncConnectionPool asyncConnectionPool )
     {
         String scheme = uri.getScheme().toLowerCase();
         switch ( scheme )
         {
         case BOLT_URI_SCHEME:
             assertNoRoutingContext( uri, routingSettings );
-            return createDirectDriver( address, connectionPool, config, securityPlan, retryLogic, asyncConnector );
+            return createDirectDriver( address, connectionPool, config, securityPlan, retryLogic, asyncConnectionPool );
         case BOLT_ROUTING_URI_SCHEME:
             return createRoutingDriver( address, connectionPool, config, routingSettings, securityPlan, retryLogic );
         default:
@@ -112,9 +127,10 @@ public class DriverFactory
      * <b>This method is protected only for testing</b>
      */
     protected Driver createDirectDriver( BoltServerAddress address, ConnectionPool connectionPool, Config config,
-            SecurityPlan securityPlan, RetryLogic retryLogic, AsyncConnector asyncConnector )
+            SecurityPlan securityPlan, RetryLogic retryLogic, AsyncConnectionPool asyncConnectionPool )
     {
-        ConnectionProvider connectionProvider = new DirectConnectionProvider( address, connectionPool, asyncConnector );
+        ConnectionProvider connectionProvider =
+                new DirectConnectionProvider( address, connectionPool, asyncConnectionPool );
         SessionFactory sessionFactory = createSessionFactory( connectionProvider, retryLogic, config );
         return createDriver( config, securityPlan, sessionFactory );
     }

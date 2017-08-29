@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.internal.netty;
 
+import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.ChannelFuture;
 import io.netty.util.concurrent.Promise;
 
 import java.util.ArrayList;
@@ -36,6 +38,7 @@ import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.summary.InternalServerInfo;
+import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
@@ -263,52 +266,53 @@ public class Main
     {
         BoltServerAddress address = new BoltServerAddress( HOST, PORT );
         AuthToken authToken = AuthTokens.basic( "neo4j", "test" );
-        Map<String,Value> authTokenMap = ((InternalAuthToken) authToken).toMap();
 
         List<Long> timings = new ArrayList<>();
-        try ( AsyncConnector bootstrap = new AsyncConnector( "Tester", authTokenMap, SECURITY_PLAN ) )
+        Bootstrap bootstrap = BootstrapFactory.newBootstrap();
+        AsyncConnectorImpl connector = new AsyncConnectorImpl( "Tester", authToken, SECURITY_PLAN, Clock.SYSTEM );
+        ChannelFuture channelFuture = connector.connect( address, bootstrap );
+        channelFuture.await();
+        NettyConnection connection = new NettyConnection( address,
+                channelFuture.channel().eventLoop().newSucceededFuture( channelFuture.channel() ), null );
+
+        for ( int i = 0; i < ITERATIONS; i++ )
         {
-            AsyncConnection connection = bootstrap.connect( address );
+            long start = System.nanoTime();
 
-            for ( int i = 0; i < ITERATIONS; i++ )
+            final Promise<Void> queryPromise = connection.newPromise();
+
+            connection.run( QUERY, PARAMS, NoOpResponseHandler.INSTANCE );
+            connection.pullAll( new ResponseHandler()
             {
-                long start = System.nanoTime();
-
-                final Promise<Void> queryPromise = connection.newPromise();
-
-                connection.run( QUERY, PARAMS, NoOpResponseHandler.INSTANCE );
-                connection.pullAll( new ResponseHandler()
+                @Override
+                public void onSuccess( Map<String,Value> metadata )
                 {
-                    @Override
-                    public void onSuccess( Map<String,Value> metadata )
-                    {
-                        queryPromise.setSuccess( null );
-                    }
-
-                    @Override
-                    public void onRecord( Value[] fields )
-                    {
-//                        System.out.println( "Received records: " + Arrays.toString( fields ) );
-                    }
-
-                    @Override
-                    public void onFailure( Throwable error )
-                    {
-                        queryPromise.setFailure( error );
-                    }
-                } );
-                connection.flush();
-
-                queryPromise.await();
-                if ( !queryPromise.isSuccess() )
-                {
-                    throw queryPromise.cause();
+                    queryPromise.setSuccess( null );
                 }
 
-                long end = System.nanoTime();
+                @Override
+                public void onRecord( Value[] fields )
+                {
+//                        System.out.println( "Received records: " + Arrays.toString( fields ) );
+                }
 
-                timings.add( TimeUnit.NANOSECONDS.toMillis( end - start ) );
+                @Override
+                public void onFailure( Throwable error )
+                {
+                    queryPromise.setFailure( error );
+                }
+            } );
+            connection.flush();
+
+            queryPromise.await();
+            if ( !queryPromise.isSuccess() )
+            {
+                throw queryPromise.cause();
             }
+
+            long end = System.nanoTime();
+
+            timings.add( TimeUnit.NANOSECONDS.toMillis( end - start ) );
         }
 
         timings = clean( timings );

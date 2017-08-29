@@ -19,11 +19,20 @@
 package org.neo4j.driver.internal.netty;
 
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.ChannelFuture;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.nio.NioSocketChannel;
 
-import org.neo4j.driver.internal.net.BoltServerAddress;
-
-public interface AsyncConnector
+public final class BootstrapFactory
 {
-    ChannelFuture connect( BoltServerAddress address, Bootstrap bootstrap );
+    private BootstrapFactory()
+    {
+    }
+
+    public static Bootstrap newBootstrap()
+    {
+        Bootstrap bootstrap = new Bootstrap();
+        bootstrap.group( new NioEventLoopGroup() );
+        bootstrap.channel( NioSocketChannel.class );
+        return bootstrap;
+    }
 }

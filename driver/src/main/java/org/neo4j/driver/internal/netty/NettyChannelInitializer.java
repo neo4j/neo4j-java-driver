@@ -18,12 +18,8 @@
  */
 package org.neo4j.driver.internal.netty;
 
-import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.ChannelFuture;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.SocketChannel;
-import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.ssl.SslHandler;
 
 import javax.net.ssl.SSLContext;
@@ -32,43 +28,43 @@ import javax.net.ssl.SSLException;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.security.SecurityPlan;
+import org.neo4j.driver.internal.util.Clock;
 
-public class ChannelBootstrap implements AutoCloseable
+import static org.neo4j.driver.internal.netty.ChannelAttributes.setAddress;
+import static org.neo4j.driver.internal.netty.ChannelAttributes.setCreationTimestamp;
+
+public class NettyChannelInitializer extends ChannelInitializer<Channel>
 {
+    private final BoltServerAddress address;
     private final SecurityPlan securityPlan;
-    private final Bootstrap bootstrap;
+    private final Clock clock;
 
-    public ChannelBootstrap( SecurityPlan securityPlan )
+    public NettyChannelInitializer( BoltServerAddress address, SecurityPlan securityPlan, Clock clock )
     {
+        this.address = address;
         this.securityPlan = securityPlan;
-        this.bootstrap = createBootstrap();
-    }
-
-    public ChannelFuture connect( final BoltServerAddress address )
-    {
-        bootstrap.handler( new ChannelInitializer<SocketChannel>()
-        {
-            @Override
-            protected void initChannel( SocketChannel ch ) throws Exception
-            {
-                if ( securityPlan.requiresEncryption() )
-                {
-                    SSLEngine sslEngine = createSslEngine( address );
-                    ch.pipeline().addLast( new SslHandler( sslEngine ) );
-                }
-            }
-        } );
-
-        return bootstrap.connect( address.toSocketAddress() );
+        this.clock = clock;
     }
 
     @Override
-    public void close() throws Exception
+    protected void initChannel( Channel channel ) throws Exception
     {
-        bootstrap.config().group().shutdownGracefully().sync();
+        if ( securityPlan.requiresEncryption() )
+        {
+            SslHandler sslHandler = createSslHandler();
+            channel.pipeline().addLast( sslHandler );
+        }
+
+        updateChannelAttributes( channel );
     }
 
-    private SSLEngine createSslEngine( BoltServerAddress address ) throws SSLException
+    private SslHandler createSslHandler() throws SSLException
+    {
+        SSLEngine sslEngine = createSslEngine();
+        return new SslHandler( sslEngine );
+    }
+
+    private SSLEngine createSslEngine() throws SSLException
     {
         SSLContext sslContext = securityPlan.sslContext();
         SSLEngine sslEngine = sslContext.createSSLEngine( address.host(), address.port() );
@@ -76,11 +72,9 @@ public class ChannelBootstrap implements AutoCloseable
         return sslEngine;
     }
 
-    private static Bootstrap createBootstrap()
+    private void updateChannelAttributes( Channel channel )
     {
-        Bootstrap bootstrap = new Bootstrap();
-        bootstrap.group( new NioEventLoopGroup() );
-        bootstrap.channel( NioSocketChannel.class );
-        return bootstrap;
+        setAddress( channel, address );
+        setCreationTimestamp( channel, clock.millis() );
     }
 }
