@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.net.SocketClient;
@@ -153,7 +154,7 @@ public class Main
         final AtomicReference<Object> status = new AtomicReference<>();
 
         try ( Driver driver = GraphDatabase.driver( "bolt://localhost:7687", AuthTokens.basic( "neo4j", "test" ),
-                Config.build().withoutEncryption().toConfig() ) )
+                Config.build().withEncryption().toConfig() ) )
         {
             try ( Session session = driver.session() )
             {
@@ -269,7 +270,10 @@ public class Main
 
         List<Long> timings = new ArrayList<>();
         Bootstrap bootstrap = BootstrapFactory.newBootstrap();
-        AsyncConnectorImpl connector = new AsyncConnectorImpl( "Tester", authToken, SECURITY_PLAN, Clock.SYSTEM );
+        ActiveChannelTracker activeChannelTracker = new ActiveChannelTracker();
+        ConnectionSettings connectionSettings = new ConnectionSettings( authToken, -1 );
+        AsyncConnectorImpl connector = new AsyncConnectorImpl( connectionSettings, SECURITY_PLAN, activeChannelTracker,
+                Clock.SYSTEM );
         ChannelFuture channelFuture = connector.connect( address, bootstrap );
         channelFuture.await();
         NettyConnection connection = new NettyConnection( address,

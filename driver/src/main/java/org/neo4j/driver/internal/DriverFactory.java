@@ -34,6 +34,7 @@ import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.net.SocketConnector;
 import org.neo4j.driver.internal.net.pooling.PoolSettings;
 import org.neo4j.driver.internal.net.pooling.SocketConnectionPool;
+import org.neo4j.driver.internal.netty.ActiveChannelTracker;
 import org.neo4j.driver.internal.netty.AsyncConnectionPool;
 import org.neo4j.driver.internal.netty.AsyncConnectionPoolImpl;
 import org.neo4j.driver.internal.netty.AsyncConnectorImpl;
@@ -96,12 +97,15 @@ public class DriverFactory
     private AsyncConnectionPool createAsyncConnectionPool( AuthToken authToken, SecurityPlan securityPlan,
             Config config )
     {
-        AsyncConnectorImpl connector =
-                new AsyncConnectorImpl( ConnectionSettings.DEFAULT_USER_AGENT, authToken, securityPlan, createClock() );
+        Clock clock = createClock();
+        ConnectionSettings connectionSettings = new ConnectionSettings( authToken, config.connectionTimeoutMillis() );
+        ActiveChannelTracker activeChannelTracker = new ActiveChannelTracker();
+        AsyncConnectorImpl connector = new AsyncConnectorImpl( connectionSettings, securityPlan,
+                activeChannelTracker, clock );
         Bootstrap bootstrap = BootstrapFactory.newBootstrap();
         PoolSettings poolSettings = new PoolSettings( config.maxIdleConnectionPoolSize(),
                 config.idleTimeBeforeConnectionTest(), config.maxConnectionLifetime() );
-        return new AsyncConnectionPoolImpl( connector, bootstrap, poolSettings, createClock() );
+        return new AsyncConnectionPoolImpl( connector, bootstrap, activeChannelTracker, poolSettings, clock );
     }
 
     private Driver createDriver( URI uri, BoltServerAddress address, ConnectionPool connectionPool,

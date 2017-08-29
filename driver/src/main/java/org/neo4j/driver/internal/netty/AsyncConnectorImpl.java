@@ -22,9 +22,11 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelPromise;
+import io.netty.channel.pool.ChannelPoolHandler;
 
 import java.util.Map;
 
+import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.security.SecurityPlan;
@@ -34,28 +36,28 @@ import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
-import static java.util.Objects.requireNonNull;
-
 public class AsyncConnectorImpl implements AsyncConnector
 {
     private final String userAgent;
     private final Map<String,Value> authToken;
     private final SecurityPlan securityPlan;
+    private final ChannelPoolHandler channelPoolHandler;
     private final Clock clock;
 
-    public AsyncConnectorImpl( String userAgent, AuthToken authToken, SecurityPlan securityPlan, Clock clock )
+    public AsyncConnectorImpl( ConnectionSettings connectionSettings, SecurityPlan securityPlan,
+            ChannelPoolHandler channelPoolHandler, Clock clock )
     {
-        this.userAgent = requireNonNull( userAgent );
-        this.authToken = tokenAsMap( authToken );
+        this.userAgent = connectionSettings.userAgent();
+        this.authToken = tokenAsMap( connectionSettings.authToken() );
         this.securityPlan = securityPlan;
+        this.channelPoolHandler = channelPoolHandler;
         this.clock = clock;
     }
 
     @Override
     public ChannelFuture connect( BoltServerAddress address, Bootstrap bootstrap )
     {
-        NettyChannelInitializer channelInitializer = newChannelInitializer( address );
-        bootstrap.handler( channelInitializer );
+        bootstrap.handler( new NettyChannelInitializer( address, securityPlan, channelPoolHandler, clock ) );
 
         ChannelFuture channelConnected = bootstrap.connect( address.toSocketAddress() );
 
@@ -67,11 +69,6 @@ public class AsyncConnectorImpl implements AsyncConnector
         handshakeCompleted.addListener( new HandshakeCompletedListener( userAgent, authToken, connectionInitialized ) );
 
         return connectionInitialized;
-    }
-
-    private NettyChannelInitializer newChannelInitializer( BoltServerAddress address )
-    {
-        return new NettyChannelInitializer( address, securityPlan, clock );
     }
 
     private static Map<String,Value> tokenAsMap( AuthToken token )

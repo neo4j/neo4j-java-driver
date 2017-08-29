@@ -20,6 +20,7 @@ package org.neo4j.driver.internal.netty;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
+import io.netty.channel.pool.ChannelPoolHandler;
 import io.netty.handler.ssl.SslHandler;
 
 import javax.net.ssl.SSLContext;
@@ -37,12 +38,15 @@ public class NettyChannelInitializer extends ChannelInitializer<Channel>
 {
     private final BoltServerAddress address;
     private final SecurityPlan securityPlan;
+    private final ChannelPoolHandler channelPoolHandler;
     private final Clock clock;
 
-    public NettyChannelInitializer( BoltServerAddress address, SecurityPlan securityPlan, Clock clock )
+    public NettyChannelInitializer( BoltServerAddress address, SecurityPlan securityPlan,
+            ChannelPoolHandler channelPoolHandler, Clock clock )
     {
         this.address = address;
         this.securityPlan = securityPlan;
+        this.channelPoolHandler = channelPoolHandler;
         this.clock = clock;
     }
 
@@ -52,10 +56,12 @@ public class NettyChannelInitializer extends ChannelInitializer<Channel>
         if ( securityPlan.requiresEncryption() )
         {
             SslHandler sslHandler = createSslHandler();
-            channel.pipeline().addLast( sslHandler );
+            channel.pipeline().addFirst( sslHandler );
         }
 
         updateChannelAttributes( channel );
+
+        channelPoolHandler.channelCreated( channel );
     }
 
     private SslHandler createSslHandler() throws SSLException

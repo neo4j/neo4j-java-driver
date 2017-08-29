@@ -31,8 +31,6 @@ import static org.neo4j.driver.internal.netty.ChannelAttributes.address;
 
 public class ActiveChannelTracker implements ChannelPoolHandler
 {
-    private static final AtomicInteger ZERO = new AtomicInteger();
-
     private final ConcurrentMap<BoltServerAddress,AtomicInteger> addressToActiveChannelCount =
             new ConcurrentHashMap<>();
 
@@ -90,10 +88,6 @@ public class ActiveChannelTracker implements ChannelPoolHandler
             throw new IllegalStateException(
                     "Unable to decrement channel count for address " + address + " because it does not exist" );
         }
-        int updatedActiveChannelCount = activeChannelCount.decrementAndGet();
-        if ( updatedActiveChannelCount == 0 )
-        {
-            addressToActiveChannelCount.remove( address, ZERO );
-        }
+        activeChannelCount.decrementAndGet();
     }
 }
