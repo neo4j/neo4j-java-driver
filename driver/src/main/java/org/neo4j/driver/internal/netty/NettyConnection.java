@@ -99,7 +99,8 @@ public class NettyConnection implements AsyncConnection
     @Override
     public void release()
     {
-        channelFuture.addListener( new ReleaseListener( channelPool ) );
+        write( ResetMessage.RESET, new ReleaseChannelHandler( channelFuture, channelPool ) );
+        flush();
     }
 
     private void write( Message message, ResponseHandler handler )
