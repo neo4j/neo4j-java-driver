@@ -276,7 +276,7 @@ public class Main
                 Clock.SYSTEM );
         ChannelFuture channelFuture = connector.connect( address, bootstrap );
         channelFuture.await();
-        NettyConnection connection = new NettyConnection( address,
+        NettyConnection connection = new NettyConnection(
                 channelFuture.channel().eventLoop().newSucceededFuture( channelFuture.channel() ), null );
 
         for ( int i = 0; i < ITERATIONS; i++ )

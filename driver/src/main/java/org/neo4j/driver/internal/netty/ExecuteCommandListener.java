@@ -18,32 +18,26 @@
  */
 package org.neo4j.driver.internal.netty;
 
-import io.netty.util.concurrent.Promise;
+import io.netty.channel.Channel;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
 
-import java.util.Map;
-
-import org.neo4j.driver.internal.spi.ResponseHandler;
-import org.neo4j.driver.v1.Value;
-
-public interface AsyncConnection
+public class ExecuteCommandListener implements GenericFutureListener<Future<Channel>>
 {
-    void run( String statement, Map<String,Value> parameters, ResponseHandler handler );
+    private final Runnable command;
 
-    void pullAll( ResponseHandler handler );
+    public ExecuteCommandListener( Runnable command )
+    {
+        this.command = command;
+    }
 
-    void discardAll( ResponseHandler handler );
-
-    void reset( ResponseHandler handler );
-
-    void flush();
-
-    // todo: create promise who's callbacks are executed in this channel's event loop
-    // todo: do we need this???
-    <T> Promise<T> newPromise();
-
-    // todo: run a command in this channel's event loop
-    // todo: do we need this???
-    void execute( Runnable command );
-
-    void release();
+    @Override
+    public void operationComplete( Future<Channel> future ) throws Exception
+    {
+        Channel channel = future.getNow();
+        if ( channel != null )
+        {
+            channel.eventLoop().execute( command );
+        }
+    }
 }

@@ -18,32 +18,34 @@
  */
 package org.neo4j.driver.internal.netty;
 
-import io.netty.util.concurrent.Promise;
+import io.netty.channel.Channel;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
 
-import java.util.Map;
-
+import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.spi.ResponseHandler;
-import org.neo4j.driver.v1.Value;
 
-public interface AsyncConnection
+public class WriteListener implements GenericFutureListener<Future<Channel>>
 {
-    void run( String statement, Map<String,Value> parameters, ResponseHandler handler );
+    private final Message message;
+    private final ResponseHandler handler;
 
-    void pullAll( ResponseHandler handler );
+    public WriteListener( Message message, ResponseHandler handler )
+    {
+        this.message = message;
+        this.handler = handler;
+    }
 
-    void discardAll( ResponseHandler handler );
-
-    void reset( ResponseHandler handler );
-
-    void flush();
-
-    // todo: create promise who's callbacks are executed in this channel's event loop
-    // todo: do we need this???
-    <T> Promise<T> newPromise();
-
-    // todo: run a command in this channel's event loop
-    // todo: do we need this???
-    void execute( Runnable command );
-
-    void release();
+    @Override
+    public void operationComplete( Future<Channel> future ) throws Exception
+    {
+        if ( future.isSuccess() )
+        {
+            ChannelWriter.write( future.getNow(), message, handler, false );
+        }
+        else
+        {
+            handler.onFailure( future.cause() );
+        }
+    }
 }

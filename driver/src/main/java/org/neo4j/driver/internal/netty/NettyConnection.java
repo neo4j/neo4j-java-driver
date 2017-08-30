@@ -21,7 +21,6 @@ package org.neo4j.driver.internal.netty;
 import io.netty.channel.Channel;
 import io.netty.util.concurrent.DefaultPromise;
 import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import io.netty.util.concurrent.Promise;
 
@@ -30,21 +29,19 @@ import java.util.Map;
 import org.neo4j.driver.internal.messaging.DiscardAllMessage;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.PullAllMessage;
+import org.neo4j.driver.internal.messaging.ResetMessage;
 import org.neo4j.driver.internal.messaging.RunMessage;
-import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Value;
 
 // todo: keep state flags to prohibit interaction with released connections
 public class NettyConnection implements AsyncConnection
 {
-    private final BoltServerAddress address;
     private final Future<Channel> channelFuture;
     private final NettyChannelPool channelPool;
 
-    public NettyConnection( BoltServerAddress address, Future<Channel> channelFuture, NettyChannelPool channelPool )
+    public NettyConnection( Future<Channel> channelFuture, NettyChannelPool channelPool )
     {
-        this.address = address;
         this.channelFuture = channelFuture;
         this.channelPool = channelPool;
     }
@@ -52,55 +49,31 @@ public class NettyConnection implements AsyncConnection
     @Override
     public void run( String statement, Map<String,Value> parameters, ResponseHandler handler )
     {
-        send( new RunMessage( statement, parameters ), handler );
+        write( new RunMessage( statement, parameters ), handler );
     }
 
     @Override
     public void pullAll( ResponseHandler handler )
     {
-        send( PullAllMessage.PULL_ALL, handler );
+        write( PullAllMessage.PULL_ALL, handler );
     }
 
     @Override
     public void discardAll( ResponseHandler handler )
     {
-        send( DiscardAllMessage.DISCARD_ALL, handler );
+        write( DiscardAllMessage.DISCARD_ALL, handler );
     }
 
     @Override
     public void reset( ResponseHandler handler )
     {
-
-    }
-
-    @Override
-    public void resetAsync( ResponseHandler handler )
-    {
-
+        write( ResetMessage.RESET, handler );
     }
 
     @Override
     public void flush()
     {
-        Channel channel = getChannelNow();
-        if ( channel != null )
-        {
-            channel.flush();
-        }
-        else
-        {
-            channelFuture.addListener( new GenericFutureListener<Future<Channel>>()
-            {
-                @Override
-                public void operationComplete( Future<Channel> future ) throws Exception
-                {
-                    if ( future.isSuccess() )
-                    {
-                        future.getNow().flush();
-                    }
-                }
-            } );
-        }
+        channelFuture.addListener( FlushListener.INSTANCE );
     }
 
     @Override
@@ -118,103 +91,20 @@ public class NettyConnection implements AsyncConnection
     }
 
     @Override
-    public void execute( final Runnable command )
+    public void execute( Runnable command )
     {
-        Channel channel = getChannelNow();
-        if ( channel != null )
-        {
-            channel.eventLoop().execute( command );
-        }
-        else
-        {
-            channelFuture.addListener( new GenericFutureListener<Future<Channel>>()
-            {
-                @Override
-                public void operationComplete( Future<Channel> future ) throws Exception
-                {
-                    Channel channel = channelFuture.getNow();
-                    if ( channel != null )
-                    {
-                        channel.eventLoop().execute( command );
-                    }
-                }
-            } );
-        }
-    }
-
-    @Override
-    public Future<Channel> channelFuture()
-    {
-        return channelFuture;
-    }
-
-    @Override
-    public boolean isOpen()
-    {
-        Channel channel = getChannelNow();
-        if ( channel != null )
-        {
-            return channel.isActive();
-        }
-        return false;
+        channelFuture.addListener( new ExecuteCommandListener( command ) );
     }
 
     @Override
     public void release()
     {
-        Channel channel = getChannelNow();
-        if ( channel != null )
-        {
-            channelPool.release( channel );
-        }
-        else
-        {
-            channelFuture.addListener( new GenericFutureListener<Future<Channel>>()
-            {
-                @Override
-                public void operationComplete( Future<Channel> future ) throws Exception
-                {
-                    Channel channel = channelFuture.getNow();
-                    if ( channel != null )
-                    {
-                        channelPool.release( channel );
-                    }
-                }
-            } );
-        }
+        channelFuture.addListener( new ReleaseListener( channelPool ) );
     }
 
-    @Override
-    public BoltServerAddress boltServerAddress()
+    private void write( Message message, ResponseHandler handler )
     {
-        return address;
-    }
-
-    private void send( final Message message, final ResponseHandler handler )
-    {
-        Channel channel = getChannelNow();
-        if ( channel != null )
-        {
-            ChannelWriter.write( channel, message, handler, false );
-        }
-        else
-        {
-            channelFuture.addListener( new GenericFutureListener<Future<Channel>>()
-            {
-                @Override
-                public void operationComplete( Future<Channel> future ) throws Exception
-                {
-                    if ( future.isSuccess() )
-                    {
-                        ChannelWriter.write( future.getNow(), message, handler, false );
-                    }
-                    else
-                    {
-                        handler.onFailure( future.cause() );
-                    }
-                }
-            } );
-        }
+        channelFuture.addListener( new WriteListener( message, handler ) );
     }
 
     private Channel getChannelNow()

@@ -66,7 +66,7 @@ public class AsyncConnectionPoolImpl implements AsyncConnectionPool
         NettyChannelPool pool = getOrCreatePool( address );
         Future<Channel> connectionFuture = pool.acquire();
         assertNotClosed( address, pool );
-        return new NettyConnection( address, connectionFuture, pool );
+        return new NettyConnection( connectionFuture, pool );
     }
 
     @Override
