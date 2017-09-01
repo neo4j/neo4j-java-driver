@@ -18,9 +18,6 @@
  */
 package org.neo4j.driver.v1;
 
-import java.util.Map;
-
-import org.neo4j.driver.internal.netty.StatementResultCursor;
 import org.neo4j.driver.v1.util.Resource;
 
 /**
@@ -61,8 +58,6 @@ import org.neo4j.driver.v1.util.Resource;
  */
 public interface Session extends Resource, StatementRunner
 {
-    StatementResultCursor runAsync( String statement, Map<String,Object> params );
-
     /**
      * Begin a new <em>explicit {@linkplain Transaction transaction}</em>. At
      * most one transaction may exist in a session at any point in time. To

@@ -18,7 +18,6 @@
  */
 package org.neo4j.driver.internal;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -61,6 +60,8 @@ public class NetworkSession implements Session, SessionResourcesHandler
     private PooledConnection currentConnection;
     private ExplicitTransaction currentTransaction;
 
+    private AsyncConnection currentAsyncConnection;
+
     private final AtomicBoolean isOpen = new AtomicBoolean( true );
 
     public NetworkSession( ConnectionProvider connectionProvider, AccessMode mode, RetryLogic retryLogic,
@@ -79,10 +80,23 @@ public class NetworkSession implements Session, SessionResourcesHandler
     }
 
     @Override
+    public StatementResultCursor runAsync( String statementText )
+    {
+        return runAsync( statementText, Values.EmptyMap );
+    }
+
+    @Override
     public StatementResult run( String statementText, Map<String,Object> statementParameters )
     {
         Value params = statementParameters == null ? Values.EmptyMap : value( statementParameters );
         return run( statementText, params );
+    }
+
+    @Override
+    public StatementResultCursor runAsync( String statementText, Map<String,Object> statementParameters )
+    {
+        Value params = statementParameters == null ? Values.EmptyMap : value( statementParameters );
+        return runAsync( statementText, params );
     }
 
     @Override
@@ -93,9 +107,22 @@ public class NetworkSession implements Session, SessionResourcesHandler
     }
 
     @Override
+    public StatementResultCursor runAsync( String statementTemplate, Record statementParameters )
+    {
+        Value params = statementParameters == null ? Values.EmptyMap : value( statementParameters.asMap() );
+        return runAsync( statementTemplate, params );
+    }
+
+    @Override
     public StatementResult run( String statementText, Value statementParameters )
     {
         return run( new Statement( statementText, statementParameters ) );
+    }
+
+    @Override
+    public StatementResultCursor runAsync( String statementText, Value statementParameters )
+    {
+        return runAsync( new Statement( statementText, statementParameters ) );
     }
 
     @Override
@@ -108,6 +135,25 @@ public class NetworkSession implements Session, SessionResourcesHandler
         currentConnection = acquireConnection( mode );
 
         return run( currentConnection, statement, this );
+    }
+
+    @Override
+    public StatementResultCursor runAsync( Statement statement )
+    {
+        ensureSessionIsOpen();
+        ensureNoOpenTransactionBeforeRunningSession();
+
+        AsyncConnection asyncConnection = acquireAsyncConnection( mode );
+        InternalStatementResultCursor resultCursor = new InternalStatementResultCursor( asyncConnection );
+
+        String query = statement.text();
+        Map<String,Value> params = statement.parameters().asMap( Values.ofValue() );
+
+        asyncConnection.run( query, params, resultCursor.runResponseHandler() );
+        asyncConnection.pullAll( resultCursor.pullAllResponseHandler() );
+        asyncConnection.flush();
+
+        return resultCursor;
     }
 
     public static StatementResult run( Connection connection, Statement statement,
@@ -171,25 +217,6 @@ public class NetworkSession implements Session, SessionResourcesHandler
         }
 
         syncAndCloseCurrentConnection();
-    }
-
-    @Override
-    public StatementResultCursor runAsync( String statement, Map<String,Object> params )
-    {
-        AsyncConnection asyncConnection = connectionProvider.acquireAsyncConnection();
-        InternalStatementResultCursor resultCursor = new InternalStatementResultCursor( asyncConnection );
-
-        Map<String,Value> valueParams = new HashMap<>();
-        for ( Map.Entry<String,Object> entry : params.entrySet() )
-        {
-            valueParams.put( entry.getKey(), value( entry.getValue() ) );
-        }
-
-        asyncConnection.run( statement, valueParams, resultCursor.runResponseHandler() );
-        asyncConnection.pullAll( resultCursor.pullAllResponseHandler() );
-        asyncConnection.flush();
-
-        return resultCursor;
     }
 
     @Override
@@ -360,6 +387,19 @@ public class NetworkSession implements Session, SessionResourcesHandler
         PooledConnection connection = connectionProvider.acquireConnection( mode );
         logger.debug( "Acquired connection " + connection.hashCode() );
         return connection;
+    }
+
+    private AsyncConnection acquireAsyncConnection( AccessMode mode )
+    {
+        if ( currentAsyncConnection != null && currentAsyncConnection.tryMarkInUse() )
+        {
+            return currentAsyncConnection;
+        }
+
+        currentAsyncConnection = connectionProvider.acquireAsyncConnection( mode );
+        logger.debug( "Acquired async connection " + currentAsyncConnection );
+
+        return currentAsyncConnection;
     }
 
     boolean currentConnectionIsOpen()

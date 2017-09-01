@@ -30,6 +30,7 @@ import org.neo4j.driver.v1.exceptions.Neo4jException;
 public class ResponseMessageHandler implements MessageHandler
 {
     private final Queue<ResponseHandler> handlers;
+    private Throwable lastError;
 
     public ResponseMessageHandler( Queue<ResponseHandler> handlers )
     {
@@ -89,14 +90,45 @@ public class ResponseMessageHandler implements MessageHandler
     @Override
     public void handleFailureMessage( String code, String message ) throws IOException
     {
-        ResponseHandler handler = handlers.remove();
         Neo4jException error = ErrorCreator.create( code, message );
-        handler.onFailure( error );
+        handleError( error, false );
     }
 
     @Override
     public void handleIgnoredMessage() throws IOException
     {
-        throw new UnsupportedOperationException( "Driver is not supposed to receive IGNORED" );
+        ResponseHandler handler = handlers.poll();
+        if ( handler != null && lastError != null )
+        {
+            handler.onFailure( lastError );
+        }
+    }
+
+    public void handleFatalError( Throwable error )
+    {
+        System.out.println( "--- FATAL ERROR" );
+        handleError( error, true );
+    }
+
+    public void handleError( Throwable error, boolean fatal )
+    {
+        lastError = error;
+
+        if ( fatal )
+        {
+            while ( !handlers.isEmpty() )
+            {
+                ResponseHandler handler = handlers.remove();
+                handler.onFailure( lastError );
+            }
+        }
+        else
+        {
+            ResponseHandler handler = handlers.poll();
+            if ( handler != null )
+            {
+                handler.onFailure( lastError );
+            }
+        }
     }
 }

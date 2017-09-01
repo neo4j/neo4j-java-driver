@@ -33,7 +33,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.driver.internal.netty.ProtocolUtil.messageBoundary;
 
-public class InboundMessageHandlerTest
+public class InboundMessageDispatcherTest
 {
     @Test
     public void encodeAndDecode()
@@ -42,7 +42,7 @@ public class InboundMessageHandlerTest
         // outbound
         ch.pipeline().addLast( new OutboundMessageHandler() );
         // inbound
-        ch.pipeline().addLast( new ChunkDecoder(), new MessageDecoder(), new InboundMessageHandler() );
+        ch.pipeline().addLast( new ChunkDecoder(), new MessageDecoder(), new InboundMessageDispatcher() );
 
         assertTrue( ch.writeOutbound( new FailureMessage( "Hello ", "World!" ) ) );
 
@@ -67,7 +67,7 @@ public class InboundMessageHandlerTest
     public void decode() throws IOException
     {
         EmbeddedChannel channel =
-                new EmbeddedChannel( new ChunkDecoder(), new MessageDecoder(), new InboundMessageHandler() );
+                new EmbeddedChannel( new ChunkDecoder(), new MessageDecoder(), new InboundMessageDispatcher() );
 
         ByteBuf buf = Unpooled.buffer();
         ByteBufPackOutput packOutput = new ByteBufPackOutput();

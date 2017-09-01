@@ -21,10 +21,10 @@ package org.neo4j.driver.internal.handlers;
 import io.netty.util.concurrent.Promise;
 
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.netty.AsyncConnection;
@@ -48,6 +48,8 @@ public class RecordsResponseHandler implements ResponseHandler
     private final StatementKeysAccessor keysAccessor;
     private final AsyncConnection asyncConnection;
 
+    // todo: all these fields are written by an event loop thread and read by user thread.
+    // todo: accesses should have correct synchronization!
     private final Queue<Record> recordBuffer;
     private Promise<Boolean> recordAvailablePromise;
 
@@ -58,7 +60,10 @@ public class RecordsResponseHandler implements ResponseHandler
     private List<Notification> notifications;
     private long resultConsumedAfter;
 
+    // todo: maybe use single queue for records, failures and completion signals???
+    // todo: for async allocate a promise for result summary right away???
     private boolean completed;
+    private Throwable failure;
 
     public RecordsResponseHandler( StatementKeysAccessor keysAccessor )
     {
@@ -69,7 +74,7 @@ public class RecordsResponseHandler implements ResponseHandler
     {
         this.keysAccessor = keysAccessor;
         this.asyncConnection = asyncConnection;
-        this.recordBuffer = new LinkedList<>();
+        this.recordBuffer = new ConcurrentLinkedQueue<>();
     }
 
     @Override
@@ -81,14 +86,13 @@ public class RecordsResponseHandler implements ResponseHandler
         profile = extractProfiledPlan( metadata );
         notifications = extractNotifications( metadata );
         resultConsumedAfter = extractResultConsumedAfter( metadata );
-        completed = true;
 
-        // todo: this should be done in SessionResourcesHandler
-        asyncConnection.release();
+        markCompleted();
 
         if ( recordAvailablePromise != null )
         {
-            recordAvailablePromise.setSuccess( true );
+            boolean hasMoreRecords = !recordBuffer.isEmpty();
+            recordAvailablePromise.setSuccess( hasMoreRecords );
             recordAvailablePromise = null;
         }
     }
@@ -96,7 +100,8 @@ public class RecordsResponseHandler implements ResponseHandler
     @Override
     public void onFailure( Throwable error )
     {
-        completed = true;
+        markCompleted();
+        failure = error;
 
         if ( recordAvailablePromise != null )
         {
@@ -109,13 +114,19 @@ public class RecordsResponseHandler implements ResponseHandler
     public void onRecord( Value[] fields )
     {
         recordBuffer.add( new InternalRecord( keysAccessor.statementKeys(), fields ) );
+
+        if ( recordAvailablePromise != null )
+        {
+            recordAvailablePromise.setSuccess( true );
+            recordAvailablePromise = null;
+        }
     }
 
     public ListenableFuture<Boolean> recordAvailable()
     {
         final Promise<Boolean> resultPromise = asyncConnection.newPromise();
 
-        asyncConnection.execute( new Runnable()
+        asyncConnection.executeInEventLoop( new Runnable()
         {
             @Override
             public void run()
@@ -123,6 +134,10 @@ public class RecordsResponseHandler implements ResponseHandler
                 if ( !recordBuffer.isEmpty() )
                 {
                     resultPromise.setSuccess( true );
+                }
+                else if ( failure != null )
+                {
+                    resultPromise.setFailure( failure );
                 }
                 else if ( completed )
                 {
@@ -176,6 +191,15 @@ public class RecordsResponseHandler implements ResponseHandler
     public boolean isCompleted()
     {
         return completed;
+    }
+
+    private void markCompleted()
+    {
+        completed = true;
+        if ( asyncConnection != null ) // todo: this null check is only needed for sync connections
+        {
+            asyncConnection.release();
+        }
     }
 
     private static StatementType extractStatementType( Map<String,Value> metadata )

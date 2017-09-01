@@ -18,18 +18,18 @@
  */
 package org.neo4j.driver.internal;
 
-import java.util.Arrays;
-import java.util.List;
-
 import org.hamcrest.MatcherAssert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.Arrays;
+import java.util.List;
+
+import org.neo4j.driver.internal.util.Iterables;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.types.Path;
 import org.neo4j.driver.v1.types.Relationship;
-import org.neo4j.driver.v1.util.Lists;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -80,7 +80,7 @@ public class InternalPathTest
         InternalPath path = testPath();
 
         // When
-        List<Path.Segment> segments = Lists.asList( path );
+        List<Path.Segment> segments = Iterables.asList( path );
 
         // Then
         MatcherAssert.assertThat( segments, equalTo( Arrays.asList( (Path.Segment)
@@ -110,7 +110,7 @@ public class InternalPathTest
         InternalPath path = testPath();
 
         // When
-        List<Node> segments = Lists.asList( path.nodes() );
+        List<Node> segments = Iterables.asList( path.nodes() );
 
         // Then
         assertThat( segments, equalTo( Arrays.asList( (Node)
@@ -127,7 +127,7 @@ public class InternalPathTest
         InternalPath path = testPath();
 
         // When
-        List<Relationship> segments = Lists.asList( path.relationships() );
+        List<Relationship> segments = Iterables.asList( path.relationships() );
 
         // Then
         assertThat( segments, equalTo( Arrays.asList( (Relationship)

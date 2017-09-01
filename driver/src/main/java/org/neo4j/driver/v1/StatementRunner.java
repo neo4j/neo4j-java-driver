@@ -20,8 +20,9 @@ package org.neo4j.driver.v1;
 
 import java.util.Map;
 
-import org.neo4j.driver.v1.util.Experimental;
+import org.neo4j.driver.internal.netty.StatementResultCursor;
 import org.neo4j.driver.v1.types.TypeSystem;
+import org.neo4j.driver.v1.util.Experimental;
 
 /**
  * Common interface for components that can execute Neo4j statements.
@@ -94,6 +95,15 @@ public interface StatementRunner
     StatementResult run( String statementTemplate, Value parameters );
 
     /**
+     * TODO
+     *
+     * @param statementTemplate
+     * @param parameters
+     * @return
+     */
+    StatementResultCursor runAsync( String statementTemplate, Value parameters );
+
+    /**
      * Run a statement and return a result stream.
      *
      * This method takes a set of parameters that will be injected into the
@@ -123,6 +133,15 @@ public interface StatementRunner
     StatementResult run( String statementTemplate, Map<String,Object> statementParameters );
 
     /**
+     * TODO
+     *
+     * @param statementTemplate
+     * @param statementParameters
+     * @return
+     */
+    StatementResultCursor runAsync( String statementTemplate, Map<String,Object> statementParameters );
+
+    /**
      * Run a statement and return a result stream.
      *
      * This method takes a set of parameters that will be injected into the
@@ -140,12 +159,29 @@ public interface StatementRunner
     StatementResult run( String statementTemplate, Record statementParameters );
 
     /**
+     * TODO
+     *
+     * @param statementTemplate
+     * @param statementParameters
+     * @return
+     */
+    StatementResultCursor runAsync( String statementTemplate, Record statementParameters );
+
+    /**
      * Run a statement and return a result stream.
      *
      * @param statementTemplate text of a Neo4j statement
      * @return a stream of result values and associated metadata
      */
     StatementResult run( String statementTemplate );
+
+    /**
+     * TODO
+     *
+     * @param statementTemplate
+     * @return
+     */
+    StatementResultCursor runAsync( String statementTemplate );
 
     /**
      * Run a statement and return a result stream.
@@ -161,6 +197,14 @@ public interface StatementRunner
      * @return a stream of result values and associated metadata
      */
     StatementResult run( Statement statement );
+
+    /**
+     * TODO
+     *
+     * @param statement
+     * @return
+     */
+    StatementResultCursor runAsync( Statement statement );
 
     /**
      * @return type system used by this statement runner for classifying values

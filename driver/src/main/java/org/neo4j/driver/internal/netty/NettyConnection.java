@@ -19,12 +19,12 @@
 package org.neo4j.driver.internal.netty;
 
 import io.netty.channel.Channel;
-import io.netty.util.concurrent.DefaultPromise;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import io.netty.util.concurrent.Promise;
 
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.driver.internal.messaging.DiscardAllMessage;
 import org.neo4j.driver.internal.messaging.Message;
@@ -34,16 +34,35 @@ import org.neo4j.driver.internal.messaging.RunMessage;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Value;
 
+import static java.util.Objects.requireNonNull;
+
 // todo: keep state flags to prohibit interaction with released connections
 public class NettyConnection implements AsyncConnection
 {
     private final Future<Channel> channelFuture;
     private final NettyChannelPool channelPool;
 
+    private Channel channel;
+    private InboundMessageDispatcher inboundMessageDispatcher;
+
+    private final AtomicInteger usageCounter = new AtomicInteger( 1 );
+
     public NettyConnection( Future<Channel> channelFuture, NettyChannelPool channelPool )
     {
         this.channelFuture = channelFuture;
         this.channelPool = channelPool;
+    }
+
+    @Override
+    public boolean tryMarkInUse()
+    {
+        int counter = usageCounter.incrementAndGet();
+        if ( counter <= 0 )
+        {
+            // connection is now being released and should not be used further
+            return false;
+        }
+        return true;
     }
 
     @Override
@@ -73,25 +92,31 @@ public class NettyConnection implements AsyncConnection
     @Override
     public void flush()
     {
-        channelFuture.addListener( FlushListener.INSTANCE );
+        if ( tryExtractChannel() )
+        {
+            channel.flush();
+        }
+        else
+        {
+            channelFuture.addListener( FlushListener.INSTANCE );
+        }
     }
 
     @Override
     public <T> Promise<T> newPromise()
     {
-        Channel channel = getChannelNow();
-        if ( channel != null )
+        if ( tryExtractChannel() )
         {
-            return new DefaultPromise<>( channel.eventLoop() );
+            return channel.eventLoop().newPromise();
         }
         else
         {
-            return new DefaultPromise<>( GlobalEventExecutor.INSTANCE );
+            return GlobalEventExecutor.INSTANCE.newPromise();
         }
     }
 
     @Override
-    public void execute( Runnable command )
+    public void executeInEventLoop( Runnable command )
     {
         channelFuture.addListener( new ExecuteCommandListener( command ) );
     }
@@ -99,21 +124,50 @@ public class NettyConnection implements AsyncConnection
     @Override
     public void release()
     {
-        write( ResetMessage.RESET, new ReleaseChannelHandler( channelFuture, channelPool ) );
-        flush();
+        int counter = usageCounter.decrementAndGet();
+        if ( counter == 0 )
+        {
+            // no usages, channel is eligible for release
+            // try to mark this channel as being released
+            boolean canRelease = usageCounter.compareAndSet( 0, Integer.MIN_VALUE );
+            if ( canRelease )
+            {
+                reset( new ReleaseChannelHandler( channelFuture, channelPool ) );
+                flush();
+            }
+            // else we lost a race with some thread that incremented the usage counter
+            // it will continue using this connection and try to release it when done
+        }
     }
 
     private void write( Message message, ResponseHandler handler )
     {
-        channelFuture.addListener( new WriteListener( message, handler ) );
+        if ( tryExtractChannel() )
+        {
+            inboundMessageDispatcher.addHandler( handler );
+            channel.write( message );
+        }
+        else
+        {
+            channelFuture.addListener( new WriteListener( message, handler ) );
+        }
     }
 
-    private Channel getChannelNow()
+    private boolean tryExtractChannel()
     {
-        if ( channelFuture.isSuccess() )
+        if ( channel != null )
         {
-            return channelFuture.getNow();
+            return true;
         }
-        return null;
+        else if ( channelFuture.isSuccess() )
+        {
+            channel = requireNonNull( channelFuture.getNow() );
+            inboundMessageDispatcher = requireNonNull( channel.pipeline().get( InboundMessageDispatcher.class ) );
+            return true;
+        }
+        else
+        {
+            return false;
+        }
     }
 }

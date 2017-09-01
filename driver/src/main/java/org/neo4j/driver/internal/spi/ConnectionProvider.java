@@ -35,5 +35,5 @@ public interface ConnectionProvider extends AutoCloseable
      */
     PooledConnection acquireConnection( AccessMode mode );
 
-    AsyncConnection acquireAsyncConnection();
+    AsyncConnection acquireAsyncConnection( AccessMode mode );
 }

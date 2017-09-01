@@ -28,8 +28,9 @@ import java.util.Queue;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.PackStreamMessageFormatV1;
 import org.neo4j.driver.internal.spi.ResponseHandler;
+import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
-public class InboundMessageHandler extends SimpleChannelInboundHandler<ByteBuf>
+public class InboundMessageDispatcher extends SimpleChannelInboundHandler<ByteBuf>
 {
     private final ByteBufPackInput packInput;
     private final MessageFormat.Reader reader;
@@ -37,7 +38,7 @@ public class InboundMessageHandler extends SimpleChannelInboundHandler<ByteBuf>
     private final Queue<ResponseHandler> handlers = new LinkedList<>();
     private final ResponseMessageHandler responseMessageHandler = new ResponseMessageHandler( handlers );
 
-    public InboundMessageHandler()
+    public InboundMessageDispatcher()
     {
         this.packInput = new ByteBufPackInput();
         this.reader = new PackStreamMessageFormatV1.Reader( packInput, new Runnable()
@@ -51,6 +52,7 @@ public class InboundMessageHandler extends SimpleChannelInboundHandler<ByteBuf>
 
     public void addHandler( ResponseHandler handler )
     {
+        System.out.println( "--- ADD HANDLER: " + handler.getClass() );
         handlers.add( handler );
     }
 
@@ -59,5 +61,19 @@ public class InboundMessageHandler extends SimpleChannelInboundHandler<ByteBuf>
     {
         packInput.setBuf( msg );
         reader.read( responseMessageHandler );
+    }
+
+    @Override
+    public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause ) throws Exception
+    {
+        responseMessageHandler.handleFatalError( cause );
+    }
+
+    @Override
+    public void channelInactive( ChannelHandlerContext ctx ) throws Exception
+    {
+        responseMessageHandler.handleFatalError( new ServiceUnavailableException(
+                "Connection terminated while receiving data. This can happen due to network " +
+                "instabilities, or due to restarts of the database." ) );
     }
 }

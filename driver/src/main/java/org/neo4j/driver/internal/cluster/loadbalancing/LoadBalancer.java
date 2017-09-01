@@ -90,7 +90,7 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
     }
 
     @Override
-    public AsyncConnection acquireAsyncConnection()
+    public AsyncConnection acquireAsyncConnection( AccessMode mode )
     {
         // todo
         throw new UnsupportedOperationException();

@@ -282,14 +282,14 @@ public class ExamplesIT
         try
         {
             // When
-            neo4j.stop();
+            neo4j.stopDb();
 
             // Then
             assertThat( example.addItem(), equalTo( false ) );
         }
         finally
         {
-            neo4j.start();
+            neo4j.startDb();
         }
     }
 

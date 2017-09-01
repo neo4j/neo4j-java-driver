@@ -37,18 +37,21 @@ public class ActiveChannelTracker implements ChannelPoolHandler
     @Override
     public void channelReleased( Channel channel ) throws Exception
     {
+        System.out.println( "+++ channelReleased: " + channel );
         decrementActiveChannelCount( channel );
     }
 
     @Override
     public void channelAcquired( Channel channel ) throws Exception
     {
+        System.out.println( "+++ channelAcquired: " + channel );
         incrementActiveChannelCount( channel );
     }
 
     @Override
     public void channelCreated( Channel channel ) throws Exception
     {
+        System.out.println( "+++ channelCreated: " + channel );
         incrementActiveChannelCount( channel );
     }
 

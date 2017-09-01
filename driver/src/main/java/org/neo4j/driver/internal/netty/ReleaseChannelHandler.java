@@ -57,6 +57,13 @@ public class ReleaseChannelHandler implements ResponseHandler
 
     private void releaseChannel()
     {
-        channelFuture.addListener( new ReleaseListener( pool ) );
+        if ( channelFuture.isSuccess() )
+        {
+            pool.release( channelFuture.getNow() );
+        }
+        else
+        {
+            channelFuture.addListener( new ReleaseListener( pool ) );
+        }
     }
 }

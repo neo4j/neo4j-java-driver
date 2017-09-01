@@ -23,6 +23,7 @@ import java.util.Map;
 
 import org.neo4j.driver.internal.handlers.BookmarkResponseHandler;
 import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
+import org.neo4j.driver.internal.netty.StatementResultCursor;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.v1.Record;
@@ -164,9 +165,21 @@ public class ExplicitTransaction implements Transaction
     }
 
     @Override
+    public StatementResultCursor runAsync( String statementTemplate, Value parameters )
+    {
+        throw new UnsupportedOperationException(); // todo
+    }
+
+    @Override
     public StatementResult run( String statementText )
     {
         return run( statementText, Values.EmptyMap );
+    }
+
+    @Override
+    public StatementResultCursor runAsync( String statementTemplate )
+    {
+        throw new UnsupportedOperationException(); // todo
     }
 
     @Override
@@ -177,10 +190,22 @@ public class ExplicitTransaction implements Transaction
     }
 
     @Override
+    public StatementResultCursor runAsync( String statementTemplate, Map<String,Object> statementParameters )
+    {
+        throw new UnsupportedOperationException(); // todo
+    }
+
+    @Override
     public StatementResult run( String statementTemplate, Record statementParameters )
     {
         Value params = statementParameters == null ? Values.EmptyMap : value( statementParameters.asMap() );
         return run( statementTemplate, params );
+    }
+
+    @Override
+    public StatementResultCursor runAsync( String statementTemplate, Record statementParameters )
+    {
+        throw new UnsupportedOperationException(); // todo
     }
 
     @Override
@@ -206,6 +231,12 @@ public class ExplicitTransaction implements Transaction
             state = State.FAILED;
             throw e;
         }
+    }
+
+    @Override
+    public StatementResultCursor runAsync( Statement statement )
+    {
+        throw new UnsupportedOperationException(); // todo
     }
 
     @Override

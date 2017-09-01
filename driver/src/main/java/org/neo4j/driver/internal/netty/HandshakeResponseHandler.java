@@ -60,7 +60,7 @@ public class HandshakeResponseHandler extends ReplayingDecoder<Void>
             ctx.pipeline().remove( this );
 
             // inbound handlers
-            ctx.pipeline().addLast( new ChunkDecoder(), new MessageDecoder(), new InboundMessageHandler() );
+            ctx.pipeline().addLast( new ChunkDecoder(), new MessageDecoder(), new InboundMessageDispatcher() );
 
             // outbound handlers
             ctx.pipeline().addLast( new OutboundMessageHandler() );

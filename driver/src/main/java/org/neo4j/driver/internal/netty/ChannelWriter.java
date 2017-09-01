@@ -24,6 +24,9 @@ import io.netty.channel.ChannelPipeline;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 
+import static org.neo4j.driver.internal.netty.ChannelAttributes.address;
+import static org.neo4j.driver.internal.netty.ChannelAttributes.creationTimestamp;
+
 public final class ChannelWriter
 {
     private ChannelWriter()
@@ -32,20 +35,32 @@ public final class ChannelWriter
 
     public static void write( Channel channel, Message message, ResponseHandler handler, boolean flush )
     {
-        ChannelPipeline pipeline = channel.pipeline();
-
-        InboundMessageHandler messageHandler = pipeline.get( InboundMessageHandler.class );
-        messageHandler.addHandler( handler );
-
-        if ( flush )
+        try
         {
-            // todo: add any kind of listener???
-            channel.writeAndFlush( message );
+            ChannelPipeline pipeline = channel.pipeline();
+
+            InboundMessageDispatcher messageHandler = pipeline.get( InboundMessageDispatcher.class );
+            messageHandler.addHandler( handler );
+
+            if ( flush )
+            {
+                // todo: add any kind of listener???
+                channel.writeAndFlush( message );
+            }
+            else
+            {
+                // todo: add any kind of listener???
+                channel.write( message );
+            }
         }
-        else
+        catch ( Throwable t )
         {
-            // todo: add any kind of listener???
-            channel.write( message );
+            System.out.println( "-------> Failed to write message: " + message + " because " + t );
+            System.out.println( "-------> Channel isOpen=" + channel.isOpen() + " isActive=" + channel.isActive() +
+                                " isRegistered=" + channel.isRegistered() + " isWritable=" + channel.isWritable() );
+            System.out.println( "-------> Channel address: " + address( channel ) + " creationTimestamp=" +
+                                creationTimestamp( channel ) );
+            throw t;
         }
     }
 }

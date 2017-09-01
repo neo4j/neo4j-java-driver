@@ -27,6 +27,8 @@ import org.neo4j.driver.v1.Value;
 
 public interface AsyncConnection
 {
+    boolean tryMarkInUse();
+
     void run( String statement, Map<String,Value> parameters, ResponseHandler handler );
 
     void pullAll( ResponseHandler handler );
@@ -43,7 +45,7 @@ public interface AsyncConnection
 
     // todo: run a command in this channel's event loop
     // todo: do we need this???
-    void execute( Runnable command );
+    void executeInEventLoop( Runnable command );
 
     void release();
 }

@@ -65,7 +65,7 @@ public class DriverAuthSteps
             {
                 driver.close();
             }
-            neo4j.restart();
+            neo4j.restartDb();
         }
         catch ( Exception e )
         {
@@ -140,7 +140,7 @@ public class DriverAuthSteps
 
     private Driver configureCredentials( String name, String oldPassword, String newPassword ) throws Exception
     {
-        neo4j.restart( Neo4jSettings.TEST_SETTINGS
+        neo4j.restartDb( Neo4jSettings.TEST_SETTINGS
                 .updateWith( Neo4jSettings.AUTH_ENABLED, "true" )
                 .updateWith( Neo4jSettings.DATA_DIR, tempDir.getAbsolutePath().replace("\\", "/") ));
 

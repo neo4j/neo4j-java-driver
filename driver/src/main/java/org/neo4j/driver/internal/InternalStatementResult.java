@@ -83,12 +83,6 @@ public class InternalStatementResult implements StatementResult
     @Override
     public Record next()
     {
-        // Implementation note:
-        // We've chosen to use Iterator<Record> over a cursor-based version,
-        // after tests show escape analysis will eliminate short-lived allocations
-        // in a way that makes the two equivalent in performance.
-        // To get the intended benefit, we need to allocate Record in this method,
-        // and have it copy out its fields from some lower level data structure.
         if ( tryFetchNext() )
         {
             return pullAllResponseHandler.recordBuffer().poll();

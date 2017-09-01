@@ -57,7 +57,7 @@ public class DirectConnectionProvider implements ConnectionProvider
     }
 
     @Override
-    public AsyncConnection acquireAsyncConnection()
+    public AsyncConnection acquireAsyncConnection( AccessMode mode )
     {
         return asyncPool.acquire( address );
     }
