@@ -24,6 +24,7 @@ import io.netty.util.concurrent.GlobalEventExecutor;
 import io.netty.util.concurrent.Promise;
 
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.driver.internal.messaging.DiscardAllMessage;
@@ -44,6 +45,7 @@ public class NettyConnection implements AsyncConnection
 
     private Channel channel;
     private InboundMessageDispatcher inboundMessageDispatcher;
+    private final AtomicBoolean autoReadEnabled = new AtomicBoolean( true );
 
     private final AtomicInteger usageCounter = new AtomicInteger( 1 );
 
@@ -63,6 +65,26 @@ public class NettyConnection implements AsyncConnection
             return false;
         }
         return true;
+    }
+
+    @Override
+    public void enableAutoRead()
+    {
+        if ( autoReadEnabled.compareAndSet( false, true ) )
+        {
+            System.out.println( "=== enableAutoRead" );
+            setAutoRead( true );
+        }
+    }
+
+    @Override
+    public void disableAutoRead()
+    {
+        if ( autoReadEnabled.compareAndSet( true, false ) )
+        {
+            System.out.println( "=== disableAutoRead" );
+            setAutoRead( false );
+        }
     }
 
     @Override
@@ -116,12 +138,6 @@ public class NettyConnection implements AsyncConnection
     }
 
     @Override
-    public void executeInEventLoop( Runnable command )
-    {
-        channelFuture.addListener( new ExecuteCommandListener( command ) );
-    }
-
-    @Override
     public void release()
     {
         int counter = usageCounter.decrementAndGet();
@@ -150,6 +166,18 @@ public class NettyConnection implements AsyncConnection
         else
         {
             channelFuture.addListener( new WriteListener( message, handler ) );
+        }
+    }
+
+    private void setAutoRead( boolean value )
+    {
+        if ( tryExtractChannel() )
+        {
+            channel.config().setAutoRead( value );
+        }
+        else
+        {
+            channelFuture.addListener( AutoReadListener.forValue( value ) );
         }
     }
 

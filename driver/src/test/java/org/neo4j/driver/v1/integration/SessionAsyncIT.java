@@ -18,14 +18,24 @@
  */
 package org.neo4j.driver.v1.integration;
 
+import io.netty.util.concurrent.GlobalEventExecutor;
+import io.netty.util.concurrent.Promise;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.neo4j.driver.internal.netty.ListenableFuture;
 import org.neo4j.driver.internal.netty.StatementResultCursor;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.types.Node;
+import org.neo4j.driver.v1.util.TestNeo4j;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
 import static org.hamcrest.Matchers.containsString;
@@ -37,7 +47,10 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.driver.internal.util.Iterables.single;
+import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.util.TestUtil.await;
+import static org.neo4j.driver.v1.util.TestUtil.awaitAll;
+import static org.neo4j.driver.v1.util.TestUtil.get;
 
 public class SessionAsyncIT
 {
@@ -132,20 +145,18 @@ public class SessionAsyncIT
                 "DETACH DELETE n1, n2 " +
                 "RETURN x" );
 
-        int processedRecords = 0;
         try
         {
-            boolean shouldStopDb = true;
-            while ( await( cursor.fetchAsync() ) )
-            {
-                if ( shouldStopDb )
-                {
-                    session.killDb();
-                    shouldStopDb = false;
-                }
+            ListenableFuture<Boolean> recordAvailable = cursor.fetchAsync();
 
+            // kill db after receiving the first record
+            // do it from a listener so that event loop thread executes the kill operation
+            recordAvailable.addListener( new KillDbListener( session ) );
+
+            while ( await( recordAvailable ) )
+            {
                 assertNotNull( cursor.current() );
-                processedRecords++;
+                recordAvailable = cursor.fetchAsync();
             }
             fail( "Exception expected" );
         }
@@ -153,8 +164,80 @@ public class SessionAsyncIT
         {
             assertThat( e, instanceOf( ServiceUnavailableException.class ) );
         }
+    }
 
-        System.out.println( "processedRecords = " + processedRecords );
+    @Test
+    public void shouldAllowNestedQueries()
+    {
+        StatementResultCursor cursor = session.runAsync( "UNWIND [1, 2, 3] AS x CREATE (p:Person {id: x}) RETURN p" );
+
+        Future<List<Future<Boolean>>> queriesExecuted = runNestedQueries( cursor );
+        List<Future<Boolean>> futures = await( queriesExecuted );
+
+        List<Boolean> futureResults = awaitAll( futures );
+        assertEquals( 7, futureResults.size() );
+
+        StatementResultCursor personCursor = session.runAsync( "MATCH (p:Person) RETURN p ORDER BY p.id" );
+
+        List<Node> personNodes = new ArrayList<>();
+        while ( await( personCursor.fetchAsync() ) )
+        {
+            personNodes.add( personCursor.current().get( 0 ).asNode() );
+        }
+        assertEquals( 3, personNodes.size() );
+
+        Node node1 = personNodes.get( 0 );
+        assertEquals( 1, node1.get( "id" ).asInt() );
+        assertEquals( 10, node1.get( "age" ).asInt() );
+
+        Node node2 = personNodes.get( 1 );
+        assertEquals( 2, node2.get( "id" ).asInt() );
+        assertEquals( 20, node2.get( "age" ).asInt() );
+
+        Node node3 = personNodes.get( 2 );
+        assertEquals( 3, node3.get( "id" ).asInt() );
+        assertEquals( 30, personNodes.get( 2 ).get( "age" ).asInt() );
+    }
+
+    private Future<List<Future<Boolean>>> runNestedQueries( StatementResultCursor inputCursor )
+    {
+        Promise<List<Future<Boolean>>> resultPromise = GlobalEventExecutor.INSTANCE.newPromise();
+        runNestedQueries( inputCursor, new ArrayList<Future<Boolean>>(), resultPromise );
+        return resultPromise;
+    }
+
+    private void runNestedQueries( final StatementResultCursor inputCursor, final List<Future<Boolean>> futures,
+            final Promise<List<Future<Boolean>>> resultPromise )
+    {
+        final ListenableFuture<Boolean> inputAvailable = inputCursor.fetchAsync();
+        futures.add( inputAvailable );
+
+        inputAvailable.addListener( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                if ( get( inputAvailable ) )
+                {
+                    Record record = inputCursor.current();
+                    Node node = record.get( 0 ).asNode();
+                    long id = node.get( "id" ).asLong();
+                    long age = id * 10;
+
+                    StatementResultCursor updatedCursor =
+                            session.runAsync( "MATCH (p:Person {id: $id}) SET p.age = $age RETURN p",
+                                    parameters( "id", id, "age", age ) );
+
+                    futures.add( updatedCursor.fetchAsync() );
+
+                    runNestedQueries( inputCursor, futures, resultPromise );
+                }
+                else
+                {
+                    resultPromise.setSuccess( futures );
+                }
+            }
+        } );
     }
 
     private static void assertSyntaxError( Exception e )
@@ -168,5 +251,39 @@ public class SessionAsyncIT
     {
         assertThat( e, instanceOf( ClientException.class ) );
         assertThat( ((ClientException) e).code(), containsString( "ArithmeticError" ) );
+    }
+
+    private static class KillDbListener implements Runnable
+    {
+
+        final TestNeo4j neo4j;
+        final AtomicBoolean shouldKillDb = new AtomicBoolean( true );
+
+        KillDbListener( TestNeo4j neo4j )
+        {
+            this.neo4j = neo4j;
+        }
+
+        @Override
+        public void run()
+        {
+            if ( shouldKillDb.get() )
+            {
+                killDb();
+                shouldKillDb.set( false );
+            }
+        }
+
+        void killDb()
+        {
+            try
+            {
+                neo4j.killDb();
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
+        }
     }
 }

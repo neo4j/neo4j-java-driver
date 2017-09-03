@@ -21,13 +21,15 @@ package org.neo4j.driver.internal.handlers;
 import io.netty.util.concurrent.Promise;
 
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.netty.AsyncConnection;
+import org.neo4j.driver.internal.netty.InternalListenableFuture;
+import org.neo4j.driver.internal.netty.ListenableFuture;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.summary.InternalNotification;
 import org.neo4j.driver.internal.summary.InternalPlan;
@@ -41,16 +43,19 @@ import org.neo4j.driver.v1.summary.ProfiledPlan;
 import org.neo4j.driver.v1.summary.StatementType;
 import org.neo4j.driver.v1.summary.SummaryCounters;
 
-public class RecordsResponseHandler implements ResponseHandler
+public class AsyncRecordsResponseHandler implements ResponseHandler
 {
-    private final RunMetadataAccessor keysAccessor;
+    private static final boolean TOUCH_AUTO_READ = false;
+
+    private final RunMetadataAccessor runMetadataAccessor;
     private final AsyncConnection asyncConnection;
 
-    // todo: all these fields are written by an event loop thread and read by user thread.
-    // todo: accesses should have correct synchronization!
-    private final Queue<Record> recordBuffer;
+    private final Queue<Record> records;
     private Promise<Boolean> recordAvailablePromise;
+    private boolean succeeded;
+    private Throwable failure;
 
+    // todo: expose result summary
     private StatementType statementType;
     private SummaryCounters counters;
     private Plan plan;
@@ -58,24 +63,17 @@ public class RecordsResponseHandler implements ResponseHandler
     private List<Notification> notifications;
     private long resultConsumedAfter;
 
-    // todo: maybe use single queue for records, failures and completion signals???
-    // todo: for async allocate a promise for result summary right away???
-    private boolean completed;
+    private volatile Record current;
 
-    public RecordsResponseHandler( RunMetadataAccessor keysAccessor )
+    public AsyncRecordsResponseHandler( RunMetadataAccessor runMetadataAccessor, AsyncConnection asyncConnection )
     {
-        this( keysAccessor, null );
-    }
-
-    public RecordsResponseHandler( RunMetadataAccessor keysAccessor, AsyncConnection asyncConnection )
-    {
-        this.keysAccessor = keysAccessor;
+        this.runMetadataAccessor = runMetadataAccessor;
         this.asyncConnection = asyncConnection;
-        this.recordBuffer = new ConcurrentLinkedQueue<>();
+        this.records = new LinkedList<>();
     }
 
     @Override
-    public void onSuccess( Map<String,Value> metadata )
+    public synchronized void onSuccess( Map<String,Value> metadata )
     {
         statementType = extractStatementType( metadata );
         counters = extractCounters( metadata );
@@ -84,20 +82,20 @@ public class RecordsResponseHandler implements ResponseHandler
         notifications = extractNotifications( metadata );
         resultConsumedAfter = extractResultConsumedAfter( metadata );
 
-        markCompleted();
+        succeeded = true;
+        asyncConnection.release();
 
         if ( recordAvailablePromise != null )
         {
-            boolean hasMoreRecords = !recordBuffer.isEmpty();
-            recordAvailablePromise.setSuccess( hasMoreRecords );
-            recordAvailablePromise = null;
+            recordAvailablePromise.setSuccess( false );
         }
     }
 
     @Override
-    public void onFailure( Throwable error )
+    public synchronized void onFailure( Throwable error )
     {
-        markCompleted();
+        failure = error;
+        asyncConnection.release();
 
         if ( recordAvailablePromise != null )
         {
@@ -107,64 +105,84 @@ public class RecordsResponseHandler implements ResponseHandler
     }
 
     @Override
-    public void onRecord( Value[] fields )
+    public synchronized void onRecord( Value[] fields )
     {
-        recordBuffer.add( new InternalRecord( keysAccessor.statementKeys(), fields ) );
+        Record record = new InternalRecord( runMetadataAccessor.statementKeys(), fields );
 
         if ( recordAvailablePromise != null )
         {
+            current = record;
             recordAvailablePromise.setSuccess( true );
             recordAvailablePromise = null;
         }
-    }
-
-    public Queue<Record> recordBuffer()
-    {
-        return recordBuffer;
-    }
-
-    public StatementType statementType()
-    {
-        return statementType;
-    }
-
-    public SummaryCounters counters()
-    {
-        return counters;
-    }
-
-    public Plan plan()
-    {
-        return plan;
-    }
-
-    public ProfiledPlan profile()
-    {
-        return profile;
-    }
-
-    public List<Notification> notifications()
-    {
-        return notifications;
-    }
-
-    public long resultConsumedAfter()
-    {
-        return resultConsumedAfter;
-    }
-
-    public boolean isCompleted()
-    {
-        return completed;
-    }
-
-    private void markCompleted()
-    {
-        completed = true;
-        if ( asyncConnection != null ) // todo: this null check is only needed for sync connections
+        else
         {
-            asyncConnection.release();
+            queueRecord( record );
         }
+    }
+
+    public synchronized ListenableFuture<Boolean> recordAvailable()
+    {
+        Record record = dequeueRecord();
+        if ( record == null )
+        {
+            if ( succeeded )
+            {
+                Promise<Boolean> result = asyncConnection.newPromise();
+                result.setSuccess( false );
+                return new InternalListenableFuture<>( result );
+            }
+
+            if ( failure != null )
+            {
+                Promise<Boolean> result = asyncConnection.newPromise();
+                result.setFailure( failure );
+                return new InternalListenableFuture<>( result );
+            }
+
+            recordAvailablePromise = asyncConnection.newPromise();
+            return new InternalListenableFuture<>( recordAvailablePromise );
+        }
+        else
+        {
+            current = record;
+
+            Promise<Boolean> result = asyncConnection.newPromise();
+            result.setSuccess( true );
+            return new InternalListenableFuture<>( result );
+        }
+    }
+
+    public Record pollCurrent()
+    {
+        Record result = current;
+        current = null;
+        return result;
+    }
+
+    private void queueRecord( Record record )
+    {
+        records.add( record );
+        if ( TOUCH_AUTO_READ )
+        {
+            if ( records.size() > 10_000 )
+            {
+                asyncConnection.disableAutoRead();
+            }
+        }
+    }
+
+    private Record dequeueRecord()
+    {
+        Record record = records.poll();
+        if ( TOUCH_AUTO_READ )
+        {
+            if ( record != null && records.size() < 100 )
+            {
+                asyncConnection.enableAutoRead();
+            }
+        }
+        return record;
     }
 
     private static StatementType extractStatementType( Map<String,Value> metadata )

@@ -23,7 +23,7 @@ import io.netty.util.concurrent.Promise;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.driver.internal.handlers.RecordsResponseHandler;
+import org.neo4j.driver.internal.handlers.AsyncRecordsResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.v1.Record;
 
@@ -31,13 +31,13 @@ public class InternalStatementResultCursor implements StatementResultCursor
 {
     private final AsyncConnection connection;
     private final RunResponseHandler runResponseHandler;
-    private final RecordsResponseHandler pullAllResponseHandler;
+    private final AsyncRecordsResponseHandler pullAllResponseHandler;
 
     public InternalStatementResultCursor( AsyncConnection connection )
     {
         this.connection = connection;
         this.runResponseHandler = new RunResponseHandler();
-        this.pullAllResponseHandler = new RecordsResponseHandler( runResponseHandler, connection );
+        this.pullAllResponseHandler = new AsyncRecordsResponseHandler( runResponseHandler, connection );
     }
 
     public RunResponseHandler runResponseHandler()
@@ -45,7 +45,7 @@ public class InternalStatementResultCursor implements StatementResultCursor
         return runResponseHandler;
     }
 
-    public RecordsResponseHandler pullAllResponseHandler()
+    public AsyncRecordsResponseHandler pullAllResponseHandler()
     {
         return pullAllResponseHandler;
     }
@@ -59,7 +59,7 @@ public class InternalStatementResultCursor implements StatementResultCursor
     @Override
     public Record current()
     {
-        return pullAllResponseHandler.recordBuffer().poll();
+        return pullAllResponseHandler.pollCurrent();
     }
 
     public ListenableFuture<List<Record>> allAsync()

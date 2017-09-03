@@ -29,6 +29,10 @@ public interface AsyncConnection
 {
     boolean tryMarkInUse();
 
+    void enableAutoRead();
+
+    void disableAutoRead();
+
     void run( String statement, Map<String,Value> parameters, ResponseHandler handler );
 
     void pullAll( ResponseHandler handler );
@@ -42,10 +46,6 @@ public interface AsyncConnection
     // todo: create promise who's callbacks are executed in this channel's event loop
     // todo: do we need this???
     <T> Promise<T> newPromise();
-
-    // todo: run a command in this channel's event loop
-    // todo: do we need this???
-    void executeInEventLoop( Runnable command );
 
     void release();
 }

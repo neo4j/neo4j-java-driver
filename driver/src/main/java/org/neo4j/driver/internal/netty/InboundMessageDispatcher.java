@@ -52,7 +52,7 @@ public class InboundMessageDispatcher extends SimpleChannelInboundHandler<ByteBu
 
     public void addHandler( ResponseHandler handler )
     {
-        System.out.println( "--- ADD HANDLER: " + handler.getClass() );
+//        System.out.println( "--- ADD HANDLER: " + handler.getClass() );
         handlers.add( handler );
     }
 
@@ -72,6 +72,8 @@ public class InboundMessageDispatcher extends SimpleChannelInboundHandler<ByteBu
     @Override
     public void channelInactive( ChannelHandlerContext ctx ) throws Exception
     {
+        System.out.println( "Channel Inactive: " + ctx.channel() );
+
         responseMessageHandler.handleFatalError( new ServiceUnavailableException(
                 "Connection terminated while receiving data. This can happen due to network " +
                 "instabilities, or due to restarts of the database." ) );

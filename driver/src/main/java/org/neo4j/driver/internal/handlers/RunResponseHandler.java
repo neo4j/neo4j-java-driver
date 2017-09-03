@@ -26,10 +26,10 @@ import java.util.Map;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Value;
 
-public class RunResponseHandler implements ResponseHandler, StatementKeysAccessor
+public class RunResponseHandler implements ResponseHandler, RunMetadataAccessor
 {
-    private List<String> statementKeys;
-    private long resultAvailableAfter;
+    private volatile List<String> statementKeys;
+    private volatile long resultAvailableAfter;
 
     @Override
     public void onSuccess( Map<String,Value> metadata )
@@ -54,6 +54,7 @@ public class RunResponseHandler implements ResponseHandler, StatementKeysAccesso
         return statementKeys;
     }
 
+    @Override
     public long resultAvailableAfter()
     {
         return resultAvailableAfter;

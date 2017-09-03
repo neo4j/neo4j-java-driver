@@ -27,8 +27,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
@@ -47,6 +47,7 @@ import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Value;
 
 import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
@@ -54,9 +55,9 @@ import static org.neo4j.driver.v1.Values.value;
 
 public class Main
 {
-    private static final int ITERATIONS = 100;
+    private static final int ITERATIONS = 10;
 
-    private static final String QUERY1 = "RETURN 1";
+    private static final String QUERY1 = "MATCH (n:ActiveItem) RETURN n LIMIT 50000";
 
     private static final String QUERY =
             "MATCH (s:Sku{sku_no: {skuNo}})-[:HAS_ITEM_SOURCE]->(i:ItemSource{itemsource: {itemSource}})\n" +
@@ -113,9 +114,11 @@ public class Main
             "}) AS overview;\n";
 
     private static final Map<String,Value> PARAMS = new HashMap<>();
+    private static final Map<String,Object> PARAMS_OBJ = new HashMap<>();
 
-    private static final String HOST = "localhost";
+    private static final String HOST = "ec2-54-78-245-189.eu-west-1.compute.amazonaws.com";
     private static final int PORT = 7687;
+    private static final String URI = "bolt://" + HOST + ":" + PORT;
     private static final SecurityPlan SECURITY_PLAN;
 
     static
@@ -129,6 +132,15 @@ public class Main
         tmp.put( "itemSource", "REG" );
         PARAMS.put( "itemList", value( Collections.singletonList( tmp ) ) );
 
+        PARAMS_OBJ.put( "skuNo", 366421 );
+        PARAMS_OBJ.put( "itemSource", "REG" );
+        PARAMS_OBJ.put( "catalogId", 2 );
+        PARAMS_OBJ.put( "locale", "en" );
+        Map<String,Object> tmpObj = new HashMap<>();
+        tmpObj.put( "skuNo", 366421 );
+        tmpObj.put( "itemSource", "REG" );
+        PARAMS_OBJ.put( "itemList", Collections.singletonList( tmpObj ) );
+
         try
         {
             SECURITY_PLAN = SecurityPlan.forAllCertificates();
@@ -141,129 +153,130 @@ public class Main
 
     public static void main( String[] args ) throws Throwable
     {
-        testDriverFetchList();
-//        testDriverFetchOneByOne();
-
-//        testNetty();
-
-//        testSocket();
+        testSessionRun();
+        testSessionRunAsync();
     }
 
-    private static void testDriverFetchList() throws Throwable
+    private static void testSessionRun() throws Throwable
     {
-        final AtomicReference<Object> status = new AtomicReference<>();
+        AuthToken authToken = AuthTokens.basic( "neo4j", "test" );
+        Config config = Config.build().withoutEncryption().toConfig();
 
-        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:7687", AuthTokens.basic( "neo4j", "test" ),
-                Config.build().withEncryption().toConfig() ) )
+        List<Long> timings = new ArrayList<>();
+        int recordsRead = 0;
+
+        try ( Driver driver = GraphDatabase.driver( URI, authToken, config ) )
         {
             try ( Session session = driver.session() )
             {
-                final StatementResultCursor cursor = session.runAsync( "unwind ['a', 'b', 'c', 'd', 'e'] as c return c",
-                        Collections.<String,Object>emptyMap() );
-
-                final ListenableFuture<List<Record>> all = ((InternalStatementResultCursor) cursor).allAsync();
-                all.addListener( new Runnable()
+                for ( int i = 0; i < ITERATIONS; i++ )
                 {
-                    @Override
-                    public void run()
+                    long start = System.nanoTime();
+                    StatementResult result = session.run( QUERY1, PARAMS_OBJ );
+                    while ( result.hasNext() )
                     {
-                        try
-                        {
-                            List<Record> records = all.get();
-                            System.out.println( "-->> " + records );
-                            status.set( new Object() );
-                        }
-                        catch ( Throwable t )
-                        {
-                            status.set( t );
-                        }
+                        Record record = result.next();
+                        useRecord( record );
+                        recordsRead++;
                     }
-                } );
+                    long end = System.nanoTime();
+                    timings.add( TimeUnit.NANOSECONDS.toMillis( end - start ) );
+                }
             }
-
-            while ( status.get() == null )
-            {
-                Thread.sleep( 1_000 );
-            }
-
-            Object res = status.get();
-            if ( res instanceof Throwable )
-            {
-                throw ((Throwable) res);
-            }
-
-            System.out.println( "-->> done!" );
         }
+
+        timings = clean( timings );
+
+        System.out.println( "Session#run(): mean --> " + mean( timings ) + "ms, stdDev --> " + stdDev( timings ) );
+        System.out.println( "Session#run(): timings --> " + timings );
+        System.out.println( "Session#run(): recordsRead --> " + recordsRead );
     }
 
-    private static void testDriverFetchOneByOne() throws Throwable
+    private static void testSessionRunAsync() throws Throwable
     {
-        final AtomicReference<Object> status = new AtomicReference<>();
+        AuthToken authToken = AuthTokens.basic( "neo4j", "test" );
+        Config config = Config.build().withoutEncryption().toConfig();
 
-        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:7687", AuthTokens.basic( "neo4j", "test" ),
-                Config.build().withoutEncryption().toConfig() ) )
+        List<Long> timings = new ArrayList<>();
+        int recordsRead = 0;
+
+        try ( Driver driver = GraphDatabase.driver( URI, authToken, config ) )
         {
             try ( Session session = driver.session() )
             {
-                final StatementResultCursor cursor = session.runAsync( "unwind ['a', 'b', 'c', 'd', 'e'] as c return c",
-                        Collections.<String,Object>emptyMap() );
-
-                final ListenableFuture<Boolean> fetchAsync = cursor.fetchAsync();
-                fetchAsync.addListener( new Runnable()
+                for ( int i = 0; i < ITERATIONS; i++ )
                 {
-                    @Override
-                    public void run()
+                    long start = System.nanoTime();
+                    StatementResultCursor cursor = session.runAsync( QUERY1, PARAMS_OBJ );
+                    while ( await( cursor.fetchAsync() ) )
                     {
-                        try
-                        {
-                            Boolean available = fetchAsync.get();
-                            System.out.println( "-->> record available: " + available );
-                            Record record = cursor.current();
-                            System.out.println( "-->> " + record );
-
-                            final ListenableFuture<Boolean> fetchAsync1 = cursor.fetchAsync();
-                            fetchAsync1.addListener( new Runnable()
-                            {
-                                @Override
-                                public void run()
-                                {
-                                    try
-                                    {
-                                        Boolean available1 = fetchAsync1.get();
-                                        System.out.println( "-->> record available: " + available1 );
-                                        status.set( new Object() );
-                                    }
-                                    catch ( Throwable t )
-                                    {
-                                        status.set( t );
-                                    }
-                                }
-                            } );
-                        }
-                        catch ( Throwable t )
-                        {
-                            status.set( t );
-                        }
+                        Record record = cursor.current();
+                        useRecord( record );
+                        recordsRead++;
                     }
-                } );
+                    long end = System.nanoTime();
+                    timings.add( TimeUnit.NANOSECONDS.toMillis( end - start ) );
+                }
             }
-
-            while ( status.get() == null )
-            {
-                Thread.sleep( 1_000 );
-            }
-
-            Object res = status.get();
-            if ( res instanceof Throwable )
-            {
-                throw ((Throwable) res);
-            }
-
-            System.out.println( "-->> done!" );
         }
+
+        timings = clean( timings );
+
+        System.out.println( "Session#runAsync(): mean --> " + mean( timings ) + "ms, stdDev --> " + stdDev( timings ) );
+        System.out.println( "Session#runAsync(): timings --> " + timings );
+        System.out.println( "Session#runAsync(): recordsRead --> " + recordsRead );
     }
 
-    private static void testNetty() throws Throwable
+    private static void testSocketConnection()
+    {
+        BoltServerAddress address = new BoltServerAddress( HOST, PORT );
+        SocketClient socket = new SocketClient( address, SECURITY_PLAN, 10_000, DEV_NULL_LOGGER );
+        InternalServerInfo serverInfo = new InternalServerInfo( address, "" );
+        SocketConnection connection = new SocketConnection( socket, serverInfo, DEV_NULL_LOGGER );
+
+        AuthToken token = AuthTokens.basic( "neo4j", "test" );
+        Map<String,Value> map = ((InternalAuthToken) token).toMap();
+
+        connection.init( "Tester", map );
+
+        List<Long> timings = new ArrayList<>();
+        for ( int i = 0; i < ITERATIONS; i++ )
+        {
+            long start = System.nanoTime();
+            connection.run( QUERY, PARAMS, NoOpResponseHandler.INSTANCE );
+            connection.pullAll( new ResponseHandler()
+            {
+                @Override
+                public void onSuccess( Map<String,Value> metadata )
+                {
+
+                }
+
+                @Override
+                public void onFailure( Throwable error )
+                {
+
+                }
+
+                @Override
+                public void onRecord( Value[] fields )
+                {
+//                    System.out.println( "Received records: " + Arrays.toString( fields ) );
+                }
+            } );
+            connection.sync();
+            long end = System.nanoTime();
+
+            timings.add( TimeUnit.NANOSECONDS.toMillis( end - start ) );
+        }
+
+        timings = clean( timings );
+
+        System.out.println( "Socket: mean --> " + mean( timings ) + "ms, stdDev --> " + stdDev( timings ) );
+        System.out.println( "Socket: " + timings );
+    }
+
+    private static void testNettyConnection() throws Throwable
     {
         BoltServerAddress address = new BoltServerAddress( HOST, PORT );
         AuthToken authToken = AuthTokens.basic( "neo4j", "test" );
@@ -325,55 +338,6 @@ public class Main
         System.out.println( "Netty: " + timings );
     }
 
-    private static void testSocket()
-    {
-        BoltServerAddress address = new BoltServerAddress( HOST, PORT );
-        SocketClient socket = new SocketClient( address, SECURITY_PLAN, 10_000, DEV_NULL_LOGGER );
-        InternalServerInfo serverInfo = new InternalServerInfo( address, "" );
-        SocketConnection connection = new SocketConnection( socket, serverInfo, DEV_NULL_LOGGER );
-
-        AuthToken token = AuthTokens.basic( "neo4j", "test" );
-        Map<String,Value> map = ((InternalAuthToken) token).toMap();
-
-        connection.init( "Tester", map );
-
-        List<Long> timings = new ArrayList<>();
-        for ( int i = 0; i < ITERATIONS; i++ )
-        {
-            long start = System.nanoTime();
-            connection.run( QUERY, PARAMS, NoOpResponseHandler.INSTANCE );
-            connection.pullAll( new ResponseHandler()
-            {
-                @Override
-                public void onSuccess( Map<String,Value> metadata )
-                {
-
-                }
-
-                @Override
-                public void onFailure( Throwable error )
-                {
-
-                }
-
-                @Override
-                public void onRecord( Value[] fields )
-                {
-//                    System.out.println( "Received records: " + Arrays.toString( fields ) );
-                }
-            } );
-            connection.sync();
-            long end = System.nanoTime();
-
-            timings.add( TimeUnit.NANOSECONDS.toMillis( end - start ) );
-        }
-
-        timings = clean( timings );
-
-        System.out.println( "Socket: mean --> " + mean( timings ) + "ms, stdDev --> " + stdDev( timings ) );
-        System.out.println( "Socket: " + timings );
-    }
-
     private static List<Long> clean( List<Long> timings )
     {
         int warmup = timings.size() / 10; // remove first 10% of measurements, they are just a warmup :)
@@ -401,5 +365,37 @@ public class Main
 
         double squaredDiffMean = sum / timings.size();
         return (Math.sqrt( squaredDiffMean ));
+    }
+
+    private static <T, U extends Future<T>> T await( U future )
+    {
+        try
+        {
+            return future.get();
+        }
+        catch ( Throwable t )
+        {
+            throw new RuntimeException( t );
+        }
+    }
+
+    private static void useRecord( Record record )
+    {
+        if ( record.keys().size() > 5 )
+        {
+            System.out.println( "Hello" );
+        }
+
+        if ( record.get( 0 ).isNull() )
+        {
+            System.out.println( " " );
+        }
+
+        if ( record.get( "A" ) == null )
+        {
+            System.out.println( "World" );
+        }
+
+//        System.out.println( record );
     }
 }

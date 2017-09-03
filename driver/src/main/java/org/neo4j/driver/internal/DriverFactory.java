@@ -66,6 +66,8 @@ public class DriverFactory
     public final Driver newInstance( URI uri, AuthToken authToken, RoutingSettings routingSettings,
             RetrySettings retrySettings, Config config )
     {
+        authToken = authToken == null ? AuthTokens.none() : authToken;
+
         BoltServerAddress address = new BoltServerAddress( uri );
         RoutingSettings newRoutingSettings = routingSettings.withRoutingContext( new RoutingContext( uri ) );
         SecurityPlan securityPlan = createSecurityPlan( address, config );
@@ -198,8 +200,6 @@ public class DriverFactory
      */
     protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Config config )
     {
-        authToken = authToken == null ? AuthTokens.none() : authToken;
-
         ConnectionSettings connectionSettings = new ConnectionSettings( authToken, config.connectionTimeoutMillis() );
         PoolSettings poolSettings = new PoolSettings( config.maxIdleConnectionPoolSize(),
                 config.idleTimeBeforeConnectionTest(), config.maxConnectionLifetime() );

@@ -22,22 +22,39 @@ import io.netty.channel.Channel;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 
-public class ExecuteCommandListener implements GenericFutureListener<Future<Channel>>
+public abstract class AutoReadListener implements GenericFutureListener<Future<Channel>>
 {
-    private final Runnable command;
-
-    public ExecuteCommandListener( Runnable command )
+    private static final AutoReadListener ENABLE = new AutoReadListener()
     {
-        this.command = command;
+        @Override
+        protected boolean value()
+        {
+            return true;
+        }
+    };
+
+    private static final AutoReadListener DISABLE = new AutoReadListener()
+    {
+        @Override
+        protected boolean value()
+        {
+            return false;
+        }
+    };
+
+    public static AutoReadListener forValue( boolean value )
+    {
+        return value ? ENABLE : DISABLE;
     }
 
     @Override
     public void operationComplete( Future<Channel> future ) throws Exception
     {
-        Channel channel = future.getNow();
-        if ( channel != null )
+        if ( future.isSuccess() )
         {
-            channel.eventLoop().execute( command );
+            future.getNow().config().setAutoRead( value() );
         }
     }
+
+    protected abstract boolean value();
 }

@@ -20,7 +20,9 @@ package org.neo4j.driver.internal.handlers;
 
 import java.util.List;
 
-public interface StatementKeysAccessor
+public interface RunMetadataAccessor
 {
     List<String> statementKeys();
+
+    long resultAvailableAfter();
 }
