@@ -97,11 +97,11 @@ public interface StatementRunner
     /**
      * TODO
      *
-     * @param statementTemplate
+     * @param statementText
      * @param parameters
      * @return
      */
-    StatementResultCursor runAsync( String statementTemplate, Value parameters );
+    StatementResultCursor runAsync( String statementText, Value parameters );
 
     /**
      * Run a statement and return a result stream.

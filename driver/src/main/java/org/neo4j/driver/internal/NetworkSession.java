@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.driver.internal.logging.DelegatingLogger;
 import org.neo4j.driver.internal.netty.AsyncConnection;
 import org.neo4j.driver.internal.netty.InternalStatementResultCursor;
+import org.neo4j.driver.internal.netty.ListenableFuture;
 import org.neo4j.driver.internal.netty.StatementResultCursor;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.Connection;
@@ -59,6 +60,7 @@ public class NetworkSession implements Session, SessionResourcesHandler
     private Bookmark bookmark = Bookmark.empty();
     private PooledConnection currentConnection;
     private ExplicitTransaction currentTransaction;
+    private AsyncExplicitTransaction currentAsyncTransaction;
 
     private AsyncConnection currentAsyncConnection;
 
@@ -120,9 +122,9 @@ public class NetworkSession implements Session, SessionResourcesHandler
     }
 
     @Override
-    public StatementResultCursor runAsync( String statementText, Value statementParameters )
+    public StatementResultCursor runAsync( String statementText, Value parameters )
     {
-        return runAsync( new Statement( statementText, statementParameters ) );
+        return runAsync( new Statement( statementText, parameters ) );
     }
 
     @Override
@@ -234,6 +236,12 @@ public class NetworkSession implements Session, SessionResourcesHandler
     }
 
     @Override
+    public ListenableFuture<Transaction> beginTransactionAsync()
+    {
+        return beginTransactionAsync( mode );
+    }
+
+    @Override
     public <T> T readTransaction( TransactionWork<T> work )
     {
         return transaction( AccessMode.READ, work );
@@ -292,6 +300,17 @@ public class NetworkSession implements Session, SessionResourcesHandler
     }
 
     @Override
+    public void onAsyncTransactionClosed( AsyncExplicitTransaction tx )
+    {
+        if ( currentAsyncTransaction != null && currentAsyncTransaction == tx )
+        {
+            currentAsyncConnection.release();
+            setBookmark( currentAsyncTransaction.bookmark() );
+            currentAsyncTransaction = null;
+        }
+    }
+
+    @Override
     public synchronized void onConnectionError( boolean recoverable )
     {
         // must check if transaction has been closed
@@ -343,9 +362,20 @@ public class NetworkSession implements Session, SessionResourcesHandler
         syncAndCloseCurrentConnection();
         currentConnection = acquireConnection( mode );
 
-        currentTransaction = new ExplicitTransaction( currentConnection, this, bookmark);
+        currentTransaction = new ExplicitTransaction( currentConnection, this, bookmark );
         currentConnection.setResourcesHandler( this );
         return currentTransaction;
+    }
+
+    private synchronized ListenableFuture<Transaction> beginTransactionAsync( AccessMode mode )
+    {
+        ensureSessionIsOpen();
+        ensureNoOpenTransactionBeforeOpeningTransaction();
+
+        AsyncConnection asyncConnection = acquireAsyncConnection( mode );
+        currentAsyncTransaction = new AsyncExplicitTransaction( asyncConnection, this );
+
+        return currentAsyncTransaction.beginAsync( bookmark );
     }
 
     private void ensureNoUnrecoverableError()
@@ -361,7 +391,7 @@ public class NetworkSession implements Session, SessionResourcesHandler
     //should be called from a synchronized block
     private void ensureNoOpenTransactionBeforeRunningSession()
     {
-        if ( currentTransaction != null )
+        if ( currentTransaction != null || currentAsyncTransaction != null )
         {
             throw new ClientException( "Statements cannot be run directly on a session with an open transaction;" +
                                        " either run from within the transaction or use a different session." );
@@ -371,7 +401,7 @@ public class NetworkSession implements Session, SessionResourcesHandler
     //should be called from a synchronized block
     private void ensureNoOpenTransactionBeforeOpeningTransaction()
     {
-        if ( currentTransaction != null )
+        if ( currentTransaction != null || currentAsyncTransaction != null )
         {
             throw new ClientException( "You cannot begin a transaction on a session with an open transaction;" +
                                        " either run from within the transaction or use a different session." );

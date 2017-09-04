@@ -94,19 +94,13 @@ public class InboundMessageDispatcher extends SimpleChannelInboundHandler<ByteBu
 
     private void ackFailureIfNeeded( ChannelHandlerContext ctx )
     {
-        if ( !isHandlingFailure )
+        Throwable error = responseHandlersHolder.currentError();
+        if ( !isHandlingFailure && isRecoverable( error ) )
         {
             isHandlingFailure = true;
 
-            Throwable error = responseHandlersHolder.currentError();
-            if ( error != null )
-            {
-                if ( isRecoverable( error ) )
-                {
-                    responseHandlersHolder.queueRegardlessOfError( new AckFailureResponseHandler( this ) );
-                    ctx.writeAndFlush( AckFailureMessage.ACK_FAILURE );
-                }
-            }
+            responseHandlersHolder.queue( new AckFailureResponseHandler( this ) );
+            ctx.channel().writeAndFlush( AckFailureMessage.ACK_FAILURE );
         }
     }
 }

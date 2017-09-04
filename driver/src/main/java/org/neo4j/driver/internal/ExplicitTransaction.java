@@ -23,6 +23,7 @@ import java.util.Map;
 
 import org.neo4j.driver.internal.handlers.BookmarkResponseHandler;
 import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
+import org.neo4j.driver.internal.netty.ListenableFuture;
 import org.neo4j.driver.internal.netty.StatementResultCursor;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
@@ -149,6 +150,18 @@ public class ExplicitTransaction implements Transaction
         }
     }
 
+    @Override
+    public ListenableFuture<Void> commitAsync()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public ListenableFuture<Void> rollbackAsync()
+    {
+        throw new UnsupportedOperationException();
+    }
+
     private void rollbackTx()
     {
         conn.run( "ROLLBACK", Collections.<String,Value>emptyMap(), NoOpResponseHandler.INSTANCE );
@@ -165,9 +178,9 @@ public class ExplicitTransaction implements Transaction
     }
 
     @Override
-    public StatementResultCursor runAsync( String statementTemplate, Value parameters )
+    public StatementResultCursor runAsync( String statementText, Value parameters )
     {
-        throw new UnsupportedOperationException(); // todo
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -179,7 +192,7 @@ public class ExplicitTransaction implements Transaction
     @Override
     public StatementResultCursor runAsync( String statementTemplate )
     {
-        throw new UnsupportedOperationException(); // todo
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -192,7 +205,7 @@ public class ExplicitTransaction implements Transaction
     @Override
     public StatementResultCursor runAsync( String statementTemplate, Map<String,Object> statementParameters )
     {
-        throw new UnsupportedOperationException(); // todo
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -205,7 +218,7 @@ public class ExplicitTransaction implements Transaction
     @Override
     public StatementResultCursor runAsync( String statementTemplate, Record statementParameters )
     {
-        throw new UnsupportedOperationException(); // todo
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -236,7 +249,7 @@ public class ExplicitTransaction implements Transaction
     @Override
     public StatementResultCursor runAsync( Statement statement )
     {
-        throw new UnsupportedOperationException(); // todo
+        throw new UnsupportedOperationException();
     }
 
     @Override

@@ -18,36 +18,50 @@
  */
 package org.neo4j.driver.internal.handlers;
 
+import io.netty.util.concurrent.Promise;
+
+import java.util.Arrays;
 import java.util.Map;
 
-import org.neo4j.driver.internal.netty.AckFailureSource;
+import org.neo4j.driver.internal.AsyncExplicitTransaction;
+import org.neo4j.driver.internal.SessionResourcesHandler;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Value;
 
 import static java.util.Objects.requireNonNull;
 
-public class AckFailureResponseHandler implements ResponseHandler
+public class RollbackTxResponseHandler implements ResponseHandler
 {
-    private final AckFailureSource ackFailureSource;
+    private final Promise<Void> rollbackTxPromise;
+    private final SessionResourcesHandler resourcesHandler;
+    private final AsyncExplicitTransaction tx;
 
-    public AckFailureResponseHandler( AckFailureSource ackFailureSource )
+    public RollbackTxResponseHandler( Promise<Void> rollbackTxPromise, SessionResourcesHandler resourcesHandler,
+            AsyncExplicitTransaction tx )
     {
-        this.ackFailureSource = requireNonNull( ackFailureSource );
+        this.rollbackTxPromise = requireNonNull( rollbackTxPromise );
+        this.resourcesHandler = requireNonNull( resourcesHandler );
+        this.tx = requireNonNull( tx );
     }
 
     @Override
     public void onSuccess( Map<String,Value> metadata )
     {
-        ackFailureSource.onAckFailureSuccess();
+        resourcesHandler.onAsyncTransactionClosed( tx );
+        rollbackTxPromise.setSuccess( null );
     }
 
     @Override
     public void onFailure( Throwable error )
     {
+        resourcesHandler.onAsyncTransactionClosed( tx );
+        rollbackTxPromise.setFailure( error );
     }
 
     @Override
     public void onRecord( Value[] fields )
     {
+        throw new UnsupportedOperationException(
+                "Transaction rollback is not expected to receive records: " + Arrays.toString( fields ) );
     }
 }

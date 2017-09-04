@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.v1;
 
+import org.neo4j.driver.internal.netty.ListenableFuture;
 import org.neo4j.driver.v1.util.Resource;
 
 /**
@@ -81,6 +82,8 @@ public interface Session extends Resource, StatementRunner
      */
     @Deprecated
     Transaction beginTransaction( String bookmark );
+
+    ListenableFuture<Transaction> beginTransactionAsync();
 
     /**
      * Execute given unit of work in a  {@link AccessMode#READ read} transaction.

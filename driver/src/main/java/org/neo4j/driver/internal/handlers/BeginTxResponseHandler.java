@@ -18,36 +18,44 @@
  */
 package org.neo4j.driver.internal.handlers;
 
+import io.netty.util.concurrent.Promise;
+
+import java.util.Arrays;
 import java.util.Map;
 
-import org.neo4j.driver.internal.netty.AckFailureSource;
 import org.neo4j.driver.internal.spi.ResponseHandler;
+import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.Value;
 
 import static java.util.Objects.requireNonNull;
 
-public class AckFailureResponseHandler implements ResponseHandler
+public class BeginTxResponseHandler implements ResponseHandler
 {
-    private final AckFailureSource ackFailureSource;
+    private final Promise<Transaction> beginTxPromise;
+    private final Transaction tx;
 
-    public AckFailureResponseHandler( AckFailureSource ackFailureSource )
+    public BeginTxResponseHandler( Promise<Transaction> beginTxPromise, Transaction tx )
     {
-        this.ackFailureSource = requireNonNull( ackFailureSource );
+        this.beginTxPromise = requireNonNull( beginTxPromise );
+        this.tx = requireNonNull( tx );
     }
 
     @Override
     public void onSuccess( Map<String,Value> metadata )
     {
-        ackFailureSource.onAckFailureSuccess();
+        beginTxPromise.setSuccess( tx );
     }
 
     @Override
     public void onFailure( Throwable error )
     {
+        beginTxPromise.setFailure( error );
     }
 
     @Override
     public void onRecord( Value[] fields )
     {
+        throw new UnsupportedOperationException(
+                "Transaction begin is not expected to receive records: " + Arrays.toString( fields ) );
     }
 }

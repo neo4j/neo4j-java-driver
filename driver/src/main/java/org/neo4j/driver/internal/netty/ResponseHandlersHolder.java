@@ -47,11 +47,6 @@ public class ResponseHandlersHolder implements MessageHandler
         }
     }
 
-    public void queueRegardlessOfError( ResponseHandler handler )
-    {
-        handlers.add( handler );
-    }
-
     @Override
     public void handleInitMessage( String clientNameAndVersion, Map<String,Value> authToken ) throws IOException
     {

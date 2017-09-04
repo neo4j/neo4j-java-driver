@@ -26,6 +26,8 @@ public interface SessionResourcesHandler
 
     void onTransactionClosed( ExplicitTransaction tx );
 
+    void onAsyncTransactionClosed( AsyncExplicitTransaction tx );
+
     void onConnectionError( boolean recoverable );
 
     SessionResourcesHandler NO_OP = new SessionResourcesHandler()
@@ -42,6 +44,11 @@ public interface SessionResourcesHandler
 
         @Override
         public void onTransactionClosed( ExplicitTransaction tx )
+        {
+        }
+
+        @Override
+        public void onAsyncTransactionClosed( AsyncExplicitTransaction tx )
         {
         }
 
