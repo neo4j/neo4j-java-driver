@@ -27,7 +27,6 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.neo4j.driver.internal.InternalRecord;
-import org.neo4j.driver.internal.netty.AsyncConnection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.summary.InternalNotification;
 import org.neo4j.driver.internal.summary.InternalPlan;
@@ -44,7 +43,6 @@ import org.neo4j.driver.v1.summary.SummaryCounters;
 public class RecordsResponseHandler implements ResponseHandler
 {
     private final RunMetadataAccessor keysAccessor;
-    private final AsyncConnection asyncConnection;
 
     // todo: all these fields are written by an event loop thread and read by user thread.
     // todo: accesses should have correct synchronization!
@@ -64,13 +62,7 @@ public class RecordsResponseHandler implements ResponseHandler
 
     public RecordsResponseHandler( RunMetadataAccessor keysAccessor )
     {
-        this( keysAccessor, null );
-    }
-
-    public RecordsResponseHandler( RunMetadataAccessor keysAccessor, AsyncConnection asyncConnection )
-    {
         this.keysAccessor = keysAccessor;
-        this.asyncConnection = asyncConnection;
         this.recordBuffer = new ConcurrentLinkedQueue<>();
     }
 
@@ -84,7 +76,7 @@ public class RecordsResponseHandler implements ResponseHandler
         notifications = extractNotifications( metadata );
         resultConsumedAfter = extractResultConsumedAfter( metadata );
 
-        markCompleted();
+        completed = true;
 
         if ( recordAvailablePromise != null )
         {
@@ -97,7 +89,7 @@ public class RecordsResponseHandler implements ResponseHandler
     @Override
     public void onFailure( Throwable error )
     {
-        markCompleted();
+        completed = true;
 
         if ( recordAvailablePromise != null )
         {
@@ -156,15 +148,6 @@ public class RecordsResponseHandler implements ResponseHandler
     public boolean isCompleted()
     {
         return completed;
-    }
-
-    private void markCompleted()
-    {
-        completed = true;
-        if ( asyncConnection != null ) // todo: this null check is only needed for sync connections
-        {
-            asyncConnection.release();
-        }
     }
 
     private static StatementType extractStatementType( Map<String,Value> metadata )

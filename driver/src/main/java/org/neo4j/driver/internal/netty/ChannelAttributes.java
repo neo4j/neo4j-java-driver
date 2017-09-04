@@ -27,6 +27,8 @@ public final class ChannelAttributes
 {
     private static final AttributeKey<BoltServerAddress> ADDRESS = AttributeKey.newInstance( "address" );
     private static final AttributeKey<Long> CREATION_TIMESTAMP = AttributeKey.newInstance( "creationTimestamp" );
+    private static final AttributeKey<ResponseHandlersHolder> RESPONSE_HANDLERS_HOLDER =
+            AttributeKey.newInstance( "responseHandlersHolder" );
 
     private ChannelAttributes()
     {
@@ -37,9 +39,9 @@ public final class ChannelAttributes
         return get( channel, ADDRESS );
     }
 
-    public static void setAddress( Channel channel, BoltServerAddress value )
+    public static void setAddress( Channel channel, BoltServerAddress address )
     {
-        setOnce( channel, ADDRESS, value );
+        setOnce( channel, ADDRESS, address );
     }
 
     public static long creationTimestamp( Channel channel )
@@ -47,9 +49,19 @@ public final class ChannelAttributes
         return get( channel, CREATION_TIMESTAMP );
     }
 
-    public static void setCreationTimestamp( Channel channel, long value )
+    public static void setCreationTimestamp( Channel channel, long creationTimestamp )
     {
-        setOnce( channel, CREATION_TIMESTAMP, value );
+        setOnce( channel, CREATION_TIMESTAMP, creationTimestamp );
+    }
+
+    public static ResponseHandlersHolder responseHandlersHolder( Channel channel )
+    {
+        return get( channel, RESPONSE_HANDLERS_HOLDER );
+    }
+
+    public static void setResponseHandlersHolder( Channel channel, ResponseHandlersHolder responseHandlersHolder )
+    {
+        setOnce( channel, RESPONSE_HANDLERS_HOLDER, responseHandlersHolder );
     }
 
     private static <T> T get( Channel channel, AttributeKey<T> key )

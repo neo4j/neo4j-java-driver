@@ -25,8 +25,8 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.neo4j.driver.internal.messaging.MessageHandler;
-import org.neo4j.driver.internal.netty.ErrorCreator;
 import org.neo4j.driver.internal.spi.ResponseHandler;
+import org.neo4j.driver.internal.util.ErrorUtil;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 
@@ -48,7 +48,7 @@ public class SocketResponseHandler implements MessageHandler
     public void handleFailureMessage( String code, String message )
     {
         ResponseHandler handler = handlers.remove();
-        error = ErrorCreator.create( code, message );
+        error = ErrorUtil.newNeo4jError( code, message );
         if ( handler != null )
         {
             handler.onFailure( error );

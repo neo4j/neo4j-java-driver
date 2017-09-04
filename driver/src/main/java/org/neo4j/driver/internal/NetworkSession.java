@@ -144,7 +144,7 @@ public class NetworkSession implements Session, SessionResourcesHandler
         ensureNoOpenTransactionBeforeRunningSession();
 
         AsyncConnection asyncConnection = acquireAsyncConnection( mode );
-        InternalStatementResultCursor resultCursor = new InternalStatementResultCursor( asyncConnection );
+        InternalStatementResultCursor resultCursor = new InternalStatementResultCursor( asyncConnection, this );
 
         String query = statement.text();
         Map<String,Value> params = statement.parameters().asMap( Values.ofValue() );
@@ -272,6 +272,15 @@ public class NetworkSession implements Session, SessionResourcesHandler
     }
 
     @Override
+    public void onAsyncResultConsumed()
+    {
+        if ( currentAsyncConnection != null )
+        {
+            currentAsyncConnection.release();
+        }
+    }
+
+    @Override
     public synchronized void onTransactionClosed( ExplicitTransaction tx )
     {
         if ( currentTransaction != null && currentTransaction == tx )
@@ -393,8 +402,11 @@ public class NetworkSession implements Session, SessionResourcesHandler
     {
         if ( currentAsyncConnection != null && currentAsyncConnection.tryMarkInUse() )
         {
+            System.out.println( "===>>> Acquired an existing async connection" );
             return currentAsyncConnection;
         }
+
+        System.out.println( "===>>> Acquiring new async connection" );
 
         currentAsyncConnection = connectionProvider.acquireAsyncConnection( mode );
         logger.debug( "Acquired async connection " + currentAsyncConnection );

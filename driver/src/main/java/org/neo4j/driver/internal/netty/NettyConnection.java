@@ -36,6 +36,7 @@ import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Value;
 
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.driver.internal.netty.ChannelAttributes.responseHandlersHolder;
 
 // todo: keep state flags to prohibit interaction with released connections
 public class NettyConnection implements AsyncConnection
@@ -44,7 +45,7 @@ public class NettyConnection implements AsyncConnection
     private final NettyChannelPool channelPool;
 
     private Channel channel;
-    private InboundMessageDispatcher inboundMessageDispatcher;
+    private ResponseHandlersHolder responseHandlersHolder;
     private final AtomicBoolean autoReadEnabled = new AtomicBoolean( true );
 
     private final AtomicInteger usageCounter = new AtomicInteger( 1 );
@@ -151,8 +152,11 @@ public class NettyConnection implements AsyncConnection
                 reset( new ReleaseChannelHandler( channelFuture, channelPool ) );
                 flush();
             }
-            // else we lost a race with some thread that incremented the usage counter
-            // it will continue using this connection and try to release it when done
+            else
+            {
+                // else we lost a race with some thread that incremented the usage counter
+                // it will continue using this connection and try to release it when done
+            }
         }
     }
 
@@ -160,7 +164,7 @@ public class NettyConnection implements AsyncConnection
     {
         if ( tryExtractChannel() )
         {
-            inboundMessageDispatcher.addHandler( handler );
+            responseHandlersHolder.queue( handler );
             channel.write( message );
         }
         else
@@ -190,7 +194,7 @@ public class NettyConnection implements AsyncConnection
         else if ( channelFuture.isSuccess() )
         {
             channel = requireNonNull( channelFuture.getNow() );
-            inboundMessageDispatcher = requireNonNull( channel.pipeline().get( InboundMessageDispatcher.class ) );
+            responseHandlersHolder = requireNonNull( responseHandlersHolder( channel ) );
             return true;
         }
         else

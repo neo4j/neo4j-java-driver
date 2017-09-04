@@ -33,6 +33,7 @@ import org.neo4j.driver.internal.util.Clock;
 
 import static org.neo4j.driver.internal.netty.ChannelAttributes.setAddress;
 import static org.neo4j.driver.internal.netty.ChannelAttributes.setCreationTimestamp;
+import static org.neo4j.driver.internal.netty.ChannelAttributes.setResponseHandlersHolder;
 
 public class NettyChannelInitializer extends ChannelInitializer<Channel>
 {
@@ -82,5 +83,6 @@ public class NettyChannelInitializer extends ChannelInitializer<Channel>
     {
         setAddress( channel, address );
         setCreationTimestamp( channel, clock.millis() );
+        setResponseHandlersHolder( channel, new ResponseHandlersHolder() );
     }
 }

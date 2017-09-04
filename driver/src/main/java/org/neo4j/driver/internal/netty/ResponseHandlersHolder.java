@@ -19,22 +19,37 @@
 package org.neo4j.driver.internal.netty;
 
 import java.io.IOException;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
 
 import org.neo4j.driver.internal.messaging.MessageHandler;
 import org.neo4j.driver.internal.spi.ResponseHandler;
+import org.neo4j.driver.internal.util.ErrorUtil;
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.exceptions.Neo4jException;
 
-public class ResponseMessageHandler implements MessageHandler
+public class ResponseHandlersHolder implements MessageHandler
 {
-    private final Queue<ResponseHandler> handlers;
-    private Throwable lastError;
+    private final Queue<ResponseHandler> handlers = new LinkedList<>();
 
-    public ResponseMessageHandler( Queue<ResponseHandler> handlers )
+    private Throwable currentError;
+    private boolean fatalErrorOccurred;
+
+    public void queue( ResponseHandler handler )
     {
-        this.handlers = handlers;
+        if ( fatalErrorOccurred )
+        {
+            handler.onFailure( currentError );
+        }
+        else
+        {
+            handlers.add( handler );
+        }
+    }
+
+    public void queueRegardlessOfError( ResponseHandler handler )
+    {
+        handlers.add( handler );
     }
 
     @Override
@@ -90,45 +105,45 @@ public class ResponseMessageHandler implements MessageHandler
     @Override
     public void handleFailureMessage( String code, String message ) throws IOException
     {
-        Neo4jException error = ErrorCreator.create( code, message );
-        handleError( error, false );
+        currentError = ErrorUtil.newNeo4jError( code, message );
+        ResponseHandler handler = handlers.poll();
+        if ( handler != null )
+        {
+            handler.onFailure( currentError );
+        }
     }
 
     @Override
     public void handleIgnoredMessage() throws IOException
     {
         ResponseHandler handler = handlers.poll();
-        if ( handler != null && lastError != null )
+        if ( handler != null && currentError != null )
         {
-            handler.onFailure( lastError );
+            handler.onFailure( currentError );
         }
     }
 
     public void handleFatalError( Throwable error )
     {
         System.out.println( "--- FATAL ERROR" );
-        handleError( error, true );
+
+        currentError = error;
+        fatalErrorOccurred = true;
+
+        while ( !handlers.isEmpty() )
+        {
+            ResponseHandler handler = handlers.remove();
+            handler.onFailure( currentError );
+        }
     }
 
-    public void handleError( Throwable error, boolean fatal )
+    public Throwable currentError()
     {
-        lastError = error;
+        return currentError;
+    }
 
-        if ( fatal )
-        {
-            while ( !handlers.isEmpty() )
-            {
-                ResponseHandler handler = handlers.remove();
-                handler.onFailure( lastError );
-            }
-        }
-        else
-        {
-            ResponseHandler handler = handlers.poll();
-            if ( handler != null )
-            {
-                handler.onFailure( lastError );
-            }
-        }
+    public void clearCurrentError()
+    {
+        currentError = null;
     }
 }

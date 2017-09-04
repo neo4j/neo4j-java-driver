@@ -19,13 +19,13 @@
 package org.neo4j.driver.internal.netty;
 
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelPipeline;
 
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 
 import static org.neo4j.driver.internal.netty.ChannelAttributes.address;
 import static org.neo4j.driver.internal.netty.ChannelAttributes.creationTimestamp;
+import static org.neo4j.driver.internal.netty.ChannelAttributes.responseHandlersHolder;
 
 public final class ChannelWriter
 {
@@ -37,10 +37,8 @@ public final class ChannelWriter
     {
         try
         {
-            ChannelPipeline pipeline = channel.pipeline();
-
-            InboundMessageDispatcher messageHandler = pipeline.get( InboundMessageDispatcher.class );
-            messageHandler.addHandler( handler );
+            ResponseHandlersHolder responseHandlersHolder = responseHandlersHolder( channel );
+            responseHandlersHolder.queue( handler );
 
             if ( flush )
             {

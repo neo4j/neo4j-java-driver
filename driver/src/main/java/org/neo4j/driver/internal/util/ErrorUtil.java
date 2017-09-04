@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.netty;
+package org.neo4j.driver.internal.util;
 
 import org.neo4j.driver.v1.exceptions.AuthenticationException;
 import org.neo4j.driver.v1.exceptions.ClientException;
@@ -24,13 +24,13 @@ import org.neo4j.driver.v1.exceptions.DatabaseException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.exceptions.TransientException;
 
-public final class ErrorCreator
+public final class ErrorUtil
 {
-    private ErrorCreator()
+    private ErrorUtil()
     {
     }
 
-    public static Neo4jException create( String code, String message )
+    public static Neo4jException newNeo4jError( String code, String message )
     {
         String classification = extractClassification( code );
         switch ( classification )
@@ -49,6 +49,35 @@ public final class ErrorCreator
         default:
             return new DatabaseException( code, message );
         }
+    }
+
+    public static boolean isRecoverable( Throwable error )
+    {
+        if ( error instanceof Neo4jException )
+        {
+            if ( isClientOrTransientError( ((Neo4jException) error) ) )
+            {
+                return true;
+            }
+
+            if ( isProtocolViolationError( ((Neo4jException) error) ) )
+            {
+                return false;
+            }
+        }
+        return false;
+    }
+
+    private static boolean isProtocolViolationError( Neo4jException error )
+    {
+        String errorCode = error.code();
+        return errorCode != null && errorCode.startsWith( "Neo.ClientError.Request" );
+    }
+
+    private static boolean isClientOrTransientError( Neo4jException error )
+    {
+        String errorCode = error.code();
+        return errorCode != null && (errorCode.contains( "ClientError" ) || errorCode.contains( "TransientError" ));
     }
 
     private static String extractClassification( String code )

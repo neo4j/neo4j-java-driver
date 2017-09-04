@@ -18,26 +18,21 @@
  */
 package org.neo4j.driver.internal.netty;
 
-import io.netty.util.concurrent.Promise;
-
-import java.util.ArrayList;
-import java.util.List;
-
+import org.neo4j.driver.internal.SessionResourcesHandler;
 import org.neo4j.driver.internal.handlers.AsyncRecordsResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.v1.Record;
 
 public class InternalStatementResultCursor implements StatementResultCursor
 {
-    private final AsyncConnection connection;
     private final RunResponseHandler runResponseHandler;
     private final AsyncRecordsResponseHandler pullAllResponseHandler;
 
-    public InternalStatementResultCursor( AsyncConnection connection )
+    public InternalStatementResultCursor( AsyncConnection connection, SessionResourcesHandler resourcesHandler )
     {
-        this.connection = connection;
         this.runResponseHandler = new RunResponseHandler();
-        this.pullAllResponseHandler = new AsyncRecordsResponseHandler( runResponseHandler, connection );
+        this.pullAllResponseHandler =
+                new AsyncRecordsResponseHandler( runResponseHandler, connection, resourcesHandler );
     }
 
     public RunResponseHandler runResponseHandler()
@@ -60,43 +55,5 @@ public class InternalStatementResultCursor implements StatementResultCursor
     public Record current()
     {
         return pullAllResponseHandler.pollCurrent();
-    }
-
-    public ListenableFuture<List<Record>> allAsync()
-    {
-        List<Record> result = new ArrayList<>();
-        Promise<List<Record>> resultPromise = connection.newPromise();
-        fetchAll( result, resultPromise );
-        return new InternalListenableFuture<>( resultPromise );
-    }
-
-    private void fetchAll( final List<Record> result, final Promise<List<Record>> resultPromise )
-    {
-        final ListenableFuture<Boolean> fetch = fetchAsync();
-        fetch.addListener( new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                try
-                {
-                    Boolean available = fetch.get();
-                    if ( available )
-                    {
-                        Record record = current();
-                        result.add( record );
-                        fetchAll( result, resultPromise );
-                    }
-                    else
-                    {
-                        resultPromise.setSuccess( result );
-                    }
-                }
-                catch ( Throwable t )
-                {
-                    resultPromise.setFailure( t );
-                }
-            }
-        } );
     }
 }

@@ -22,21 +22,22 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
-import java.util.LinkedList;
-import java.util.Queue;
-
+import org.neo4j.driver.internal.handlers.AckFailureResponseHandler;
+import org.neo4j.driver.internal.messaging.AckFailureMessage;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.PackStreamMessageFormatV1;
-import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
-public class InboundMessageDispatcher extends SimpleChannelInboundHandler<ByteBuf>
+import static org.neo4j.driver.internal.netty.ChannelAttributes.responseHandlersHolder;
+import static org.neo4j.driver.internal.util.ErrorUtil.isRecoverable;
+
+public class InboundMessageDispatcher extends SimpleChannelInboundHandler<ByteBuf> implements AckFailureSource
 {
     private final ByteBufPackInput packInput;
     private final MessageFormat.Reader reader;
 
-    private final Queue<ResponseHandler> handlers = new LinkedList<>();
-    private final ResponseMessageHandler responseMessageHandler = new ResponseMessageHandler( handlers );
+    private ResponseHandlersHolder responseHandlersHolder;
+    private boolean isHandlingFailure;
 
     public InboundMessageDispatcher()
     {
@@ -50,23 +51,26 @@ public class InboundMessageDispatcher extends SimpleChannelInboundHandler<ByteBu
         } );
     }
 
-    public void addHandler( ResponseHandler handler )
+    @Override
+    public void handlerAdded( ChannelHandlerContext ctx ) throws Exception
     {
-//        System.out.println( "--- ADD HANDLER: " + handler.getClass() );
-        handlers.add( handler );
+        responseHandlersHolder = responseHandlersHolder( ctx.channel() );
     }
 
     @Override
     protected void channelRead0( ChannelHandlerContext ctx, ByteBuf msg ) throws Exception
     {
         packInput.setBuf( msg );
-        reader.read( responseMessageHandler );
+        reader.read( responseHandlersHolder );
+
+        ackFailureIfNeeded( ctx );
     }
 
     @Override
     public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause ) throws Exception
     {
-        responseMessageHandler.handleFatalError( cause );
+        responseHandlersHolder.handleFatalError( cause );
+        ctx.close();
     }
 
     @Override
@@ -74,8 +78,35 @@ public class InboundMessageDispatcher extends SimpleChannelInboundHandler<ByteBu
     {
         System.out.println( "Channel Inactive: " + ctx.channel() );
 
-        responseMessageHandler.handleFatalError( new ServiceUnavailableException(
+        responseHandlersHolder.handleFatalError( new ServiceUnavailableException(
                 "Connection terminated while receiving data. This can happen due to network " +
                 "instabilities, or due to restarts of the database." ) );
+
+        ctx.close();
+    }
+
+    @Override
+    public void onAckFailureSuccess()
+    {
+        responseHandlersHolder.clearCurrentError();
+        isHandlingFailure = false;
+    }
+
+    private void ackFailureIfNeeded( ChannelHandlerContext ctx )
+    {
+        if ( !isHandlingFailure )
+        {
+            isHandlingFailure = true;
+
+            Throwable error = responseHandlersHolder.currentError();
+            if ( error != null )
+            {
+                if ( isRecoverable( error ) )
+                {
+                    responseHandlersHolder.queueRegardlessOfError( new AckFailureResponseHandler( this ) );
+                    ctx.writeAndFlush( AckFailureMessage.ACK_FAILURE );
+                }
+            }
+        }
     }
 }

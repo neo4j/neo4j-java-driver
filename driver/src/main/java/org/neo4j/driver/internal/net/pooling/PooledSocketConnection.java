@@ -28,8 +28,9 @@ import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Consumer;
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.summary.ServerInfo;
+
+import static org.neo4j.driver.internal.util.ErrorUtil.isRecoverable;
 
 /**
  * The state of a pooledConnection from a pool point of view could be one of the following:
@@ -261,7 +262,7 @@ public class PooledSocketConnection implements PooledConnection
      */
     private void onDelegateException( RuntimeException e )
     {
-        if ( !isClientOrTransientError( e ) || isProtocolViolationError( e ) )
+        if ( !isRecoverable( e ) )
         {
             unrecoverableErrorsOccurred = true;
         }
@@ -292,33 +293,6 @@ public class PooledSocketConnection implements PooledConnection
     public long lastUsedTimestamp()
     {
         return lastUsedTimestamp;
-    }
-
-    private boolean isProtocolViolationError( RuntimeException e )
-    {
-        if ( e instanceof Neo4jException )
-        {
-            String errorCode = ((Neo4jException) e).code();
-            if ( errorCode != null )
-            {
-                return errorCode.startsWith( "Neo.ClientError.Request" );
-            }
-        }
-        return false;
-    }
-
-    private boolean isClientOrTransientError( RuntimeException e )
-    {
-        // Eg: DatabaseErrors and unknown (no status code or not neo4j exception) cause session to be discarded
-        if ( e instanceof Neo4jException )
-        {
-            String errorCode = ((Neo4jException) e).code();
-            if ( errorCode != null )
-            {
-                return errorCode.contains( "ClientError" ) || errorCode.contains( "TransientError" );
-            }
-        }
-        return false;
     }
 
     private void updateLastUsedTimestamp()

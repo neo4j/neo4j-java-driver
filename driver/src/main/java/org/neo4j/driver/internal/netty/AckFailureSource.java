@@ -16,38 +16,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal;
+package org.neo4j.driver.internal.netty;
 
-public interface SessionResourcesHandler
+// todo: better name?
+public interface AckFailureSource
 {
-    void onResultConsumed();
-
-    void onAsyncResultConsumed();
-
-    void onTransactionClosed( ExplicitTransaction tx );
-
-    void onConnectionError( boolean recoverable );
-
-    SessionResourcesHandler NO_OP = new SessionResourcesHandler()
-    {
-        @Override
-        public void onResultConsumed()
-        {
-        }
-
-        @Override
-        public void onAsyncResultConsumed()
-        {
-        }
-
-        @Override
-        public void onTransactionClosed( ExplicitTransaction tx )
-        {
-        }
-
-        @Override
-        public void onConnectionError( boolean recoverable )
-        {
-        }
-    };
+    void onAckFailureSuccess();
 }
