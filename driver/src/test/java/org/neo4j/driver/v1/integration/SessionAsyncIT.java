@@ -20,6 +20,7 @@ package org.neo4j.driver.v1.integration;
 
 import io.netty.util.concurrent.GlobalEventExecutor;
 import io.netty.util.concurrent.Promise;
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -55,7 +56,13 @@ import static org.neo4j.driver.v1.util.TestUtil.get;
 public class SessionAsyncIT
 {
     @Rule
-    public TestNeo4jSession session = new TestNeo4jSession();
+    public final TestNeo4jSession session = new TestNeo4jSession();
+
+    @After
+    public void tearDown() throws Exception
+    {
+        await( session.closeAsync() );
+    }
 
     @Test
     public void shouldRunQueryWithEmptyResult()

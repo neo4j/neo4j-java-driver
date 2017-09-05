@@ -23,8 +23,8 @@ import io.netty.util.concurrent.Promise;
 import java.util.Arrays;
 import java.util.Map;
 
-import org.neo4j.driver.internal.AsyncExplicitTransaction;
 import org.neo4j.driver.internal.Bookmark;
+import org.neo4j.driver.internal.ExplicitTransaction;
 import org.neo4j.driver.internal.SessionResourcesHandler;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Value;
@@ -35,10 +35,10 @@ public class CommitTxResponseHandler implements ResponseHandler
 {
     private final Promise<Void> commitTxPromise;
     private final SessionResourcesHandler resourcesHandler;
-    private final AsyncExplicitTransaction tx;
+    private final ExplicitTransaction tx;
 
     public CommitTxResponseHandler( Promise<Void> commitTxPromise, SessionResourcesHandler resourcesHandler,
-            AsyncExplicitTransaction tx )
+            ExplicitTransaction tx )
     {
         this.commitTxPromise = requireNonNull( commitTxPromise );
         this.resourcesHandler = requireNonNull( resourcesHandler );

@@ -21,12 +21,12 @@ package org.neo4j.driver.internal.cluster;
 
 import java.util.List;
 
+import org.neo4j.driver.ResultResourcesHandler;
 import org.neo4j.driver.internal.NetworkSession;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
 
-import static org.neo4j.driver.internal.SessionResourcesHandler.NO_OP;
 import static org.neo4j.driver.internal.util.ServerVersion.v3_2_0;
 import static org.neo4j.driver.internal.util.ServerVersion.version;
 import static org.neo4j.driver.v1.Values.parameters;
@@ -62,7 +62,7 @@ public class RoutingProcedureRunner
 
     List<Record> runProcedure( Connection connection, Statement procedure )
     {
-        return NetworkSession.run( connection, procedure, NO_OP ).list();
+        return NetworkSession.run( connection, procedure, ResultResourcesHandler.NO_OP ).list();
     }
 
     Statement invokedProcedure()

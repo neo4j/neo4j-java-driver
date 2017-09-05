@@ -21,6 +21,7 @@ package org.neo4j.driver.internal;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.driver.ResultResourcesHandler;
 import org.neo4j.driver.internal.handlers.RecordsResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.spi.Connection;
@@ -41,11 +42,11 @@ public class InternalStatementResult implements StatementResult
 {
     private final Statement statement;
     private final Connection connection;
-    private final SessionResourcesHandler resourcesHandler;
+    private final ResultResourcesHandler resourcesHandler;
     private final RunResponseHandler runResponseHandler;
     private final RecordsResponseHandler pullAllResponseHandler;
 
-    InternalStatementResult( Statement statement, Connection connection, SessionResourcesHandler resourcesHandler )
+    InternalStatementResult( Statement statement, Connection connection, ResultResourcesHandler resourcesHandler )
     {
         this.statement = statement;
         this.connection = connection;
@@ -217,12 +218,12 @@ public class InternalStatementResult implements StatementResult
         }
         catch ( Throwable error )
         {
-            resourcesHandler.onResultConsumed();
+            resourcesHandler.resultFailed( error );
             throw error;
         }
         if ( pullAllResponseHandler.isCompleted() )
         {
-            resourcesHandler.onResultConsumed();
+            resourcesHandler.resultFetched();
         }
     }
 

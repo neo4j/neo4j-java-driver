@@ -30,7 +30,13 @@ import static java.util.Objects.requireNonNull;
 
 public class NettyChannelPool extends FixedChannelPool
 {
+    /**
+     * Unlimited amount of parties are allowed to request channels from the pool.
+     */
     private static final int MAX_PENDING_ACQUIRES = Integer.MAX_VALUE;
+    /**
+     * Check channels when they are returned to the pool.
+     */
     private static final boolean RELEASE_HEALTH_CHECK = true;
 
     private final BoltServerAddress address;

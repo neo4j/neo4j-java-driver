@@ -145,4 +145,6 @@ public interface Session extends Resource, StatementRunner
      */
     @Override
     void close();
+
+    ListenableFuture<Void> closeAsync();
 }

@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal.netty;
 
-import org.neo4j.driver.internal.SessionResourcesHandler;
+import org.neo4j.driver.ResultResourcesHandler;
 import org.neo4j.driver.internal.handlers.AsyncRecordsResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.v1.Record;
@@ -28,7 +28,7 @@ public class InternalStatementResultCursor implements StatementResultCursor
     private final RunResponseHandler runResponseHandler;
     private final AsyncRecordsResponseHandler pullAllResponseHandler;
 
-    public InternalStatementResultCursor( AsyncConnection connection, SessionResourcesHandler resourcesHandler )
+    public InternalStatementResultCursor( AsyncConnection connection, ResultResourcesHandler resourcesHandler )
     {
         this.runResponseHandler = new RunResponseHandler();
         this.pullAllResponseHandler =

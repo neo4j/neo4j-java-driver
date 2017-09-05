@@ -29,11 +29,13 @@ public class WriteListener implements GenericFutureListener<Future<Channel>>
 {
     private final Message message;
     private final ResponseHandler handler;
+    private final boolean flush;
 
-    public WriteListener( Message message, ResponseHandler handler )
+    public WriteListener( Message message, ResponseHandler handler, boolean flush )
     {
         this.message = message;
         this.handler = handler;
+        this.flush = flush;
     }
 
     @Override
@@ -41,7 +43,7 @@ public class WriteListener implements GenericFutureListener<Future<Channel>>
     {
         if ( future.isSuccess() )
         {
-            ChannelWriter.write( future.getNow(), message, handler, false );
+            ChannelWriter.write( future.getNow(), message, handler, flush );
         }
         else
         {

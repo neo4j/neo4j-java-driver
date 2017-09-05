@@ -83,6 +83,6 @@ public class NettyChannelInitializer extends ChannelInitializer<Channel>
     {
         setAddress( channel, address );
         setCreationTimestamp( channel, clock.millis() );
-        setResponseHandlersHolder( channel, new ResponseHandlersHolder() );
+        setResponseHandlersHolder( channel, new ResponseHandlersHolder( channel ) );
     }
 }

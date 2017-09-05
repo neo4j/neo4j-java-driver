@@ -55,7 +55,7 @@ public final class TestUtil
     {
         try
         {
-            return future.get( 1, MINUTES );
+            return future.get( 10, MINUTES );
         }
         catch ( InterruptedException e )
         {
@@ -64,7 +64,13 @@ public final class TestUtil
         }
         catch ( ExecutionException e )
         {
-            throwException( e.getCause() );
+            Throwable cause = e.getCause();
+            StackTraceElement[] originalStackTrace = cause.getStackTrace();
+            RuntimeException exceptionWithOriginalStackTrace = new RuntimeException();
+            cause.setStackTrace( exceptionWithOriginalStackTrace.getStackTrace() );
+            exceptionWithOriginalStackTrace.setStackTrace( originalStackTrace );
+            cause.addSuppressed( exceptionWithOriginalStackTrace );
+            throwException( cause );
             return null;
         }
         catch ( TimeoutException e )

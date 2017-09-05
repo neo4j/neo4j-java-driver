@@ -21,14 +21,17 @@ package org.neo4j.driver.internal.netty;
 import io.netty.channel.Channel;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
+import io.netty.util.concurrent.Promise;
 
 public class ReleaseListener implements GenericFutureListener<Future<Channel>>
 {
     private final NettyChannelPool pool;
+    private final Promise<Void> releasePromise;
 
-    public ReleaseListener( NettyChannelPool pool )
+    public ReleaseListener( NettyChannelPool pool, Promise<Void> releasePromise )
     {
         this.pool = pool;
+        this.releasePromise = releasePromise;
     }
 
     @Override
@@ -37,7 +40,7 @@ public class ReleaseListener implements GenericFutureListener<Future<Channel>>
         Channel channel = future.getNow();
         if ( channel != null )
         {
-            pool.release( channel );
+            pool.release( channel, releasePromise );
         }
     }
 }

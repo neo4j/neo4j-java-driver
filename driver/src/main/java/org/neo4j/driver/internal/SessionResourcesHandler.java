@@ -22,39 +22,9 @@ public interface SessionResourcesHandler
 {
     void onResultConsumed();
 
-    void onAsyncResultConsumed();
-
     void onTransactionClosed( ExplicitTransaction tx );
 
-    void onAsyncTransactionClosed( AsyncExplicitTransaction tx );
+    void onAsyncTransactionClosed( ExplicitTransaction tx );
 
     void onConnectionError( boolean recoverable );
-
-    SessionResourcesHandler NO_OP = new SessionResourcesHandler()
-    {
-        @Override
-        public void onResultConsumed()
-        {
-        }
-
-        @Override
-        public void onAsyncResultConsumed()
-        {
-        }
-
-        @Override
-        public void onTransactionClosed( ExplicitTransaction tx )
-        {
-        }
-
-        @Override
-        public void onAsyncTransactionClosed( AsyncExplicitTransaction tx )
-        {
-        }
-
-        @Override
-        public void onConnectionError( boolean recoverable )
-        {
-        }
-    };
 }

@@ -26,8 +26,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 
+import org.neo4j.driver.ResultResourcesHandler;
 import org.neo4j.driver.internal.InternalRecord;
-import org.neo4j.driver.internal.SessionResourcesHandler;
 import org.neo4j.driver.internal.netty.AsyncConnection;
 import org.neo4j.driver.internal.netty.InternalListenableFuture;
 import org.neo4j.driver.internal.netty.ListenableFuture;
@@ -50,7 +50,7 @@ public class AsyncRecordsResponseHandler implements ResponseHandler
 
     private final RunMetadataAccessor runMetadataAccessor;
     private final AsyncConnection asyncConnection;
-    private final SessionResourcesHandler resourcesHandler;
+    private final ResultResourcesHandler resourcesHandler;
 
     private final Queue<Record> records;
     private Promise<Boolean> recordAvailablePromise;
@@ -68,7 +68,7 @@ public class AsyncRecordsResponseHandler implements ResponseHandler
     private volatile Record current;
 
     public AsyncRecordsResponseHandler( RunMetadataAccessor runMetadataAccessor, AsyncConnection asyncConnection,
-            SessionResourcesHandler resourcesHandler )
+            ResultResourcesHandler resourcesHandler )
     {
         this.runMetadataAccessor = runMetadataAccessor;
         this.asyncConnection = asyncConnection;
@@ -87,7 +87,7 @@ public class AsyncRecordsResponseHandler implements ResponseHandler
         resultConsumedAfter = extractResultConsumedAfter( metadata );
 
         succeeded = true;
-        resourcesHandler.onAsyncResultConsumed();
+        resourcesHandler.resultFetched();
 
         if ( recordAvailablePromise != null )
         {
@@ -99,7 +99,7 @@ public class AsyncRecordsResponseHandler implements ResponseHandler
     public synchronized void onFailure( Throwable error )
     {
         failure = error;
-        resourcesHandler.onAsyncResultConsumed();
+        resourcesHandler.resultFailed( error );
 
         if ( recordAvailablePromise != null )
         {

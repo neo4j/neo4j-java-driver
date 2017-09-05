@@ -52,7 +52,7 @@ public class ExplicitTransactionTest
         Connection conn = mock( Connection.class );
         when( conn.isOpen() ).thenReturn( true );
         SessionResourcesHandler resourcesHandler = mock( SessionResourcesHandler.class );
-        ExplicitTransaction tx = new ExplicitTransaction( conn, resourcesHandler );
+        ExplicitTransaction tx = beginTx( conn, resourcesHandler );
 
         // When
         tx.close();
@@ -76,7 +76,7 @@ public class ExplicitTransactionTest
         Connection conn = mock( Connection.class );
         when( conn.isOpen() ).thenReturn( true );
         SessionResourcesHandler resourcesHandler = mock( SessionResourcesHandler.class );
-        ExplicitTransaction tx = new ExplicitTransaction( conn, resourcesHandler );
+        ExplicitTransaction tx = beginTx( conn, resourcesHandler );
 
         // When
         tx.failure();
@@ -102,7 +102,7 @@ public class ExplicitTransactionTest
         Connection conn = mock( Connection.class );
         when( conn.isOpen() ).thenReturn( true );
         SessionResourcesHandler resourcesHandler = mock( SessionResourcesHandler.class );
-        ExplicitTransaction tx = new ExplicitTransaction( conn, resourcesHandler );
+        ExplicitTransaction tx = beginTx( conn, resourcesHandler );
 
         // When
         tx.success();
@@ -126,7 +126,7 @@ public class ExplicitTransactionTest
     {
         Connection connection = mock( Connection.class );
 
-        new ExplicitTransaction( connection, mock( SessionResourcesHandler.class ), null );
+        beginTx( connection, mock( SessionResourcesHandler.class ), null );
 
         InOrder inOrder = inOrder( connection );
         inOrder.verify( connection ).run( "BEGIN", Collections.<String,Value>emptyMap(), NoOpResponseHandler.INSTANCE );
@@ -140,7 +140,7 @@ public class ExplicitTransactionTest
         Bookmark bookmark = Bookmark.from( "hi, I'm bookmark" );
         Connection connection = mock( Connection.class );
 
-        new ExplicitTransaction( connection, mock( SessionResourcesHandler.class ), bookmark );
+        beginTx( connection, mock( SessionResourcesHandler.class ), bookmark );
 
         Map<String,Value> expectedParams = bookmark.asBeginTransactionParameters();
 
@@ -153,7 +153,7 @@ public class ExplicitTransactionTest
     @Test
     public void shouldBeOpenAfterConstruction()
     {
-        Transaction tx = new ExplicitTransaction( openConnectionMock(), mock( SessionResourcesHandler.class ) );
+        Transaction tx = beginTx( openConnectionMock(), mock( SessionResourcesHandler.class ) );
 
         assertTrue( tx.isOpen() );
     }
@@ -161,7 +161,7 @@ public class ExplicitTransactionTest
     @Test
     public void shouldBeOpenWhenMarkedForSuccess()
     {
-        Transaction tx = new ExplicitTransaction( openConnectionMock(), mock( SessionResourcesHandler.class ) );
+        Transaction tx = beginTx( openConnectionMock(), mock( SessionResourcesHandler.class ) );
 
         tx.success();
 
@@ -171,7 +171,7 @@ public class ExplicitTransactionTest
     @Test
     public void shouldBeOpenWhenMarkedForFailure()
     {
-        Transaction tx = new ExplicitTransaction( openConnectionMock(), mock( SessionResourcesHandler.class ) );
+        Transaction tx = beginTx( openConnectionMock(), mock( SessionResourcesHandler.class ) );
 
         tx.failure();
 
@@ -181,7 +181,7 @@ public class ExplicitTransactionTest
     @Test
     public void shouldBeOpenWhenMarkedToClose()
     {
-        ExplicitTransaction tx = new ExplicitTransaction( openConnectionMock(), mock( SessionResourcesHandler.class ) );
+        ExplicitTransaction tx = beginTx( openConnectionMock(), mock( SessionResourcesHandler.class ) );
 
         tx.markToClose();
 
@@ -191,7 +191,7 @@ public class ExplicitTransactionTest
     @Test
     public void shouldBeClosedAfterCommit()
     {
-        Transaction tx = new ExplicitTransaction( openConnectionMock(), mock( SessionResourcesHandler.class ) );
+        Transaction tx = beginTx( openConnectionMock(), mock( SessionResourcesHandler.class ) );
 
         tx.success();
         tx.close();
@@ -202,7 +202,7 @@ public class ExplicitTransactionTest
     @Test
     public void shouldBeClosedAfterRollback()
     {
-        Transaction tx = new ExplicitTransaction( openConnectionMock(), mock( SessionResourcesHandler.class ) );
+        Transaction tx = beginTx( openConnectionMock(), mock( SessionResourcesHandler.class ) );
 
         tx.failure();
         tx.close();
@@ -213,7 +213,7 @@ public class ExplicitTransactionTest
     @Test
     public void shouldBeClosedWhenMarkedToCloseAndClosed()
     {
-        ExplicitTransaction tx = new ExplicitTransaction( openConnectionMock(), mock( SessionResourcesHandler.class ) );
+        ExplicitTransaction tx = beginTx( openConnectionMock(), mock( SessionResourcesHandler.class ) );
 
         tx.markToClose();
         tx.close();
@@ -224,14 +224,14 @@ public class ExplicitTransactionTest
     @Test
     public void shouldHaveEmptyBookmarkInitially()
     {
-        ExplicitTransaction tx = new ExplicitTransaction( openConnectionMock(), mock( SessionResourcesHandler.class ) );
+        ExplicitTransaction tx = beginTx( openConnectionMock(), mock( SessionResourcesHandler.class ) );
         assertTrue( tx.bookmark().isEmpty() );
     }
 
     @Test
     public void shouldNotKeepInitialBookmark()
     {
-        ExplicitTransaction tx = new ExplicitTransaction( openConnectionMock(), mock( SessionResourcesHandler.class ),
+        ExplicitTransaction tx = beginTx( openConnectionMock(), mock( SessionResourcesHandler.class ),
                 Bookmark.from( "Dog" ) );
         assertTrue( tx.bookmark().isEmpty() );
     }
@@ -239,7 +239,7 @@ public class ExplicitTransactionTest
     @Test
     public void shouldNotOverwriteBookmarkWithNull()
     {
-        ExplicitTransaction tx = new ExplicitTransaction( openConnectionMock(), mock( SessionResourcesHandler.class ) );
+        ExplicitTransaction tx = beginTx( openConnectionMock(), mock( SessionResourcesHandler.class ) );
         tx.setBookmark( Bookmark.from( "Cat" ) );
         assertEquals( "Cat", tx.bookmark().maxBookmarkAsString() );
         tx.setBookmark( null );
@@ -249,7 +249,7 @@ public class ExplicitTransactionTest
     @Test
     public void shouldNotOverwriteBookmarkWithEmptyBookmark()
     {
-        ExplicitTransaction tx = new ExplicitTransaction( openConnectionMock(), mock( SessionResourcesHandler.class ) );
+        ExplicitTransaction tx = beginTx( openConnectionMock(), mock( SessionResourcesHandler.class ) );
         tx.setBookmark( Bookmark.from( "Cat" ) );
         assertEquals( "Cat", tx.bookmark().maxBookmarkAsString() );
         tx.setBookmark( Bookmark.empty() );
@@ -261,5 +261,18 @@ public class ExplicitTransactionTest
         Connection connection = mock( Connection.class );
         when( connection.isOpen() ).thenReturn( true );
         return connection;
+    }
+
+    private static ExplicitTransaction beginTx( Connection connection, SessionResourcesHandler resourcesHandler )
+    {
+        return beginTx( connection, resourcesHandler, Bookmark.empty() );
+    }
+
+    private static ExplicitTransaction beginTx( Connection connection, SessionResourcesHandler resourcesHandler,
+            Bookmark initialBookmark )
+    {
+        ExplicitTransaction tx = new ExplicitTransaction( connection, resourcesHandler );
+        tx.begin( initialBookmark );
+        return tx;
     }
 }

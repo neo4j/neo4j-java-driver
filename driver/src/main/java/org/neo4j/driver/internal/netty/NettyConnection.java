@@ -25,9 +25,7 @@ import io.netty.util.concurrent.Promise;
 
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.driver.internal.messaging.DiscardAllMessage;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.PullAllMessage;
 import org.neo4j.driver.internal.messaging.ResetMessage;
@@ -48,7 +46,7 @@ public class NettyConnection implements AsyncConnection
     private ResponseHandlersHolder responseHandlersHolder;
     private final AtomicBoolean autoReadEnabled = new AtomicBoolean( true );
 
-    private final AtomicInteger usageCounter = new AtomicInteger( 1 );
+    private final NettyConnectionState state = new NettyConnectionState();
 
     public NettyConnection( Future<Channel> channelFuture, NettyChannelPool channelPool )
     {
@@ -59,13 +57,7 @@ public class NettyConnection implements AsyncConnection
     @Override
     public boolean tryMarkInUse()
     {
-        int counter = usageCounter.incrementAndGet();
-        if ( counter <= 0 )
-        {
-            // connection is now being released and should not be used further
-            return false;
-        }
-        return true;
+        return state.markInUse();
     }
 
     @Override
@@ -91,25 +83,13 @@ public class NettyConnection implements AsyncConnection
     @Override
     public void run( String statement, Map<String,Value> parameters, ResponseHandler handler )
     {
-        write( new RunMessage( statement, parameters ), handler );
+        write( new RunMessage( statement, parameters ), handler, false );
     }
 
     @Override
     public void pullAll( ResponseHandler handler )
     {
-        write( PullAllMessage.PULL_ALL, handler );
-    }
-
-    @Override
-    public void discardAll( ResponseHandler handler )
-    {
-        write( DiscardAllMessage.DISCARD_ALL, handler );
-    }
-
-    @Override
-    public void reset( ResponseHandler handler )
-    {
-        write( ResetMessage.RESET, handler );
+        write( PullAllMessage.PULL_ALL, handler, false );
     }
 
     @Override
@@ -117,7 +97,14 @@ public class NettyConnection implements AsyncConnection
     {
         if ( tryExtractChannel() )
         {
-            channel.flush();
+            channel.eventLoop().execute( new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    channel.flush();
+                }
+            } );
         }
         else
         {
@@ -141,35 +128,53 @@ public class NettyConnection implements AsyncConnection
     @Override
     public void release()
     {
-        int counter = usageCounter.decrementAndGet();
-        if ( counter == 0 )
+        if ( state.release() )
         {
-            // no usages, channel is eligible for release
-            // try to mark this channel as being released
-            boolean canRelease = usageCounter.compareAndSet( 0, Integer.MIN_VALUE );
-            if ( canRelease )
-            {
-                reset( new ReleaseChannelHandler( channelFuture, channelPool ) );
-                flush();
-            }
-            else
-            {
-                // else we lost a race with some thread that incremented the usage counter
-                // it will continue using this connection and try to release it when done
-            }
+            write( ResetMessage.RESET, new ReleaseChannelHandler( channelFuture, channelPool ), true );
         }
     }
 
-    private void write( Message message, ResponseHandler handler )
+    @Override
+    public Promise<Void> forceRelease()
     {
-        if ( tryExtractChannel() )
+        Promise<Void> releasePromise = newPromise();
+
+        if ( state.forceRelease() )
         {
-            responseHandlersHolder.queue( handler );
-            channel.write( message );
+            write( ResetMessage.RESET, new ReleaseChannelHandler( channelFuture, channelPool, releasePromise ), true );
         }
         else
         {
-            channelFuture.addListener( new WriteListener( message, handler ) );
+            releasePromise.setSuccess( null );
+        }
+
+        return releasePromise;
+    }
+
+    private void write( final Message message, final ResponseHandler handler, final boolean flush )
+    {
+        if ( tryExtractChannel() )
+        {
+            channel.eventLoop().execute( new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    responseHandlersHolder.queue( handler );
+                    if ( flush )
+                    {
+                        channel.writeAndFlush( message );
+                    }
+                    else
+                    {
+                        channel.write( message );
+                    }
+                }
+            } );
+        }
+        else
+        {
+            channelFuture.addListener( new WriteListener( message, handler, flush ) );
         }
     }
 

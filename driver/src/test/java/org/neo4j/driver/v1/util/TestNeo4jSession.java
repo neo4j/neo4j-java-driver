@@ -98,6 +98,12 @@ public class TestNeo4jSession extends TestNeo4j implements Session
     }
 
     @Override
+    public ListenableFuture<Void> closeAsync()
+    {
+        return realSession.closeAsync();
+    }
+
+    @Override
     public StatementResultCursor runAsync( String statement, Map<String,Object> params )
     {
         return realSession.runAsync( statement, params );

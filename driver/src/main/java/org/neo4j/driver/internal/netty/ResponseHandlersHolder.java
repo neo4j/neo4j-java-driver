@@ -18,11 +18,15 @@
  */
 package org.neo4j.driver.internal.netty;
 
+import io.netty.channel.Channel;
+
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
 
+import org.neo4j.driver.internal.handlers.AckFailureResponseHandler;
+import org.neo4j.driver.internal.messaging.AckFailureMessage;
 import org.neo4j.driver.internal.messaging.MessageHandler;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.ErrorUtil;
@@ -30,10 +34,16 @@ import org.neo4j.driver.v1.Value;
 
 public class ResponseHandlersHolder implements MessageHandler
 {
+    private final Channel channel;
     private final Queue<ResponseHandler> handlers = new LinkedList<>();
 
     private Throwable currentError;
     private boolean fatalErrorOccurred;
+
+    public ResponseHandlersHolder( Channel channel )
+    {
+        this.channel = channel;
+    }
 
     public void queue( ResponseHandler handler )
     {
@@ -101,18 +111,20 @@ public class ResponseHandlersHolder implements MessageHandler
     public void handleFailureMessage( String code, String message ) throws IOException
     {
         currentError = ErrorUtil.newNeo4jError( code, message );
-        ResponseHandler handler = handlers.poll();
-        if ( handler != null )
-        {
-            handler.onFailure( currentError );
-        }
+
+        // queue ACK_FAILURE before notifying the next response handler
+        queue( new AckFailureResponseHandler( this ) );
+        channel.writeAndFlush( AckFailureMessage.ACK_FAILURE );
+
+        ResponseHandler handler = handlers.remove();
+        handler.onFailure( currentError );
     }
 
     @Override
     public void handleIgnoredMessage() throws IOException
     {
-        ResponseHandler handler = handlers.poll();
-        if ( handler != null && currentError != null )
+        ResponseHandler handler = handlers.remove();
+        if ( currentError != null )
         {
             handler.onFailure( currentError );
         }
@@ -130,11 +142,6 @@ public class ResponseHandlersHolder implements MessageHandler
             ResponseHandler handler = handlers.remove();
             handler.onFailure( currentError );
         }
-    }
-
-    public Throwable currentError()
-    {
-        return currentError;
     }
 
     public void clearCurrentError()

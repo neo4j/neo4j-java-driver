@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.neo4j.driver.ResultResourcesHandler;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.v1.Record;
@@ -391,31 +392,31 @@ public class InternalStatementResultTest
     @Test
     public void shouldNotifyResourcesHandlerWhenFetchedViaList()
     {
-        SessionResourcesHandler resourcesHandler = mock( SessionResourcesHandler.class );
+        ResultResourcesHandler resourcesHandler = mock( ResultResourcesHandler.class );
         StatementResult result = createResult( 10, resourcesHandler );
 
         List<Record> records = result.list();
         assertEquals( 10, records.size() );
 
-        verify( resourcesHandler ).onResultConsumed();
+        verify( resourcesHandler ).resultFetched();
     }
 
     @Test
     public void shouldNotifyResourcesHandlerWhenFetchedViaSingle()
     {
-        SessionResourcesHandler resourcesHandler = mock( SessionResourcesHandler.class );
+        ResultResourcesHandler resourcesHandler = mock( ResultResourcesHandler.class );
         StatementResult result = createResult( 1, resourcesHandler );
 
         Record record = result.single();
         assertEquals( "v1-1", record.get( "k1" ).asString() );
 
-        verify( resourcesHandler ).onResultConsumed();
+        verify( resourcesHandler ).resultFetched();
     }
 
     @Test
     public void shouldNotifyResourcesHandlerWhenFetchedViaIterator()
     {
-        SessionResourcesHandler resourcesHandler = mock( SessionResourcesHandler.class );
+        ResultResourcesHandler resourcesHandler = mock( ResultResourcesHandler.class );
         StatementResult result = createResult( 1, resourcesHandler );
 
         while ( result.hasNext() )
@@ -423,35 +424,35 @@ public class InternalStatementResultTest
             assertNotNull( result.next() );
         }
 
-        verify( resourcesHandler ).onResultConsumed();
+        verify( resourcesHandler ).resultFetched();
     }
 
     @Test
     public void shouldNotifyResourcesHandlerWhenSummary()
     {
-        SessionResourcesHandler resourcesHandler = mock( SessionResourcesHandler.class );
+        ResultResourcesHandler resourcesHandler = mock( ResultResourcesHandler.class );
         StatementResult result = createResult( 10, resourcesHandler );
 
         assertNotNull( result.summary() );
 
-        verify( resourcesHandler ).onResultConsumed();
+        verify( resourcesHandler ).resultFetched();
     }
 
     @Test
     public void shouldNotifyResourcesHandlerWhenConsumed()
     {
-        SessionResourcesHandler resourcesHandler = mock( SessionResourcesHandler.class );
+        ResultResourcesHandler resourcesHandler = mock( ResultResourcesHandler.class );
         StatementResult result = createResult( 5, resourcesHandler );
 
         result.consume();
 
-        verify( resourcesHandler ).onResultConsumed();
+        verify( resourcesHandler ).resultFetched();
     }
 
     @Test
     public void shouldNotifyResourcesHandlerOnlyOnceWhenConsumed()
     {
-        SessionResourcesHandler resourcesHandler = mock( SessionResourcesHandler.class );
+        ResultResourcesHandler resourcesHandler = mock( ResultResourcesHandler.class );
         StatementResult result = createResult( 8, resourcesHandler );
 
         assertEquals( 8, result.list().size() );
@@ -459,22 +460,21 @@ public class InternalStatementResultTest
         assertNotNull( result.consume() );
         assertNotNull( result.summary() );
 
-        verify( resourcesHandler ).onResultConsumed();
+        verify( resourcesHandler ).resultFetched();
     }
 
     private StatementResult createResult( int numberOfRecords )
     {
-        return createResult( numberOfRecords, SessionResourcesHandler.NO_OP );
+        return createResult( numberOfRecords, ResultResourcesHandler.NO_OP );
     }
 
-    private StatementResult createResult( int numberOfRecords, SessionResourcesHandler resourcesHandler )
+    private StatementResult createResult( int numberOfRecords, ResultResourcesHandler resourcesHandler )
     {
         Connection connection = mock( Connection.class );
         String statement = "<unknown>";
 
-        final InternalStatementResult result =
-                new InternalStatementResult( new Statement( statement ), connection, resourcesHandler
-                );
+        Statement stmt = new Statement( statement );
+        InternalStatementResult result = new InternalStatementResult( stmt, connection, resourcesHandler );
 
         // Each time the cursor calls `recieveOne`, we'll run one of these,
         // to emulate how messages are handed over to the cursor

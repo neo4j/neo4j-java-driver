@@ -18,11 +18,15 @@
  */
 package org.neo4j.driver.internal;
 
+import io.netty.util.concurrent.GlobalEventExecutor;
+
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.driver.ResultResourcesHandler;
 import org.neo4j.driver.internal.logging.DelegatingLogger;
 import org.neo4j.driver.internal.netty.AsyncConnection;
+import org.neo4j.driver.internal.netty.InternalListenableFuture;
 import org.neo4j.driver.internal.netty.InternalStatementResultCursor;
 import org.neo4j.driver.internal.netty.ListenableFuture;
 import org.neo4j.driver.internal.netty.StatementResultCursor;
@@ -48,7 +52,7 @@ import org.neo4j.driver.v1.types.TypeSystem;
 
 import static org.neo4j.driver.v1.Values.value;
 
-public class NetworkSession implements Session, SessionResourcesHandler
+public class NetworkSession implements Session, SessionResourcesHandler, ResultResourcesHandler
 {
     private static final String LOG_NAME = "Session";
 
@@ -57,10 +61,10 @@ public class NetworkSession implements Session, SessionResourcesHandler
     private final RetryLogic retryLogic;
     protected final Logger logger;
 
-    private Bookmark bookmark = Bookmark.empty();
+    private volatile Bookmark bookmark = Bookmark.empty();
     private PooledConnection currentConnection;
     private ExplicitTransaction currentTransaction;
-    private AsyncExplicitTransaction currentAsyncTransaction;
+    private volatile ExplicitTransaction currentAsyncTransaction;
 
     private AsyncConnection currentAsyncConnection;
 
@@ -159,7 +163,7 @@ public class NetworkSession implements Session, SessionResourcesHandler
     }
 
     public static StatementResult run( Connection connection, Statement statement,
-            SessionResourcesHandler resourcesHandler )
+            ResultResourcesHandler resourcesHandler )
     {
         InternalStatementResult result = new InternalStatementResult( statement, connection, resourcesHandler );
         connection.run( statement.text(), statement.parameters().asMap( Values.ofValue() ),
@@ -216,9 +220,30 @@ public class NetworkSession implements Session, SessionResourcesHandler
                     logger.error( "Failed to close transaction", e );
                 }
             }
+            if ( currentAsyncTransaction != null )
+            {
+                currentAsyncTransaction.rollbackAsync();
+            }
         }
 
         syncAndCloseCurrentConnection();
+    }
+
+    @Override
+    public ListenableFuture<Void> closeAsync()
+    {
+        if ( currentAsyncTransaction != null )
+        {
+            return currentAsyncTransaction.rollbackAsync();
+        }
+        else if ( currentAsyncConnection != null )
+        {
+            return new InternalListenableFuture<>( currentAsyncConnection.forceRelease() );
+        }
+        else
+        {
+            return new InternalListenableFuture<>( GlobalEventExecutor.INSTANCE.<Void>newPromise() );
+        }
     }
 
     @Override
@@ -280,12 +305,16 @@ public class NetworkSession implements Session, SessionResourcesHandler
     }
 
     @Override
-    public void onAsyncResultConsumed()
+    public void resultFetched()
     {
-        if ( currentAsyncConnection != null )
-        {
-            currentAsyncConnection.release();
-        }
+        closeCurrentConnection();
+        releaseCurrentAsyncConnection();
+    }
+
+    @Override
+    public void resultFailed( Throwable error )
+    {
+        resultFetched();
     }
 
     @Override
@@ -300,7 +329,7 @@ public class NetworkSession implements Session, SessionResourcesHandler
     }
 
     @Override
-    public void onAsyncTransactionClosed( AsyncExplicitTransaction tx )
+    public void onAsyncTransactionClosed( ExplicitTransaction tx )
     {
         if ( currentAsyncTransaction != null && currentAsyncTransaction == tx )
         {
@@ -362,7 +391,8 @@ public class NetworkSession implements Session, SessionResourcesHandler
         syncAndCloseCurrentConnection();
         currentConnection = acquireConnection( mode );
 
-        currentTransaction = new ExplicitTransaction( currentConnection, this, bookmark );
+        currentTransaction = new ExplicitTransaction( currentConnection, this );
+        currentTransaction.begin( bookmark );
         currentConnection.setResourcesHandler( this );
         return currentTransaction;
     }
@@ -373,7 +403,7 @@ public class NetworkSession implements Session, SessionResourcesHandler
         ensureNoOpenTransactionBeforeOpeningTransaction();
 
         AsyncConnection asyncConnection = acquireAsyncConnection( mode );
-        currentAsyncTransaction = new AsyncExplicitTransaction( asyncConnection, this );
+        currentAsyncTransaction = new ExplicitTransaction( asyncConnection, this );
 
         return currentAsyncTransaction.beginAsync( bookmark );
     }
@@ -479,6 +509,14 @@ public class NetworkSession implements Session, SessionResourcesHandler
         {
             connection.close();
             logger.debug( "Released connection " + connection.hashCode() );
+        }
+    }
+
+    private void releaseCurrentAsyncConnection()
+    {
+        if ( currentAsyncConnection != null )
+        {
+            currentAsyncConnection.release();
         }
     }
 }

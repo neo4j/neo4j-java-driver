@@ -16,34 +16,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.netty;
+package org.neo4j.driver;
 
-import io.netty.util.concurrent.Promise;
-
-import java.util.Map;
-
-import org.neo4j.driver.internal.spi.ResponseHandler;
-import org.neo4j.driver.v1.Value;
-
-public interface AsyncConnection
+public interface ResultResourcesHandler
 {
-    boolean tryMarkInUse();
+    void resultFetched();
 
-    void enableAutoRead();
+    void resultFailed( Throwable error );
 
-    void disableAutoRead();
+    ResultResourcesHandler NO_OP = new ResultResourcesHandler()
+    {
+        @Override
+        public void resultFetched()
+        {
+        }
 
-    void run( String statement, Map<String,Value> parameters, ResponseHandler handler );
-
-    void pullAll( ResponseHandler handler );
-
-    void flush();
-
-    // todo: create promise who's callbacks are executed in this channel's event loop
-    // todo: do we need this???
-    <T> Promise<T> newPromise();
-
-    void release();
-
-    Promise<Void> forceRelease();
+        @Override
+        public void resultFailed( Throwable error )
+        {
+        }
+    };
 }

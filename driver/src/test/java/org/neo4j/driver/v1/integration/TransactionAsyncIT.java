@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.v1.integration;
 
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -47,7 +48,13 @@ import static org.neo4j.driver.v1.util.TestUtil.await;
 public class TransactionAsyncIT
 {
     @Rule
-    public TestNeo4jSession session = new TestNeo4jSession();
+    public final TestNeo4jSession session = new TestNeo4jSession();
+
+    @After
+    public void tearDown() throws Exception
+    {
+        await( session.closeAsync() );
+    }
 
     @Test
     public void shouldBePossibleToCommitEmptyTx()
@@ -165,7 +172,6 @@ public class TransactionAsyncIT
         catch ( Exception e )
         {
             assertThat( e, instanceOf( ClientException.class ) );
-            assertThat( e.getMessage(), startsWith( "Cannot run more statements in this transaction" ) );
         }
     }
 
@@ -221,7 +227,6 @@ public class TransactionAsyncIT
         catch ( Exception e )
         {
             assertThat( e, instanceOf( ClientException.class ) );
-            assertThat( e.getMessage(), startsWith( "Cannot run more statements in this transaction" ) );
         }
     }
 
@@ -257,10 +262,10 @@ public class TransactionAsyncIT
     {
         Transaction tx = await( session.beginTransactionAsync() );
 
-        StatementResultCursor cursor1 = tx.runAsync( "RETURN" );
+        StatementResultCursor cursor = tx.runAsync( "RETURN" );
         try
         {
-            await( cursor1.fetchAsync() );
+            await( cursor.fetchAsync() );
             fail( "Exception expected" );
         }
         catch ( Exception e )
@@ -268,37 +273,16 @@ public class TransactionAsyncIT
             assertSyntaxError( e );
         }
 
-        // todo: should runAsync throw from here directly?
-        StatementResultCursor cursor2 = tx.runAsync( "CREATE ()" );
-        fail( "todo" );
-    }
-
-    @Test
-    public void shouldAllowCommitWithoutWaitingForQueries()
-    {
-        Transaction tx = await( session.beginTransactionAsync() );
-
-        tx.runAsync( "CREATE (n:Node {id: 42})" );
-        tx.runAsync( "CREATE (n:Node {id: 4242})" );
-        tx.runAsync( "CREATE (n:Node {id: 424242})" );
-
-        assertThat( await( tx.commitAsync() ), is( nullValue() ) );
-        assertEquals( 1, countNodes( 42 ) );
-        assertEquals( 1, countNodes( 4242 ) );
-        assertEquals( 1, countNodes( 424242 ) );
-    }
-
-    @Test
-    public void shouldAllowRollbackWithoutWaitingForQueries()
-    {
-        Transaction tx = await( session.beginTransactionAsync() );
-
-        tx.runAsync( "CREATE (n:Node {id: 42})" );
-        tx.runAsync( "CREATE (n:Node {id: 4242})" );
-
-        assertThat( await( tx.rollbackAsync() ), is( nullValue() ) );
-        assertEquals( 0, countNodes( 42 ) );
-        assertEquals( 0, countNodes( 4242 ) );
+        try
+        {
+            tx.runAsync( "CREATE ()" );
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( ClientException.class ) );
+            assertThat( e.getMessage(), startsWith( "Cannot run more statements in this transaction" ) );
+        }
     }
 
     private int countNodes( Object id )

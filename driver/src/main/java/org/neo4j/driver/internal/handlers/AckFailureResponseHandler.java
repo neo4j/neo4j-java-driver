@@ -20,25 +20,23 @@ package org.neo4j.driver.internal.handlers;
 
 import java.util.Map;
 
-import org.neo4j.driver.internal.netty.AckFailureSource;
+import org.neo4j.driver.internal.netty.ResponseHandlersHolder;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Value;
 
-import static java.util.Objects.requireNonNull;
-
 public class AckFailureResponseHandler implements ResponseHandler
 {
-    private final AckFailureSource ackFailureSource;
+    private final ResponseHandlersHolder responseHandlersHolder;
 
-    public AckFailureResponseHandler( AckFailureSource ackFailureSource )
+    public AckFailureResponseHandler( ResponseHandlersHolder responseHandlersHolder )
     {
-        this.ackFailureSource = requireNonNull( ackFailureSource );
+        this.responseHandlersHolder = responseHandlersHolder;
     }
 
     @Override
     public void onSuccess( Map<String,Value> metadata )
     {
-        ackFailureSource.onAckFailureSuccess();
+        responseHandlersHolder.clearCurrentError();
     }
 
     @Override

@@ -22,14 +22,11 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
-import org.neo4j.driver.internal.handlers.AckFailureResponseHandler;
-import org.neo4j.driver.internal.messaging.AckFailureMessage;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.PackStreamMessageFormatV1;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
 import static org.neo4j.driver.internal.netty.ChannelAttributes.responseHandlersHolder;
-import static org.neo4j.driver.internal.util.ErrorUtil.isRecoverable;
 
 public class InboundMessageDispatcher extends SimpleChannelInboundHandler<ByteBuf> implements AckFailureSource
 {
@@ -62,8 +59,6 @@ public class InboundMessageDispatcher extends SimpleChannelInboundHandler<ByteBu
     {
         packInput.setBuf( msg );
         reader.read( responseHandlersHolder );
-
-        ackFailureIfNeeded( ctx );
     }
 
     @Override
@@ -90,17 +85,5 @@ public class InboundMessageDispatcher extends SimpleChannelInboundHandler<ByteBu
     {
         responseHandlersHolder.clearCurrentError();
         isHandlingFailure = false;
-    }
-
-    private void ackFailureIfNeeded( ChannelHandlerContext ctx )
-    {
-        Throwable error = responseHandlersHolder.currentError();
-        if ( !isHandlingFailure && isRecoverable( error ) )
-        {
-            isHandlingFailure = true;
-
-            responseHandlersHolder.queue( new AckFailureResponseHandler( this ) );
-            ctx.channel().writeAndFlush( AckFailureMessage.ACK_FAILURE );
-        }
     }
 }

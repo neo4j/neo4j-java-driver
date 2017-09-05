@@ -31,6 +31,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.driver.ResultResourcesHandler;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Extract;
 import org.neo4j.driver.v1.Statement;
@@ -171,9 +172,8 @@ public class ExtractTest
         Connection connection = mock( Connection.class );
         String statement = "<unknown>";
 
-        InternalStatementResult result =
-                new InternalStatementResult( new Statement( statement ), connection, SessionResourcesHandler.NO_OP
-                );
+        Statement stmt = new Statement( statement );
+        InternalStatementResult result = new InternalStatementResult( stmt, connection, ResultResourcesHandler.NO_OP );
         result.runResponseHandler().onSuccess( singletonMap( "fields", value( singletonList( "k1" ) ) ) );
         result.pullAllResponseHandler().onRecord( new Value[]{value( 42 )} );
         result.pullAllResponseHandler().onSuccess( Collections.<String,Value>emptyMap() );
