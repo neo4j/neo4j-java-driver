@@ -26,10 +26,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.driver.ResultResourcesHandler;
 import org.neo4j.driver.internal.logging.DelegatingLogger;
 import org.neo4j.driver.internal.netty.AsyncConnection;
-import org.neo4j.driver.internal.netty.InternalListenableFuture;
 import org.neo4j.driver.internal.netty.InternalStatementResultCursor;
-import org.neo4j.driver.internal.netty.ListenableFuture;
+import org.neo4j.driver.internal.netty.InternalTask;
 import org.neo4j.driver.internal.netty.StatementResultCursor;
+import org.neo4j.driver.internal.netty.Task;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
@@ -230,7 +230,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     }
 
     @Override
-    public ListenableFuture<Void> closeAsync()
+    public Task<Void> closeAsync()
     {
         if ( currentAsyncTransaction != null )
         {
@@ -238,11 +238,11 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
         }
         else if ( currentAsyncConnection != null )
         {
-            return new InternalListenableFuture<>( currentAsyncConnection.forceRelease() );
+            return new InternalTask<>( currentAsyncConnection.forceRelease() );
         }
         else
         {
-            return new InternalListenableFuture<>( GlobalEventExecutor.INSTANCE.<Void>newPromise() );
+            return new InternalTask<>( GlobalEventExecutor.INSTANCE.<Void>newPromise() );
         }
     }
 
@@ -261,7 +261,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     }
 
     @Override
-    public ListenableFuture<Transaction> beginTransactionAsync()
+    public Task<Transaction> beginTransactionAsync()
     {
         return beginTransactionAsync( mode );
     }
@@ -397,7 +397,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
         return currentTransaction;
     }
 
-    private synchronized ListenableFuture<Transaction> beginTransactionAsync( AccessMode mode )
+    private synchronized Task<Transaction> beginTransactionAsync( AccessMode mode )
     {
         ensureSessionIsOpen();
         ensureNoOpenTransactionBeforeOpeningTransaction();

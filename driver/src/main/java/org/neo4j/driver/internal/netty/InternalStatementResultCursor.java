@@ -46,7 +46,7 @@ public class InternalStatementResultCursor implements StatementResultCursor
     }
 
     @Override
-    public ListenableFuture<Boolean> fetchAsync()
+    public Task<Boolean> fetchAsync()
     {
         return pullAllResponseHandler.recordAvailable();
     }

@@ -23,8 +23,8 @@ import org.junit.runners.model.Statement;
 
 import java.util.Map;
 
-import org.neo4j.driver.internal.netty.ListenableFuture;
 import org.neo4j.driver.internal.netty.StatementResultCursor;
+import org.neo4j.driver.internal.netty.Task;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
@@ -98,7 +98,7 @@ public class TestNeo4jSession extends TestNeo4j implements Session
     }
 
     @Override
-    public ListenableFuture<Void> closeAsync()
+    public Task<Void> closeAsync()
     {
         return realSession.closeAsync();
     }
@@ -123,7 +123,7 @@ public class TestNeo4jSession extends TestNeo4j implements Session
     }
 
     @Override
-    public ListenableFuture<Transaction> beginTransactionAsync()
+    public Task<Transaction> beginTransactionAsync()
     {
         return realSession.beginTransactionAsync();
     }

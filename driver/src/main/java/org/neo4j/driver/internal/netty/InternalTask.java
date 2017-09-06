@@ -26,24 +26,31 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-public class InternalListenableFuture<T> implements ListenableFuture<T>
+public class InternalTask<T> implements Task<T>
 {
     private final Future<T> delegate;
 
-    public InternalListenableFuture( Future<T> delegate )
+    public InternalTask( Future<T> delegate )
     {
         this.delegate = Objects.requireNonNull( delegate );
     }
 
     @Override
-    public void addListener( final Runnable listener )
+    public void addListener( final TaskListener<T> listener )
     {
         delegate.addListener( new FutureListener<T>()
         {
             @Override
             public void operationComplete( Future<T> future )
             {
-                listener.run();
+                if ( future.isSuccess() )
+                {
+                    listener.taskCompleted( future.getNow(), null );
+                }
+                else
+                {
+                    listener.taskCompleted( null, future.cause() );
+                }
             }
         } );
     }

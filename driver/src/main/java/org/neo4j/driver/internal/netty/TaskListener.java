@@ -18,11 +18,7 @@
  */
 package org.neo4j.driver.internal.netty;
 
-import org.neo4j.driver.v1.Record;
-
-public interface StatementResultCursor
+public interface TaskListener<T>
 {
-    Task<Boolean> fetchAsync();
-
-    Record current();
+    void taskCompleted( T result, Throwable error );
 }

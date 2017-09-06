@@ -30,10 +30,10 @@ import org.neo4j.driver.internal.handlers.CommitTxResponseHandler;
 import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
 import org.neo4j.driver.internal.handlers.RollbackTxResponseHandler;
 import org.neo4j.driver.internal.netty.AsyncConnection;
-import org.neo4j.driver.internal.netty.InternalListenableFuture;
 import org.neo4j.driver.internal.netty.InternalStatementResultCursor;
-import org.neo4j.driver.internal.netty.ListenableFuture;
+import org.neo4j.driver.internal.netty.InternalTask;
 import org.neo4j.driver.internal.netty.StatementResultCursor;
+import org.neo4j.driver.internal.netty.Task;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.v1.Record;
@@ -110,7 +110,7 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
         }
     }
 
-    public InternalListenableFuture<Transaction> beginAsync( Bookmark initialBookmark )
+    public InternalTask<Transaction> beginAsync( Bookmark initialBookmark )
     {
         Promise<Transaction> beginTxPromise = asyncConnection.newPromise();
 
@@ -128,7 +128,7 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
         asyncConnection.flush();
 //        }
 
-        return new InternalListenableFuture<>( beginTxPromise );
+        return new InternalTask<>( beginTxPromise );
     }
 
     @Override
@@ -198,25 +198,25 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
     }
 
     @Override
-    public ListenableFuture<Void> commitAsync()
+    public Task<Void> commitAsync()
     {
         Promise<Void> commitTxPromise = asyncConnection.newPromise();
         asyncConnection.run( "COMMIT", Collections.<String,Value>emptyMap(), NoOpResponseHandler.INSTANCE );
         asyncConnection.pullAll( new CommitTxResponseHandler( commitTxPromise, resourcesHandler, this ) );
         asyncConnection.flush();
 
-        return new InternalListenableFuture<>( commitTxPromise );
+        return new InternalTask<>( commitTxPromise );
     }
 
     @Override
-    public ListenableFuture<Void> rollbackAsync()
+    public Task<Void> rollbackAsync()
     {
         Promise<Void> rollbackTxPromise = asyncConnection.newPromise();
         asyncConnection.run( "ROLLBACK", Collections.<String,Value>emptyMap(), NoOpResponseHandler.INSTANCE );
         asyncConnection.pullAll( new RollbackTxResponseHandler( rollbackTxPromise, resourcesHandler, this ) );
         asyncConnection.flush();
 
-        return new InternalListenableFuture<>( rollbackTxPromise );
+        return new InternalTask<>( rollbackTxPromise );
     }
 
     private void rollbackTx()

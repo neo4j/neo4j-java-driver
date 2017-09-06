@@ -28,10 +28,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.driver.internal.netty.ListenableFuture;
 import org.neo4j.driver.internal.netty.StatementResultCursor;
+import org.neo4j.driver.internal.netty.Task;
+import org.neo4j.driver.internal.netty.TaskListener;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
@@ -51,7 +51,6 @@ import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 import static org.neo4j.driver.v1.util.TestUtil.awaitAll;
-import static org.neo4j.driver.v1.util.TestUtil.get;
 
 public class SessionAsyncIT
 {
@@ -154,7 +153,7 @@ public class SessionAsyncIT
 
         try
         {
-            ListenableFuture<Boolean> recordAvailable = cursor.fetchAsync();
+            Task<Boolean> recordAvailable = cursor.fetchAsync();
 
             // kill db after receiving the first record
             // do it from a listener so that event loop thread executes the kill operation
@@ -216,15 +215,19 @@ public class SessionAsyncIT
     private void runNestedQueries( final StatementResultCursor inputCursor, final List<Future<Boolean>> futures,
             final Promise<List<Future<Boolean>>> resultPromise )
     {
-        final ListenableFuture<Boolean> inputAvailable = inputCursor.fetchAsync();
+        final Task<Boolean> inputAvailable = inputCursor.fetchAsync();
         futures.add( inputAvailable );
 
-        inputAvailable.addListener( new Runnable()
+        inputAvailable.addListener( new TaskListener<Boolean>()
         {
             @Override
-            public void run()
+            public void taskCompleted( Boolean inputAvailable, Throwable error )
             {
-                if ( get( inputAvailable ) )
+                if ( error != null )
+                {
+                    resultPromise.setFailure( error );
+                }
+                else if ( inputAvailable )
                 {
                     Record record = inputCursor.current();
                     Node node = record.get( 0 ).asNode();
@@ -260,11 +263,11 @@ public class SessionAsyncIT
         assertThat( ((ClientException) e).code(), containsString( "ArithmeticError" ) );
     }
 
-    private static class KillDbListener implements Runnable
+    private static class KillDbListener implements TaskListener<Boolean>
     {
 
         final TestNeo4j neo4j;
-        final AtomicBoolean shouldKillDb = new AtomicBoolean( true );
+        volatile boolean shouldKillDb = true;
 
         KillDbListener( TestNeo4j neo4j )
         {
@@ -272,12 +275,12 @@ public class SessionAsyncIT
         }
 
         @Override
-        public void run()
+        public void taskCompleted( Boolean result, Throwable error )
         {
-            if ( shouldKillDb.get() )
+            if ( shouldKillDb )
             {
                 killDb();
-                shouldKillDb.set( false );
+                shouldKillDb = false;
             }
         }
 

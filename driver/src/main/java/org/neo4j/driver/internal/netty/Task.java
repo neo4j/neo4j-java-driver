@@ -20,7 +20,7 @@ package org.neo4j.driver.internal.netty;
 
 import java.util.concurrent.Future;
 
-public interface ListenableFuture<T> extends Future<T>
+public interface Task<T> extends Future<T>
 {
-    void addListener( Runnable listener );
+    void addListener( TaskListener<T> listener );
 }

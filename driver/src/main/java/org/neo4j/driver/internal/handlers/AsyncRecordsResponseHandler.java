@@ -29,8 +29,8 @@ import java.util.Queue;
 import org.neo4j.driver.ResultResourcesHandler;
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.netty.AsyncConnection;
-import org.neo4j.driver.internal.netty.InternalListenableFuture;
-import org.neo4j.driver.internal.netty.ListenableFuture;
+import org.neo4j.driver.internal.netty.InternalTask;
+import org.neo4j.driver.internal.netty.Task;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.summary.InternalNotification;
 import org.neo4j.driver.internal.summary.InternalPlan;
@@ -125,7 +125,7 @@ public class AsyncRecordsResponseHandler implements ResponseHandler
         }
     }
 
-    public synchronized ListenableFuture<Boolean> recordAvailable()
+    public synchronized Task<Boolean> recordAvailable()
     {
         Record record = dequeueRecord();
         if ( record == null )
@@ -134,18 +134,18 @@ public class AsyncRecordsResponseHandler implements ResponseHandler
             {
                 Promise<Boolean> result = asyncConnection.newPromise();
                 result.setSuccess( false );
-                return new InternalListenableFuture<>( result );
+                return new InternalTask<>( result );
             }
 
             if ( failure != null )
             {
                 Promise<Boolean> result = asyncConnection.newPromise();
                 result.setFailure( failure );
-                return new InternalListenableFuture<>( result );
+                return new InternalTask<>( result );
             }
 
             recordAvailablePromise = asyncConnection.newPromise();
-            return new InternalListenableFuture<>( recordAvailablePromise );
+            return new InternalTask<>( recordAvailablePromise );
         }
         else
         {
@@ -153,7 +153,7 @@ public class AsyncRecordsResponseHandler implements ResponseHandler
 
             Promise<Boolean> result = asyncConnection.newPromise();
             result.setSuccess( true );
-            return new InternalListenableFuture<>( result );
+            return new InternalTask<>( result );
         }
     }
 

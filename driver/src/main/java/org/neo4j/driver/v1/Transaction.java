@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.v1;
 
-import org.neo4j.driver.internal.netty.ListenableFuture;
+import org.neo4j.driver.internal.netty.Task;
 import org.neo4j.driver.v1.util.Resource;
 
 /**
@@ -80,7 +80,7 @@ public interface Transaction extends Resource, StatementRunner
     @Override
     void close();
 
-    ListenableFuture<Void> commitAsync();
+    Task<Void> commitAsync();
 
-    ListenableFuture<Void> rollbackAsync();
+    Task<Void> rollbackAsync();
 }
