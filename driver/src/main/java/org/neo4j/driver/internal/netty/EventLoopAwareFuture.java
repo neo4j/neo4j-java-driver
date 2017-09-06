@@ -18,8 +18,10 @@
  */
 package org.neo4j.driver.internal.netty;
 
-// todo: better name?
-public interface AckFailureSource
+import io.netty.channel.EventLoop;
+import io.netty.util.concurrent.Future;
+
+public interface EventLoopAwareFuture<T> extends Future<T>
 {
-    void onAckFailureSuccess();
+    EventLoop eventLoop();
 }

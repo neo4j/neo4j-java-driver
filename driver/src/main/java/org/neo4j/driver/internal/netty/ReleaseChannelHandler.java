@@ -19,7 +19,6 @@
 package org.neo4j.driver.internal.netty;
 
 import io.netty.channel.Channel;
-import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
 
 import java.util.Map;
@@ -29,18 +28,18 @@ import org.neo4j.driver.v1.Value;
 
 public class ReleaseChannelHandler implements ResponseHandler
 {
-    private final Future<Channel> channelFuture;
+    private final Channel channel;
     private final NettyChannelPool pool;
     private final Promise<Void> releasePromise;
 
-    public ReleaseChannelHandler( Future<Channel> channelFuture, NettyChannelPool pool )
+    public ReleaseChannelHandler( Channel channel, NettyChannelPool pool )
     {
-        this( channelFuture, pool, null );
+        this( channel, pool, null );
     }
 
-    public ReleaseChannelHandler( Future<Channel> channelFuture, NettyChannelPool pool, Promise<Void> releasePromise )
+    public ReleaseChannelHandler( Channel channel, NettyChannelPool pool, Promise<Void> releasePromise )
     {
-        this.channelFuture = channelFuture;
+        this.channel = channel;
         this.pool = pool;
         this.releasePromise = releasePromise;
     }
@@ -65,21 +64,13 @@ public class ReleaseChannelHandler implements ResponseHandler
 
     private void releaseChannel()
     {
-        if ( channelFuture.isSuccess() )
+        if ( releasePromise == null )
         {
-            Channel channel = channelFuture.getNow();
-            if ( releasePromise == null )
-            {
-                pool.release( channel );
-            }
-            else
-            {
-                pool.release( channel, releasePromise );
-            }
+            pool.release( channel );
         }
         else
         {
-            channelFuture.addListener( new ReleaseListener( pool, releasePromise ) );
+            pool.release( channel, releasePromise );
         }
     }
 }

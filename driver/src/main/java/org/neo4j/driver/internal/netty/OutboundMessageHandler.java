@@ -52,6 +52,7 @@ public class OutboundMessageHandler extends MessageToMessageEncoder<Message>
     @Override
     protected void encode( ChannelHandlerContext ctx, Message msg, List<Object> out ) throws Exception
     {
+        System.out.println( "Sending " + msg );
         ByteBuf bodyBuf = ctx.alloc().ioBuffer();
         packOutput.setBuf( bodyBuf );
 

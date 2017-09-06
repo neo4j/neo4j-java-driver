@@ -21,6 +21,7 @@ package org.neo4j.driver.v1;
 import java.util.Map;
 
 import org.neo4j.driver.internal.netty.StatementResultCursor;
+import org.neo4j.driver.internal.netty.Task;
 import org.neo4j.driver.v1.types.TypeSystem;
 import org.neo4j.driver.v1.util.Experimental;
 
@@ -94,14 +95,7 @@ public interface StatementRunner
      */
     StatementResult run( String statementTemplate, Value parameters );
 
-    /**
-     * TODO
-     *
-     * @param statementText
-     * @param parameters
-     * @return
-     */
-    StatementResultCursor runAsync( String statementText, Value parameters );
+    Task<StatementResultCursor> runAsync( String statementText, Value parameters );
 
     /**
      * Run a statement and return a result stream.
@@ -132,14 +126,7 @@ public interface StatementRunner
      */
     StatementResult run( String statementTemplate, Map<String,Object> statementParameters );
 
-    /**
-     * TODO
-     *
-     * @param statementTemplate
-     * @param statementParameters
-     * @return
-     */
-    StatementResultCursor runAsync( String statementTemplate, Map<String,Object> statementParameters );
+    Task<StatementResultCursor> runAsync( String statementTemplate, Map<String,Object> statementParameters );
 
     /**
      * Run a statement and return a result stream.
@@ -158,14 +145,7 @@ public interface StatementRunner
      */
     StatementResult run( String statementTemplate, Record statementParameters );
 
-    /**
-     * TODO
-     *
-     * @param statementTemplate
-     * @param statementParameters
-     * @return
-     */
-    StatementResultCursor runAsync( String statementTemplate, Record statementParameters );
+    Task<StatementResultCursor> runAsync( String statementTemplate, Record statementParameters );
 
     /**
      * Run a statement and return a result stream.
@@ -175,13 +155,7 @@ public interface StatementRunner
      */
     StatementResult run( String statementTemplate );
 
-    /**
-     * TODO
-     *
-     * @param statementTemplate
-     * @return
-     */
-    StatementResultCursor runAsync( String statementTemplate );
+    Task<StatementResultCursor> runAsync( String statementTemplate );
 
     /**
      * Run a statement and return a result stream.
@@ -198,13 +172,7 @@ public interface StatementRunner
      */
     StatementResult run( Statement statement );
 
-    /**
-     * TODO
-     *
-     * @param statement
-     * @return
-     */
-    StatementResultCursor runAsync( Statement statement );
+    Task<StatementResultCursor> runAsync( Statement statement );
 
     /**
      * @return type system used by this statement runner for classifying values

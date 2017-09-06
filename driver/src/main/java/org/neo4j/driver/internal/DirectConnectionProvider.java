@@ -21,6 +21,7 @@ package org.neo4j.driver.internal;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.netty.AsyncConnection;
 import org.neo4j.driver.internal.netty.AsyncConnectionPool;
+import org.neo4j.driver.internal.netty.EventLoopAwareFuture;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.spi.PooledConnection;
@@ -57,7 +58,7 @@ public class DirectConnectionProvider implements ConnectionProvider
     }
 
     @Override
-    public AsyncConnection acquireAsyncConnection( AccessMode mode )
+    public EventLoopAwareFuture<AsyncConnection> acquireAsyncConnection( AccessMode mode )
     {
         return asyncPool.acquire( address );
     }

@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal.spi;
 
 import org.neo4j.driver.internal.netty.AsyncConnection;
+import org.neo4j.driver.internal.netty.EventLoopAwareFuture;
 import org.neo4j.driver.v1.AccessMode;
 
 /**
@@ -35,5 +36,5 @@ public interface ConnectionProvider extends AutoCloseable
      */
     PooledConnection acquireConnection( AccessMode mode );
 
-    AsyncConnection acquireAsyncConnection( AccessMode mode );
+    EventLoopAwareFuture<AsyncConnection> acquireAsyncConnection( AccessMode mode );
 }

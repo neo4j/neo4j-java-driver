@@ -26,6 +26,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.driver.ResultResourcesHandler;
 import org.neo4j.driver.internal.logging.DelegatingLogger;
 import org.neo4j.driver.internal.netty.AsyncConnection;
+import org.neo4j.driver.internal.netty.EventLoopAwareFuture;
+import org.neo4j.driver.internal.netty.Futures;
 import org.neo4j.driver.internal.netty.InternalStatementResultCursor;
 import org.neo4j.driver.internal.netty.InternalTask;
 import org.neo4j.driver.internal.netty.StatementResultCursor;
@@ -49,6 +51,7 @@ import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.types.TypeSystem;
+import org.neo4j.driver.v1.util.Function;
 
 import static org.neo4j.driver.v1.Values.value;
 
@@ -66,7 +69,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     private ExplicitTransaction currentTransaction;
     private volatile ExplicitTransaction currentAsyncTransaction;
 
-    private AsyncConnection currentAsyncConnection;
+    private EventLoopAwareFuture<AsyncConnection> asyncConnectionFuture;
 
     private final AtomicBoolean isOpen = new AtomicBoolean( true );
 
@@ -86,7 +89,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     }
 
     @Override
-    public StatementResultCursor runAsync( String statementText )
+    public Task<StatementResultCursor> runAsync( String statementText )
     {
         return runAsync( statementText, Values.EmptyMap );
     }
@@ -99,7 +102,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     }
 
     @Override
-    public StatementResultCursor runAsync( String statementText, Map<String,Object> statementParameters )
+    public Task<StatementResultCursor> runAsync( String statementText, Map<String,Object> statementParameters )
     {
         Value params = statementParameters == null ? Values.EmptyMap : value( statementParameters );
         return runAsync( statementText, params );
@@ -113,7 +116,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     }
 
     @Override
-    public StatementResultCursor runAsync( String statementTemplate, Record statementParameters )
+    public Task<StatementResultCursor> runAsync( String statementTemplate, Record statementParameters )
     {
         Value params = statementParameters == null ? Values.EmptyMap : value( statementParameters.asMap() );
         return runAsync( statementTemplate, params );
@@ -126,7 +129,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     }
 
     @Override
-    public StatementResultCursor runAsync( String statementText, Value parameters )
+    public Task<StatementResultCursor> runAsync( String statementText, Value parameters )
     {
         return runAsync( new Statement( statementText, parameters ) );
     }
@@ -144,22 +147,30 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     }
 
     @Override
-    public StatementResultCursor runAsync( Statement statement )
+    public Task<StatementResultCursor> runAsync( final Statement statement )
     {
         ensureSessionIsOpen();
         ensureNoOpenTransactionBeforeRunningSession();
 
-        AsyncConnection asyncConnection = acquireAsyncConnection( mode );
-        InternalStatementResultCursor resultCursor = new InternalStatementResultCursor( asyncConnection, this );
+        EventLoopAwareFuture<AsyncConnection> connectionFuture = acquireAsyncConnection( mode );
+        return new InternalTask<>(
+                Futures.transform( connectionFuture, new Function<AsyncConnection,StatementResultCursor>()
+                {
+                    @Override
+                    public StatementResultCursor apply( final AsyncConnection connection )
+                    {
+                        String query = statement.text();
+                        Map<String,Value> params = statement.parameters().asMap( Values.ofValue() );
 
-        String query = statement.text();
-        Map<String,Value> params = statement.parameters().asMap( Values.ofValue() );
+                        InternalStatementResultCursor cursor = new InternalStatementResultCursor( connection, true );
 
-        asyncConnection.run( query, params, resultCursor.runResponseHandler() );
-        asyncConnection.pullAll( resultCursor.pullAllResponseHandler() );
-        asyncConnection.flush();
+                        connection.run( query, params, cursor.runResponseHandler() );
+                        connection.pullAll( cursor.pullAllResponseHandler() );
+                        connection.flush();
 
-        return resultCursor;
+                        return cursor;
+                    }
+                } ) );
     }
 
     public static StatementResult run( Connection connection, Statement statement,
@@ -232,17 +243,26 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     @Override
     public Task<Void> closeAsync()
     {
-        if ( currentAsyncTransaction != null )
+        if ( asyncConnectionFuture != null )
+        {
+            return new InternalTask<>( Futures.unwrap( Futures.transform( asyncConnectionFuture,
+                    new Function<AsyncConnection,EventLoopAwareFuture<Void>>()
+                    {
+                        @Override
+                        public EventLoopAwareFuture<Void> apply( AsyncConnection connection )
+                        {
+                            return connection.forceRelease();
+                        }
+                    } ) ) );
+        }
+        else if ( currentAsyncTransaction != null )
         {
             return currentAsyncTransaction.rollbackAsync();
         }
-        else if ( currentAsyncConnection != null )
-        {
-            return new InternalTask<>( currentAsyncConnection.forceRelease() );
-        }
         else
         {
-            return new InternalTask<>( GlobalEventExecutor.INSTANCE.<Void>newPromise() );
+            // todo: this should not use GlobalEventExecutor
+            return new InternalTask<>( GlobalEventExecutor.INSTANCE.<Void>newSucceededFuture( null ) );
         }
     }
 
@@ -308,7 +328,6 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     public void resultFetched()
     {
         closeCurrentConnection();
-        releaseCurrentAsyncConnection();
     }
 
     @Override
@@ -333,7 +352,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     {
         if ( currentAsyncTransaction != null && currentAsyncTransaction == tx )
         {
-            currentAsyncConnection.release();
+//            currentAsyncConnection.release();
             setBookmark( currentAsyncTransaction.bookmark() );
             currentAsyncTransaction = null;
         }
@@ -399,13 +418,16 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
 
     private synchronized Task<Transaction> beginTransactionAsync( AccessMode mode )
     {
-        ensureSessionIsOpen();
-        ensureNoOpenTransactionBeforeOpeningTransaction();
+        // todo
+//        ensureSessionIsOpen();
+//        ensureNoOpenTransactionBeforeOpeningTransaction();
+//
+//        AsyncConnection asyncConnection = acquireAsyncConnection( mode );
+//        currentAsyncTransaction = new ExplicitTransaction( asyncConnection, this );
+//
+//        return currentAsyncTransaction.beginAsync( bookmark );
 
-        AsyncConnection asyncConnection = acquireAsyncConnection( mode );
-        currentAsyncTransaction = new ExplicitTransaction( asyncConnection, this );
-
-        return currentAsyncTransaction.beginAsync( bookmark );
+        throw new UnsupportedOperationException();
     }
 
     private void ensureNoUnrecoverableError()
@@ -458,20 +480,36 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
         return connection;
     }
 
-    private AsyncConnection acquireAsyncConnection( AccessMode mode )
+    private EventLoopAwareFuture<AsyncConnection> acquireAsyncConnection( final AccessMode mode )
     {
-        if ( currentAsyncConnection != null && currentAsyncConnection.tryMarkInUse() )
+        if ( asyncConnectionFuture == null )
         {
-            System.out.println( "===>>> Acquired an existing async connection" );
-            return currentAsyncConnection;
+            asyncConnectionFuture = connectionProvider.acquireAsyncConnection( mode );
+        }
+        else
+        {
+            // memorize in local so same instance is transformed and used in callbacks
+            final EventLoopAwareFuture<AsyncConnection> currentAsyncConnectionFuture = asyncConnectionFuture;
+
+            asyncConnectionFuture = Futures.unwrap( Futures.transform( currentAsyncConnectionFuture,
+                    new Function<AsyncConnection,EventLoopAwareFuture<AsyncConnection>>()
+                    {
+                        @Override
+                        public EventLoopAwareFuture<AsyncConnection> apply( AsyncConnection asyncConnection )
+                        {
+                            if ( asyncConnection.tryMarkInUse() )
+                            {
+                                return currentAsyncConnectionFuture;
+                            }
+                            else
+                            {
+                                return connectionProvider.acquireAsyncConnection( mode );
+                            }
+                        }
+                    } ) );
         }
 
-        System.out.println( "===>>> Acquiring new async connection" );
-
-        currentAsyncConnection = connectionProvider.acquireAsyncConnection( mode );
-        logger.debug( "Acquired async connection " + currentAsyncConnection );
-
-        return currentAsyncConnection;
+        return asyncConnectionFuture;
     }
 
     boolean currentConnectionIsOpen()
@@ -509,14 +547,6 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
         {
             connection.close();
             logger.debug( "Released connection " + connection.hashCode() );
-        }
-    }
-
-    private void releaseCurrentAsyncConnection()
-    {
-        if ( currentAsyncConnection != null )
-        {
-            currentAsyncConnection.release();
         }
     }
 }

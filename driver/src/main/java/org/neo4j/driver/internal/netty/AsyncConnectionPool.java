@@ -24,7 +24,7 @@ import org.neo4j.driver.internal.net.BoltServerAddress;
 
 public interface AsyncConnectionPool extends Closeable
 {
-    AsyncConnection acquire( BoltServerAddress address );
+    EventLoopAwareFuture<AsyncConnection> acquire( BoltServerAddress address );
 
     void purge( BoltServerAddress address );
 

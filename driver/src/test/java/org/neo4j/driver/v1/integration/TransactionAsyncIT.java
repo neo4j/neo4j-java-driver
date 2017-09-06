@@ -87,7 +87,7 @@ public class TransactionAsyncIT
     {
         Transaction tx = await( session.beginTransactionAsync() );
 
-        StatementResultCursor cursor = tx.runAsync( "CREATE (n:Node {id: 42}) RETURN n" );
+        StatementResultCursor cursor = await( tx.runAsync( "CREATE (n:Node {id: 42}) RETURN n" ) );
         assertThat( await( cursor.fetchAsync() ), is( true ) );
         Node node = cursor.current().get( 0 ).asNode();
         assertEquals( "Node", single( node.labels() ) );
@@ -102,7 +102,7 @@ public class TransactionAsyncIT
     {
         Transaction tx = await( session.beginTransactionAsync() );
 
-        StatementResultCursor cursor = tx.runAsync( "CREATE (n:Node {id: 4242}) RETURN n" );
+        StatementResultCursor cursor = await( tx.runAsync( "CREATE (n:Node {id: 4242}) RETURN n" ) );
         assertThat( await( cursor.fetchAsync() ), is( true ) );
         Node node = cursor.current().get( 0 ).asNode();
         assertEquals( "Node", single( node.labels() ) );
@@ -117,13 +117,13 @@ public class TransactionAsyncIT
     {
         Transaction tx = await( session.beginTransactionAsync() );
 
-        StatementResultCursor cursor1 = tx.runAsync( "CREATE (n:Node {id: 1})" );
+        StatementResultCursor cursor1 = await( tx.runAsync( "CREATE (n:Node {id: 1})" ) );
         assertThat( await( cursor1.fetchAsync() ), is( false ) );
 
-        StatementResultCursor cursor2 = tx.runAsync( "CREATE (n:Node {id: 2})" );
+        StatementResultCursor cursor2 = await( tx.runAsync( "CREATE (n:Node {id: 2})" ) );
         assertThat( await( cursor2.fetchAsync() ), is( false ) );
 
-        StatementResultCursor cursor3 = tx.runAsync( "CREATE (n:Node {id: 2})" );
+        StatementResultCursor cursor3 = await( tx.runAsync( "CREATE (n:Node {id: 2})" ) );
         assertThat( await( cursor3.fetchAsync() ), is( false ) );
 
         assertNull( await( tx.commitAsync() ) );
@@ -136,10 +136,10 @@ public class TransactionAsyncIT
     {
         Transaction tx = await( session.beginTransactionAsync() );
 
-        StatementResultCursor cursor1 = tx.runAsync( "CREATE (n:Node {id: 1})" );
+        StatementResultCursor cursor1 = await( tx.runAsync( "CREATE (n:Node {id: 1})" ) );
         assertThat( await( cursor1.fetchAsync() ), is( false ) );
 
-        StatementResultCursor cursor2 = tx.runAsync( "CREATE (n:Node {id: 42})" );
+        StatementResultCursor cursor2 = await( tx.runAsync( "CREATE (n:Node {id: 42})" ) );
         assertThat( await( cursor2.fetchAsync() ), is( false ) );
 
         assertNull( await( tx.rollbackAsync() ) );
@@ -152,7 +152,7 @@ public class TransactionAsyncIT
     {
         Transaction tx = await( session.beginTransactionAsync() );
 
-        StatementResultCursor cursor = tx.runAsync( "RETURN" );
+        StatementResultCursor cursor = await( tx.runAsync( "RETURN" ) );
 
         try
         {
@@ -180,7 +180,7 @@ public class TransactionAsyncIT
     {
         Transaction tx = await( session.beginTransactionAsync() );
 
-        StatementResultCursor cursor = tx.runAsync( "RETURN" );
+        StatementResultCursor cursor = await( tx.runAsync( "RETURN" ) );
 
         try
         {
@@ -200,15 +200,15 @@ public class TransactionAsyncIT
     {
         Transaction tx = await( session.beginTransactionAsync() );
 
-        StatementResultCursor cursor1 = tx.runAsync( "CREATE (n:Node) RETURN n" );
+        StatementResultCursor cursor1 = await( tx.runAsync( "CREATE (n:Node) RETURN n" ) );
         assertThat( await( cursor1.fetchAsync() ), is( true ) );
         assertTrue( cursor1.current().get( 0 ).asNode().hasLabel( "Node" ) );
 
-        StatementResultCursor cursor2 = tx.runAsync( "RETURN 42" );
+        StatementResultCursor cursor2 = await( tx.runAsync( "RETURN 42" ) );
         assertThat( await( cursor2.fetchAsync() ), is( true ) );
         assertEquals( 42, cursor2.current().get( 0 ).asInt() );
 
-        StatementResultCursor cursor3 = tx.runAsync( "RETURN" );
+        StatementResultCursor cursor3 = await( tx.runAsync( "RETURN" ) );
         try
         {
             await( cursor3.fetchAsync() );
@@ -235,15 +235,15 @@ public class TransactionAsyncIT
     {
         Transaction tx = await( session.beginTransactionAsync() );
 
-        StatementResultCursor cursor1 = tx.runAsync( "RETURN 4242" );
+        StatementResultCursor cursor1 = await( tx.runAsync( "RETURN 4242" ) );
         assertThat( await( cursor1.fetchAsync() ), is( true ) );
         assertEquals( 4242, cursor1.current().get( 0 ).asInt() );
 
-        StatementResultCursor cursor2 = tx.runAsync( "CREATE (n:Node) DELETE n RETURN 42" );
+        StatementResultCursor cursor2 = await( tx.runAsync( "CREATE (n:Node) DELETE n RETURN 42" ) );
         assertThat( await( cursor2.fetchAsync() ), is( true ) );
         assertEquals( 42, cursor2.current().get( 0 ).asInt() );
 
-        StatementResultCursor cursor3 = tx.runAsync( "RETURN" );
+        StatementResultCursor cursor3 = await( tx.runAsync( "RETURN" ) );
         try
         {
             await( cursor3.fetchAsync() );
@@ -262,7 +262,7 @@ public class TransactionAsyncIT
     {
         Transaction tx = await( session.beginTransactionAsync() );
 
-        StatementResultCursor cursor = tx.runAsync( "RETURN" );
+        StatementResultCursor cursor = await( tx.runAsync( "RETURN" ) );
         try
         {
             await( cursor.fetchAsync() );

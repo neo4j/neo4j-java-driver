@@ -19,9 +19,6 @@
 package org.neo4j.driver.internal.netty;
 
 import io.netty.channel.Channel;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GlobalEventExecutor;
-import io.netty.util.concurrent.Promise;
 
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -33,24 +30,23 @@ import org.neo4j.driver.internal.messaging.RunMessage;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Value;
 
-import static java.util.Objects.requireNonNull;
 import static org.neo4j.driver.internal.netty.ChannelAttributes.responseHandlersHolder;
 
 // todo: keep state flags to prohibit interaction with released connections
 public class NettyConnection implements AsyncConnection
 {
-    private final Future<Channel> channelFuture;
+    private final Channel channel;
+    private final ResponseHandlersHolder responseHandlersHolder;
     private final NettyChannelPool channelPool;
 
-    private Channel channel;
-    private ResponseHandlersHolder responseHandlersHolder;
     private final AtomicBoolean autoReadEnabled = new AtomicBoolean( true );
 
     private final NettyConnectionState state = new NettyConnectionState();
 
-    public NettyConnection( Future<Channel> channelFuture, NettyChannelPool channelPool )
+    public NettyConnection( Channel channel, NettyChannelPool channelPool )
     {
-        this.channelFuture = channelFuture;
+        this.channel = channel;
+        this.responseHandlersHolder = responseHandlersHolder( channel );
         this.channelPool = channelPool;
     }
 
@@ -95,34 +91,13 @@ public class NettyConnection implements AsyncConnection
     @Override
     public void flush()
     {
-        if ( tryExtractChannel() )
-        {
-            channel.eventLoop().execute( new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    channel.flush();
-                }
-            } );
-        }
-        else
-        {
-            channelFuture.addListener( FlushListener.INSTANCE );
-        }
+        channel.flush();
     }
 
     @Override
-    public <T> Promise<T> newPromise()
+    public <T> EventLoopAwarePromise<T> newPromise()
     {
-        if ( tryExtractChannel() )
-        {
-            return channel.eventLoop().newPromise();
-        }
-        else
-        {
-            return GlobalEventExecutor.INSTANCE.newPromise();
-        }
+        return new EventLoopAwarePromise<>( channel.eventLoop() );
     }
 
     @Override
@@ -130,18 +105,18 @@ public class NettyConnection implements AsyncConnection
     {
         if ( state.release() )
         {
-            write( ResetMessage.RESET, new ReleaseChannelHandler( channelFuture, channelPool ), true );
+            write( ResetMessage.RESET, new ReleaseChannelHandler( channel, channelPool ), true );
         }
     }
 
     @Override
-    public Promise<Void> forceRelease()
+    public EventLoopAwareFuture<Void> forceRelease()
     {
-        Promise<Void> releasePromise = newPromise();
+        EventLoopAwarePromise<Void> releasePromise = newPromise();
 
         if ( state.forceRelease() )
         {
-            write( ResetMessage.RESET, new ReleaseChannelHandler( channelFuture, channelPool, releasePromise ), true );
+            write( ResetMessage.RESET, new ReleaseChannelHandler( channel, channelPool, releasePromise ), true );
         }
         else
         {
@@ -153,58 +128,19 @@ public class NettyConnection implements AsyncConnection
 
     private void write( final Message message, final ResponseHandler handler, final boolean flush )
     {
-        if ( tryExtractChannel() )
+        responseHandlersHolder.queue( handler );
+        if ( flush )
         {
-            channel.eventLoop().execute( new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    responseHandlersHolder.queue( handler );
-                    if ( flush )
-                    {
-                        channel.writeAndFlush( message );
-                    }
-                    else
-                    {
-                        channel.write( message );
-                    }
-                }
-            } );
+            channel.writeAndFlush( message );
         }
         else
         {
-            channelFuture.addListener( new WriteListener( message, handler, flush ) );
+            channel.write( message );
         }
     }
 
     private void setAutoRead( boolean value )
     {
-        if ( tryExtractChannel() )
-        {
-            channel.config().setAutoRead( value );
-        }
-        else
-        {
-            channelFuture.addListener( AutoReadListener.forValue( value ) );
-        }
-    }
-
-    private boolean tryExtractChannel()
-    {
-        if ( channel != null )
-        {
-            return true;
-        }
-        else if ( channelFuture.isSuccess() )
-        {
-            channel = requireNonNull( channelFuture.getNow() );
-            responseHandlersHolder = requireNonNull( responseHandlersHolder( channel ) );
-            return true;
-        }
-        else
-        {
-            return false;
-        }
+        channel.config().setAutoRead( value );
     }
 }

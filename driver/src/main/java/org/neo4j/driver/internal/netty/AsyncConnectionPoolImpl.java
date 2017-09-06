@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.net.pooling.PoolSettings;
 import org.neo4j.driver.internal.util.Clock;
+import org.neo4j.driver.v1.util.Function;
 
 // todo: add logging
 public class AsyncConnectionPoolImpl implements AsyncConnectionPool
@@ -60,13 +61,21 @@ public class AsyncConnectionPoolImpl implements AsyncConnectionPool
     }
 
     @Override
-    public AsyncConnection acquire( BoltServerAddress address )
+    public EventLoopAwareFuture<AsyncConnection> acquire( BoltServerAddress address )
     {
         assertNotClosed();
-        NettyChannelPool pool = getOrCreatePool( address );
+        final NettyChannelPool pool = getOrCreatePool( address );
         Future<Channel> connectionFuture = pool.acquire();
         assertNotClosed( address, pool );
-        return new NettyConnection( connectionFuture, pool );
+
+        return Futures.transform( connectionFuture, bootstrap, new Function<Channel,AsyncConnection>()
+        {
+            @Override
+            public AsyncConnection apply( Channel channel )
+            {
+                return new NettyConnection( channel, pool );
+            }
+        } );
     }
 
     @Override

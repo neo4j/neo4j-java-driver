@@ -28,13 +28,12 @@ import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
 import static org.neo4j.driver.internal.netty.ChannelAttributes.responseHandlersHolder;
 
-public class InboundMessageDispatcher extends SimpleChannelInboundHandler<ByteBuf> implements AckFailureSource
+public class InboundMessageDispatcher extends SimpleChannelInboundHandler<ByteBuf>
 {
     private final ByteBufPackInput packInput;
     private final MessageFormat.Reader reader;
 
     private ResponseHandlersHolder responseHandlersHolder;
-    private boolean isHandlingFailure;
 
     public InboundMessageDispatcher()
     {
@@ -78,12 +77,5 @@ public class InboundMessageDispatcher extends SimpleChannelInboundHandler<ByteBu
                 "instabilities, or due to restarts of the database." ) );
 
         ctx.close();
-    }
-
-    @Override
-    public void onAckFailureSuccess()
-    {
-        responseHandlersHolder.clearCurrentError();
-        isHandlingFailure = false;
     }
 }

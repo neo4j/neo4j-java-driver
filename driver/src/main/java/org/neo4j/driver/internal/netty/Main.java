@@ -55,7 +55,7 @@ import static org.neo4j.driver.v1.Values.value;
 
 public class Main
 {
-    private static final int ITERATIONS = 10;
+    private static final int ITERATIONS = 100;
 
     private static final String QUERY1 = "MATCH (n:ActiveItem) RETURN n LIMIT 50000";
 
@@ -116,7 +116,9 @@ public class Main
     private static final Map<String,Value> PARAMS = new HashMap<>();
     private static final Map<String,Object> PARAMS_OBJ = new HashMap<>();
 
-    private static final String HOST = "ec2-54-78-245-189.eu-west-1.compute.amazonaws.com";
+    private static final String USER = "neo4j";
+    private static final String PASSWORD = "test";
+    private static final String HOST = "localhost";
     private static final int PORT = 7687;
     private static final String URI = "bolt://" + HOST + ":" + PORT;
     private static final SecurityPlan SECURITY_PLAN;
@@ -159,7 +161,7 @@ public class Main
 
     private static void testSessionRun() throws Throwable
     {
-        AuthToken authToken = AuthTokens.basic( "neo4j", "test" );
+        AuthToken authToken = AuthTokens.basic( USER, PASSWORD );
         Config config = Config.build().withoutEncryption().toConfig();
 
         List<Long> timings = new ArrayList<>();
@@ -172,7 +174,7 @@ public class Main
                 for ( int i = 0; i < ITERATIONS; i++ )
                 {
                     long start = System.nanoTime();
-                    StatementResult result = session.run( QUERY1, PARAMS_OBJ );
+                    StatementResult result = session.run( QUERY, PARAMS_OBJ );
                     while ( result.hasNext() )
                     {
                         Record record = result.next();
@@ -194,7 +196,7 @@ public class Main
 
     private static void testSessionRunAsync() throws Throwable
     {
-        AuthToken authToken = AuthTokens.basic( "neo4j", "test" );
+        AuthToken authToken = AuthTokens.basic( USER, PASSWORD );
         Config config = Config.build().withoutEncryption().toConfig();
 
         List<Long> timings = new ArrayList<>();
@@ -207,7 +209,8 @@ public class Main
                 for ( int i = 0; i < ITERATIONS; i++ )
                 {
                     long start = System.nanoTime();
-                    StatementResultCursor cursor = session.runAsync( QUERY1, PARAMS_OBJ );
+                    Task<StatementResultCursor> cursorTask = session.runAsync( QUERY, PARAMS_OBJ );
+                    StatementResultCursor cursor = await( cursorTask );
                     while ( await( cursor.fetchAsync() ) )
                     {
                         Record record = cursor.current();
@@ -289,8 +292,7 @@ public class Main
                 Clock.SYSTEM );
         ChannelFuture channelFuture = connector.connect( address, bootstrap );
         channelFuture.await();
-        NettyConnection connection = new NettyConnection(
-                channelFuture.channel().eventLoop().newSucceededFuture( channelFuture.channel() ), null );
+        NettyConnection connection = new NettyConnection( channelFuture.channel(), null );
 
         for ( int i = 0; i < ITERATIONS; i++ )
         {

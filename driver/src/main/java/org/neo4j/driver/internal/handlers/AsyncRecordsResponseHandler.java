@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 
-import org.neo4j.driver.ResultResourcesHandler;
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.netty.AsyncConnection;
 import org.neo4j.driver.internal.netty.InternalTask;
@@ -49,8 +48,8 @@ public class AsyncRecordsResponseHandler implements ResponseHandler
     private static final boolean TOUCH_AUTO_READ = false;
 
     private final RunMetadataAccessor runMetadataAccessor;
-    private final AsyncConnection asyncConnection;
-    private final ResultResourcesHandler resourcesHandler;
+    private final AsyncConnection connection;
+    private final boolean releaseConnection;
 
     private final Queue<Record> records;
     private Promise<Boolean> recordAvailablePromise;
@@ -67,12 +66,12 @@ public class AsyncRecordsResponseHandler implements ResponseHandler
 
     private volatile Record current;
 
-    public AsyncRecordsResponseHandler( RunMetadataAccessor runMetadataAccessor, AsyncConnection asyncConnection,
-            ResultResourcesHandler resourcesHandler )
+    public AsyncRecordsResponseHandler( RunMetadataAccessor runMetadataAccessor, AsyncConnection connection,
+            boolean releaseConnection )
     {
         this.runMetadataAccessor = runMetadataAccessor;
-        this.asyncConnection = asyncConnection;
-        this.resourcesHandler = resourcesHandler;
+        this.connection = connection;
+        this.releaseConnection = releaseConnection;
         this.records = new LinkedList<>();
     }
 
@@ -87,7 +86,7 @@ public class AsyncRecordsResponseHandler implements ResponseHandler
         resultConsumedAfter = extractResultConsumedAfter( metadata );
 
         succeeded = true;
-        resourcesHandler.resultFetched();
+        releaseConnectionIfNeeded();
 
         if ( recordAvailablePromise != null )
         {
@@ -99,7 +98,7 @@ public class AsyncRecordsResponseHandler implements ResponseHandler
     public synchronized void onFailure( Throwable error )
     {
         failure = error;
-        resourcesHandler.resultFailed( error );
+        releaseConnectionIfNeeded();
 
         if ( recordAvailablePromise != null )
         {
@@ -132,26 +131,26 @@ public class AsyncRecordsResponseHandler implements ResponseHandler
         {
             if ( succeeded )
             {
-                Promise<Boolean> result = asyncConnection.newPromise();
+                Promise<Boolean> result = connection.newPromise();
                 result.setSuccess( false );
                 return new InternalTask<>( result );
             }
 
             if ( failure != null )
             {
-                Promise<Boolean> result = asyncConnection.newPromise();
+                Promise<Boolean> result = connection.newPromise();
                 result.setFailure( failure );
                 return new InternalTask<>( result );
             }
 
-            recordAvailablePromise = asyncConnection.newPromise();
+            recordAvailablePromise = connection.newPromise();
             return new InternalTask<>( recordAvailablePromise );
         }
         else
         {
             current = record;
 
-            Promise<Boolean> result = asyncConnection.newPromise();
+            Promise<Boolean> result = connection.newPromise();
             result.setSuccess( true );
             return new InternalTask<>( result );
         }
@@ -171,7 +170,7 @@ public class AsyncRecordsResponseHandler implements ResponseHandler
         {
             if ( records.size() > 10_000 )
             {
-                asyncConnection.disableAutoRead();
+                connection.disableAutoRead();
             }
         }
     }
@@ -183,10 +182,18 @@ public class AsyncRecordsResponseHandler implements ResponseHandler
         {
             if ( record != null && records.size() < 100 )
             {
-                asyncConnection.enableAutoRead();
+                connection.enableAutoRead();
             }
         }
         return record;
+    }
+
+    private void releaseConnectionIfNeeded()
+    {
+        if ( releaseConnection )
+        {
+            connection.release();
+        }
     }
 
     private static StatementType extractStatementType( Map<String,Value> metadata )

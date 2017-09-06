@@ -18,8 +18,6 @@
  */
 package org.neo4j.driver.internal.netty;
 
-import io.netty.util.concurrent.Promise;
-
 import java.util.Map;
 
 import org.neo4j.driver.internal.spi.ResponseHandler;
@@ -41,9 +39,9 @@ public interface AsyncConnection
 
     // todo: create promise who's callbacks are executed in this channel's event loop
     // todo: do we need this???
-    <T> Promise<T> newPromise();
+    <T> EventLoopAwarePromise<T> newPromise();
 
     void release();
 
-    Promise<Void> forceRelease();
+    EventLoopAwareFuture<Void> forceRelease();
 }

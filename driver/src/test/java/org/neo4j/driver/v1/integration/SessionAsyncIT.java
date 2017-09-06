@@ -66,7 +66,7 @@ public class SessionAsyncIT
     @Test
     public void shouldRunQueryWithEmptyResult()
     {
-        StatementResultCursor cursor = session.runAsync( "CREATE (:Person)" );
+        StatementResultCursor cursor = await( session.runAsync( "CREATE (:Person)" ) );
 
         assertThat( await( cursor.fetchAsync() ), is( false ) );
     }
@@ -74,7 +74,7 @@ public class SessionAsyncIT
     @Test
     public void shouldRunQueryWithSingleResult()
     {
-        StatementResultCursor cursor = session.runAsync( "CREATE (p:Person {name: 'Nick Fury'}) RETURN p" );
+        StatementResultCursor cursor = await( session.runAsync( "CREATE (p:Person {name: 'Nick Fury'}) RETURN p" ) );
 
         assertThat( await( cursor.fetchAsync() ), is( true ) );
 
@@ -89,7 +89,7 @@ public class SessionAsyncIT
     @Test
     public void shouldRunQueryWithMultipleResults()
     {
-        StatementResultCursor cursor = session.runAsync( "UNWIND [1,2,3] AS x RETURN x" );
+        StatementResultCursor cursor = await( session.runAsync( "UNWIND [1,2,3] AS x RETURN x" ) );
 
         assertThat( await( cursor.fetchAsync() ), is( true ) );
         assertEquals( 1, cursor.current().get( 0 ).asInt() );
@@ -106,7 +106,7 @@ public class SessionAsyncIT
     @Test
     public void shouldFailForIncorrectQuery()
     {
-        StatementResultCursor cursor = session.runAsync( "RETURN" );
+        StatementResultCursor cursor = await( session.runAsync( "RETURN" ) );
 
         try
         {
@@ -122,7 +122,7 @@ public class SessionAsyncIT
     @Test
     public void shouldFailWhenQueryFailsAtRuntime()
     {
-        StatementResultCursor cursor = session.runAsync( "UNWIND [1, 2, 0] AS x RETURN 10 / x" );
+        StatementResultCursor cursor = await( session.runAsync( "UNWIND [1, 2, 0] AS x RETURN 10 / x" ) );
 
         assertThat( await( cursor.fetchAsync() ), is( true ) );
         assertEquals( 10, cursor.current().get( 0 ).asInt() );
@@ -145,11 +145,11 @@ public class SessionAsyncIT
     @Test
     public void shouldFailWhenServerIsRestarted() throws Exception
     {
-        StatementResultCursor cursor = session.runAsync(
+        StatementResultCursor cursor = await( session.runAsync(
                 "UNWIND range(0, 1000000) AS x " +
                 "CREATE (n1:Node {value: x})-[r:LINKED {value: x}]->(n2:Node {value: x}) " +
                 "DETACH DELETE n1, n2 " +
-                "RETURN x" );
+                "RETURN x" ) );
 
         try
         {
@@ -175,7 +175,8 @@ public class SessionAsyncIT
     @Test
     public void shouldAllowNestedQueries()
     {
-        StatementResultCursor cursor = session.runAsync( "UNWIND [1, 2, 3] AS x CREATE (p:Person {id: x}) RETURN p" );
+        StatementResultCursor cursor =
+                await( session.runAsync( "UNWIND [1, 2, 3] AS x CREATE (p:Person {id: x}) RETURN p" ) );
 
         Future<List<Future<Boolean>>> queriesExecuted = runNestedQueries( cursor );
         List<Future<Boolean>> futures = await( queriesExecuted );
@@ -183,7 +184,7 @@ public class SessionAsyncIT
         List<Boolean> futureResults = awaitAll( futures );
         assertEquals( 7, futureResults.size() );
 
-        StatementResultCursor personCursor = session.runAsync( "MATCH (p:Person) RETURN p ORDER BY p.id" );
+        StatementResultCursor personCursor = await( session.runAsync( "MATCH (p:Person) RETURN p ORDER BY p.id" ) );
 
         List<Node> personNodes = new ArrayList<>();
         while ( await( personCursor.fetchAsync() ) )
@@ -229,22 +230,40 @@ public class SessionAsyncIT
                 }
                 else if ( inputAvailable )
                 {
-                    Record record = inputCursor.current();
-                    Node node = record.get( 0 ).asNode();
-                    long id = node.get( "id" ).asLong();
-                    long age = id * 10;
-
-                    StatementResultCursor updatedCursor =
-                            session.runAsync( "MATCH (p:Person {id: $id}) SET p.age = $age RETURN p",
-                                    parameters( "id", id, "age", age ) );
-
-                    futures.add( updatedCursor.fetchAsync() );
-
-                    runNestedQueries( inputCursor, futures, resultPromise );
+                    runNestedQuery( inputCursor, futures, resultPromise );
                 }
                 else
                 {
                     resultPromise.setSuccess( futures );
+                }
+            }
+        } );
+    }
+
+    private void runNestedQuery( final StatementResultCursor inputCursor, final List<Future<Boolean>> futures,
+            final Promise<List<Future<Boolean>>> resultPromise )
+    {
+        Record record = inputCursor.current();
+        Node node = record.get( 0 ).asNode();
+        long id = node.get( "id" ).asLong();
+        long age = id * 10;
+
+        Task<StatementResultCursor> task = session.runAsync( "MATCH (p:Person {id: $id}) SET p.age = $age RETURN p",
+                parameters( "id", id, "age", age ) );
+
+        task.addListener( new TaskListener<StatementResultCursor>()
+        {
+            @Override
+            public void taskCompleted( StatementResultCursor result, Throwable error )
+            {
+                if ( error != null )
+                {
+                    resultPromise.setFailure( error );
+                }
+                else
+                {
+                    futures.add( result.fetchAsync() );
+                    runNestedQueries( inputCursor, futures, resultPromise );
                 }
             }
         } );

@@ -30,7 +30,6 @@ import org.neo4j.driver.internal.handlers.CommitTxResponseHandler;
 import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
 import org.neo4j.driver.internal.handlers.RollbackTxResponseHandler;
 import org.neo4j.driver.internal.netty.AsyncConnection;
-import org.neo4j.driver.internal.netty.InternalStatementResultCursor;
 import org.neo4j.driver.internal.netty.InternalTask;
 import org.neo4j.driver.internal.netty.StatementResultCursor;
 import org.neo4j.driver.internal.netty.Task;
@@ -234,7 +233,7 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
     }
 
     @Override
-    public StatementResultCursor runAsync( String statementText, Value parameters )
+    public Task<StatementResultCursor> runAsync( String statementText, Value parameters )
     {
         return runAsync( new Statement( statementText, parameters ) );
     }
@@ -246,7 +245,7 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
     }
 
     @Override
-    public StatementResultCursor runAsync( String statementTemplate )
+    public Task<StatementResultCursor> runAsync( String statementTemplate )
     {
         return runAsync( statementTemplate, Values.EmptyMap );
     }
@@ -259,7 +258,7 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
     }
 
     @Override
-    public StatementResultCursor runAsync( String statementTemplate, Map<String,Object> statementParameters )
+    public Task<StatementResultCursor> runAsync( String statementTemplate, Map<String,Object> statementParameters )
     {
         Value params = statementParameters == null ? Values.EmptyMap : value( statementParameters );
         return runAsync( statementTemplate, params );
@@ -273,7 +272,7 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
     }
 
     @Override
-    public StatementResultCursor runAsync( String statementTemplate, Record statementParameters )
+    public Task<StatementResultCursor> runAsync( String statementTemplate, Record statementParameters )
     {
         Value params = statementParameters == null ? Values.EmptyMap : value( statementParameters.asMap() );
         return runAsync( statementTemplate, params );
@@ -305,20 +304,22 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
     }
 
     @Override
-    public StatementResultCursor runAsync( Statement statement )
+    public Task<StatementResultCursor> runAsync( Statement statement )
     {
-        ensureNotFailed();
-
-        InternalStatementResultCursor resultCursor = new InternalStatementResultCursor( asyncConnection, this );
-
-        String query = statement.text();
-        Map<String,Value> params = statement.parameters().asMap( Values.ofValue() );
-
-        asyncConnection.run( query, params, resultCursor.runResponseHandler() );
-        asyncConnection.pullAll( resultCursor.pullAllResponseHandler() );
-        asyncConnection.flush();
-
-        return resultCursor;
+        // todo
+//        ensureNotFailed();
+//
+//        InternalStatementResultCursor resultCursor = new InternalStatementResultCursor( asyncConnection, this );
+//
+//        String query = statement.text();
+//        Map<String,Value> params = statement.parameters().asMap( Values.ofValue() );
+//
+//        asyncConnection.run( query, params, resultCursor.runResponseHandler() );
+//        asyncConnection.pullAll( resultCursor.pullAllResponseHandler() );
+//        asyncConnection.flush();
+//
+//        return resultCursor;
+        throw new UnsupportedOperationException();
     }
 
     @Override

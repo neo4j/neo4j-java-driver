@@ -33,6 +33,7 @@ import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.cluster.RoutingTable;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.netty.AsyncConnection;
+import org.neo4j.driver.internal.netty.EventLoopAwareFuture;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.spi.PooledConnection;
@@ -90,9 +91,8 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
     }
 
     @Override
-    public AsyncConnection acquireAsyncConnection( AccessMode mode )
+    public EventLoopAwareFuture<AsyncConnection> acquireAsyncConnection( AccessMode mode )
     {
-        // todo
         throw new UnsupportedOperationException();
     }
 
