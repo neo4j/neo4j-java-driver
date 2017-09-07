@@ -18,10 +18,6 @@
  */
 package org.neo4j.driver.internal.netty;
 
-import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.ChannelFuture;
-import io.netty.util.concurrent.Promise;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -30,16 +26,6 @@ import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.driver.internal.ConnectionSettings;
-import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
-import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.internal.net.SocketClient;
-import org.neo4j.driver.internal.net.SocketConnection;
-import org.neo4j.driver.internal.security.InternalAuthToken;
-import org.neo4j.driver.internal.security.SecurityPlan;
-import org.neo4j.driver.internal.spi.ResponseHandler;
-import org.neo4j.driver.internal.summary.InternalServerInfo;
-import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
@@ -48,16 +34,13 @@ import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
-import org.neo4j.driver.v1.Value;
-
-import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
-import static org.neo4j.driver.v1.Values.value;
+import org.neo4j.driver.v1.Transaction;
 
 public class Main
 {
     private static final int ITERATIONS = 100;
 
-    private static final String QUERY1 = "MATCH (n:ActiveItem) RETURN n LIMIT 50000";
+    private static final String QUERY1 = "MATCH (n:ActiveItem) RETURN n LIMIT 10000";
 
     private static final String QUERY =
             "MATCH (s:Sku{sku_no: {skuNo}})-[:HAS_ITEM_SOURCE]->(i:ItemSource{itemsource: {itemSource}})\n" +
@@ -113,27 +96,16 @@ public class Main
             "\thasThirdPartyContent: sku.has_third_party_content\n" +
             "}) AS overview;\n";
 
-    private static final Map<String,Value> PARAMS = new HashMap<>();
     private static final Map<String,Object> PARAMS_OBJ = new HashMap<>();
 
     private static final String USER = "neo4j";
     private static final String PASSWORD = "test";
-    private static final String HOST = "localhost";
+    private static final String HOST = "ec2-54-73-57-164.eu-west-1.compute.amazonaws.com";
     private static final int PORT = 7687;
     private static final String URI = "bolt://" + HOST + ":" + PORT;
-    private static final SecurityPlan SECURITY_PLAN;
 
     static
     {
-        PARAMS.put( "skuNo", value( 366421 ) );
-        PARAMS.put( "itemSource", value( "REG" ) );
-        PARAMS.put( "catalogId", value( 2 ) );
-        PARAMS.put( "locale", value( "en" ) );
-        Map<String,Object> tmp = new HashMap<>();
-        tmp.put( "skuNo", 366421 );
-        tmp.put( "itemSource", "REG" );
-        PARAMS.put( "itemList", value( Collections.singletonList( tmp ) ) );
-
         PARAMS_OBJ.put( "skuNo", 366421 );
         PARAMS_OBJ.put( "itemSource", "REG" );
         PARAMS_OBJ.put( "catalogId", 2 );
@@ -142,202 +114,132 @@ public class Main
         tmpObj.put( "skuNo", 366421 );
         tmpObj.put( "itemSource", "REG" );
         PARAMS_OBJ.put( "itemList", Collections.singletonList( tmpObj ) );
-
-        try
-        {
-            SECURITY_PLAN = SecurityPlan.forAllCertificates();
-        }
-        catch ( Throwable t )
-        {
-            throw new RuntimeException( t );
-        }
     }
 
     public static void main( String[] args ) throws Throwable
     {
         testSessionRun();
         testSessionRunAsync();
+
+        testTxRun();
+        testTxRunAsync();
     }
 
     private static void testSessionRun() throws Throwable
     {
-        AuthToken authToken = AuthTokens.basic( USER, PASSWORD );
-        Config config = Config.build().withoutEncryption().toConfig();
-
-        List<Long> timings = new ArrayList<>();
-        int recordsRead = 0;
-
-        try ( Driver driver = GraphDatabase.driver( URI, authToken, config ) )
+        test( "Session#run()", new Action()
         {
-            try ( Session session = driver.session() )
+            @Override
+            public void apply( Driver driver, MutableInt recordsRead )
             {
-                for ( int i = 0; i < ITERATIONS; i++ )
+                try ( Session session = driver.session() )
                 {
-                    long start = System.nanoTime();
                     StatementResult result = session.run( QUERY, PARAMS_OBJ );
                     while ( result.hasNext() )
                     {
                         Record record = result.next();
                         useRecord( record );
-                        recordsRead++;
+                        recordsRead.increment();
                     }
-                    long end = System.nanoTime();
-                    timings.add( TimeUnit.NANOSECONDS.toMillis( end - start ) );
                 }
             }
-        }
-
-        timings = clean( timings );
-
-        System.out.println( "Session#run(): mean --> " + mean( timings ) + "ms, stdDev --> " + stdDev( timings ) );
-        System.out.println( "Session#run(): timings --> " + timings );
-        System.out.println( "Session#run(): recordsRead --> " + recordsRead );
+        } );
     }
 
     private static void testSessionRunAsync() throws Throwable
+    {
+        test( "Session#runAsync()", new Action()
+        {
+            @Override
+            public void apply( Driver driver, MutableInt recordsRead )
+            {
+                Session session = driver.session();
+                Task<StatementResultCursor> cursorTask = session.runAsync( QUERY, PARAMS_OBJ );
+                StatementResultCursor cursor = await( cursorTask );
+                while ( await( cursor.fetchAsync() ) )
+                {
+                    Record record = cursor.current();
+                    useRecord( record );
+                    recordsRead.increment();
+                }
+                await( session.closeAsync() );
+            }
+        } );
+    }
+
+    private static void testTxRun() throws Throwable
+    {
+        test( "Transaction#run()", new Action()
+        {
+            @Override
+            public void apply( Driver driver, MutableInt recordsRead )
+            {
+                try ( Session session = driver.session();
+                      Transaction tx = session.beginTransaction() )
+                {
+                    StatementResult result = tx.run( QUERY, PARAMS_OBJ );
+                    while ( result.hasNext() )
+                    {
+                        Record record = result.next();
+                        useRecord( record );
+                        recordsRead.increment();
+                    }
+                    tx.success();
+                }
+            }
+        } );
+    }
+
+    private static void testTxRunAsync() throws Throwable
+    {
+        test( "Transaction#runAsync()", new Action()
+        {
+            @Override
+            public void apply( Driver driver, MutableInt recordsRead )
+            {
+                Session session = driver.session();
+                Transaction tx = await( session.beginTransactionAsync() );
+                StatementResultCursor cursor = await( tx.runAsync( QUERY, PARAMS_OBJ ) );
+                while ( await( cursor.fetchAsync() ) )
+                {
+                    Record record = cursor.current();
+                    useRecord( record );
+                    recordsRead.increment();
+                }
+                await( tx.commitAsync() );
+                await( session.closeAsync() );
+            }
+        } );
+    }
+
+    private static void test( String actionName, Action action ) throws Throwable
     {
         AuthToken authToken = AuthTokens.basic( USER, PASSWORD );
         Config config = Config.build().withoutEncryption().toConfig();
 
         List<Long> timings = new ArrayList<>();
-        int recordsRead = 0;
+        MutableInt recordsRead = new MutableInt();
 
         try ( Driver driver = GraphDatabase.driver( URI, authToken, config ) )
         {
-            try ( Session session = driver.session() )
+            for ( int i = 0; i < ITERATIONS; i++ )
             {
-                for ( int i = 0; i < ITERATIONS; i++ )
-                {
-                    long start = System.nanoTime();
-                    Task<StatementResultCursor> cursorTask = session.runAsync( QUERY, PARAMS_OBJ );
-                    StatementResultCursor cursor = await( cursorTask );
-                    while ( await( cursor.fetchAsync() ) )
-                    {
-                        Record record = cursor.current();
-                        useRecord( record );
-                        recordsRead++;
-                    }
-                    long end = System.nanoTime();
-                    timings.add( TimeUnit.NANOSECONDS.toMillis( end - start ) );
-                }
+                long start = System.nanoTime();
+
+                action.apply( driver, recordsRead );
+
+                long end = System.nanoTime();
+                timings.add( TimeUnit.NANOSECONDS.toMillis( end - start ) );
             }
         }
 
         timings = clean( timings );
 
-        System.out.println( "Session#runAsync(): mean --> " + mean( timings ) + "ms, stdDev --> " + stdDev( timings ) );
-        System.out.println( "Session#runAsync(): timings --> " + timings );
-        System.out.println( "Session#runAsync(): recordsRead --> " + recordsRead );
-    }
-
-    private static void testSocketConnection()
-    {
-        BoltServerAddress address = new BoltServerAddress( HOST, PORT );
-        SocketClient socket = new SocketClient( address, SECURITY_PLAN, 10_000, DEV_NULL_LOGGER );
-        InternalServerInfo serverInfo = new InternalServerInfo( address, "" );
-        SocketConnection connection = new SocketConnection( socket, serverInfo, DEV_NULL_LOGGER );
-
-        AuthToken token = AuthTokens.basic( "neo4j", "test" );
-        Map<String,Value> map = ((InternalAuthToken) token).toMap();
-
-        connection.init( "Tester", map );
-
-        List<Long> timings = new ArrayList<>();
-        for ( int i = 0; i < ITERATIONS; i++ )
-        {
-            long start = System.nanoTime();
-            connection.run( QUERY, PARAMS, NoOpResponseHandler.INSTANCE );
-            connection.pullAll( new ResponseHandler()
-            {
-                @Override
-                public void onSuccess( Map<String,Value> metadata )
-                {
-
-                }
-
-                @Override
-                public void onFailure( Throwable error )
-                {
-
-                }
-
-                @Override
-                public void onRecord( Value[] fields )
-                {
-//                    System.out.println( "Received records: " + Arrays.toString( fields ) );
-                }
-            } );
-            connection.sync();
-            long end = System.nanoTime();
-
-            timings.add( TimeUnit.NANOSECONDS.toMillis( end - start ) );
-        }
-
-        timings = clean( timings );
-
-        System.out.println( "Socket: mean --> " + mean( timings ) + "ms, stdDev --> " + stdDev( timings ) );
-        System.out.println( "Socket: " + timings );
-    }
-
-    private static void testNettyConnection() throws Throwable
-    {
-        BoltServerAddress address = new BoltServerAddress( HOST, PORT );
-        AuthToken authToken = AuthTokens.basic( "neo4j", "test" );
-
-        List<Long> timings = new ArrayList<>();
-        Bootstrap bootstrap = BootstrapFactory.newBootstrap();
-        ActiveChannelTracker activeChannelTracker = new ActiveChannelTracker();
-        ConnectionSettings connectionSettings = new ConnectionSettings( authToken, -1 );
-        AsyncConnectorImpl connector = new AsyncConnectorImpl( connectionSettings, SECURITY_PLAN, activeChannelTracker,
-                Clock.SYSTEM );
-        ChannelFuture channelFuture = connector.connect( address, bootstrap );
-        channelFuture.await();
-        NettyConnection connection = new NettyConnection( channelFuture.channel(), null );
-
-        for ( int i = 0; i < ITERATIONS; i++ )
-        {
-            long start = System.nanoTime();
-
-            final Promise<Void> queryPromise = connection.newPromise();
-
-            connection.run( QUERY, PARAMS, NoOpResponseHandler.INSTANCE );
-            connection.pullAll( new ResponseHandler()
-            {
-                @Override
-                public void onSuccess( Map<String,Value> metadata )
-                {
-                    queryPromise.setSuccess( null );
-                }
-
-                @Override
-                public void onRecord( Value[] fields )
-                {
-//                        System.out.println( "Received records: " + Arrays.toString( fields ) );
-                }
-
-                @Override
-                public void onFailure( Throwable error )
-                {
-                    queryPromise.setFailure( error );
-                }
-            } );
-            connection.flush();
-
-            queryPromise.await();
-            if ( !queryPromise.isSuccess() )
-            {
-                throw queryPromise.cause();
-            }
-
-            long end = System.nanoTime();
-
-            timings.add( TimeUnit.NANOSECONDS.toMillis( end - start ) );
-        }
-
-        timings = clean( timings );
-
-        System.out.println( "Netty: mean --> " + mean( timings ) + "ms, stdDev --> " + stdDev( timings ) );
-        System.out.println( "Netty: " + timings );
+        System.out.println( "============================================================" );
+        System.out.println( actionName + ": mean --> " + mean( timings ) + "ms, stdDev --> " + stdDev( timings ) );
+        System.out.println( actionName + ": timings --> " + timings );
+        System.out.println( actionName + ": recordsRead --> " + recordsRead );
+        System.out.println( "============================================================" );
     }
 
     private static List<Long> clean( List<Long> timings )
@@ -399,5 +301,26 @@ public class Main
         }
 
 //        System.out.println( record );
+    }
+
+    private interface Action
+    {
+        void apply( Driver driver, MutableInt recordsRead );
+    }
+
+    private static class MutableInt
+    {
+        int value;
+
+        void increment()
+        {
+            value++;
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.valueOf( value );
+        }
     }
 }

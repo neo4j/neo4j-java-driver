@@ -19,15 +19,17 @@
 package org.neo4j.driver.v1.integration;
 
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.driver.internal.netty.StatementResultCursor;
+import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.types.Node;
-import org.neo4j.driver.v1.util.TestNeo4jSession;
+import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
@@ -48,7 +50,15 @@ import static org.neo4j.driver.v1.util.TestUtil.await;
 public class TransactionAsyncIT
 {
     @Rule
-    public final TestNeo4jSession session = new TestNeo4jSession();
+    public final TestNeo4j neo4j = new TestNeo4j();
+
+    private Session session;
+
+    @Before
+    public void setUp() throws Exception
+    {
+        session = neo4j.driver().session();
+    }
 
     @After
     public void tearDown() throws Exception
@@ -132,6 +142,20 @@ public class TransactionAsyncIT
     }
 
     @Test
+    public void shouldBePossibleToRunMultipleStatementsAndCommitWithoutWaiting()
+    {
+        Transaction tx = await( session.beginTransactionAsync() );
+
+        tx.runAsync( "CREATE (n:Node {id: 1})" );
+        tx.runAsync( "CREATE (n:Node {id: 2})" );
+        tx.runAsync( "CREATE (n:Node {id: 1})" );
+
+        assertNull( await( tx.commitAsync() ) );
+        assertEquals( 1, countNodes( 2 ) );
+        assertEquals( 2, countNodes( 1 ) );
+    }
+
+    @Test
     public void shouldBePossibleToRunMultipleStatementsAndRollback()
     {
         Transaction tx = await( session.beginTransactionAsync() );
@@ -141,6 +165,19 @@ public class TransactionAsyncIT
 
         StatementResultCursor cursor2 = await( tx.runAsync( "CREATE (n:Node {id: 42})" ) );
         assertThat( await( cursor2.fetchAsync() ), is( false ) );
+
+        assertNull( await( tx.rollbackAsync() ) );
+        assertEquals( 0, countNodes( 1 ) );
+        assertEquals( 0, countNodes( 42 ) );
+    }
+
+    @Test
+    public void shouldBePossibleToRunMultipleStatementsAndRollbackWithoutWaiting()
+    {
+        Transaction tx = await( session.beginTransactionAsync() );
+
+        tx.runAsync( "CREATE (n:Node {id: 1})" );
+        tx.runAsync( "CREATE (n:Node {id: 42})" );
 
         assertNull( await( tx.rollbackAsync() ) );
         assertEquals( 0, countNodes( 1 ) );
@@ -282,6 +319,23 @@ public class TransactionAsyncIT
         {
             assertThat( e, instanceOf( ClientException.class ) );
             assertThat( e.getMessage(), startsWith( "Cannot run more statements in this transaction" ) );
+        }
+    }
+
+    @Test
+    public void shouldFailBoBeginTxWithInvalidBookmark()
+    {
+        Session session = neo4j.driver().session( "InvalidBookmark" );
+
+        try
+        {
+            await( session.beginTransactionAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( ClientException.class ) );
+            assertThat( e.getMessage(), containsString( "InvalidBookmark" ) );
         }
     }
 

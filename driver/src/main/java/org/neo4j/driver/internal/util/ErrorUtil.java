@@ -55,14 +55,14 @@ public final class ErrorUtil
     {
         if ( error instanceof Neo4jException )
         {
-            if ( isClientOrTransientError( ((Neo4jException) error) ) )
-            {
-                return true;
-            }
-
             if ( isProtocolViolationError( ((Neo4jException) error) ) )
             {
                 return false;
+            }
+
+            if ( isClientOrTransientError( ((Neo4jException) error) ) )
+            {
+                return true;
             }
         }
         return false;

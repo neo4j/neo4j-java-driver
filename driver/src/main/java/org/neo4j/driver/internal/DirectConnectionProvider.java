@@ -37,11 +37,6 @@ public class DirectConnectionProvider implements ConnectionProvider
     private final ConnectionPool pool;
     private final AsyncConnectionPool asyncPool;
 
-    DirectConnectionProvider( BoltServerAddress address, ConnectionPool pool )
-    {
-        this( address, pool, null );
-    }
-
     DirectConnectionProvider( BoltServerAddress address, ConnectionPool pool, AsyncConnectionPool asyncPool )
     {
         this.address = address;

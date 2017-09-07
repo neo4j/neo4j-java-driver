@@ -23,8 +23,6 @@ import io.netty.util.concurrent.Promise;
 import java.util.Arrays;
 import java.util.Map;
 
-import org.neo4j.driver.internal.ExplicitTransaction;
-import org.neo4j.driver.internal.SessionResourcesHandler;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Value;
 
@@ -33,28 +31,21 @@ import static java.util.Objects.requireNonNull;
 public class RollbackTxResponseHandler implements ResponseHandler
 {
     private final Promise<Void> rollbackTxPromise;
-    private final SessionResourcesHandler resourcesHandler;
-    private final ExplicitTransaction tx;
 
-    public RollbackTxResponseHandler( Promise<Void> rollbackTxPromise, SessionResourcesHandler resourcesHandler,
-            ExplicitTransaction tx )
+    public RollbackTxResponseHandler( Promise<Void> rollbackTxPromise )
     {
         this.rollbackTxPromise = requireNonNull( rollbackTxPromise );
-        this.resourcesHandler = requireNonNull( resourcesHandler );
-        this.tx = requireNonNull( tx );
     }
 
     @Override
     public void onSuccess( Map<String,Value> metadata )
     {
-        resourcesHandler.onAsyncTransactionClosed( tx );
         rollbackTxPromise.setSuccess( null );
     }
 
     @Override
     public void onFailure( Throwable error )
     {
-        resourcesHandler.onAsyncTransactionClosed( tx );
         rollbackTxPromise.setFailure( error );
     }
 

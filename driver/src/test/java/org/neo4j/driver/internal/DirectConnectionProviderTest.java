@@ -21,6 +21,7 @@ package org.neo4j.driver.internal;
 import org.junit.Test;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.netty.AsyncConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.PooledConnection;
 
@@ -109,11 +110,12 @@ public class DirectConnectionProviderTest
 
     private static DirectConnectionProvider newConnectionProvider( BoltServerAddress address )
     {
-        return new DirectConnectionProvider( address, mock( ConnectionPool.class, RETURNS_MOCKS ) );
+        return new DirectConnectionProvider( address, mock( ConnectionPool.class, RETURNS_MOCKS ),
+                mock( AsyncConnectionPool.class ) );
     }
 
     private static DirectConnectionProvider newConnectionProvider( ConnectionPool pool )
     {
-        return new DirectConnectionProvider( BoltServerAddress.LOCAL_DEFAULT, pool );
+        return new DirectConnectionProvider( BoltServerAddress.LOCAL_DEFAULT, pool, mock( AsyncConnectionPool.class ) );
     }
 }

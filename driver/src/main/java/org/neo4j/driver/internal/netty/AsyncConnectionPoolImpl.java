@@ -117,7 +117,7 @@ public class AsyncConnectionPoolImpl implements AsyncConnectionPool
             finally
             {
                 // todo: do we need to sync here?
-                bootstrap.config().group().shutdownGracefully();
+                bootstrap.config().group().shutdownGracefully().syncUninterruptibly();
             }
         }
     }

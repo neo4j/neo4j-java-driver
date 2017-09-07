@@ -23,12 +23,19 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.Promise;
 
+import org.neo4j.driver.internal.util.Consumer;
 import org.neo4j.driver.v1.util.Function;
 
 public final class Futures
 {
     private Futures()
     {
+    }
+
+    public static <T> EventLoopAwarePromise<T> completed( EventLoopAwarePromise<T> promise, T value )
+    {
+        promise.setSuccess( value );
+        return promise;
     }
 
     public static <T, U> EventLoopAwareFuture<U> transform( EventLoopAwareFuture<T> future, Function<T,U> transformer )
@@ -90,6 +97,27 @@ public final class Futures
         return result;
     }
 
+    public static <T> EventLoopAwareFuture<T> fallback( EventLoopAwareFuture<T> from, EventLoopAwareFuture<T> to )
+    {
+        EventLoopAwarePromise<T> result = new EventLoopAwarePromise<>( from.eventLoop() );
+        from.addListener( new FallbackListener<>( result, to ) );
+        return result;
+    }
+
+    public static <T> EventLoopAwareFuture<T> onSuccess( EventLoopAwareFuture<T> future, Consumer<T> action )
+    {
+        EventLoopAwarePromise<T> result = new EventLoopAwarePromise<>( future.eventLoop() );
+        future.addListener( new SuccessListener<>( result, action ) );
+        return result;
+    }
+
+    public static <T> EventLoopAwareFuture<T> onCompletion( EventLoopAwareFuture<T> future, Consumer<Void> action )
+    {
+        EventLoopAwarePromise<T> result = new EventLoopAwarePromise<>( future.eventLoop() );
+        future.addListener( new CompletionListener<>( result, action ) );
+        return result;
+    }
+
     private static class TransformListener<T, U> implements GenericFutureListener<Future<T>>
     {
         final Promise<U> result;
@@ -124,6 +152,148 @@ public final class Futures
             else
             {
                 result.setFailure( future.cause() );
+            }
+        }
+    }
+
+    private static class FallbackListener<T> implements GenericFutureListener<Future<T>>
+    {
+        final Promise<T> result;
+        final Future<T> fallback;
+
+        FallbackListener( Promise<T> result, Future<T> fallback )
+        {
+            this.result = result;
+            this.fallback = fallback;
+        }
+
+        @Override
+        public void operationComplete( Future<T> future ) throws Exception
+        {
+            if ( future.isCancelled() )
+            {
+                result.cancel( true );
+            }
+            else if ( future.isSuccess() )
+            {
+                result.setSuccess( future.getNow() );
+            }
+            else
+            {
+                fallback.addListener( new NestedFallbackListener<>( result, future.cause() ) );
+            }
+        }
+    }
+
+    private static class NestedFallbackListener<T> implements GenericFutureListener<Future<T>>
+    {
+        final Promise<T> result;
+        final Throwable originalError;
+
+        NestedFallbackListener( Promise<T> result, Throwable originalError )
+        {
+            this.result = result;
+            this.originalError = originalError;
+        }
+
+        @Override
+        public void operationComplete( Future<T> future ) throws Exception
+        {
+            if ( future.isCancelled() )
+            {
+                result.cancel( true );
+            }
+            else if ( future.isSuccess() )
+            {
+                result.setSuccess( future.getNow() );
+            }
+            else
+            {
+                result.setFailure( originalError );
+            }
+        }
+    }
+
+    private static class SuccessListener<T> implements GenericFutureListener<Future<T>>
+    {
+        final Promise<T> result;
+        final Consumer<T> action;
+
+        SuccessListener( Promise<T> result, Consumer<T> action )
+        {
+            this.result = result;
+            this.action = action;
+        }
+
+        @Override
+        public void operationComplete( Future<T> future ) throws Exception
+        {
+            if ( future.isCancelled() )
+            {
+                result.cancel( true );
+            }
+            else if ( future.isSuccess() )
+            {
+                try
+                {
+                    T value = future.getNow();
+                    action.accept( value );
+                    result.setSuccess( value );
+                }
+                catch ( Throwable t )
+                {
+                    result.setFailure( t );
+                }
+            }
+            else
+            {
+                result.setFailure( future.cause() );
+            }
+        }
+    }
+
+    private static class CompletionListener<T> implements GenericFutureListener<Future<T>>
+    {
+        final Promise<T> result;
+        final Consumer<Void> action;
+
+        CompletionListener( Promise<T> result, Consumer<Void> action )
+        {
+            this.result = result;
+            this.action = action;
+        }
+
+        @Override
+        public void operationComplete( Future<T> future ) throws Exception
+        {
+            if ( future.isCancelled() )
+            {
+                result.cancel( true );
+            }
+            else if ( future.isSuccess() )
+            {
+                try
+                {
+                    action.accept( null );
+                    result.setSuccess( future.getNow() );
+                }
+                catch ( Throwable t )
+                {
+                    result.setFailure( t );
+                }
+            }
+            else
+            {
+                Throwable error = future.cause();
+                try
+                {
+                    action.accept( null );
+                }
+                catch ( Throwable t )
+                {
+                    error.addSuppressed( t );
+                }
+                result.setFailure( error );
             }
         }
     }

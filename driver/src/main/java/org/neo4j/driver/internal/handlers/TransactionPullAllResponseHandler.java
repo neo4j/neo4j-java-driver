@@ -18,44 +18,30 @@
  */
 package org.neo4j.driver.internal.handlers;
 
-import io.netty.util.concurrent.Promise;
-
-import java.util.Arrays;
-import java.util.Map;
-
-import org.neo4j.driver.internal.spi.ResponseHandler;
-import org.neo4j.driver.v1.Transaction;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.internal.ExplicitTransaction;
+import org.neo4j.driver.internal.netty.AsyncConnection;
 
 import static java.util.Objects.requireNonNull;
 
-public class BeginTxResponseHandler<T extends Transaction> implements ResponseHandler
+public class TransactionPullAllResponseHandler extends PullAllResponseHandler
 {
-    private final Promise<T> beginTxPromise;
-    private final T tx;
+    private final ExplicitTransaction tx;
 
-    public BeginTxResponseHandler( Promise<T> beginTxPromise, T tx )
+    public TransactionPullAllResponseHandler( RunMetadataAccessor runMetadataAccessor, AsyncConnection connection,
+            ExplicitTransaction tx )
     {
-        this.beginTxPromise = requireNonNull( beginTxPromise );
+        super( runMetadataAccessor, connection );
         this.tx = requireNonNull( tx );
     }
 
     @Override
-    public void onSuccess( Map<String,Value> metadata )
+    protected void afterSuccess()
     {
-        beginTxPromise.setSuccess( tx );
     }
 
     @Override
-    public void onFailure( Throwable error )
+    protected void afterFailure( Throwable error )
     {
-        beginTxPromise.setFailure( error );
-    }
-
-    @Override
-    public void onRecord( Value[] fields )
-    {
-        throw new UnsupportedOperationException(
-                "Transaction begin is not expected to receive records: " + Arrays.toString( fields ) );
+        tx.resultFailed( error );
     }
 }

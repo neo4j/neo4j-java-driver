@@ -43,13 +43,12 @@ import org.neo4j.driver.v1.summary.ProfiledPlan;
 import org.neo4j.driver.v1.summary.StatementType;
 import org.neo4j.driver.v1.summary.SummaryCounters;
 
-public class PullAllResponseHandler implements ResponseHandler
+public abstract class PullAllResponseHandler implements ResponseHandler
 {
     private static final boolean TOUCH_AUTO_READ = false;
 
     private final RunMetadataAccessor runMetadataAccessor;
-    private final AsyncConnection connection;
-    private final boolean releaseConnection;
+    protected final AsyncConnection connection;
 
     private final Queue<Record> records;
     private Promise<Boolean> recordAvailablePromise;
@@ -66,12 +65,10 @@ public class PullAllResponseHandler implements ResponseHandler
 
     private volatile Record current;
 
-    public PullAllResponseHandler( RunMetadataAccessor runMetadataAccessor, AsyncConnection connection,
-            boolean releaseConnection )
+    public PullAllResponseHandler( RunMetadataAccessor runMetadataAccessor, AsyncConnection connection )
     {
         this.runMetadataAccessor = runMetadataAccessor;
         this.connection = connection;
-        this.releaseConnection = releaseConnection;
         this.records = new LinkedList<>();
     }
 
@@ -86,7 +83,7 @@ public class PullAllResponseHandler implements ResponseHandler
         resultConsumedAfter = extractResultConsumedAfter( metadata );
 
         succeeded = true;
-        releaseConnectionIfNeeded();
+        afterSuccess();
 
         if ( recordAvailablePromise != null )
         {
@@ -94,11 +91,13 @@ public class PullAllResponseHandler implements ResponseHandler
         }
     }
 
+    protected abstract void afterSuccess();
+
     @Override
     public synchronized void onFailure( Throwable error )
     {
         failure = error;
-        releaseConnectionIfNeeded();
+        afterFailure( error );
 
         if ( recordAvailablePromise != null )
         {
@@ -106,6 +105,8 @@ public class PullAllResponseHandler implements ResponseHandler
             recordAvailablePromise = null;
         }
     }
+
+    protected abstract void afterFailure( Throwable error );
 
     @Override
     public synchronized void onRecord( Value[] fields )
@@ -186,14 +187,6 @@ public class PullAllResponseHandler implements ResponseHandler
             }
         }
         return record;
-    }
-
-    private void releaseConnectionIfNeeded()
-    {
-        if ( releaseConnection )
-        {
-            connection.release();
-        }
     }
 
     private static StatementType extractStatementType( Map<String,Value> metadata )

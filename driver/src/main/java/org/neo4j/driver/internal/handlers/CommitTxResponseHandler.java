@@ -25,7 +25,6 @@ import java.util.Map;
 
 import org.neo4j.driver.internal.Bookmark;
 import org.neo4j.driver.internal.ExplicitTransaction;
-import org.neo4j.driver.internal.SessionResourcesHandler;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Value;
 
@@ -34,14 +33,11 @@ import static java.util.Objects.requireNonNull;
 public class CommitTxResponseHandler implements ResponseHandler
 {
     private final Promise<Void> commitTxPromise;
-    private final SessionResourcesHandler resourcesHandler;
     private final ExplicitTransaction tx;
 
-    public CommitTxResponseHandler( Promise<Void> commitTxPromise, SessionResourcesHandler resourcesHandler,
-            ExplicitTransaction tx )
+    public CommitTxResponseHandler( Promise<Void> commitTxPromise, ExplicitTransaction tx )
     {
         this.commitTxPromise = requireNonNull( commitTxPromise );
-        this.resourcesHandler = requireNonNull( resourcesHandler );
         this.tx = requireNonNull( tx );
     }
 
@@ -57,14 +53,12 @@ public class CommitTxResponseHandler implements ResponseHandler
             }
         }
 
-        resourcesHandler.onAsyncTransactionClosed( tx );
         commitTxPromise.setSuccess( null );
     }
 
     @Override
     public void onFailure( Throwable error )
     {
-        resourcesHandler.onAsyncTransactionClosed( tx );
         commitTxPromise.setFailure( error );
     }
 

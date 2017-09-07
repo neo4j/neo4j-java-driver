@@ -96,7 +96,7 @@ public class ResponseHandlersHolder implements MessageHandler
     @Override
     public void handleSuccessMessage( Map<String,Value> meta ) throws IOException
     {
-        System.out.println( "Received SUCCESS " + meta );
+//        System.out.println( "Received SUCCESS " + meta );
         ResponseHandler handler = handlers.remove();
         handler.onSuccess( meta );
     }
@@ -112,7 +112,7 @@ public class ResponseHandlersHolder implements MessageHandler
     @Override
     public void handleFailureMessage( String code, String message ) throws IOException
     {
-        System.out.println( "Received FAILURE " + code + " " + message );
+//        System.out.println( "Received FAILURE " + code + " " + message );
         currentError = ErrorUtil.newNeo4jError( code, message );
 
         // queue ACK_FAILURE before notifying the next response handler

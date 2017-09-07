@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.driver.ResultResourcesHandler;
 import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
+import org.neo4j.driver.internal.handlers.SessionPullAllResponseHandler;
 import org.neo4j.driver.internal.logging.DelegatingLogger;
 import org.neo4j.driver.internal.netty.AsyncConnection;
 import org.neo4j.driver.internal.netty.EventLoopAwareFuture;
@@ -69,7 +70,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     private volatile Bookmark bookmark = Bookmark.empty();
     private PooledConnection currentConnection;
     private ExplicitTransaction currentTransaction;
-    private volatile ExplicitTransaction currentAsyncTransaction;
+    private volatile EventLoopAwareFuture<ExplicitTransaction> currentAsyncTransactionFuture;
 
     private EventLoopAwareFuture<AsyncConnection> asyncConnectionFuture;
 
@@ -165,11 +166,12 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
                         Map<String,Value> params = statement.parameters().asMap( Values.ofValue() );
 
                         RunResponseHandler runHandler = new RunResponseHandler();
-                        PullAllResponseHandler pullHandler = new PullAllResponseHandler( runHandler, connection, true );
-                        InternalStatementResultCursor cursor = new InternalStatementResultCursor( pullHandler );
+                        PullAllResponseHandler pullAllHandler =
+                                new SessionPullAllResponseHandler( runHandler, connection );
+                        InternalStatementResultCursor cursor = new InternalStatementResultCursor( pullAllHandler );
 
                         connection.run( query, params, runHandler );
-                        connection.pullAll( pullHandler );
+                        connection.pullAll( pullAllHandler );
                         connection.flush();
 
                         return cursor;
@@ -235,10 +237,6 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
                     logger.error( "Failed to close transaction", e );
                 }
             }
-            if ( currentAsyncTransaction != null )
-            {
-                currentAsyncTransaction.rollbackAsync();
-            }
         }
 
         syncAndCloseCurrentConnection();
@@ -259,9 +257,17 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
                         }
                     } ) ) );
         }
-        else if ( currentAsyncTransaction != null )
+        else if ( currentAsyncTransactionFuture != null )
         {
-            return currentAsyncTransaction.rollbackAsync();
+            return new InternalTask<>( Futures.unwrap( Futures.transform( currentAsyncTransactionFuture,
+                    new Function<ExplicitTransaction,EventLoopAwareFuture<Void>>()
+                    {
+                        @Override
+                        public EventLoopAwareFuture<Void> apply( ExplicitTransaction tx )
+                        {
+                            return tx.internalRollbackAsync();
+                        }
+                    } ) ) );
         }
         else
         {
@@ -351,15 +357,10 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
         }
     }
 
-    @Override
-    public void onAsyncTransactionClosed( ExplicitTransaction tx )
+    public void asyncTransactionClosed( ExplicitTransaction tx )
     {
-        if ( currentAsyncTransaction != null && currentAsyncTransaction == tx )
-        {
-//            currentAsyncConnection.release();
-            setBookmark( currentAsyncTransaction.bookmark() );
-            currentAsyncTransaction = null;
-        }
+        setBookmark( tx.bookmark() );
+        currentAsyncTransactionFuture = null;
     }
 
     @Override
@@ -422,16 +423,31 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
 
     private synchronized Task<Transaction> beginTransactionAsync( AccessMode mode )
     {
-        // todo
-//        ensureSessionIsOpen();
-//        ensureNoOpenTransactionBeforeOpeningTransaction();
-//
-//        AsyncConnection asyncConnection = acquireAsyncConnection( mode );
-//        currentAsyncTransaction = new ExplicitTransaction( asyncConnection, this );
-//
-//        return currentAsyncTransaction.beginAsync( bookmark );
+        ensureSessionIsOpen();
+        ensureNoOpenTransactionBeforeOpeningTransaction();
 
-        throw new UnsupportedOperationException();
+        EventLoopAwareFuture<AsyncConnection> connectionFuture = acquireAsyncConnection( mode );
+        currentAsyncTransactionFuture = Futures.unwrap( Futures.transform( connectionFuture,
+                new Function<AsyncConnection,EventLoopAwareFuture<ExplicitTransaction>>()
+                {
+                    @Override
+                    public EventLoopAwareFuture<ExplicitTransaction> apply( AsyncConnection connection )
+                    {
+                        ExplicitTransaction tx = new ExplicitTransaction( connection, NetworkSession.this );
+                        return tx.beginAsync( bookmark );
+                    }
+                } ) );
+
+        // todo: this transform is basically just to cast, it should not be here!
+        return new InternalTask<>( Futures.transform( currentAsyncTransactionFuture,
+                new Function<ExplicitTransaction,Transaction>()
+                {
+                    @Override
+                    public Transaction apply( ExplicitTransaction transaction )
+                    {
+                        return transaction;
+                    }
+                } ) );
     }
 
     private void ensureNoUnrecoverableError()
@@ -447,7 +463,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     //should be called from a synchronized block
     private void ensureNoOpenTransactionBeforeRunningSession()
     {
-        if ( currentTransaction != null || currentAsyncTransaction != null )
+        if ( currentTransaction != null || currentAsyncTransactionFuture != null )
         {
             throw new ClientException( "Statements cannot be run directly on a session with an open transaction;" +
                                        " either run from within the transaction or use a different session." );
@@ -457,7 +473,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     //should be called from a synchronized block
     private void ensureNoOpenTransactionBeforeOpeningTransaction()
     {
-        if ( currentTransaction != null || currentAsyncTransaction != null )
+        if ( currentTransaction != null || currentAsyncTransactionFuture != null )
         {
             throw new ClientException( "You cannot begin a transaction on a session with an open transaction;" +
                                        " either run from within the transaction or use a different session." );

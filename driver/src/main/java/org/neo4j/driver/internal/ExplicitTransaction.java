@@ -18,8 +18,6 @@
  */
 package org.neo4j.driver.internal;
 
-import io.netty.util.concurrent.Promise;
-
 import java.util.Collections;
 import java.util.Map;
 
@@ -28,13 +26,21 @@ import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
 import org.neo4j.driver.internal.handlers.BookmarkResponseHandler;
 import org.neo4j.driver.internal.handlers.CommitTxResponseHandler;
 import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
+import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RollbackTxResponseHandler;
+import org.neo4j.driver.internal.handlers.RunResponseHandler;
+import org.neo4j.driver.internal.handlers.TransactionPullAllResponseHandler;
 import org.neo4j.driver.internal.netty.AsyncConnection;
+import org.neo4j.driver.internal.netty.EventLoopAwareFuture;
+import org.neo4j.driver.internal.netty.EventLoopAwarePromise;
+import org.neo4j.driver.internal.netty.Futures;
+import org.neo4j.driver.internal.netty.InternalStatementResultCursor;
 import org.neo4j.driver.internal.netty.InternalTask;
 import org.neo4j.driver.internal.netty.StatementResultCursor;
 import org.neo4j.driver.internal.netty.Task;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
+import org.neo4j.driver.internal.util.Consumer;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementResult;
@@ -69,7 +75,7 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
         FAILED,
 
         /** This transaction has successfully committed */
-        SUCCEEDED,
+        COMMITTED,
 
         /** This transaction has been rolled back */
         ROLLED_BACK
@@ -78,6 +84,7 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
     private final SessionResourcesHandler resourcesHandler;
     private final Connection connection;
     private final AsyncConnection asyncConnection;
+    private final NetworkSession session;
 
     private volatile Bookmark bookmark = Bookmark.empty();
     private volatile State state = State.ACTIVE;
@@ -86,14 +93,16 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
     {
         this.connection = connection;
         this.asyncConnection = null;
+        this.session = null;
         this.resourcesHandler = resourcesHandler;
     }
 
-    public ExplicitTransaction( AsyncConnection asyncConnection, SessionResourcesHandler resourcesHandler )
+    public ExplicitTransaction( AsyncConnection asyncConnection, NetworkSession session )
     {
         this.connection = null;
         this.asyncConnection = asyncConnection;
-        this.resourcesHandler = resourcesHandler;
+        this.session = session;
+        this.resourcesHandler = SessionResourcesHandler.NO_OP;
     }
 
     public void begin( Bookmark initialBookmark )
@@ -109,25 +118,25 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
         }
     }
 
-    public InternalTask<Transaction> beginAsync( Bookmark initialBookmark )
+    public EventLoopAwareFuture<ExplicitTransaction> beginAsync( Bookmark initialBookmark )
     {
-        Promise<Transaction> beginTxPromise = asyncConnection.newPromise();
+        EventLoopAwarePromise<ExplicitTransaction> beginTxPromise = asyncConnection.newPromise();
 
         Map<String,Value> parameters = initialBookmark.asBeginTransactionParameters();
         asyncConnection.run( "BEGIN", parameters, NoOpResponseHandler.INSTANCE );
 
-//        if ( initialBookmark.isEmpty() )
-//        {
-//            asyncConnection.pullAll( NoOpResponseHandler.INSTANCE );
-//            beginTxPromise.setSuccess( this );
-//        }
-//        else
-//        {
-        asyncConnection.pullAll( new BeginTxResponseHandler( beginTxPromise, this ) );
-        asyncConnection.flush();
-//        }
+        if ( initialBookmark.isEmpty() )
+        {
+            asyncConnection.pullAll( NoOpResponseHandler.INSTANCE );
+            beginTxPromise.setSuccess( this );
+        }
+        else
+        {
+            asyncConnection.pullAll( new BeginTxResponseHandler<>( beginTxPromise, this ) );
+            asyncConnection.flush();
+        }
 
-        return new InternalTask<>( beginTxPromise );
+        return beginTxPromise;
     }
 
     @Override
@@ -162,16 +171,16 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
                         connection.run( "COMMIT", Collections.<String,Value>emptyMap(), NoOpResponseHandler.INSTANCE );
                         connection.pullAll( new BookmarkResponseHandler( this ) );
                         connection.sync();
-                        state = State.SUCCEEDED;
+                        state = State.COMMITTED;
                     }
-                    catch( Throwable e )
+                    catch ( Throwable e )
                     {
                         // failed to commit
                         try
                         {
                             rollbackTx();
                         }
-                        catch( Throwable ignored )
+                        catch ( Throwable ignored )
                         {
                             // best effort.
                         }
@@ -196,34 +205,118 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
         }
     }
 
-    @Override
-    public Task<Void> commitAsync()
-    {
-        Promise<Void> commitTxPromise = asyncConnection.newPromise();
-        asyncConnection.run( "COMMIT", Collections.<String,Value>emptyMap(), NoOpResponseHandler.INSTANCE );
-        asyncConnection.pullAll( new CommitTxResponseHandler( commitTxPromise, resourcesHandler, this ) );
-        asyncConnection.flush();
-
-        return new InternalTask<>( commitTxPromise );
-    }
-
-    @Override
-    public Task<Void> rollbackAsync()
-    {
-        Promise<Void> rollbackTxPromise = asyncConnection.newPromise();
-        asyncConnection.run( "ROLLBACK", Collections.<String,Value>emptyMap(), NoOpResponseHandler.INSTANCE );
-        asyncConnection.pullAll( new RollbackTxResponseHandler( rollbackTxPromise, resourcesHandler, this ) );
-        asyncConnection.flush();
-
-        return new InternalTask<>( rollbackTxPromise );
-    }
-
     private void rollbackTx()
     {
         connection.run( "ROLLBACK", Collections.<String,Value>emptyMap(), NoOpResponseHandler.INSTANCE );
         connection.pullAll( new BookmarkResponseHandler( this ) );
         connection.sync();
         state = State.ROLLED_BACK;
+    }
+
+    @Override
+    public Task<Void> commitAsync()
+    {
+        return new InternalTask<>( internalCommitAsync() );
+    }
+
+    // todo: return failed task when tx has already been rolled back
+    EventLoopAwareFuture<Void> internalCommitAsync()
+    {
+        if ( state == State.COMMITTED || state == State.ROLLED_BACK )
+        {
+            return Futures.completed( asyncConnection.<Void>newPromise(), null );
+        }
+        else
+        {
+            return txClosed( doCommitAsync() );
+        }
+    }
+
+    @Override
+    public Task<Void> rollbackAsync()
+    {
+        return new InternalTask<>( internalRollbackAsync() );
+    }
+
+    // todo: return failed task when tx has already been committed
+    EventLoopAwareFuture<Void> internalRollbackAsync()
+    {
+        if ( state == State.COMMITTED || state == State.ROLLED_BACK )
+        {
+            return Futures.completed( asyncConnection.<Void>newPromise(), null );
+        }
+        else
+        {
+            return txClosed( doRollbackAsync() );
+        }
+    }
+
+    private EventLoopAwareFuture<Void> closeAsync()
+    {
+        if ( state == State.MARKED_SUCCESS )
+        {
+            return txClosed( Futures.fallback( doCommitAsync(), doRollbackAsync() ) );
+        }
+        else if ( state == State.MARKED_FAILED || state == State.ACTIVE )
+        {
+            return txClosed( doRollbackAsync() );
+        }
+        else if ( state == State.FAILED )
+        {
+            // unrecoverable error happened, transaction should've been rolled back on the server
+            // update state so that this transaction does not remain open
+            state = State.ROLLED_BACK;
+        }
+
+        return Futures.completed( asyncConnection.<Void>newPromise(), null );
+    }
+
+    private EventLoopAwareFuture<Void> txClosed( EventLoopAwareFuture<Void> operation )
+    {
+        return Futures.onCompletion( operation, new Consumer<Void>()
+        {
+            @Override
+            public void accept( Void aVoid )
+            {
+                asyncConnection.release();
+                session.asyncTransactionClosed( ExplicitTransaction.this );
+            }
+        } );
+    }
+
+    private EventLoopAwareFuture<Void> doCommitAsync()
+    {
+        EventLoopAwarePromise<Void> commitTxPromise = asyncConnection.newPromise();
+
+        asyncConnection.run( "COMMIT", Collections.<String,Value>emptyMap(), NoOpResponseHandler.INSTANCE );
+        asyncConnection.pullAll( new CommitTxResponseHandler( commitTxPromise, this ) );
+        asyncConnection.flush();
+
+        return Futures.onSuccess( commitTxPromise, new Consumer<Void>()
+        {
+            @Override
+            public void accept( Void result )
+            {
+                ExplicitTransaction.this.state = State.COMMITTED;
+            }
+        } );
+    }
+
+    private EventLoopAwareFuture<Void> doRollbackAsync()
+    {
+        EventLoopAwarePromise<Void> rollbackTxPromise = asyncConnection.newPromise();
+        asyncConnection.run( "ROLLBACK", Collections.<String,Value>emptyMap(), NoOpResponseHandler.INSTANCE );
+        asyncConnection.pullAll( new RollbackTxResponseHandler( rollbackTxPromise ) );
+        asyncConnection.flush();
+
+        return Futures.onSuccess( rollbackTxPromise, new Consumer<Void>()
+        {
+            @Override
+            public void accept( Void aVoid )
+            {
+                ExplicitTransaction.this.state = State.ROLLED_BACK;
+            }
+        } );
     }
 
     @Override
@@ -253,7 +346,7 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
     @Override
     public StatementResult run( String statementText, Map<String,Object> statementParameters )
     {
-        Value params = statementParameters == null ? Values.EmptyMap : value(statementParameters);
+        Value params = statementParameters == null ? Values.EmptyMap : value( statementParameters );
         return run( statementText, params );
     }
 
@@ -306,26 +399,27 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
     @Override
     public Task<StatementResultCursor> runAsync( Statement statement )
     {
-        // todo
-//        ensureNotFailed();
-//
-//        InternalStatementResultCursor resultCursor = new InternalStatementResultCursor( asyncConnection, this );
-//
-//        String query = statement.text();
-//        Map<String,Value> params = statement.parameters().asMap( Values.ofValue() );
-//
-//        asyncConnection.run( query, params, resultCursor.runResponseHandler() );
-//        asyncConnection.pullAll( resultCursor.pullAllResponseHandler() );
-//        asyncConnection.flush();
-//
-//        return resultCursor;
-        throw new UnsupportedOperationException();
+        ensureNotFailed();
+
+        RunResponseHandler runHandler = new RunResponseHandler();
+        PullAllResponseHandler pullAllHandler =
+                new TransactionPullAllResponseHandler( runHandler, asyncConnection, this );
+        InternalStatementResultCursor cursor = new InternalStatementResultCursor( pullAllHandler );
+
+        String query = statement.text();
+        Map<String,Value> params = statement.parameters().asMap( Values.ofValue() );
+
+        asyncConnection.run( query, params, runHandler );
+        asyncConnection.pullAll( pullAllHandler );
+        asyncConnection.flush();
+
+        return new InternalTask<>( Futures.completed( asyncConnection.<StatementResultCursor>newPromise(), cursor ) );
     }
 
     @Override
     public boolean isOpen()
     {
-        return state != State.SUCCEEDED && state != State.ROLLED_BACK;
+        return state != State.COMMITTED && state != State.ROLLED_BACK;
     }
 
     private void ensureNotFailed()

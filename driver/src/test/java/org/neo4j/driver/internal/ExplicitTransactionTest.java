@@ -126,7 +126,7 @@ public class ExplicitTransactionTest
     {
         Connection connection = mock( Connection.class );
 
-        beginTx( connection, mock( SessionResourcesHandler.class ), null );
+        beginTx( connection, mock( SessionResourcesHandler.class ), Bookmark.empty() );
 
         InOrder inOrder = inOrder( connection );
         inOrder.verify( connection ).run( "BEGIN", Collections.<String,Value>emptyMap(), NoOpResponseHandler.INSTANCE );

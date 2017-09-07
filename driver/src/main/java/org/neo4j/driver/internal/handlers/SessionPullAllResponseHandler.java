@@ -16,31 +16,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal;
+package org.neo4j.driver.internal.handlers;
 
-public interface SessionResourcesHandler
+import org.neo4j.driver.internal.netty.AsyncConnection;
+
+public class SessionPullAllResponseHandler extends PullAllResponseHandler
 {
-    void onResultConsumed();
-
-    void onTransactionClosed( ExplicitTransaction tx );
-
-    void onConnectionError( boolean recoverable );
-
-    SessionResourcesHandler NO_OP = new SessionResourcesHandler()
+    public SessionPullAllResponseHandler( RunMetadataAccessor runMetadataAccessor, AsyncConnection connection )
     {
-        @Override
-        public void onResultConsumed()
-        {
-        }
+        super( runMetadataAccessor, connection );
+    }
 
-        @Override
-        public void onTransactionClosed( ExplicitTransaction tx )
-        {
-        }
+    @Override
+    protected void afterSuccess()
+    {
+        connection.release();
+    }
 
-        @Override
-        public void onConnectionError( boolean recoverable )
-        {
-        }
-    };
+    @Override
+    protected void afterFailure( Throwable error )
+    {
+        connection.release();
+    }
 }

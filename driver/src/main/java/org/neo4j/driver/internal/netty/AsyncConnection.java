@@ -37,8 +37,6 @@ public interface AsyncConnection
 
     void flush();
 
-    // todo: create promise who's callbacks are executed in this channel's event loop
-    // todo: do we need this???
     <T> EventLoopAwarePromise<T> newPromise();
 
     void release();
