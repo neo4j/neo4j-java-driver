@@ -19,7 +19,6 @@
 package org.neo4j.driver.internal.netty;
 
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.EventLoop;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.Promise;
@@ -91,19 +90,6 @@ public final class Futures
         return result;
     }
 
-    private static <T, U> Promise<U> newPromise( Future<T> original, Bootstrap bootstrap )
-    {
-        if ( original instanceof EventLoopAwarePromise )
-        {
-            EventLoop eventLoop = ((EventLoopAwarePromise<?>) original).eventLoop();
-            return new EventLoopAwarePromise<>( eventLoop );
-        }
-        else
-        {
-            return new EventLoopAwarePromise<>( bootstrap );
-        }
-    }
-
     private static class TransformListener<T, U> implements GenericFutureListener<Future<T>>
     {
         final Promise<U> result;
@@ -124,9 +110,9 @@ public final class Futures
             }
             else if ( future.isSuccess() )
             {
-                T originalValue = future.getNow();
                 try
                 {
+                    T originalValue = future.getNow();
                     U transformedValue = transformer.apply( originalValue );
                     result.setSuccess( transformedValue );
                 }

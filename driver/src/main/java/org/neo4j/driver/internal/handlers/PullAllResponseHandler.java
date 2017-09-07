@@ -43,7 +43,7 @@ import org.neo4j.driver.v1.summary.ProfiledPlan;
 import org.neo4j.driver.v1.summary.StatementType;
 import org.neo4j.driver.v1.summary.SummaryCounters;
 
-public class AsyncRecordsResponseHandler implements ResponseHandler
+public class PullAllResponseHandler implements ResponseHandler
 {
     private static final boolean TOUCH_AUTO_READ = false;
 
@@ -66,7 +66,7 @@ public class AsyncRecordsResponseHandler implements ResponseHandler
 
     private volatile Record current;
 
-    public AsyncRecordsResponseHandler( RunMetadataAccessor runMetadataAccessor, AsyncConnection connection,
+    public PullAllResponseHandler( RunMetadataAccessor runMetadataAccessor, AsyncConnection connection,
             boolean releaseConnection )
     {
         this.runMetadataAccessor = runMetadataAccessor;

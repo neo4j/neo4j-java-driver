@@ -18,41 +18,27 @@
  */
 package org.neo4j.driver.internal.netty;
 
-import org.neo4j.driver.internal.handlers.AsyncRecordsResponseHandler;
-import org.neo4j.driver.internal.handlers.RunResponseHandler;
+import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.v1.Record;
 
 public class InternalStatementResultCursor implements StatementResultCursor
 {
-    private final RunResponseHandler runResponseHandler;
-    private final AsyncRecordsResponseHandler pullAllResponseHandler;
+    private final PullAllResponseHandler pullAllHandler;
 
-    public InternalStatementResultCursor( AsyncConnection connection, boolean releaseConnection )
+    public InternalStatementResultCursor( PullAllResponseHandler pullAllHandler )
     {
-        this.runResponseHandler = new RunResponseHandler();
-        this.pullAllResponseHandler =
-                new AsyncRecordsResponseHandler( runResponseHandler, connection, releaseConnection );
-    }
-
-    public RunResponseHandler runResponseHandler()
-    {
-        return runResponseHandler;
-    }
-
-    public AsyncRecordsResponseHandler pullAllResponseHandler()
-    {
-        return pullAllResponseHandler;
+        this.pullAllHandler = pullAllHandler;
     }
 
     @Override
     public Task<Boolean> fetchAsync()
     {
-        return pullAllResponseHandler.recordAvailable();
+        return pullAllHandler.recordAvailable();
     }
 
     @Override
     public Record current()
     {
-        return pullAllResponseHandler.pollCurrent();
+        return pullAllHandler.pollCurrent();
     }
 }

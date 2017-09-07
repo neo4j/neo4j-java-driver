@@ -100,6 +100,7 @@ public class TestNeo4jSession extends TestNeo4j implements Session
     @Override
     public Task<Void> closeAsync()
     {
+        // todo: disallow close here as well?
         return realSession.closeAsync();
     }
 

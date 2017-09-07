@@ -24,6 +24,8 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.ResultResourcesHandler;
+import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
+import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.logging.DelegatingLogger;
 import org.neo4j.driver.internal.netty.AsyncConnection;
 import org.neo4j.driver.internal.netty.EventLoopAwareFuture;
@@ -162,10 +164,12 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
                         String query = statement.text();
                         Map<String,Value> params = statement.parameters().asMap( Values.ofValue() );
 
-                        InternalStatementResultCursor cursor = new InternalStatementResultCursor( connection, true );
+                        RunResponseHandler runHandler = new RunResponseHandler();
+                        PullAllResponseHandler pullHandler = new PullAllResponseHandler( runHandler, connection, true );
+                        InternalStatementResultCursor cursor = new InternalStatementResultCursor( pullHandler );
 
-                        connection.run( query, params, cursor.runResponseHandler() );
-                        connection.pullAll( cursor.pullAllResponseHandler() );
+                        connection.run( query, params, runHandler );
+                        connection.pullAll( pullHandler );
                         connection.flush();
 
                         return cursor;

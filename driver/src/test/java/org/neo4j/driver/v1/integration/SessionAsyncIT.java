@@ -21,6 +21,7 @@ package org.neo4j.driver.v1.integration;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import io.netty.util.concurrent.Promise;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -33,11 +34,11 @@ import org.neo4j.driver.internal.netty.StatementResultCursor;
 import org.neo4j.driver.internal.netty.Task;
 import org.neo4j.driver.internal.netty.TaskListener;
 import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.util.TestNeo4j;
-import org.neo4j.driver.v1.util.TestNeo4jSession;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
@@ -55,7 +56,15 @@ import static org.neo4j.driver.v1.util.TestUtil.awaitAll;
 public class SessionAsyncIT
 {
     @Rule
-    public final TestNeo4jSession session = new TestNeo4jSession();
+    public final TestNeo4j neo4j = new TestNeo4j();
+
+    private Session session;
+
+    @Before
+    public void setUp() throws Exception
+    {
+        session = neo4j.driver().session();
+    }
 
     @After
     public void tearDown() throws Exception
@@ -157,7 +166,7 @@ public class SessionAsyncIT
 
             // kill db after receiving the first record
             // do it from a listener so that event loop thread executes the kill operation
-            recordAvailable.addListener( new KillDbListener( session ) );
+            recordAvailable.addListener( new KillDbListener( neo4j ) );
 
             while ( await( recordAvailable ) )
             {
@@ -204,6 +213,34 @@ public class SessionAsyncIT
         Node node3 = personNodes.get( 2 );
         assertEquals( 3, node3.get( "id" ).asInt() );
         assertEquals( 30, personNodes.get( 2 ).get( "age" ).asInt() );
+    }
+
+    @Test
+    public void shouldAllowMultipleAsyncRunsWithoutConsumingResults() throws InterruptedException
+    {
+        int queryCount = 13;
+        List<Future<StatementResultCursor>> cursors = new ArrayList<>();
+        for ( int i = 0; i < queryCount; i++ )
+        {
+            cursors.add( session.runAsync( "CREATE (:Person)" ) );
+        }
+
+        List<Future<Boolean>> fetches = new ArrayList<>();
+        for ( StatementResultCursor cursor : awaitAll( cursors ) )
+        {
+            fetches.add( cursor.fetchAsync() );
+        }
+
+        awaitAll( fetches );
+
+        await( session.closeAsync() );
+        session = neo4j.driver().session();
+
+        StatementResultCursor cursor = await( session.runAsync( "MATCH (p:Person) RETURN count(p)" ) );
+        assertThat( await( cursor.fetchAsync() ), is( true ) );
+
+        Record record = cursor.current();
+        assertEquals( queryCount, record.get( 0 ).asInt() );
     }
 
     private Future<List<Future<Boolean>>> runNestedQueries( StatementResultCursor inputCursor )
@@ -284,7 +321,6 @@ public class SessionAsyncIT
 
     private static class KillDbListener implements TaskListener<Boolean>
     {
-
         final TestNeo4j neo4j;
         volatile boolean shouldKillDb = true;
 

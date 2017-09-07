@@ -126,7 +126,7 @@ public class NettyConnection implements AsyncConnection
         return releasePromise;
     }
 
-    private void write( final Message message, final ResponseHandler handler, final boolean flush )
+    private void write( Message message, ResponseHandler handler, boolean flush )
     {
         responseHandlersHolder.queue( handler );
         if ( flush )
