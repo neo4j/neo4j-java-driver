@@ -26,13 +26,15 @@ import io.netty.handler.codec.ReplayingDecoder;
 import java.util.List;
 
 import org.neo4j.driver.internal.async.outbound.OutboundMessageHandler;
-import org.neo4j.driver.internal.logging.DevNullLogging;
+import org.neo4j.driver.internal.messaging.MessageFormat;
+import org.neo4j.driver.internal.messaging.PackStreamMessageFormatV1;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.driver.internal.async.ProtocolUtil.HTTP;
 import static org.neo4j.driver.internal.async.ProtocolUtil.NO_PROTOCOL_VERSION;
 import static org.neo4j.driver.internal.async.ProtocolUtil.PROTOCOL_VERSION_1;
+import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 
 public class HandshakeResponseHandler extends ReplayingDecoder<Void>
 {
@@ -59,13 +61,15 @@ public class HandshakeResponseHandler extends ReplayingDecoder<Void>
         {
         case PROTOCOL_VERSION_1:
 
+            MessageFormat messageFormat = new PackStreamMessageFormatV1();
+
             ctx.pipeline().remove( this );
 
             // inbound handlers
             ctx.pipeline().addLast( new ChunkDecoder(), new MessageDecoder(), new InboundMessageDispatcher() );
 
             // outbound handlers
-            ctx.pipeline().addLast( new OutboundMessageHandler( DevNullLogging.DEV_NULL_LOGGING ) ); // todo: read log!
+            ctx.pipeline().addLast( new OutboundMessageHandler( messageFormat, DEV_NULL_LOGGING ) ); // todo: read log!
 
             handshakeCompletedPromise.setSuccess();
 

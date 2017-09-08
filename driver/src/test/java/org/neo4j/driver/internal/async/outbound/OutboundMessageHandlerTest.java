@@ -27,14 +27,19 @@ import org.mockito.stubbing.Answer;
 import java.io.IOException;
 
 import org.neo4j.driver.internal.messaging.Message;
+import org.neo4j.driver.internal.messaging.MessageFormat;
+import org.neo4j.driver.internal.packstream.PackOutput;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.async.ProtocolUtil.messageBoundary;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
+import static org.neo4j.driver.internal.messaging.MessageFormat.Writer;
 import static org.neo4j.driver.internal.messaging.PullAllMessage.PULL_ALL;
 import static org.neo4j.driver.v1.util.TestUtil.assertByteBufContains;
 import static org.neo4j.driver.v1.util.TestUtil.assertByteBufEquals;
@@ -44,8 +49,8 @@ public class OutboundMessageHandlerTest
     @Test
     public void shouldOutputByteBufAsWrittenByWriterAndMessageBoundary() throws IOException
     {
-        OutboundMessageWriter writer = mockWriter( 1, 2, 3, 4, 5 );
-        OutboundMessageHandler handler = new OutboundMessageHandler( writer, DEV_NULL_LOGGING );
+        MessageFormat messageFormat = mockMessageFormatWithWriter( 1, 2, 3, 4, 5 );
+        OutboundMessageHandler handler = new OutboundMessageHandler( messageFormat, DEV_NULL_LOGGING );
         EmbeddedChannel channel = new EmbeddedChannel( handler );
 
         // do not care which message, writer will return predefined bytes anyway
@@ -55,28 +60,46 @@ public class OutboundMessageHandlerTest
         assertEquals( 2, channel.outboundMessages().size() );
 
         ByteBuf buf1 = channel.readOutbound();
-        assertByteBufContains( buf1, (byte) 1, (byte) 2, (byte) 3, (byte) 4, (byte) 5 );
+        assertByteBufContains( buf1, (short) 5, (byte) 1, (byte) 2, (byte) 3, (byte) 4, (byte) 5 );
 
         ByteBuf buf2 = channel.readOutbound();
         assertByteBufEquals( messageBoundary(), buf2 );
     }
 
-    private static OutboundMessageWriter mockWriter( final int... bytesToWrite ) throws IOException
+    private static MessageFormat mockMessageFormatWithWriter( final int... bytesToWrite )
     {
-        OutboundMessageWriter writer = mock( OutboundMessageWriter.class );
-        doAnswer( new Answer<Integer>()
+        MessageFormat messageFormat = mock( MessageFormat.class );
+
+        when( messageFormat.newWriter( any( PackOutput.class ), anyBoolean() ) ).then( new Answer<Writer>()
         {
             @Override
-            public Integer answer( InvocationOnMock invocation ) throws Throwable
+            public Writer answer( InvocationOnMock invocation ) throws Throwable
             {
-                ByteBuf buf = invocation.getArgumentAt( 1, ByteBuf.class );
+                PackOutput output = invocation.getArgumentAt( 0, PackOutput.class );
+                return mockWriter( output, bytesToWrite );
+            }
+        } );
+
+        return messageFormat;
+    }
+
+    private static Writer mockWriter( final PackOutput output, final int... bytesToWrite ) throws IOException
+    {
+        final Writer writer = mock( Writer.class );
+
+        doAnswer( new Answer<Writer>()
+        {
+            @Override
+            public Writer answer( InvocationOnMock invocation ) throws Throwable
+            {
                 for ( int b : bytesToWrite )
                 {
-                    buf.writeByte( b );
+                    output.writeByte( (byte) b );
                 }
-                return bytesToWrite.length;
+                return writer;
             }
-        } ).when( writer ).write( any( Message.class ), any( ByteBuf.class ) );
+        } ).when( writer ).write( any( Message.class ) );
+
         return writer;
     }
 }

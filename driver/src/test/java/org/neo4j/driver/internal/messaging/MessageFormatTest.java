@@ -135,7 +135,8 @@ public class MessageFormatTest
     {
         // Pack
         final ByteArrayOutputStream out = new ByteArrayOutputStream( 128 );
-        MessageFormat.Writer writer = format.newWriter( Channels.newChannel( out ), true );
+        ChunkedOutput output = new ChunkedOutput( Channels.newChannel( out ) );
+        MessageFormat.Writer writer = format.newWriter( output, true );
         for ( Message message : messages )
         {
             writer.write( message );

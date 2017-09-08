@@ -180,6 +180,7 @@ public class ChunkedOutput implements PackOutput
         }
     };
 
+    @Override
     public Runnable messageBoundaryHook()
     {
         return onMessageComplete;

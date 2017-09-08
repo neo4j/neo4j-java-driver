@@ -108,6 +108,18 @@ public class BufferedChannelOutput implements PackOutput
         return this;
     }
 
+    @Override
+    public Runnable messageBoundaryHook()
+    {
+        return new Runnable()
+        {
+            @Override
+            public void run()
+            {
+            }
+        };
+    }
+
     private void ensure( int size ) throws IOException
     {
         if ( buffer.remaining() < size )

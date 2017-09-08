@@ -45,7 +45,7 @@ public class SocketProtocolV1 implements SocketProtocol
     private SocketProtocolV1( ByteChannel channel, boolean byteArraySupportEnabled )
     {
         messageFormat = new PackStreamMessageFormatV1();
-        this.writer = messageFormat.newWriter( channel, byteArraySupportEnabled );
+        this.writer = messageFormat.newWriter( new ChunkedOutput( channel ), byteArraySupportEnabled );
         this.reader = messageFormat.newReader( channel );
     }
 
