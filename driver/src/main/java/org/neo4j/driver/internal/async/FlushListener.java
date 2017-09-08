@@ -16,32 +16,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.handlers;
+package org.neo4j.driver.internal.async;
 
-import org.neo4j.driver.internal.ExplicitTransaction;
-import org.neo4j.driver.internal.async.AsyncConnection;
+import io.netty.channel.Channel;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
 
-import static java.util.Objects.requireNonNull;
-
-public class TransactionPullAllResponseHandler extends PullAllResponseHandler
+public class FlushListener implements GenericFutureListener<Future<Channel>>
 {
-    private final ExplicitTransaction tx;
+    public static final FlushListener INSTANCE = new FlushListener();
 
-    public TransactionPullAllResponseHandler( RunMetadataAccessor runMetadataAccessor, AsyncConnection connection,
-            ExplicitTransaction tx )
-    {
-        super( runMetadataAccessor, connection );
-        this.tx = requireNonNull( tx );
-    }
-
-    @Override
-    protected void afterSuccess()
+    private FlushListener()
     {
     }
 
     @Override
-    protected void afterFailure( Throwable error )
+    public void operationComplete( Future<Channel> future ) throws Exception
     {
-        tx.resultFailed( error );
+        if ( future.isSuccess() )
+        {
+            Channel channel = future.getNow();
+            channel.flush();
+        }
     }
 }

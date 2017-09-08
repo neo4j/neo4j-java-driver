@@ -16,36 +16,61 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.handlers;
+package org.neo4j.driver.internal.async;
+
+import io.netty.channel.Channel;
+import io.netty.util.concurrent.Promise;
 
 import java.util.Map;
 
-import org.neo4j.driver.internal.async.ResponseHandlersHolder;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Value;
 
-public class AckFailureResponseHandler implements ResponseHandler
+public class ReleaseChannelHandler implements ResponseHandler
 {
-    private final ResponseHandlersHolder responseHandlersHolder;
+    private final Channel channel;
+    private final NettyChannelPool pool;
+    private final Promise<Void> releasePromise;
 
-    public AckFailureResponseHandler( ResponseHandlersHolder responseHandlersHolder )
+    public ReleaseChannelHandler( Channel channel, NettyChannelPool pool )
     {
-        this.responseHandlersHolder = responseHandlersHolder;
+        this( channel, pool, null );
+    }
+
+    public ReleaseChannelHandler( Channel channel, NettyChannelPool pool, Promise<Void> releasePromise )
+    {
+        this.channel = channel;
+        this.pool = pool;
+        this.releasePromise = releasePromise;
     }
 
     @Override
     public void onSuccess( Map<String,Value> metadata )
     {
-        responseHandlersHolder.clearCurrentError();
+        releaseChannel();
     }
 
     @Override
     public void onFailure( Throwable error )
     {
+        releaseChannel();
     }
 
     @Override
     public void onRecord( Value[] fields )
     {
+        throw new UnsupportedOperationException();
+    }
+
+    private void releaseChannel()
+    {
+        if ( releasePromise == null )
+        {
+            pool.release( channel );
+        }
+        else
+        {
+            pool.release( channel, releasePromise );
+        }
     }
 }

@@ -16,26 +16,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.handlers;
+package org.neo4j.driver.internal.async;
 
-import org.neo4j.driver.internal.async.AsyncConnection;
+import org.neo4j.driver.v1.Record;
 
-public class SessionPullAllResponseHandler extends PullAllResponseHandler
+public interface StatementResultCursor
 {
-    public SessionPullAllResponseHandler( RunMetadataAccessor runMetadataAccessor, AsyncConnection connection )
-    {
-        super( runMetadataAccessor, connection );
-    }
+    Task<Boolean> fetchAsync();
 
-    @Override
-    protected void afterSuccess()
-    {
-        connection.release();
-    }
-
-    @Override
-    protected void afterFailure( Throwable error )
-    {
-        connection.release();
-    }
+    Record current();
 }

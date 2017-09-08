@@ -21,6 +21,8 @@ package org.neo4j.driver.internal.cluster.loadbalancing;
 import java.util.Set;
 
 import org.neo4j.driver.internal.RoutingErrorHandler;
+import org.neo4j.driver.internal.async.AsyncConnection;
+import org.neo4j.driver.internal.async.EventLoopAwareFuture;
 import org.neo4j.driver.internal.cluster.AddressSet;
 import org.neo4j.driver.internal.cluster.ClusterComposition;
 import org.neo4j.driver.internal.cluster.ClusterCompositionProvider;
@@ -32,8 +34,6 @@ import org.neo4j.driver.internal.cluster.RoutingProcedureClusterCompositionProvi
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.cluster.RoutingTable;
 import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.internal.netty.AsyncConnection;
-import org.neo4j.driver.internal.netty.EventLoopAwareFuture;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.spi.PooledConnection;

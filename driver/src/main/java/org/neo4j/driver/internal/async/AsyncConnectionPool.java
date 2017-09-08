@@ -16,26 +16,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.handlers;
+package org.neo4j.driver.internal.async;
 
-import org.neo4j.driver.internal.async.AsyncConnection;
+import java.io.Closeable;
 
-public class SessionPullAllResponseHandler extends PullAllResponseHandler
+import org.neo4j.driver.internal.net.BoltServerAddress;
+
+public interface AsyncConnectionPool extends Closeable
 {
-    public SessionPullAllResponseHandler( RunMetadataAccessor runMetadataAccessor, AsyncConnection connection )
-    {
-        super( runMetadataAccessor, connection );
-    }
+    EventLoopAwareFuture<AsyncConnection> acquire( BoltServerAddress address );
 
-    @Override
-    protected void afterSuccess()
-    {
-        connection.release();
-    }
+    void purge( BoltServerAddress address );
 
-    @Override
-    protected void afterFailure( Throwable error )
-    {
-        connection.release();
-    }
+    boolean hasAddress( BoltServerAddress address );
+
+    int activeConnections( BoltServerAddress address );
 }

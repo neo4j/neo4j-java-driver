@@ -16,36 +16,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.handlers;
+package org.neo4j.driver.internal.async;
 
 import java.util.Map;
 
-import org.neo4j.driver.internal.async.ResponseHandlersHolder;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Value;
 
-public class AckFailureResponseHandler implements ResponseHandler
+public interface AsyncConnection
 {
-    private final ResponseHandlersHolder responseHandlersHolder;
+    boolean tryMarkInUse();
 
-    public AckFailureResponseHandler( ResponseHandlersHolder responseHandlersHolder )
-    {
-        this.responseHandlersHolder = responseHandlersHolder;
-    }
+    void enableAutoRead();
 
-    @Override
-    public void onSuccess( Map<String,Value> metadata )
-    {
-        responseHandlersHolder.clearCurrentError();
-    }
+    void disableAutoRead();
 
-    @Override
-    public void onFailure( Throwable error )
-    {
-    }
+    void run( String statement, Map<String,Value> parameters, ResponseHandler handler );
 
-    @Override
-    public void onRecord( Value[] fields )
-    {
-    }
+    void pullAll( ResponseHandler handler );
+
+    void flush();
+
+    <T> EventLoopAwarePromise<T> newPromise();
+
+    void release();
+
+    EventLoopAwareFuture<Void> forceRelease();
 }

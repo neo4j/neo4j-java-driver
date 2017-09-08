@@ -18,10 +18,10 @@
  */
 package org.neo4j.driver.internal;
 
+import org.neo4j.driver.internal.async.AsyncConnection;
+import org.neo4j.driver.internal.async.AsyncConnectionPool;
+import org.neo4j.driver.internal.async.EventLoopAwareFuture;
 import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.internal.netty.AsyncConnection;
-import org.neo4j.driver.internal.netty.AsyncConnectionPool;
-import org.neo4j.driver.internal.netty.EventLoopAwareFuture;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.spi.PooledConnection;

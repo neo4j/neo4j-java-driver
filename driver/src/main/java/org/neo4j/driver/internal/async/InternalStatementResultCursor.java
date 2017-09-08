@@ -16,36 +16,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.handlers;
+package org.neo4j.driver.internal.async;
 
-import java.util.Map;
+import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
+import org.neo4j.driver.v1.Record;
 
-import org.neo4j.driver.internal.async.ResponseHandlersHolder;
-import org.neo4j.driver.internal.spi.ResponseHandler;
-import org.neo4j.driver.v1.Value;
-
-public class AckFailureResponseHandler implements ResponseHandler
+public class InternalStatementResultCursor implements StatementResultCursor
 {
-    private final ResponseHandlersHolder responseHandlersHolder;
+    private final PullAllResponseHandler pullAllHandler;
 
-    public AckFailureResponseHandler( ResponseHandlersHolder responseHandlersHolder )
+    public InternalStatementResultCursor( PullAllResponseHandler pullAllHandler )
     {
-        this.responseHandlersHolder = responseHandlersHolder;
+        this.pullAllHandler = pullAllHandler;
     }
 
     @Override
-    public void onSuccess( Map<String,Value> metadata )
+    public Task<Boolean> fetchAsync()
     {
-        responseHandlersHolder.clearCurrentError();
+        return pullAllHandler.recordAvailable();
     }
 
     @Override
-    public void onFailure( Throwable error )
+    public Record current()
     {
-    }
-
-    @Override
-    public void onRecord( Value[] fields )
-    {
+        return pullAllHandler.pollCurrent();
     }
 }

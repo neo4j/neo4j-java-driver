@@ -16,32 +16,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.handlers;
+package org.neo4j.driver.internal.async;
 
-import org.neo4j.driver.internal.ExplicitTransaction;
-import org.neo4j.driver.internal.async.AsyncConnection;
+import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.nio.NioSocketChannel;
 
-import static java.util.Objects.requireNonNull;
-
-public class TransactionPullAllResponseHandler extends PullAllResponseHandler
+public final class BootstrapFactory
 {
-    private final ExplicitTransaction tx;
-
-    public TransactionPullAllResponseHandler( RunMetadataAccessor runMetadataAccessor, AsyncConnection connection,
-            ExplicitTransaction tx )
-    {
-        super( runMetadataAccessor, connection );
-        this.tx = requireNonNull( tx );
-    }
-
-    @Override
-    protected void afterSuccess()
+    private BootstrapFactory()
     {
     }
 
-    @Override
-    protected void afterFailure( Throwable error )
+    public static Bootstrap newBootstrap()
     {
-        tx.resultFailed( error );
+        Bootstrap bootstrap = new Bootstrap();
+        bootstrap.group( new NioEventLoopGroup() );
+        bootstrap.channel( NioSocketChannel.class );
+        return bootstrap;
     }
 }

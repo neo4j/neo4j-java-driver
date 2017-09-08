@@ -23,8 +23,8 @@ import org.junit.runners.model.Statement;
 
 import java.util.Map;
 
-import org.neo4j.driver.internal.netty.StatementResultCursor;
-import org.neo4j.driver.internal.netty.Task;
+import org.neo4j.driver.internal.async.StatementResultCursor;
+import org.neo4j.driver.internal.async.Task;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;

@@ -16,26 +16,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.handlers;
+package org.neo4j.driver.internal.async;
 
-import org.neo4j.driver.internal.async.AsyncConnection;
+import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 
-public class SessionPullAllResponseHandler extends PullAllResponseHandler
+public class ChunkDecoder extends LengthFieldBasedFrameDecoder
 {
-    public SessionPullAllResponseHandler( RunMetadataAccessor runMetadataAccessor, AsyncConnection connection )
-    {
-        super( runMetadataAccessor, connection );
-    }
+    private static final int MAX_FRAME_LENGTH = Integer.MAX_VALUE; // todo: it is actually 2 bytes!
+    private static final int LENGTH_FIELD_OFFSET = 0;
+    private static final int LENGTH_FIELD_LENGTH = 2;
+    private static final int LENGTH_ADJUSTMENT = 0;
+    private static final int INITIAL_BYTES_TO_STRIP = LENGTH_FIELD_LENGTH;
 
-    @Override
-    protected void afterSuccess()
+    public ChunkDecoder()
     {
-        connection.release();
-    }
-
-    @Override
-    protected void afterFailure( Throwable error )
-    {
-        connection.release();
+        super( MAX_FRAME_LENGTH, LENGTH_FIELD_OFFSET, LENGTH_FIELD_LENGTH, LENGTH_ADJUSTMENT, INITIAL_BYTES_TO_STRIP );
     }
 }

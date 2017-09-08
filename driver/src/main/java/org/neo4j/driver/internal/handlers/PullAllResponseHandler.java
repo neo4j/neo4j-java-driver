@@ -27,9 +27,9 @@ import java.util.Map;
 import java.util.Queue;
 
 import org.neo4j.driver.internal.InternalRecord;
-import org.neo4j.driver.internal.netty.AsyncConnection;
-import org.neo4j.driver.internal.netty.InternalTask;
-import org.neo4j.driver.internal.netty.Task;
+import org.neo4j.driver.internal.async.AsyncConnection;
+import org.neo4j.driver.internal.async.InternalTask;
+import org.neo4j.driver.internal.async.Task;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.summary.InternalNotification;
 import org.neo4j.driver.internal.summary.InternalPlan;

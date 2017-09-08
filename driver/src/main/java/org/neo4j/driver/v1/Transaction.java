@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.v1;
 
-import org.neo4j.driver.internal.netty.Task;
+import org.neo4j.driver.internal.async.Task;
 import org.neo4j.driver.v1.util.Resource;
 
 /**
