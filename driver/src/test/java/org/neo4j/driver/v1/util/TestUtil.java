@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.v1.util;
 
+import io.netty.buffer.ByteBuf;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -25,6 +27,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public final class TestUtil
 {
@@ -79,6 +83,43 @@ public final class TestUtil
         }
     }
 
+    public static void assertByteBufContains( ByteBuf buf, Number... values )
+    {
+        try
+        {
+            assertNotNull( buf );
+            int expectedReadableBytes = 0;
+            for ( Number value : values )
+            {
+                expectedReadableBytes += bytesCount( value );
+            }
+            assertEquals( "Unexpected number of bytes", expectedReadableBytes, buf.readableBytes() );
+            for ( Number expectedValue : values )
+            {
+                Number actualValue = read( buf, expectedValue.getClass() );
+                String valueType = actualValue.getClass().getSimpleName();
+                assertEquals( valueType + " values not equal", expectedValue, actualValue );
+            }
+        }
+        finally
+        {
+            buf.release();
+        }
+    }
+
+    public static void assertByteBufEquals( ByteBuf expected, ByteBuf actual )
+    {
+        try
+        {
+            assertEquals( expected, actual );
+        }
+        finally
+        {
+            expected.release();
+            actual.release();
+        }
+    }
+
     private static void throwException( Throwable t )
     {
         TestUtil.<RuntimeException>doThrowException( t );
@@ -88,5 +129,70 @@ public final class TestUtil
     private static <E extends Throwable> void doThrowException( Throwable t ) throws E
     {
         throw (E) t;
+    }
+
+    private static Number read( ByteBuf buf, Class<? extends Number> type )
+    {
+        if ( type == Byte.class )
+        {
+            return buf.readByte();
+        }
+        else if ( type == Short.class )
+        {
+            return buf.readShort();
+        }
+        else if ( type == Integer.class )
+        {
+            return buf.readInt();
+        }
+        else if ( type == Long.class )
+        {
+            return buf.readLong();
+        }
+        else if ( type == Float.class )
+        {
+            return buf.readFloat();
+        }
+        else if ( type == Double.class )
+        {
+            return buf.readDouble();
+        }
+        else
+        {
+            throw new IllegalArgumentException( "Unexpected numeric type: " + type );
+        }
+    }
+
+    private static int bytesCount( Number value )
+    {
+        if ( value instanceof Byte )
+        {
+            return 1;
+        }
+        else if ( value instanceof Short )
+        {
+            return 2;
+        }
+        else if ( value instanceof Integer )
+        {
+            return 4;
+        }
+        else if ( value instanceof Long )
+        {
+            return 8;
+        }
+        else if ( value instanceof Float )
+        {
+            return 4;
+        }
+        else if ( value instanceof Double )
+        {
+            return 8;
+        }
+        else
+        {
+            throw new IllegalArgumentException(
+                    "Unexpected number: '" + value + "' or type" + value.getClass() );
+        }
     }
 }

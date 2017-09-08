@@ -164,7 +164,7 @@ public class PackStream
 
         public void packRaw( byte[] data ) throws IOException
         {
-            out.writeBytes( data, 0, data.length );
+            out.writeBytes( data );
         }
 
         public void packNull() throws IOException

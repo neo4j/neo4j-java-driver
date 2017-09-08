@@ -25,6 +25,8 @@ import io.netty.handler.codec.ReplayingDecoder;
 
 import java.util.List;
 
+import org.neo4j.driver.internal.async.outbound.OutboundMessageHandler;
+import org.neo4j.driver.internal.logging.DevNullLogging;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static java.util.Objects.requireNonNull;
@@ -63,7 +65,7 @@ public class HandshakeResponseHandler extends ReplayingDecoder<Void>
             ctx.pipeline().addLast( new ChunkDecoder(), new MessageDecoder(), new InboundMessageDispatcher() );
 
             // outbound handlers
-            ctx.pipeline().addLast( new OutboundMessageHandler() );
+            ctx.pipeline().addLast( new OutboundMessageHandler( DevNullLogging.DEV_NULL_LOGGING ) ); // todo: read log!
 
             handshakeCompletedPromise.setSuccess();
 

@@ -49,8 +49,9 @@ public class BufferedChannelOutput implements PackOutput
     }
 
     @Override
-    public PackOutput writeBytes( byte[] data, int offset, int length ) throws IOException
+    public PackOutput writeBytes( byte[] data ) throws IOException
     {
+        int length = data.length;
         int index = 0;
         while ( index < length )
         {
@@ -61,7 +62,7 @@ public class BufferedChannelOutput implements PackOutput
 
             int amountToWrite = Math.min( buffer.remaining(), length - index );
 
-            buffer.put( data, offset + index, amountToWrite );
+            buffer.put( data, index, amountToWrite );
             index += amountToWrite;
         }
         return this;

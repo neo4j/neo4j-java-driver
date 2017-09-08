@@ -47,9 +47,9 @@ public class ByteBufPackOutput implements PackOutput
     }
 
     @Override
-    public PackOutput writeBytes( byte[] data, int offset, int amountToWrite ) throws IOException
+    public PackOutput writeBytes( byte[] data ) throws IOException
     {
-        buf.writeBytes( data, offset, amountToWrite );
+        buf.writeBytes( data );
         return this;
     }
 

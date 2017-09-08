@@ -105,8 +105,10 @@ public class ChunkedOutput implements PackOutput
     }
 
     @Override
-    public PackOutput writeBytes( byte[] data, int offset, int length ) throws IOException
+    public PackOutput writeBytes( byte[] data ) throws IOException
     {
+        int offset = 0;
+        int length = data.length;
         while ( offset < length )
         {
             // Ensure there is an open chunk, and that it has at least one byte of space left

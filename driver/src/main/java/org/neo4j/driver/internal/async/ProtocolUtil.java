@@ -32,6 +32,11 @@ public final class ProtocolUtil
     public static final int PROTOCOL_VERSION_1 = 1;
     public static final int NO_PROTOCOL_VERSION = 0;
 
+    public static final int CHUNK_HEADER_SIZE_BYTES = 2;
+
+    // todo: investigate and document this value
+    public static final int DEFAULT_MAX_OUTBOUND_CHUNK_SIZE_BYTES = Short.MAX_VALUE / 2;
+
     private static final ByteBuf HANDSHAKE_BUF = unreleasableBuffer( copyInt(
             BOLT_MAGIC_PREAMBLE,
             PROTOCOL_VERSION_1,
@@ -39,7 +44,11 @@ public final class ProtocolUtil
             NO_PROTOCOL_VERSION,
             NO_PROTOCOL_VERSION ) ).asReadOnly();
 
-    private static final ByteBuf MESSAGE_BOUNDARY = unreleasableBuffer( copyShort( 0 ) ).asReadOnly();
+    private static final ByteBuf MESSAGE_BOUNDARY_BUF = unreleasableBuffer( copyShort( 0 ) ).asReadOnly();
+
+    private ProtocolUtil()
+    {
+    }
 
     public static ByteBuf handshake()
     {
@@ -48,10 +57,6 @@ public final class ProtocolUtil
 
     public static ByteBuf messageBoundary()
     {
-        return MESSAGE_BOUNDARY.duplicate();
-    }
-
-    private ProtocolUtil()
-    {
+        return MESSAGE_BOUNDARY_BUF.duplicate();
     }
 }

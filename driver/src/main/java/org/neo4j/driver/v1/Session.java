@@ -115,7 +115,7 @@ public interface Session extends Resource, StatementRunner
      * or if this transaction was rolled back, the bookmark value will
      * be null.
      *
-     * @return a reference to a previous transac'tion
+     * @return a reference to a previous transaction
      */
     String lastBookmark();
 

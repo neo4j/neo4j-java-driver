@@ -32,7 +32,7 @@ public interface PackOutput
     PackOutput writeByte( byte value ) throws IOException;
 
     /** Produce binary data */
-    PackOutput writeBytes( byte[] data, int offset, int amountToWrite ) throws IOException;
+    PackOutput writeBytes( byte[] data ) throws IOException;
 
     /** Produce a 4-byte signed integer */
     PackOutput writeShort( short value ) throws IOException;

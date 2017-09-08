@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.async;
+package org.neo4j.driver.internal.async.outbound;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -25,52 +25,36 @@ import io.netty.handler.codec.MessageToMessageEncoder;
 import java.util.List;
 
 import org.neo4j.driver.internal.messaging.Message;
-import org.neo4j.driver.internal.messaging.MessageFormat;
-import org.neo4j.driver.internal.messaging.PackStreamMessageFormatV1;
+import org.neo4j.driver.v1.Logger;
+import org.neo4j.driver.v1.Logging;
 
 import static org.neo4j.driver.internal.async.ProtocolUtil.messageBoundary;
 
 public class OutboundMessageHandler extends MessageToMessageEncoder<Message>
 {
-    private static final int MAX_CHUNK_SIZE = 8192;
+    private final OutboundMessageWriter writer;
+    private final Logger log;
 
-    private final ByteBufPackOutput packOutput;
-    private final MessageFormat.Writer writer;
-
-    public OutboundMessageHandler()
+    public OutboundMessageHandler( Logging logging )
     {
-        this.packOutput = new ByteBufPackOutput();
-        this.writer = new PackStreamMessageFormatV1.Writer( packOutput, new Runnable()
-        {
-            @Override
-            public void run()
-            {
-            }
-        }, true );
+        this( new PackStreamMessageWriter(), logging );
+    }
+
+    OutboundMessageHandler( OutboundMessageWriter writer, Logging logging )
+    {
+        this.writer = writer;
+        this.log = logging.getLog( getClass().getSimpleName() );
     }
 
     @Override
     protected void encode( ChannelHandlerContext ctx, Message msg, List<Object> out ) throws Exception
     {
-//        System.out.println( "Sending " + msg );
-        ByteBuf bodyBuf = ctx.alloc().ioBuffer();
-        packOutput.setBuf( bodyBuf );
+        log.debug( "Sending message %s", msg );
 
-        writer.write( msg );
-        int bytesWritten = bodyBuf.writerIndex();
+        ByteBuf messageBody = ctx.alloc().ioBuffer();
+        writer.write( msg, messageBody );
 
-        if ( bytesWritten <= MAX_CHUNK_SIZE )
-        {
-            ByteBuf headerBuf = ctx.alloc().ioBuffer( 2 );
-            headerBuf.writeShort( bytesWritten );
-
-            out.add( headerBuf );
-            out.add( bodyBuf );
-            out.add( messageBoundary() );
-        }
-        else
-        {
-            throw new UnsupportedOperationException(); // todo
-        }
+        out.add( messageBody );
+        out.add( messageBoundary() );
     }
 }
