@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.async;
+package org.neo4j.driver.internal.async.inbound;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -33,6 +33,8 @@ public class MessageDecoder extends ByteToMessageDecoder
     {
         if ( msg instanceof ByteBuf )
         {
+            // on every read check if input buffer is empty or not
+            // if it is empty then it's a message boundary and full message is in the buffer
             readMessageBoundary = ((ByteBuf) msg).readableBytes() == 0;
         }
         super.channelRead( ctx, msg );
@@ -43,9 +45,16 @@ public class MessageDecoder extends ByteToMessageDecoder
     {
         if ( readMessageBoundary )
         {
+            // now we have a complete message in the input buffer
+
+            // increment ref count of the buffer because we will pass it's duplicate through
             in.retain();
             ByteBuf res = in.duplicate();
+
+            // signal that whole message was read by making input buffer seem like it was fully read/consumed
             in.readerIndex( in.readableBytes() );
+
+            // pass the full message to the next handler in the pipeline
             out.add( res );
 
             readMessageBoundary = false;

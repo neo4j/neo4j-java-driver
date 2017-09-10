@@ -23,6 +23,7 @@ import io.netty.channel.Channel;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.PullAllMessage;
 import org.neo4j.driver.internal.messaging.ResetMessage;
@@ -30,13 +31,13 @@ import org.neo4j.driver.internal.messaging.RunMessage;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Value;
 
-import static org.neo4j.driver.internal.async.ChannelAttributes.responseHandlersHolder;
+import static org.neo4j.driver.internal.async.ChannelAttributes.messageDispatcher;
 
 // todo: keep state flags to prohibit interaction with released connections
 public class NettyConnection implements AsyncConnection
 {
     private final Channel channel;
-    private final ResponseHandlersHolder responseHandlersHolder;
+    private final InboundMessageDispatcher messageDispatcher;
     private final NettyChannelPool channelPool;
 
     private final AtomicBoolean autoReadEnabled = new AtomicBoolean( true );
@@ -46,7 +47,7 @@ public class NettyConnection implements AsyncConnection
     public NettyConnection( Channel channel, NettyChannelPool channelPool )
     {
         this.channel = channel;
-        this.responseHandlersHolder = responseHandlersHolder( channel );
+        this.messageDispatcher = messageDispatcher( channel );
         this.channelPool = channelPool;
     }
 
@@ -128,7 +129,7 @@ public class NettyConnection implements AsyncConnection
 
     private void write( Message message, ResponseHandler handler, boolean flush )
     {
-        responseHandlersHolder.queue( handler );
+        messageDispatcher.queue( handler );
         if ( flush )
         {
             channel.writeAndFlush( message );

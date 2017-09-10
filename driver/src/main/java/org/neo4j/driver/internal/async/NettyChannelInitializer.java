@@ -27,13 +27,15 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 
+import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.util.Clock;
 
 import static org.neo4j.driver.internal.async.ChannelAttributes.setAddress;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setCreationTimestamp;
-import static org.neo4j.driver.internal.async.ChannelAttributes.setResponseHandlersHolder;
+import static org.neo4j.driver.internal.async.ChannelAttributes.setMessageDispatcher;
+import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 
 public class NettyChannelInitializer extends ChannelInitializer<Channel>
 {
@@ -83,6 +85,6 @@ public class NettyChannelInitializer extends ChannelInitializer<Channel>
     {
         setAddress( channel, address );
         setCreationTimestamp( channel, clock.millis() );
-        setResponseHandlersHolder( channel, new ResponseHandlersHolder( channel ) );
+        setMessageDispatcher( channel, new InboundMessageDispatcher( channel, DEV_NULL_LOGGING ) );
     }
 }

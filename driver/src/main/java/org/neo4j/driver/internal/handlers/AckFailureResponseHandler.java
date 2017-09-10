@@ -20,23 +20,23 @@ package org.neo4j.driver.internal.handlers;
 
 import java.util.Map;
 
-import org.neo4j.driver.internal.async.ResponseHandlersHolder;
+import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Value;
 
 public class AckFailureResponseHandler implements ResponseHandler
 {
-    private final ResponseHandlersHolder responseHandlersHolder;
+    private final InboundMessageDispatcher messageDispatcher;
 
-    public AckFailureResponseHandler( ResponseHandlersHolder responseHandlersHolder )
+    public AckFailureResponseHandler( InboundMessageDispatcher messageDispatcher )
     {
-        this.responseHandlersHolder = responseHandlersHolder;
+        this.messageDispatcher = messageDispatcher;
     }
 
     @Override
     public void onSuccess( Map<String,Value> metadata )
     {
-        responseHandlersHolder.clearCurrentError();
+        messageDispatcher.clearCurrentError();
     }
 
     @Override

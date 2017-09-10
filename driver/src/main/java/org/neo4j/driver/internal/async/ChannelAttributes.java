@@ -21,14 +21,15 @@ package org.neo4j.driver.internal.async;
 import io.netty.channel.Channel;
 import io.netty.util.AttributeKey;
 
+import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 
 public final class ChannelAttributes
 {
     private static final AttributeKey<BoltServerAddress> ADDRESS = AttributeKey.newInstance( "address" );
     private static final AttributeKey<Long> CREATION_TIMESTAMP = AttributeKey.newInstance( "creationTimestamp" );
-    private static final AttributeKey<ResponseHandlersHolder> RESPONSE_HANDLERS_HOLDER =
-            AttributeKey.newInstance( "responseHandlersHolder" );
+    private static final AttributeKey<InboundMessageDispatcher> MESSAGE_DISPATCHER =
+            AttributeKey.newInstance( "messageDispatcher" );
 
     private ChannelAttributes()
     {
@@ -54,14 +55,14 @@ public final class ChannelAttributes
         setOnce( channel, CREATION_TIMESTAMP, creationTimestamp );
     }
 
-    public static ResponseHandlersHolder responseHandlersHolder( Channel channel )
+    public static InboundMessageDispatcher messageDispatcher( Channel channel )
     {
-        return get( channel, RESPONSE_HANDLERS_HOLDER );
+        return get( channel, MESSAGE_DISPATCHER );
     }
 
-    public static void setResponseHandlersHolder( Channel channel, ResponseHandlersHolder responseHandlersHolder )
+    public static void setMessageDispatcher( Channel channel, InboundMessageDispatcher messageDispatcher )
     {
-        setOnce( channel, RESPONSE_HANDLERS_HOLDER, responseHandlersHolder );
+        setOnce( channel, MESSAGE_DISPATCHER, messageDispatcher );
     }
 
     private static <T> T get( Channel channel, AttributeKey<T> key )

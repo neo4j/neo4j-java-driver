@@ -19,7 +19,6 @@
 package org.neo4j.driver.internal.messaging;
 
 import java.io.IOException;
-import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -30,7 +29,6 @@ import java.util.Map;
 import org.neo4j.driver.internal.InternalNode;
 import org.neo4j.driver.internal.InternalPath;
 import org.neo4j.driver.internal.InternalRelationship;
-import org.neo4j.driver.internal.net.BufferingChunkedInput;
 import org.neo4j.driver.internal.packstream.ByteArrayIncompatiblePacker;
 import org.neo4j.driver.internal.packstream.PackInput;
 import org.neo4j.driver.internal.packstream.PackOutput;
@@ -84,9 +82,8 @@ public class PackStreamMessageFormatV1 implements MessageFormat
     }
 
     @Override
-    public MessageFormat.Reader newReader( ReadableByteChannel ch )
+    public MessageFormat.Reader newReader( PackInput input )
     {
-        BufferingChunkedInput input = new BufferingChunkedInput( ch );
         return new Reader( input, input.messageBoundaryHook() );
     }
 

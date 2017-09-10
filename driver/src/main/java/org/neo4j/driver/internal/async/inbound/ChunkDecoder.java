@@ -16,13 +16,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.async;
+package org.neo4j.driver.internal.async.inbound;
 
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 
 public class ChunkDecoder extends LengthFieldBasedFrameDecoder
 {
-    private static final int MAX_FRAME_LENGTH = Integer.MAX_VALUE; // todo: it is actually 2 bytes!
+    private static final int MAX_FRAME_LENGTH = Short.MAX_VALUE;
     private static final int LENGTH_FIELD_OFFSET = 0;
     private static final int LENGTH_FIELD_LENGTH = 2;
     private static final int LENGTH_ADJUSTMENT = 0;

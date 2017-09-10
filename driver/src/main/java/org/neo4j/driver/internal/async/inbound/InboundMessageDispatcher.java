@@ -16,11 +16,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.async;
+package org.neo4j.driver.internal.async.inbound;
 
 import io.netty.channel.Channel;
 
-import java.io.IOException;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
@@ -30,19 +30,25 @@ import org.neo4j.driver.internal.messaging.AckFailureMessage;
 import org.neo4j.driver.internal.messaging.MessageHandler;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.ErrorUtil;
+import org.neo4j.driver.v1.Logger;
+import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Value;
 
-public class ResponseHandlersHolder implements MessageHandler
+import static java.util.Objects.requireNonNull;
+
+public class InboundMessageDispatcher implements MessageHandler
 {
     private final Channel channel;
     private final Queue<ResponseHandler> handlers = new LinkedList<>();
+    private final Logger log;
 
     private Throwable currentError;
     private boolean fatalErrorOccurred;
 
-    public ResponseHandlersHolder( Channel channel )
+    public InboundMessageDispatcher( Channel channel, Logging logging )
     {
-        this.channel = channel;
+        this.channel = requireNonNull( channel );
+        this.log = logging.getLog( getClass().getSimpleName() );
     }
 
     public void queue( ResponseHandler handler )
@@ -57,62 +63,74 @@ public class ResponseHandlersHolder implements MessageHandler
         }
     }
 
-    @Override
-    public void handleInitMessage( String clientNameAndVersion, Map<String,Value> authToken ) throws IOException
+    int queuedHandlersCount()
     {
-        throw new UnsupportedOperationException( "Driver is not supposed to receive INIT" );
+        return handlers.size();
     }
 
     @Override
-    public void handleRunMessage( String statement, Map<String,Value> parameters ) throws IOException
+    public void handleInitMessage( String clientNameAndVersion, Map<String,Value> authToken )
     {
-        throw new UnsupportedOperationException( "Driver is not supposed to receive RUN" );
+        throw new UnsupportedOperationException( "Driver is not supposed to receive INIT message. " +
+                                                 "Received INIT with client: '" + clientNameAndVersion + "' " +
+                                                 "and auth: " + authToken );
     }
 
     @Override
-    public void handlePullAllMessage() throws IOException
+    public void handleRunMessage( String statement, Map<String,Value> parameters )
     {
-        throw new UnsupportedOperationException( "Driver is not supposed to receive PULL_ALL" );
+        throw new UnsupportedOperationException( "Driver is not supposed to receive RUN message. " +
+                                                 "Received RUN with statement: '" + statement + "' " +
+                                                 "and params: " + parameters );
     }
 
     @Override
-    public void handleDiscardAllMessage() throws IOException
+    public void handlePullAllMessage()
     {
-        throw new UnsupportedOperationException( "Driver is not supposed to receive DISCARD_ALL" );
+        throw new UnsupportedOperationException( "Driver is not supposed to receive PULL_ALL message." );
     }
 
     @Override
-    public void handleResetMessage() throws IOException
+    public void handleDiscardAllMessage()
     {
-        throw new UnsupportedOperationException( "Driver is not supposed to receive RESET" );
+        throw new UnsupportedOperationException( "Driver is not supposed to receive DISCARD_ALL message." );
     }
 
     @Override
-    public void handleAckFailureMessage() throws IOException
+    public void handleResetMessage()
     {
-        throw new UnsupportedOperationException( "Driver is not supposed to receive ACK_FAILURE" );
+        throw new UnsupportedOperationException( "Driver is not supposed to receive RESET message." );
     }
 
     @Override
-    public void handleSuccessMessage( Map<String,Value> meta ) throws IOException
+    public void handleAckFailureMessage()
     {
-//        System.out.println( "Received SUCCESS " + meta );
+        throw new UnsupportedOperationException( "Driver is not supposed to receive ACK_FAILURE message." );
+    }
+
+    @Override
+    public void handleSuccessMessage( Map<String,Value> meta )
+    {
         ResponseHandler handler = handlers.remove();
+        log.debug( "Received SUCCESS message with metadata %s for handler %s", meta, handler );
         handler.onSuccess( meta );
     }
 
     @Override
-    public void handleRecordMessage( Value[] fields ) throws IOException
+    public void handleRecordMessage( Value[] fields )
     {
-//        System.out.println( "Received RECORD " + Arrays.toString( fields ) );
+        if ( log.isDebugEnabled() )
+        {
+            log.debug( "Received RECORD message with metadata %s", Arrays.toString( fields ) );
+        }
         ResponseHandler handler = handlers.peek();
         handler.onRecord( fields );
     }
 
     @Override
-    public void handleFailureMessage( String code, String message ) throws IOException
+    public void handleFailureMessage( String code, String message )
     {
-//        System.out.println( "Received FAILURE " + code + " " + message );
+        log.debug( "Received FAILURE message with code '%s' and message '%s'", code, message );
         currentError = ErrorUtil.newNeo4jError( code, message );
 
         // queue ACK_FAILURE before notifying the next response handler
@@ -124,9 +142,10 @@ public class ResponseHandlersHolder implements MessageHandler
     }
 
     @Override
-    public void handleIgnoredMessage() throws IOException
+    public void handleIgnoredMessage()
     {
         ResponseHandler handler = handlers.remove();
+        log.debug( "Received IGNORED message for handler %s", handler );
         if ( currentError != null )
         {
             handler.onFailure( currentError );
@@ -135,7 +154,7 @@ public class ResponseHandlersHolder implements MessageHandler
 
     public void handleFatalError( Throwable error )
     {
-        System.out.println( "--- FATAL ERROR" );
+        log.warn( "Fatal error occurred", error );
 
         currentError = error;
         fatalErrorOccurred = true;
@@ -150,5 +169,10 @@ public class ResponseHandlersHolder implements MessageHandler
     public void clearCurrentError()
     {
         currentError = null;
+    }
+
+    Throwable currentError()
+    {
+        return currentError;
     }
 }

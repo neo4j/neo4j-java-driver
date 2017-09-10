@@ -19,8 +19,8 @@
 package org.neo4j.driver.internal.messaging;
 
 import java.io.IOException;
-import java.nio.channels.ReadableByteChannel;
 
+import org.neo4j.driver.internal.packstream.PackInput;
 import org.neo4j.driver.internal.packstream.PackOutput;
 
 public interface MessageFormat
@@ -45,7 +45,7 @@ public interface MessageFormat
 
     Writer newWriter( PackOutput output, boolean byteArraySupportEnabled );
 
-    Reader newReader( ReadableByteChannel ch );
+    Reader newReader( PackInput input );
 
     int version();
 }

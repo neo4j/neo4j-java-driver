@@ -29,6 +29,7 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Collections;
 
+import org.neo4j.driver.internal.net.BufferingChunkedInput;
 import org.neo4j.driver.internal.net.ChunkedOutput;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.util.DumpMessage;
@@ -102,7 +103,8 @@ public class FragmentedMessageDeliveryTest
         }
 
         ReadableByteChannel fragmentedChannel = packets( channels );
-        MessageFormat.Reader reader = format.newReader( fragmentedChannel );
+        BufferingChunkedInput input = new BufferingChunkedInput( fragmentedChannel );
+        MessageFormat.Reader reader = format.newReader( input );
 
         ArrayList<Message> packedMessages = new ArrayList<>();
         DumpMessage.unpack( packedMessages, reader );

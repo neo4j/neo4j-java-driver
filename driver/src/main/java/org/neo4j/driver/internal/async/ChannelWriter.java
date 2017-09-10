@@ -20,12 +20,13 @@ package org.neo4j.driver.internal.async;
 
 import io.netty.channel.Channel;
 
+import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 
 import static org.neo4j.driver.internal.async.ChannelAttributes.address;
 import static org.neo4j.driver.internal.async.ChannelAttributes.creationTimestamp;
-import static org.neo4j.driver.internal.async.ChannelAttributes.responseHandlersHolder;
+import static org.neo4j.driver.internal.async.ChannelAttributes.messageDispatcher;
 
 public final class ChannelWriter
 {
@@ -37,8 +38,8 @@ public final class ChannelWriter
     {
         try
         {
-            ResponseHandlersHolder responseHandlersHolder = responseHandlersHolder( channel );
-            responseHandlersHolder.queue( handler );
+            InboundMessageDispatcher messageDispatcher = messageDispatcher( channel );
+            messageDispatcher.queue( handler );
 
             if ( flush )
             {

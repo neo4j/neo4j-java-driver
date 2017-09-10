@@ -33,6 +33,7 @@ import java.util.Collections;
 import org.neo4j.driver.internal.InternalNode;
 import org.neo4j.driver.internal.InternalPath;
 import org.neo4j.driver.internal.InternalRelationship;
+import org.neo4j.driver.internal.net.BufferingChunkedInput;
 import org.neo4j.driver.internal.net.ChunkedOutput;
 import org.neo4j.driver.internal.packstream.PackStream;
 import org.neo4j.driver.internal.util.BytePrinter;
@@ -152,8 +153,9 @@ public class MessageFormatTest
     {
         try
         {
-            ByteArrayInputStream input = new ByteArrayInputStream( bytes );
-            MessageFormat.Reader reader = format.newReader( Channels.newChannel( input ) );
+            ByteArrayInputStream inputStream = new ByteArrayInputStream( bytes );
+            BufferingChunkedInput input = new BufferingChunkedInput( Channels.newChannel( inputStream ) );
+            MessageFormat.Reader reader = format.newReader( input );
             ArrayList<Message> messages = new ArrayList<>();
             DumpMessage.unpack( messages, reader );
             return messages;

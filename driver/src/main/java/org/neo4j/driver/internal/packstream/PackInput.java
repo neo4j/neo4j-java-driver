@@ -49,4 +49,7 @@ public interface PackInput
 
     /** Get the next byte without forwarding the internal pointer */
     byte peekByte() throws IOException;
+
+    // todo: remove this method! it is temporary!
+    Runnable messageBoundaryHook();
 }

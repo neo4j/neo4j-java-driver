@@ -16,69 +16,95 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.async;
+package org.neo4j.driver.internal.async.inbound;
 
 import io.netty.buffer.ByteBuf;
 
-import java.io.IOException;
-
 import org.neo4j.driver.internal.packstream.PackInput;
 
-public class ByteBufPackInput implements PackInput
+import static java.util.Objects.requireNonNull;
+
+public class ByteBufInput implements PackInput
 {
     private ByteBuf buf;
 
-    public void setBuf( ByteBuf buf )
+    public void start( ByteBuf newBuf )
     {
-        this.buf = buf;
+        assertNotStarted();
+        buf = requireNonNull( newBuf );
+    }
+
+    public void stop()
+    {
+        buf = null;
     }
 
     @Override
-    public boolean hasMoreData() throws IOException
+    public boolean hasMoreData()
     {
         return buf.isReadable();
     }
 
     @Override
-    public byte readByte() throws IOException
+    public byte readByte()
     {
         return buf.readByte();
     }
 
     @Override
-    public short readShort() throws IOException
+    public short readShort()
     {
         return buf.readShort();
     }
 
     @Override
-    public int readInt() throws IOException
+    public int readInt()
     {
         return buf.readInt();
     }
 
     @Override
-    public long readLong() throws IOException
+    public long readLong()
     {
         return buf.readLong();
     }
 
     @Override
-    public double readDouble() throws IOException
+    public double readDouble()
     {
         return buf.readDouble();
     }
 
     @Override
-    public PackInput readBytes( byte[] into, int offset, int toRead ) throws IOException
+    public PackInput readBytes( byte[] into, int offset, int toRead )
     {
         buf.readBytes( into, offset, toRead );
         return this;
     }
 
     @Override
-    public byte peekByte() throws IOException
+    public byte peekByte()
     {
         return buf.getByte( buf.readerIndex() );
+    }
+
+    @Override
+    public Runnable messageBoundaryHook()
+    {
+        return new Runnable()
+        {
+            @Override
+            public void run()
+            {
+            }
+        };
+    }
+
+    private void assertNotStarted()
+    {
+        if ( buf != null )
+        {
+            throw new IllegalStateException( "Already started" );
+        }
     }
 }
