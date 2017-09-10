@@ -29,6 +29,8 @@ import org.neo4j.driver.internal.messaging.InitMessage;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Value;
 
+import static org.neo4j.driver.internal.async.ChannelAttributes.messageDispatcher;
+
 public class HandshakeCompletedListener implements ChannelFutureListener
 {
     private final String userAgent;
@@ -53,7 +55,8 @@ public class HandshakeCompletedListener implements ChannelFutureListener
             InitMessage message = new InitMessage( userAgent, authToken );
             InitResponseHandler handler = new InitResponseHandler( connectionInitializedPromise );
 
-            ChannelWriter.write( channel, message, handler, true );
+            messageDispatcher( channel ).queue( handler );
+            channel.writeAndFlush( message );
         }
         else
         {
