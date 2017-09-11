@@ -25,8 +25,8 @@ import io.netty.channel.ChannelPromise;
 
 import java.util.Map;
 
+import org.neo4j.driver.internal.handlers.AsyncInitResponseHandler;
 import org.neo4j.driver.internal.messaging.InitMessage;
-import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Value;
 
 import static org.neo4j.driver.internal.async.ChannelAttributes.messageDispatcher;
@@ -53,7 +53,7 @@ public class HandshakeCompletedListener implements ChannelFutureListener
             Channel channel = future.channel();
 
             InitMessage message = new InitMessage( userAgent, authToken );
-            InitResponseHandler handler = new InitResponseHandler( connectionInitializedPromise );
+            AsyncInitResponseHandler handler = new AsyncInitResponseHandler( connectionInitializedPromise );
 
             messageDispatcher( channel ).queue( handler );
             channel.writeAndFlush( message );
@@ -61,35 +61,6 @@ public class HandshakeCompletedListener implements ChannelFutureListener
         else
         {
             connectionInitializedPromise.setFailure( future.cause() );
-        }
-    }
-
-    private static class InitResponseHandler implements ResponseHandler
-    {
-        final ChannelPromise connectionInitializedPromise;
-
-        InitResponseHandler( ChannelPromise connectionInitializedPromise )
-        {
-            this.connectionInitializedPromise = connectionInitializedPromise;
-        }
-
-        @Override
-        public void onSuccess( Map<String,Value> metadata )
-        {
-            // todo: process metadata, parse server version and adjust byte array support, etc.
-            connectionInitializedPromise.setSuccess();
-        }
-
-        @Override
-        public void onFailure( Throwable error )
-        {
-            connectionInitializedPromise.setFailure( error );
-        }
-
-        @Override
-        public void onRecord( Value[] fields )
-        {
-            throw new UnsupportedOperationException();
         }
     }
 }

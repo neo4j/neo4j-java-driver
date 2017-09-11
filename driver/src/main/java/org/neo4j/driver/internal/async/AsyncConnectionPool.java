@@ -18,11 +18,11 @@
  */
 package org.neo4j.driver.internal.async;
 
-import java.io.Closeable;
+import io.netty.util.concurrent.Future;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
 
-public interface AsyncConnectionPool extends Closeable
+public interface AsyncConnectionPool
 {
     EventLoopAwareFuture<AsyncConnection> acquire( BoltServerAddress address );
 
@@ -31,4 +31,6 @@ public interface AsyncConnectionPool extends Closeable
     boolean hasAddress( BoltServerAddress address );
 
     int activeConnections( BoltServerAddress address );
+
+    Future<?> closeAsync();
 }

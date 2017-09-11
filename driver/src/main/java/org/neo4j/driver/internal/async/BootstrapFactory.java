@@ -30,8 +30,18 @@ public final class BootstrapFactory
 
     public static Bootstrap newBootstrap()
     {
+        return newBootstrap( new NioEventLoopGroup() );
+    }
+
+    public static Bootstrap newBootstrap( int threadCount )
+    {
+        return newBootstrap( new NioEventLoopGroup( threadCount ) );
+    }
+
+    private static Bootstrap newBootstrap( NioEventLoopGroup eventLoopGroup )
+    {
         Bootstrap bootstrap = new Bootstrap();
-        bootstrap.group( new NioEventLoopGroup() );
+        bootstrap.group( eventLoopGroup );
         bootstrap.channel( NioSocketChannel.class );
         return bootstrap;
     }

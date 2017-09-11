@@ -22,20 +22,28 @@ public class PoolSettings
 {
     public static final int NO_IDLE_CONNECTION_TEST = -1;
     public static final int INFINITE_CONNECTION_LIFETIME = -1;
+    public static final int NOT_CONFIGURED = -1;
 
     public static final int DEFAULT_MAX_IDLE_CONNECTION_POOL_SIZE = 10;
-    public static final int DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST = NO_IDLE_CONNECTION_TEST;
-    public static final int DEFAULT_MAX_CONNECTION_LIFETIME = INFINITE_CONNECTION_LIFETIME;
+    public static final int DEFAULT_MAX_CONNECTION_POOL_SIZE = NOT_CONFIGURED;
+    public static final int DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST = NOT_CONFIGURED;
+    public static final int DEFAULT_MAX_CONNECTION_LIFETIME = NOT_CONFIGURED;
+    public static final int DEFAULT_CONNECTION_ACQUISITION_TIMEOUT = NOT_CONFIGURED;
 
     private final int maxIdleConnectionPoolSize;
     private final long idleTimeBeforeConnectionTest;
     private final long maxConnectionLifetime;
+    private final int maxConnectionPoolSize;
+    private final long connectionAcquisitionTimeout;
 
-    public PoolSettings( int maxIdleConnectionPoolSize, long idleTimeBeforeConnectionTest, long maxConnectionLifetime )
+    public PoolSettings( int maxIdleConnectionPoolSize, long idleTimeBeforeConnectionTest, long maxConnectionLifetime,
+            int maxConnectionPoolSize, long connectionAcquisitionTimeout )
     {
         this.maxIdleConnectionPoolSize = maxIdleConnectionPoolSize;
         this.idleTimeBeforeConnectionTest = idleTimeBeforeConnectionTest;
         this.maxConnectionLifetime = maxConnectionLifetime;
+        this.maxConnectionPoolSize = maxConnectionPoolSize;
+        this.connectionAcquisitionTimeout = connectionAcquisitionTimeout;
     }
 
     public int maxIdleConnectionPoolSize()
@@ -61,5 +69,15 @@ public class PoolSettings
     public boolean maxConnectionLifetimeEnabled()
     {
         return maxConnectionLifetime > 0;
+    }
+
+    public int maxConnectionPoolSize()
+    {
+        return maxConnectionPoolSize;
+    }
+
+    public long connectionAcquisitionTimeout()
+    {
+        return connectionAcquisitionTimeout;
     }
 }

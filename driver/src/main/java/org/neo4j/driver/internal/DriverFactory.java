@@ -101,12 +101,14 @@ public class DriverFactory
     {
         Clock clock = createClock();
         ConnectionSettings connectionSettings = new ConnectionSettings( authToken, config.connectionTimeoutMillis() );
-        ActiveChannelTracker activeChannelTracker = new ActiveChannelTracker();
+        ActiveChannelTracker activeChannelTracker = new ActiveChannelTracker( config.logging() );
         AsyncConnectorImpl connector = new AsyncConnectorImpl( connectionSettings, securityPlan,
                 activeChannelTracker, clock );
         Bootstrap bootstrap = BootstrapFactory.newBootstrap();
         PoolSettings poolSettings = new PoolSettings( config.maxIdleConnectionPoolSize(),
-                config.idleTimeBeforeConnectionTest(), config.maxConnectionLifetime() );
+                config.idleTimeBeforeConnectionTest(), config.maxConnectionLifetimeMillis(),
+                config.maxConnectionPoolSize(),
+                config.connectionAcquisitionTimeoutMillis() );
         return new AsyncConnectionPoolImpl( connector, bootstrap, activeChannelTracker, poolSettings, clock );
     }
 
@@ -202,7 +204,8 @@ public class DriverFactory
     {
         ConnectionSettings connectionSettings = new ConnectionSettings( authToken, config.connectionTimeoutMillis() );
         PoolSettings poolSettings = new PoolSettings( config.maxIdleConnectionPoolSize(),
-                config.idleTimeBeforeConnectionTest(), config.maxConnectionLifetime() );
+                config.idleTimeBeforeConnectionTest(), config.maxConnectionLifetimeMillis(),
+                config.maxConnectionPoolSize(), config.connectionAcquisitionTimeoutMillis() );
         Connector connector = createConnector( connectionSettings, securityPlan, config.logging() );
 
         return new SocketConnectionPool( poolSettings, connector, createClock(), config.logging() );

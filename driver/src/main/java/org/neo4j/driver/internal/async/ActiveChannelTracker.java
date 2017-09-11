@@ -23,74 +23,94 @@ import io.netty.channel.pool.ChannelPoolHandler;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.util.ConcurrentSet;
+import org.neo4j.driver.v1.Logger;
+import org.neo4j.driver.v1.Logging;
 
 import static org.neo4j.driver.internal.async.ChannelAttributes.address;
 
 public class ActiveChannelTracker implements ChannelPoolHandler
 {
-    private final ConcurrentMap<BoltServerAddress,AtomicInteger> addressToActiveChannelCount =
-            new ConcurrentHashMap<>();
+    private final ConcurrentMap<BoltServerAddress,ConcurrentSet<Channel>> addressToActiveChannelCount;
+    private final Logger log;
 
-    @Override
-    public void channelReleased( Channel channel ) throws Exception
+    public ActiveChannelTracker( Logging logging )
     {
-//        System.out.println( "+++ channelReleased: " + channel );
-        decrementActiveChannelCount( channel );
+        this.addressToActiveChannelCount = new ConcurrentHashMap<>();
+        this.log = logging.getLog( getClass().getSimpleName() );
     }
 
     @Override
-    public void channelAcquired( Channel channel ) throws Exception
+    public void channelReleased( Channel channel )
     {
-//        System.out.println( "+++ channelAcquired: " + channel );
-        incrementActiveChannelCount( channel );
+        log.debug( "Channel %s released back to the pool", channel );
+        channelInactive( channel );
     }
 
     @Override
-    public void channelCreated( Channel channel ) throws Exception
+    public void channelAcquired( Channel channel )
     {
-//        System.out.println( "+++ channelCreated: " + channel );
-        incrementActiveChannelCount( channel );
+        log.debug( "Channel %s acquired from the pool", channel );
+        channelActive( channel );
+    }
+
+    @Override
+    public void channelCreated( Channel channel )
+    {
+        log.debug( "Channel %s created", channel );
+        channelActive( channel );
     }
 
     public int activeChannelCount( BoltServerAddress address )
     {
-        AtomicInteger count = addressToActiveChannelCount.get( address );
-        return count == null ? 0 : count.get();
+        ConcurrentSet<Channel> activeChannels = addressToActiveChannelCount.get( address );
+        return activeChannels == null ? 0 : activeChannels.size();
     }
 
-    private void incrementActiveChannelCount( Channel channel )
+    public void prune( BoltServerAddress address )
+    {
+        ConcurrentSet<Channel> activeChannels = addressToActiveChannelCount.remove( address );
+        if ( activeChannels != null )
+        {
+            for ( Channel channel : activeChannels )
+            {
+                channel.close();
+            }
+        }
+    }
+
+    private void channelActive( Channel channel )
     {
         BoltServerAddress address = address( channel );
-        AtomicInteger activeChannelCount = addressToActiveChannelCount.get( address );
-        if ( activeChannelCount == null )
+        ConcurrentSet<Channel> activeChannels = addressToActiveChannelCount.get( address );
+        if ( activeChannels == null )
         {
-            AtomicInteger newCount = new AtomicInteger();
-            AtomicInteger existingCount = addressToActiveChannelCount.putIfAbsent( address, newCount );
-            if ( existingCount == null )
+            ConcurrentSet<Channel> newActiveChannels = new ConcurrentSet<>();
+            ConcurrentSet<Channel> existingActiveChannels = addressToActiveChannelCount.putIfAbsent( address,
+                    newActiveChannels );
+            if ( existingActiveChannels == null )
             {
-                activeChannelCount = newCount;
+                activeChannels = newActiveChannels;
             }
             else
             {
-                activeChannelCount = existingCount;
+                activeChannels = existingActiveChannels;
             }
         }
 
-        activeChannelCount.incrementAndGet();
+        activeChannels.add( channel );
     }
 
-    private void decrementActiveChannelCount( Channel channel )
+    private void channelInactive( Channel channel )
     {
         BoltServerAddress address = address( channel );
-        AtomicInteger activeChannelCount = addressToActiveChannelCount.get( address );
-        if ( activeChannelCount == null )
+        ConcurrentSet<Channel> activeChannels = addressToActiveChannelCount.get( address );
+        if ( activeChannels == null )
         {
-            throw new IllegalStateException(
-                    "Unable to decrement channel count for address " + address + " because it does not exist" );
+            throw new IllegalStateException( "No channels exist for address '" + address + "'" );
         }
-        activeChannelCount.decrementAndGet();
+        activeChannels.remove( channel );
     }
 }

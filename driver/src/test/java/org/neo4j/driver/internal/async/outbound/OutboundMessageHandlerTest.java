@@ -25,13 +25,23 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
+import org.neo4j.driver.internal.messaging.PackStreamMessageFormatV1;
+import org.neo4j.driver.internal.messaging.RunMessage;
 import org.neo4j.driver.internal.packstream.PackOutput;
+import org.neo4j.driver.internal.packstream.PackStream;
+import org.neo4j.driver.v1.Value;
 
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.doAnswer;
@@ -41,6 +51,7 @@ import static org.neo4j.driver.internal.async.ProtocolUtil.messageBoundary;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.messaging.MessageFormat.Writer;
 import static org.neo4j.driver.internal.messaging.PullAllMessage.PULL_ALL;
+import static org.neo4j.driver.v1.Values.value;
 import static org.neo4j.driver.v1.util.TestUtil.assertByteBufContains;
 import static org.neo4j.driver.v1.util.TestUtil.assertByteBufEquals;
 
@@ -50,7 +61,7 @@ public class OutboundMessageHandlerTest
     public void shouldOutputByteBufAsWrittenByWriterAndMessageBoundary() throws IOException
     {
         MessageFormat messageFormat = mockMessageFormatWithWriter( 1, 2, 3, 4, 5 );
-        OutboundMessageHandler handler = new OutboundMessageHandler( messageFormat, DEV_NULL_LOGGING );
+        OutboundMessageHandler handler = newHandler( messageFormat );
         EmbeddedChannel channel = new EmbeddedChannel( handler );
 
         // do not care which message, writer will return predefined bytes anyway
@@ -64,6 +75,40 @@ public class OutboundMessageHandlerTest
 
         ByteBuf buf2 = channel.readOutbound();
         assertByteBufEquals( messageBoundary(), buf2 );
+    }
+
+    @Test
+    public void shouldSupportByteArraysByDefault()
+    {
+        OutboundMessageHandler handler = newHandler( new PackStreamMessageFormatV1() );
+        EmbeddedChannel channel = new EmbeddedChannel( handler );
+
+        Map<String,Value> params = new HashMap<>();
+        params.put( "array", value( new byte[]{1, 2, 3} ) );
+
+        assertTrue( channel.writeOutbound( new RunMessage( "RETURN 1", params ) ) );
+        assertTrue( channel.finish() );
+    }
+
+    @Test
+    public void shouldFailToWriteByteArrayWhenNotSupported()
+    {
+        OutboundMessageHandler handler = newHandler( new PackStreamMessageFormatV1() ).withoutByteArraySupport();
+        EmbeddedChannel channel = new EmbeddedChannel( handler );
+
+        Map<String,Value> params = new HashMap<>();
+        params.put( "array", value( new byte[]{1, 2, 3} ) );
+
+        try
+        {
+            channel.writeOutbound( new RunMessage( "RETURN 1", params ) );
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e.getCause(), instanceOf( PackStream.UnPackable.class ) );
+            assertThat( e.getCause().getMessage(), startsWith( "Packing bytes is not supported" ) );
+        }
     }
 
     private static MessageFormat mockMessageFormatWithWriter( final int... bytesToWrite )
@@ -101,5 +146,10 @@ public class OutboundMessageHandlerTest
         } ).when( writer ).write( any( Message.class ) );
 
         return writer;
+    }
+
+    private static OutboundMessageHandler newHandler( MessageFormat messageFormat )
+    {
+        return new OutboundMessageHandler( messageFormat, DEV_NULL_LOGGING );
     }
 }

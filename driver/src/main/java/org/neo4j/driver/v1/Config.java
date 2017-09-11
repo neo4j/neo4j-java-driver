@@ -57,9 +57,11 @@ public class Config
     private final boolean logLeakedSessions;
 
     private final int maxIdleConnectionPoolSize;
+    private final int maxConnectionPoolSize;
 
     private final long idleTimeBeforeConnectionTest;
-    private final long maxConnectionLifetime;
+    private final long maxConnectionLifetimeMillis;
+    private final long connectionAcquisitionTimeoutMillis;
 
     /** Indicator for encrypted traffic */
     private final boolean encrypted;
@@ -80,8 +82,10 @@ public class Config
         this.logLeakedSessions = builder.logLeakedSessions;
 
         this.idleTimeBeforeConnectionTest = builder.idleTimeBeforeConnectionTest;
-        this.maxConnectionLifetime = builder.maxConnectionLifetime;
+        this.maxConnectionLifetimeMillis = builder.maxConnectionLifetimeMillis;
         this.maxIdleConnectionPoolSize = builder.maxIdleConnectionPoolSize;
+        this.maxConnectionPoolSize = builder.maxConnectionPoolSize;
+        this.connectionAcquisitionTimeoutMillis = builder.connectionAcquisitionTimeoutMillis;
 
         this.encrypted = builder.encrypted;
         this.trustStrategy = builder.trustStrategy;
@@ -146,9 +150,9 @@ public class Config
      *
      * @return maximum lifetime in milliseconds
      */
-    public long maxConnectionLifetime()
+    public long maxConnectionLifetimeMillis()
     {
-        return maxConnectionLifetime;
+        return maxConnectionLifetimeMillis;
     }
 
     /**
@@ -157,6 +161,16 @@ public class Config
     public int connectionTimeoutMillis()
     {
         return connectionTimeoutMillis;
+    }
+
+    public int maxConnectionPoolSize()
+    {
+        return maxConnectionPoolSize;
+    }
+
+    public long connectionAcquisitionTimeoutMillis()
+    {
+        return connectionAcquisitionTimeoutMillis;
     }
 
     /**
@@ -230,8 +244,10 @@ public class Config
         private Logging logging = new JULogging( Level.INFO );
         private boolean logLeakedSessions;
         private int maxIdleConnectionPoolSize = PoolSettings.DEFAULT_MAX_IDLE_CONNECTION_POOL_SIZE;
+        private int maxConnectionPoolSize = PoolSettings.DEFAULT_MAX_CONNECTION_POOL_SIZE;
         private long idleTimeBeforeConnectionTest = PoolSettings.DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST;
-        private long maxConnectionLifetime = PoolSettings.DEFAULT_MAX_CONNECTION_LIFETIME;
+        private long maxConnectionLifetimeMillis = PoolSettings.DEFAULT_MAX_CONNECTION_LIFETIME;
+        private long connectionAcquisitionTimeoutMillis = PoolSettings.DEFAULT_CONNECTION_ACQUISITION_TIMEOUT;
         private boolean encrypted = true;
         private TrustStrategy trustStrategy = trustAllCertificates();
         private LoadBalancingStrategy loadBalancingStrategy = LoadBalancingStrategy.LEAST_CONNECTED;
@@ -389,7 +405,32 @@ public class Config
          */
         public ConfigBuilder withMaxConnectionLifetime( long value, TimeUnit unit )
         {
-            this.maxConnectionLifetime = unit.toMillis( value );
+            this.maxConnectionLifetimeMillis = unit.toMillis( value );
+            return this;
+        }
+
+        /**
+         * Todo: doc and validation
+         *
+         * @param value
+         * @return
+         */
+        public ConfigBuilder withMaxConnectionPoolSize( int value )
+        {
+            this.maxConnectionPoolSize = value;
+            return this;
+        }
+
+        /**
+         * Todo: doc and validation
+         *
+         * @param value
+         * @param unit
+         * @return
+         */
+        public ConfigBuilder withConnectionAcquisitionTimeout( long value, TimeUnit unit )
+        {
+            this.connectionAcquisitionTimeoutMillis = unit.toMillis( value );
             return this;
         }
 

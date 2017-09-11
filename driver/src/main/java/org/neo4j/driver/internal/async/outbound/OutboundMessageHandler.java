@@ -33,15 +33,24 @@ import static org.neo4j.driver.internal.async.ProtocolUtil.messageBoundary;
 
 public class OutboundMessageHandler extends MessageToMessageEncoder<Message>
 {
+    public static final String NAME = OutboundMessageHandler.class.getSimpleName();
+
+    private final MessageFormat messageFormat;
     private final ChunkAwareByteBufOutput output;
     private final MessageFormat.Writer writer;
     private final Logger log;
 
     public OutboundMessageHandler( MessageFormat messageFormat, Logging logging )
     {
+        this( messageFormat, true, logging.getLog( NAME ) );
+    }
+
+    private OutboundMessageHandler( MessageFormat messageFormat, boolean byteArraySupportEnabled, Logger log )
+    {
+        this.messageFormat = messageFormat;
         this.output = new ChunkAwareByteBufOutput();
-        this.writer = messageFormat.newWriter( output, true );
-        this.log = logging.getLog( getClass().getSimpleName() );
+        this.writer = messageFormat.newWriter( output, byteArraySupportEnabled );
+        this.log = log;
     }
 
     @Override
@@ -56,5 +65,10 @@ public class OutboundMessageHandler extends MessageToMessageEncoder<Message>
 
         out.add( messageBuf );
         out.add( messageBoundary() );
+    }
+
+    public OutboundMessageHandler withoutByteArraySupport()
+    {
+        return new OutboundMessageHandler( messageFormat, false, log );
     }
 }

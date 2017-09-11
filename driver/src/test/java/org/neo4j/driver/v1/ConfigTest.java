@@ -111,7 +111,7 @@ public class ConfigTest
     {
         Config config = Config.build().withMaxConnectionLifetime( 42, TimeUnit.SECONDS ).toConfig();
 
-        assertEquals( TimeUnit.SECONDS.toMillis( 42 ), config.maxConnectionLifetime() );
+        assertEquals( TimeUnit.SECONDS.toMillis( 42 ), config.maxConnectionLifetimeMillis() );
     }
 
     @Test
@@ -119,7 +119,7 @@ public class ConfigTest
     {
         Config config = Config.build().withMaxConnectionLifetime( 0, TimeUnit.SECONDS ).toConfig();
 
-        assertEquals( 0, config.maxConnectionLifetime() );
+        assertEquals( 0, config.maxConnectionLifetimeMillis() );
     }
 
     @Test
@@ -127,7 +127,7 @@ public class ConfigTest
     {
         Config config = Config.build().withMaxConnectionLifetime( -42, TimeUnit.SECONDS ).toConfig();
 
-        assertEquals( TimeUnit.SECONDS.toMillis( -42 ), config.maxConnectionLifetime() );
+        assertEquals( TimeUnit.SECONDS.toMillis( -42 ), config.maxConnectionLifetimeMillis() );
     }
 
     @Test

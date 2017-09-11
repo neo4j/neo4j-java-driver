@@ -20,12 +20,11 @@ package org.neo4j.driver.internal.async;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
+import io.netty.channel.EventLoopGroup;
 import io.netty.util.concurrent.Future;
 
-import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
@@ -40,10 +39,7 @@ public class AsyncConnectionPoolImpl implements AsyncConnectionPool
     private final Bootstrap bootstrap;
     private final ActiveChannelTracker activeChannelTracker;
     private final NettyChannelHealthChecker channelHealthChecker;
-
-    // todo: these two should come from PoolSettings
-    private final long acquireTimeoutMillis;
-    private final int maxConnections;
+    private final PoolSettings settings;
 
     private final ConcurrentMap<BoltServerAddress,NettyChannelPool> pools = new ConcurrentHashMap<>();
     private final AtomicBoolean closed = new AtomicBoolean();
@@ -55,24 +51,22 @@ public class AsyncConnectionPoolImpl implements AsyncConnectionPool
         this.bootstrap = bootstrap;
         this.activeChannelTracker = activeChannelTracker;
         this.channelHealthChecker = new NettyChannelHealthChecker( settings, clock );
-        // todo: fix next two settings
-        this.acquireTimeoutMillis = TimeUnit.SECONDS.toMillis( 60 );
-        this.maxConnections = 100;
+        this.settings = settings;
     }
 
     @Override
-    public EventLoopAwareFuture<AsyncConnection> acquire( BoltServerAddress address )
+    public EventLoopAwareFuture<AsyncConnection> acquire( final BoltServerAddress address )
     {
         assertNotClosed();
         final NettyChannelPool pool = getOrCreatePool( address );
-        Future<Channel> connectionFuture = pool.acquire();
-        assertNotClosed( address, pool );
+        final Future<Channel> connectionFuture = pool.acquire();
 
         return Futures.transform( connectionFuture, bootstrap, new Function<Channel,AsyncConnection>()
         {
             @Override
             public AsyncConnection apply( Channel channel )
             {
+                assertNotClosed( address, channel, pool );
                 return new NettyConnection( channel, pool );
             }
         } );
@@ -81,7 +75,11 @@ public class AsyncConnectionPoolImpl implements AsyncConnectionPool
     @Override
     public void purge( BoltServerAddress address )
     {
-        NettyChannelPool pool = getPool( address );
+        // prune active connections
+        activeChannelTracker.prune( address );
+
+        // prune idle connections in the pool and pool itself
+        NettyChannelPool pool = pools.remove( address );
         if ( pool != null )
         {
             pool.close();
@@ -101,7 +99,7 @@ public class AsyncConnectionPoolImpl implements AsyncConnectionPool
     }
 
     @Override
-    public void close() throws IOException
+    public Future<?> closeAsync()
     {
         if ( closed.compareAndSet( false, true ) )
         {
@@ -116,15 +114,15 @@ public class AsyncConnectionPoolImpl implements AsyncConnectionPool
             }
             finally
             {
-                // todo: do we need to sync here?
-                bootstrap.config().group().shutdownGracefully().syncUninterruptibly();
+                eventLoopGroup().shutdownGracefully();
             }
         }
+        return eventLoopGroup().terminationFuture();
     }
 
     private NettyChannelPool getOrCreatePool( BoltServerAddress address )
     {
-        NettyChannelPool pool = getPool( address );
+        NettyChannelPool pool = pools.get( address );
         if ( pool == null )
         {
             pool = newPool( address );
@@ -139,15 +137,15 @@ public class AsyncConnectionPoolImpl implements AsyncConnectionPool
         return pool;
     }
 
-    private NettyChannelPool getPool( BoltServerAddress address )
-    {
-        return pools.get( address );
-    }
-
     private NettyChannelPool newPool( BoltServerAddress address )
     {
         return new NettyChannelPool( address, connector, bootstrap, activeChannelTracker, channelHealthChecker,
-                acquireTimeoutMillis, maxConnections );
+                settings.connectionAcquisitionTimeout(), settings.maxConnectionPoolSize() );
+    }
+
+    private EventLoopGroup eventLoopGroup()
+    {
+        return bootstrap.config().group();
     }
 
     private void assertNotClosed()
@@ -158,10 +156,11 @@ public class AsyncConnectionPoolImpl implements AsyncConnectionPool
         }
     }
 
-    private void assertNotClosed( BoltServerAddress address, NettyChannelPool pool )
+    private void assertNotClosed( BoltServerAddress address, Channel channel, NettyChannelPool pool )
     {
         if ( closed.get() )
         {
+            pool.release( channel );
             pool.close();
             pools.remove( address );
             assertNotClosed();

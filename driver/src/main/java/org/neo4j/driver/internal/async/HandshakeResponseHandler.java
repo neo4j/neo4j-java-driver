@@ -20,6 +20,7 @@ package org.neo4j.driver.internal.async;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.ReplayingDecoder;
 
@@ -64,16 +65,18 @@ public class HandshakeResponseHandler extends ReplayingDecoder<Void>
         {
         case PROTOCOL_VERSION_1:
 
-            MessageFormat messageFormat = new PackStreamMessageFormatV1();
+            MessageFormat format = new PackStreamMessageFormatV1();
+            ChannelPipeline pipeline = ctx.pipeline();
 
-            ctx.pipeline().remove( this );
+            pipeline.remove( this );
 
             // inbound handlers
-            ctx.pipeline().addLast( new ChunkDecoder(), new MessageDecoder(),
-                    new InboundMessageHandler( messageFormat, DEV_NULL_LOGGING ) );
+            pipeline.addLast( new ChunkDecoder() );
+            pipeline.addLast( new MessageDecoder() );
+            pipeline.addLast( new InboundMessageHandler( format, DEV_NULL_LOGGING ) );
 
             // outbound handlers
-            ctx.pipeline().addLast( new OutboundMessageHandler( messageFormat, DEV_NULL_LOGGING ) );
+            pipeline.addLast( OutboundMessageHandler.NAME, new OutboundMessageHandler( format, DEV_NULL_LOGGING ) );
 
             handshakeCompletedPromise.setSuccess();
 

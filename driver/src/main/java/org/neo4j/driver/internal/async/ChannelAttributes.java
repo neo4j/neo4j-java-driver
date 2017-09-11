@@ -24,12 +24,14 @@ import io.netty.util.AttributeKey;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 
+import static io.netty.util.AttributeKey.newInstance;
+
 public final class ChannelAttributes
 {
-    private static final AttributeKey<BoltServerAddress> ADDRESS = AttributeKey.newInstance( "address" );
-    private static final AttributeKey<Long> CREATION_TIMESTAMP = AttributeKey.newInstance( "creationTimestamp" );
-    private static final AttributeKey<InboundMessageDispatcher> MESSAGE_DISPATCHER =
-            AttributeKey.newInstance( "messageDispatcher" );
+    private static final AttributeKey<BoltServerAddress> ADDRESS = newInstance( "address" );
+    private static final AttributeKey<Long> CREATION_TIMESTAMP = newInstance( "creationTimestamp" );
+    private static final AttributeKey<InboundMessageDispatcher> MESSAGE_DISPATCHER = newInstance( "messageDispatcher" );
+    private static final AttributeKey<String> SERVER_VERSION = newInstance( "serverVersion" );
 
     private ChannelAttributes()
     {
@@ -63,6 +65,16 @@ public final class ChannelAttributes
     public static void setMessageDispatcher( Channel channel, InboundMessageDispatcher messageDispatcher )
     {
         setOnce( channel, MESSAGE_DISPATCHER, messageDispatcher );
+    }
+
+    public static String serverVersion( Channel channel )
+    {
+        return get( channel, SERVER_VERSION );
+    }
+
+    public static void setServerVersion( Channel channel, String serverVersion )
+    {
+        setOnce( channel, SERVER_VERSION, serverVersion );
     }
 
     private static <T> T get( Channel channel, AttributeKey<T> key )

@@ -59,7 +59,7 @@ public final class TestUtil
     {
         try
         {
-            return future.get( 10, MINUTES );
+            return future.get( 1, MINUTES );
         }
         catch ( InterruptedException e )
         {

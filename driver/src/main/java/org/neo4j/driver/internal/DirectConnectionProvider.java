@@ -62,7 +62,7 @@ public class DirectConnectionProvider implements ConnectionProvider
     public void close() throws Exception
     {
         pool.close();
-        asyncPool.close();
+        asyncPool.closeAsync().syncUninterruptibly();
     }
 
     public BoltServerAddress getAddress()

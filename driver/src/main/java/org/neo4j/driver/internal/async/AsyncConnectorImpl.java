@@ -36,6 +36,8 @@ import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
+import static java.util.Objects.requireNonNull;
+
 public class AsyncConnectorImpl implements AsyncConnector
 {
     private final String userAgent;
@@ -49,9 +51,9 @@ public class AsyncConnectorImpl implements AsyncConnector
     {
         this.userAgent = connectionSettings.userAgent();
         this.authToken = tokenAsMap( connectionSettings.authToken() );
-        this.securityPlan = securityPlan;
-        this.channelPoolHandler = channelPoolHandler;
-        this.clock = clock;
+        this.securityPlan = requireNonNull( securityPlan );
+        this.channelPoolHandler = requireNonNull( channelPoolHandler );
+        this.clock = requireNonNull( clock );
     }
 
     @Override
