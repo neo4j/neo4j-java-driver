@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.async;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ConnectTimeoutException;
 import io.netty.channel.pool.ChannelPoolHandler;
 import org.junit.After;
 import org.junit.Before;
@@ -49,6 +50,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
+import static org.neo4j.driver.v1.util.TestUtil.await;
 
 public class AsyncConnectorImplTest
 {
@@ -131,7 +133,32 @@ public class AsyncConnectorImplTest
         assertFalse( channel.isActive() );
     }
 
+    @Test
+    public void shouldEnforceConnectTimeout() throws Exception
+    {
+        AsyncConnectorImpl connector = newConnector( neo4j.authToken(), 500 );
+
+        // try connect to a non-routable ip address 10.0.0.0, it will never respond
+        ChannelFuture channelFuture = connector.connect( new BoltServerAddress( "10.0.0.0" ), bootstrap );
+
+        try
+        {
+            await( channelFuture );
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( ServiceUnavailableException.class ) );
+            assertThat( e.getCause(), instanceOf( ConnectTimeoutException.class ) );
+        }
+    }
+
     private AsyncConnectorImpl newConnector( AuthToken authToken ) throws Exception
+    {
+        return newConnector( authToken, Integer.MAX_VALUE );
+    }
+
+    private AsyncConnectorImpl newConnector( AuthToken authToken, int connectTimeoutMillis ) throws Exception
     {
         ConnectionSettings settings = new ConnectionSettings( authToken, 1000 );
         return new AsyncConnectorImpl( settings, SecurityPlan.forAllCertificates(),

@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal.async;
 
 import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.ChannelOption;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 
@@ -43,6 +44,8 @@ public final class BootstrapFactory
         Bootstrap bootstrap = new Bootstrap();
         bootstrap.group( eventLoopGroup );
         bootstrap.channel( NioSocketChannel.class );
+        bootstrap.option( ChannelOption.SO_KEEPALIVE, true );
+        bootstrap.option( ChannelOption.SO_REUSEADDR, true );
         return bootstrap;
     }
 }

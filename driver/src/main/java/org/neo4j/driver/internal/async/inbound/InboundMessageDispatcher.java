@@ -150,6 +150,10 @@ public class InboundMessageDispatcher implements MessageHandler
         {
             handler.onFailure( currentError );
         }
+        else
+        {
+            log.warn( "Received IGNORED message for handler %s but error is missing", handler );
+        }
     }
 
     public void handleFatalError( Throwable error )
