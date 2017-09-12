@@ -44,8 +44,6 @@ public class RecordsResponseHandler implements ResponseHandler
 {
     private final RunMetadataAccessor keysAccessor;
 
-    // todo: all these fields are written by an event loop thread and read by user thread.
-    // todo: accesses should have correct synchronization!
     private final Queue<Record> recordBuffer;
     private Promise<Boolean> recordAvailablePromise;
 
@@ -56,8 +54,6 @@ public class RecordsResponseHandler implements ResponseHandler
     private List<Notification> notifications;
     private long resultConsumedAfter;
 
-    // todo: maybe use single queue for records, failures and completion signals???
-    // todo: for async allocate a promise for result summary right away???
     private boolean completed;
 
     public RecordsResponseHandler( RunMetadataAccessor keysAccessor )

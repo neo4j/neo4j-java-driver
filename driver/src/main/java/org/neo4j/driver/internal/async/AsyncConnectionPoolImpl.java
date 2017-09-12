@@ -30,9 +30,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.net.pooling.PoolSettings;
 import org.neo4j.driver.internal.util.Clock;
+import org.neo4j.driver.v1.Logger;
+import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.util.Function;
 
-// todo: add logging
 public class AsyncConnectionPoolImpl implements AsyncConnectionPool
 {
     private final AsyncConnector connector;
@@ -40,23 +41,27 @@ public class AsyncConnectionPoolImpl implements AsyncConnectionPool
     private final ActiveChannelTracker activeChannelTracker;
     private final NettyChannelHealthChecker channelHealthChecker;
     private final PoolSettings settings;
+    private final Logger log;
 
     private final ConcurrentMap<BoltServerAddress,NettyChannelPool> pools = new ConcurrentHashMap<>();
     private final AtomicBoolean closed = new AtomicBoolean();
 
     public AsyncConnectionPoolImpl( AsyncConnector connector, Bootstrap bootstrap,
-            ActiveChannelTracker activeChannelTracker, PoolSettings settings, Clock clock )
+            ActiveChannelTracker activeChannelTracker, PoolSettings settings, Logging logging, Clock clock )
     {
         this.connector = connector;
         this.bootstrap = bootstrap;
         this.activeChannelTracker = activeChannelTracker;
         this.channelHealthChecker = new NettyChannelHealthChecker( settings, clock );
         this.settings = settings;
+        this.log = logging.getLog( getClass().getSimpleName() );
     }
 
     @Override
     public InternalFuture<AsyncConnection> acquire( final BoltServerAddress address )
     {
+        log.debug( "Acquiring connection from pool for address: %s", address );
+
         assertNotClosed();
         final NettyChannelPool pool = getOrCreatePool( address );
         final Future<Channel> connectionFuture = pool.acquire();
@@ -75,6 +80,8 @@ public class AsyncConnectionPoolImpl implements AsyncConnectionPool
     @Override
     public void purge( BoltServerAddress address )
     {
+        log.info( "Purging connections for address: %s", address );
+
         // prune active connections
         activeChannelTracker.prune( address );
 
@@ -103,6 +110,7 @@ public class AsyncConnectionPoolImpl implements AsyncConnectionPool
     {
         if ( closed.compareAndSet( false, true ) )
         {
+            log.info( "Closing the connection pool" );
             try
             {
                 for ( NettyChannelPool pool : pools.values() )

@@ -109,7 +109,8 @@ public class DriverFactory
                 config.idleTimeBeforeConnectionTest(), config.maxConnectionLifetimeMillis(),
                 config.maxConnectionPoolSize(),
                 config.connectionAcquisitionTimeoutMillis() );
-        return new AsyncConnectionPoolImpl( connector, bootstrap, activeChannelTracker, poolSettings, clock );
+        return new AsyncConnectionPoolImpl( connector, bootstrap, activeChannelTracker, poolSettings, config.logging(),
+                clock );
     }
 
     private Driver createDriver( URI uri, BoltServerAddress address, ConnectionPool connectionPool,

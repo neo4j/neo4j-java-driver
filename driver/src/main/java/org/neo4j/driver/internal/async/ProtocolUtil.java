@@ -34,7 +34,6 @@ public final class ProtocolUtil
 
     public static final int CHUNK_HEADER_SIZE_BYTES = 2;
 
-    // todo: investigate and document this value
     public static final int DEFAULT_MAX_OUTBOUND_CHUNK_SIZE_BYTES = Short.MAX_VALUE / 2;
 
     private static final ByteBuf HANDSHAKE_BUF = unreleasableBuffer( copyInt(

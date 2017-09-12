@@ -169,6 +169,6 @@ public class AsyncConnectionPoolImplTest
                 poolHandler, DEV_NULL_LOGGING, clock );
         PoolSettings poolSettings = new PoolSettings( 5, -1, -1, 10, 5000 );
         Bootstrap bootstrap = BootstrapFactory.newBootstrap( 1 );
-        return new AsyncConnectionPoolImpl( connector, bootstrap, poolHandler, poolSettings, clock );
+        return new AsyncConnectionPoolImpl( connector, bootstrap, poolHandler, poolSettings, DEV_NULL_LOGGING, clock );
     }
 }

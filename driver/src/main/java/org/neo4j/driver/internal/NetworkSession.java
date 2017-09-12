@@ -271,7 +271,6 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
         }
         else
         {
-            // todo: this should not use GlobalEventExecutor
             return new InternalTask<>( GlobalEventExecutor.INSTANCE.<Void>newSucceededFuture( null ) );
         }
     }

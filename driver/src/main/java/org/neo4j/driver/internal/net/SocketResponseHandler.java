@@ -18,7 +18,6 @@
  */
 package org.neo4j.driver.internal.net;
 
-import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
@@ -65,10 +64,8 @@ public class SocketResponseHandler implements MessageHandler
     @Override
     public void handleIgnoredMessage()
     {
-        // todo: this is really fucking strange!
-        // todo: IGNORED used to mark handler as completed, which is needed for ISResult
         ResponseHandler handler = handlers.remove();
-        handler.onSuccess( Collections.<String,Value>emptyMap() );
+        handler.onFailure( error );
     }
 
     @Override
