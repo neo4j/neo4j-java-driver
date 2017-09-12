@@ -219,12 +219,16 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
         return new InternalTask<>( internalCommitAsync() );
     }
 
-    // todo: return failed task when tx has already been rolled back
     InternalFuture<Void> internalCommitAsync()
     {
-        if ( state == State.COMMITTED || state == State.ROLLED_BACK )
+        if ( state == State.COMMITTED )
         {
             return Futures.completed( asyncConnection.<Void>newPromise(), null );
+        }
+        else if ( state == State.ROLLED_BACK )
+        {
+            return Futures.failed( asyncConnection.<Void>newPromise(),
+                    new ClientException( "Can't commit, transaction has already been rolled back" ) );
         }
         else
         {
@@ -238,10 +242,14 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
         return new InternalTask<>( internalRollbackAsync() );
     }
 
-    // todo: return failed task when tx has already been committed
     InternalFuture<Void> internalRollbackAsync()
     {
-        if ( state == State.COMMITTED || state == State.ROLLED_BACK )
+        if ( state == State.COMMITTED )
+        {
+            return Futures.failed( asyncConnection.<Void>newPromise(),
+                    new ClientException( "Can't rollback, transaction has already been committed" ) );
+        }
+        else if ( state == State.ROLLED_BACK )
         {
             return Futures.completed( asyncConnection.<Void>newPromise(), null );
         }

@@ -25,10 +25,10 @@ public class PoolSettings
     public static final int NOT_CONFIGURED = -1;
 
     public static final int DEFAULT_MAX_IDLE_CONNECTION_POOL_SIZE = 10;
-    public static final int DEFAULT_MAX_CONNECTION_POOL_SIZE = NOT_CONFIGURED;
-    public static final int DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST = NOT_CONFIGURED;
-    public static final int DEFAULT_MAX_CONNECTION_LIFETIME = NOT_CONFIGURED;
-    public static final int DEFAULT_CONNECTION_ACQUISITION_TIMEOUT = NOT_CONFIGURED;
+    public static final int DEFAULT_MAX_CONNECTION_POOL_SIZE = Integer.MAX_VALUE;
+    public static final long DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST = NOT_CONFIGURED;
+    public static final long DEFAULT_MAX_CONNECTION_LIFETIME = NOT_CONFIGURED;
+    public static final long DEFAULT_CONNECTION_ACQUISITION_TIMEOUT = Long.MAX_VALUE;
 
     private final int maxIdleConnectionPoolSize;
     private final long idleTimeBeforeConnectionTest;

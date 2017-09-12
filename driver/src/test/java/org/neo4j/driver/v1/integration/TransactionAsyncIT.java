@@ -24,6 +24,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.driver.internal.async.StatementResultCursor;
+import org.neo4j.driver.internal.async.Task;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
@@ -336,6 +337,72 @@ public class TransactionAsyncIT
         {
             assertThat( e, instanceOf( ClientException.class ) );
             assertThat( e.getMessage(), containsString( "InvalidBookmark" ) );
+        }
+    }
+
+    @Test
+    public void shouldBePossibleToCommitWhenCommitted()
+    {
+        Transaction tx = await( session.beginTransactionAsync() );
+        tx.runAsync( "CREATE ()" );
+        assertNull( await( tx.commitAsync() ) );
+
+        Task<Void> secondCommit = tx.commitAsync();
+        // second commit should return a completed future
+        assertTrue( secondCommit.isDone() );
+        assertNull( await( secondCommit ) );
+    }
+
+    @Test
+    public void shouldBePossibleToRollbackWhenRolledBack()
+    {
+        Transaction tx = await( session.beginTransactionAsync() );
+        tx.runAsync( "CREATE ()" );
+        assertNull( await( tx.rollbackAsync() ) );
+
+        Task<Void> secondRollback = tx.rollbackAsync();
+        // second rollback should return a completed future
+        assertTrue( secondRollback.isDone() );
+        assertNull( await( secondRollback ) );
+    }
+
+    @Test
+    public void shouldFailToCommitWhenRolledBack()
+    {
+        Transaction tx = await( session.beginTransactionAsync() );
+        tx.runAsync( "CREATE ()" );
+        assertNull( await( tx.rollbackAsync() ) );
+
+        try
+        {
+            // should not be possible to commit after rollback
+            await( tx.commitAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( ClientException.class ) );
+            assertThat( e.getMessage(), containsString( "transaction has already been rolled back" ) );
+        }
+    }
+
+    @Test
+    public void shouldFailToRollbackWhenCommitted()
+    {
+        Transaction tx = await( session.beginTransactionAsync() );
+        tx.runAsync( "CREATE ()" );
+        assertNull( await( tx.commitAsync() ) );
+
+        try
+        {
+            // should not be possible to rollback after commit
+            await( tx.rollbackAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( ClientException.class ) );
+            assertThat( e.getMessage(), containsString( "transaction has already been committed" ) );
         }
     }
 

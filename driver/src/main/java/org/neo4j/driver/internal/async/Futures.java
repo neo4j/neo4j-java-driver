@@ -38,6 +38,12 @@ public final class Futures
         return promise;
     }
 
+    public static <T> InternalPromise<T> failed( InternalPromise<T> promise, Throwable cause )
+    {
+        promise.setFailure( cause );
+        return promise;
+    }
+
     public static <T, U> InternalFuture<U> transform( InternalFuture<T> future, Function<T,U> transformer )
     {
         InternalPromise<U> result = new InternalPromise<>( future.eventLoop() );
