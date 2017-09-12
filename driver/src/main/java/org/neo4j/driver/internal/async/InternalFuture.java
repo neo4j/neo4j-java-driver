@@ -21,7 +21,7 @@ package org.neo4j.driver.internal.async;
 import io.netty.channel.EventLoop;
 import io.netty.util.concurrent.Future;
 
-public interface EventLoopAwareFuture<T> extends Future<T>
+public interface InternalFuture<T> extends Future<T>
 {
     EventLoop eventLoop();
 }

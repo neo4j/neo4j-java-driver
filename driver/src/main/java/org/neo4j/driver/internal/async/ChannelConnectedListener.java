@@ -24,6 +24,7 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelPromise;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
 import static java.lang.String.format;
@@ -34,21 +35,24 @@ public class ChannelConnectedListener implements ChannelFutureListener
 {
     private final BoltServerAddress address;
     private final ChannelPromise handshakeCompletedPromise;
+    private final Logging logging;
 
-    public ChannelConnectedListener( BoltServerAddress address, ChannelPromise handshakeCompletedPromise )
+    public ChannelConnectedListener( BoltServerAddress address, ChannelPromise handshakeCompletedPromise,
+            Logging logging )
     {
-        this.address = address;
+        this.address = requireNonNull( address );
         this.handshakeCompletedPromise = requireNonNull( handshakeCompletedPromise );
+        this.logging = requireNonNull( logging );
     }
 
     @Override
-    public void operationComplete( ChannelFuture future ) throws Exception
+    public void operationComplete( ChannelFuture future )
     {
         Channel channel = future.channel();
 
         if ( future.isSuccess() )
         {
-            channel.pipeline().addLast( new HandshakeResponseHandler( handshakeCompletedPromise ) );
+            channel.pipeline().addLast( new HandshakeResponseHandler( handshakeCompletedPromise, logging ) );
             ChannelFuture handshakeFuture = channel.writeAndFlush( handshake() );
 
             handshakeFuture.addListener( new ChannelFutureListener()
@@ -65,14 +69,14 @@ public class ChannelConnectedListener implements ChannelFutureListener
         }
         else
         {
-            handshakeCompletedPromise.setFailure( databaseUnavailableError( address ) );
+            handshakeCompletedPromise.setFailure( databaseUnavailableError( address, future.cause() ) );
         }
     }
 
-    private static Throwable databaseUnavailableError( BoltServerAddress address )
+    private static Throwable databaseUnavailableError( BoltServerAddress address, Throwable cause )
     {
         return new ServiceUnavailableException( format(
                 "Unable to connect to %s, ensure the database is running and that there " +
-                "is a working network connection to it.", address ) );
+                "is a working network connection to it.", address ), cause );
     }
 }

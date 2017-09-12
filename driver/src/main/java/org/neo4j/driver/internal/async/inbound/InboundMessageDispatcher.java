@@ -63,7 +63,7 @@ public class InboundMessageDispatcher implements MessageHandler
         }
     }
 
-    int queuedHandlersCount()
+    public int queuedHandlersCount()
     {
         return handlers.size();
     }

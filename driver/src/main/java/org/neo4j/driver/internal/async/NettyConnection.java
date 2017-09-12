@@ -96,9 +96,9 @@ public class NettyConnection implements AsyncConnection
     }
 
     @Override
-    public <T> EventLoopAwarePromise<T> newPromise()
+    public <T> InternalPromise<T> newPromise()
     {
-        return new EventLoopAwarePromise<>( channel.eventLoop() );
+        return new InternalPromise<>( channel.eventLoop() );
     }
 
     @Override
@@ -111,9 +111,9 @@ public class NettyConnection implements AsyncConnection
     }
 
     @Override
-    public EventLoopAwareFuture<Void> forceRelease()
+    public InternalFuture<Void> forceRelease()
     {
-        EventLoopAwarePromise<Void> releasePromise = newPromise();
+        InternalPromise<Void> releasePromise = newPromise();
 
         if ( state.forceRelease() )
         {

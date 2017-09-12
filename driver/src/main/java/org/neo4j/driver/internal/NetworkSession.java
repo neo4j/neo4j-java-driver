@@ -25,8 +25,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.ResultResourcesHandler;
 import org.neo4j.driver.internal.async.AsyncConnection;
-import org.neo4j.driver.internal.async.EventLoopAwareFuture;
 import org.neo4j.driver.internal.async.Futures;
+import org.neo4j.driver.internal.async.InternalFuture;
 import org.neo4j.driver.internal.async.InternalStatementResultCursor;
 import org.neo4j.driver.internal.async.InternalTask;
 import org.neo4j.driver.internal.async.StatementResultCursor;
@@ -70,9 +70,9 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     private volatile Bookmark bookmark = Bookmark.empty();
     private PooledConnection currentConnection;
     private ExplicitTransaction currentTransaction;
-    private volatile EventLoopAwareFuture<ExplicitTransaction> currentAsyncTransactionFuture;
+    private volatile InternalFuture<ExplicitTransaction> currentAsyncTransactionFuture;
 
-    private EventLoopAwareFuture<AsyncConnection> asyncConnectionFuture;
+    private InternalFuture<AsyncConnection> asyncConnectionFuture;
 
     private final AtomicBoolean isOpen = new AtomicBoolean( true );
 
@@ -155,7 +155,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
         ensureSessionIsOpen();
         ensureNoOpenTransactionBeforeRunningSession();
 
-        EventLoopAwareFuture<AsyncConnection> connectionFuture = acquireAsyncConnection( mode );
+        InternalFuture<AsyncConnection> connectionFuture = acquireAsyncConnection( mode );
         return new InternalTask<>(
                 Futures.transform( connectionFuture, new Function<AsyncConnection,StatementResultCursor>()
                 {
@@ -248,10 +248,10 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
         if ( asyncConnectionFuture != null )
         {
             return new InternalTask<>( Futures.unwrap( Futures.transform( asyncConnectionFuture,
-                    new Function<AsyncConnection,EventLoopAwareFuture<Void>>()
+                    new Function<AsyncConnection,InternalFuture<Void>>()
                     {
                         @Override
-                        public EventLoopAwareFuture<Void> apply( AsyncConnection connection )
+                        public InternalFuture<Void> apply( AsyncConnection connection )
                         {
                             return connection.forceRelease();
                         }
@@ -260,10 +260,10 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
         else if ( currentAsyncTransactionFuture != null )
         {
             return new InternalTask<>( Futures.unwrap( Futures.transform( currentAsyncTransactionFuture,
-                    new Function<ExplicitTransaction,EventLoopAwareFuture<Void>>()
+                    new Function<ExplicitTransaction,InternalFuture<Void>>()
                     {
                         @Override
-                        public EventLoopAwareFuture<Void> apply( ExplicitTransaction tx )
+                        public InternalFuture<Void> apply( ExplicitTransaction tx )
                         {
                             return tx.internalRollbackAsync();
                         }
@@ -426,12 +426,12 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
         ensureSessionIsOpen();
         ensureNoOpenTransactionBeforeOpeningTransaction();
 
-        EventLoopAwareFuture<AsyncConnection> connectionFuture = acquireAsyncConnection( mode );
+        InternalFuture<AsyncConnection> connectionFuture = acquireAsyncConnection( mode );
         currentAsyncTransactionFuture = Futures.unwrap( Futures.transform( connectionFuture,
-                new Function<AsyncConnection,EventLoopAwareFuture<ExplicitTransaction>>()
+                new Function<AsyncConnection,InternalFuture<ExplicitTransaction>>()
                 {
                     @Override
-                    public EventLoopAwareFuture<ExplicitTransaction> apply( AsyncConnection connection )
+                    public InternalFuture<ExplicitTransaction> apply( AsyncConnection connection )
                     {
                         ExplicitTransaction tx = new ExplicitTransaction( connection, NetworkSession.this );
                         return tx.beginAsync( bookmark );
@@ -500,7 +500,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
         return connection;
     }
 
-    private EventLoopAwareFuture<AsyncConnection> acquireAsyncConnection( final AccessMode mode )
+    private InternalFuture<AsyncConnection> acquireAsyncConnection( final AccessMode mode )
     {
         if ( asyncConnectionFuture == null )
         {
@@ -509,13 +509,13 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
         else
         {
             // memorize in local so same instance is transformed and used in callbacks
-            final EventLoopAwareFuture<AsyncConnection> currentAsyncConnectionFuture = asyncConnectionFuture;
+            final InternalFuture<AsyncConnection> currentAsyncConnectionFuture = asyncConnectionFuture;
 
             asyncConnectionFuture = Futures.unwrap( Futures.transform( currentAsyncConnectionFuture,
-                    new Function<AsyncConnection,EventLoopAwareFuture<AsyncConnection>>()
+                    new Function<AsyncConnection,InternalFuture<AsyncConnection>>()
                     {
                         @Override
-                        public EventLoopAwareFuture<AsyncConnection> apply( AsyncConnection asyncConnection )
+                        public InternalFuture<AsyncConnection> apply( AsyncConnection asyncConnection )
                         {
                             if ( asyncConnection.tryMarkInUse() )
                             {

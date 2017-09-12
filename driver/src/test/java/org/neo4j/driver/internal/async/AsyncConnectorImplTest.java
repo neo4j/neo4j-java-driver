@@ -48,6 +48,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 
 public class AsyncConnectorImplTest
 {
@@ -134,6 +135,6 @@ public class AsyncConnectorImplTest
     {
         ConnectionSettings settings = new ConnectionSettings( authToken, 1000 );
         return new AsyncConnectorImpl( settings, SecurityPlan.forAllCertificates(),
-                mock( ChannelPoolHandler.class ), new FakeClock() );
+                mock( ChannelPoolHandler.class ), DEV_NULL_LOGGING, new FakeClock() );
     }
 }

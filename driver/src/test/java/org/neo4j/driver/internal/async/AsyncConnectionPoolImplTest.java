@@ -166,7 +166,7 @@ public class AsyncConnectionPoolImplTest
         ConnectionSettings connectionSettings = new ConnectionSettings( neo4j.authToken(), 5000 );
         ActiveChannelTracker poolHandler = new ActiveChannelTracker( DEV_NULL_LOGGING );
         AsyncConnectorImpl connector = new AsyncConnectorImpl( connectionSettings, SecurityPlan.forAllCertificates(),
-                poolHandler, clock );
+                poolHandler, DEV_NULL_LOGGING, clock );
         PoolSettings poolSettings = new PoolSettings( 5, -1, -1, 10, 5000 );
         Bootstrap bootstrap = BootstrapFactory.newBootstrap( 1 );
         return new AsyncConnectionPoolImpl( connector, bootstrap, poolHandler, poolSettings, clock );

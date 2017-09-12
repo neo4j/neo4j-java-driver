@@ -103,7 +103,7 @@ public class DriverFactory
         ConnectionSettings connectionSettings = new ConnectionSettings( authToken, config.connectionTimeoutMillis() );
         ActiveChannelTracker activeChannelTracker = new ActiveChannelTracker( config.logging() );
         AsyncConnectorImpl connector = new AsyncConnectorImpl( connectionSettings, securityPlan,
-                activeChannelTracker, clock );
+                activeChannelTracker, config.logging(), clock );
         Bootstrap bootstrap = BootstrapFactory.newBootstrap();
         PoolSettings poolSettings = new PoolSettings( config.maxIdleConnectionPoolSize(),
                 config.idleTimeBeforeConnectionTest(), config.maxConnectionLifetimeMillis(),

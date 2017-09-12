@@ -29,6 +29,7 @@ import org.neo4j.driver.internal.handlers.AsyncInitResponseHandler;
 import org.neo4j.driver.internal.messaging.InitMessage;
 import org.neo4j.driver.v1.Value;
 
+import static java.util.Objects.requireNonNull;
 import static org.neo4j.driver.internal.async.ChannelAttributes.messageDispatcher;
 
 public class HandshakeCompletedListener implements ChannelFutureListener
@@ -40,13 +41,13 @@ public class HandshakeCompletedListener implements ChannelFutureListener
     public HandshakeCompletedListener( String userAgent, Map<String,Value> authToken,
             ChannelPromise connectionInitializedPromise )
     {
-        this.userAgent = userAgent;
-        this.authToken = authToken;
-        this.connectionInitializedPromise = connectionInitializedPromise;
+        this.userAgent = requireNonNull( userAgent );
+        this.authToken = requireNonNull( authToken );
+        this.connectionInitializedPromise = requireNonNull( connectionInitializedPromise );
     }
 
     @Override
-    public void operationComplete( ChannelFuture future ) throws Exception
+    public void operationComplete( ChannelFuture future )
     {
         if ( future.isSuccess() )
         {

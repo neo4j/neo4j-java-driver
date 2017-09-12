@@ -28,17 +28,17 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-public class EventLoopAwarePromise<T> implements EventLoopAwareFuture<T>, Promise<T>
+public class InternalPromise<T> implements InternalFuture<T>, Promise<T>
 {
     private final EventLoop eventLoop;
     private final Promise<T> delegate;
 
-    public EventLoopAwarePromise( Bootstrap bootstrap )
+    public InternalPromise( Bootstrap bootstrap )
     {
         this( bootstrap.config().group().next() );
     }
 
-    public EventLoopAwarePromise( EventLoop eventLoop )
+    public InternalPromise( EventLoop eventLoop )
     {
         this.eventLoop = eventLoop;
         this.delegate = eventLoop.newPromise();

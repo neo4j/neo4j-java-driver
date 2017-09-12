@@ -55,7 +55,7 @@ public class AsyncConnectionPoolImpl implements AsyncConnectionPool
     }
 
     @Override
-    public EventLoopAwareFuture<AsyncConnection> acquire( final BoltServerAddress address )
+    public InternalFuture<AsyncConnection> acquire( final BoltServerAddress address )
     {
         assertNotClosed();
         final NettyChannelPool pool = getOrCreatePool( address );

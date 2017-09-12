@@ -37,9 +37,9 @@ public interface AsyncConnection
 
     void flush();
 
-    <T> EventLoopAwarePromise<T> newPromise();
+    <T> InternalPromise<T> newPromise();
 
     void release();
 
-    EventLoopAwareFuture<Void> forceRelease();
+    InternalFuture<Void> forceRelease();
 }

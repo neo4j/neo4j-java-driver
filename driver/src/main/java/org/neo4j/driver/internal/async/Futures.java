@@ -32,30 +32,30 @@ public final class Futures
     {
     }
 
-    public static <T> EventLoopAwarePromise<T> completed( EventLoopAwarePromise<T> promise, T value )
+    public static <T> InternalPromise<T> completed( InternalPromise<T> promise, T value )
     {
         promise.setSuccess( value );
         return promise;
     }
 
-    public static <T, U> EventLoopAwareFuture<U> transform( EventLoopAwareFuture<T> future, Function<T,U> transformer )
+    public static <T, U> InternalFuture<U> transform( InternalFuture<T> future, Function<T,U> transformer )
     {
-        EventLoopAwarePromise<U> result = new EventLoopAwarePromise<>( future.eventLoop() );
+        InternalPromise<U> result = new InternalPromise<>( future.eventLoop() );
         future.addListener( new TransformListener<>( result, transformer ) );
         return result;
     }
 
-    public static <T, U> EventLoopAwareFuture<U> transform( Future<T> future, Bootstrap bootstrap,
+    public static <T, U> InternalFuture<U> transform( Future<T> future, Bootstrap bootstrap,
             Function<T,U> transformer )
     {
-        EventLoopAwarePromise<U> result = new EventLoopAwarePromise<>( bootstrap );
+        InternalPromise<U> result = new InternalPromise<>( bootstrap );
         future.addListener( new TransformListener<>( result, transformer ) );
         return result;
     }
 
-    public static <T> EventLoopAwareFuture<T> unwrap( EventLoopAwareFuture<EventLoopAwareFuture<T>> future )
+    public static <T> InternalFuture<T> unwrap( InternalFuture<InternalFuture<T>> future )
     {
-        final EventLoopAwarePromise<T> result = new EventLoopAwarePromise<>( future.eventLoop() );
+        final InternalPromise<T> result = new InternalPromise<>( future.eventLoop() );
         future.addListener( new GenericFutureListener<Future<Future<T>>>()
         {
             @Override
@@ -97,23 +97,23 @@ public final class Futures
         return result;
     }
 
-    public static <T> EventLoopAwareFuture<T> fallback( EventLoopAwareFuture<T> from, EventLoopAwareFuture<T> to )
+    public static <T> InternalFuture<T> fallback( InternalFuture<T> from, InternalFuture<T> to )
     {
-        EventLoopAwarePromise<T> result = new EventLoopAwarePromise<>( from.eventLoop() );
+        InternalPromise<T> result = new InternalPromise<>( from.eventLoop() );
         from.addListener( new FallbackListener<>( result, to ) );
         return result;
     }
 
-    public static <T> EventLoopAwareFuture<T> onSuccess( EventLoopAwareFuture<T> future, Consumer<T> action )
+    public static <T> InternalFuture<T> onSuccess( InternalFuture<T> future, Consumer<T> action )
     {
-        EventLoopAwarePromise<T> result = new EventLoopAwarePromise<>( future.eventLoop() );
+        InternalPromise<T> result = new InternalPromise<>( future.eventLoop() );
         future.addListener( new SuccessListener<>( result, action ) );
         return result;
     }
 
-    public static <T> EventLoopAwareFuture<T> onCompletion( EventLoopAwareFuture<T> future, Consumer<Void> action )
+    public static <T> InternalFuture<T> onCompletion( InternalFuture<T> future, Consumer<Void> action )
     {
-        EventLoopAwarePromise<T> result = new EventLoopAwarePromise<>( future.eventLoop() );
+        InternalPromise<T> result = new InternalPromise<>( future.eventLoop() );
         future.addListener( new CompletionListener<>( result, action ) );
         return result;
     }

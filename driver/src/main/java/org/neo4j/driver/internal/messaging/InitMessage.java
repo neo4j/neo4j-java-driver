@@ -47,6 +47,16 @@ public class InitMessage implements Message
         handler.handleInitMessage( userAgent, authToken );
     }
 
+    public String userAgent()
+    {
+        return userAgent;
+    }
+
+    public Map<String,Value> authToken()
+    {
+        return authToken;
+    }
+
     @Override
     public String toString()
     {

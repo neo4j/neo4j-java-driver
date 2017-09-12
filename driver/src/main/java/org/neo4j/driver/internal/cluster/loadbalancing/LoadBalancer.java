@@ -22,7 +22,7 @@ import java.util.Set;
 
 import org.neo4j.driver.internal.RoutingErrorHandler;
 import org.neo4j.driver.internal.async.AsyncConnection;
-import org.neo4j.driver.internal.async.EventLoopAwareFuture;
+import org.neo4j.driver.internal.async.InternalFuture;
 import org.neo4j.driver.internal.cluster.AddressSet;
 import org.neo4j.driver.internal.cluster.ClusterComposition;
 import org.neo4j.driver.internal.cluster.ClusterCompositionProvider;
@@ -91,7 +91,7 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
     }
 
     @Override
-    public EventLoopAwareFuture<AsyncConnection> acquireAsyncConnection( AccessMode mode )
+    public InternalFuture<AsyncConnection> acquireAsyncConnection( AccessMode mode )
     {
         throw new UnsupportedOperationException();
     }

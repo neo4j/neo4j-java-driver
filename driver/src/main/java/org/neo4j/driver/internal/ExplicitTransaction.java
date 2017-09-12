@@ -23,9 +23,9 @@ import java.util.Map;
 
 import org.neo4j.driver.ResultResourcesHandler;
 import org.neo4j.driver.internal.async.AsyncConnection;
-import org.neo4j.driver.internal.async.EventLoopAwareFuture;
-import org.neo4j.driver.internal.async.EventLoopAwarePromise;
 import org.neo4j.driver.internal.async.Futures;
+import org.neo4j.driver.internal.async.InternalFuture;
+import org.neo4j.driver.internal.async.InternalPromise;
 import org.neo4j.driver.internal.async.InternalStatementResultCursor;
 import org.neo4j.driver.internal.async.InternalTask;
 import org.neo4j.driver.internal.async.StatementResultCursor;
@@ -118,9 +118,9 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
         }
     }
 
-    public EventLoopAwareFuture<ExplicitTransaction> beginAsync( Bookmark initialBookmark )
+    public InternalFuture<ExplicitTransaction> beginAsync( Bookmark initialBookmark )
     {
-        EventLoopAwarePromise<ExplicitTransaction> beginTxPromise = asyncConnection.newPromise();
+        InternalPromise<ExplicitTransaction> beginTxPromise = asyncConnection.newPromise();
 
         Map<String,Value> parameters = initialBookmark.asBeginTransactionParameters();
         asyncConnection.run( "BEGIN", parameters, NoOpResponseHandler.INSTANCE );
@@ -220,7 +220,7 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
     }
 
     // todo: return failed task when tx has already been rolled back
-    EventLoopAwareFuture<Void> internalCommitAsync()
+    InternalFuture<Void> internalCommitAsync()
     {
         if ( state == State.COMMITTED || state == State.ROLLED_BACK )
         {
@@ -239,7 +239,7 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
     }
 
     // todo: return failed task when tx has already been committed
-    EventLoopAwareFuture<Void> internalRollbackAsync()
+    InternalFuture<Void> internalRollbackAsync()
     {
         if ( state == State.COMMITTED || state == State.ROLLED_BACK )
         {
@@ -251,7 +251,7 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
         }
     }
 
-    private EventLoopAwareFuture<Void> closeAsync()
+    private InternalFuture<Void> closeAsync()
     {
         if ( state == State.MARKED_SUCCESS )
         {
@@ -271,7 +271,7 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
         return Futures.completed( asyncConnection.<Void>newPromise(), null );
     }
 
-    private EventLoopAwareFuture<Void> txClosed( EventLoopAwareFuture<Void> operation )
+    private InternalFuture<Void> txClosed( InternalFuture<Void> operation )
     {
         return Futures.onCompletion( operation, new Consumer<Void>()
         {
@@ -284,9 +284,9 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
         } );
     }
 
-    private EventLoopAwareFuture<Void> doCommitAsync()
+    private InternalFuture<Void> doCommitAsync()
     {
-        EventLoopAwarePromise<Void> commitTxPromise = asyncConnection.newPromise();
+        InternalPromise<Void> commitTxPromise = asyncConnection.newPromise();
 
         asyncConnection.run( "COMMIT", Collections.<String,Value>emptyMap(), NoOpResponseHandler.INSTANCE );
         asyncConnection.pullAll( new CommitTxResponseHandler( commitTxPromise, this ) );
@@ -302,9 +302,9 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
         } );
     }
 
-    private EventLoopAwareFuture<Void> doRollbackAsync()
+    private InternalFuture<Void> doRollbackAsync()
     {
-        EventLoopAwarePromise<Void> rollbackTxPromise = asyncConnection.newPromise();
+        InternalPromise<Void> rollbackTxPromise = asyncConnection.newPromise();
         asyncConnection.run( "ROLLBACK", Collections.<String,Value>emptyMap(), NoOpResponseHandler.INSTANCE );
         asyncConnection.pullAll( new RollbackTxResponseHandler( rollbackTxPromise ) );
         asyncConnection.flush();

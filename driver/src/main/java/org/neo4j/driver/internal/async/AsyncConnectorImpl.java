@@ -33,6 +33,7 @@ import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.AuthTokens;
+import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
@@ -44,15 +45,17 @@ public class AsyncConnectorImpl implements AsyncConnector
     private final Map<String,Value> authToken;
     private final SecurityPlan securityPlan;
     private final ChannelPoolHandler channelPoolHandler;
+    private final Logging logging;
     private final Clock clock;
 
     public AsyncConnectorImpl( ConnectionSettings connectionSettings, SecurityPlan securityPlan,
-            ChannelPoolHandler channelPoolHandler, Clock clock )
+            ChannelPoolHandler channelPoolHandler, Logging logging, Clock clock )
     {
         this.userAgent = connectionSettings.userAgent();
         this.authToken = tokenAsMap( connectionSettings.authToken() );
         this.securityPlan = requireNonNull( securityPlan );
         this.channelPoolHandler = requireNonNull( channelPoolHandler );
+        this.logging = requireNonNull( logging );
         this.clock = requireNonNull( clock );
     }
 
@@ -67,7 +70,7 @@ public class AsyncConnectorImpl implements AsyncConnector
         ChannelPromise handshakeCompleted = channel.newPromise();
         ChannelPromise connectionInitialized = channel.newPromise();
 
-        channelConnected.addListener( new ChannelConnectedListener( address, handshakeCompleted ) );
+        channelConnected.addListener( new ChannelConnectedListener( address, handshakeCompleted, logging ) );
         handshakeCompleted.addListener( new HandshakeCompletedListener( userAgent, authToken, connectionInitialized ) );
 
         return connectionInitialized;
