@@ -69,7 +69,7 @@ public class ActiveChannelTracker implements ChannelPoolHandler
         return activeChannels == null ? 0 : activeChannels.size();
     }
 
-    public void prune( BoltServerAddress address )
+    public void purge( BoltServerAddress address )
     {
         ConcurrentSet<Channel> activeChannels = addressToActiveChannelCount.remove( address );
         if ( activeChannels != null )

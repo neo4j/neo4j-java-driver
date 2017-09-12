@@ -110,7 +110,7 @@ public class ActiveChannelTrackerTest
     public void shouldPruneForMissingAddress()
     {
         assertEquals( 0, tracker.activeChannelCount( address ) );
-        tracker.prune( address );
+        tracker.purge( address );
         assertEquals( 0, tracker.activeChannelCount( address ) );
     }
 
@@ -127,7 +127,7 @@ public class ActiveChannelTrackerTest
 
         assertEquals( 3, tracker.activeChannelCount( address ) );
 
-        tracker.prune( address );
+        tracker.purge( address );
 
         assertEquals( 0, tracker.activeChannelCount( address ) );
         assertNull( await( channel1.closeFuture() ) );

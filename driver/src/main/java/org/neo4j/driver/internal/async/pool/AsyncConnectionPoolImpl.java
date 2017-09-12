@@ -87,10 +87,10 @@ public class AsyncConnectionPoolImpl implements AsyncConnectionPool
     {
         log.info( "Purging connections for address: %s", address );
 
-        // prune active connections
-        activeChannelTracker.prune( address );
+        // purge active connections
+        activeChannelTracker.purge( address );
 
-        // prune idle connections in the pool and pool itself
+        // purge idle connections in the pool and pool itself
         NettyChannelPool pool = pools.remove( address );
         if ( pool != null )
         {
