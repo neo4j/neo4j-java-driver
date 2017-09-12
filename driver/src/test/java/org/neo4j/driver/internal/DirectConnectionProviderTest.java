@@ -20,7 +20,7 @@ package org.neo4j.driver.internal;
 
 import org.junit.Test;
 
-import org.neo4j.driver.internal.async.AsyncConnectionPool;
+import org.neo4j.driver.internal.async.pool.AsyncConnectionPool;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.PooledConnection;

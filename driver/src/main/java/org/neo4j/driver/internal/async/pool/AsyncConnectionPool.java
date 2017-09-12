@@ -16,10 +16,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.async;
+package org.neo4j.driver.internal.async.pool;
 
 import io.netty.util.concurrent.Future;
 
+import org.neo4j.driver.internal.async.AsyncConnection;
+import org.neo4j.driver.internal.async.InternalFuture;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 
 public interface AsyncConnectionPool

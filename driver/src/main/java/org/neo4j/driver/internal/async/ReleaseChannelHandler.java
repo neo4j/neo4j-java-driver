@@ -23,6 +23,7 @@ import io.netty.util.concurrent.Promise;
 
 import java.util.Map;
 
+import org.neo4j.driver.internal.async.pool.NettyChannelPool;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Value;
 

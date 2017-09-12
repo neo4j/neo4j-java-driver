@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.async;
+package org.neo4j.driver.internal.async.pool;
 
 import io.netty.channel.Channel;
 import io.netty.channel.embedded.EmbeddedChannel;

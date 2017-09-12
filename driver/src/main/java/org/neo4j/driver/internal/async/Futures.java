@@ -25,34 +25,34 @@ import io.netty.util.concurrent.Promise;
 
 import org.neo4j.driver.v1.util.Function;
 
-final class Futures
+public final class Futures
 {
     private Futures()
     {
     }
 
-    static <T, U> InternalFuture<U> thenApply( InternalFuture<T> future, Function<T,U> fn )
+    public static <T, U> InternalFuture<U> thenApply( InternalFuture<T> future, Function<T,U> fn )
     {
         InternalPromise<U> result = new InternalPromise<>( future.eventLoop() );
         future.addListener( new ThenApplyListener<>( result, fn ) );
         return result;
     }
 
-    static <T, U> InternalFuture<U> thenApply( Future<T> future, Bootstrap bootstrap, Function<T,U> fn )
+    public static <T, U> InternalFuture<U> thenApply( Future<T> future, Bootstrap bootstrap, Function<T,U> fn )
     {
         InternalPromise<U> result = new InternalPromise<>( bootstrap );
         future.addListener( new ThenApplyListener<>( result, fn ) );
         return result;
     }
 
-    static <T, U> InternalFuture<U> thenCombine( InternalFuture<T> future, Function<T,InternalFuture<U>> fn )
+    public static <T, U> InternalFuture<U> thenCombine( InternalFuture<T> future, Function<T,InternalFuture<U>> fn )
     {
         InternalPromise<U> result = new InternalPromise<>( future.eventLoop() );
         future.addListener( new ThenCombineListener<>( result, fn ) );
         return result;
     }
 
-    static <T> InternalFuture<T> whenComplete( InternalFuture<T> future, Runnable action )
+    public static <T> InternalFuture<T> whenComplete( InternalFuture<T> future, Runnable action )
     {
         InternalPromise<T> result = new InternalPromise<>( future.eventLoop() );
         future.addListener( new CompletionListener<>( result, action ) );

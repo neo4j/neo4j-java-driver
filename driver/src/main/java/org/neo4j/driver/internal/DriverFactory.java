@@ -24,11 +24,11 @@ import java.io.IOException;
 import java.net.URI;
 import java.security.GeneralSecurityException;
 
-import org.neo4j.driver.internal.async.ActiveChannelTracker;
-import org.neo4j.driver.internal.async.AsyncConnectionPool;
-import org.neo4j.driver.internal.async.AsyncConnectionPoolImpl;
 import org.neo4j.driver.internal.async.AsyncConnectorImpl;
 import org.neo4j.driver.internal.async.BootstrapFactory;
+import org.neo4j.driver.internal.async.pool.ActiveChannelTracker;
+import org.neo4j.driver.internal.async.pool.AsyncConnectionPool;
+import org.neo4j.driver.internal.async.pool.AsyncConnectionPoolImpl;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.cluster.loadbalancing.LeastConnectedLoadBalancingStrategy;
