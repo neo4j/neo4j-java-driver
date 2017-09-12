@@ -18,8 +18,6 @@
  */
 package org.neo4j.driver.internal.handlers;
 
-import io.netty.util.concurrent.Promise;
-
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -28,7 +26,7 @@ import java.util.Queue;
 
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.async.AsyncConnection;
-import org.neo4j.driver.internal.async.InternalTask;
+import org.neo4j.driver.internal.async.InternalPromise;
 import org.neo4j.driver.internal.async.Task;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.summary.InternalNotification;
@@ -51,7 +49,7 @@ public abstract class PullAllResponseHandler implements ResponseHandler
     protected final AsyncConnection connection;
 
     private final Queue<Record> records;
-    private Promise<Boolean> recordAvailablePromise;
+    private InternalPromise<Boolean> recordAvailablePromise;
     private boolean succeeded;
     private Throwable failure;
 
@@ -132,28 +130,21 @@ public abstract class PullAllResponseHandler implements ResponseHandler
         {
             if ( succeeded )
             {
-                Promise<Boolean> result = connection.newPromise();
-                result.setSuccess( false );
-                return new InternalTask<>( result );
+                return connection.<Boolean>newPromise().succeeded( false ).asTask();
             }
 
             if ( failure != null )
             {
-                Promise<Boolean> result = connection.newPromise();
-                result.setFailure( failure );
-                return new InternalTask<>( result );
+                return connection.<Boolean>newPromise().failed( failure ).asTask();
             }
 
             recordAvailablePromise = connection.newPromise();
-            return new InternalTask<>( recordAvailablePromise );
+            return recordAvailablePromise.asTask();
         }
         else
         {
             current = record;
-
-            Promise<Boolean> result = connection.newPromise();
-            result.setSuccess( true );
-            return new InternalTask<>( result );
+            return connection.<Boolean>newPromise().succeeded( true ).asTask();
         }
     }
 

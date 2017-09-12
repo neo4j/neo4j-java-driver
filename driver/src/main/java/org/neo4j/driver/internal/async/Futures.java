@@ -23,116 +23,51 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.Promise;
 
-import org.neo4j.driver.internal.util.Consumer;
 import org.neo4j.driver.v1.util.Function;
 
-public final class Futures
+final class Futures
 {
     private Futures()
     {
     }
 
-    public static <T> InternalPromise<T> completed( InternalPromise<T> promise, T value )
-    {
-        promise.setSuccess( value );
-        return promise;
-    }
-
-    public static <T> InternalPromise<T> failed( InternalPromise<T> promise, Throwable cause )
-    {
-        promise.setFailure( cause );
-        return promise;
-    }
-
-    public static <T, U> InternalFuture<U> transform( InternalFuture<T> future, Function<T,U> transformer )
+    static <T, U> InternalFuture<U> thenApply( InternalFuture<T> future, Function<T,U> fn )
     {
         InternalPromise<U> result = new InternalPromise<>( future.eventLoop() );
-        future.addListener( new TransformListener<>( result, transformer ) );
+        future.addListener( new ThenApplyListener<>( result, fn ) );
         return result;
     }
 
-    public static <T, U> InternalFuture<U> transform( Future<T> future, Bootstrap bootstrap,
-            Function<T,U> transformer )
+    static <T, U> InternalFuture<U> thenApply( Future<T> future, Bootstrap bootstrap, Function<T,U> fn )
     {
         InternalPromise<U> result = new InternalPromise<>( bootstrap );
-        future.addListener( new TransformListener<>( result, transformer ) );
+        future.addListener( new ThenApplyListener<>( result, fn ) );
         return result;
     }
 
-    public static <T> InternalFuture<T> unwrap( InternalFuture<InternalFuture<T>> future )
+    static <T, U> InternalFuture<U> thenCombine( InternalFuture<T> future, Function<T,InternalFuture<U>> fn )
     {
-        final InternalPromise<T> result = new InternalPromise<>( future.eventLoop() );
-        future.addListener( new GenericFutureListener<Future<Future<T>>>()
-        {
-            @Override
-            public void operationComplete( Future<Future<T>> future ) throws Exception
-            {
-                if ( future.isCancelled() )
-                {
-                    result.cancel( true );
-                }
-                else if ( future.isSuccess() )
-                {
-                    Future<T> nested = future.getNow();
-                    nested.addListener( new GenericFutureListener<Future<T>>()
-                    {
-                        @Override
-                        public void operationComplete( Future<T> future ) throws Exception
-                        {
-                            if ( future.isCancelled() )
-                            {
-                                result.cancel( true );
-                            }
-                            else if ( future.isSuccess() )
-                            {
-                                result.setSuccess( future.getNow() );
-                            }
-                            else
-                            {
-                                result.setFailure( future.cause() );
-                            }
-                        }
-                    } );
-                }
-                else
-                {
-                    result.setFailure( future.cause() );
-                }
-            }
-        } );
+        InternalPromise<U> result = new InternalPromise<>( future.eventLoop() );
+        future.addListener( new ThenCombineListener<>( result, fn ) );
         return result;
     }
 
-    public static <T> InternalFuture<T> fallback( InternalFuture<T> from, InternalFuture<T> to )
-    {
-        InternalPromise<T> result = new InternalPromise<>( from.eventLoop() );
-        from.addListener( new FallbackListener<>( result, to ) );
-        return result;
-    }
-
-    public static <T> InternalFuture<T> onSuccess( InternalFuture<T> future, Consumer<T> action )
-    {
-        InternalPromise<T> result = new InternalPromise<>( future.eventLoop() );
-        future.addListener( new SuccessListener<>( result, action ) );
-        return result;
-    }
-
-    public static <T> InternalFuture<T> onCompletion( InternalFuture<T> future, Consumer<Void> action )
+    static <T> InternalFuture<T> whenComplete( InternalFuture<T> future, Runnable action )
     {
         InternalPromise<T> result = new InternalPromise<>( future.eventLoop() );
         future.addListener( new CompletionListener<>( result, action ) );
         return result;
     }
 
-    private static class TransformListener<T, U> implements GenericFutureListener<Future<T>>
+    private static class ThenApplyListener<T, U> implements GenericFutureListener<Future<T>>
     {
         final Promise<U> result;
-        final Function<T,U> transformer;
+        final Function<T,U> fn;
 
-        TransformListener( Promise<U> result, Function<T,U> transformer )
+        ThenApplyListener( Promise<U> result, Function<T,U> fn )
         {
             this.result = result;
-            this.transformer = transformer;
+            this.fn = fn;
         }
 
         @Override
@@ -147,8 +82,8 @@ public final class Futures
                 try
                 {
                     T originalValue = future.getNow();
-                    U transformedValue = transformer.apply( originalValue );
-                    result.setSuccess( transformedValue );
+                    U newValue = fn.apply( originalValue );
+                    result.setSuccess( newValue );
                 }
                 catch ( Throwable t )
                 {
@@ -162,73 +97,15 @@ public final class Futures
         }
     }
 
-    private static class FallbackListener<T> implements GenericFutureListener<Future<T>>
+    private static class ThenCombineListener<T, U> implements GenericFutureListener<Future<T>>
     {
-        final Promise<T> result;
-        final Future<T> fallback;
+        final Promise<U> result;
+        final Function<T,InternalFuture<U>> fn;
 
-        FallbackListener( Promise<T> result, Future<T> fallback )
+        ThenCombineListener( Promise<U> result, Function<T,InternalFuture<U>> fn )
         {
             this.result = result;
-            this.fallback = fallback;
-        }
-
-        @Override
-        public void operationComplete( Future<T> future ) throws Exception
-        {
-            if ( future.isCancelled() )
-            {
-                result.cancel( true );
-            }
-            else if ( future.isSuccess() )
-            {
-                result.setSuccess( future.getNow() );
-            }
-            else
-            {
-                fallback.addListener( new NestedFallbackListener<>( result, future.cause() ) );
-            }
-        }
-    }
-
-    private static class NestedFallbackListener<T> implements GenericFutureListener<Future<T>>
-    {
-        final Promise<T> result;
-        final Throwable originalError;
-
-        NestedFallbackListener( Promise<T> result, Throwable originalError )
-        {
-            this.result = result;
-            this.originalError = originalError;
-        }
-
-        @Override
-        public void operationComplete( Future<T> future ) throws Exception
-        {
-            if ( future.isCancelled() )
-            {
-                result.cancel( true );
-            }
-            else if ( future.isSuccess() )
-            {
-                result.setSuccess( future.getNow() );
-            }
-            else
-            {
-                result.setFailure( originalError );
-            }
-        }
-    }
-
-    private static class SuccessListener<T> implements GenericFutureListener<Future<T>>
-    {
-        final Promise<T> result;
-        final Consumer<T> action;
-
-        SuccessListener( Promise<T> result, Consumer<T> action )
-        {
-            this.result = result;
-            this.action = action;
+            this.fn = fn;
         }
 
         @Override
@@ -243,8 +120,8 @@ public final class Futures
                 try
                 {
                     T value = future.getNow();
-                    action.accept( value );
-                    result.setSuccess( value );
+                    InternalFuture<U> newFuture = fn.apply( value );
+                    newFuture.addListener( new NestedThenCombineListener<>( result, newFuture ) );
                 }
                 catch ( Throwable t )
                 {
@@ -258,12 +135,42 @@ public final class Futures
         }
     }
 
+    private static class NestedThenCombineListener<T> implements GenericFutureListener<Future<T>>
+    {
+
+        final Promise<T> result;
+        final Future<T> future;
+
+        NestedThenCombineListener( Promise<T> result, Future<T> future )
+        {
+            this.result = result;
+            this.future = future;
+        }
+
+        @Override
+        public void operationComplete( Future<T> future ) throws Exception
+        {
+            if ( future.isCancelled() )
+            {
+                result.cancel( true );
+            }
+            else if ( future.isSuccess() )
+            {
+                result.setSuccess( future.getNow() );
+            }
+            else
+            {
+                result.setFailure( future.cause() );
+            }
+        }
+    }
+
     private static class CompletionListener<T> implements GenericFutureListener<Future<T>>
     {
         final Promise<T> result;
-        final Consumer<Void> action;
+        final Runnable action;
 
-        CompletionListener( Promise<T> result, Consumer<Void> action )
+        CompletionListener( Promise<T> result, Runnable action )
         {
             this.result = result;
             this.action = action;
@@ -280,7 +187,7 @@ public final class Futures
             {
                 try
                 {
-                    action.accept( null );
+                    action.run();
                     result.setSuccess( future.getNow() );
                 }
                 catch ( Throwable t )
@@ -293,7 +200,7 @@ public final class Futures
                 Throwable error = future.cause();
                 try
                 {
-                    action.accept( null );
+                    action.run();
                 }
                 catch ( Throwable t )
                 {

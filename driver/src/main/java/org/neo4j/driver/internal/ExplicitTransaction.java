@@ -23,11 +23,9 @@ import java.util.Map;
 
 import org.neo4j.driver.ResultResourcesHandler;
 import org.neo4j.driver.internal.async.AsyncConnection;
-import org.neo4j.driver.internal.async.Futures;
 import org.neo4j.driver.internal.async.InternalFuture;
 import org.neo4j.driver.internal.async.InternalPromise;
 import org.neo4j.driver.internal.async.InternalStatementResultCursor;
-import org.neo4j.driver.internal.async.InternalTask;
 import org.neo4j.driver.internal.async.StatementResultCursor;
 import org.neo4j.driver.internal.async.Task;
 import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
@@ -40,7 +38,6 @@ import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.handlers.TransactionPullAllResponseHandler;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
-import org.neo4j.driver.internal.util.Consumer;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementResult;
@@ -50,6 +47,7 @@ import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.types.TypeSystem;
+import org.neo4j.driver.v1.util.Function;
 
 import static org.neo4j.driver.internal.util.ErrorUtil.isRecoverable;
 import static org.neo4j.driver.v1.Values.ofValue;
@@ -216,80 +214,60 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
     @Override
     public Task<Void> commitAsync()
     {
-        return new InternalTask<>( internalCommitAsync() );
+        return internalCommitAsync().asTask();
     }
 
     InternalFuture<Void> internalCommitAsync()
     {
         if ( state == State.COMMITTED )
         {
-            return Futures.completed( asyncConnection.<Void>newPromise(), null );
+            return asyncConnection.<Void>newPromise().succeeded( null );
         }
         else if ( state == State.ROLLED_BACK )
         {
-            return Futures.failed( asyncConnection.<Void>newPromise(),
+            return asyncConnection.<Void>newPromise().failed(
                     new ClientException( "Can't commit, transaction has already been rolled back" ) );
         }
         else
         {
-            return txClosed( doCommitAsync() );
+            return doCommitAsync().whenComplete( releaseConnectionAndNotifySession() );
         }
     }
 
     @Override
     public Task<Void> rollbackAsync()
     {
-        return new InternalTask<>( internalRollbackAsync() );
+        return internalRollbackAsync().asTask();
     }
 
     InternalFuture<Void> internalRollbackAsync()
     {
         if ( state == State.COMMITTED )
         {
-            return Futures.failed( asyncConnection.<Void>newPromise(),
-                    new ClientException( "Can't rollback, transaction has already been committed" ) );
+            return asyncConnection.<Void>newPromise()
+                    .failed( new ClientException( "Can't rollback, transaction has already been committed" ) );
         }
         else if ( state == State.ROLLED_BACK )
         {
-            return Futures.completed( asyncConnection.<Void>newPromise(), null );
+            return asyncConnection.<Void>newPromise().succeeded( null );
         }
         else
         {
-            return txClosed( doRollbackAsync() );
+            return doRollbackAsync().whenComplete( releaseConnectionAndNotifySession() );
         }
     }
 
-    private InternalFuture<Void> closeAsync()
+    private Runnable releaseConnectionAndNotifySession()
     {
-        if ( state == State.MARKED_SUCCESS )
-        {
-            return txClosed( Futures.fallback( doCommitAsync(), doRollbackAsync() ) );
-        }
-        else if ( state == State.MARKED_FAILED || state == State.ACTIVE )
-        {
-            return txClosed( doRollbackAsync() );
-        }
-        else if ( state == State.FAILED )
-        {
-            // unrecoverable error happened, transaction should've been rolled back on the server
-            // update state so that this transaction does not remain open
-            state = State.ROLLED_BACK;
-        }
-
-        return Futures.completed( asyncConnection.<Void>newPromise(), null );
-    }
-
-    private InternalFuture<Void> txClosed( InternalFuture<Void> operation )
-    {
-        return Futures.onCompletion( operation, new Consumer<Void>()
+        return new Runnable()
         {
             @Override
-            public void accept( Void aVoid )
+            public void run()
             {
                 asyncConnection.release();
                 session.asyncTransactionClosed( ExplicitTransaction.this );
             }
-        } );
+        };
     }
 
     private InternalFuture<Void> doCommitAsync()
@@ -300,12 +278,13 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
         asyncConnection.pullAll( new CommitTxResponseHandler( commitTxPromise, this ) );
         asyncConnection.flush();
 
-        return Futures.onSuccess( commitTxPromise, new Consumer<Void>()
+        return commitTxPromise.thenApply( new Function<Void,Void>()
         {
             @Override
-            public void accept( Void result )
+            public Void apply( Void ignore )
             {
                 ExplicitTransaction.this.state = State.COMMITTED;
+                return null;
             }
         } );
     }
@@ -317,12 +296,13 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
         asyncConnection.pullAll( new RollbackTxResponseHandler( rollbackTxPromise ) );
         asyncConnection.flush();
 
-        return Futures.onSuccess( rollbackTxPromise, new Consumer<Void>()
+        return rollbackTxPromise.thenApply( new Function<Void,Void>()
         {
             @Override
-            public void accept( Void aVoid )
+            public Void apply( Void ignore )
             {
                 ExplicitTransaction.this.state = State.ROLLED_BACK;
+                return null;
             }
         } );
     }
@@ -412,7 +392,7 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
         RunResponseHandler runHandler = new RunResponseHandler();
         PullAllResponseHandler pullAllHandler =
                 new TransactionPullAllResponseHandler( runHandler, asyncConnection, this );
-        InternalStatementResultCursor cursor = new InternalStatementResultCursor( pullAllHandler );
+        StatementResultCursor cursor = new InternalStatementResultCursor( pullAllHandler );
 
         String query = statement.text();
         Map<String,Value> params = statement.parameters().asMap( Values.ofValue() );
@@ -421,7 +401,7 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
         asyncConnection.pullAll( pullAllHandler );
         asyncConnection.flush();
 
-        return new InternalTask<>( Futures.completed( asyncConnection.<StatementResultCursor>newPromise(), cursor ) );
+        return asyncConnection.<StatementResultCursor>newPromise().succeeded( cursor ).asTask();
     }
 
     @Override

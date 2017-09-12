@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.ResultResourcesHandler;
 import org.neo4j.driver.internal.async.AsyncConnection;
-import org.neo4j.driver.internal.async.Futures;
 import org.neo4j.driver.internal.async.InternalFuture;
 import org.neo4j.driver.internal.async.InternalStatementResultCursor;
 import org.neo4j.driver.internal.async.InternalTask;
@@ -156,27 +155,26 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
         ensureNoOpenTransactionBeforeRunningSession();
 
         InternalFuture<AsyncConnection> connectionFuture = acquireAsyncConnection( mode );
-        return new InternalTask<>(
-                Futures.transform( connectionFuture, new Function<AsyncConnection,StatementResultCursor>()
-                {
-                    @Override
-                    public StatementResultCursor apply( final AsyncConnection connection )
-                    {
-                        String query = statement.text();
-                        Map<String,Value> params = statement.parameters().asMap( Values.ofValue() );
 
-                        RunResponseHandler runHandler = new RunResponseHandler();
-                        PullAllResponseHandler pullAllHandler =
-                                new SessionPullAllResponseHandler( runHandler, connection );
-                        InternalStatementResultCursor cursor = new InternalStatementResultCursor( pullAllHandler );
+        return connectionFuture.thenApply( new Function<AsyncConnection,StatementResultCursor>()
+        {
+            @Override
+            public StatementResultCursor apply( final AsyncConnection connection )
+            {
+                String query = statement.text();
+                Map<String,Value> params = statement.parameters().asMap( Values.ofValue() );
 
-                        connection.run( query, params, runHandler );
-                        connection.pullAll( pullAllHandler );
-                        connection.flush();
+                RunResponseHandler runHandler = new RunResponseHandler();
+                PullAllResponseHandler pullAllHandler = new SessionPullAllResponseHandler( runHandler, connection );
+                InternalStatementResultCursor cursor = new InternalStatementResultCursor( pullAllHandler );
 
-                        return cursor;
-                    }
-                } ) );
+                connection.run( query, params, runHandler );
+                connection.pullAll( pullAllHandler );
+                connection.flush();
+
+                return cursor;
+            }
+        } ).asTask();
     }
 
     public static StatementResult run( Connection connection, Statement statement,
@@ -247,27 +245,25 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     {
         if ( asyncConnectionFuture != null )
         {
-            return new InternalTask<>( Futures.unwrap( Futures.transform( asyncConnectionFuture,
-                    new Function<AsyncConnection,InternalFuture<Void>>()
-                    {
-                        @Override
-                        public InternalFuture<Void> apply( AsyncConnection connection )
-                        {
-                            return connection.forceRelease();
-                        }
-                    } ) ) );
+            return asyncConnectionFuture.thenCombine( new Function<AsyncConnection,InternalFuture<Void>>()
+            {
+                @Override
+                public InternalFuture<Void> apply( AsyncConnection connection )
+                {
+                    return connection.forceRelease();
+                }
+            } ).asTask();
         }
         else if ( currentAsyncTransactionFuture != null )
         {
-            return new InternalTask<>( Futures.unwrap( Futures.transform( currentAsyncTransactionFuture,
-                    new Function<ExplicitTransaction,InternalFuture<Void>>()
-                    {
-                        @Override
-                        public InternalFuture<Void> apply( ExplicitTransaction tx )
-                        {
-                            return tx.internalRollbackAsync();
-                        }
-                    } ) ) );
+            return currentAsyncTransactionFuture.thenCombine( new Function<ExplicitTransaction,InternalFuture<Void>>()
+            {
+                @Override
+                public InternalFuture<Void> apply( ExplicitTransaction tx )
+                {
+                    return tx.internalRollbackAsync();
+                }
+            } ).asTask();
         }
         else
         {
@@ -426,7 +422,8 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
         ensureNoOpenTransactionBeforeOpeningTransaction();
 
         InternalFuture<AsyncConnection> connectionFuture = acquireAsyncConnection( mode );
-        currentAsyncTransactionFuture = Futures.unwrap( Futures.transform( connectionFuture,
+
+        currentAsyncTransactionFuture = connectionFuture.thenCombine(
                 new Function<AsyncConnection,InternalFuture<ExplicitTransaction>>()
                 {
                     @Override
@@ -435,18 +432,10 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
                         ExplicitTransaction tx = new ExplicitTransaction( connection, NetworkSession.this );
                         return tx.beginAsync( bookmark );
                     }
-                } ) );
+                } );
 
-        // todo: this transform is basically just to cast, it should not be here!
-        return new InternalTask<>( Futures.transform( currentAsyncTransactionFuture,
-                new Function<ExplicitTransaction,Transaction>()
-                {
-                    @Override
-                    public Transaction apply( ExplicitTransaction transaction )
-                    {
-                        return transaction;
-                    }
-                } ) );
+        //noinspection unchecked
+        return (Task) currentAsyncTransactionFuture.asTask();
     }
 
     private void ensureNoUnrecoverableError()
@@ -510,13 +499,13 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
             // memorize in local so same instance is transformed and used in callbacks
             final InternalFuture<AsyncConnection> currentAsyncConnectionFuture = asyncConnectionFuture;
 
-            asyncConnectionFuture = Futures.unwrap( Futures.transform( currentAsyncConnectionFuture,
+            asyncConnectionFuture = currentAsyncConnectionFuture.thenCombine(
                     new Function<AsyncConnection,InternalFuture<AsyncConnection>>()
                     {
                         @Override
-                        public InternalFuture<AsyncConnection> apply( AsyncConnection asyncConnection )
+                        public InternalFuture<AsyncConnection> apply( AsyncConnection connection )
                         {
-                            if ( asyncConnection.tryMarkInUse() )
+                            if ( connection.tryMarkInUse() )
                             {
                                 return currentAsyncConnectionFuture;
                             }
@@ -525,7 +514,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
                                 return connectionProvider.acquireAsyncConnection( mode );
                             }
                         }
-                    } ) );
+                    } );
         }
 
         return asyncConnectionFuture;

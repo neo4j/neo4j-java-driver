@@ -66,7 +66,7 @@ public class AsyncConnectionPoolImpl implements AsyncConnectionPool
         final NettyChannelPool pool = getOrCreatePool( address );
         final Future<Channel> connectionFuture = pool.acquire();
 
-        return Futures.transform( connectionFuture, bootstrap, new Function<Channel,AsyncConnection>()
+        return Futures.thenApply( connectionFuture, bootstrap, new Function<Channel,AsyncConnection>()
         {
             @Override
             public AsyncConnection apply( Channel channel )

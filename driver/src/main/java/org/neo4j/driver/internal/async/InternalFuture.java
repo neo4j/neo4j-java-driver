@@ -21,7 +21,17 @@ package org.neo4j.driver.internal.async;
 import io.netty.channel.EventLoop;
 import io.netty.util.concurrent.Future;
 
+import org.neo4j.driver.v1.util.Function;
+
 public interface InternalFuture<T> extends Future<T>
 {
     EventLoop eventLoop();
+
+    Task<T> asTask();
+
+    <U> InternalFuture<U> thenApply( Function<T,U> fn );
+
+    <U> InternalFuture<U> thenCombine( Function<T,InternalFuture<U>> fn );
+
+    InternalFuture<T> whenComplete( Runnable action );
 }

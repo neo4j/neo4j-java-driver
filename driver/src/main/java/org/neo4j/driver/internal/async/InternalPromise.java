@@ -28,6 +28,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.neo4j.driver.v1.util.Function;
+
 public class InternalPromise<T> implements InternalFuture<T>, Promise<T>
 {
     private final EventLoop eventLoop;
@@ -44,10 +46,46 @@ public class InternalPromise<T> implements InternalFuture<T>, Promise<T>
         this.delegate = eventLoop.newPromise();
     }
 
+    public InternalFuture<T> succeeded( T value )
+    {
+        setSuccess( value );
+        return this;
+    }
+
+    public InternalFuture<T> failed( Throwable cause )
+    {
+        setFailure( cause );
+        return this;
+    }
+
     @Override
     public EventLoop eventLoop()
     {
         return eventLoop;
+    }
+
+    @Override
+    public Task<T> asTask()
+    {
+        return new InternalTask<>( this );
+    }
+
+    @Override
+    public <U> InternalFuture<U> thenApply( Function<T,U> fn )
+    {
+        return Futures.thenApply( this, fn );
+    }
+
+    @Override
+    public <U> InternalFuture<U> thenCombine( Function<T,InternalFuture<U>> fn )
+    {
+        return Futures.thenCombine( this, fn );
+    }
+
+    @Override
+    public InternalFuture<T> whenComplete( Runnable action )
+    {
+        return Futures.whenComplete( this, action );
     }
 
     @Override
