@@ -26,59 +26,61 @@ import java.util.Queue;
 
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.async.AsyncConnection;
+import org.neo4j.driver.internal.async.InternalFuture;
 import org.neo4j.driver.internal.async.InternalPromise;
-import org.neo4j.driver.internal.async.Task;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.summary.InternalNotification;
 import org.neo4j.driver.internal.summary.InternalPlan;
 import org.neo4j.driver.internal.summary.InternalProfiledPlan;
+import org.neo4j.driver.internal.summary.InternalResultSummary;
 import org.neo4j.driver.internal.summary.InternalSummaryCounters;
 import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.summary.Notification;
 import org.neo4j.driver.v1.summary.Plan;
 import org.neo4j.driver.v1.summary.ProfiledPlan;
+import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.summary.StatementType;
-import org.neo4j.driver.v1.summary.SummaryCounters;
+
+import static java.util.Objects.requireNonNull;
 
 public abstract class PullAllResponseHandler implements ResponseHandler
 {
     private static final boolean TOUCH_AUTO_READ = false;
 
+    private final Statement statement;
     private final RunResponseHandler runResponseHandler;
     protected final AsyncConnection connection;
 
     private final Queue<Record> records;
-    private InternalPromise<Boolean> recordAvailablePromise;
     private boolean succeeded;
     private Throwable failure;
 
-    // todo: expose result summary
-    private StatementType statementType;
-    private SummaryCounters counters;
-    private Plan plan;
-    private ProfiledPlan profile;
-    private List<Notification> notifications;
-    private long resultConsumedAfter;
-
+    private ResultSummary summary;
     private volatile Record current;
 
-    public PullAllResponseHandler( RunResponseHandler runResponseHandler, AsyncConnection connection )
+    private InternalPromise<Boolean> recordAvailablePromise;
+    private InternalPromise<ResultSummary> summaryAvailablePromise;
+
+    public PullAllResponseHandler( Statement statement, RunResponseHandler runResponseHandler,
+            AsyncConnection connection )
     {
-        this.runResponseHandler = runResponseHandler;
-        this.connection = connection;
+        this.statement = requireNonNull( statement );
+        this.runResponseHandler = requireNonNull( runResponseHandler );
+        this.connection = requireNonNull( connection );
         this.records = new LinkedList<>();
     }
 
     @Override
     public synchronized void onSuccess( Map<String,Value> metadata )
     {
-        statementType = extractStatementType( metadata );
-        counters = extractCounters( metadata );
-        plan = extractPlan( metadata );
-        profile = extractProfiledPlan( metadata );
-        notifications = extractNotifications( metadata );
-        resultConsumedAfter = extractResultConsumedAfter( metadata );
+        summary = extractResultSummary( metadata );
+        if ( summaryAvailablePromise != null )
+        {
+            summaryAvailablePromise.setSuccess( summary );
+            summaryAvailablePromise = null;
+        }
 
         succeeded = true;
         afterSuccess();
@@ -86,6 +88,7 @@ public abstract class PullAllResponseHandler implements ResponseHandler
         if ( recordAvailablePromise != null )
         {
             recordAvailablePromise.setSuccess( false );
+            recordAvailablePromise = null;
         }
     }
 
@@ -123,36 +126,56 @@ public abstract class PullAllResponseHandler implements ResponseHandler
         }
     }
 
-    public synchronized Task<Boolean> recordAvailable()
+    public synchronized InternalFuture<Boolean> fetchRecordAsync()
     {
         Record record = dequeueRecord();
         if ( record == null )
         {
             if ( succeeded )
             {
-                return connection.<Boolean>newPromise().succeeded( false ).asTask();
+                return connection.<Boolean>newPromise().succeeded( false );
             }
 
             if ( failure != null )
             {
-                return connection.<Boolean>newPromise().failed( failure ).asTask();
+                return connection.<Boolean>newPromise().failed( failure );
             }
 
-            recordAvailablePromise = connection.newPromise();
-            return recordAvailablePromise.asTask();
+            if ( recordAvailablePromise == null )
+            {
+                recordAvailablePromise = connection.newPromise();
+            }
+
+            return recordAvailablePromise;
         }
         else
         {
             current = record;
-            return connection.<Boolean>newPromise().succeeded( true ).asTask();
+            return connection.<Boolean>newPromise().succeeded( true );
         }
     }
 
-    public Record pollCurrent()
+    public Record currentRecord()
     {
         Record result = current;
         current = null;
         return result;
+    }
+
+    public synchronized InternalFuture<ResultSummary> summaryAsync()
+    {
+        if ( summary != null )
+        {
+            return connection.<ResultSummary>newPromise().succeeded( summary );
+        }
+        else
+        {
+            if ( summaryAvailablePromise == null )
+            {
+                summaryAvailablePromise = connection.newPromise();
+            }
+            return summaryAvailablePromise;
+        }
     }
 
     private void queueRecord( Record record )
@@ -178,6 +201,14 @@ public abstract class PullAllResponseHandler implements ResponseHandler
             }
         }
         return record;
+    }
+
+    private ResultSummary extractResultSummary( Map<String,Value> metadata )
+    {
+        return new InternalResultSummary( statement, connection.serverInfo(), extractStatementType( metadata ),
+                extractCounters( metadata ), extractPlan( metadata ), extractProfiledPlan( metadata ),
+                extractNotifications( metadata ), runResponseHandler.resultAvailableAfter(),
+                extractResultConsumedAfter( metadata ) );
     }
 
     private static StatementType extractStatementType( Map<String,Value> metadata )

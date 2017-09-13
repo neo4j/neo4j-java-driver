@@ -24,6 +24,7 @@ import java.util.List;
 import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.summary.ResultSummary;
 
 public class InternalStatementResultCursor implements StatementResultCursor
 {
@@ -44,14 +45,20 @@ public class InternalStatementResultCursor implements StatementResultCursor
     }
 
     @Override
+    public Task<ResultSummary> summaryAsync()
+    {
+        return pullAllHandler.summaryAsync().asTask();
+    }
+
+    @Override
     public Task<Boolean> fetchAsync()
     {
-        return pullAllHandler.recordAvailable();
+        return pullAllHandler.fetchRecordAsync().asTask();
     }
 
     @Override
     public Record current()
     {
-        return pullAllHandler.pollCurrent();
+        return pullAllHandler.currentRecord();
     }
 }

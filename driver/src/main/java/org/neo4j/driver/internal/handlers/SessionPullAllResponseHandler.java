@@ -19,12 +19,14 @@
 package org.neo4j.driver.internal.handlers;
 
 import org.neo4j.driver.internal.async.AsyncConnection;
+import org.neo4j.driver.v1.Statement;
 
 public class SessionPullAllResponseHandler extends PullAllResponseHandler
 {
-    public SessionPullAllResponseHandler( RunResponseHandler runResponseHandler, AsyncConnection connection )
+    public SessionPullAllResponseHandler( Statement statement, RunResponseHandler runResponseHandler,
+            AsyncConnection connection )
     {
-        super( runResponseHandler, connection );
+        super( statement, runResponseHandler, connection );
     }
 
     @Override

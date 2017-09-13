@@ -30,10 +30,14 @@ import org.neo4j.driver.internal.messaging.PullAllMessage;
 import org.neo4j.driver.internal.messaging.ResetMessage;
 import org.neo4j.driver.internal.messaging.RunMessage;
 import org.neo4j.driver.internal.spi.ResponseHandler;
+import org.neo4j.driver.internal.summary.InternalServerInfo;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.summary.ServerInfo;
 
+import static org.neo4j.driver.internal.async.ChannelAttributes.address;
 import static org.neo4j.driver.internal.async.ChannelAttributes.messageDispatcher;
+import static org.neo4j.driver.internal.async.ChannelAttributes.serverVersion;
 
 // todo: keep state flags to prohibit interaction with released connections
 public class NettyConnection implements AsyncConnection
@@ -129,6 +133,12 @@ public class NettyConnection implements AsyncConnection
         }
 
         return releasePromise;
+    }
+
+    @Override
+    public ServerInfo serverInfo()
+    {
+        return new InternalServerInfo( address( channel ), serverVersion( channel ) );
     }
 
     private void write( Message message, ResponseHandler handler, boolean flush )

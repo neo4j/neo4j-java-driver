@@ -50,7 +50,7 @@ public final class QueryRunner
 
         InternalPromise<Void> runCompletedPromise = connection.newPromise();
         final RunResponseHandler runHandler = new RunResponseHandler( runCompletedPromise );
-        final PullAllResponseHandler pullAllHandler = newPullAllHandler( runHandler, connection, tx );
+        final PullAllResponseHandler pullAllHandler = newPullAllHandler( statement, runHandler, connection, tx );
 
         connection.run( query, params, runHandler );
         connection.pullAll( pullAllHandler );
@@ -66,13 +66,13 @@ public final class QueryRunner
         } );
     }
 
-    private static PullAllResponseHandler newPullAllHandler( RunResponseHandler runHandler, AsyncConnection connection,
-            ExplicitTransaction tx )
+    private static PullAllResponseHandler newPullAllHandler( Statement statement, RunResponseHandler runHandler,
+            AsyncConnection connection, ExplicitTransaction tx )
     {
         if ( tx != null )
         {
-            return new TransactionPullAllResponseHandler( runHandler, connection, tx );
+            return new TransactionPullAllResponseHandler( statement, runHandler, connection, tx );
         }
-        return new SessionPullAllResponseHandler( runHandler, connection );
+        return new SessionPullAllResponseHandler( statement, runHandler, connection );
     }
 }

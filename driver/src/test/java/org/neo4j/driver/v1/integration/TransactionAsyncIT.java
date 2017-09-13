@@ -24,22 +24,29 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.driver.internal.async.StatementResultCursor;
 import org.neo4j.driver.internal.async.Task;
 import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.summary.ResultSummary;
+import org.neo4j.driver.v1.summary.StatementType;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -417,6 +424,90 @@ public class TransactionAsyncIT
         StatementResultCursor cursor = await( tx.runAsync( "RETURN 1, 2, 3, 5" ) );
 
         assertEquals( Arrays.asList( "1", "2", "3", "5" ), cursor.keys() );
+    }
+
+    @Test
+    public void shouldExposeResultSummaryForSimpleQuery()
+    {
+        String query = "CREATE (p1:Person {name: $name1})-[:KNOWS]->(p2:Person {name: $name2}) RETURN p1, p2";
+        Value params = parameters( "name1", "Bob", "name2", "John" );
+
+        Transaction tx = await( session.beginTransactionAsync() );
+        StatementResultCursor cursor = await( tx.runAsync( query, params ) );
+        ResultSummary summary = await( cursor.summaryAsync() );
+
+        assertEquals( new Statement( query, params ), summary.statement() );
+        assertEquals( 2, summary.counters().nodesCreated() );
+        assertEquals( 2, summary.counters().labelsAdded() );
+        assertEquals( 2, summary.counters().propertiesSet() );
+        assertEquals( 1, summary.counters().relationshipsCreated() );
+        assertEquals( StatementType.READ_WRITE, summary.statementType() );
+        assertFalse( summary.hasPlan() );
+        assertFalse( summary.hasProfile() );
+        assertNull( summary.plan() );
+        assertNull( summary.profile() );
+        assertEquals( 0, summary.notifications().size() );
+        assertThat( summary.resultAvailableAfter( TimeUnit.MILLISECONDS ), greaterThanOrEqualTo( 0L ) );
+        assertThat( summary.resultConsumedAfter( TimeUnit.MILLISECONDS ), greaterThanOrEqualTo( 0L ) );
+    }
+
+    @Test
+    public void shouldExposeResultSummaryForExplainQuery()
+    {
+        String query = "EXPLAIN MATCH (n) RETURN n";
+
+        Transaction tx = await( session.beginTransactionAsync() );
+        StatementResultCursor cursor = await( tx.runAsync( query ) );
+        ResultSummary summary = await( cursor.summaryAsync() );
+
+        assertEquals( new Statement( query ), summary.statement() );
+        assertEquals( 0, summary.counters().nodesCreated() );
+        assertEquals( 0, summary.counters().propertiesSet() );
+        assertEquals( StatementType.READ_ONLY, summary.statementType() );
+        assertTrue( summary.hasPlan() );
+        assertFalse( summary.hasProfile() );
+        assertNotNull( summary.plan() );
+        // asserting on plan is a bit fragile and can break when server side changes or with different
+        // server versions; that is why do fuzzy assertions in this test based on string content
+        assertThat( summary.plan().toString(), containsString( "AllNodesScan" ) );
+        assertNull( summary.profile() );
+        assertEquals( 0, summary.notifications().size() );
+        assertThat( summary.resultAvailableAfter( TimeUnit.MILLISECONDS ), greaterThanOrEqualTo( 0L ) );
+        assertThat( summary.resultConsumedAfter( TimeUnit.MILLISECONDS ), greaterThanOrEqualTo( 0L ) );
+    }
+
+    @Test
+    public void shouldExposeResultSummaryForProfileQuery()
+    {
+        String query = "PROFILE MERGE (n {name: $name}) " +
+                       "ON CREATE SET n.created = timestamp() " +
+                       "ON MATCH SET n.counter = coalesce(n.counter, 0) + 1";
+
+        Value params = parameters( "name", "Bob" );
+
+        Transaction tx = await( session.beginTransactionAsync() );
+        StatementResultCursor cursor = await( tx.runAsync( query, params ) );
+        ResultSummary summary = await( cursor.summaryAsync() );
+
+        assertEquals( new Statement( query, params ), summary.statement() );
+        assertEquals( 1, summary.counters().nodesCreated() );
+        assertEquals( 2, summary.counters().propertiesSet() );
+        assertEquals( 0, summary.counters().relationshipsCreated() );
+        assertEquals( StatementType.WRITE_ONLY, summary.statementType() );
+        assertTrue( summary.hasPlan() );
+        assertTrue( summary.hasProfile() );
+        assertNotNull( summary.plan() );
+        assertNotNull( summary.profile() );
+        // asserting on profile is a bit fragile and can break when server side changes or with different
+        // server versions; that is why do fuzzy assertions in this test based on string content
+        String profileAsString = summary.profile().toString();
+        System.out.println( profileAsString );
+        assertThat( profileAsString, containsString( "DbHits" ) );
+        assertThat( profileAsString, containsString( "PageCacheHits" ) );
+        assertThat( profileAsString, containsString( "AllNodesScan" ) );
+        assertEquals( 0, summary.notifications().size() );
+        assertThat( summary.resultAvailableAfter( TimeUnit.MILLISECONDS ), greaterThanOrEqualTo( 0L ) );
+        assertThat( summary.resultConsumedAfter( TimeUnit.MILLISECONDS ), greaterThanOrEqualTo( 0L ) );
     }
 
     private int countNodes( Object id )

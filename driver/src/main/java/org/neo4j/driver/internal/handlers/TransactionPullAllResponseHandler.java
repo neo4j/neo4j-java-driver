@@ -20,6 +20,7 @@ package org.neo4j.driver.internal.handlers;
 
 import org.neo4j.driver.internal.ExplicitTransaction;
 import org.neo4j.driver.internal.async.AsyncConnection;
+import org.neo4j.driver.v1.Statement;
 
 import static java.util.Objects.requireNonNull;
 
@@ -27,10 +28,10 @@ public class TransactionPullAllResponseHandler extends PullAllResponseHandler
 {
     private final ExplicitTransaction tx;
 
-    public TransactionPullAllResponseHandler( RunResponseHandler runResponseHandler, AsyncConnection connection,
-            ExplicitTransaction tx )
+    public TransactionPullAllResponseHandler( Statement statement, RunResponseHandler runResponseHandler,
+            AsyncConnection connection, ExplicitTransaction tx )
     {
-        super( runResponseHandler, connection );
+        super( statement, runResponseHandler, connection );
         this.tx = requireNonNull( tx );
     }
 

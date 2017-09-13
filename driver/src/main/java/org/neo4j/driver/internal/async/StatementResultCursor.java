@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.async;
 import java.util.List;
 
 import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.summary.ResultSummary;
 
 public interface StatementResultCursor
 {
@@ -30,6 +31,8 @@ public interface StatementResultCursor
      * @return list of all keys.
      */
     List<String> keys();
+
+    Task<ResultSummary> summaryAsync();
 
     Task<Boolean> fetchAsync();
 

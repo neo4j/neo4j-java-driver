@@ -22,6 +22,7 @@ import java.util.Map;
 
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.summary.ServerInfo;
 
 public interface AsyncConnection
 {
@@ -42,4 +43,6 @@ public interface AsyncConnection
     void release();
 
     InternalFuture<Void> forceRelease();
+
+    ServerInfo serverInfo();
 }
