@@ -25,17 +25,14 @@ import org.neo4j.driver.ResultResourcesHandler;
 import org.neo4j.driver.internal.async.AsyncConnection;
 import org.neo4j.driver.internal.async.InternalFuture;
 import org.neo4j.driver.internal.async.InternalPromise;
-import org.neo4j.driver.internal.async.InternalStatementResultCursor;
+import org.neo4j.driver.internal.async.QueryRunner;
 import org.neo4j.driver.internal.async.StatementResultCursor;
 import org.neo4j.driver.internal.async.Task;
 import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
 import org.neo4j.driver.internal.handlers.BookmarkResponseHandler;
 import org.neo4j.driver.internal.handlers.CommitTxResponseHandler;
 import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
-import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RollbackTxResponseHandler;
-import org.neo4j.driver.internal.handlers.RunResponseHandler;
-import org.neo4j.driver.internal.handlers.TransactionPullAllResponseHandler;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.v1.Record;
@@ -388,20 +385,7 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
     public Task<StatementResultCursor> runAsync( Statement statement )
     {
         ensureNotFailed();
-
-        RunResponseHandler runHandler = new RunResponseHandler();
-        PullAllResponseHandler pullAllHandler =
-                new TransactionPullAllResponseHandler( runHandler, asyncConnection, this );
-        StatementResultCursor cursor = new InternalStatementResultCursor( pullAllHandler );
-
-        String query = statement.text();
-        Map<String,Value> params = statement.parameters().asMap( Values.ofValue() );
-
-        asyncConnection.run( query, params, runHandler );
-        asyncConnection.pullAll( pullAllHandler );
-        asyncConnection.flush();
-
-        return asyncConnection.<StatementResultCursor>newPromise().succeeded( cursor ).asTask();
+        return QueryRunner.runAsync( asyncConnection, statement, this ).asTask();
     }
 
     @Override

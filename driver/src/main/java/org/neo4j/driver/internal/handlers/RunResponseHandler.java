@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.internal.handlers;
 
+import io.netty.util.concurrent.Promise;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -26,35 +28,50 @@ import java.util.Map;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Value;
 
-public class RunResponseHandler implements ResponseHandler, RunMetadataAccessor
+public class RunResponseHandler implements ResponseHandler
 {
-    private volatile List<String> statementKeys;
-    private volatile long resultAvailableAfter;
+    private final Promise<Void> runCompletedPromise;
+
+    private List<String> statementKeys;
+    private long resultAvailableAfter;
+
+    public RunResponseHandler( Promise<Void> runCompletedPromise )
+    {
+        this.runCompletedPromise = runCompletedPromise;
+    }
 
     @Override
     public void onSuccess( Map<String,Value> metadata )
     {
         statementKeys = extractKeys( metadata );
         resultAvailableAfter = extractResultAvailableAfter( metadata );
+
+        if ( runCompletedPromise != null )
+        {
+            runCompletedPromise.setSuccess( null );
+        }
     }
 
     @Override
     public void onFailure( Throwable error )
     {
+        if ( runCompletedPromise != null )
+        {
+            runCompletedPromise.setFailure( error );
+        }
     }
 
     @Override
     public void onRecord( Value[] fields )
     {
+        throw new UnsupportedOperationException();
     }
 
-    @Override
     public List<String> statementKeys()
     {
         return statementKeys;
     }
 
-    @Override
     public long resultAvailableAfter()
     {
         return resultAvailableAfter;

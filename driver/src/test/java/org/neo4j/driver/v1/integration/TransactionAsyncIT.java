@@ -23,6 +23,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.Arrays;
+
 import org.neo4j.driver.internal.async.StatementResultCursor;
 import org.neo4j.driver.internal.async.Task;
 import org.neo4j.driver.v1.Session;
@@ -190,11 +192,9 @@ public class TransactionAsyncIT
     {
         Transaction tx = await( session.beginTransactionAsync() );
 
-        StatementResultCursor cursor = await( tx.runAsync( "RETURN" ) );
-
         try
         {
-            await( cursor.fetchAsync() );
+            await( tx.runAsync( "RETURN" ) );
             fail( "Exception expected" );
         }
         catch ( Exception e )
@@ -218,11 +218,9 @@ public class TransactionAsyncIT
     {
         Transaction tx = await( session.beginTransactionAsync() );
 
-        StatementResultCursor cursor = await( tx.runAsync( "RETURN" ) );
-
         try
         {
-            await( cursor.fetchAsync() );
+            await( tx.runAsync( "RETURN" ) );
             fail( "Exception expected" );
         }
         catch ( Exception e )
@@ -246,10 +244,9 @@ public class TransactionAsyncIT
         assertThat( await( cursor2.fetchAsync() ), is( true ) );
         assertEquals( 42, cursor2.current().get( 0 ).asInt() );
 
-        StatementResultCursor cursor3 = await( tx.runAsync( "RETURN" ) );
         try
         {
-            await( cursor3.fetchAsync() );
+            await( tx.runAsync( "RETURN" ) );
             fail( "Exception expected" );
         }
         catch ( Exception e )
@@ -281,10 +278,9 @@ public class TransactionAsyncIT
         assertThat( await( cursor2.fetchAsync() ), is( true ) );
         assertEquals( 42, cursor2.current().get( 0 ).asInt() );
 
-        StatementResultCursor cursor3 = await( tx.runAsync( "RETURN" ) );
         try
         {
-            await( cursor3.fetchAsync() );
+            await( tx.runAsync( "RETURN" ) );
             fail( "Exception expected" );
         }
         catch ( Exception e )
@@ -300,10 +296,9 @@ public class TransactionAsyncIT
     {
         Transaction tx = await( session.beginTransactionAsync() );
 
-        StatementResultCursor cursor = await( tx.runAsync( "RETURN" ) );
         try
         {
-            await( cursor.fetchAsync() );
+            await( tx.runAsync( "RETURN" ) );
             fail( "Exception expected" );
         }
         catch ( Exception e )
@@ -404,6 +399,24 @@ public class TransactionAsyncIT
             assertThat( e, instanceOf( ClientException.class ) );
             assertThat( e.getMessage(), containsString( "transaction has already been committed" ) );
         }
+    }
+
+    @Test
+    public void shouldExposeStatementKeysForColumnsWithAliases()
+    {
+        Transaction tx = await( session.beginTransactionAsync() );
+        StatementResultCursor cursor = await( tx.runAsync( "RETURN 1 AS one, 2 AS two, 3 AS three, 4 AS five" ) );
+
+        assertEquals( Arrays.asList( "one", "two", "three", "five" ), cursor.keys() );
+    }
+
+    @Test
+    public void shouldExposeStatementKeysForColumnsWithoutAliases()
+    {
+        Transaction tx = await( session.beginTransactionAsync() );
+        StatementResultCursor cursor = await( tx.runAsync( "RETURN 1, 2, 3, 5" ) );
+
+        assertEquals( Arrays.asList( "1", "2", "3", "5" ), cursor.keys() );
     }
 
     private int countNodes( Object id )

@@ -26,13 +26,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.driver.ResultResourcesHandler;
 import org.neo4j.driver.internal.async.AsyncConnection;
 import org.neo4j.driver.internal.async.InternalFuture;
-import org.neo4j.driver.internal.async.InternalStatementResultCursor;
 import org.neo4j.driver.internal.async.InternalTask;
+import org.neo4j.driver.internal.async.QueryRunner;
 import org.neo4j.driver.internal.async.StatementResultCursor;
 import org.neo4j.driver.internal.async.Task;
-import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
-import org.neo4j.driver.internal.handlers.RunResponseHandler;
-import org.neo4j.driver.internal.handlers.SessionPullAllResponseHandler;
 import org.neo4j.driver.internal.logging.DelegatingLogger;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.Connection;
@@ -156,23 +153,12 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
 
         InternalFuture<AsyncConnection> connectionFuture = acquireAsyncConnection( mode );
 
-        return connectionFuture.thenApply( new Function<AsyncConnection,StatementResultCursor>()
+        return connectionFuture.thenCombine( new Function<AsyncConnection,InternalFuture<StatementResultCursor>>()
         {
             @Override
-            public StatementResultCursor apply( final AsyncConnection connection )
+            public InternalFuture<StatementResultCursor> apply( AsyncConnection connection )
             {
-                String query = statement.text();
-                Map<String,Value> params = statement.parameters().asMap( Values.ofValue() );
-
-                RunResponseHandler runHandler = new RunResponseHandler();
-                PullAllResponseHandler pullAllHandler = new SessionPullAllResponseHandler( runHandler, connection );
-                InternalStatementResultCursor cursor = new InternalStatementResultCursor( pullAllHandler );
-
-                connection.run( query, params, runHandler );
-                connection.pullAll( pullAllHandler );
-                connection.flush();
-
-                return cursor;
+                return QueryRunner.runAsync( connection, statement );
             }
         } ).asTask();
     }

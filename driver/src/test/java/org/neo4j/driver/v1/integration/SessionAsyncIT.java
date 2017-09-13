@@ -27,6 +27,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Future;
 
@@ -115,11 +116,9 @@ public class SessionAsyncIT
     @Test
     public void shouldFailForIncorrectQuery()
     {
-        StatementResultCursor cursor = await( session.runAsync( "RETURN" ) );
-
         try
         {
-            await( cursor.fetchAsync() );
+            await( session.runAsync( "RETURN" ) );
             fail( "Exception expected" );
         }
         catch ( Exception e )
@@ -241,6 +240,22 @@ public class SessionAsyncIT
 
         Record record = cursor.current();
         assertEquals( queryCount, record.get( 0 ).asInt() );
+    }
+
+    @Test
+    public void shouldExposeStatementKeysForColumnsWithAliases()
+    {
+        StatementResultCursor cursor = await( session.runAsync( "RETURN 1 AS one, 2 AS two, 3 AS three, 4 AS five" ) );
+
+        assertEquals( Arrays.asList( "one", "two", "three", "five" ), cursor.keys() );
+    }
+
+    @Test
+    public void shouldExposeStatementKeysForColumnsWithoutAliases()
+    {
+        StatementResultCursor cursor = await( session.runAsync( "RETURN 1, 2, 3, 5" ) );
+
+        assertEquals( Arrays.asList( "1", "2", "3", "5" ), cursor.keys() );
     }
 
     private Future<List<Future<Boolean>>> runNestedQueries( StatementResultCursor inputCursor )

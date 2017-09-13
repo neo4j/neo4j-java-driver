@@ -50,7 +50,7 @@ public class InternalStatementResult implements StatementResult
     {
         this.statement = statement;
         this.connection = connection;
-        this.runResponseHandler = new RunResponseHandler();
+        this.runResponseHandler = new RunResponseHandler( null );
         this.pullAllResponseHandler = new RecordsResponseHandler( runResponseHandler );
         this.resourcesHandler = resourcesHandler;
     }

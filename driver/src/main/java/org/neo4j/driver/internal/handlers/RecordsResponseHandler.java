@@ -42,7 +42,7 @@ import org.neo4j.driver.v1.summary.SummaryCounters;
 
 public class RecordsResponseHandler implements ResponseHandler
 {
-    private final RunMetadataAccessor keysAccessor;
+    private final RunResponseHandler runResponseHandler;
 
     private final Queue<Record> recordBuffer;
     private Promise<Boolean> recordAvailablePromise;
@@ -56,9 +56,9 @@ public class RecordsResponseHandler implements ResponseHandler
 
     private boolean completed;
 
-    public RecordsResponseHandler( RunMetadataAccessor keysAccessor )
+    public RecordsResponseHandler( RunResponseHandler runResponseHandler )
     {
-        this.keysAccessor = keysAccessor;
+        this.runResponseHandler = runResponseHandler;
         this.recordBuffer = new ConcurrentLinkedQueue<>();
     }
 
@@ -97,7 +97,7 @@ public class RecordsResponseHandler implements ResponseHandler
     @Override
     public void onRecord( Value[] fields )
     {
-        recordBuffer.add( new InternalRecord( keysAccessor.statementKeys(), fields ) );
+        recordBuffer.add( new InternalRecord( runResponseHandler.statementKeys(), fields ) );
 
         if ( recordAvailablePromise != null )
         {

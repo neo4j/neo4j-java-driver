@@ -22,9 +22,9 @@ import org.neo4j.driver.internal.async.AsyncConnection;
 
 public class SessionPullAllResponseHandler extends PullAllResponseHandler
 {
-    public SessionPullAllResponseHandler( RunMetadataAccessor runMetadataAccessor, AsyncConnection connection )
+    public SessionPullAllResponseHandler( RunResponseHandler runResponseHandler, AsyncConnection connection )
     {
-        super( runMetadataAccessor, connection );
+        super( runResponseHandler, connection );
     }
 
     @Override

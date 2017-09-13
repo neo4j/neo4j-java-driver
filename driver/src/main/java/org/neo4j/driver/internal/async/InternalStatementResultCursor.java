@@ -18,16 +18,29 @@
  */
 package org.neo4j.driver.internal.async;
 
+import java.util.Collections;
+import java.util.List;
+
 import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
+import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.v1.Record;
 
 public class InternalStatementResultCursor implements StatementResultCursor
 {
+    private final RunResponseHandler runResponseHandler;
     private final PullAllResponseHandler pullAllHandler;
 
-    public InternalStatementResultCursor( PullAllResponseHandler pullAllHandler )
+    public InternalStatementResultCursor( RunResponseHandler runResponseHandler, PullAllResponseHandler pullAllHandler )
     {
+        this.runResponseHandler = runResponseHandler;
         this.pullAllHandler = pullAllHandler;
+    }
+
+    @Override
+    public List<String> keys()
+    {
+        List<String> keys = runResponseHandler.statementKeys();
+        return keys == null ? Collections.<String>emptyList() : Collections.unmodifiableList( keys );
     }
 
     @Override

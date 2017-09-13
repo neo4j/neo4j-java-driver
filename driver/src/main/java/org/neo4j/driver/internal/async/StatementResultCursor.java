@@ -18,10 +18,19 @@
  */
 package org.neo4j.driver.internal.async;
 
+import java.util.List;
+
 import org.neo4j.driver.v1.Record;
 
 public interface StatementResultCursor
 {
+    /**
+     * Retrieve the keys of the records this result cursor contains.
+     *
+     * @return list of all keys.
+     */
+    List<String> keys();
+
     Task<Boolean> fetchAsync();
 
     Record current();

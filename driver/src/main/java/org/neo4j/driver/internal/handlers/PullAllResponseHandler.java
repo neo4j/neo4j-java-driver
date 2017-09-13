@@ -45,7 +45,7 @@ public abstract class PullAllResponseHandler implements ResponseHandler
 {
     private static final boolean TOUCH_AUTO_READ = false;
 
-    private final RunMetadataAccessor runMetadataAccessor;
+    private final RunResponseHandler runResponseHandler;
     protected final AsyncConnection connection;
 
     private final Queue<Record> records;
@@ -63,9 +63,9 @@ public abstract class PullAllResponseHandler implements ResponseHandler
 
     private volatile Record current;
 
-    public PullAllResponseHandler( RunMetadataAccessor runMetadataAccessor, AsyncConnection connection )
+    public PullAllResponseHandler( RunResponseHandler runResponseHandler, AsyncConnection connection )
     {
-        this.runMetadataAccessor = runMetadataAccessor;
+        this.runResponseHandler = runResponseHandler;
         this.connection = connection;
         this.records = new LinkedList<>();
     }
@@ -109,7 +109,7 @@ public abstract class PullAllResponseHandler implements ResponseHandler
     @Override
     public synchronized void onRecord( Value[] fields )
     {
-        Record record = new InternalRecord( runMetadataAccessor.statementKeys(), fields );
+        Record record = new InternalRecord( runResponseHandler.statementKeys(), fields );
 
         if ( recordAvailablePromise != null )
         {
