@@ -30,6 +30,7 @@ public final class ChannelAttributes
 {
     private static final AttributeKey<BoltServerAddress> ADDRESS = newInstance( "address" );
     private static final AttributeKey<Long> CREATION_TIMESTAMP = newInstance( "creationTimestamp" );
+    private static final AttributeKey<Long> LAST_USED_TIMESTAMP = newInstance( "lastUsedTimestamp" );
     private static final AttributeKey<InboundMessageDispatcher> MESSAGE_DISPATCHER = newInstance( "messageDispatcher" );
     private static final AttributeKey<String> SERVER_VERSION = newInstance( "serverVersion" );
 
@@ -57,6 +58,16 @@ public final class ChannelAttributes
         setOnce( channel, CREATION_TIMESTAMP, creationTimestamp );
     }
 
+    public static Long lastUsedTimestamp( Channel channel )
+    {
+        return get( channel, LAST_USED_TIMESTAMP );
+    }
+
+    public static void setLastUsedTimestamp( Channel channel, long lastUsedTimestamp )
+    {
+        set( channel, LAST_USED_TIMESTAMP, lastUsedTimestamp );
+    }
+
     public static InboundMessageDispatcher messageDispatcher( Channel channel )
     {
         return get( channel, MESSAGE_DISPATCHER );
@@ -80,6 +91,11 @@ public final class ChannelAttributes
     private static <T> T get( Channel channel, AttributeKey<T> key )
     {
         return channel.attr( key ).get();
+    }
+
+    private static <T> void set( Channel channel, AttributeKey<T> key, T value )
+    {
+        channel.attr( key ).set( value );
     }
 
     private static <T> void setOnce( Channel channel, AttributeKey<T> key, T value )

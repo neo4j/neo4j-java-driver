@@ -27,15 +27,18 @@ import org.neo4j.driver.internal.net.BoltServerAddress;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.internal.async.ChannelAttributes.address;
 import static org.neo4j.driver.internal.async.ChannelAttributes.creationTimestamp;
+import static org.neo4j.driver.internal.async.ChannelAttributes.lastUsedTimestamp;
 import static org.neo4j.driver.internal.async.ChannelAttributes.messageDispatcher;
 import static org.neo4j.driver.internal.async.ChannelAttributes.serverVersion;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setAddress;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setCreationTimestamp;
+import static org.neo4j.driver.internal.async.ChannelAttributes.setLastUsedTimestamp;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setMessageDispatcher;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setServerVersion;
 
@@ -94,6 +97,24 @@ public class ChannelAttributesTest
         {
             assertThat( e, instanceOf( IllegalStateException.class ) );
         }
+    }
+
+    @Test
+    public void shouldSetAndGetLastUsedTimestamp()
+    {
+        assertNull( lastUsedTimestamp( channel ) );
+        setLastUsedTimestamp( channel, 42L );
+        assertEquals( 42L, lastUsedTimestamp( channel ).longValue() );
+    }
+
+    @Test
+    public void shouldAllowSettingLastUsedTimestampMultipleTimes()
+    {
+        setLastUsedTimestamp( channel, 42L );
+        setLastUsedTimestamp( channel, 4242L );
+        setLastUsedTimestamp( channel, 424242L );
+
+        assertEquals( 424242L, lastUsedTimestamp( channel ).longValue() );
     }
 
     @Test

@@ -19,14 +19,19 @@
 package org.neo4j.driver.internal.async.pool;
 
 import io.netty.channel.Channel;
-import io.netty.channel.EventLoop;
 import io.netty.channel.pool.ChannelHealthChecker;
 import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.Promise;
 
+import org.neo4j.driver.internal.handlers.PingResponseHandler;
+import org.neo4j.driver.internal.messaging.ResetMessage;
 import org.neo4j.driver.internal.net.pooling.PoolSettings;
 import org.neo4j.driver.internal.util.Clock;
 
+import static java.util.Objects.requireNonNull;
 import static org.neo4j.driver.internal.async.ChannelAttributes.creationTimestamp;
+import static org.neo4j.driver.internal.async.ChannelAttributes.lastUsedTimestamp;
+import static org.neo4j.driver.internal.async.ChannelAttributes.messageDispatcher;
 
 public class NettyChannelHealthChecker implements ChannelHealthChecker
 {
@@ -35,8 +40,8 @@ public class NettyChannelHealthChecker implements ChannelHealthChecker
 
     public NettyChannelHealthChecker( PoolSettings poolSettings, Clock clock )
     {
-        this.poolSettings = poolSettings;
-        this.clock = clock;
+        this.poolSettings = requireNonNull( poolSettings );
+        this.clock = requireNonNull( clock );
     }
 
     @Override
@@ -44,8 +49,11 @@ public class NettyChannelHealthChecker implements ChannelHealthChecker
     {
         if ( isTooOld( channel ) )
         {
-            EventLoop loop = channel.eventLoop();
-            return loop.newSucceededFuture( Boolean.FALSE );
+            return channel.eventLoop().newSucceededFuture( Boolean.FALSE );
+        }
+        if ( hasBeenIdleForTooLong( channel ) )
+        {
+            return ping( channel );
         }
         return ACTIVE.isHealthy( channel );
     }
@@ -61,5 +69,27 @@ public class NettyChannelHealthChecker implements ChannelHealthChecker
             return ageMillis > poolSettings.maxConnectionLifetime();
         }
         return false;
+    }
+
+    private boolean hasBeenIdleForTooLong( Channel channel )
+    {
+        if ( poolSettings.idleTimeBeforeConnectionTestEnabled() )
+        {
+            Long lastUsedTimestamp = lastUsedTimestamp( channel );
+            if ( lastUsedTimestamp != null )
+            {
+                long idleTime = clock.millis() - lastUsedTimestamp;
+                return idleTime > poolSettings.idleTimeBeforeConnectionTest();
+            }
+        }
+        return false;
+    }
+
+    private Future<Boolean> ping( Channel channel )
+    {
+        Promise<Boolean> result = channel.eventLoop().newPromise();
+        messageDispatcher( channel ).queue( new PingResponseHandler( result ) );
+        channel.writeAndFlush( ResetMessage.RESET );
+        return result;
     }
 }

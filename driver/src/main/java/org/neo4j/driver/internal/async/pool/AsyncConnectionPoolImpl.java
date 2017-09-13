@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.async.pool;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.pool.ChannelPool;
 import io.netty.util.concurrent.Future;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -46,9 +47,10 @@ public class AsyncConnectionPoolImpl implements AsyncConnectionPool
     private final ActiveChannelTracker activeChannelTracker;
     private final NettyChannelHealthChecker channelHealthChecker;
     private final PoolSettings settings;
+    private final Clock clock;
     private final Logger log;
 
-    private final ConcurrentMap<BoltServerAddress,NettyChannelPool> pools = new ConcurrentHashMap<>();
+    private final ConcurrentMap<BoltServerAddress,ChannelPool> pools = new ConcurrentHashMap<>();
     private final AtomicBoolean closed = new AtomicBoolean();
 
     public AsyncConnectionPoolImpl( AsyncConnector connector, Bootstrap bootstrap,
@@ -59,6 +61,7 @@ public class AsyncConnectionPoolImpl implements AsyncConnectionPool
         this.activeChannelTracker = activeChannelTracker;
         this.channelHealthChecker = new NettyChannelHealthChecker( settings, clock );
         this.settings = settings;
+        this.clock = clock;
         this.log = logging.getLog( getClass().getSimpleName() );
     }
 
@@ -68,7 +71,7 @@ public class AsyncConnectionPoolImpl implements AsyncConnectionPool
         log.debug( "Acquiring connection from pool for address: %s", address );
 
         assertNotClosed();
-        final NettyChannelPool pool = getOrCreatePool( address );
+        final ChannelPool pool = getOrCreatePool( address );
         final Future<Channel> connectionFuture = pool.acquire();
 
         return Futures.thenApply( connectionFuture, bootstrap, new Function<Channel,AsyncConnection>()
@@ -77,7 +80,7 @@ public class AsyncConnectionPoolImpl implements AsyncConnectionPool
             public AsyncConnection apply( Channel channel )
             {
                 assertNotClosed( address, channel, pool );
-                return new NettyConnection( channel, pool );
+                return new NettyConnection( channel, pool, clock );
             }
         } );
     }
@@ -91,7 +94,7 @@ public class AsyncConnectionPoolImpl implements AsyncConnectionPool
         activeChannelTracker.purge( address );
 
         // purge idle connections in the pool and pool itself
-        NettyChannelPool pool = pools.remove( address );
+        ChannelPool pool = pools.remove( address );
         if ( pool != null )
         {
             pool.close();
@@ -118,7 +121,7 @@ public class AsyncConnectionPoolImpl implements AsyncConnectionPool
             log.info( "Closing the connection pool" );
             try
             {
-                for ( NettyChannelPool pool : pools.values() )
+                for ( ChannelPool pool : pools.values() )
                 {
                     pool.close();
                 }
@@ -133,9 +136,9 @@ public class AsyncConnectionPoolImpl implements AsyncConnectionPool
         return eventLoopGroup().terminationFuture();
     }
 
-    private NettyChannelPool getOrCreatePool( BoltServerAddress address )
+    private ChannelPool getOrCreatePool( BoltServerAddress address )
     {
-        NettyChannelPool pool = pools.get( address );
+        ChannelPool pool = pools.get( address );
         if ( pool == null )
         {
             pool = newPool( address );
@@ -169,7 +172,7 @@ public class AsyncConnectionPoolImpl implements AsyncConnectionPool
         }
     }
 
-    private void assertNotClosed( BoltServerAddress address, Channel channel, NettyChannelPool pool )
+    private void assertNotClosed( BoltServerAddress address, Channel channel, ChannelPool pool )
     {
         if ( closed.get() )
         {

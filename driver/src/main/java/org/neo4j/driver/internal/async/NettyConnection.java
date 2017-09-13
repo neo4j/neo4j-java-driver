@@ -19,17 +19,18 @@
 package org.neo4j.driver.internal.async;
 
 import io.netty.channel.Channel;
+import io.netty.channel.pool.ChannelPool;
 
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
-import org.neo4j.driver.internal.async.pool.NettyChannelPool;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.PullAllMessage;
 import org.neo4j.driver.internal.messaging.ResetMessage;
 import org.neo4j.driver.internal.messaging.RunMessage;
 import org.neo4j.driver.internal.spi.ResponseHandler;
+import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.Value;
 
 import static org.neo4j.driver.internal.async.ChannelAttributes.messageDispatcher;
@@ -39,17 +40,19 @@ public class NettyConnection implements AsyncConnection
 {
     private final Channel channel;
     private final InboundMessageDispatcher messageDispatcher;
-    private final NettyChannelPool channelPool;
+    private final ChannelPool channelPool;
+    private final Clock clock;
 
     private final AtomicBoolean autoReadEnabled = new AtomicBoolean( true );
 
     private final NettyConnectionState state = new NettyConnectionState();
 
-    public NettyConnection( Channel channel, NettyChannelPool channelPool )
+    public NettyConnection( Channel channel, ChannelPool channelPool, Clock clock )
     {
         this.channel = channel;
         this.messageDispatcher = messageDispatcher( channel );
         this.channelPool = channelPool;
+        this.clock = clock;
     }
 
     @Override
@@ -107,7 +110,7 @@ public class NettyConnection implements AsyncConnection
     {
         if ( state.release() )
         {
-            write( ResetMessage.RESET, new ReleaseChannelHandler( channel, channelPool ), true );
+            write( ResetMessage.RESET, new ReleaseChannelHandler( channel, channelPool, clock ), true );
         }
     }
 
@@ -118,7 +121,7 @@ public class NettyConnection implements AsyncConnection
 
         if ( state.forceRelease() )
         {
-            write( ResetMessage.RESET, new ReleaseChannelHandler( channel, channelPool, releasePromise ), true );
+            write( ResetMessage.RESET, new ReleaseChannelHandler( channel, channelPool, clock, releasePromise ), true );
         }
         else
         {

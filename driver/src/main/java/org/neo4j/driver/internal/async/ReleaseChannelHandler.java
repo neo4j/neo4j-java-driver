@@ -19,29 +19,35 @@
 package org.neo4j.driver.internal.async;
 
 import io.netty.channel.Channel;
+import io.netty.channel.pool.ChannelPool;
 import io.netty.util.concurrent.Promise;
 
 import java.util.Map;
 
-import org.neo4j.driver.internal.async.pool.NettyChannelPool;
 import org.neo4j.driver.internal.spi.ResponseHandler;
+import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.Value;
+
+import static java.util.Objects.requireNonNull;
+import static org.neo4j.driver.internal.async.ChannelAttributes.setLastUsedTimestamp;
 
 public class ReleaseChannelHandler implements ResponseHandler
 {
     private final Channel channel;
-    private final NettyChannelPool pool;
+    private final ChannelPool pool;
+    private final Clock clock;
     private final Promise<Void> releasePromise;
 
-    public ReleaseChannelHandler( Channel channel, NettyChannelPool pool )
+    public ReleaseChannelHandler( Channel channel, ChannelPool pool, Clock clock )
     {
-        this( channel, pool, null );
+        this( channel, pool, clock, null );
     }
 
-    public ReleaseChannelHandler( Channel channel, NettyChannelPool pool, Promise<Void> releasePromise )
+    public ReleaseChannelHandler( Channel channel, ChannelPool pool, Clock clock, Promise<Void> releasePromise )
     {
-        this.channel = channel;
-        this.pool = pool;
+        this.channel = requireNonNull( channel );
+        this.pool = requireNonNull( pool );
+        this.clock = requireNonNull( clock );
         this.releasePromise = releasePromise;
     }
 
@@ -65,6 +71,8 @@ public class ReleaseChannelHandler implements ResponseHandler
 
     private void releaseChannel()
     {
+        setLastUsedTimestamp( channel, clock.millis() );
+
         if ( releasePromise == null )
         {
             pool.release( channel );
