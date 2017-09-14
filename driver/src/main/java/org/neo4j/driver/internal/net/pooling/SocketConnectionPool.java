@@ -109,6 +109,12 @@ public class SocketConnectionPool implements ConnectionPool
         }
     }
 
+    public int activeConnections( BoltServerAddress address )
+    {
+        BlockingPooledConnectionQueue connectionQueue = pools.get( address );
+        return connectionQueue == null ? 0 : connectionQueue.activeConnections();
+    }
+
     private BlockingPooledConnectionQueue pool( BoltServerAddress address )
     {
         BlockingPooledConnectionQueue pool = pools.get( address );
@@ -130,10 +136,16 @@ public class SocketConnectionPool implements ConnectionPool
     {
         ConnectionSupplier connectionSupplier = new ConnectionSupplier( connectionQueue, address );
 
-        PooledConnection connection;
+        PooledConnection connection = null;
         boolean connectionCreated;
         do
         {
+            // dispose previous connection that can't be acquired
+            if ( connection != null )
+            {
+                connectionQueue.disposeBroken( connection );
+            }
+
             connection = connectionQueue.acquire( connectionSupplier );
             connectionCreated = connectionSupplier.connectionCreated();
         }

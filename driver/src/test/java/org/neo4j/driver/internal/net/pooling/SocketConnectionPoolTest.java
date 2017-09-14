@@ -24,7 +24,9 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -42,11 +44,13 @@ import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.v1.Logging;
+import org.neo4j.driver.v1.Value;
 
 import static java.util.Collections.newSetFromMap;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.isOneOf;
 import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
@@ -56,6 +60,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -64,6 +69,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.net.BoltServerAddress.DEFAULT_PORT;
 import static org.neo4j.driver.internal.net.BoltServerAddress.LOCAL_DEFAULT;
+import static org.neo4j.driver.v1.Values.value;
 
 public class SocketConnectionPoolTest
 {
@@ -487,6 +493,98 @@ public class SocketConnectionPoolTest
         inOrder.verify( connection3 ).reset();
         inOrder.verify( connection4, never() ).reset();
         inOrder.verify( connection4, never() ).sync();
+    }
+
+    @Test
+    public void reportActiveConnectionsWhenEmpty()
+    {
+        SocketConnectionPool pool = newPool( newMockConnector() );
+
+        int activeConnections1 = pool.activeConnections( ADDRESS_1 );
+        int activeConnections2 = pool.activeConnections( ADDRESS_2 );
+        int activeConnections3 = pool.activeConnections( ADDRESS_3 );
+
+        assertEquals( 0, activeConnections1 );
+        assertEquals( 0, activeConnections2 );
+        assertEquals( 0, activeConnections3 );
+    }
+
+    @Test
+    public void reportActiveConnectionsWhenHasAcquiredConnections()
+    {
+        int acquiredConnections = 23;
+        SocketConnectionPool pool = newPool( newMockConnector() );
+
+        for ( int i = 0; i < acquiredConnections; i++ )
+        {
+            assertNotNull( pool.acquire( ADDRESS_1 ) );
+        }
+
+        assertEquals( acquiredConnections, pool.activeConnections( ADDRESS_1 ) );
+    }
+
+    @Test
+    public void reportActiveConnectionsWhenHasIdleConnections()
+    {
+        Connection connection = newConnectionMock( ADDRESS_1 );
+        Connector connector = newMockConnector( connection );
+        SocketConnectionPool pool = newPool( connector );
+
+        PooledConnection connection1 = pool.acquire( ADDRESS_1 );
+        PooledConnection connection2 = pool.acquire( ADDRESS_1 );
+
+        assertEquals( 2, pool.activeConnections( ADDRESS_1 ) );
+
+        connection1.close();
+        connection2.close();
+
+        assertEquals( 0, pool.activeConnections( ADDRESS_1 ) );
+    }
+
+    @Test
+    public void shouldForgetBrokenIdleConnection()
+    {
+        Connection connection1 = newConnectionMock( ADDRESS_1 );
+        Connection connection2 = newConnectionMock( ADDRESS_1 );
+
+        doNothing().doThrow( new RuntimeException() ).when( connection1 ).reset();
+
+        int idleTimeBeforeConnectionTest = 42;
+        FakeClock clock = new FakeClock();
+        Connector connector = newMockConnector( connection1, connection2 );
+        SocketConnectionPool pool = newPool( connector, clock, idleTimeBeforeConnectionTest );
+
+        // acquire and release one connection
+        pool.acquire( ADDRESS_1 ).close();
+        // make this connection seem idle for too long
+        clock.progress( idleTimeBeforeConnectionTest + 42 );
+
+        PooledConnection acquiredConnection = pool.acquire( ADDRESS_1 );
+
+        Map<String,Value> auth = Collections.singletonMap( "Key", value( "Value" ) );
+        acquiredConnection.init( "DummyClient", auth );
+        verify( connection1, never() ).init( "DummyClient", auth );
+        verify( connection2 ).init( "DummyClient", auth );
+
+        assertEquals( 1, pool.activeConnections( ADDRESS_1 ) );
+        acquiredConnection.close();
+        assertEquals( 0, pool.activeConnections( ADDRESS_1 ) );
+    }
+
+    @Test
+    public void shouldForgetIdleConnection()
+    {
+        Connection connection = newConnectionMock( ADDRESS_1 );
+        doThrow( new RuntimeException() ).when( connection ).reset();
+
+        SocketConnectionPool pool = newPool( newMockConnector( connection ), new FakeClock(), 42 );
+        PooledConnection pooledConnection = pool.acquire( ADDRESS_1 );
+
+        // release the connection, it should fail to reset and be disposed
+        pooledConnection.close();
+
+        assertEquals( 0, pool.activeConnections( ADDRESS_1 ) );
+        verify( connection ).close();
     }
 
     private static Answer<Connection> createConnectionAnswer( final Set<Connection> createdConnections )
