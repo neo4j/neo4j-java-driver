@@ -133,12 +133,12 @@ public abstract class PullAllResponseHandler implements ResponseHandler
         {
             if ( succeeded )
             {
-                return connection.<Boolean>newPromise().succeeded( false );
+                return connection.<Boolean>newPromise().setSuccess( false );
             }
 
             if ( failure != null )
             {
-                return connection.<Boolean>newPromise().failed( failure );
+                return connection.<Boolean>newPromise().setFailure( failure );
             }
 
             if ( recordAvailablePromise == null )
@@ -151,7 +151,7 @@ public abstract class PullAllResponseHandler implements ResponseHandler
         else
         {
             current = record;
-            return connection.<Boolean>newPromise().succeeded( true );
+            return connection.<Boolean>newPromise().setSuccess( true );
         }
     }
 
@@ -166,7 +166,7 @@ public abstract class PullAllResponseHandler implements ResponseHandler
     {
         if ( summary != null )
         {
-            return connection.<ResultSummary>newPromise().succeeded( summary );
+            return connection.<ResultSummary>newPromise().setSuccess( summary );
         }
         else
         {

@@ -16,25 +16,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.async;
+package org.neo4j.driver.v1;
 
-import java.util.List;
+import java.util.concurrent.Future;
 
-import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.summary.ResultSummary;
-
-public interface StatementResultCursor
+public interface Response<T> extends Future<T>
 {
-    /**
-     * Retrieve the keys of the records this result cursor contains.
-     *
-     * @return list of all keys.
-     */
-    List<String> keys();
-
-    Task<ResultSummary> summaryAsync();
-
-    Task<Boolean> fetchAsync();
-
-    Record current();
+    void addListener( ResponseListener<T> listener );
 }

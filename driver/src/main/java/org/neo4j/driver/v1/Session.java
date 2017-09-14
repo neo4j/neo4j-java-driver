@@ -18,7 +18,6 @@
  */
 package org.neo4j.driver.v1;
 
-import org.neo4j.driver.internal.async.Task;
 import org.neo4j.driver.v1.util.Resource;
 
 /**
@@ -83,7 +82,7 @@ public interface Session extends Resource, StatementRunner
     @Deprecated
     Transaction beginTransaction( String bookmark );
 
-    Task<Transaction> beginTransactionAsync();
+    Response<Transaction> beginTransactionAsync();
 
     /**
      * Execute given unit of work in a  {@link AccessMode#READ read} transaction.
@@ -146,5 +145,5 @@ public interface Session extends Resource, StatementRunner
     @Override
     void close();
 
-    Task<Void> closeAsync();
+    Response<Void> closeAsync();
 }

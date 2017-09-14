@@ -26,8 +26,6 @@ import org.neo4j.driver.internal.async.AsyncConnection;
 import org.neo4j.driver.internal.async.InternalFuture;
 import org.neo4j.driver.internal.async.InternalPromise;
 import org.neo4j.driver.internal.async.QueryRunner;
-import org.neo4j.driver.internal.async.StatementResultCursor;
-import org.neo4j.driver.internal.async.Task;
 import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
 import org.neo4j.driver.internal.handlers.BookmarkResponseHandler;
 import org.neo4j.driver.internal.handlers.CommitTxResponseHandler;
@@ -36,8 +34,10 @@ import org.neo4j.driver.internal.handlers.RollbackTxResponseHandler;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.Response;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.StatementResultCursor;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
@@ -209,7 +209,7 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
     }
 
     @Override
-    public Task<Void> commitAsync()
+    public Response<Void> commitAsync()
     {
         return internalCommitAsync().asTask();
     }
@@ -218,11 +218,11 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
     {
         if ( state == State.COMMITTED )
         {
-            return asyncConnection.<Void>newPromise().succeeded( null );
+            return asyncConnection.<Void>newPromise().setSuccess( null );
         }
         else if ( state == State.ROLLED_BACK )
         {
-            return asyncConnection.<Void>newPromise().failed(
+            return asyncConnection.<Void>newPromise().setFailure(
                     new ClientException( "Can't commit, transaction has already been rolled back" ) );
         }
         else
@@ -232,7 +232,7 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
     }
 
     @Override
-    public Task<Void> rollbackAsync()
+    public Response<Void> rollbackAsync()
     {
         return internalRollbackAsync().asTask();
     }
@@ -242,11 +242,11 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
         if ( state == State.COMMITTED )
         {
             return asyncConnection.<Void>newPromise()
-                    .failed( new ClientException( "Can't rollback, transaction has already been committed" ) );
+                    .setFailure( new ClientException( "Can't rollback, transaction has already been committed" ) );
         }
         else if ( state == State.ROLLED_BACK )
         {
-            return asyncConnection.<Void>newPromise().succeeded( null );
+            return asyncConnection.<Void>newPromise().setSuccess( null );
         }
         else
         {
@@ -311,7 +311,7 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
     }
 
     @Override
-    public Task<StatementResultCursor> runAsync( String statementText, Value parameters )
+    public Response<StatementResultCursor> runAsync( String statementText, Value parameters )
     {
         return runAsync( new Statement( statementText, parameters ) );
     }
@@ -323,7 +323,7 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
     }
 
     @Override
-    public Task<StatementResultCursor> runAsync( String statementTemplate )
+    public Response<StatementResultCursor> runAsync( String statementTemplate )
     {
         return runAsync( statementTemplate, Values.EmptyMap );
     }
@@ -336,7 +336,7 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
     }
 
     @Override
-    public Task<StatementResultCursor> runAsync( String statementTemplate, Map<String,Object> statementParameters )
+    public Response<StatementResultCursor> runAsync( String statementTemplate, Map<String,Object> statementParameters )
     {
         Value params = statementParameters == null ? Values.EmptyMap : value( statementParameters );
         return runAsync( statementTemplate, params );
@@ -350,7 +350,7 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
     }
 
     @Override
-    public Task<StatementResultCursor> runAsync( String statementTemplate, Record statementParameters )
+    public Response<StatementResultCursor> runAsync( String statementTemplate, Record statementParameters )
     {
         Value params = statementParameters == null ? Values.EmptyMap : value( statementParameters.asMap() );
         return runAsync( statementTemplate, params );
@@ -382,7 +382,7 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
     }
 
     @Override
-    public Task<StatementResultCursor> runAsync( Statement statement )
+    public Response<StatementResultCursor> runAsync( Statement statement )
     {
         ensureNotFailed();
         return QueryRunner.runAsync( asyncConnection, statement, this ).asTask();

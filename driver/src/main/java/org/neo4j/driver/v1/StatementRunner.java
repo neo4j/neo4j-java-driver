@@ -20,8 +20,6 @@ package org.neo4j.driver.v1;
 
 import java.util.Map;
 
-import org.neo4j.driver.internal.async.StatementResultCursor;
-import org.neo4j.driver.internal.async.Task;
 import org.neo4j.driver.v1.types.TypeSystem;
 import org.neo4j.driver.v1.util.Experimental;
 
@@ -95,7 +93,7 @@ public interface StatementRunner
      */
     StatementResult run( String statementTemplate, Value parameters );
 
-    Task<StatementResultCursor> runAsync( String statementText, Value parameters );
+    Response<StatementResultCursor> runAsync( String statementText, Value parameters );
 
     /**
      * Run a statement and return a result stream.
@@ -126,7 +124,7 @@ public interface StatementRunner
      */
     StatementResult run( String statementTemplate, Map<String,Object> statementParameters );
 
-    Task<StatementResultCursor> runAsync( String statementTemplate, Map<String,Object> statementParameters );
+    Response<StatementResultCursor> runAsync( String statementTemplate, Map<String,Object> statementParameters );
 
     /**
      * Run a statement and return a result stream.
@@ -145,7 +143,7 @@ public interface StatementRunner
      */
     StatementResult run( String statementTemplate, Record statementParameters );
 
-    Task<StatementResultCursor> runAsync( String statementTemplate, Record statementParameters );
+    Response<StatementResultCursor> runAsync( String statementTemplate, Record statementParameters );
 
     /**
      * Run a statement and return a result stream.
@@ -155,7 +153,7 @@ public interface StatementRunner
      */
     StatementResult run( String statementTemplate );
 
-    Task<StatementResultCursor> runAsync( String statementTemplate );
+    Response<StatementResultCursor> runAsync( String statementTemplate );
 
     /**
      * Run a statement and return a result stream.
@@ -172,7 +170,7 @@ public interface StatementRunner
      */
     StatementResult run( Statement statement );
 
-    Task<StatementResultCursor> runAsync( Statement statement );
+    Response<StatementResultCursor> runAsync( Statement statement );
 
     /**
      * @return type system used by this statement runner for classifying values

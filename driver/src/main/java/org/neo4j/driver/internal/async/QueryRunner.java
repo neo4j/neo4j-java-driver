@@ -26,6 +26,7 @@ import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.handlers.SessionPullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.TransactionPullAllResponseHandler;
 import org.neo4j.driver.v1.Statement;
+import org.neo4j.driver.v1.StatementResultCursor;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.util.Function;
 

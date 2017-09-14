@@ -26,11 +26,11 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.driver.internal.async.StatementResultCursor;
-import org.neo4j.driver.internal.async.Task;
+import org.neo4j.driver.v1.Response;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.StatementResultCursor;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
@@ -349,7 +349,7 @@ public class TransactionAsyncIT
         tx.runAsync( "CREATE ()" );
         assertNull( await( tx.commitAsync() ) );
 
-        Task<Void> secondCommit = tx.commitAsync();
+        Response<Void> secondCommit = tx.commitAsync();
         // second commit should return a completed future
         assertTrue( secondCommit.isDone() );
         assertNull( await( secondCommit ) );
@@ -362,7 +362,7 @@ public class TransactionAsyncIT
         tx.runAsync( "CREATE ()" );
         assertNull( await( tx.rollbackAsync() ) );
 
-        Task<Void> secondRollback = tx.rollbackAsync();
+        Response<Void> secondRollback = tx.rollbackAsync();
         // second rollback should return a completed future
         assertTrue( secondRollback.isDone() );
         assertNull( await( secondRollback ) );

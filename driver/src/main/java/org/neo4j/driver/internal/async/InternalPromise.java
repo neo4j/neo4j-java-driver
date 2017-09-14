@@ -28,6 +28,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.neo4j.driver.v1.Response;
 import org.neo4j.driver.v1.util.Function;
 
 public class InternalPromise<T> implements InternalFuture<T>, Promise<T>
@@ -46,18 +47,6 @@ public class InternalPromise<T> implements InternalFuture<T>, Promise<T>
         this.delegate = eventLoop.newPromise();
     }
 
-    public InternalFuture<T> succeeded( T value )
-    {
-        setSuccess( value );
-        return this;
-    }
-
-    public InternalFuture<T> failed( Throwable cause )
-    {
-        setFailure( cause );
-        return this;
-    }
-
     @Override
     public EventLoop eventLoop()
     {
@@ -65,9 +54,9 @@ public class InternalPromise<T> implements InternalFuture<T>, Promise<T>
     }
 
     @Override
-    public Task<T> asTask()
+    public Response<T> asTask()
     {
-        return new InternalTask<>( this );
+        return new InternalResponse<>( this );
     }
 
     @Override
@@ -89,9 +78,10 @@ public class InternalPromise<T> implements InternalFuture<T>, Promise<T>
     }
 
     @Override
-    public Promise<T> setSuccess( T result )
+    public InternalPromise<T> setSuccess( T result )
     {
-        return delegate.setSuccess( result );
+        delegate.setSuccess( result );
+        return this;
     }
 
     @Override
@@ -101,9 +91,10 @@ public class InternalPromise<T> implements InternalFuture<T>, Promise<T>
     }
 
     @Override
-    public Promise<T> setFailure( Throwable cause )
+    public InternalPromise<T> setFailure( Throwable cause )
     {
-        return delegate.setFailure( cause );
+        delegate.setFailure( cause );
+        return this;
     }
 
     @Override
@@ -119,51 +110,59 @@ public class InternalPromise<T> implements InternalFuture<T>, Promise<T>
     }
 
     @Override
-    public Promise<T> addListener( GenericFutureListener<? extends Future<? super T>> listener )
+    public InternalPromise<T> addListener( GenericFutureListener<? extends Future<? super T>> listener )
     {
-        return delegate.addListener( listener );
+        delegate.addListener( listener );
+        return this;
     }
 
     @Override
-    public Promise<T> addListeners( GenericFutureListener<? extends Future<? super T>>... listeners )
+    public InternalPromise<T> addListeners( GenericFutureListener<? extends Future<? super T>>... listeners )
     {
-        return delegate.addListeners( listeners );
+        delegate.addListeners( listeners );
+        return this;
     }
 
     @Override
-    public Promise<T> removeListener( GenericFutureListener<? extends Future<? super T>> listener )
+    public InternalPromise<T> removeListener( GenericFutureListener<? extends Future<? super T>> listener )
     {
-        return delegate.removeListener( listener );
+        delegate.removeListener( listener );
+        return this;
     }
 
     @Override
-    public Promise<T> removeListeners( GenericFutureListener<? extends Future<? super T>>... listeners )
+    public InternalPromise<T> removeListeners( GenericFutureListener<? extends Future<? super T>>... listeners )
     {
-        return delegate.removeListeners( listeners );
+        delegate.removeListeners( listeners );
+        return this;
     }
 
     @Override
-    public Promise<T> await() throws InterruptedException
+    public InternalPromise<T> await() throws InterruptedException
     {
-        return delegate.await();
+        delegate.await();
+        return this;
     }
 
     @Override
-    public Promise<T> awaitUninterruptibly()
+    public InternalPromise<T> awaitUninterruptibly()
     {
-        return delegate.awaitUninterruptibly();
+        delegate.awaitUninterruptibly();
+        return this;
     }
 
     @Override
-    public Promise<T> sync() throws InterruptedException
+    public InternalPromise<T> sync() throws InterruptedException
     {
-        return delegate.sync();
+        delegate.sync();
+        return this;
     }
 
     @Override
-    public Promise<T> syncUninterruptibly()
+    public InternalPromise<T> syncUninterruptibly()
     {
-        return delegate.syncUninterruptibly();
+        delegate.syncUninterruptibly();
+        return this;
     }
 
     @Override

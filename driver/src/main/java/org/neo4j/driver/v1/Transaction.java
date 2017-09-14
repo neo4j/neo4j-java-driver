@@ -18,7 +18,6 @@
  */
 package org.neo4j.driver.v1;
 
-import org.neo4j.driver.internal.async.Task;
 import org.neo4j.driver.v1.util.Resource;
 
 /**
@@ -80,7 +79,7 @@ public interface Transaction extends Resource, StatementRunner
     @Override
     void close();
 
-    Task<Void> commitAsync();
+    Response<Void> commitAsync();
 
-    Task<Void> rollbackAsync();
+    Response<Void> rollbackAsync();
 }

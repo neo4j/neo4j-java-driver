@@ -26,10 +26,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.driver.ResultResourcesHandler;
 import org.neo4j.driver.internal.async.AsyncConnection;
 import org.neo4j.driver.internal.async.InternalFuture;
-import org.neo4j.driver.internal.async.InternalTask;
+import org.neo4j.driver.internal.async.InternalResponse;
 import org.neo4j.driver.internal.async.QueryRunner;
-import org.neo4j.driver.internal.async.StatementResultCursor;
-import org.neo4j.driver.internal.async.Task;
 import org.neo4j.driver.internal.logging.DelegatingLogger;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.Connection;
@@ -41,9 +39,11 @@ import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.Response;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.StatementResultCursor;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.TransactionWork;
 import org.neo4j.driver.v1.Value;
@@ -88,7 +88,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     }
 
     @Override
-    public Task<StatementResultCursor> runAsync( String statementText )
+    public Response<StatementResultCursor> runAsync( String statementText )
     {
         return runAsync( statementText, Values.EmptyMap );
     }
@@ -101,7 +101,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     }
 
     @Override
-    public Task<StatementResultCursor> runAsync( String statementText, Map<String,Object> statementParameters )
+    public Response<StatementResultCursor> runAsync( String statementText, Map<String,Object> statementParameters )
     {
         Value params = statementParameters == null ? Values.EmptyMap : value( statementParameters );
         return runAsync( statementText, params );
@@ -115,7 +115,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     }
 
     @Override
-    public Task<StatementResultCursor> runAsync( String statementTemplate, Record statementParameters )
+    public Response<StatementResultCursor> runAsync( String statementTemplate, Record statementParameters )
     {
         Value params = statementParameters == null ? Values.EmptyMap : value( statementParameters.asMap() );
         return runAsync( statementTemplate, params );
@@ -128,7 +128,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     }
 
     @Override
-    public Task<StatementResultCursor> runAsync( String statementText, Value parameters )
+    public Response<StatementResultCursor> runAsync( String statementText, Value parameters )
     {
         return runAsync( new Statement( statementText, parameters ) );
     }
@@ -146,7 +146,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     }
 
     @Override
-    public Task<StatementResultCursor> runAsync( final Statement statement )
+    public Response<StatementResultCursor> runAsync( final Statement statement )
     {
         ensureSessionIsOpen();
         ensureNoOpenTransactionBeforeRunningSession();
@@ -227,7 +227,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     }
 
     @Override
-    public Task<Void> closeAsync()
+    public Response<Void> closeAsync()
     {
         if ( asyncConnectionFuture != null )
         {
@@ -253,7 +253,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
         }
         else
         {
-            return new InternalTask<>( GlobalEventExecutor.INSTANCE.<Void>newSucceededFuture( null ) );
+            return new InternalResponse<>( GlobalEventExecutor.INSTANCE.<Void>newSucceededFuture( null ) );
         }
     }
 
@@ -272,7 +272,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     }
 
     @Override
-    public Task<Transaction> beginTransactionAsync()
+    public Response<Transaction> beginTransactionAsync()
     {
         return beginTransactionAsync( mode );
     }
@@ -402,7 +402,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
         return currentTransaction;
     }
 
-    private synchronized Task<Transaction> beginTransactionAsync( AccessMode mode )
+    private synchronized Response<Transaction> beginTransactionAsync( AccessMode mode )
     {
         ensureSessionIsOpen();
         ensureNoOpenTransactionBeforeOpeningTransaction();
@@ -421,7 +421,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
                 } );
 
         //noinspection unchecked
-        return (Task) currentAsyncTransactionFuture.asTask();
+        return (Response) currentAsyncTransactionFuture.asTask();
     }
 
     private void ensureNoUnrecoverableError()

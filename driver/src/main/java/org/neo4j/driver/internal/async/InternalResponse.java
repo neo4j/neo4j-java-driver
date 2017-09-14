@@ -26,17 +26,20 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-public class InternalTask<T> implements Task<T>
+import org.neo4j.driver.v1.Response;
+import org.neo4j.driver.v1.ResponseListener;
+
+public class InternalResponse<T> implements Response<T>
 {
     private final Future<T> delegate;
 
-    public InternalTask( Future<T> delegate )
+    public InternalResponse( Future<T> delegate )
     {
         this.delegate = Objects.requireNonNull( delegate );
     }
 
     @Override
-    public void addListener( final TaskListener<T> listener )
+    public void addListener( final ResponseListener<T> listener )
     {
         delegate.addListener( new FutureListener<T>()
         {
@@ -45,11 +48,11 @@ public class InternalTask<T> implements Task<T>
             {
                 if ( future.isSuccess() )
                 {
-                    listener.taskCompleted( future.getNow(), null );
+                    listener.operationCompleted( future.getNow(), null );
                 }
                 else
                 {
-                    listener.taskCompleted( null, future.cause() );
+                    listener.operationCompleted( null, future.cause() );
                 }
             }
         } );

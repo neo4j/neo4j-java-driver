@@ -16,9 +16,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.async;
+package org.neo4j.driver.v1;
 
-public interface TaskListener<T>
+import java.util.List;
+
+import org.neo4j.driver.v1.summary.ResultSummary;
+
+public interface StatementResultCursor
 {
-    void taskCompleted( T result, Throwable error );
+    /**
+     * Retrieve the keys of the records this result cursor contains.
+     *
+     * @return list of all keys.
+     */
+    List<String> keys();
+
+    Response<ResultSummary> summaryAsync();
+
+    Response<Boolean> fetchAsync();
+
+    Record current();
 }

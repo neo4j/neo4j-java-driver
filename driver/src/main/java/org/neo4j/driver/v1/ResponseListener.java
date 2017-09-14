@@ -16,11 +16,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.async;
+package org.neo4j.driver.v1;
 
-import java.util.concurrent.Future;
-
-public interface Task<T> extends Future<T>
+public interface ResponseListener<T>
 {
-    void addListener( TaskListener<T> listener );
+    void operationCompleted( T result, Throwable error );
 }

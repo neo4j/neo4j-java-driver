@@ -23,11 +23,11 @@ import org.junit.runners.model.Statement;
 
 import java.util.Map;
 
-import org.neo4j.driver.internal.async.StatementResultCursor;
-import org.neo4j.driver.internal.async.Task;
 import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.Response;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.StatementResultCursor;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.TransactionWork;
 import org.neo4j.driver.v1.Value;
@@ -98,13 +98,13 @@ public class TestNeo4jSession extends TestNeo4j implements Session
     }
 
     @Override
-    public Task<Void> closeAsync()
+    public Response<Void> closeAsync()
     {
         throw new UnsupportedOperationException( "Disallowed on this test session" );
     }
 
     @Override
-    public Task<StatementResultCursor> runAsync( String statement, Map<String,Object> params )
+    public Response<StatementResultCursor> runAsync( String statement, Map<String,Object> params )
     {
         return realSession.runAsync( statement, params );
     }
@@ -123,7 +123,7 @@ public class TestNeo4jSession extends TestNeo4j implements Session
     }
 
     @Override
-    public Task<Transaction> beginTransactionAsync()
+    public Response<Transaction> beginTransactionAsync()
     {
         return realSession.beginTransactionAsync();
     }
@@ -166,7 +166,7 @@ public class TestNeo4jSession extends TestNeo4j implements Session
     }
 
     @Override
-    public Task<StatementResultCursor> runAsync( String statementText, Value parameters )
+    public Response<StatementResultCursor> runAsync( String statementText, Value parameters )
     {
         return realSession.runAsync( statementText, parameters );
     }
@@ -178,7 +178,7 @@ public class TestNeo4jSession extends TestNeo4j implements Session
     }
 
     @Override
-    public Task<StatementResultCursor> runAsync( String statementTemplate, Record statementParameters )
+    public Response<StatementResultCursor> runAsync( String statementTemplate, Record statementParameters )
     {
         return realSession.runAsync( statementTemplate, statementParameters );
     }
@@ -190,7 +190,7 @@ public class TestNeo4jSession extends TestNeo4j implements Session
     }
 
     @Override
-    public Task<StatementResultCursor> runAsync( String statementTemplate )
+    public Response<StatementResultCursor> runAsync( String statementTemplate )
     {
         return realSession.runAsync( statementTemplate );
     }
@@ -202,7 +202,7 @@ public class TestNeo4jSession extends TestNeo4j implements Session
     }
 
     @Override
-    public Task<StatementResultCursor> runAsync( org.neo4j.driver.v1.Statement statement )
+    public Response<StatementResultCursor> runAsync( org.neo4j.driver.v1.Statement statement )
     {
         return realSession.runAsync( statement );
     }

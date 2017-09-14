@@ -32,12 +32,12 @@ import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.driver.internal.async.StatementResultCursor;
-import org.neo4j.driver.internal.async.Task;
-import org.neo4j.driver.internal.async.TaskListener;
 import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.Response;
+import org.neo4j.driver.v1.ResponseListener;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
+import org.neo4j.driver.v1.StatementResultCursor;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
@@ -170,7 +170,7 @@ public class SessionAsyncIT
 
         try
         {
-            Task<Boolean> recordAvailable = cursor.fetchAsync();
+            Response<Boolean> recordAvailable = cursor.fetchAsync();
 
             // kill db after receiving the first record
             // do it from a listener so that event loop thread executes the kill operation
@@ -358,13 +358,13 @@ public class SessionAsyncIT
     private void runNestedQueries( final StatementResultCursor inputCursor, final List<Future<Boolean>> futures,
             final Promise<List<Future<Boolean>>> resultPromise )
     {
-        final Task<Boolean> inputAvailable = inputCursor.fetchAsync();
+        final Response<Boolean> inputAvailable = inputCursor.fetchAsync();
         futures.add( inputAvailable );
 
-        inputAvailable.addListener( new TaskListener<Boolean>()
+        inputAvailable.addListener( new ResponseListener<Boolean>()
         {
             @Override
-            public void taskCompleted( Boolean inputAvailable, Throwable error )
+            public void operationCompleted( Boolean inputAvailable, Throwable error )
             {
                 if ( error != null )
                 {
@@ -390,13 +390,14 @@ public class SessionAsyncIT
         long id = node.get( "id" ).asLong();
         long age = id * 10;
 
-        Task<StatementResultCursor> task = session.runAsync( "MATCH (p:Person {id: $id}) SET p.age = $age RETURN p",
+        Response<StatementResultCursor> response =
+                session.runAsync( "MATCH (p:Person {id: $id}) SET p.age = $age RETURN p",
                 parameters( "id", id, "age", age ) );
 
-        task.addListener( new TaskListener<StatementResultCursor>()
+        response.addListener( new ResponseListener<StatementResultCursor>()
         {
             @Override
-            public void taskCompleted( StatementResultCursor result, Throwable error )
+            public void operationCompleted( StatementResultCursor result, Throwable error )
             {
                 if ( error != null )
                 {
@@ -424,7 +425,7 @@ public class SessionAsyncIT
         assertThat( ((ClientException) e).code(), containsString( "ArithmeticError" ) );
     }
 
-    private static class KillDbListener implements TaskListener<Boolean>
+    private static class KillDbListener implements ResponseListener<Boolean>
     {
         final TestNeo4j neo4j;
         volatile boolean shouldKillDb = true;
@@ -435,7 +436,7 @@ public class SessionAsyncIT
         }
 
         @Override
-        public void taskCompleted( Boolean result, Throwable error )
+        public void operationCompleted( Boolean result, Throwable error )
         {
             if ( shouldKillDb )
             {

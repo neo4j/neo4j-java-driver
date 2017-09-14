@@ -32,8 +32,10 @@ import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.Response;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.StatementResultCursor;
 import org.neo4j.driver.v1.Transaction;
 
 public class Main
@@ -154,8 +156,8 @@ public class Main
             public void apply( Driver driver, MutableInt recordsRead )
             {
                 Session session = driver.session();
-                Task<StatementResultCursor> cursorTask = session.runAsync( QUERY, PARAMS_OBJ );
-                StatementResultCursor cursor = await( cursorTask );
+                Response<StatementResultCursor> cursorResponse = session.runAsync( QUERY, PARAMS_OBJ );
+                StatementResultCursor cursor = await( cursorResponse );
                 while ( await( cursor.fetchAsync() ) )
                 {
                     Record record = cursor.current();
