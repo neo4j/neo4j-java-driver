@@ -224,6 +224,15 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
         }
 
         syncAndCloseCurrentConnection();
+
+        try
+        {
+            closeAsync().get();
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     @Override
@@ -396,8 +405,9 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
         syncAndCloseCurrentConnection();
         currentConnection = acquireConnection( mode );
 
-        currentTransaction = new ExplicitTransaction( currentConnection, this );
-        currentTransaction.begin( bookmark );
+        ExplicitTransaction tx = new ExplicitTransaction( currentConnection, this );
+        tx.begin( bookmark );
+        currentTransaction = tx;
         currentConnection.setResourcesHandler( this );
         return currentTransaction;
     }

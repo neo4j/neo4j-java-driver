@@ -21,13 +21,13 @@ package org.neo4j.driver.internal.async;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.ConnectTimeoutException;
 import io.netty.channel.pool.ChannelPoolHandler;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.net.ConnectException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
@@ -133,10 +133,10 @@ public class AsyncConnectorImplTest
         assertFalse( channel.isActive() );
     }
 
-    @Test
+    @Test( timeout = 10000 )
     public void shouldEnforceConnectTimeout() throws Exception
     {
-        AsyncConnectorImpl connector = newConnector( neo4j.authToken(), 500 );
+        AsyncConnectorImpl connector = newConnector( neo4j.authToken(), 1000 );
 
         // try connect to a non-routable ip address 10.0.0.0, it will never respond
         ChannelFuture channelFuture = connector.connect( new BoltServerAddress( "10.0.0.0" ), bootstrap );
@@ -149,7 +149,7 @@ public class AsyncConnectorImplTest
         catch ( Exception e )
         {
             assertThat( e, instanceOf( ServiceUnavailableException.class ) );
-            assertThat( e.getCause(), instanceOf( ConnectTimeoutException.class ) );
+            assertThat( e.getCause(), instanceOf( ConnectException.class ) );
         }
     }
 

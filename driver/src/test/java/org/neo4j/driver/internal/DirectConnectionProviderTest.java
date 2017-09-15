@@ -110,12 +110,16 @@ public class DirectConnectionProviderTest
 
     private static DirectConnectionProvider newConnectionProvider( BoltServerAddress address )
     {
-        return new DirectConnectionProvider( address, mock( ConnectionPool.class, RETURNS_MOCKS ),
-                mock( AsyncConnectionPool.class ) );
+        return new DirectConnectionProvider( address, mock( ConnectionPool.class, RETURNS_MOCKS ), asyncPoolMock() );
     }
 
     private static DirectConnectionProvider newConnectionProvider( ConnectionPool pool )
     {
-        return new DirectConnectionProvider( BoltServerAddress.LOCAL_DEFAULT, pool, mock( AsyncConnectionPool.class ) );
+        return new DirectConnectionProvider( BoltServerAddress.LOCAL_DEFAULT, pool, asyncPoolMock() );
+    }
+
+    private static AsyncConnectionPool asyncPoolMock()
+    {
+        return mock( AsyncConnectionPool.class, RETURNS_MOCKS );
     }
 }

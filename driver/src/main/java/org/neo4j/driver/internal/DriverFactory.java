@@ -87,6 +87,7 @@ public class DriverFactory
             try
             {
                 connectionPool.close();
+                asyncConnectionPool.closeAsync().syncUninterruptibly();
             }
             catch ( Throwable closeError )
             {

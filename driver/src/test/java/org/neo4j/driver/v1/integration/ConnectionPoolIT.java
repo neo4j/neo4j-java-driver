@@ -198,7 +198,6 @@ public class ConnectionPoolIT
                     }
                     catch ( Throwable e )
                     {
-                        e.printStackTrace();
                         lastExceptionFromDriver = e;
                         throw new RuntimeException( e );
                     }
