@@ -49,13 +49,13 @@ public class InternalStatementResultCursor implements StatementResultCursor
     @Override
     public Response<ResultSummary> summaryAsync()
     {
-        return pullAllHandler.summaryAsync().asTask();
+        return pullAllHandler.summaryAsync().asResponse();
     }
 
     @Override
     public Response<Boolean> fetchAsync()
     {
-        return pullAllHandler.fetchRecordAsync().asTask();
+        return pullAllHandler.fetchRecordAsync().asResponse();
     }
 
     @Override

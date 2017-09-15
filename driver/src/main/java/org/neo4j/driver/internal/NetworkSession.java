@@ -160,7 +160,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
             {
                 return QueryRunner.runAsync( connection, statement );
             }
-        } ).asTask();
+        } ).asResponse();
     }
 
     public static StatementResult run( Connection connection, Statement statement,
@@ -247,7 +247,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
                 {
                     return connection.forceRelease();
                 }
-            } ).asTask();
+            } ).asResponse();
         }
         else if ( currentAsyncTransactionFuture != null )
         {
@@ -258,7 +258,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
                 {
                     return tx.internalRollbackAsync();
                 }
-            } ).asTask();
+            } ).asResponse();
         }
         else
         {
@@ -431,7 +431,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
                 } );
 
         //noinspection unchecked
-        return (Response) currentAsyncTransactionFuture.asTask();
+        return (Response) currentAsyncTransactionFuture.asResponse();
     }
 
     private void ensureNoUnrecoverableError()

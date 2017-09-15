@@ -54,7 +54,7 @@ public class InternalPromise<T> implements InternalFuture<T>, Promise<T>
     }
 
     @Override
-    public Response<T> asTask()
+    public Response<T> asResponse()
     {
         return new InternalResponse<>( this );
     }

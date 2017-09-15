@@ -28,7 +28,7 @@ public interface InternalFuture<T> extends Future<T>
 {
     EventLoop eventLoop();
 
-    Response<T> asTask();
+    Response<T> asResponse();
 
     <U> InternalFuture<U> thenApply( Function<T,U> fn );
 
