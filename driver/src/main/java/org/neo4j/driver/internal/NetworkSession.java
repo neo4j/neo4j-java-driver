@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.driver.ResultResourcesHandler;
 import org.neo4j.driver.internal.async.AsyncConnection;
 import org.neo4j.driver.internal.async.InternalFuture;
-import org.neo4j.driver.internal.async.InternalResponse;
+import org.neo4j.driver.internal.async.InternalPromise;
 import org.neo4j.driver.internal.async.QueryRunner;
 import org.neo4j.driver.internal.logging.DelegatingLogger;
 import org.neo4j.driver.internal.retry.RetryLogic;
@@ -160,7 +160,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
             {
                 return QueryRunner.runAsync( connection, statement );
             }
-        } ).asResponse();
+        } );
     }
 
     public static StatementResult run( Connection connection, Statement statement,
@@ -247,7 +247,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
                 {
                     return connection.forceRelease();
                 }
-            } ).asResponse();
+            } );
         }
         else if ( currentAsyncTransactionFuture != null )
         {
@@ -258,11 +258,11 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
                 {
                     return tx.internalRollbackAsync();
                 }
-            } ).asResponse();
+            } );
         }
         else
         {
-            return new InternalResponse<>( GlobalEventExecutor.INSTANCE.<Void>newSucceededFuture( null ) );
+            return new InternalPromise<Void>( GlobalEventExecutor.INSTANCE ).setSuccess( null );
         }
     }
 
@@ -431,7 +431,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
                 } );
 
         //noinspection unchecked
-        return (Response) currentAsyncTransactionFuture.asResponse();
+        return (Response) currentAsyncTransactionFuture;
     }
 
     private void ensureNoUnrecoverableError()

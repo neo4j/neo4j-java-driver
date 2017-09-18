@@ -19,8 +19,9 @@
 package org.neo4j.driver.internal.async;
 
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.EventLoop;
+import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.Promise;
 
@@ -28,12 +29,12 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.neo4j.driver.v1.Response;
+import org.neo4j.driver.v1.ResponseListener;
 import org.neo4j.driver.v1.util.Function;
 
 public class InternalPromise<T> implements InternalFuture<T>, Promise<T>
 {
-    private final EventLoop eventLoop;
+    private final EventExecutor eventExecutor;
     private final Promise<T> delegate;
 
     public InternalPromise( Bootstrap bootstrap )
@@ -41,22 +42,16 @@ public class InternalPromise<T> implements InternalFuture<T>, Promise<T>
         this( bootstrap.config().group().next() );
     }
 
-    public InternalPromise( EventLoop eventLoop )
+    public InternalPromise( EventExecutor eventExecutor )
     {
-        this.eventLoop = eventLoop;
-        this.delegate = eventLoop.newPromise();
+        this.eventExecutor = eventExecutor;
+        this.delegate = eventExecutor.newPromise();
     }
 
     @Override
-    public EventLoop eventLoop()
+    public EventExecutor eventExecutor()
     {
-        return eventLoop;
-    }
-
-    @Override
-    public Response<T> asResponse()
-    {
-        return new InternalResponse<>( this );
+        return eventExecutor;
     }
 
     @Override
@@ -75,6 +70,26 @@ public class InternalPromise<T> implements InternalFuture<T>, Promise<T>
     public InternalFuture<T> whenComplete( Runnable action )
     {
         return Futures.whenComplete( this, action );
+    }
+
+    @Override
+    public void addListener( final ResponseListener<T> listener )
+    {
+        delegate.addListener( new FutureListener<T>()
+        {
+            @Override
+            public void operationComplete( Future<T> future )
+            {
+                if ( future.isSuccess() )
+                {
+                    listener.operationCompleted( future.getNow(), null );
+                }
+                else
+                {
+                    listener.operationCompleted( null, future.cause() );
+                }
+            }
+        } );
     }
 
     @Override

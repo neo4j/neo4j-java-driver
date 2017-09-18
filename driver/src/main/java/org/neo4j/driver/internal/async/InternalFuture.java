@@ -18,17 +18,15 @@
  */
 package org.neo4j.driver.internal.async;
 
-import io.netty.channel.EventLoop;
+import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
 
 import org.neo4j.driver.v1.Response;
 import org.neo4j.driver.v1.util.Function;
 
-public interface InternalFuture<T> extends Future<T>
+public interface InternalFuture<T> extends Future<T>, Response<T>
 {
-    EventLoop eventLoop();
-
-    Response<T> asResponse();
+    EventExecutor eventExecutor();
 
     <U> InternalFuture<U> thenApply( Function<T,U> fn );
 

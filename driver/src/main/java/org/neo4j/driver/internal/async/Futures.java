@@ -33,7 +33,7 @@ public final class Futures
 
     public static <T, U> InternalFuture<U> thenApply( InternalFuture<T> future, Function<T,U> fn )
     {
-        InternalPromise<U> result = new InternalPromise<>( future.eventLoop() );
+        InternalPromise<U> result = new InternalPromise<>( future.eventExecutor() );
         future.addListener( new ThenApplyListener<>( result, fn ) );
         return result;
     }
@@ -47,14 +47,14 @@ public final class Futures
 
     public static <T, U> InternalFuture<U> thenCombine( InternalFuture<T> future, Function<T,InternalFuture<U>> fn )
     {
-        InternalPromise<U> result = new InternalPromise<>( future.eventLoop() );
+        InternalPromise<U> result = new InternalPromise<>( future.eventExecutor() );
         future.addListener( new ThenCombineListener<>( result, fn ) );
         return result;
     }
 
     public static <T> InternalFuture<T> whenComplete( InternalFuture<T> future, Runnable action )
     {
-        InternalPromise<T> result = new InternalPromise<>( future.eventLoop() );
+        InternalPromise<T> result = new InternalPromise<>( future.eventExecutor() );
         future.addListener( new CompletionListener<>( result, action ) );
         return result;
     }
