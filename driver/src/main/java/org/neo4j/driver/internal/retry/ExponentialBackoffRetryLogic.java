@@ -109,6 +109,13 @@ public class ExponentialBackoffRetryLogic implements RetryLogic
         }
     }
 
+    protected boolean canRetryOn( Throwable error )
+    {
+        return error instanceof SessionExpiredException ||
+               error instanceof ServiceUnavailableException ||
+               isTransientError( error );
+    }
+
     private long computeDelayWithJitter( long delayMs )
     {
         long jitter = (long) (delayMs * jitterFactor);
@@ -152,13 +159,6 @@ public class ExponentialBackoffRetryLogic implements RetryLogic
         {
             throw new IllegalArgumentException( "Clock should not be null" );
         }
-    }
-
-    private static boolean canRetryOn( Throwable error )
-    {
-        return error instanceof SessionExpiredException ||
-               error instanceof ServiceUnavailableException ||
-               isTransientError( error );
     }
 
     private static boolean isTransientError( Throwable error )
