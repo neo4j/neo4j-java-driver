@@ -52,6 +52,10 @@ import static org.neo4j.driver.v1.Values.value;
 
 public class ExplicitTransaction implements Transaction, ResultResourcesHandler
 {
+    private static final String BEGIN_QUERY = "BEGIN";
+    private static final String COMMIT_QUERY = "COMMIT";
+    private static final String ROLLBACK_QUERY = "ROLLBACK";
+
     private enum State
     {
         /** The transaction is running with no explicit success or failure marked */
@@ -104,7 +108,7 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
     {
         Map<String,Value> parameters = initialBookmark.asBeginTransactionParameters();
 
-        connection.run( "BEGIN", parameters, NoOpResponseHandler.INSTANCE );
+        connection.run( BEGIN_QUERY, parameters, NoOpResponseHandler.INSTANCE );
         connection.pullAll( NoOpResponseHandler.INSTANCE );
 
         if ( !initialBookmark.isEmpty() )
@@ -118,7 +122,7 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
         InternalPromise<ExplicitTransaction> beginTxPromise = asyncConnection.newPromise();
 
         Map<String,Value> parameters = initialBookmark.asBeginTransactionParameters();
-        asyncConnection.run( "BEGIN", parameters, NoOpResponseHandler.INSTANCE );
+        asyncConnection.run( BEGIN_QUERY, parameters, NoOpResponseHandler.INSTANCE );
 
         if ( initialBookmark.isEmpty() )
         {
@@ -163,7 +167,8 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
                 {
                     try
                     {
-                        connection.run( "COMMIT", Collections.<String,Value>emptyMap(), NoOpResponseHandler.INSTANCE );
+                        connection.run( COMMIT_QUERY, Collections.<String,Value>emptyMap(),
+                                NoOpResponseHandler.INSTANCE );
                         connection.pullAll( new BookmarkResponseHandler( this ) );
                         connection.sync();
                         state = State.COMMITTED;
@@ -202,7 +207,7 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
 
     private void rollbackTx()
     {
-        connection.run( "ROLLBACK", Collections.<String,Value>emptyMap(), NoOpResponseHandler.INSTANCE );
+        connection.run( ROLLBACK_QUERY, Collections.<String,Value>emptyMap(), NoOpResponseHandler.INSTANCE );
         connection.pullAll( new BookmarkResponseHandler( this ) );
         connection.sync();
         state = State.ROLLED_BACK;
@@ -271,7 +276,7 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
     {
         InternalPromise<Void> commitTxPromise = asyncConnection.newPromise();
 
-        asyncConnection.run( "COMMIT", Collections.<String,Value>emptyMap(), NoOpResponseHandler.INSTANCE );
+        asyncConnection.run( COMMIT_QUERY, Collections.<String,Value>emptyMap(), NoOpResponseHandler.INSTANCE );
         asyncConnection.pullAll( new CommitTxResponseHandler( commitTxPromise, this ) );
         asyncConnection.flush();
 
@@ -289,7 +294,7 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
     private InternalFuture<Void> doRollbackAsync()
     {
         InternalPromise<Void> rollbackTxPromise = asyncConnection.newPromise();
-        asyncConnection.run( "ROLLBACK", Collections.<String,Value>emptyMap(), NoOpResponseHandler.INSTANCE );
+        asyncConnection.run( ROLLBACK_QUERY, Collections.<String,Value>emptyMap(), NoOpResponseHandler.INSTANCE );
         asyncConnection.pullAll( new RollbackTxResponseHandler( rollbackTxPromise ) );
         asyncConnection.flush();
 
