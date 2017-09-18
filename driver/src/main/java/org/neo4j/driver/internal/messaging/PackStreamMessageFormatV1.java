@@ -19,8 +19,6 @@
 package org.neo4j.driver.internal.messaging;
 
 import java.io.IOException;
-import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.WritableByteChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -31,13 +29,11 @@ import java.util.Map;
 import org.neo4j.driver.internal.InternalNode;
 import org.neo4j.driver.internal.InternalPath;
 import org.neo4j.driver.internal.InternalRelationship;
-import org.neo4j.driver.internal.net.BufferingChunkedInput;
-import org.neo4j.driver.internal.net.ChunkedOutput;
+import org.neo4j.driver.internal.packstream.ByteArrayIncompatiblePacker;
 import org.neo4j.driver.internal.packstream.PackInput;
 import org.neo4j.driver.internal.packstream.PackOutput;
 import org.neo4j.driver.internal.packstream.PackStream;
 import org.neo4j.driver.internal.packstream.PackType;
-import org.neo4j.driver.internal.packstream.ByteArrayIncompatiblePacker;
 import org.neo4j.driver.internal.util.Iterables;
 import org.neo4j.driver.internal.value.InternalValue;
 import org.neo4j.driver.internal.value.ListValue;
@@ -80,16 +76,14 @@ public class PackStreamMessageFormatV1 implements MessageFormat
     private static final Map<String,Value> EMPTY_STRING_VALUE_MAP = new HashMap<>( 0 );
 
     @Override
-    public MessageFormat.Writer newWriter( WritableByteChannel ch, boolean byteArraySupportEnabled )
+    public MessageFormat.Writer newWriter( PackOutput output, boolean byteArraySupportEnabled )
     {
-        ChunkedOutput output = new ChunkedOutput( ch );
         return new Writer( output, output.messageBoundaryHook(), byteArraySupportEnabled );
     }
 
     @Override
-    public MessageFormat.Reader newReader( ReadableByteChannel ch )
+    public MessageFormat.Reader newReader( PackInput input )
     {
-        BufferingChunkedInput input = new BufferingChunkedInput( ch );
         return new Reader( input, input.messageBoundaryHook() );
     }
 

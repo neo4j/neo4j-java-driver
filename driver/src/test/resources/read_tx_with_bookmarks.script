@@ -11,8 +11,8 @@ C: RUN "MATCH (n) RETURN n.name AS name" {}
 S: SUCCESS {"fields": ["name"]}
    RECORD ["Bob"]
    RECORD ["Alice"]
-   SUCCESS {"bookmark": "NewBookmark"}
+   SUCCESS {}
 C: RUN "COMMIT" {}
    PULL_ALL
 S: SUCCESS {}
-   SUCCESS {}
+   SUCCESS {"bookmark": "NewBookmark"}

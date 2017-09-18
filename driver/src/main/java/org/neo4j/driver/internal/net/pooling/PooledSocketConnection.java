@@ -22,14 +22,15 @@ import java.util.Map;
 
 import org.neo4j.driver.internal.SessionResourcesHandler;
 import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.PooledConnection;
+import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Consumer;
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.summary.ServerInfo;
+
+import static org.neo4j.driver.internal.util.ErrorUtil.isRecoverable;
 
 /**
  * The state of a pooledConnection from a pool point of view could be one of the following:
@@ -87,12 +88,11 @@ public class PooledSocketConnection implements PooledConnection
     }
 
     @Override
-    public void run( String statement, Map<String,Value> parameters,
-            Collector collector )
+    public void run( String statement, Map<String,Value> parameters, ResponseHandler handler )
     {
         try
         {
-            delegate.run( statement, parameters, collector );
+            delegate.run( statement, parameters, handler );
         }
         catch(RuntimeException e)
         {
@@ -101,11 +101,11 @@ public class PooledSocketConnection implements PooledConnection
     }
 
     @Override
-    public void discardAll( Collector collector )
+    public void discardAll( ResponseHandler handler )
     {
         try
         {
-            delegate.discardAll( collector );
+            delegate.discardAll( handler );
         }
         catch ( RuntimeException e )
         {
@@ -114,11 +114,11 @@ public class PooledSocketConnection implements PooledConnection
     }
 
     @Override
-    public void pullAll( Collector collector )
+    public void pullAll( ResponseHandler handler )
     {
         try
         {
-            delegate.pullAll( collector );
+            delegate.pullAll( handler );
         }
         catch ( RuntimeException e )
         {
@@ -262,7 +262,7 @@ public class PooledSocketConnection implements PooledConnection
      */
     private void onDelegateException( RuntimeException e )
     {
-        if ( !isClientOrTransientError( e ) || isProtocolViolationError( e ) )
+        if ( !isRecoverable( e ) )
         {
             unrecoverableErrorsOccurred = true;
         }
@@ -293,33 +293,6 @@ public class PooledSocketConnection implements PooledConnection
     public long lastUsedTimestamp()
     {
         return lastUsedTimestamp;
-    }
-
-    private boolean isProtocolViolationError( RuntimeException e )
-    {
-        if ( e instanceof Neo4jException )
-        {
-            String errorCode = ((Neo4jException) e).code();
-            if ( errorCode != null )
-            {
-                return errorCode.startsWith( "Neo.ClientError.Request" );
-            }
-        }
-        return false;
-    }
-
-    private boolean isClientOrTransientError( RuntimeException e )
-    {
-        // Eg: DatabaseErrors and unknown (no status code or not neo4j exception) cause session to be discarded
-        if ( e instanceof Neo4jException )
-        {
-            String errorCode = ((Neo4jException) e).code();
-            if ( errorCode != null )
-            {
-                return errorCode.contains( "ClientError" ) || errorCode.contains( "TransientError" );
-            }
-        }
-        return false;
     }
 
     private void updateLastUsedTimestamp()

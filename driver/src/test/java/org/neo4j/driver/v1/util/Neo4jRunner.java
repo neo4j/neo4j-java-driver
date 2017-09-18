@@ -67,6 +67,7 @@ public class Neo4jRunner
     public static final String HOME_DIR = new File( NEO4J_DIR, "neo4jHome" ).getAbsolutePath();
 
     private Driver driver;
+    private boolean restartDriver;
 
     /** Global runner controlling a single server, used to avoid having to restart the server between tests */
     public static synchronized Neo4jRunner getOrCreateGlobalRunner() throws IOException
@@ -110,6 +111,16 @@ public class Neo4jRunner
 
     public Driver driver()
     {
+        if ( restartDriver )
+        {
+            restartDriver = false;
+            if ( driver != null )
+            {
+                driver.close();
+                driver = null;
+            }
+        }
+
         if ( driver == null )
         {
             driver = GraphDatabase.driver( DEFAULT_URI, DEFAULT_AUTH_TOKEN );
@@ -159,15 +170,24 @@ public class Neo4jRunner
         {
             return;
         }
-        if( driver != null )
-        {
-            driver.close();
-            driver = null;
-        }
+        restartDriver = true;
 
         debug( "Stopping server..." );
         executeCommand( "neoctrl-stop", HOME_DIR );
         debug( "Server stopped." );
+    }
+
+    public void killNeo4j() throws IOException
+    {
+        if ( serverStatus() == ServerStatus.OFFLINE )
+        {
+            return;
+        }
+        restartDriver = true;
+
+        debug( "Killing server..." );
+        executeCommand( "neoctrl-stop", "-k", HOME_DIR );
+        debug( "Server killed." );
     }
 
     public void forceToRestart() throws IOException

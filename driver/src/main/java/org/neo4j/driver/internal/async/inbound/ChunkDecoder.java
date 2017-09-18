@@ -16,22 +16,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1.util;
+package org.neo4j.driver.internal.async.inbound;
 
-import java.util.ArrayList;
-import java.util.List;
+import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 
-public class Lists
+public class ChunkDecoder extends LengthFieldBasedFrameDecoder
 {
+    private static final int MAX_FRAME_LENGTH = Short.MAX_VALUE;
+    private static final int LENGTH_FIELD_OFFSET = 0;
+    private static final int LENGTH_FIELD_LENGTH = 2;
+    private static final int LENGTH_ADJUSTMENT = 0;
+    private static final int INITIAL_BYTES_TO_STRIP = LENGTH_FIELD_LENGTH;
 
-    public static <T> List<T> asList( Iterable<T> iterable )
+    public ChunkDecoder()
     {
-        List<T> list = new ArrayList<>();
-        for ( T item : iterable )
-        {
-            list.add( item );
-        }
-        return list;
+        super( MAX_FRAME_LENGTH, LENGTH_FIELD_OFFSET, LENGTH_FIELD_LENGTH, LENGTH_ADJUSTMENT, INITIAL_BYTES_TO_STRIP );
     }
-
 }

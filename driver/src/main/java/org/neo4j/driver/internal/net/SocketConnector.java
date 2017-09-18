@@ -47,7 +47,8 @@ public class SocketConnector implements Connector
     @Override
     public final Connection connect( BoltServerAddress address )
     {
-        Connection connection = createConnection( address, securityPlan, connectionSettings.timeoutMillis(), logging );
+        Connection connection =
+                createConnection( address, securityPlan, connectionSettings.connectTimeoutMillis(), logging );
 
         // Because SocketConnection is not thread safe, wrap it in this guard
         // to ensure concurrent access leads causes application errors

@@ -20,10 +20,8 @@ package org.neo4j.driver.internal.net.pooling;
 
 import org.junit.Test;
 
-import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class PoolSettingsTest
@@ -31,7 +29,7 @@ public class PoolSettingsTest
     @Test
     public void idleTimeBeforeConnectionTestWhenConfigured()
     {
-        PoolSettings settings = new PoolSettings( 10, 42, 10 );
+        PoolSettings settings = new PoolSettings( 10, 42, 10, 5, -1 );
         assertTrue( settings.idleTimeBeforeConnectionTestEnabled() );
         assertEquals( 42, settings.idleTimeBeforeConnectionTest() );
     }
@@ -40,7 +38,7 @@ public class PoolSettingsTest
     public void idleTimeBeforeConnectionTestWhenSetToZero()
     {
         //Always test idle time during acquisition
-        PoolSettings settings = new PoolSettings( 10, 0, 10 );
+        PoolSettings settings = new PoolSettings( 10, 0, 10, 5, -1 );
         assertTrue( settings.idleTimeBeforeConnectionTestEnabled() );
         assertEquals( 0, settings.idleTimeBeforeConnectionTest() );
     }
@@ -57,7 +55,7 @@ public class PoolSettingsTest
     @Test
     public void maxConnectionLifetimeWhenConfigured()
     {
-        PoolSettings settings = new PoolSettings( 10, 10, 42 );
+        PoolSettings settings = new PoolSettings( 10, 10, 42, 5, -1 );
         assertTrue( settings.maxConnectionLifetimeEnabled() );
         assertEquals( 42, settings.maxConnectionLifetime() );
     }
@@ -65,7 +63,7 @@ public class PoolSettingsTest
     @Test
     public void maxConnectionLifetimeWhenSetToZeroOrNegativeValue()
     {
-        testMaxConnectionLifetimeWithIllegalValue( 0 ); // testing for thrashing
+        testMaxConnectionLifetimeWithIllegalValue( 0 );
         testMaxConnectionLifetimeWithIllegalValue( -1 );
         testMaxConnectionLifetimeWithIllegalValue( -42 );
         testMaxConnectionLifetimeWithIllegalValue( Integer.MIN_VALUE );
@@ -73,13 +71,13 @@ public class PoolSettingsTest
 
     private static void testIdleTimeBeforeConnectionTestWithIllegalValue( int value )
     {
-        PoolSettings settings = new PoolSettings( 10, value, 10 );
+        PoolSettings settings = new PoolSettings( 10, value, 10, 5, -1 );
         assertFalse( settings.idleTimeBeforeConnectionTestEnabled() );
     }
 
     private static void testMaxConnectionLifetimeWithIllegalValue( int value )
     {
-        PoolSettings settings = new PoolSettings( 10, 10, value );
+        PoolSettings settings = new PoolSettings( 10, 10, value, 5, -1 );
         assertFalse( settings.maxConnectionLifetimeEnabled() );
     }
 }

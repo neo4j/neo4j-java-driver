@@ -21,24 +21,41 @@ package org.neo4j.driver.internal;
 import java.util.Collections;
 import java.util.Map;
 
-import org.neo4j.driver.internal.spi.Collector;
+import org.neo4j.driver.ResultResourcesHandler;
+import org.neo4j.driver.internal.async.AsyncConnection;
+import org.neo4j.driver.internal.async.InternalFuture;
+import org.neo4j.driver.internal.async.InternalPromise;
+import org.neo4j.driver.internal.async.QueryRunner;
+import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
+import org.neo4j.driver.internal.handlers.BookmarkResponseHandler;
+import org.neo4j.driver.internal.handlers.CommitTxResponseHandler;
+import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
+import org.neo4j.driver.internal.handlers.RollbackTxResponseHandler;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.Response;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.StatementResultCursor;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.types.TypeSystem;
+import org.neo4j.driver.v1.util.Function;
 
+import static org.neo4j.driver.internal.util.ErrorUtil.isRecoverable;
 import static org.neo4j.driver.v1.Values.ofValue;
 import static org.neo4j.driver.v1.Values.value;
 
-public class ExplicitTransaction implements Transaction
+public class ExplicitTransaction implements Transaction, ResultResourcesHandler
 {
+    private static final String BEGIN_QUERY = "BEGIN";
+    private static final String COMMIT_QUERY = "COMMIT";
+    private static final String ROLLBACK_QUERY = "ROLLBACK";
+
     private enum State
     {
         /** The transaction is running with no explicit success or failure marked */
@@ -57,28 +74,68 @@ public class ExplicitTransaction implements Transaction
         FAILED,
 
         /** This transaction has successfully committed */
-        SUCCEEDED,
+        COMMITTED,
 
         /** This transaction has been rolled back */
         ROLLED_BACK
     }
 
     private final SessionResourcesHandler resourcesHandler;
-    private final Connection conn;
+    private final Connection connection;
+    private final AsyncConnection asyncConnection;
+    private final NetworkSession session;
 
-    private Bookmark bookmark = Bookmark.empty();
-    private State state = State.ACTIVE;
+    private volatile Bookmark bookmark = Bookmark.empty();
+    private volatile State state = State.ACTIVE;
 
-    public ExplicitTransaction( Connection conn, SessionResourcesHandler resourcesHandler )
+    public ExplicitTransaction( Connection connection, SessionResourcesHandler resourcesHandler )
     {
-        this( conn, resourcesHandler, Bookmark.empty() );
+        this.connection = connection;
+        this.asyncConnection = null;
+        this.session = null;
+        this.resourcesHandler = resourcesHandler;
     }
 
-    ExplicitTransaction( Connection conn, SessionResourcesHandler resourcesHandler, Bookmark initialBookmark )
+    public ExplicitTransaction( AsyncConnection asyncConnection, NetworkSession session )
     {
-        this.conn = conn;
-        this.resourcesHandler = resourcesHandler;
-        runBeginStatement( conn, initialBookmark );
+        this.connection = null;
+        this.asyncConnection = asyncConnection;
+        this.session = session;
+        this.resourcesHandler = SessionResourcesHandler.NO_OP;
+    }
+
+    public void begin( Bookmark initialBookmark )
+    {
+        Map<String,Value> parameters = initialBookmark.asBeginTransactionParameters();
+
+        connection.run( BEGIN_QUERY, parameters, NoOpResponseHandler.INSTANCE );
+        connection.pullAll( NoOpResponseHandler.INSTANCE );
+
+        if ( !initialBookmark.isEmpty() )
+        {
+            connection.sync();
+        }
+    }
+
+    public InternalFuture<ExplicitTransaction> beginAsync( Bookmark initialBookmark )
+    {
+        InternalPromise<ExplicitTransaction> beginTxPromise = asyncConnection.newPromise();
+
+        Map<String,Value> parameters = initialBookmark.asBeginTransactionParameters();
+        asyncConnection.run( BEGIN_QUERY, parameters, NoOpResponseHandler.INSTANCE );
+
+        if ( initialBookmark.isEmpty() )
+        {
+            asyncConnection.pullAll( NoOpResponseHandler.INSTANCE );
+            beginTxPromise.setSuccess( this );
+        }
+        else
+        {
+            asyncConnection.pullAll( new BeginTxResponseHandler<>( beginTxPromise, this ) );
+            asyncConnection.flush();
+        }
+
+        return beginTxPromise;
     }
 
     @Override
@@ -104,25 +161,26 @@ public class ExplicitTransaction implements Transaction
     {
         try
         {
-            if ( conn != null && conn.isOpen() )
+            if ( connection != null && connection.isOpen() )
             {
                 if ( state == State.MARKED_SUCCESS )
                 {
                     try
                     {
-                        conn.run( "COMMIT", Collections.<String,Value>emptyMap(), Collector.NO_OP );
-                        conn.pullAll( new BookmarkCollector( this ) );
-                        conn.sync();
-                        state = State.SUCCEEDED;
+                        connection.run( COMMIT_QUERY, Collections.<String,Value>emptyMap(),
+                                NoOpResponseHandler.INSTANCE );
+                        connection.pullAll( new BookmarkResponseHandler( this ) );
+                        connection.sync();
+                        state = State.COMMITTED;
                     }
-                    catch( Throwable e )
+                    catch ( Throwable e )
                     {
                         // failed to commit
                         try
                         {
                             rollbackTx();
                         }
-                        catch( Throwable ignored )
+                        catch ( Throwable ignored )
                         {
                             // best effort.
                         }
@@ -149,17 +207,118 @@ public class ExplicitTransaction implements Transaction
 
     private void rollbackTx()
     {
-        conn.run( "ROLLBACK", Collections.<String, Value>emptyMap(), Collector.NO_OP );
-        conn.pullAll( new BookmarkCollector( this ) );
-        conn.sync();
+        connection.run( ROLLBACK_QUERY, Collections.<String,Value>emptyMap(), NoOpResponseHandler.INSTANCE );
+        connection.pullAll( new BookmarkResponseHandler( this ) );
+        connection.sync();
         state = State.ROLLED_BACK;
     }
 
     @Override
-    @SuppressWarnings( "unchecked" )
+    public Response<Void> commitAsync()
+    {
+        return internalCommitAsync();
+    }
+
+    private InternalFuture<Void> internalCommitAsync()
+    {
+        if ( state == State.COMMITTED )
+        {
+            return asyncConnection.<Void>newPromise().setSuccess( null );
+        }
+        else if ( state == State.ROLLED_BACK )
+        {
+            return asyncConnection.<Void>newPromise().setFailure(
+                    new ClientException( "Can't commit, transaction has already been rolled back" ) );
+        }
+        else
+        {
+            return doCommitAsync().whenComplete( releaseConnectionAndNotifySession() );
+        }
+    }
+
+    @Override
+    public Response<Void> rollbackAsync()
+    {
+        return internalRollbackAsync();
+    }
+
+    InternalFuture<Void> internalRollbackAsync()
+    {
+        if ( state == State.COMMITTED )
+        {
+            return asyncConnection.<Void>newPromise()
+                    .setFailure( new ClientException( "Can't rollback, transaction has already been committed" ) );
+        }
+        else if ( state == State.ROLLED_BACK )
+        {
+            return asyncConnection.<Void>newPromise().setSuccess( null );
+        }
+        else
+        {
+            return doRollbackAsync().whenComplete( releaseConnectionAndNotifySession() );
+        }
+    }
+
+    private Runnable releaseConnectionAndNotifySession()
+    {
+        return new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                asyncConnection.release();
+                session.asyncTransactionClosed( ExplicitTransaction.this );
+            }
+        };
+    }
+
+    private InternalFuture<Void> doCommitAsync()
+    {
+        InternalPromise<Void> commitTxPromise = asyncConnection.newPromise();
+
+        asyncConnection.run( COMMIT_QUERY, Collections.<String,Value>emptyMap(), NoOpResponseHandler.INSTANCE );
+        asyncConnection.pullAll( new CommitTxResponseHandler( commitTxPromise, this ) );
+        asyncConnection.flush();
+
+        return commitTxPromise.thenApply( new Function<Void,Void>()
+        {
+            @Override
+            public Void apply( Void ignore )
+            {
+                ExplicitTransaction.this.state = State.COMMITTED;
+                return null;
+            }
+        } );
+    }
+
+    private InternalFuture<Void> doRollbackAsync()
+    {
+        InternalPromise<Void> rollbackTxPromise = asyncConnection.newPromise();
+        asyncConnection.run( ROLLBACK_QUERY, Collections.<String,Value>emptyMap(), NoOpResponseHandler.INSTANCE );
+        asyncConnection.pullAll( new RollbackTxResponseHandler( rollbackTxPromise ) );
+        asyncConnection.flush();
+
+        return rollbackTxPromise.thenApply( new Function<Void,Void>()
+        {
+            @Override
+            public Void apply( Void ignore )
+            {
+                ExplicitTransaction.this.state = State.ROLLED_BACK;
+                return null;
+            }
+        } );
+    }
+
+    @Override
     public StatementResult run( String statementText, Value statementParameters )
     {
         return run( new Statement( statementText, statementParameters ) );
+    }
+
+    @Override
+    public Response<StatementResultCursor> runAsync( String statementText, Value parameters )
+    {
+        return runAsync( new Statement( statementText, parameters ) );
     }
 
     @Override
@@ -169,10 +328,23 @@ public class ExplicitTransaction implements Transaction
     }
 
     @Override
+    public Response<StatementResultCursor> runAsync( String statementTemplate )
+    {
+        return runAsync( statementTemplate, Values.EmptyMap );
+    }
+
+    @Override
     public StatementResult run( String statementText, Map<String,Object> statementParameters )
     {
-        Value params = statementParameters == null ? Values.EmptyMap : value(statementParameters);
+        Value params = statementParameters == null ? Values.EmptyMap : value( statementParameters );
         return run( statementText, params );
+    }
+
+    @Override
+    public Response<StatementResultCursor> runAsync( String statementTemplate, Map<String,Object> statementParameters )
+    {
+        Value params = statementParameters == null ? Values.EmptyMap : value( statementParameters );
+        return runAsync( statementTemplate, params );
     }
 
     @Override
@@ -183,19 +355,26 @@ public class ExplicitTransaction implements Transaction
     }
 
     @Override
-    public synchronized StatementResult run( Statement statement )
+    public Response<StatementResultCursor> runAsync( String statementTemplate, Record statementParameters )
+    {
+        Value params = statementParameters == null ? Values.EmptyMap : value( statementParameters.asMap() );
+        return runAsync( statementTemplate, params );
+    }
+
+    @Override
+    public StatementResult run( Statement statement )
     {
         ensureNotFailed();
 
         try
         {
             InternalStatementResult result =
-                    new InternalStatementResult( conn, SessionResourcesHandler.NO_OP, this, statement );
-            conn.run( statement.text(),
+                    new InternalStatementResult( statement, connection, ResultResourcesHandler.NO_OP );
+            connection.run( statement.text(),
                     statement.parameters().asMap( ofValue() ),
-                    result.runResponseCollector() );
-            conn.pullAll( result.pullAllResponseCollector() );
-            conn.flush();
+                    result.runResponseHandler() );
+            connection.pullAll( result.pullAllResponseHandler() );
+            connection.flush();
             return result;
         }
         catch ( Neo4jException e )
@@ -208,9 +387,16 @@ public class ExplicitTransaction implements Transaction
     }
 
     @Override
+    public Response<StatementResultCursor> runAsync( Statement statement )
+    {
+        ensureNotFailed();
+        return QueryRunner.runAsync( asyncConnection, statement, this );
+    }
+
+    @Override
     public boolean isOpen()
     {
-        return state != State.SUCCEEDED && state != State.ROLLED_BACK;
+        return state != State.COMMITTED && state != State.ROLLED_BACK;
     }
 
     private void ensureNotFailed()
@@ -218,9 +404,9 @@ public class ExplicitTransaction implements Transaction
         if ( state == State.FAILED || state == State.MARKED_FAILED || state == State.ROLLED_BACK )
         {
             throw new ClientException(
-                "Cannot run more statements in this transaction, because previous statements in the " +
-                "transaction has failed and the transaction has been rolled back. Please start a new" +
-                " transaction to run another statement."
+                    "Cannot run more statements in this transaction, because previous statements in the " +
+                    "transaction has failed and the transaction has been rolled back. Please start a new " +
+                    "transaction to run another statement."
             );
         }
     }
@@ -231,7 +417,27 @@ public class ExplicitTransaction implements Transaction
         return InternalTypeSystem.TYPE_SYSTEM;
     }
 
-    public synchronized void markToClose()
+    @Override
+    public void resultFetched()
+    {
+        // no resources to release when result is fully fetched
+    }
+
+    @Override
+    public void resultFailed( Throwable error )
+    {
+        // RUN failed, this transaction should not commit
+        if ( isRecoverable( error ) )
+        {
+            failure();
+        }
+        else
+        {
+            markToClose();
+        }
+    }
+
+    public void markToClose()
     {
         state = State.FAILED;
     }
@@ -241,25 +447,11 @@ public class ExplicitTransaction implements Transaction
         return bookmark;
     }
 
-    void setBookmark( Bookmark bookmark )
+    public void setBookmark( Bookmark bookmark )
     {
         if ( bookmark != null && !bookmark.isEmpty() )
         {
             this.bookmark = bookmark;
-        }
-    }
-
-    private static void runBeginStatement( Connection connection, Bookmark bookmark )
-    {
-        Bookmark initialBookmark = bookmark == null ? Bookmark.empty() : bookmark;
-        Map<String,Value> parameters = initialBookmark.asBeginTransactionParameters();
-
-        connection.run( "BEGIN", parameters, Collector.NO_OP );
-        connection.pullAll( Collector.NO_OP );
-
-        if ( !initialBookmark.isEmpty() )
-        {
-            connection.sync();
         }
     }
 }

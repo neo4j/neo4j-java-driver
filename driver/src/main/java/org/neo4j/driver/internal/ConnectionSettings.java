@@ -52,18 +52,18 @@ public class ConnectionSettings
 
     private final AuthToken authToken;
     private final String userAgent;
-    private final int timeoutMillis;
+    private final int connectTimeoutMillis;
 
-    public ConnectionSettings( AuthToken authToken, String userAgent, int timeoutMillis )
+    public ConnectionSettings( AuthToken authToken, String userAgent, int connectTimeoutMillis )
     {
         this.authToken = authToken;
         this.userAgent = userAgent;
-        this.timeoutMillis = timeoutMillis;
+        this.connectTimeoutMillis = connectTimeoutMillis;
     }
 
-    public ConnectionSettings( AuthToken authToken, int timeoutMillis )
+    public ConnectionSettings( AuthToken authToken, int connectTimeoutMillis )
     {
-        this( authToken, DEFAULT_USER_AGENT, timeoutMillis );
+        this( authToken, DEFAULT_USER_AGENT, connectTimeoutMillis );
     }
 
     public AuthToken authToken()
@@ -76,8 +76,8 @@ public class ConnectionSettings
         return userAgent;
     }
 
-    public int timeoutMillis()
+    public int connectTimeoutMillis()
     {
-        return timeoutMillis;
+        return connectTimeoutMillis;
     }
 }

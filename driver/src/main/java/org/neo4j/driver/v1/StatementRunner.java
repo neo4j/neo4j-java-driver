@@ -20,8 +20,8 @@ package org.neo4j.driver.v1;
 
 import java.util.Map;
 
-import org.neo4j.driver.v1.util.Experimental;
 import org.neo4j.driver.v1.types.TypeSystem;
+import org.neo4j.driver.v1.util.Experimental;
 
 /**
  * Common interface for components that can execute Neo4j statements.
@@ -93,6 +93,8 @@ public interface StatementRunner
      */
     StatementResult run( String statementTemplate, Value parameters );
 
+    Response<StatementResultCursor> runAsync( String statementText, Value parameters );
+
     /**
      * Run a statement and return a result stream.
      *
@@ -122,6 +124,8 @@ public interface StatementRunner
      */
     StatementResult run( String statementTemplate, Map<String,Object> statementParameters );
 
+    Response<StatementResultCursor> runAsync( String statementTemplate, Map<String,Object> statementParameters );
+
     /**
      * Run a statement and return a result stream.
      *
@@ -139,6 +143,8 @@ public interface StatementRunner
      */
     StatementResult run( String statementTemplate, Record statementParameters );
 
+    Response<StatementResultCursor> runAsync( String statementTemplate, Record statementParameters );
+
     /**
      * Run a statement and return a result stream.
      *
@@ -146,6 +152,8 @@ public interface StatementRunner
      * @return a stream of result values and associated metadata
      */
     StatementResult run( String statementTemplate );
+
+    Response<StatementResultCursor> runAsync( String statementTemplate );
 
     /**
      * Run a statement and return a result stream.
@@ -161,6 +169,8 @@ public interface StatementRunner
      * @return a stream of result values and associated metadata
      */
     StatementResult run( Statement statement );
+
+    Response<StatementResultCursor> runAsync( Statement statement );
 
     /**
      * @return type system used by this statement runner for classifying values

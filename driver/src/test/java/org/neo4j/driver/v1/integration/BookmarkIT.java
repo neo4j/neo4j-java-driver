@@ -125,7 +125,6 @@ public class BookmarkIT
 
         try
         {
-            // todo: configure bookmark wait timeout to be lower than default 30sec when neo4j supports this
             session.beginTransaction( session.lastBookmark() + 42 );
             fail( "Exception expected" );
         }

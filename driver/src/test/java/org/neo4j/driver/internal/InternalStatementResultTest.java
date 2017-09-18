@@ -18,7 +18,6 @@
  */
 package org.neo4j.driver.internal;
 
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -26,9 +25,12 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.neo4j.driver.ResultResourcesHandler;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.v1.Record;
@@ -39,6 +41,7 @@ import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
 import org.neo4j.driver.v1.util.Pair;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.junit.Assert.assertEquals;
@@ -389,31 +392,31 @@ public class InternalStatementResultTest
     @Test
     public void shouldNotifyResourcesHandlerWhenFetchedViaList()
     {
-        SessionResourcesHandler resourcesHandler = mock( SessionResourcesHandler.class );
+        ResultResourcesHandler resourcesHandler = mock( ResultResourcesHandler.class );
         StatementResult result = createResult( 10, resourcesHandler );
 
         List<Record> records = result.list();
         assertEquals( 10, records.size() );
 
-        verify( resourcesHandler ).onResultConsumed();
+        verify( resourcesHandler ).resultFetched();
     }
 
     @Test
     public void shouldNotifyResourcesHandlerWhenFetchedViaSingle()
     {
-        SessionResourcesHandler resourcesHandler = mock( SessionResourcesHandler.class );
+        ResultResourcesHandler resourcesHandler = mock( ResultResourcesHandler.class );
         StatementResult result = createResult( 1, resourcesHandler );
 
         Record record = result.single();
         assertEquals( "v1-1", record.get( "k1" ).asString() );
 
-        verify( resourcesHandler ).onResultConsumed();
+        verify( resourcesHandler ).resultFetched();
     }
 
     @Test
     public void shouldNotifyResourcesHandlerWhenFetchedViaIterator()
     {
-        SessionResourcesHandler resourcesHandler = mock( SessionResourcesHandler.class );
+        ResultResourcesHandler resourcesHandler = mock( ResultResourcesHandler.class );
         StatementResult result = createResult( 1, resourcesHandler );
 
         while ( result.hasNext() )
@@ -421,35 +424,35 @@ public class InternalStatementResultTest
             assertNotNull( result.next() );
         }
 
-        verify( resourcesHandler ).onResultConsumed();
+        verify( resourcesHandler ).resultFetched();
     }
 
     @Test
     public void shouldNotifyResourcesHandlerWhenSummary()
     {
-        SessionResourcesHandler resourcesHandler = mock( SessionResourcesHandler.class );
+        ResultResourcesHandler resourcesHandler = mock( ResultResourcesHandler.class );
         StatementResult result = createResult( 10, resourcesHandler );
 
         assertNotNull( result.summary() );
 
-        verify( resourcesHandler ).onResultConsumed();
+        verify( resourcesHandler ).resultFetched();
     }
 
     @Test
     public void shouldNotifyResourcesHandlerWhenConsumed()
     {
-        SessionResourcesHandler resourcesHandler = mock( SessionResourcesHandler.class );
+        ResultResourcesHandler resourcesHandler = mock( ResultResourcesHandler.class );
         StatementResult result = createResult( 5, resourcesHandler );
 
         result.consume();
 
-        verify( resourcesHandler ).onResultConsumed();
+        verify( resourcesHandler ).resultFetched();
     }
 
     @Test
     public void shouldNotifyResourcesHandlerOnlyOnceWhenConsumed()
     {
-        SessionResourcesHandler resourcesHandler = mock( SessionResourcesHandler.class );
+        ResultResourcesHandler resourcesHandler = mock( ResultResourcesHandler.class );
         StatementResult result = createResult( 8, resourcesHandler );
 
         assertEquals( 8, result.list().size() );
@@ -457,21 +460,21 @@ public class InternalStatementResultTest
         assertNotNull( result.consume() );
         assertNotNull( result.summary() );
 
-        verify( resourcesHandler ).onResultConsumed();
+        verify( resourcesHandler ).resultFetched();
     }
 
     private StatementResult createResult( int numberOfRecords )
     {
-        return createResult( numberOfRecords, SessionResourcesHandler.NO_OP );
+        return createResult( numberOfRecords, ResultResourcesHandler.NO_OP );
     }
 
-    private StatementResult createResult( int numberOfRecords, SessionResourcesHandler resourcesHandler )
+    private StatementResult createResult( int numberOfRecords, ResultResourcesHandler resourcesHandler )
     {
         Connection connection = mock( Connection.class );
         String statement = "<unknown>";
 
-        final InternalStatementResult result = new InternalStatementResult( connection, resourcesHandler, null,
-                new Statement( statement ) );
+        Statement stmt = new Statement( statement );
+        InternalStatementResult result = new InternalStatementResult( stmt, connection, resourcesHandler );
 
         // Each time the cursor calls `recieveOne`, we'll run one of these,
         // to emulate how messages are handed over to the cursor
@@ -504,7 +507,7 @@ public class InternalStatementResultTest
             @Override
             public void run()
             {
-                cursor.pullAllResponseCollector().done();
+                cursor.pullAllResponseHandler().onSuccess( Collections.<String,Value>emptyMap() );
             }
         };
     }
@@ -516,7 +519,7 @@ public class InternalStatementResultTest
             @Override
             public void run()
             {
-                cursor.pullAllResponseCollector().record( new Value[]{value( "v1-" + val ), value( "v2-" + val )} );
+                cursor.pullAllResponseHandler().onRecord( new Value[]{value( "v1-" + val ), value( "v2-" + val )} );
             }
         };
     }
@@ -528,8 +531,7 @@ public class InternalStatementResultTest
             @Override
             public void run()
             {
-                cursor.runResponseCollector().keys( new String[]{"k1", "k2"} );
-                cursor.runResponseCollector().done();
+                cursor.runResponseHandler().onSuccess( singletonMap( "fields", value( Arrays.asList( "k1", "k2" ) ) ) );
             }
         };
     }

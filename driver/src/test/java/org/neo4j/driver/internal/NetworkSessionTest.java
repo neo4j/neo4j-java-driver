@@ -29,11 +29,12 @@ import org.mockito.verification.VerificationMode;
 
 import java.util.Map;
 
+import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
 import org.neo4j.driver.internal.retry.FixedRetryLogic;
 import org.neo4j.driver.internal.retry.RetryLogic;
-import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.spi.PooledConnection;
+import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.Supplier;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Session;
@@ -68,7 +69,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
-import static org.neo4j.driver.internal.spi.Collector.NO_OP;
 import static org.neo4j.driver.v1.AccessMode.READ;
 import static org.neo4j.driver.v1.AccessMode.WRITE;
 
@@ -216,7 +216,7 @@ public class NetworkSessionTest
         session.run( "RETURN 1" );
 
         verify( connectionProvider ).acquireConnection( READ );
-        verify( connection ).run( eq( "RETURN 1" ), anyParams(), any( Collector.class ) );
+        verify( connection ).run( eq( "RETURN 1" ), anyParams(), any( ResponseHandler.class ) );
     }
 
     @Test
@@ -230,11 +230,11 @@ public class NetworkSessionTest
 
         session.run( "RETURN 1" );
         verify( connectionProvider ).acquireConnection( READ );
-        verify( connection1 ).run( eq( "RETURN 1" ), anyParams(), any( Collector.class ) );
+        verify( connection1 ).run( eq( "RETURN 1" ), anyParams(), any( ResponseHandler.class ) );
 
         session.run( "RETURN 2" );
         verify( connectionProvider, times( 2 ) ).acquireConnection( READ );
-        verify( connection2 ).run( eq( "RETURN 2" ), anyParams(), any( Collector.class ) );
+        verify( connection2 ).run( eq( "RETURN 2" ), anyParams(), any( ResponseHandler.class ) );
 
         InOrder inOrder = inOrder( connection1 );
         inOrder.verify( connection1 ).sync();
@@ -252,11 +252,11 @@ public class NetworkSessionTest
 
         session.run( "RETURN 1" );
         verify( connectionProvider ).acquireConnection( READ );
-        verify( connection1 ).run( eq( "RETURN 1" ), anyParams(), any( Collector.class ) );
+        verify( connection1 ).run( eq( "RETURN 1" ), anyParams(), any( ResponseHandler.class ) );
 
         session.run( "RETURN 2" );
         verify( connectionProvider, times( 2 ) ).acquireConnection( READ );
-        verify( connection2 ).run( eq( "RETURN 2" ), anyParams(), any( Collector.class ) );
+        verify( connection2 ).run( eq( "RETURN 2" ), anyParams(), any( ResponseHandler.class ) );
 
         verify( connection1, never() ).sync();
         verify( connection1 ).close();
@@ -272,7 +272,7 @@ public class NetworkSessionTest
 
         session.run( "RETURN 1" );
         verify( connectionProvider ).acquireConnection( READ );
-        verify( connection ).run( eq( "RETURN 1" ), anyParams(), any( Collector.class ) );
+        verify( connection ).run( eq( "RETURN 1" ), anyParams(), any( ResponseHandler.class ) );
 
         session.close();
 
@@ -290,7 +290,7 @@ public class NetworkSessionTest
 
         session.run( "RETURN 1" );
         verify( connectionProvider ).acquireConnection( READ );
-        verify( connection ).run( eq( "RETURN 1" ), anyParams(), any( Collector.class ) );
+        verify( connection ).run( eq( "RETURN 1" ), anyParams(), any( ResponseHandler.class ) );
 
         session.close();
 
@@ -344,7 +344,7 @@ public class NetworkSessionTest
 
         session.run( "RETURN 1" );
         verify( connectionProvider ).acquireConnection( READ );
-        verify( connection1 ).run( eq( "RETURN 1" ), anyParams(), any( Collector.class ) );
+        verify( connection1 ).run( eq( "RETURN 1" ), anyParams(), any( ResponseHandler.class ) );
 
         session.beginTransaction();
         verify( connection1 ).close();
@@ -380,7 +380,7 @@ public class NetworkSessionTest
         tx.run( "RETURN 1" );
 
         verify( connectionProvider ).acquireConnection( READ );
-        verify( connection ).run( eq( "RETURN 1" ), anyParams(), any( Collector.class ) );
+        verify( connection ).run( eq( "RETURN 1" ), anyParams(), any( ResponseHandler.class ) );
 
         tx.close();
         verify( connection ).sync();
@@ -506,7 +506,7 @@ public class NetworkSessionTest
 
         session.run( "RETURN 1" );
         verify( connectionProvider ).acquireConnection( READ );
-        verify( connection ).run( eq( "RETURN 1" ), anyParams(), any( Collector.class ) );
+        verify( connection ).run( eq( "RETURN 1" ), anyParams(), any( ResponseHandler.class ) );
 
         session.onResultConsumed();
 
@@ -1039,7 +1039,7 @@ public class NetworkSessionTest
                 }
                 return null;
             }
-        } ).when( connection ).run( eq( "COMMIT" ), anyParams(), any( Collector.class ) );
+        } ).when( connection ).run( eq( "COMMIT" ), anyParams(), any( ResponseHandler.class ) );
 
         return connection;
     }
@@ -1056,7 +1056,7 @@ public class NetworkSessionTest
 
     private static void verifyBeginTx( PooledConnection connectionMock, Bookmark bookmark )
     {
-        verify( connectionMock ).run( "BEGIN", bookmark.asBeginTransactionParameters(), NO_OP );
+        verify( connectionMock ).run( "BEGIN", bookmark.asBeginTransactionParameters(), NoOpResponseHandler.INSTANCE );
     }
 
     private static void verifyCommitTx( PooledConnection connectionMock, VerificationMode mode )
@@ -1071,7 +1071,7 @@ public class NetworkSessionTest
 
     private static void verifyRun( PooledConnection connectionMock, String statement, VerificationMode mode )
     {
-        verify( connectionMock, mode ).run( eq( statement ), anyParams(), any( Collector.class ) );
+        verify( connectionMock, mode ).run( eq( statement ), anyParams(), any( ResponseHandler.class ) );
     }
 
     private static Map<String,Value> anyParams()

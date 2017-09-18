@@ -62,7 +62,7 @@ public class CredentialsIT
     @BeforeClass
     public static void enableAuth() throws Exception
     {
-        neo4j.restart( Neo4jSettings.TEST_SETTINGS
+        neo4j.restartDb( Neo4jSettings.TEST_SETTINGS
                 .updateWith( Neo4jSettings.AUTH_ENABLED, "true" )
                 .updateWith( Neo4jSettings.DATA_DIR, tempDir.getRoot().getAbsolutePath().replace( "\\", "/" ) ) );
 

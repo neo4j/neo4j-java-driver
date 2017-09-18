@@ -26,6 +26,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 
@@ -35,10 +36,10 @@ import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.retry.FixedRetryLogic;
 import org.neo4j.driver.internal.retry.RetryLogic;
-import org.neo4j.driver.internal.spi.Collector;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.spi.PooledConnection;
+import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.summary.InternalServerInfo;
 import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.v1.AccessMode;
@@ -390,14 +391,14 @@ public class RoutingDriverTest
                 doAnswer( withKeys( "ttl", "servers" ) ).when( connection ).run(
                         eq( GET_SERVERS ),
                         eq( Collections.<String,Value>emptyMap() ),
-                        any( Collector.class ) );
+                        any( ResponseHandler.class ) );
                 if ( answer > furtherGetServers.length )
                 {
                     answer = furtherGetServers.length;
                 }
                 int offset = answer++;
                 doAnswer( offset == 0 ? toGetServers : furtherGetServers[offset - 1] )
-                        .when( connection ).pullAll( any( Collector.class ) );
+                        .when( connection ).pullAll( any( ResponseHandler.class ) );
 
                 return connection;
             }
@@ -406,29 +407,30 @@ public class RoutingDriverTest
         return pool;
     }
 
-    private static CollectorAnswer withKeys( final String... keys )
+    private static ResponseHandlerAnswer withKeys( final String... keys )
     {
-        return new CollectorAnswer()
+        return new ResponseHandlerAnswer()
         {
             @Override
-            void collect( Collector collector )
+            void setUp( ResponseHandler handler )
             {
-                collector.keys( keys );
+                handler.onSuccess( Collections.singletonMap( "fields", value( Arrays.asList( keys ) ) ) );
             }
         };
     }
 
-    private static CollectorAnswer withServerList( final Value[]... records )
+    private static ResponseHandlerAnswer withServerList( final Value[]... records )
     {
-        return new CollectorAnswer()
+        return new ResponseHandlerAnswer()
         {
             @Override
-            void collect( Collector collector )
+            void setUp( ResponseHandler handler )
             {
                 for ( Value[] fields : records )
                 {
-                    collector.record( fields );
+                    handler.onRecord( fields );
                 }
+                handler.onSuccess( Collections.<String,Value>emptyMap() );
             }
         };
     }
@@ -462,27 +464,26 @@ public class RoutingDriverTest
         }
     }
 
-    private static abstract class CollectorAnswer implements Answer
+    private static abstract class ResponseHandlerAnswer implements Answer<Void>
     {
-        abstract void collect( Collector collector );
+        abstract void setUp( ResponseHandler handler );
 
         @Override
-        public final Object answer( InvocationOnMock invocation ) throws Throwable
+        public Void answer( InvocationOnMock invocation ) throws Throwable
         {
-            Collector collector = collector( invocation );
-            collect( collector );
-            collector.done();
+            ResponseHandler handler = handlerFrom( invocation );
+            setUp( handler );
             return null;
         }
 
-        private Collector collector( InvocationOnMock invocation )
+        private ResponseHandler handlerFrom( InvocationOnMock invocation )
         {
             switch ( invocation.getMethod().getName() )
             {
             case "pullAll":
-                return invocation.getArgumentAt( 0, Collector.class );
+                return invocation.getArgumentAt( 0, ResponseHandler.class );
             case "run":
-                return invocation.getArgumentAt( 2, Collector.class );
+                return invocation.getArgumentAt( 2, ResponseHandler.class );
             default:
                 throw new UnsupportedOperationException( invocation.getMethod().getName() );
             }

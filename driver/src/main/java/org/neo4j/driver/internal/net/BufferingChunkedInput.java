@@ -196,6 +196,7 @@ public class BufferingChunkedInput implements PackInput
         }
     };
 
+    @Override
     public Runnable messageBoundaryHook()
     {
         return this.onMessageComplete;

@@ -326,6 +326,7 @@ public class ChunkedInput implements PackInput
         }
     };
 
+    @Override
     public Runnable messageBoundaryHook()
     {
         return this.onMessageComplete;

@@ -18,9 +18,16 @@
  */
 package org.neo4j.driver.internal;
 
+import io.netty.util.concurrent.GlobalEventExecutor;
+
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.driver.ResultResourcesHandler;
+import org.neo4j.driver.internal.async.AsyncConnection;
+import org.neo4j.driver.internal.async.InternalFuture;
+import org.neo4j.driver.internal.async.InternalPromise;
+import org.neo4j.driver.internal.async.QueryRunner;
 import org.neo4j.driver.internal.logging.DelegatingLogger;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.Connection;
@@ -32,19 +39,22 @@ import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.Response;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.StatementResultCursor;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.TransactionWork;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.types.TypeSystem;
+import org.neo4j.driver.v1.util.Function;
 
 import static org.neo4j.driver.v1.Values.value;
 
-public class NetworkSession implements Session, SessionResourcesHandler
+public class NetworkSession implements Session, SessionResourcesHandler, ResultResourcesHandler
 {
     private static final String LOG_NAME = "Session";
 
@@ -53,9 +63,12 @@ public class NetworkSession implements Session, SessionResourcesHandler
     private final RetryLogic retryLogic;
     protected final Logger logger;
 
-    private Bookmark bookmark = Bookmark.empty();
+    private volatile Bookmark bookmark = Bookmark.empty();
     private PooledConnection currentConnection;
     private ExplicitTransaction currentTransaction;
+    private volatile InternalFuture<ExplicitTransaction> currentAsyncTransactionFuture;
+
+    private InternalFuture<AsyncConnection> asyncConnectionFuture;
 
     private final AtomicBoolean isOpen = new AtomicBoolean( true );
 
@@ -75,10 +88,23 @@ public class NetworkSession implements Session, SessionResourcesHandler
     }
 
     @Override
+    public Response<StatementResultCursor> runAsync( String statementText )
+    {
+        return runAsync( statementText, Values.EmptyMap );
+    }
+
+    @Override
     public StatementResult run( String statementText, Map<String,Object> statementParameters )
     {
         Value params = statementParameters == null ? Values.EmptyMap : value( statementParameters );
         return run( statementText, params );
+    }
+
+    @Override
+    public Response<StatementResultCursor> runAsync( String statementText, Map<String,Object> statementParameters )
+    {
+        Value params = statementParameters == null ? Values.EmptyMap : value( statementParameters );
+        return runAsync( statementText, params );
     }
 
     @Override
@@ -89,9 +115,22 @@ public class NetworkSession implements Session, SessionResourcesHandler
     }
 
     @Override
+    public Response<StatementResultCursor> runAsync( String statementTemplate, Record statementParameters )
+    {
+        Value params = statementParameters == null ? Values.EmptyMap : value( statementParameters.asMap() );
+        return runAsync( statementTemplate, params );
+    }
+
+    @Override
     public StatementResult run( String statementText, Value statementParameters )
     {
         return run( new Statement( statementText, statementParameters ) );
+    }
+
+    @Override
+    public Response<StatementResultCursor> runAsync( String statementText, Value parameters )
+    {
+        return runAsync( new Statement( statementText, parameters ) );
     }
 
     @Override
@@ -106,13 +145,31 @@ public class NetworkSession implements Session, SessionResourcesHandler
         return run( currentConnection, statement, this );
     }
 
-    public static StatementResult run( Connection connection, Statement statement,
-            SessionResourcesHandler resourcesHandler )
+    @Override
+    public Response<StatementResultCursor> runAsync( final Statement statement )
     {
-        InternalStatementResult result = new InternalStatementResult( connection, resourcesHandler, null, statement );
+        ensureSessionIsOpen();
+        ensureNoOpenTransactionBeforeRunningSession();
+
+        InternalFuture<AsyncConnection> connectionFuture = acquireAsyncConnection( mode );
+
+        return connectionFuture.thenCombine( new Function<AsyncConnection,InternalFuture<StatementResultCursor>>()
+        {
+            @Override
+            public InternalFuture<StatementResultCursor> apply( AsyncConnection connection )
+            {
+                return QueryRunner.runAsync( connection, statement );
+            }
+        } );
+    }
+
+    public static StatementResult run( Connection connection, Statement statement,
+            ResultResourcesHandler resourcesHandler )
+    {
+        InternalStatementResult result = new InternalStatementResult( statement, connection, resourcesHandler );
         connection.run( statement.text(), statement.parameters().asMap( Values.ofValue() ),
-                result.runResponseCollector() );
-        connection.pullAll( result.pullAllResponseCollector() );
+                result.runResponseHandler() );
+        connection.pullAll( result.pullAllResponseHandler() );
         connection.flush();
         return result;
     }
@@ -167,6 +224,46 @@ public class NetworkSession implements Session, SessionResourcesHandler
         }
 
         syncAndCloseCurrentConnection();
+
+        try
+        {
+            closeAsync().get();
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+
+    @Override
+    public Response<Void> closeAsync()
+    {
+        if ( asyncConnectionFuture != null )
+        {
+            return asyncConnectionFuture.thenCombine( new Function<AsyncConnection,InternalFuture<Void>>()
+            {
+                @Override
+                public InternalFuture<Void> apply( AsyncConnection connection )
+                {
+                    return connection.forceRelease();
+                }
+            } );
+        }
+        else if ( currentAsyncTransactionFuture != null )
+        {
+            return currentAsyncTransactionFuture.thenCombine( new Function<ExplicitTransaction,InternalFuture<Void>>()
+            {
+                @Override
+                public InternalFuture<Void> apply( ExplicitTransaction tx )
+                {
+                    return tx.internalRollbackAsync();
+                }
+            } );
+        }
+        else
+        {
+            return new InternalPromise<Void>( GlobalEventExecutor.INSTANCE ).setSuccess( null );
+        }
     }
 
     @Override
@@ -181,6 +278,12 @@ public class NetworkSession implements Session, SessionResourcesHandler
     {
         setBookmark( Bookmark.from( bookmark ) );
         return beginTransaction();
+    }
+
+    @Override
+    public Response<Transaction> beginTransactionAsync()
+    {
+        return beginTransactionAsync( mode );
     }
 
     @Override
@@ -222,6 +325,18 @@ public class NetworkSession implements Session, SessionResourcesHandler
     }
 
     @Override
+    public void resultFetched()
+    {
+        closeCurrentConnection();
+    }
+
+    @Override
+    public void resultFailed( Throwable error )
+    {
+        resultFetched();
+    }
+
+    @Override
     public synchronized void onTransactionClosed( ExplicitTransaction tx )
     {
         if ( currentTransaction != null && currentTransaction == tx )
@@ -230,6 +345,12 @@ public class NetworkSession implements Session, SessionResourcesHandler
             setBookmark( currentTransaction.bookmark() );
             currentTransaction = null;
         }
+    }
+
+    public void asyncTransactionClosed( ExplicitTransaction tx )
+    {
+        setBookmark( tx.bookmark() );
+        currentAsyncTransactionFuture = null;
     }
 
     @Override
@@ -284,9 +405,33 @@ public class NetworkSession implements Session, SessionResourcesHandler
         syncAndCloseCurrentConnection();
         currentConnection = acquireConnection( mode );
 
-        currentTransaction = new ExplicitTransaction( currentConnection, this, bookmark);
+        ExplicitTransaction tx = new ExplicitTransaction( currentConnection, this );
+        tx.begin( bookmark );
+        currentTransaction = tx;
         currentConnection.setResourcesHandler( this );
         return currentTransaction;
+    }
+
+    private synchronized Response<Transaction> beginTransactionAsync( AccessMode mode )
+    {
+        ensureSessionIsOpen();
+        ensureNoOpenTransactionBeforeOpeningTransaction();
+
+        InternalFuture<AsyncConnection> connectionFuture = acquireAsyncConnection( mode );
+
+        currentAsyncTransactionFuture = connectionFuture.thenCombine(
+                new Function<AsyncConnection,InternalFuture<ExplicitTransaction>>()
+                {
+                    @Override
+                    public InternalFuture<ExplicitTransaction> apply( AsyncConnection connection )
+                    {
+                        ExplicitTransaction tx = new ExplicitTransaction( connection, NetworkSession.this );
+                        return tx.beginAsync( bookmark );
+                    }
+                } );
+
+        //noinspection unchecked
+        return (Response) currentAsyncTransactionFuture;
     }
 
     private void ensureNoUnrecoverableError()
@@ -302,7 +447,7 @@ public class NetworkSession implements Session, SessionResourcesHandler
     //should be called from a synchronized block
     private void ensureNoOpenTransactionBeforeRunningSession()
     {
-        if ( currentTransaction != null )
+        if ( currentTransaction != null || currentAsyncTransactionFuture != null )
         {
             throw new ClientException( "Statements cannot be run directly on a session with an open transaction;" +
                                        " either run from within the transaction or use a different session." );
@@ -312,7 +457,7 @@ public class NetworkSession implements Session, SessionResourcesHandler
     //should be called from a synchronized block
     private void ensureNoOpenTransactionBeforeOpeningTransaction()
     {
-        if ( currentTransaction != null )
+        if ( currentTransaction != null || currentAsyncTransactionFuture != null )
         {
             throw new ClientException( "You cannot begin a transaction on a session with an open transaction;" +
                                        " either run from within the transaction or use a different session." );
@@ -337,6 +482,38 @@ public class NetworkSession implements Session, SessionResourcesHandler
         PooledConnection connection = connectionProvider.acquireConnection( mode );
         logger.debug( "Acquired connection " + connection.hashCode() );
         return connection;
+    }
+
+    private InternalFuture<AsyncConnection> acquireAsyncConnection( final AccessMode mode )
+    {
+        if ( asyncConnectionFuture == null )
+        {
+            asyncConnectionFuture = connectionProvider.acquireAsyncConnection( mode );
+        }
+        else
+        {
+            // memorize in local so same instance is transformed and used in callbacks
+            final InternalFuture<AsyncConnection> currentAsyncConnectionFuture = asyncConnectionFuture;
+
+            asyncConnectionFuture = currentAsyncConnectionFuture.thenCombine(
+                    new Function<AsyncConnection,InternalFuture<AsyncConnection>>()
+                    {
+                        @Override
+                        public InternalFuture<AsyncConnection> apply( AsyncConnection connection )
+                        {
+                            if ( connection.tryMarkInUse() )
+                            {
+                                return currentAsyncConnectionFuture;
+                            }
+                            else
+                            {
+                                return connectionProvider.acquireAsyncConnection( mode );
+                            }
+                        }
+                    } );
+        }
+
+        return asyncConnectionFuture;
     }
 
     boolean currentConnectionIsOpen()

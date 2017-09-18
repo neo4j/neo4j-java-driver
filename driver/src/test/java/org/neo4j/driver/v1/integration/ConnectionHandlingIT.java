@@ -361,7 +361,8 @@ public class ConnectionHandlingIT
         {
             ConnectionSettings connectionSettings = new ConnectionSettings( authToken, 1000 );
             PoolSettings poolSettings = new PoolSettings( config.maxIdleConnectionPoolSize(),
-                    config.idleTimeBeforeConnectionTest(), config.maxConnectionLifetime() );
+                    config.idleTimeBeforeConnectionTest(), config.maxConnectionLifetimeMillis(),
+                    config.maxConnectionPoolSize(), config.connectionAcquisitionTimeoutMillis() );
             Connector connector = createConnector( connectionSettings, securityPlan, config.logging() );
             connectionPool = new MemorizingConnectionPool( poolSettings, connector, createClock(), config.logging() );
             return connectionPool;

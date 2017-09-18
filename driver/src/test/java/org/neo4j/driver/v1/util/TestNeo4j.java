@@ -82,17 +82,17 @@ public class TestNeo4j implements TestRule
         return runner.driver();
     }
 
-    public void restart() throws Exception
+    public void restartDb() throws Exception
     {
         runner.restartNeo4j();
     }
 
-    public void forceRestart() throws Exception
+    public void forceRestartDb() throws Exception
     {
         runner.forceToRestart();
     }
 
-    public void restart( Neo4jSettings neo4jSettings ) throws Exception
+    public void restartDb( Neo4jSettings neo4jSettings ) throws Exception
     {
         runner.restartNeo4j( neo4jSettings );
     }
@@ -160,13 +160,18 @@ public class TestNeo4j implements TestRule
         }
     }
 
-    public void start() throws IOException
+    public void startDb() throws IOException
     {
         runner.startNeo4j();
     }
 
-    public void stop() throws IOException
+    public void stopDb() throws IOException
     {
         runner.stopNeo4j();
+    }
+
+    public void killDb() throws IOException
+    {
+        runner.killNeo4j();
     }
 }

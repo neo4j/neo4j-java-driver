@@ -82,6 +82,8 @@ public interface Session extends Resource, StatementRunner
     @Deprecated
     Transaction beginTransaction( String bookmark );
 
+    Response<Transaction> beginTransactionAsync();
+
     /**
      * Execute given unit of work in a  {@link AccessMode#READ read} transaction.
      * <p>
@@ -112,7 +114,7 @@ public interface Session extends Resource, StatementRunner
      * or if this transaction was rolled back, the bookmark value will
      * be null.
      *
-     * @return a reference to a previous transac'tion
+     * @return a reference to a previous transaction
      */
     String lastBookmark();
 
@@ -142,4 +144,6 @@ public interface Session extends Resource, StatementRunner
      */
     @Override
     void close();
+
+    Response<Void> closeAsync();
 }

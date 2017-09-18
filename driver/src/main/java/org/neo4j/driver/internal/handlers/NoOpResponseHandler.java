@@ -16,23 +16,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal;
+package org.neo4j.driver.internal.handlers;
 
-import org.neo4j.driver.internal.spi.Collector.NoOperationCollector;
+import java.util.Map;
 
-class BookmarkCollector extends NoOperationCollector
+import org.neo4j.driver.internal.spi.ResponseHandler;
+import org.neo4j.driver.v1.Value;
+
+public class NoOpResponseHandler implements ResponseHandler
 {
-    private final ExplicitTransaction transaction;
+    public static final NoOpResponseHandler INSTANCE = new NoOpResponseHandler();
 
-    BookmarkCollector( ExplicitTransaction transaction )
+    @Override
+    public void onSuccess( Map<String,Value> metadata )
     {
-        this.transaction = transaction;
     }
 
     @Override
-    public void bookmark( Bookmark bookmark )
+    public void onFailure( Throwable error )
     {
-        transaction.setBookmark( bookmark );
     }
 
+    @Override
+    public void onRecord( Value[] fields )
+    {
+    }
 }

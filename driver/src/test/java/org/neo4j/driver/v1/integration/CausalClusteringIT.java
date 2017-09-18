@@ -302,7 +302,6 @@ public class CausalClusteringIT
 
             try
             {
-                // todo: configure bookmark wait timeout to be lower than default 30sec when neo4j supports this
                 session.beginTransaction( newBookmark );
                 fail( "Exception expected" );
             }

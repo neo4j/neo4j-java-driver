@@ -18,10 +18,17 @@
  */
 package org.neo4j.driver.internal;
 
+import io.netty.bootstrap.Bootstrap;
+
 import java.io.IOException;
 import java.net.URI;
 import java.security.GeneralSecurityException;
 
+import org.neo4j.driver.internal.async.AsyncConnectorImpl;
+import org.neo4j.driver.internal.async.BootstrapFactory;
+import org.neo4j.driver.internal.async.pool.ActiveChannelTracker;
+import org.neo4j.driver.internal.async.pool.AsyncConnectionPool;
+import org.neo4j.driver.internal.async.pool.AsyncConnectionPoolImpl;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.cluster.loadbalancing.LeastConnectedLoadBalancingStrategy;
@@ -59,15 +66,20 @@ public class DriverFactory
     public final Driver newInstance( URI uri, AuthToken authToken, RoutingSettings routingSettings,
             RetrySettings retrySettings, Config config )
     {
+        authToken = authToken == null ? AuthTokens.none() : authToken;
+
         BoltServerAddress address = new BoltServerAddress( uri );
         RoutingSettings newRoutingSettings = routingSettings.withRoutingContext( new RoutingContext( uri ) );
         SecurityPlan securityPlan = createSecurityPlan( address, config );
         ConnectionPool connectionPool = createConnectionPool( authToken, securityPlan, config );
         RetryLogic retryLogic = createRetryLogic( retrySettings, config.logging() );
 
+        AsyncConnectionPool asyncConnectionPool = createAsyncConnectionPool( authToken, securityPlan, config );
+
         try
         {
-            return createDriver( uri, address, connectionPool, config, newRoutingSettings, securityPlan, retryLogic );
+            return createDriver( uri, address, connectionPool, config, newRoutingSettings, securityPlan, retryLogic,
+                    asyncConnectionPool );
         }
         catch ( Throwable driverError )
         {
@@ -75,6 +87,7 @@ public class DriverFactory
             try
             {
                 connectionPool.close();
+                asyncConnectionPool.closeAsync().syncUninterruptibly();
             }
             catch ( Throwable closeError )
             {
@@ -84,16 +97,33 @@ public class DriverFactory
         }
     }
 
+    private AsyncConnectionPool createAsyncConnectionPool( AuthToken authToken, SecurityPlan securityPlan,
+            Config config )
+    {
+        Clock clock = createClock();
+        ConnectionSettings connectionSettings = new ConnectionSettings( authToken, config.connectionTimeoutMillis() );
+        ActiveChannelTracker activeChannelTracker = new ActiveChannelTracker( config.logging() );
+        AsyncConnectorImpl connector = new AsyncConnectorImpl( connectionSettings, securityPlan,
+                activeChannelTracker, config.logging(), clock );
+        Bootstrap bootstrap = BootstrapFactory.newBootstrap();
+        PoolSettings poolSettings = new PoolSettings( config.maxIdleConnectionPoolSize(),
+                config.idleTimeBeforeConnectionTest(), config.maxConnectionLifetimeMillis(),
+                config.maxConnectionPoolSize(),
+                config.connectionAcquisitionTimeoutMillis() );
+        return new AsyncConnectionPoolImpl( connector, bootstrap, activeChannelTracker, poolSettings, config.logging(),
+                clock );
+    }
+
     private Driver createDriver( URI uri, BoltServerAddress address, ConnectionPool connectionPool,
             Config config, RoutingSettings routingSettings, SecurityPlan securityPlan,
-            RetryLogic retryLogic )
+            RetryLogic retryLogic, AsyncConnectionPool asyncConnectionPool )
     {
         String scheme = uri.getScheme().toLowerCase();
         switch ( scheme )
         {
         case BOLT_URI_SCHEME:
             assertNoRoutingContext( uri, routingSettings );
-            return createDirectDriver( address, connectionPool, config, securityPlan, retryLogic );
+            return createDirectDriver( address, connectionPool, config, securityPlan, retryLogic, asyncConnectionPool );
         case BOLT_ROUTING_URI_SCHEME:
             return createRoutingDriver( address, connectionPool, config, routingSettings, securityPlan, retryLogic );
         default:
@@ -107,9 +137,10 @@ public class DriverFactory
      * <b>This method is protected only for testing</b>
      */
     protected Driver createDirectDriver( BoltServerAddress address, ConnectionPool connectionPool, Config config,
-            SecurityPlan securityPlan, RetryLogic retryLogic )
+            SecurityPlan securityPlan, RetryLogic retryLogic, AsyncConnectionPool asyncConnectionPool )
     {
-        ConnectionProvider connectionProvider = new DirectConnectionProvider( address, connectionPool );
+        ConnectionProvider connectionProvider =
+                new DirectConnectionProvider( address, connectionPool, asyncConnectionPool );
         SessionFactory sessionFactory = createSessionFactory( connectionProvider, retryLogic, config );
         return createDriver( config, securityPlan, sessionFactory );
     }
@@ -173,11 +204,10 @@ public class DriverFactory
      */
     protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Config config )
     {
-        authToken = authToken == null ? AuthTokens.none() : authToken;
-
         ConnectionSettings connectionSettings = new ConnectionSettings( authToken, config.connectionTimeoutMillis() );
         PoolSettings poolSettings = new PoolSettings( config.maxIdleConnectionPoolSize(),
-                config.idleTimeBeforeConnectionTest(), config.maxConnectionLifetime() );
+                config.idleTimeBeforeConnectionTest(), config.maxConnectionLifetimeMillis(),
+                config.maxConnectionPoolSize(), config.connectionAcquisitionTimeoutMillis() );
         Connector connector = createConnector( connectionSettings, securityPlan, config.logging() );
 
         return new SocketConnectionPool( poolSettings, connector, createClock(), config.logging() );
@@ -198,7 +228,7 @@ public class DriverFactory
      * <p>
      * <b>This method is protected only for testing</b>
      */
-    protected Connector createConnector( ConnectionSettings connectionSettings, SecurityPlan securityPlan,
+    protected Connector createConnector( final ConnectionSettings connectionSettings, SecurityPlan securityPlan,
             Logging logging )
     {
         return new SocketConnector( connectionSettings, securityPlan, logging );

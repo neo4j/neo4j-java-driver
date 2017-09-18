@@ -180,7 +180,7 @@ public class SocketClient
     public void receiveAll( SocketResponseHandler handler ) throws IOException
     {
         // Wait until all pending requests have been replied to
-        while ( handler.collectorsWaiting() > 0 )
+        while ( handler.handlersWaiting() > 0 )
         {
             receiveOne( handler );
         }

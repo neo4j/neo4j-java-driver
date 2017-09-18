@@ -21,6 +21,8 @@ package org.neo4j.driver.internal.net;
 import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 
+import java.util.Arrays;
+
 import org.neo4j.driver.internal.util.BytePrinter;
 import org.neo4j.driver.v1.util.RecordingByteChannel;
 
@@ -65,7 +67,7 @@ public class ChunkedOutputTest
     public void shouldReserveSpaceForChunkHeaderWhenWriteDataToNewChunk() throws Throwable
     {
         // Given 2 bytes left in buffer + chunk is closed
-        out.writeBytes( new byte[10], 0, 10 );  // 2 (header) + 10
+        out.writeBytes( new byte[10] );  // 2 (header) + 10
         out.messageBoundaryHook().run();        // 2 (ending)
 
         // When write 2 bytes
@@ -87,7 +89,7 @@ public class ChunkedOutputTest
         }
 
         // When
-        out.writeBytes( data, 4, 16 );
+        out.writeBytes( Arrays.copyOfRange( data, 4, 16 ) );
         out.messageBoundaryHook().run();
         out.flush();
 

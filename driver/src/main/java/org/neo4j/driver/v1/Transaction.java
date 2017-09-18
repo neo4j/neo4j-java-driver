@@ -78,4 +78,8 @@ public interface Transaction extends Resource, StatementRunner
      */
     @Override
     void close();
+
+    Response<Void> commitAsync();
+
+    Response<Void> rollbackAsync();
 }

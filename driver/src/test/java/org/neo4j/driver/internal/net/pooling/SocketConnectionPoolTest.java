@@ -786,7 +786,8 @@ public class SocketConnectionPoolTest
     private static SocketConnectionPool newPool( Connector connector, Clock clock, long idleTimeBeforeConnectionTest,
             long maxConnectionLifetime )
     {
-        PoolSettings poolSettings = new PoolSettings( 42, idleTimeBeforeConnectionTest, maxConnectionLifetime );
+        PoolSettings poolSettings = new PoolSettings( 42, idleTimeBeforeConnectionTest, maxConnectionLifetime,
+                42, -1 );
         Logging logging = mock( Logging.class, RETURNS_MOCKS );
         return new SocketConnectionPool( poolSettings, connector, clock, logging );
     }

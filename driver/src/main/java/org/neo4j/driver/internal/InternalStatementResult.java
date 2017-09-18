@@ -19,27 +19,20 @@
 package org.neo4j.driver.internal;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Queue;
 
-import org.neo4j.driver.internal.spi.Collector;
+import org.neo4j.driver.ResultResourcesHandler;
+import org.neo4j.driver.internal.handlers.RecordsResponseHandler;
+import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.summary.SummaryBuilder;
+import org.neo4j.driver.internal.spi.ResponseHandler;
+import org.neo4j.driver.internal.summary.InternalResultSummary;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementResult;
-import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
-import org.neo4j.driver.v1.summary.Notification;
-import org.neo4j.driver.v1.summary.Plan;
-import org.neo4j.driver.v1.summary.ProfiledPlan;
 import org.neo4j.driver.v1.summary.ResultSummary;
-import org.neo4j.driver.v1.summary.ServerInfo;
-import org.neo4j.driver.v1.summary.StatementType;
-import org.neo4j.driver.v1.summary.SummaryCounters;
 import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.util.Functions;
 
@@ -47,144 +40,39 @@ import static java.util.Collections.emptyList;
 
 public class InternalStatementResult implements StatementResult
 {
+    private final Statement statement;
     private final Connection connection;
-    private final SessionResourcesHandler resourcesHandler;
-    private final Collector runResponseCollector;
-    private final Collector pullAllResponseCollector;
-    private final Queue<Record> recordBuffer = new LinkedList<>();
+    private final ResultResourcesHandler resourcesHandler;
+    private final RunResponseHandler runResponseHandler;
+    private final RecordsResponseHandler pullAllResponseHandler;
 
-    private List<String> keys = null;
-    private ResultSummary summary = null;
-
-    private boolean done = false;
-
-    InternalStatementResult( Connection connection, SessionResourcesHandler resourcesHandler,
-            ExplicitTransaction transaction, Statement statement )
+    InternalStatementResult( Statement statement, Connection connection, ResultResourcesHandler resourcesHandler )
     {
+        this.statement = statement;
         this.connection = connection;
-        this.runResponseCollector = newRunResponseCollector();
-        this.pullAllResponseCollector = newStreamResponseCollector( transaction, statement, connection.server() );
+        this.runResponseHandler = new RunResponseHandler( null );
+        this.pullAllResponseHandler = new RecordsResponseHandler( runResponseHandler );
         this.resourcesHandler = resourcesHandler;
     }
 
-    private Collector newRunResponseCollector()
+    ResponseHandler runResponseHandler()
     {
-        return new Collector.NoOperationCollector()
-        {
-            @Override
-            public void keys( String[] names )
-            {
-                keys = Arrays.asList( names );
-            }
-
-            @Override
-            public void done()
-            {
-                if ( keys == null )
-                {
-                    keys = new ArrayList<>();
-                }
-            }
-
-            @Override
-            public void resultAvailableAfter( long l )
-            {
-              pullAllResponseCollector.resultAvailableAfter( l );
-            }
-        };
+        return runResponseHandler;
     }
 
-    private Collector newStreamResponseCollector( final ExplicitTransaction transaction, final Statement statement,
-            final ServerInfo serverInfo )
+    ResponseHandler pullAllResponseHandler()
     {
-        final SummaryBuilder summaryBuilder = new SummaryBuilder( statement, serverInfo );
-
-        return new Collector.NoOperationCollector()
-        {
-            @Override
-            public void record( Value[] fields )
-            {
-                recordBuffer.add( new InternalRecord( keys, fields ) );
-            }
-
-            @Override
-            public void statementType( StatementType type )
-            {
-                summaryBuilder.statementType( type );
-            }
-
-            @Override
-            public void statementStatistics( SummaryCounters statistics )
-            {
-                summaryBuilder.statementStatistics( statistics );
-            }
-
-            @Override
-            public void plan( Plan plan )
-            {
-                summaryBuilder.plan( plan );
-            }
-
-            @Override
-            public void profile( ProfiledPlan plan )
-            {
-                summaryBuilder.profile( plan );
-            }
-
-            @Override
-            public void notifications( List<Notification> notifications )
-            {
-                summaryBuilder.notifications( notifications );
-            }
-
-            @Override
-            public void bookmark( Bookmark bookmark )
-            {
-                if ( transaction != null )
-                {
-                    transaction.setBookmark( bookmark );
-                }
-            }
-
-            @Override
-            public void done()
-            {
-                summary = summaryBuilder.build();
-                done = true;
-            }
-
-            @Override
-            public void resultAvailableAfter(long l)
-            {
-                summaryBuilder.resultAvailableAfter( l );
-            }
-
-            @Override
-            public void resultConsumedAfter(long l)
-            {
-                summaryBuilder.resultConsumedAfter( l );
-            }
-        };
-    }
-
-    Collector runResponseCollector()
-    {
-        return runResponseCollector;
-    }
-
-    Collector pullAllResponseCollector()
-    {
-        return pullAllResponseCollector;
+        return pullAllResponseHandler;
     }
 
     @Override
     public List<String> keys()
     {
-        if ( keys == null )
+        if ( runResponseHandler.statementKeys() == null )
         {
             tryFetchNext();
         }
-        return keys;
+        return runResponseHandler.statementKeys();
     }
 
     @Override
@@ -196,15 +84,9 @@ public class InternalStatementResult implements StatementResult
     @Override
     public Record next()
     {
-        // Implementation note:
-        // We've chosen to use Iterator<Record> over a cursor-based version,
-        // after tests show escape analysis will eliminate short-lived allocations
-        // in a way that makes the two equivalent in performance.
-        // To get the intended benefit, we need to allocate Record in this method,
-        // and have it copy out its fields from some lower level data structure.
         if ( tryFetchNext() )
         {
-            return recordBuffer.poll();
+            return pullAllResponseHandler.recordBuffer().poll();
         }
         else
         {
@@ -242,7 +124,7 @@ public class InternalStatementResult implements StatementResult
     {
         if ( tryFetchNext() )
         {
-            return recordBuffer.peek();
+            return pullAllResponseHandler.recordBuffer().peek();
         }
         else
         {
@@ -280,32 +162,32 @@ public class InternalStatementResult implements StatementResult
     @Override
     public ResultSummary consume()
     {
-        if ( done )
+        if ( pullAllResponseHandler.isCompleted() )
         {
-            recordBuffer.clear();
+            pullAllResponseHandler.recordBuffer().clear();
         }
         else
         {
             do
             {
                 receiveOne();
-                recordBuffer.clear();
+                pullAllResponseHandler.recordBuffer().clear();
             }
-            while ( !done );
+            while ( !pullAllResponseHandler.isCompleted() );
         }
 
-        return summary;
+        return createResultSummary();
     }
 
     @Override
     public ResultSummary summary()
     {
-        while( !done )
+        while ( !pullAllResponseHandler.isCompleted() )
         {
             receiveOne();
         }
 
-        return summary;
+        return createResultSummary();
     }
 
     @Override
@@ -316,9 +198,9 @@ public class InternalStatementResult implements StatementResult
 
     private boolean tryFetchNext()
     {
-        while ( recordBuffer.isEmpty() )
+        while ( pullAllResponseHandler.recordBuffer().isEmpty() )
         {
-            if ( done )
+            if ( pullAllResponseHandler.isCompleted() )
             {
                 return false;
             }
@@ -336,12 +218,27 @@ public class InternalStatementResult implements StatementResult
         }
         catch ( Throwable error )
         {
-            resourcesHandler.onResultConsumed();
+            resourcesHandler.resultFailed( error );
             throw error;
         }
-        if ( done )
+        if ( pullAllResponseHandler.isCompleted() )
         {
-            resourcesHandler.onResultConsumed();
+            resourcesHandler.resultFetched();
         }
+    }
+
+    private ResultSummary createResultSummary()
+    {
+        return new InternalResultSummary(
+                statement,
+                connection.server(),
+                pullAllResponseHandler.statementType(),
+                pullAllResponseHandler.counters(),
+                pullAllResponseHandler.plan(),
+                pullAllResponseHandler.profile(),
+                pullAllResponseHandler.notifications(),
+                runResponseHandler.resultAvailableAfter(),
+                pullAllResponseHandler.resultConsumedAfter()
+        );
     }
 }
