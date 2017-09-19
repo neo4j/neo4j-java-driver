@@ -20,6 +20,7 @@ package org.neo4j.driver.internal.async;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.util.concurrent.EventExecutor;
+import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.GenericFutureListener;
@@ -40,7 +41,12 @@ public class InternalPromise<T> implements InternalFuture<T>, Promise<T>
 
     public InternalPromise( Bootstrap bootstrap )
     {
-        this( bootstrap.config().group().next() );
+        this( bootstrap.config().group() );
+    }
+
+    public InternalPromise( EventExecutorGroup eventExecutorGroup )
+    {
+        this( eventExecutorGroup.next() );
     }
 
     public InternalPromise( EventExecutor eventExecutor )

@@ -18,7 +18,9 @@
  */
 package org.neo4j.driver.internal;
 
-import io.netty.util.concurrent.GlobalEventExecutor;
+import io.netty.util.concurrent.EventExecutorGroup;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -40,6 +42,7 @@ import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Response;
+import org.neo4j.driver.v1.ResponseListener;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementResult;
@@ -61,6 +64,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     private final ConnectionProvider connectionProvider;
     private final AccessMode mode;
     private final RetryLogic retryLogic;
+    private final EventExecutorGroup eventExecutorGroup;
     protected final Logger logger;
 
     private volatile Bookmark bookmark = Bookmark.empty();
@@ -73,11 +77,12 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     private final AtomicBoolean isOpen = new AtomicBoolean( true );
 
     public NetworkSession( ConnectionProvider connectionProvider, AccessMode mode, RetryLogic retryLogic,
-            Logging logging )
+            EventExecutorGroup eventExecutorGroup, Logging logging )
     {
         this.connectionProvider = connectionProvider;
         this.mode = mode;
         this.retryLogic = retryLogic;
+        this.eventExecutorGroup = eventExecutorGroup;
         this.logger = new DelegatingLogger( logging.getLog( LOG_NAME ), String.valueOf( hashCode() ) );
     }
 
@@ -262,7 +267,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
         }
         else
         {
-            return new InternalPromise<Void>( GlobalEventExecutor.INSTANCE ).setSuccess( null );
+            return new InternalPromise<Void>( eventExecutorGroup ).setSuccess( null );
         }
     }
 
@@ -294,9 +299,21 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     }
 
     @Override
+    public <T> Response<T> readTransactionAsync( TransactionWork<Response<T>> work )
+    {
+        return transactionAsync( AccessMode.READ, work );
+    }
+
+    @Override
     public <T> T writeTransaction( TransactionWork<T> work )
     {
         return transaction( AccessMode.WRITE, work );
+    }
+
+    @Override
+    public <T> Response<T> writeTransactionAsync( TransactionWork<Response<T>> work )
+    {
+        return transactionAsync( AccessMode.WRITE, work );
     }
 
     void setBookmark( Bookmark bookmark )
@@ -398,6 +415,113 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
         } );
     }
 
+    private <T> InternalFuture<T> transactionAsync( final AccessMode mode, final TransactionWork<Response<T>> work )
+    {
+        return retryLogic.retryAsync( new Supplier<InternalFuture<T>>()
+        {
+            @Override
+            public InternalFuture<T> get()
+            {
+                final InternalFuture<ExplicitTransaction> txFuture = beginTransactionAsync( mode );
+                final InternalPromise<T> resultPromise = new InternalPromise<>( txFuture.eventExecutor() );
+
+                txFuture.addListener( new FutureListener<ExplicitTransaction>()
+                {
+                    @Override
+                    public void operationComplete( Future<ExplicitTransaction> future ) throws Exception
+                    {
+                        if ( future.isCancelled() )
+                        {
+                            resultPromise.cancel( true );
+                        }
+                        else if ( future.isSuccess() )
+                        {
+                            executeWork( resultPromise, future.getNow(), work );
+                        }
+                        else
+                        {
+                            resultPromise.setFailure( future.cause() );
+                        }
+                    }
+                } );
+
+                return resultPromise;
+            }
+        } );
+    }
+
+    private <T> void executeWork( final InternalPromise<T> resultPromise, final ExplicitTransaction tx,
+            TransactionWork<Response<T>> work )
+    {
+        Response<T> workResponse = work.execute( tx );
+        workResponse.addListener( new ResponseListener<T>()
+        {
+            @Override
+            public void operationCompleted( T result, Throwable error )
+            {
+                if ( error != null )
+                {
+                    rollbackTxAfterFailedTransactionWork( tx, resultPromise, error );
+                }
+                else
+                {
+                    commitTxAfterSucceededTransactionWork( tx, resultPromise, result );
+                }
+            }
+        } );
+    }
+
+    private <T> void rollbackTxAfterFailedTransactionWork( ExplicitTransaction tx,
+            final InternalPromise<T> resultPromise, final Throwable error )
+    {
+        if ( tx.isOpen() )
+        {
+            tx.rollbackAsync().addListener( new ResponseListener<Void>()
+            {
+                @Override
+                public void operationCompleted( Void ignore, Throwable rollbackError )
+                {
+                    if ( rollbackError != null )
+                    {
+                        error.addSuppressed( rollbackError );
+                    }
+                    resultPromise.setFailure( error );
+                }
+            } );
+        }
+        else
+        {
+            resultPromise.setFailure( error );
+        }
+    }
+
+    private <T> void commitTxAfterSucceededTransactionWork( ExplicitTransaction tx,
+            final InternalPromise<T> resultPromise, final T result )
+    {
+        if ( tx.isOpen() )
+        {
+            tx.commitAsync().addListener( new ResponseListener<Void>()
+            {
+                @Override
+                public void operationCompleted( Void ignore, Throwable commitError )
+                {
+                    if ( commitError != null )
+                    {
+                        resultPromise.setFailure( commitError );
+                    }
+                    else
+                    {
+                        resultPromise.setSuccess( result );
+                    }
+                }
+            } );
+        }
+        else
+        {
+            resultPromise.setSuccess( result );
+        }
+    }
+
     private synchronized Transaction beginTransaction( AccessMode mode )
     {
         ensureSessionIsOpen();
@@ -431,7 +555,6 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
                     }
                 } );
 
-        //noinspection unchecked
         return currentAsyncTransactionFuture;
     }
 

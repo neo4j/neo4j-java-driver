@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal;
 
+import io.netty.util.concurrent.GlobalEventExecutor;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -99,7 +100,7 @@ public class LeakLoggingNetworkSessionTest
     private static LeakLoggingNetworkSession newSession( Logging logging, boolean openConnection )
     {
         return new LeakLoggingNetworkSession( connectionProviderMock( openConnection ), READ,
-                new FixedRetryLogic( 0 ), logging );
+                new FixedRetryLogic( 0 ), GlobalEventExecutor.INSTANCE, logging );
     }
 
     private static ConnectionProvider connectionProviderMock( final boolean openConnection )

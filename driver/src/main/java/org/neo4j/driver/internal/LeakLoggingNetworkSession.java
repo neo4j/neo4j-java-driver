@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.internal;
 
+import io.netty.util.concurrent.EventExecutorGroup;
+
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.v1.AccessMode;
@@ -30,9 +32,9 @@ class LeakLoggingNetworkSession extends NetworkSession
     private final String stackTrace;
 
     LeakLoggingNetworkSession( ConnectionProvider connectionProvider, AccessMode mode, RetryLogic retryLogic,
-            Logging logging )
+            EventExecutorGroup eventExecutorGroup, Logging logging )
     {
-        super( connectionProvider, mode, retryLogic, logging );
+        super( connectionProvider, mode, retryLogic, eventExecutorGroup, logging );
         this.stackTrace = captureStackTrace();
     }
 

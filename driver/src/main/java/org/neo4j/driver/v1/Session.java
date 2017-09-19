@@ -96,6 +96,8 @@ public interface Session extends Resource, StatementRunner
      */
     <T> T readTransaction( TransactionWork<T> work );
 
+    <T> Response<T> readTransactionAsync( TransactionWork<Response<T>> work );
+
     /**
      * Execute given unit of work in a {@link AccessMode#WRITE write} transaction.
      * <p>
@@ -107,6 +109,8 @@ public interface Session extends Resource, StatementRunner
      * @return a result as returned by the given unit of work.
      */
     <T> T writeTransaction( TransactionWork<T> work );
+
+    <T> Response<T> writeTransactionAsync( TransactionWork<Response<T>> work );
 
     /**
      * Return the bookmark received following the last completed

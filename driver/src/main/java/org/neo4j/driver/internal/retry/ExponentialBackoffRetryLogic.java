@@ -124,7 +124,7 @@ public class ExponentialBackoffRetryLogic implements RetryLogic
     @Override
     public <T> InternalFuture<T> retryAsync( Supplier<InternalFuture<T>> work )
     {
-        InternalPromise<T> result = new InternalPromise<>( eventExecutorGroup.next() );
+        InternalPromise<T> result = new InternalPromise<>( eventExecutorGroup );
         executeWorkInEventLoop( result, work );
         return result;
     }

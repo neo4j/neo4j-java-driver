@@ -28,19 +28,27 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.driver.internal.async.InternalPromise;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Response;
 import org.neo4j.driver.v1.ResponseListener;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementResultCursor;
+import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.v1.TransactionWork;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.v1.exceptions.SessionExpiredException;
+import org.neo4j.driver.v1.exceptions.TransientException;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.summary.StatementType;
 import org.neo4j.driver.v1.types.Node;
@@ -71,13 +79,13 @@ public class SessionAsyncIT
     private Session session;
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         session = neo4j.driver().session();
     }
 
     @After
-    public void tearDown() throws Exception
+    public void tearDown()
     {
         await( session.closeAsync() );
     }
@@ -348,6 +356,56 @@ public class SessionAsyncIT
         assertThat( summary.resultConsumedAfter( TimeUnit.MILLISECONDS ), greaterThanOrEqualTo( 0L ) );
     }
 
+    @Test
+    public void shouldRunAsyncTransactionWithoutRetries()
+    {
+        InvocationTrackingWork work = new InvocationTrackingWork( "CREATE (:Apa) RETURN 42" );
+        Response<Record> txResponse = session.writeTransactionAsync( work );
+
+        Record record = await( txResponse );
+        assertNotNull( record );
+        assertEquals( 42L, record.get( 0 ).asLong() );
+
+        assertEquals( 1, work.invocationCount() );
+        assertEquals( 1, countNodesByLabel( "Apa" ) );
+    }
+
+    @Test
+    public void shouldRunAsyncTransactionWithRetries()
+    {
+        List<Throwable> failures = Arrays.<Throwable>asList( new ServiceUnavailableException( "Oh!" ),
+                new SessionExpiredException( "Ah!" ), new TransientException( "Code", "Message" ) );
+        InvocationTrackingWork work = new InvocationTrackingWork( "CREATE (:Node) RETURN 24", failures );
+        Response<Record> txResponse = session.writeTransactionAsync( work );
+
+        Record record = await( txResponse );
+        assertNotNull( record );
+        assertEquals( 24L, record.get( 0 ).asLong() );
+
+        assertEquals( 4, work.invocationCount() );
+        assertEquals( 1, countNodesByLabel( "Node" ) );
+    }
+
+    @Test
+    public void shouldRunAsyncTransactionThatCanNotBeRetried()
+    {
+        InvocationTrackingWork work = new InvocationTrackingWork( "UNWIND [10, 5, 0] AS x CREATE (:Hi) RETURN 10/x" );
+        Response<Record> txResponse = session.writeTransactionAsync( work );
+
+        try
+        {
+            await( txResponse );
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( ClientException.class ) );
+        }
+
+        assertEquals( 1, work.invocationCount() );
+        assertEquals( 0, countNodesByLabel( "Hi" ) );
+    }
+
     private Future<List<Future<Boolean>>> runNestedQueries( StatementResultCursor inputCursor )
     {
         Promise<List<Future<Boolean>>> resultPromise = GlobalEventExecutor.INSTANCE.newPromise();
@@ -412,6 +470,11 @@ public class SessionAsyncIT
         } );
     }
 
+    private long countNodesByLabel( String label )
+    {
+        return session.run( "MATCH (n:" + label + ") RETURN count(n)" ).single().get( 0 ).asLong();
+    }
+
     private static void assertSyntaxError( Exception e )
     {
         assertThat( e, instanceOf( ClientException.class ) );
@@ -454,6 +517,93 @@ public class SessionAsyncIT
             catch ( IOException e )
             {
                 throw new RuntimeException( e );
+            }
+        }
+    }
+
+    private static class InvocationTrackingWork implements TransactionWork<Response<Record>>
+    {
+        final String query;
+        final Iterator<Throwable> failures;
+        final AtomicInteger invocationCount;
+
+        InvocationTrackingWork( String query )
+        {
+            this( query, Collections.<Throwable>emptyList() );
+        }
+
+        InvocationTrackingWork( String query, List<Throwable> failures )
+        {
+            this.query = query;
+            this.failures = failures.iterator();
+            this.invocationCount = new AtomicInteger();
+        }
+
+        int invocationCount()
+        {
+            return invocationCount.get();
+        }
+
+        @Override
+        public Response<Record> execute( Transaction tx )
+        {
+            invocationCount.incrementAndGet();
+
+            final InternalPromise<Record> resultPromise = new InternalPromise<>( GlobalEventExecutor.INSTANCE );
+
+            tx.runAsync( query ).addListener( new ResponseListener<StatementResultCursor>()
+            {
+                @Override
+                public void operationCompleted( final StatementResultCursor cursor, Throwable error )
+                {
+                    processQueryResult( cursor, error, resultPromise );
+                }
+            } );
+
+            return resultPromise;
+        }
+
+        private void processQueryResult( final StatementResultCursor cursor, final Throwable error,
+                final InternalPromise<Record> resultPromise )
+        {
+            if ( error != null )
+            {
+                resultPromise.setFailure( error );
+                return;
+            }
+
+            cursor.fetchAsync().addListener( new ResponseListener<Boolean>()
+            {
+                @Override
+                public void operationCompleted( Boolean recordAvailable, Throwable error )
+                {
+                    processFetchResult( recordAvailable, error, resultPromise, cursor );
+                }
+            } );
+        }
+
+        private void processFetchResult( Boolean recordAvailable, Throwable error,
+                InternalPromise<Record> resultPromise, StatementResultCursor cursor )
+        {
+            if ( error != null )
+            {
+                resultPromise.setFailure( error );
+                return;
+            }
+
+            if ( !recordAvailable )
+            {
+                resultPromise.setFailure( new AssertionError( "Record not available" ) );
+                return;
+            }
+
+            if ( failures.hasNext() )
+            {
+                resultPromise.setFailure( failures.next() );
+            }
+            else
+            {
+                resultPromise.setSuccess( cursor.current() );
             }
         }
     }
