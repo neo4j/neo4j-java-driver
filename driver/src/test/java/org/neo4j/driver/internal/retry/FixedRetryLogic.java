@@ -18,6 +18,9 @@
  */
 package org.neo4j.driver.internal.retry;
 
+import io.netty.util.concurrent.EventExecutorGroup;
+import io.netty.util.concurrent.GlobalEventExecutor;
+
 import org.neo4j.driver.internal.util.SleeplessClock;
 
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
@@ -29,7 +32,13 @@ public class FixedRetryLogic extends ExponentialBackoffRetryLogic
 
     public FixedRetryLogic( int retryCount )
     {
-        super( new RetrySettings( Long.MAX_VALUE ), new SleeplessClock(), DEV_NULL_LOGGING );
+        this( retryCount, GlobalEventExecutor.INSTANCE );
+    }
+
+    public FixedRetryLogic( int retryCount, EventExecutorGroup eventExecutorGroup )
+    {
+        super( new RetrySettings( Long.MAX_VALUE ), eventExecutorGroup, new SleeplessClock(),
+                DEV_NULL_LOGGING );
         this.retryCount = retryCount;
     }
 

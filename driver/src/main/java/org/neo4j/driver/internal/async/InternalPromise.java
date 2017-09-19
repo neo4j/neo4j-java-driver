@@ -29,6 +29,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.neo4j.driver.internal.util.BiConsumer;
 import org.neo4j.driver.v1.ResponseListener;
 import org.neo4j.driver.v1.util.Function;
 
@@ -61,13 +62,13 @@ public class InternalPromise<T> implements InternalFuture<T>, Promise<T>
     }
 
     @Override
-    public <U> InternalFuture<U> thenCombine( Function<T,InternalFuture<U>> fn )
+    public <U> InternalFuture<U> thenCompose( Function<T,InternalFuture<U>> fn )
     {
-        return Futures.thenCombine( this, fn );
+        return Futures.thenCompose( this, fn );
     }
 
     @Override
-    public InternalFuture<T> whenComplete( Runnable action )
+    public InternalFuture<T> whenComplete( BiConsumer<T,Throwable> action )
     {
         return Futures.whenComplete( this, action );
     }

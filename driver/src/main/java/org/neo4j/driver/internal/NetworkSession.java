@@ -153,7 +153,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
 
         InternalFuture<AsyncConnection> connectionFuture = acquireAsyncConnection( mode );
 
-        return connectionFuture.thenCombine( new Function<AsyncConnection,InternalFuture<StatementResultCursor>>()
+        return connectionFuture.thenCompose( new Function<AsyncConnection,InternalFuture<StatementResultCursor>>()
         {
             @Override
             public InternalFuture<StatementResultCursor> apply( AsyncConnection connection )
@@ -240,7 +240,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     {
         if ( asyncConnectionFuture != null )
         {
-            return asyncConnectionFuture.thenCombine( new Function<AsyncConnection,InternalFuture<Void>>()
+            return asyncConnectionFuture.thenCompose( new Function<AsyncConnection,InternalFuture<Void>>()
             {
                 @Override
                 public InternalFuture<Void> apply( AsyncConnection connection )
@@ -251,7 +251,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
         }
         else if ( currentAsyncTransactionFuture != null )
         {
-            return currentAsyncTransactionFuture.thenCombine( new Function<ExplicitTransaction,InternalFuture<Void>>()
+            return currentAsyncTransactionFuture.thenCompose( new Function<ExplicitTransaction,InternalFuture<Void>>()
             {
                 @Override
                 public InternalFuture<Void> apply( ExplicitTransaction tx )
@@ -283,7 +283,8 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     @Override
     public Response<Transaction> beginTransactionAsync()
     {
-        return beginTransactionAsync( mode );
+        //noinspection unchecked
+        return (Response) beginTransactionAsync( mode );
     }
 
     @Override
@@ -412,14 +413,14 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
         return currentTransaction;
     }
 
-    private synchronized Response<Transaction> beginTransactionAsync( AccessMode mode )
+    private synchronized InternalFuture<ExplicitTransaction> beginTransactionAsync( AccessMode mode )
     {
         ensureSessionIsOpen();
         ensureNoOpenTransactionBeforeOpeningTransaction();
 
         InternalFuture<AsyncConnection> connectionFuture = acquireAsyncConnection( mode );
 
-        currentAsyncTransactionFuture = connectionFuture.thenCombine(
+        currentAsyncTransactionFuture = connectionFuture.thenCompose(
                 new Function<AsyncConnection,InternalFuture<ExplicitTransaction>>()
                 {
                     @Override
@@ -431,7 +432,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
                 } );
 
         //noinspection unchecked
-        return (Response) currentAsyncTransactionFuture;
+        return currentAsyncTransactionFuture;
     }
 
     private void ensureNoUnrecoverableError()
@@ -495,7 +496,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
             // memorize in local so same instance is transformed and used in callbacks
             final InternalFuture<AsyncConnection> currentAsyncConnectionFuture = asyncConnectionFuture;
 
-            asyncConnectionFuture = currentAsyncConnectionFuture.thenCombine(
+            asyncConnectionFuture = currentAsyncConnectionFuture.thenCompose(
                     new Function<AsyncConnection,InternalFuture<AsyncConnection>>()
                     {
                         @Override

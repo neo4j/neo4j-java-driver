@@ -16,14 +16,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.retry;
+package org.neo4j.driver.internal.util;
 
-import org.neo4j.driver.internal.async.InternalFuture;
-import org.neo4j.driver.internal.util.Supplier;
-
-public interface RetryLogic
+public interface BiConsumer<T, U>
 {
-    <T> T retry( Supplier<T> work );
-
-    <T> InternalFuture<T> retryAsync( Supplier<InternalFuture<T>> work );
+    void accept( T t, U u );
 }
