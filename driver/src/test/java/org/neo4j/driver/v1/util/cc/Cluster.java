@@ -417,7 +417,7 @@ public class Cluster
         return Config.build()
                 .withTrustStrategy( trustAllCertificates() )
                 .withEncryption()
-                .withMaxIdleSessions( 1 )
+                .withMaxIdleConnections( 1 )
                 .withConnectionLivenessCheckTimeout( 1, TimeUnit.HOURS )
                 .toConfig();
     }
