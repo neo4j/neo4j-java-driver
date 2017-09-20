@@ -82,12 +82,7 @@ public abstract class PullAllResponseHandler implements ResponseHandler
 
         succeeded = true;
         afterSuccess();
-
-        if ( recordPromise != null )
-        {
-            recordPromise.setSuccess( null );
-            recordPromise = null;
-        }
+        succeedRecordPromise( null );
     }
 
     protected abstract void afterSuccess();
@@ -97,12 +92,7 @@ public abstract class PullAllResponseHandler implements ResponseHandler
     {
         failure = error;
         afterFailure( error );
-
-        if ( recordPromise != null )
-        {
-            recordPromise.setFailure( error );
-            recordPromise = null;
-        }
+        failRecordPromise( error );
     }
 
     protected abstract void afterFailure( Throwable error );
@@ -114,8 +104,7 @@ public abstract class PullAllResponseHandler implements ResponseHandler
 
         if ( recordPromise != null )
         {
-            recordPromise.setSuccess( record );
-            recordPromise = null;
+            succeedRecordPromise( record );
         }
         else
         {
@@ -141,6 +130,7 @@ public abstract class PullAllResponseHandler implements ResponseHandler
             if ( recordPromise == null )
             {
                 recordPromise = connection.newPromise();
+                System.out.println( "setting promise " + recordPromise.hashCode() );
             }
             return recordPromise;
         }
@@ -189,6 +179,26 @@ public abstract class PullAllResponseHandler implements ResponseHandler
             }
         }
         return record;
+    }
+
+    private void succeedRecordPromise( Record record )
+    {
+        if ( recordPromise != null )
+        {
+            InternalPromise<Record> promise = recordPromise;
+            recordPromise = null;
+            promise.setSuccess( record );
+        }
+    }
+
+    private void failRecordPromise( Throwable error )
+    {
+        if ( recordPromise != null )
+        {
+            InternalPromise<Record> promise = recordPromise;
+            recordPromise = null;
+            promise.setFailure( error );
+        }
     }
 
     private ResultSummary extractResultSummary( Map<String,Value> metadata )

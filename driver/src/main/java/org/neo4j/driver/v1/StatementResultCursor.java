@@ -20,6 +20,7 @@ package org.neo4j.driver.v1;
 
 import java.util.List;
 
+import org.neo4j.driver.internal.util.Consumer;
 import org.neo4j.driver.v1.summary.ResultSummary;
 
 public interface StatementResultCursor
@@ -36,4 +37,6 @@ public interface StatementResultCursor
     Response<Record> nextAsync();
 
     Response<Record> peekAsync();
+
+    Response<Void> forEachAsync( Consumer<Record> action );
 }

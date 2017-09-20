@@ -43,7 +43,7 @@ public final class QueryRunner
         return runAsync( connection, statement, null );
     }
 
-    public static InternalFuture<StatementResultCursor> runAsync( AsyncConnection connection, Statement statement,
+    public static InternalFuture<StatementResultCursor> runAsync( final AsyncConnection connection, Statement statement,
             ExplicitTransaction tx )
     {
         String query = statement.text();
@@ -62,7 +62,7 @@ public final class QueryRunner
             @Override
             public StatementResultCursor apply( Void ignore )
             {
-                return new InternalStatementResultCursor( runHandler, pullAllHandler );
+                return new InternalStatementResultCursor( connection, runHandler, pullAllHandler );
             }
         } );
     }

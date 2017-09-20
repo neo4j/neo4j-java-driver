@@ -35,6 +35,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.driver.internal.async.InternalPromise;
+import org.neo4j.driver.internal.util.Consumer;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Response;
 import org.neo4j.driver.v1.ResponseListener;
@@ -477,6 +478,18 @@ public class SessionAsyncIT
         assertNull( await( cursor.nextAsync() ) );
     }
 
+    @Test
+    public void shouldForEachWithEmptyCursor()
+    {
+        testForEach( "CREATE ()", 0 );
+    }
+
+    @Test
+    public void shouldForEachWithNonEmptyCursor()
+    {
+        testForEach( "UNWIND range(1, 10000) AS x RETURN x", 10000 );
+    }
+
     private Future<List<Future<Record>>> runNestedQueries( StatementResultCursor inputCursor )
     {
         Promise<List<Future<Record>>> resultPromise = GlobalEventExecutor.INSTANCE.newPromise();
@@ -543,6 +556,24 @@ public class SessionAsyncIT
     private long countNodesByLabel( String label )
     {
         return session.run( "MATCH (n:" + label + ") RETURN count(n)" ).single().get( 0 ).asLong();
+    }
+
+    private void testForEach( String query, int expectedSeenRecords )
+    {
+        StatementResultCursor cursor = await( session.runAsync( query ) );
+
+        final AtomicInteger recordsSeen = new AtomicInteger();
+        Response<Void> forEachDone = cursor.forEachAsync( new Consumer<Record>()
+        {
+            @Override
+            public void accept( Record record )
+            {
+                recordsSeen.incrementAndGet();
+            }
+        } );
+
+        assertNull( await( forEachDone ) );
+        assertEquals( expectedSeenRecords, recordsSeen.get() );
     }
 
     private static void assertSyntaxError( Exception e )
