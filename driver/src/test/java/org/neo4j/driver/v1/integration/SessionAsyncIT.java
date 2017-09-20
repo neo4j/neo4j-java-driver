@@ -28,7 +28,6 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Future;
@@ -46,6 +45,7 @@ import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.TransactionWork;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.DatabaseException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 import org.neo4j.driver.v1.exceptions.TransientException;
@@ -54,6 +54,7 @@ import org.neo4j.driver.v1.summary.StatementType;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
+import static java.util.Collections.emptyIterator;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
@@ -371,11 +372,13 @@ public class SessionAsyncIT
     }
 
     @Test
-    public void shouldRunAsyncTransactionWithRetries()
+    public void shouldRunAsyncTransactionWithRetriesOnAsyncFailures()
     {
-        List<Throwable> failures = Arrays.<Throwable>asList( new ServiceUnavailableException( "Oh!" ),
-                new SessionExpiredException( "Ah!" ), new TransientException( "Code", "Message" ) );
-        InvocationTrackingWork work = new InvocationTrackingWork( "CREATE (:Node) RETURN 24", failures );
+        InvocationTrackingWork work = new InvocationTrackingWork( "CREATE (:Node) RETURN 24" ).withAsyncFailures(
+                new ServiceUnavailableException( "Oh!" ),
+                new SessionExpiredException( "Ah!" ),
+                new TransientException( "Code", "Message" ) );
+
         Response<Record> txResponse = session.writeTransactionAsync( work );
 
         Record record = await( txResponse );
@@ -384,6 +387,23 @@ public class SessionAsyncIT
 
         assertEquals( 4, work.invocationCount() );
         assertEquals( 1, countNodesByLabel( "Node" ) );
+    }
+
+    @Test
+    public void shouldRunAsyncTransactionWithRetriesOnSyncFailures()
+    {
+        InvocationTrackingWork work = new InvocationTrackingWork( "CREATE (:Test) RETURN 12" ).withSyncFailures(
+                new TransientException( "Oh!", "Deadlock!" ),
+                new ServiceUnavailableException( "Oh! Network Failure" ) );
+
+        Response<Record> txResponse = session.writeTransactionAsync( work );
+
+        Record record = await( txResponse );
+        assertNotNull( record );
+        assertEquals( 12L, record.get( 0 ).asLong() );
+
+        assertEquals( 3, work.invocationCount() );
+        assertEquals( 1, countNodesByLabel( "Test" ) );
     }
 
     @Test
@@ -404,6 +424,32 @@ public class SessionAsyncIT
 
         assertEquals( 1, work.invocationCount() );
         assertEquals( 0, countNodesByLabel( "Hi" ) );
+    }
+
+    @Test
+    public void shouldRunAsyncTransactionThatCanNotBeRetriedAfterATransientFailure()
+    {
+        // first throw TransientException directly from work, retry can happen afterwards
+        // then return a future failed with DatabaseException, retry can't happen afterwards
+        InvocationTrackingWork work = new InvocationTrackingWork( "CREATE (:Person) RETURN 1" )
+                .withSyncFailures( new TransientException( "Oh!", "Deadlock!" ) )
+                .withAsyncFailures( new DatabaseException( "Oh!", "OutOfMemory!" ) );
+        Response<Record> txResponse = session.writeTransactionAsync( work );
+
+        try
+        {
+            await( txResponse );
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( DatabaseException.class ) );
+            assertEquals( 1, e.getSuppressed().length );
+            assertThat( e.getSuppressed()[0], instanceOf( TransientException.class ) );
+        }
+
+        assertEquals( 2, work.invocationCount() );
+        assertEquals( 0, countNodesByLabel( "Person" ) );
     }
 
     private Future<List<Future<Boolean>>> runNestedQueries( StatementResultCursor inputCursor )
@@ -524,19 +570,27 @@ public class SessionAsyncIT
     private static class InvocationTrackingWork implements TransactionWork<Response<Record>>
     {
         final String query;
-        final Iterator<Throwable> failures;
         final AtomicInteger invocationCount;
+
+        Iterator<RuntimeException> asyncFailures = emptyIterator();
+        Iterator<RuntimeException> syncFailures = emptyIterator();
 
         InvocationTrackingWork( String query )
         {
-            this( query, Collections.<Throwable>emptyList() );
+            this.query = query;
+            this.invocationCount = new AtomicInteger();
         }
 
-        InvocationTrackingWork( String query, List<Throwable> failures )
+        InvocationTrackingWork withAsyncFailures( RuntimeException... failures )
         {
-            this.query = query;
-            this.failures = failures.iterator();
-            this.invocationCount = new AtomicInteger();
+            asyncFailures = Arrays.asList( failures ).iterator();
+            return this;
+        }
+
+        InvocationTrackingWork withSyncFailures( RuntimeException... failures )
+        {
+            syncFailures = Arrays.asList( failures ).iterator();
+            return this;
         }
 
         int invocationCount()
@@ -548,6 +602,11 @@ public class SessionAsyncIT
         public Response<Record> execute( Transaction tx )
         {
             invocationCount.incrementAndGet();
+
+            if ( syncFailures.hasNext() )
+            {
+                throw syncFailures.next();
+            }
 
             final InternalPromise<Record> resultPromise = new InternalPromise<>( GlobalEventExecutor.INSTANCE );
 
@@ -597,9 +656,9 @@ public class SessionAsyncIT
                 return;
             }
 
-            if ( failures.hasNext() )
+            if ( asyncFailures.hasNext() )
             {
-                resultPromise.setFailure( failures.next() );
+                resultPromise.setFailure( asyncFailures.next() );
             }
             else
             {

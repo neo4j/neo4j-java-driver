@@ -453,7 +453,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     private <T> void executeWork( final InternalPromise<T> resultPromise, final ExplicitTransaction tx,
             TransactionWork<Response<T>> work )
     {
-        Response<T> workResponse = work.execute( tx );
+        Response<T> workResponse = safeExecuteWork( tx, work );
         workResponse.addListener( new ResponseListener<T>()
         {
             @Override
@@ -469,6 +469,22 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
                 }
             }
         } );
+    }
+
+    private <T> Response<T> safeExecuteWork( ExplicitTransaction tx, TransactionWork<Response<T>> work )
+    {
+        // given work might fail in both async and sync way
+        // async failure will result in a failed future being returned
+        // sync failure will result in an exception being thrown
+        try
+        {
+            return work.execute( tx );
+        }
+        catch ( Throwable workError )
+        {
+            // work threw an exception, wrap it in a future and proceed
+            return new InternalPromise<T>( eventExecutorGroup ).setFailure( workError );
+        }
     }
 
     private <T> void rollbackTxAfterFailedTransactionWork( ExplicitTransaction tx,

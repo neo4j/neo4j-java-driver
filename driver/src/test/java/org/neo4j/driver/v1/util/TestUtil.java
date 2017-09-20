@@ -68,13 +68,7 @@ public final class TestUtil
         }
         catch ( ExecutionException e )
         {
-            Throwable cause = e.getCause();
-            StackTraceElement[] originalStackTrace = cause.getStackTrace();
-            RuntimeException exceptionWithOriginalStackTrace = new RuntimeException();
-            cause.setStackTrace( exceptionWithOriginalStackTrace.getStackTrace() );
-            exceptionWithOriginalStackTrace.setStackTrace( originalStackTrace );
-            cause.addSuppressed( exceptionWithOriginalStackTrace );
-            throwException( cause );
+            throwException( e.getCause() );
             return null;
         }
         catch ( TimeoutException e )
