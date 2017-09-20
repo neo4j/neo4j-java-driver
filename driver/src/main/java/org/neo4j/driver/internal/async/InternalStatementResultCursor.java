@@ -33,6 +33,8 @@ public class InternalStatementResultCursor implements StatementResultCursor
     private final RunResponseHandler runResponseHandler;
     private final PullAllResponseHandler pullAllHandler;
 
+    private Response<Record> peekedRecordResponse;
+
     public InternalStatementResultCursor( RunResponseHandler runResponseHandler, PullAllResponseHandler pullAllHandler )
     {
         this.runResponseHandler = runResponseHandler;
@@ -53,14 +55,27 @@ public class InternalStatementResultCursor implements StatementResultCursor
     }
 
     @Override
-    public Response<Boolean> fetchAsync()
+    public Response<Record> nextAsync()
     {
-        return pullAllHandler.fetchRecordAsync();
+        if ( peekedRecordResponse != null )
+        {
+            Response<Record> result = peekedRecordResponse;
+            peekedRecordResponse = null;
+            return result;
+        }
+        else
+        {
+            return pullAllHandler.nextAsync();
+        }
     }
 
     @Override
-    public Record current()
+    public Response<Record> peekAsync()
     {
-        return pullAllHandler.currentRecord();
+        if ( peekedRecordResponse == null )
+        {
+            peekedRecordResponse = pullAllHandler.nextAsync();
+        }
+        return peekedRecordResponse;
     }
 }

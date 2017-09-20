@@ -33,7 +33,7 @@ public interface StatementResultCursor
 
     Response<ResultSummary> summaryAsync();
 
-    Response<Boolean> fetchAsync();
+    Response<Record> nextAsync();
 
-    Record current();
+    Response<Record> peekAsync();
 }

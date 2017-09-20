@@ -26,6 +26,7 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Response;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
@@ -108,10 +109,13 @@ public class TransactionAsyncIT
         Transaction tx = await( session.beginTransactionAsync() );
 
         StatementResultCursor cursor = await( tx.runAsync( "CREATE (n:Node {id: 42}) RETURN n" ) );
-        assertThat( await( cursor.fetchAsync() ), is( true ) );
-        Node node = cursor.current().get( 0 ).asNode();
+
+        Record record = await( cursor.nextAsync() );
+        assertNotNull( record );
+        Node node = record.get( 0 ).asNode();
         assertEquals( "Node", single( node.labels() ) );
         assertEquals( 42, node.get( "id" ).asInt() );
+        assertNull( await( cursor.nextAsync() ) );
 
         assertNull( await( tx.commitAsync() ) );
         assertEquals( 1, countNodes( 42 ) );
@@ -123,10 +127,12 @@ public class TransactionAsyncIT
         Transaction tx = await( session.beginTransactionAsync() );
 
         StatementResultCursor cursor = await( tx.runAsync( "CREATE (n:Node {id: 4242}) RETURN n" ) );
-        assertThat( await( cursor.fetchAsync() ), is( true ) );
-        Node node = cursor.current().get( 0 ).asNode();
+        Record record = await( cursor.nextAsync() );
+        assertNotNull( record );
+        Node node = record.get( 0 ).asNode();
         assertEquals( "Node", single( node.labels() ) );
         assertEquals( 4242, node.get( "id" ).asInt() );
+        assertNull( await( cursor.nextAsync() ) );
 
         assertNull( await( tx.rollbackAsync() ) );
         assertEquals( 0, countNodes( 4242 ) );
@@ -138,13 +144,13 @@ public class TransactionAsyncIT
         Transaction tx = await( session.beginTransactionAsync() );
 
         StatementResultCursor cursor1 = await( tx.runAsync( "CREATE (n:Node {id: 1})" ) );
-        assertThat( await( cursor1.fetchAsync() ), is( false ) );
+        assertNull( await( cursor1.nextAsync() ) );
 
         StatementResultCursor cursor2 = await( tx.runAsync( "CREATE (n:Node {id: 2})" ) );
-        assertThat( await( cursor2.fetchAsync() ), is( false ) );
+        assertNull( await( cursor2.nextAsync() ) );
 
         StatementResultCursor cursor3 = await( tx.runAsync( "CREATE (n:Node {id: 2})" ) );
-        assertThat( await( cursor3.fetchAsync() ), is( false ) );
+        assertNull( await( cursor3.nextAsync() ) );
 
         assertNull( await( tx.commitAsync() ) );
         assertEquals( 1, countNodes( 1 ) );
@@ -171,10 +177,10 @@ public class TransactionAsyncIT
         Transaction tx = await( session.beginTransactionAsync() );
 
         StatementResultCursor cursor1 = await( tx.runAsync( "CREATE (n:Node {id: 1})" ) );
-        assertThat( await( cursor1.fetchAsync() ), is( false ) );
+        assertNull( await( cursor1.nextAsync() ) );
 
         StatementResultCursor cursor2 = await( tx.runAsync( "CREATE (n:Node {id: 42})" ) );
-        assertThat( await( cursor2.fetchAsync() ), is( false ) );
+        assertNull( await( cursor2.nextAsync() ) );
 
         assertNull( await( tx.rollbackAsync() ) );
         assertEquals( 0, countNodes( 1 ) );
@@ -244,12 +250,14 @@ public class TransactionAsyncIT
         Transaction tx = await( session.beginTransactionAsync() );
 
         StatementResultCursor cursor1 = await( tx.runAsync( "CREATE (n:Node) RETURN n" ) );
-        assertThat( await( cursor1.fetchAsync() ), is( true ) );
-        assertTrue( cursor1.current().get( 0 ).asNode().hasLabel( "Node" ) );
+        Record record1 = await( cursor1.nextAsync() );
+        assertNotNull( record1 );
+        assertTrue( record1.get( 0 ).asNode().hasLabel( "Node" ) );
 
         StatementResultCursor cursor2 = await( tx.runAsync( "RETURN 42" ) );
-        assertThat( await( cursor2.fetchAsync() ), is( true ) );
-        assertEquals( 42, cursor2.current().get( 0 ).asInt() );
+        Record record2 = await( cursor2.nextAsync() );
+        assertNotNull( record2 );
+        assertEquals( 42, record2.get( 0 ).asInt() );
 
         try
         {
@@ -278,12 +286,14 @@ public class TransactionAsyncIT
         Transaction tx = await( session.beginTransactionAsync() );
 
         StatementResultCursor cursor1 = await( tx.runAsync( "RETURN 4242" ) );
-        assertThat( await( cursor1.fetchAsync() ), is( true ) );
-        assertEquals( 4242, cursor1.current().get( 0 ).asInt() );
+        Record record1 = await( cursor1.nextAsync() );
+        assertNotNull( record1 );
+        assertEquals( 4242, record1.get( 0 ).asInt() );
 
         StatementResultCursor cursor2 = await( tx.runAsync( "CREATE (n:Node) DELETE n RETURN 42" ) );
-        assertThat( await( cursor2.fetchAsync() ), is( true ) );
-        assertEquals( 42, cursor2.current().get( 0 ).asInt() );
+        Record record2 = await( cursor2.nextAsync() );
+        assertNotNull( record2 );
+        assertEquals( 42, record2.get( 0 ).asInt() );
 
         try
         {
@@ -508,6 +518,30 @@ public class TransactionAsyncIT
         assertEquals( 0, summary.notifications().size() );
         assertThat( summary.resultAvailableAfter( TimeUnit.MILLISECONDS ), greaterThanOrEqualTo( 0L ) );
         assertThat( summary.resultConsumedAfter( TimeUnit.MILLISECONDS ), greaterThanOrEqualTo( 0L ) );
+    }
+
+    @Test
+    public void shouldPeekRecordFromCursor()
+    {
+        Transaction tx = await( session.beginTransactionAsync() );
+        StatementResultCursor cursor = await( tx.runAsync( "UNWIND ['a', 'b', 'c'] AS x RETURN x" ) );
+
+        assertEquals( "a", await( cursor.peekAsync() ).get( 0 ).asString() );
+        assertEquals( "a", await( cursor.peekAsync() ).get( 0 ).asString() );
+
+        assertEquals( "a", await( cursor.nextAsync() ).get( 0 ).asString() );
+
+        assertEquals( "b", await( cursor.peekAsync() ).get( 0 ).asString() );
+        assertEquals( "b", await( cursor.peekAsync() ).get( 0 ).asString() );
+        assertEquals( "b", await( cursor.peekAsync() ).get( 0 ).asString() );
+
+        assertEquals( "b", await( cursor.nextAsync() ).get( 0 ).asString() );
+        assertEquals( "c", await( cursor.nextAsync() ).get( 0 ).asString() );
+
+        assertNull( await( cursor.peekAsync() ) );
+        assertNull( await( cursor.nextAsync() ) );
+
+        await( tx.rollbackAsync() );
     }
 
     private int countNodes( Object id )
