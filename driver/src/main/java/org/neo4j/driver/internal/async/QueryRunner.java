@@ -50,7 +50,7 @@ public final class QueryRunner
         Map<String,Value> params = statement.parameters().asMap( ofValue() );
 
         InternalPromise<Void> runCompletedPromise = connection.newPromise();
-        final RunResponseHandler runHandler = new RunResponseHandler( runCompletedPromise );
+        final RunResponseHandler runHandler = new RunResponseHandler( runCompletedPromise, tx );
         final PullAllResponseHandler pullAllHandler = newPullAllHandler( statement, runHandler, connection, tx );
 
         connection.run( query, params, runHandler );

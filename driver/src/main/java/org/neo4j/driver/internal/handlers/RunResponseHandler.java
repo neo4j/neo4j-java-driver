@@ -25,19 +25,22 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.driver.internal.ExplicitTransaction;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Value;
 
 public class RunResponseHandler implements ResponseHandler
 {
     private final Promise<Void> runCompletedPromise;
+    private final ExplicitTransaction tx;
 
     private List<String> statementKeys;
     private long resultAvailableAfter;
 
-    public RunResponseHandler( Promise<Void> runCompletedPromise )
+    public RunResponseHandler( Promise<Void> runCompletedPromise, ExplicitTransaction tx )
     {
         this.runCompletedPromise = runCompletedPromise;
+        this.tx = tx;
     }
 
     @Override
@@ -55,6 +58,10 @@ public class RunResponseHandler implements ResponseHandler
     @Override
     public void onFailure( Throwable error )
     {
+        if ( tx != null )
+        {
+            tx.resultFailed( error );
+        }
         if ( runCompletedPromise != null )
         {
             runCompletedPromise.setFailure( error );
