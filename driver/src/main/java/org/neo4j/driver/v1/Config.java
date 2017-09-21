@@ -331,8 +331,24 @@ public class Config
          *
          * @param size the max number of idle sessions to keep open
          * @return this builder
+         * @deprecated please use {@link #withMaxIdleConnections(int)} instead.
          */
+        @Deprecated
         public ConfigBuilder withMaxIdleSessions( int size )
+        {
+            this.maxIdleConnectionPoolSize = size;
+            return this;
+        }
+
+        /**
+         * The max number of idle connections to keep open at once. Configure this
+         * higher for greater concurrency, or lower to reduce the pressure on the
+         * database instance.
+         *
+         * @param size the max number of idle connections to keep open
+         * @return this builder
+         */
+        public ConfigBuilder withMaxIdleConnections( int size )
         {
             this.maxIdleConnectionPoolSize = size;
             return this;
