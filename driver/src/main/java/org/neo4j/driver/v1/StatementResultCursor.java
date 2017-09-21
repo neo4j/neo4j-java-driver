@@ -39,4 +39,6 @@ public interface StatementResultCursor
     Response<Record> peekAsync();
 
     Response<Void> forEachAsync( Consumer<Record> action );
+
+    Response<List<Record>> listAsync();
 }

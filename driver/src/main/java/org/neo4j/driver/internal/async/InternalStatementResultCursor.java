@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.async;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -87,6 +88,14 @@ public class InternalStatementResultCursor implements StatementResultCursor
         return result;
     }
 
+    @Override
+    public Response<List<Record>> listAsync()
+    {
+        InternalPromise<List<Record>> result = connection.newPromise();
+        internalListAsync( new ArrayList<Record>(), result );
+        return result;
+    }
+
     private void internalForEachAsync( final Consumer<Record> action, final InternalPromise<Void> result )
     {
         final InternalFuture<Record> recordFuture = internalNextAsync();
@@ -111,6 +120,40 @@ public class InternalStatementResultCursor implements StatementResultCursor
                     else
                     {
                         result.setSuccess( null );
+                    }
+                }
+                else
+                {
+                    result.setFailure( future.cause() );
+                }
+            }
+        } );
+    }
+
+    private void internalListAsync( final List<Record> records, final InternalPromise<List<Record>> result )
+    {
+        final InternalFuture<Record> recordFuture = internalNextAsync();
+
+        recordFuture.addListener( new FutureListener<Record>()
+        {
+            @Override
+            public void operationComplete( Future<Record> future )
+            {
+                if ( future.isCancelled() )
+                {
+                    result.cancel( true );
+                }
+                else if ( future.isSuccess() )
+                {
+                    Record record = future.getNow();
+                    if ( record != null )
+                    {
+                        records.add( record );
+                        internalListAsync( records, result );
+                    }
+                    else
+                    {
+                        result.setSuccess( records );
                     }
                 }
                 else

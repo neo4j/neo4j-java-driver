@@ -23,7 +23,10 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -558,6 +561,18 @@ public class TransactionAsyncIT
         testForEach( "UNWIND range(1, 12555) AS x CREATE (n:Node {id: x}) RETURN n", 12555 );
     }
 
+    @Test
+    public void shouldConvertToListWithEmptyCursor()
+    {
+        testList( "CREATE (:Person)-[:KNOWS]->(:Person)", Collections.emptyList() );
+    }
+
+    @Test
+    public void shouldConvertToListWithNonEmptyCursor()
+    {
+        testList( "UNWIND [1, '1', 2, '2', 3, '3'] AS x RETURN x", Arrays.asList( 1L, "1", 2L, "2", 3L, "3" ) );
+    }
+
     private int countNodes( Object id )
     {
         StatementResult result = session.run( "MATCH (n:Node {id: $id}) RETURN count(n)", parameters( "id", id ) );
@@ -581,6 +596,19 @@ public class TransactionAsyncIT
 
         assertNull( await( forEachDone ) );
         assertEquals( expectedSeenRecords, recordsSeen.get() );
+    }
+
+    private <T> void testList( String query, List<T> expectedList )
+    {
+        Transaction tx = await( session.beginTransactionAsync() );
+        StatementResultCursor cursor = await( tx.runAsync( query ) );
+        List<Record> records = await( cursor.listAsync() );
+        List<Object> actualList = new ArrayList<>();
+        for ( Record record : records )
+        {
+            actualList.add( record.get( 0 ).asObject() );
+        }
+        assertEquals( expectedList, actualList );
     }
 
     private static void assertSyntaxError( Exception e )

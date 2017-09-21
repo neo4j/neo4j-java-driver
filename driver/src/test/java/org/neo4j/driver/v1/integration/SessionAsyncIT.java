@@ -28,6 +28,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Future;
@@ -490,6 +491,19 @@ public class SessionAsyncIT
         testForEach( "UNWIND range(1, 10000) AS x RETURN x", 10000 );
     }
 
+    @Test
+    public void shouldConvertToListWithEmptyCursor()
+    {
+        testList( "MATCH (n:NoSuchLabel) RETURN n", Collections.emptyList() );
+    }
+
+    @Test
+    public void shouldConvertToListWithNonEmptyCursor()
+    {
+        testList( "UNWIND range(1, 100, 10) AS x RETURN x",
+                Arrays.asList( 1L, 11L, 21L, 31L, 41L, 51L, 61L, 71L, 81L, 91L ) );
+    }
+
     private Future<List<Future<Record>>> runNestedQueries( StatementResultCursor inputCursor )
     {
         Promise<List<Future<Record>>> resultPromise = GlobalEventExecutor.INSTANCE.newPromise();
@@ -574,6 +588,18 @@ public class SessionAsyncIT
 
         assertNull( await( forEachDone ) );
         assertEquals( expectedSeenRecords, recordsSeen.get() );
+    }
+
+    private <T> void testList( String query, List<T> expectedList )
+    {
+        StatementResultCursor cursor = await( session.runAsync( query ) );
+        List<Record> records = await( cursor.listAsync() );
+        List<Object> actualList = new ArrayList<>();
+        for ( Record record : records )
+        {
+            actualList.add( record.get( 0 ).asObject() );
+        }
+        assertEquals( expectedList, actualList );
     }
 
     private static void assertSyntaxError( Exception e )

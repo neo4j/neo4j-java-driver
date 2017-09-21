@@ -130,7 +130,6 @@ public abstract class PullAllResponseHandler implements ResponseHandler
             if ( recordPromise == null )
             {
                 recordPromise = connection.newPromise();
-                System.out.println( "setting promise " + recordPromise.hashCode() );
             }
             return recordPromise;
         }
