@@ -23,7 +23,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Future;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.driver.v1.AuthToken;
@@ -32,7 +32,6 @@ import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.Response;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.StatementResultCursor;
@@ -156,8 +155,8 @@ public class Main
             public void apply( Driver driver, MutableInt recordsRead )
             {
                 Session session = driver.session();
-                Response<StatementResultCursor> cursorResponse = session.runAsync( QUERY, PARAMS_OBJ );
-                StatementResultCursor cursor = await( cursorResponse );
+                CompletionStage<StatementResultCursor> cursorFuture = session.runAsync( QUERY, PARAMS_OBJ );
+                StatementResultCursor cursor = await( cursorFuture );
                 Record record;
                 while ( (record = await( cursor.nextAsync() )) != null )
                 {
@@ -273,11 +272,11 @@ public class Main
         return (Math.sqrt( squaredDiffMean ));
     }
 
-    private static <T, U extends Future<T>> T await( U future )
+    private static <T> T await( CompletionStage<T> stage )
     {
         try
         {
-            return future.get();
+            return stage.toCompletableFuture().get();
         }
         catch ( Throwable t )
         {

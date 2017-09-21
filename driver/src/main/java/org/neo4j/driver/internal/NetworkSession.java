@@ -23,10 +23,12 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 
 import java.util.Map;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.ResultResourcesHandler;
 import org.neo4j.driver.internal.async.AsyncConnection;
+import org.neo4j.driver.internal.async.Futures;
 import org.neo4j.driver.internal.async.InternalFuture;
 import org.neo4j.driver.internal.async.InternalPromise;
 import org.neo4j.driver.internal.async.QueryRunner;
@@ -41,8 +43,6 @@ import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.Response;
-import org.neo4j.driver.v1.ResponseListener;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementResult;
@@ -55,6 +55,8 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.types.TypeSystem;
 import org.neo4j.driver.v1.util.Function;
 
+import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.neo4j.driver.internal.async.Futures.asCompletionStage;
 import static org.neo4j.driver.v1.Values.value;
 
 public class NetworkSession implements Session, SessionResourcesHandler, ResultResourcesHandler
@@ -93,7 +95,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     }
 
     @Override
-    public Response<StatementResultCursor> runAsync( String statementText )
+    public CompletionStage<StatementResultCursor> runAsync( String statementText )
     {
         return runAsync( statementText, Values.EmptyMap );
     }
@@ -106,7 +108,8 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     }
 
     @Override
-    public Response<StatementResultCursor> runAsync( String statementText, Map<String,Object> statementParameters )
+    public CompletionStage<StatementResultCursor> runAsync( String statementText,
+            Map<String,Object> statementParameters )
     {
         Value params = statementParameters == null ? Values.EmptyMap : value( statementParameters );
         return runAsync( statementText, params );
@@ -120,7 +123,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     }
 
     @Override
-    public Response<StatementResultCursor> runAsync( String statementTemplate, Record statementParameters )
+    public CompletionStage<StatementResultCursor> runAsync( String statementTemplate, Record statementParameters )
     {
         Value params = statementParameters == null ? Values.EmptyMap : value( statementParameters.asMap() );
         return runAsync( statementTemplate, params );
@@ -133,7 +136,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     }
 
     @Override
-    public Response<StatementResultCursor> runAsync( String statementText, Value parameters )
+    public CompletionStage<StatementResultCursor> runAsync( String statementText, Value parameters )
     {
         return runAsync( new Statement( statementText, parameters ) );
     }
@@ -151,21 +154,15 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     }
 
     @Override
-    public Response<StatementResultCursor> runAsync( final Statement statement )
+    public CompletionStage<StatementResultCursor> runAsync( final Statement statement )
     {
         ensureSessionIsOpen();
         ensureNoOpenTransactionBeforeRunningSession();
 
         InternalFuture<AsyncConnection> connectionFuture = acquireAsyncConnection( mode );
 
-        return connectionFuture.thenCompose( new Function<AsyncConnection,InternalFuture<StatementResultCursor>>()
-        {
-            @Override
-            public InternalFuture<StatementResultCursor> apply( AsyncConnection connection )
-            {
-                return QueryRunner.runAsync( connection, statement );
-            }
-        } );
+        return asCompletionStage( connectionFuture.thenCompose(
+                connection -> QueryRunner.runAsync( connection, statement ) ) );
     }
 
     public static StatementResult run( Connection connection, Statement statement,
@@ -232,7 +229,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
 
         try
         {
-            closeAsync().get();
+            closeAsync().toCompletableFuture().get();
         }
         catch ( Exception e )
         {
@@ -241,33 +238,20 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     }
 
     @Override
-    public Response<Void> closeAsync()
+    public CompletionStage<Void> closeAsync()
     {
         if ( asyncConnectionFuture != null )
         {
-            return asyncConnectionFuture.thenCompose( new Function<AsyncConnection,InternalFuture<Void>>()
-            {
-                @Override
-                public InternalFuture<Void> apply( AsyncConnection connection )
-                {
-                    return connection.forceRelease();
-                }
-            } );
+            return asCompletionStage( asyncConnectionFuture.thenCompose( AsyncConnection::forceRelease ) );
         }
         else if ( currentAsyncTransactionFuture != null )
         {
-            return currentAsyncTransactionFuture.thenCompose( new Function<ExplicitTransaction,InternalFuture<Void>>()
-            {
-                @Override
-                public InternalFuture<Void> apply( ExplicitTransaction tx )
-                {
-                    return tx.internalRollbackAsync();
-                }
-            } );
+            return asCompletionStage(
+                    currentAsyncTransactionFuture.thenCompose( ExplicitTransaction::internalRollbackAsync ) );
         }
         else
         {
-            return new InternalPromise<Void>( eventExecutorGroup ).setSuccess( null );
+            return completedFuture( null );
         }
     }
 
@@ -286,10 +270,10 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     }
 
     @Override
-    public Response<Transaction> beginTransactionAsync()
+    public CompletionStage<Transaction> beginTransactionAsync()
     {
         //noinspection unchecked
-        return (Response) beginTransactionAsync( mode );
+        return (CompletionStage) asCompletionStage( beginTransactionAsync( mode ) );
     }
 
     @Override
@@ -299,9 +283,9 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     }
 
     @Override
-    public <T> Response<T> readTransactionAsync( TransactionWork<Response<T>> work )
+    public <T> CompletionStage<T> readTransactionAsync( TransactionWork<CompletionStage<T>> work )
     {
-        return transactionAsync( AccessMode.READ, work );
+        return asCompletionStage( transactionAsync( AccessMode.READ, work ) );
     }
 
     @Override
@@ -311,9 +295,9 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     }
 
     @Override
-    public <T> Response<T> writeTransactionAsync( TransactionWork<Response<T>> work )
+    public <T> CompletionStage<T> writeTransactionAsync( TransactionWork<CompletionStage<T>> work )
     {
-        return transactionAsync( AccessMode.WRITE, work );
+        return asCompletionStage( transactionAsync( AccessMode.WRITE, work ) );
     }
 
     void setBookmark( Bookmark bookmark )
@@ -415,63 +399,56 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
         } );
     }
 
-    private <T> InternalFuture<T> transactionAsync( final AccessMode mode, final TransactionWork<Response<T>> work )
+    private <T> InternalFuture<T> transactionAsync( final AccessMode mode,
+            final TransactionWork<CompletionStage<T>> work )
     {
-        return retryLogic.retryAsync( new Supplier<InternalFuture<T>>()
+        return retryLogic.retryAsync( () ->
         {
-            @Override
-            public InternalFuture<T> get()
+            final InternalFuture<ExplicitTransaction> txFuture = beginTransactionAsync( mode );
+            final InternalPromise<T> resultPromise = new InternalPromise<>( txFuture.eventExecutor() );
+
+            txFuture.addListener( new FutureListener<ExplicitTransaction>()
             {
-                final InternalFuture<ExplicitTransaction> txFuture = beginTransactionAsync( mode );
-                final InternalPromise<T> resultPromise = new InternalPromise<>( txFuture.eventExecutor() );
-
-                txFuture.addListener( new FutureListener<ExplicitTransaction>()
+                @Override
+                public void operationComplete( Future<ExplicitTransaction> future ) throws Exception
                 {
-                    @Override
-                    public void operationComplete( Future<ExplicitTransaction> future ) throws Exception
+                    if ( future.isCancelled() )
                     {
-                        if ( future.isCancelled() )
-                        {
-                            resultPromise.cancel( true );
-                        }
-                        else if ( future.isSuccess() )
-                        {
-                            executeWork( resultPromise, future.getNow(), work );
-                        }
-                        else
-                        {
-                            resultPromise.setFailure( future.cause() );
-                        }
+                        resultPromise.cancel( true );
                     }
-                } );
+                    else if ( future.isSuccess() )
+                    {
+                        executeWork( resultPromise, future.getNow(), work );
+                    }
+                    else
+                    {
+                        resultPromise.setFailure( future.cause() );
+                    }
+                }
+            } );
 
-                return resultPromise;
-            }
+            return resultPromise;
         } );
     }
 
     private <T> void executeWork( final InternalPromise<T> resultPromise, final ExplicitTransaction tx,
-            TransactionWork<Response<T>> work )
+            TransactionWork<CompletionStage<T>> work )
     {
-        Response<T> workResponse = safeExecuteWork( tx, work );
-        workResponse.addListener( new ResponseListener<T>()
+        CompletionStage<T> workFuture = safeExecuteWork( tx, work );
+        workFuture.whenComplete( ( result, error ) ->
         {
-            @Override
-            public void operationCompleted( T result, Throwable error )
+            if ( error != null )
             {
-                if ( error != null )
-                {
-                    rollbackTxAfterFailedTransactionWork( tx, resultPromise, error );
-                }
-                else
-                {
-                    commitTxAfterSucceededTransactionWork( tx, resultPromise, result );
-                }
+                rollbackTxAfterFailedTransactionWork( tx, resultPromise, error );
+            }
+            else
+            {
+                commitTxAfterSucceededTransactionWork( tx, resultPromise, result );
             }
         } );
     }
 
-    private <T> Response<T> safeExecuteWork( ExplicitTransaction tx, TransactionWork<Response<T>> work )
+    private <T> CompletionStage<T> safeExecuteWork( ExplicitTransaction tx, TransactionWork<CompletionStage<T>> work )
     {
         // given work might fail in both async and sync way
         // async failure will result in a failed future being returned
@@ -483,7 +460,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
         catch ( Throwable workError )
         {
             // work threw an exception, wrap it in a future and proceed
-            return new InternalPromise<T>( eventExecutorGroup ).setFailure( workError );
+            return Futures.failedFuture( workError );
         }
     }
 
@@ -492,17 +469,13 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     {
         if ( tx.isOpen() )
         {
-            tx.rollbackAsync().addListener( new ResponseListener<Void>()
+            tx.rollbackAsync().whenComplete( ( ignore, rollbackError ) ->
             {
-                @Override
-                public void operationCompleted( Void ignore, Throwable rollbackError )
+                if ( rollbackError != null )
                 {
-                    if ( rollbackError != null )
-                    {
-                        error.addSuppressed( rollbackError );
-                    }
-                    resultPromise.setFailure( error );
+                    error.addSuppressed( rollbackError );
                 }
+                resultPromise.setFailure( error );
             } );
         }
         else
@@ -516,19 +489,15 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     {
         if ( tx.isOpen() )
         {
-            tx.commitAsync().addListener( new ResponseListener<Void>()
+            tx.commitAsync().whenComplete( ( ignore, commitError ) ->
             {
-                @Override
-                public void operationCompleted( Void ignore, Throwable commitError )
+                if ( commitError != null )
                 {
-                    if ( commitError != null )
-                    {
-                        resultPromise.setFailure( commitError );
-                    }
-                    else
-                    {
-                        resultPromise.setSuccess( result );
-                    }
+                    resultPromise.setFailure( commitError );
+                }
+                else
+                {
+                    resultPromise.setSuccess( result );
                 }
             } );
         }

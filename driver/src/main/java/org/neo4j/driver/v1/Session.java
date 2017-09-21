@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.v1;
 
+import java.util.concurrent.CompletionStage;
+
 import org.neo4j.driver.v1.util.Resource;
 
 /**
@@ -82,7 +84,7 @@ public interface Session extends Resource, StatementRunner
     @Deprecated
     Transaction beginTransaction( String bookmark );
 
-    Response<Transaction> beginTransactionAsync();
+    CompletionStage<Transaction> beginTransactionAsync();
 
     /**
      * Execute given unit of work in a  {@link AccessMode#READ read} transaction.
@@ -96,7 +98,7 @@ public interface Session extends Resource, StatementRunner
      */
     <T> T readTransaction( TransactionWork<T> work );
 
-    <T> Response<T> readTransactionAsync( TransactionWork<Response<T>> work );
+    <T> CompletionStage<T> readTransactionAsync( TransactionWork<CompletionStage<T>> work );
 
     /**
      * Execute given unit of work in a {@link AccessMode#WRITE write} transaction.
@@ -110,7 +112,7 @@ public interface Session extends Resource, StatementRunner
      */
     <T> T writeTransaction( TransactionWork<T> work );
 
-    <T> Response<T> writeTransactionAsync( TransactionWork<Response<T>> work );
+    <T> CompletionStage<T> writeTransactionAsync( TransactionWork<CompletionStage<T>> work );
 
     /**
      * Return the bookmark received following the last completed
@@ -149,5 +151,5 @@ public interface Session extends Resource, StatementRunner
     @Override
     void close();
 
-    Response<Void> closeAsync();
+    CompletionStage<Void> closeAsync();
 }

@@ -24,16 +24,17 @@ import io.netty.util.concurrent.FutureListener;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.util.Consumer;
 import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.Response;
 import org.neo4j.driver.v1.StatementResultCursor;
 import org.neo4j.driver.v1.summary.ResultSummary;
 
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.driver.internal.async.Futures.asCompletionStage;
 
 public class InternalStatementResultCursor implements StatementResultCursor
 {
@@ -41,7 +42,7 @@ public class InternalStatementResultCursor implements StatementResultCursor
     private final RunResponseHandler runResponseHandler;
     private final PullAllResponseHandler pullAllHandler;
 
-    private InternalFuture<Record> peekedRecordResponse;
+    private InternalFuture<Record> peekedRecordFuture;
 
     public InternalStatementResultCursor( AsyncConnection connection, RunResponseHandler runResponseHandler,
             PullAllResponseHandler pullAllHandler )
@@ -59,41 +60,41 @@ public class InternalStatementResultCursor implements StatementResultCursor
     }
 
     @Override
-    public Response<ResultSummary> summaryAsync()
+    public CompletionStage<ResultSummary> summaryAsync()
     {
-        return pullAllHandler.summaryAsync();
+        return asCompletionStage( pullAllHandler.summaryAsync() );
     }
 
     @Override
-    public Response<Record> nextAsync()
+    public CompletionStage<Record> nextAsync()
     {
-        return internalNextAsync();
+        return asCompletionStage( internalNextAsync() );
     }
 
     @Override
-    public Response<Record> peekAsync()
+    public CompletionStage<Record> peekAsync()
     {
-        if ( peekedRecordResponse == null )
+        if ( peekedRecordFuture == null )
         {
-            peekedRecordResponse = pullAllHandler.nextAsync();
+            peekedRecordFuture = pullAllHandler.nextAsync();
         }
-        return peekedRecordResponse;
+        return asCompletionStage( peekedRecordFuture );
     }
 
     @Override
-    public Response<Void> forEachAsync( final Consumer<Record> action )
+    public CompletionStage<Void> forEachAsync( final Consumer<Record> action )
     {
         InternalPromise<Void> result = connection.newPromise();
         internalForEachAsync( action, result );
-        return result;
+        return asCompletionStage( result );
     }
 
     @Override
-    public Response<List<Record>> listAsync()
+    public CompletionStage<List<Record>> listAsync()
     {
         InternalPromise<List<Record>> result = connection.newPromise();
-        internalListAsync( new ArrayList<Record>(), result );
-        return result;
+        internalListAsync( new ArrayList<>(), result );
+        return asCompletionStage( result );
     }
 
     private void internalForEachAsync( final Consumer<Record> action, final InternalPromise<Void> result )
@@ -166,10 +167,10 @@ public class InternalStatementResultCursor implements StatementResultCursor
 
     private InternalFuture<Record> internalNextAsync()
     {
-        if ( peekedRecordResponse != null )
+        if ( peekedRecordFuture != null )
         {
-            InternalFuture<Record> result = peekedRecordResponse;
-            peekedRecordResponse = null;
+            InternalFuture<Record> result = peekedRecordFuture;
+            peekedRecordFuture = null;
             return result;
         }
         else

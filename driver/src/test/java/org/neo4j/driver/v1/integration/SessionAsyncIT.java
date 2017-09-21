@@ -31,14 +31,13 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
 
 import org.neo4j.driver.internal.async.InternalPromise;
-import org.neo4j.driver.internal.util.Consumer;
 import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.Response;
-import org.neo4j.driver.v1.ResponseListener;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementResultCursor;
@@ -66,6 +65,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.driver.internal.async.Futures.asCompletionStage;
 import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.internal.util.Matchers.containsResultAvailableAfterAndResultConsumedAfter;
 import static org.neo4j.driver.v1.Values.parameters;
@@ -210,8 +210,8 @@ public class SessionAsyncIT
         StatementResultCursor cursor =
                 await( session.runAsync( "UNWIND [1, 2, 3] AS x CREATE (p:Person {id: x}) RETURN p" ) );
 
-        Future<List<Future<Record>>> queriesExecuted = runNestedQueries( cursor );
-        List<Future<Record>> futures = await( queriesExecuted );
+        Future<List<CompletionStage<Record>>> queriesExecuted = runNestedQueries( cursor );
+        List<CompletionStage<Record>> futures = await( queriesExecuted );
 
         List<Record> futureResults = awaitAll( futures );
         assertEquals( 7, futureResults.size() );
@@ -243,13 +243,13 @@ public class SessionAsyncIT
     public void shouldAllowMultipleAsyncRunsWithoutConsumingResults() throws InterruptedException
     {
         int queryCount = 13;
-        List<Future<StatementResultCursor>> cursors = new ArrayList<>();
+        List<CompletionStage<StatementResultCursor>> cursors = new ArrayList<>();
         for ( int i = 0; i < queryCount; i++ )
         {
             cursors.add( session.runAsync( "CREATE (:Person)" ) );
         }
 
-        List<Future<Record>> records = new ArrayList<>();
+        List<CompletionStage<Record>> records = new ArrayList<>();
         for ( StatementResultCursor cursor : awaitAll( cursors ) )
         {
             records.add( cursor.nextAsync() );
@@ -361,9 +361,9 @@ public class SessionAsyncIT
     public void shouldRunAsyncTransactionWithoutRetries()
     {
         InvocationTrackingWork work = new InvocationTrackingWork( "CREATE (:Apa) RETURN 42" );
-        Response<Record> txResponse = session.writeTransactionAsync( work );
+        CompletionStage<Record> txStage = session.writeTransactionAsync( work );
 
-        Record record = await( txResponse );
+        Record record = await( txStage );
         assertNotNull( record );
         assertEquals( 42L, record.get( 0 ).asLong() );
 
@@ -379,9 +379,9 @@ public class SessionAsyncIT
                 new SessionExpiredException( "Ah!" ),
                 new TransientException( "Code", "Message" ) );
 
-        Response<Record> txResponse = session.writeTransactionAsync( work );
+        CompletionStage<Record> txStage = session.writeTransactionAsync( work );
 
-        Record record = await( txResponse );
+        Record record = await( txStage );
         assertNotNull( record );
         assertEquals( 24L, record.get( 0 ).asLong() );
 
@@ -396,9 +396,9 @@ public class SessionAsyncIT
                 new TransientException( "Oh!", "Deadlock!" ),
                 new ServiceUnavailableException( "Oh! Network Failure" ) );
 
-        Response<Record> txResponse = session.writeTransactionAsync( work );
+        CompletionStage<Record> txStage = session.writeTransactionAsync( work );
 
-        Record record = await( txResponse );
+        Record record = await( txStage );
         assertNotNull( record );
         assertEquals( 12L, record.get( 0 ).asLong() );
 
@@ -410,11 +410,11 @@ public class SessionAsyncIT
     public void shouldRunAsyncTransactionThatCanNotBeRetried()
     {
         InvocationTrackingWork work = new InvocationTrackingWork( "UNWIND [10, 5, 0] AS x CREATE (:Hi) RETURN 10/x" );
-        Response<Record> txResponse = session.writeTransactionAsync( work );
+        CompletionStage<Record> txStage = session.writeTransactionAsync( work );
 
         try
         {
-            await( txResponse );
+            await( txStage );
             fail( "Exception expected" );
         }
         catch ( Exception e )
@@ -434,11 +434,11 @@ public class SessionAsyncIT
         InvocationTrackingWork work = new InvocationTrackingWork( "CREATE (:Person) RETURN 1" )
                 .withSyncFailures( new TransientException( "Oh!", "Deadlock!" ) )
                 .withAsyncFailures( new DatabaseException( "Oh!", "OutOfMemory!" ) );
-        Response<Record> txResponse = session.writeTransactionAsync( work );
+        CompletionStage<Record> txStage = session.writeTransactionAsync( work );
 
         try
         {
-            await( txResponse );
+            await( txStage );
             fail( "Exception expected" );
         }
         catch ( Exception e )
@@ -499,65 +499,57 @@ public class SessionAsyncIT
                 Arrays.asList( 1L, 11L, 21L, 31L, 41L, 51L, 61L, 71L, 81L, 91L ) );
     }
 
-    private Future<List<Future<Record>>> runNestedQueries( StatementResultCursor inputCursor )
+    private Future<List<CompletionStage<Record>>> runNestedQueries( StatementResultCursor inputCursor )
     {
-        Promise<List<Future<Record>>> resultPromise = GlobalEventExecutor.INSTANCE.newPromise();
-        runNestedQueries( inputCursor, new ArrayList<Future<Record>>(), resultPromise );
+        Promise<List<CompletionStage<Record>>> resultPromise = GlobalEventExecutor.INSTANCE.newPromise();
+        runNestedQueries( inputCursor, new ArrayList<>(), resultPromise );
         return resultPromise;
     }
 
-    private void runNestedQueries( final StatementResultCursor inputCursor, final List<Future<Record>> futures,
-            final Promise<List<Future<Record>>> resultPromise )
+    private void runNestedQueries( final StatementResultCursor inputCursor, final List<CompletionStage<Record>> stages,
+            final Promise<List<CompletionStage<Record>>> resultPromise )
     {
-        final Response<Record> recordResponse = inputCursor.nextAsync();
-        futures.add( recordResponse );
+        final CompletionStage<Record> recordResponse = inputCursor.nextAsync();
+        stages.add( recordResponse );
 
-        recordResponse.addListener( new ResponseListener<Record>()
+        recordResponse.whenComplete( ( record, error ) ->
         {
-            @Override
-            public void operationCompleted( Record record, Throwable error )
+            if ( error != null )
             {
-                if ( error != null )
-                {
-                    resultPromise.setFailure( error );
-                }
-                else if ( record != null )
-                {
-                    runNestedQuery( inputCursor, record, futures, resultPromise );
-                }
-                else
-                {
-                    resultPromise.setSuccess( futures );
-                }
+                resultPromise.setFailure( error );
+            }
+            else if ( record != null )
+            {
+                runNestedQuery( inputCursor, record, stages, resultPromise );
+            }
+            else
+            {
+                resultPromise.setSuccess( stages );
             }
         } );
     }
 
     private void runNestedQuery( final StatementResultCursor inputCursor, Record record,
-            final List<Future<Record>> futures, final Promise<List<Future<Record>>> resultPromise )
+            final List<CompletionStage<Record>> stages, final Promise<List<CompletionStage<Record>>> resultPromise )
     {
         Node node = record.get( 0 ).asNode();
         long id = node.get( "id" ).asLong();
         long age = id * 10;
 
-        Response<StatementResultCursor> response =
+        CompletionStage<StatementResultCursor> response =
                 session.runAsync( "MATCH (p:Person {id: $id}) SET p.age = $age RETURN p",
                 parameters( "id", id, "age", age ) );
 
-        response.addListener( new ResponseListener<StatementResultCursor>()
+        response.whenComplete( ( cursor, error ) ->
         {
-            @Override
-            public void operationCompleted( StatementResultCursor cursor, Throwable error )
+            if ( error != null )
             {
-                if ( error != null )
-                {
-                    resultPromise.setFailure( error );
-                }
-                else
-                {
-                    futures.add( cursor.nextAsync() );
-                    runNestedQueries( inputCursor, futures, resultPromise );
-                }
+                resultPromise.setFailure( error );
+            }
+            else
+            {
+                stages.add( cursor.nextAsync() );
+                runNestedQueries( inputCursor, stages, resultPromise );
             }
         } );
     }
@@ -572,14 +564,7 @@ public class SessionAsyncIT
         StatementResultCursor cursor = await( session.runAsync( query ) );
 
         final AtomicInteger recordsSeen = new AtomicInteger();
-        Response<Void> forEachDone = cursor.forEachAsync( new Consumer<Record>()
-        {
-            @Override
-            public void accept( Record record )
-            {
-                recordsSeen.incrementAndGet();
-            }
-        } );
+        CompletionStage<Void> forEachDone = cursor.forEachAsync( record -> recordsSeen.incrementAndGet() );
 
         assertNull( await( forEachDone ) );
         assertEquals( expectedSeenRecords, recordsSeen.get() );
@@ -610,7 +595,7 @@ public class SessionAsyncIT
         assertThat( ((ClientException) e).code(), containsString( "ArithmeticError" ) );
     }
 
-    private static class KillDbListener implements ResponseListener<Record>
+    private static class KillDbListener implements BiConsumer<Record,Throwable>
     {
         final TestNeo4j neo4j;
         volatile boolean shouldKillDb = true;
@@ -621,7 +606,7 @@ public class SessionAsyncIT
         }
 
         @Override
-        public void operationCompleted( Record record, Throwable error )
+        public void accept( Record record, Throwable error )
         {
             if ( shouldKillDb )
             {
@@ -643,7 +628,7 @@ public class SessionAsyncIT
         }
     }
 
-    private static class InvocationTrackingWork implements TransactionWork<Response<Record>>
+    private static class InvocationTrackingWork implements TransactionWork<CompletionStage<Record>>
     {
         final String query;
         final AtomicInteger invocationCount;
@@ -675,7 +660,7 @@ public class SessionAsyncIT
         }
 
         @Override
-        public Response<Record> execute( Transaction tx )
+        public CompletionStage<Record> execute( Transaction tx )
         {
             invocationCount.incrementAndGet();
 
@@ -686,16 +671,10 @@ public class SessionAsyncIT
 
             final InternalPromise<Record> resultPromise = new InternalPromise<>( GlobalEventExecutor.INSTANCE );
 
-            tx.runAsync( query ).addListener( new ResponseListener<StatementResultCursor>()
-            {
-                @Override
-                public void operationCompleted( final StatementResultCursor cursor, Throwable error )
-                {
-                    processQueryResult( cursor, error, resultPromise );
-                }
-            } );
+            tx.runAsync( query ).whenComplete( ( cursor, error ) ->
+                    processQueryResult( cursor, error, resultPromise ) );
 
-            return resultPromise;
+            return asCompletionStage( resultPromise );
         }
 
         private void processQueryResult( final StatementResultCursor cursor, final Throwable error,
@@ -707,14 +686,8 @@ public class SessionAsyncIT
                 return;
             }
 
-            cursor.nextAsync().addListener( new ResponseListener<Record>()
-            {
-                @Override
-                public void operationCompleted( Record record, Throwable error )
-                {
-                    processFetchResult( record, error, resultPromise, cursor );
-                }
-            } );
+            cursor.nextAsync().whenComplete( ( record, fetchError ) ->
+                    processFetchResult( record, fetchError, resultPromise, cursor ) );
         }
 
         private void processFetchResult( Record record, Throwable error,

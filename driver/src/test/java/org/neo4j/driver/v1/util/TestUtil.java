@@ -22,6 +22,7 @@ import io.netty.buffer.ByteBuf;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
@@ -36,26 +37,23 @@ public final class TestUtil
     {
     }
 
-    public static <T, F extends Future<T>> T get( F future )
-    {
-        if ( !future.isDone() )
-        {
-            throw new IllegalArgumentException( "Given future is not yet completed" );
-        }
-        return await( future );
-    }
-
-    public static <T, F extends Future<T>> List<T> awaitAll( List<F> futures )
+    public static <T> List<T> awaitAll( List<CompletionStage<T>> stages )
     {
         List<T> result = new ArrayList<>();
-        for ( F future : futures )
+        for ( CompletionStage<T> stage : stages )
         {
-            result.add( await( future ) );
+            result.add( await( stage ) );
         }
         return result;
     }
 
-    public static <T, F extends Future<T>> T await( F future )
+    public static <T> T await( CompletionStage<T> stage )
+    {
+        Future<T> future = stage.toCompletableFuture();
+        return await( future );
+    }
+
+    public static <T, U extends Future<T>> T await( U future )
     {
         try
         {

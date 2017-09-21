@@ -28,11 +28,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.driver.internal.util.Consumer;
 import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.Response;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementResult;
@@ -374,9 +373,9 @@ public class TransactionAsyncIT
         tx.runAsync( "CREATE ()" );
         assertNull( await( tx.commitAsync() ) );
 
-        Response<Void> secondCommit = tx.commitAsync();
+        CompletionStage<Void> secondCommit = tx.commitAsync();
         // second commit should return a completed future
-        assertTrue( secondCommit.isDone() );
+        assertTrue( secondCommit.toCompletableFuture().isDone() );
         assertNull( await( secondCommit ) );
     }
 
@@ -387,9 +386,9 @@ public class TransactionAsyncIT
         tx.runAsync( "CREATE ()" );
         assertNull( await( tx.rollbackAsync() ) );
 
-        Response<Void> secondRollback = tx.rollbackAsync();
+        CompletionStage<Void> secondRollback = tx.rollbackAsync();
         // second rollback should return a completed future
-        assertTrue( secondRollback.isDone() );
+        assertTrue( secondRollback.toCompletableFuture().isDone() );
         assertNull( await( secondRollback ) );
     }
 
@@ -610,14 +609,7 @@ public class TransactionAsyncIT
         StatementResultCursor cursor = await( tx.runAsync( query ) );
 
         final AtomicInteger recordsSeen = new AtomicInteger();
-        Response<Void> forEachDone = cursor.forEachAsync( new Consumer<Record>()
-        {
-            @Override
-            public void accept( Record record )
-            {
-                recordsSeen.incrementAndGet();
-            }
-        } );
+        CompletionStage<Void> forEachDone = cursor.forEachAsync( record -> recordsSeen.incrementAndGet() );
 
         assertNull( await( forEachDone ) );
         assertEquals( expectedSeenRecords, recordsSeen.get() );

@@ -22,7 +22,6 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.Promise;
 
@@ -31,7 +30,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.driver.internal.util.BiConsumer;
-import org.neo4j.driver.v1.ResponseListener;
 import org.neo4j.driver.v1.util.Function;
 
 public class InternalPromise<T> implements InternalFuture<T>, Promise<T>
@@ -77,26 +75,6 @@ public class InternalPromise<T> implements InternalFuture<T>, Promise<T>
     public InternalFuture<T> whenComplete( BiConsumer<T,Throwable> action )
     {
         return Futures.whenComplete( this, action );
-    }
-
-    @Override
-    public void addListener( final ResponseListener<T> listener )
-    {
-        delegate.addListener( new FutureListener<T>()
-        {
-            @Override
-            public void operationComplete( Future<T> future )
-            {
-                if ( future.isSuccess() )
-                {
-                    listener.operationCompleted( future.getNow(), null );
-                }
-                else
-                {
-                    listener.operationCompleted( null, future.cause() );
-                }
-            }
-        } );
     }
 
     @Override

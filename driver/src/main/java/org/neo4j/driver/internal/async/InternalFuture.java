@@ -22,10 +22,9 @@ import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
 
 import org.neo4j.driver.internal.util.BiConsumer;
-import org.neo4j.driver.v1.Response;
 import org.neo4j.driver.v1.util.Function;
 
-public interface InternalFuture<T> extends Future<T>, Response<T>
+public interface InternalFuture<T> extends Future<T>
 {
     EventExecutor eventExecutor();
 

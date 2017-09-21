@@ -20,6 +20,7 @@ package org.neo4j.driver.internal;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.ResultResourcesHandler;
 import org.neo4j.driver.internal.async.AsyncConnection;
@@ -35,7 +36,6 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.internal.util.BiConsumer;
 import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.Response;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.StatementResultCursor;
@@ -47,6 +47,7 @@ import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.types.TypeSystem;
 import org.neo4j.driver.v1.util.Function;
 
+import static org.neo4j.driver.internal.async.Futures.asCompletionStage;
 import static org.neo4j.driver.internal.util.ErrorUtil.isRecoverable;
 import static org.neo4j.driver.v1.Values.ofValue;
 import static org.neo4j.driver.v1.Values.value;
@@ -215,9 +216,9 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
     }
 
     @Override
-    public Response<Void> commitAsync()
+    public CompletionStage<Void> commitAsync()
     {
-        return internalCommitAsync();
+        return asCompletionStage( internalCommitAsync() );
     }
 
     InternalFuture<Void> internalCommitAsync()
@@ -238,9 +239,9 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
     }
 
     @Override
-    public Response<Void> rollbackAsync()
+    public CompletionStage<Void> rollbackAsync()
     {
-        return internalRollbackAsync();
+        return asCompletionStage( internalRollbackAsync() );
     }
 
     InternalFuture<Void> internalRollbackAsync()
@@ -317,7 +318,7 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
     }
 
     @Override
-    public Response<StatementResultCursor> runAsync( String statementText, Value parameters )
+    public CompletionStage<StatementResultCursor> runAsync( String statementText, Value parameters )
     {
         return runAsync( new Statement( statementText, parameters ) );
     }
@@ -329,7 +330,7 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
     }
 
     @Override
-    public Response<StatementResultCursor> runAsync( String statementTemplate )
+    public CompletionStage<StatementResultCursor> runAsync( String statementTemplate )
     {
         return runAsync( statementTemplate, Values.EmptyMap );
     }
@@ -342,7 +343,8 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
     }
 
     @Override
-    public Response<StatementResultCursor> runAsync( String statementTemplate, Map<String,Object> statementParameters )
+    public CompletionStage<StatementResultCursor> runAsync( String statementTemplate,
+            Map<String,Object> statementParameters )
     {
         Value params = statementParameters == null ? Values.EmptyMap : value( statementParameters );
         return runAsync( statementTemplate, params );
@@ -356,7 +358,7 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
     }
 
     @Override
-    public Response<StatementResultCursor> runAsync( String statementTemplate, Record statementParameters )
+    public CompletionStage<StatementResultCursor> runAsync( String statementTemplate, Record statementParameters )
     {
         Value params = statementParameters == null ? Values.EmptyMap : value( statementParameters.asMap() );
         return runAsync( statementTemplate, params );
@@ -388,10 +390,10 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
     }
 
     @Override
-    public Response<StatementResultCursor> runAsync( Statement statement )
+    public CompletionStage<StatementResultCursor> runAsync( Statement statement )
     {
         ensureNotFailed();
-        return QueryRunner.runAsync( asyncConnection, statement, this );
+        return asCompletionStage( QueryRunner.runAsync( asyncConnection, statement, this ) );
     }
 
     @Override

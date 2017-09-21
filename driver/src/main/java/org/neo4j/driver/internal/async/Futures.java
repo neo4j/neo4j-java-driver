@@ -23,6 +23,9 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.Promise;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+
 import org.neo4j.driver.internal.util.BiConsumer;
 import org.neo4j.driver.v1.util.Function;
 
@@ -30,6 +33,45 @@ public final class Futures
 {
     private Futures()
     {
+    }
+
+    public static <T> CompletionStage<T> asCompletionStage( InternalFuture<T> future )
+    {
+        CompletableFuture<T> result = new CompletableFuture<>();
+        if ( future.isCancelled() )
+        {
+            result.cancel( true );
+        }
+        else if ( future.isSuccess() )
+        {
+            result.complete( future.getNow() );
+        }
+        else
+        {
+            future.addListener( ignore ->
+            {
+                if ( future.isCancelled() )
+                {
+                    result.cancel( true );
+                }
+                else if ( future.isSuccess() )
+                {
+                    result.complete( future.getNow() );
+                }
+                else
+                {
+                    result.completeExceptionally( future.cause() );
+                }
+            } );
+        }
+        return result;
+    }
+
+    public static <T> CompletableFuture<T> failedFuture( Throwable error )
+    {
+        CompletableFuture<T> result = new CompletableFuture<>();
+        result.completeExceptionally( error );
+        return result;
     }
 
     public static <T, U> InternalFuture<U> thenApply( InternalFuture<T> future, Function<T,U> fn )

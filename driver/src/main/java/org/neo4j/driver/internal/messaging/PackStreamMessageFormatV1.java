@@ -328,7 +328,8 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                         Relationship rel = seg.relationship();
                         long relEndId = rel.endNodeId();
                         long segEndId = seg.end().id();
-                        packer.pack( relEndId == segEndId ? relIdx.get( rel ) : -relIdx.get( rel ) );
+                        int size = relEndId == segEndId ? relIdx.get( rel ) : -relIdx.get( rel );
+                        packer.pack( size );
                         packer.pack( nodeIdx.get( seg.end() ) );
                     }
                     break;
