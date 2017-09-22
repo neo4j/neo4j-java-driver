@@ -66,7 +66,7 @@ abstract class AbstractStressIT<C extends AbstractContext>
 {
     private static final int THREAD_COUNT = Integer.getInteger( "threadCount", 8 );
     private static final int ASYNC_BATCH_SIZE = Integer.getInteger( "asyncBatchSize", 10 );
-    private static final int EXECUTION_TIME_SECONDS = Integer.getInteger( "executionTimeSeconds", 60 );
+    private static final int EXECUTION_TIME_SECONDS = Integer.getInteger( "executionTimeSeconds", 20 );
     private static final boolean DEBUG_LOGGING_ENABLED = Boolean.getBoolean( "loggingEnabled" );
 
     private LoggerNameTrackingLogging logging;
