@@ -28,28 +28,38 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.driver.internal.async.InternalPromise;
+import org.neo4j.driver.internal.util.Consumer;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Response;
 import org.neo4j.driver.v1.ResponseListener;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementResultCursor;
+import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.v1.TransactionWork;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.DatabaseException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.v1.exceptions.SessionExpiredException;
+import org.neo4j.driver.v1.exceptions.TransientException;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.summary.StatementType;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
+import static java.util.Collections.emptyIterator;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -71,13 +81,13 @@ public class SessionAsyncIT
     private Session session;
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         session = neo4j.driver().session();
     }
 
     @After
-    public void tearDown() throws Exception
+    public void tearDown()
     {
         await( session.closeAsync() );
     }
@@ -87,7 +97,7 @@ public class SessionAsyncIT
     {
         StatementResultCursor cursor = await( session.runAsync( "CREATE (:Person)" ) );
 
-        assertThat( await( cursor.fetchAsync() ), is( false ) );
+        assertNull( await( cursor.nextAsync() ) );
     }
 
     @Test
@@ -95,14 +105,13 @@ public class SessionAsyncIT
     {
         StatementResultCursor cursor = await( session.runAsync( "CREATE (p:Person {name: 'Nick Fury'}) RETURN p" ) );
 
-        assertThat( await( cursor.fetchAsync() ), is( true ) );
-
-        Record record = cursor.current();
+        Record record = await( cursor.nextAsync() );
+        assertNotNull( record );
         Node node = record.get( 0 ).asNode();
         assertEquals( "Person", single( node.labels() ) );
         assertEquals( "Nick Fury", node.get( "name" ).asString() );
 
-        assertThat( await( cursor.fetchAsync() ), is( false ) );
+        assertNull( await( cursor.nextAsync() ) );
     }
 
     @Test
@@ -110,16 +119,19 @@ public class SessionAsyncIT
     {
         StatementResultCursor cursor = await( session.runAsync( "UNWIND [1,2,3] AS x RETURN x" ) );
 
-        assertThat( await( cursor.fetchAsync() ), is( true ) );
-        assertEquals( 1, cursor.current().get( 0 ).asInt() );
+        Record record1 = await( cursor.nextAsync() );
+        assertNotNull( record1 );
+        assertEquals( 1, record1.get( 0 ).asInt() );
 
-        assertThat( await( cursor.fetchAsync() ), is( true ) );
-        assertEquals( 2, cursor.current().get( 0 ).asInt() );
+        Record record2 = await( cursor.nextAsync() );
+        assertNotNull( record2 );
+        assertEquals( 2, record2.get( 0 ).asInt() );
 
-        assertThat( await( cursor.fetchAsync() ), is( true ) );
-        assertEquals( 3, cursor.current().get( 0 ).asInt() );
+        Record record3 = await( cursor.nextAsync() );
+        assertNotNull( record3 );
+        assertEquals( 3, record3.get( 0 ).asInt() );
 
-        assertThat( await( cursor.fetchAsync() ), is( false ) );
+        assertNull( await( cursor.nextAsync() ) );
     }
 
     @Test
@@ -141,16 +153,17 @@ public class SessionAsyncIT
     {
         StatementResultCursor cursor = await( session.runAsync( "UNWIND [1, 2, 0] AS x RETURN 10 / x" ) );
 
-        assertThat( await( cursor.fetchAsync() ), is( true ) );
-        assertEquals( 10, cursor.current().get( 0 ).asInt() );
+        Record record1 = await( cursor.nextAsync() );
+        assertNotNull( record1 );
+        assertEquals( 10, record1.get( 0 ).asInt() );
 
-        assertThat( await( cursor.fetchAsync() ), is( true ) );
-        assertEquals( 5, cursor.current().get( 0 ).asInt() );
+        Record record2 = await( cursor.nextAsync() );
+        assertNotNull( record2 );
+        assertEquals( 5, record2.get( 0 ).asInt() );
 
         try
         {
-            await( cursor.fetchAsync() );
-            System.out.println( cursor.current() );
+            await( cursor.nextAsync() );
             fail( "Exception expected" );
         }
         catch ( Exception e )
@@ -170,16 +183,17 @@ public class SessionAsyncIT
 
         try
         {
-            Response<Boolean> recordAvailable = cursor.fetchAsync();
+            Response<Record> recordResponse = cursor.nextAsync();
 
             // kill db after receiving the first record
             // do it from a listener so that event loop thread executes the kill operation
-            recordAvailable.addListener( new KillDbListener( neo4j ) );
+            recordResponse.addListener( new KillDbListener( neo4j ) );
 
-            while ( await( recordAvailable ) )
+            Record record;
+            while ( (record = await( recordResponse )) != null )
             {
-                assertNotNull( cursor.current() );
-                recordAvailable = cursor.fetchAsync();
+                assertNotNull( record );
+                recordResponse = cursor.nextAsync();
             }
             fail( "Exception expected" );
         }
@@ -195,18 +209,19 @@ public class SessionAsyncIT
         StatementResultCursor cursor =
                 await( session.runAsync( "UNWIND [1, 2, 3] AS x CREATE (p:Person {id: x}) RETURN p" ) );
 
-        Future<List<Future<Boolean>>> queriesExecuted = runNestedQueries( cursor );
-        List<Future<Boolean>> futures = await( queriesExecuted );
+        Future<List<Future<Record>>> queriesExecuted = runNestedQueries( cursor );
+        List<Future<Record>> futures = await( queriesExecuted );
 
-        List<Boolean> futureResults = awaitAll( futures );
+        List<Record> futureResults = awaitAll( futures );
         assertEquals( 7, futureResults.size() );
 
         StatementResultCursor personCursor = await( session.runAsync( "MATCH (p:Person) RETURN p ORDER BY p.id" ) );
 
         List<Node> personNodes = new ArrayList<>();
-        while ( await( personCursor.fetchAsync() ) )
+        Record record;
+        while ( (record = await( personCursor.nextAsync() )) != null )
         {
-            personNodes.add( personCursor.current().get( 0 ).asNode() );
+            personNodes.add( record.get( 0 ).asNode() );
         }
         assertEquals( 3, personNodes.size() );
 
@@ -233,21 +248,20 @@ public class SessionAsyncIT
             cursors.add( session.runAsync( "CREATE (:Person)" ) );
         }
 
-        List<Future<Boolean>> fetches = new ArrayList<>();
+        List<Future<Record>> records = new ArrayList<>();
         for ( StatementResultCursor cursor : awaitAll( cursors ) )
         {
-            fetches.add( cursor.fetchAsync() );
+            records.add( cursor.nextAsync() );
         }
 
-        awaitAll( fetches );
+        awaitAll( records );
 
         await( session.closeAsync() );
         session = neo4j.driver().session();
 
         StatementResultCursor cursor = await( session.runAsync( "MATCH (p:Person) RETURN count(p)" ) );
-        assertThat( await( cursor.fetchAsync() ), is( true ) );
-
-        Record record = cursor.current();
+        Record record = await( cursor.nextAsync() );
+        assertNotNull( record );
         assertEquals( queryCount, record.get( 0 ).asInt() );
     }
 
@@ -348,31 +362,173 @@ public class SessionAsyncIT
         assertThat( summary.resultConsumedAfter( TimeUnit.MILLISECONDS ), greaterThanOrEqualTo( 0L ) );
     }
 
-    private Future<List<Future<Boolean>>> runNestedQueries( StatementResultCursor inputCursor )
+    @Test
+    public void shouldRunAsyncTransactionWithoutRetries()
     {
-        Promise<List<Future<Boolean>>> resultPromise = GlobalEventExecutor.INSTANCE.newPromise();
-        runNestedQueries( inputCursor, new ArrayList<Future<Boolean>>(), resultPromise );
+        InvocationTrackingWork work = new InvocationTrackingWork( "CREATE (:Apa) RETURN 42" );
+        Response<Record> txResponse = session.writeTransactionAsync( work );
+
+        Record record = await( txResponse );
+        assertNotNull( record );
+        assertEquals( 42L, record.get( 0 ).asLong() );
+
+        assertEquals( 1, work.invocationCount() );
+        assertEquals( 1, countNodesByLabel( "Apa" ) );
+    }
+
+    @Test
+    public void shouldRunAsyncTransactionWithRetriesOnAsyncFailures()
+    {
+        InvocationTrackingWork work = new InvocationTrackingWork( "CREATE (:Node) RETURN 24" ).withAsyncFailures(
+                new ServiceUnavailableException( "Oh!" ),
+                new SessionExpiredException( "Ah!" ),
+                new TransientException( "Code", "Message" ) );
+
+        Response<Record> txResponse = session.writeTransactionAsync( work );
+
+        Record record = await( txResponse );
+        assertNotNull( record );
+        assertEquals( 24L, record.get( 0 ).asLong() );
+
+        assertEquals( 4, work.invocationCount() );
+        assertEquals( 1, countNodesByLabel( "Node" ) );
+    }
+
+    @Test
+    public void shouldRunAsyncTransactionWithRetriesOnSyncFailures()
+    {
+        InvocationTrackingWork work = new InvocationTrackingWork( "CREATE (:Test) RETURN 12" ).withSyncFailures(
+                new TransientException( "Oh!", "Deadlock!" ),
+                new ServiceUnavailableException( "Oh! Network Failure" ) );
+
+        Response<Record> txResponse = session.writeTransactionAsync( work );
+
+        Record record = await( txResponse );
+        assertNotNull( record );
+        assertEquals( 12L, record.get( 0 ).asLong() );
+
+        assertEquals( 3, work.invocationCount() );
+        assertEquals( 1, countNodesByLabel( "Test" ) );
+    }
+
+    @Test
+    public void shouldRunAsyncTransactionThatCanNotBeRetried()
+    {
+        InvocationTrackingWork work = new InvocationTrackingWork( "UNWIND [10, 5, 0] AS x CREATE (:Hi) RETURN 10/x" );
+        Response<Record> txResponse = session.writeTransactionAsync( work );
+
+        try
+        {
+            await( txResponse );
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( ClientException.class ) );
+        }
+
+        assertEquals( 1, work.invocationCount() );
+        assertEquals( 0, countNodesByLabel( "Hi" ) );
+    }
+
+    @Test
+    public void shouldRunAsyncTransactionThatCanNotBeRetriedAfterATransientFailure()
+    {
+        // first throw TransientException directly from work, retry can happen afterwards
+        // then return a future failed with DatabaseException, retry can't happen afterwards
+        InvocationTrackingWork work = new InvocationTrackingWork( "CREATE (:Person) RETURN 1" )
+                .withSyncFailures( new TransientException( "Oh!", "Deadlock!" ) )
+                .withAsyncFailures( new DatabaseException( "Oh!", "OutOfMemory!" ) );
+        Response<Record> txResponse = session.writeTransactionAsync( work );
+
+        try
+        {
+            await( txResponse );
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( DatabaseException.class ) );
+            assertEquals( 1, e.getSuppressed().length );
+            assertThat( e.getSuppressed()[0], instanceOf( TransientException.class ) );
+        }
+
+        assertEquals( 2, work.invocationCount() );
+        assertEquals( 0, countNodesByLabel( "Person" ) );
+    }
+
+    @Test
+    public void shouldPeekRecordFromCursor()
+    {
+        StatementResultCursor cursor = await( session.runAsync( "UNWIND [1, 2, 42] AS x RETURN x" ) );
+
+        assertEquals( 1, await( cursor.peekAsync() ).get( 0 ).asInt() );
+        assertEquals( 1, await( cursor.peekAsync() ).get( 0 ).asInt() );
+        assertEquals( 1, await( cursor.peekAsync() ).get( 0 ).asInt() );
+
+        assertEquals( 1, await( cursor.nextAsync() ).get( 0 ).asInt() );
+
+        assertEquals( 2, await( cursor.peekAsync() ).get( 0 ).asInt() );
+        assertEquals( 2, await( cursor.peekAsync() ).get( 0 ).asInt() );
+
+        assertEquals( 2, await( cursor.nextAsync() ).get( 0 ).asInt() );
+
+        assertEquals( 42, await( cursor.nextAsync() ).get( 0 ).asInt() );
+
+        assertNull( await( cursor.peekAsync() ) );
+        assertNull( await( cursor.nextAsync() ) );
+    }
+
+    @Test
+    public void shouldForEachWithEmptyCursor()
+    {
+        testForEach( "CREATE ()", 0 );
+    }
+
+    @Test
+    public void shouldForEachWithNonEmptyCursor()
+    {
+        testForEach( "UNWIND range(1, 10000) AS x RETURN x", 10000 );
+    }
+
+    @Test
+    public void shouldConvertToListWithEmptyCursor()
+    {
+        testList( "MATCH (n:NoSuchLabel) RETURN n", Collections.emptyList() );
+    }
+
+    @Test
+    public void shouldConvertToListWithNonEmptyCursor()
+    {
+        testList( "UNWIND range(1, 100, 10) AS x RETURN x",
+                Arrays.asList( 1L, 11L, 21L, 31L, 41L, 51L, 61L, 71L, 81L, 91L ) );
+    }
+
+    private Future<List<Future<Record>>> runNestedQueries( StatementResultCursor inputCursor )
+    {
+        Promise<List<Future<Record>>> resultPromise = GlobalEventExecutor.INSTANCE.newPromise();
+        runNestedQueries( inputCursor, new ArrayList<Future<Record>>(), resultPromise );
         return resultPromise;
     }
 
-    private void runNestedQueries( final StatementResultCursor inputCursor, final List<Future<Boolean>> futures,
-            final Promise<List<Future<Boolean>>> resultPromise )
+    private void runNestedQueries( final StatementResultCursor inputCursor, final List<Future<Record>> futures,
+            final Promise<List<Future<Record>>> resultPromise )
     {
-        final Response<Boolean> inputAvailable = inputCursor.fetchAsync();
-        futures.add( inputAvailable );
+        final Response<Record> recordResponse = inputCursor.nextAsync();
+        futures.add( recordResponse );
 
-        inputAvailable.addListener( new ResponseListener<Boolean>()
+        recordResponse.addListener( new ResponseListener<Record>()
         {
             @Override
-            public void operationCompleted( Boolean inputAvailable, Throwable error )
+            public void operationCompleted( Record record, Throwable error )
             {
                 if ( error != null )
                 {
                     resultPromise.setFailure( error );
                 }
-                else if ( inputAvailable )
+                else if ( record != null )
                 {
-                    runNestedQuery( inputCursor, futures, resultPromise );
+                    runNestedQuery( inputCursor, record, futures, resultPromise );
                 }
                 else
                 {
@@ -382,10 +538,9 @@ public class SessionAsyncIT
         } );
     }
 
-    private void runNestedQuery( final StatementResultCursor inputCursor, final List<Future<Boolean>> futures,
-            final Promise<List<Future<Boolean>>> resultPromise )
+    private void runNestedQuery( final StatementResultCursor inputCursor, Record record,
+            final List<Future<Record>> futures, final Promise<List<Future<Record>>> resultPromise )
     {
-        Record record = inputCursor.current();
         Node node = record.get( 0 ).asNode();
         long id = node.get( "id" ).asLong();
         long age = id * 10;
@@ -397,7 +552,7 @@ public class SessionAsyncIT
         response.addListener( new ResponseListener<StatementResultCursor>()
         {
             @Override
-            public void operationCompleted( StatementResultCursor result, Throwable error )
+            public void operationCompleted( StatementResultCursor cursor, Throwable error )
             {
                 if ( error != null )
                 {
@@ -405,11 +560,46 @@ public class SessionAsyncIT
                 }
                 else
                 {
-                    futures.add( result.fetchAsync() );
+                    futures.add( cursor.nextAsync() );
                     runNestedQueries( inputCursor, futures, resultPromise );
                 }
             }
         } );
+    }
+
+    private long countNodesByLabel( String label )
+    {
+        return session.run( "MATCH (n:" + label + ") RETURN count(n)" ).single().get( 0 ).asLong();
+    }
+
+    private void testForEach( String query, int expectedSeenRecords )
+    {
+        StatementResultCursor cursor = await( session.runAsync( query ) );
+
+        final AtomicInteger recordsSeen = new AtomicInteger();
+        Response<Void> forEachDone = cursor.forEachAsync( new Consumer<Record>()
+        {
+            @Override
+            public void accept( Record record )
+            {
+                recordsSeen.incrementAndGet();
+            }
+        } );
+
+        assertNull( await( forEachDone ) );
+        assertEquals( expectedSeenRecords, recordsSeen.get() );
+    }
+
+    private <T> void testList( String query, List<T> expectedList )
+    {
+        StatementResultCursor cursor = await( session.runAsync( query ) );
+        List<Record> records = await( cursor.listAsync() );
+        List<Object> actualList = new ArrayList<>();
+        for ( Record record : records )
+        {
+            actualList.add( record.get( 0 ).asObject() );
+        }
+        assertEquals( expectedList, actualList );
     }
 
     private static void assertSyntaxError( Exception e )
@@ -425,7 +615,7 @@ public class SessionAsyncIT
         assertThat( ((ClientException) e).code(), containsString( "ArithmeticError" ) );
     }
 
-    private static class KillDbListener implements ResponseListener<Boolean>
+    private static class KillDbListener implements ResponseListener<Record>
     {
         final TestNeo4j neo4j;
         volatile boolean shouldKillDb = true;
@@ -436,7 +626,7 @@ public class SessionAsyncIT
         }
 
         @Override
-        public void operationCompleted( Boolean result, Throwable error )
+        public void operationCompleted( Record record, Throwable error )
         {
             if ( shouldKillDb )
             {
@@ -454,6 +644,106 @@ public class SessionAsyncIT
             catch ( IOException e )
             {
                 throw new RuntimeException( e );
+            }
+        }
+    }
+
+    private static class InvocationTrackingWork implements TransactionWork<Response<Record>>
+    {
+        final String query;
+        final AtomicInteger invocationCount;
+
+        Iterator<RuntimeException> asyncFailures = emptyIterator();
+        Iterator<RuntimeException> syncFailures = emptyIterator();
+
+        InvocationTrackingWork( String query )
+        {
+            this.query = query;
+            this.invocationCount = new AtomicInteger();
+        }
+
+        InvocationTrackingWork withAsyncFailures( RuntimeException... failures )
+        {
+            asyncFailures = Arrays.asList( failures ).iterator();
+            return this;
+        }
+
+        InvocationTrackingWork withSyncFailures( RuntimeException... failures )
+        {
+            syncFailures = Arrays.asList( failures ).iterator();
+            return this;
+        }
+
+        int invocationCount()
+        {
+            return invocationCount.get();
+        }
+
+        @Override
+        public Response<Record> execute( Transaction tx )
+        {
+            invocationCount.incrementAndGet();
+
+            if ( syncFailures.hasNext() )
+            {
+                throw syncFailures.next();
+            }
+
+            final InternalPromise<Record> resultPromise = new InternalPromise<>( GlobalEventExecutor.INSTANCE );
+
+            tx.runAsync( query ).addListener( new ResponseListener<StatementResultCursor>()
+            {
+                @Override
+                public void operationCompleted( final StatementResultCursor cursor, Throwable error )
+                {
+                    processQueryResult( cursor, error, resultPromise );
+                }
+            } );
+
+            return resultPromise;
+        }
+
+        private void processQueryResult( final StatementResultCursor cursor, final Throwable error,
+                final InternalPromise<Record> resultPromise )
+        {
+            if ( error != null )
+            {
+                resultPromise.setFailure( error );
+                return;
+            }
+
+            cursor.nextAsync().addListener( new ResponseListener<Record>()
+            {
+                @Override
+                public void operationCompleted( Record record, Throwable error )
+                {
+                    processFetchResult( record, error, resultPromise, cursor );
+                }
+            } );
+        }
+
+        private void processFetchResult( Record record, Throwable error,
+                InternalPromise<Record> resultPromise, StatementResultCursor cursor )
+        {
+            if ( error != null )
+            {
+                resultPromise.setFailure( error );
+                return;
+            }
+
+            if ( record == null )
+            {
+                resultPromise.setFailure( new AssertionError( "Record not available" ) );
+                return;
+            }
+
+            if ( asyncFailures.hasNext() )
+            {
+                resultPromise.setFailure( asyncFailures.next() );
+            }
+            else
+            {
+                resultPromise.setSuccess( record );
             }
         }
     }

@@ -16,29 +16,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1;
+package org.neo4j.driver.internal.util;
 
-import java.util.List;
-
-import org.neo4j.driver.internal.util.Consumer;
-import org.neo4j.driver.v1.summary.ResultSummary;
-
-public interface StatementResultCursor
+public interface BiConsumer<T, U>
 {
-    /**
-     * Retrieve the keys of the records this result cursor contains.
-     *
-     * @return list of all keys.
-     */
-    List<String> keys();
-
-    Response<ResultSummary> summaryAsync();
-
-    Response<Record> nextAsync();
-
-    Response<Record> peekAsync();
-
-    Response<Void> forEachAsync( Consumer<Record> action );
-
-    Response<List<Record>> listAsync();
+    void accept( T t, U u );
 }

@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal;
 
+import io.netty.util.concurrent.GlobalEventExecutor;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -1010,7 +1011,8 @@ public class NetworkSessionTest
     private static NetworkSession newSession( ConnectionProvider connectionProvider, AccessMode mode,
             RetryLogic retryLogic, Bookmark bookmark )
     {
-        NetworkSession session = new NetworkSession( connectionProvider, mode, retryLogic, DEV_NULL_LOGGING );
+        NetworkSession session = new NetworkSession( connectionProvider, mode, retryLogic,
+                GlobalEventExecutor.INSTANCE, DEV_NULL_LOGGING );
         session.setBookmark( bookmark );
         return session;
     }

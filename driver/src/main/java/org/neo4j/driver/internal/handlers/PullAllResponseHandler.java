@@ -53,15 +53,14 @@ public abstract class PullAllResponseHandler implements ResponseHandler
     private final RunResponseHandler runResponseHandler;
     protected final AsyncConnection connection;
 
-    private final Queue<Record> records;
+    private final Queue<Record> records = new LinkedList<>();
+
     private boolean succeeded;
     private Throwable failure;
-
     private ResultSummary summary;
-    private volatile Record current;
 
-    private InternalPromise<Boolean> recordAvailablePromise;
-    private InternalPromise<ResultSummary> summaryAvailablePromise;
+    private InternalPromise<Record> recordPromise;
+    private InternalPromise<ResultSummary> summaryPromise;
 
     public PullAllResponseHandler( Statement statement, RunResponseHandler runResponseHandler,
             AsyncConnection connection )
@@ -69,27 +68,21 @@ public abstract class PullAllResponseHandler implements ResponseHandler
         this.statement = requireNonNull( statement );
         this.runResponseHandler = requireNonNull( runResponseHandler );
         this.connection = requireNonNull( connection );
-        this.records = new LinkedList<>();
     }
 
     @Override
     public synchronized void onSuccess( Map<String,Value> metadata )
     {
         summary = extractResultSummary( metadata );
-        if ( summaryAvailablePromise != null )
+        if ( summaryPromise != null )
         {
-            summaryAvailablePromise.setSuccess( summary );
-            summaryAvailablePromise = null;
+            summaryPromise.setSuccess( summary );
+            summaryPromise = null;
         }
 
         succeeded = true;
         afterSuccess();
-
-        if ( recordAvailablePromise != null )
-        {
-            recordAvailablePromise.setSuccess( false );
-            recordAvailablePromise = null;
-        }
+        succeedRecordPromise( null );
     }
 
     protected abstract void afterSuccess();
@@ -99,12 +92,7 @@ public abstract class PullAllResponseHandler implements ResponseHandler
     {
         failure = error;
         afterFailure( error );
-
-        if ( recordAvailablePromise != null )
-        {
-            recordAvailablePromise.setFailure( error );
-            recordAvailablePromise = null;
-        }
+        failRecordPromise( error );
     }
 
     protected abstract void afterFailure( Throwable error );
@@ -114,11 +102,9 @@ public abstract class PullAllResponseHandler implements ResponseHandler
     {
         Record record = new InternalRecord( runResponseHandler.statementKeys(), fields );
 
-        if ( recordAvailablePromise != null )
+        if ( recordPromise != null )
         {
-            current = record;
-            recordAvailablePromise.setSuccess( true );
-            recordAvailablePromise = null;
+            succeedRecordPromise( record );
         }
         else
         {
@@ -126,40 +112,31 @@ public abstract class PullAllResponseHandler implements ResponseHandler
         }
     }
 
-    public synchronized InternalFuture<Boolean> fetchRecordAsync()
+    public synchronized InternalFuture<Record> nextAsync()
     {
         Record record = dequeueRecord();
         if ( record == null )
         {
             if ( succeeded )
             {
-                return connection.<Boolean>newPromise().setSuccess( false );
+                return connection.<Record>newPromise().setSuccess( null );
             }
 
             if ( failure != null )
             {
-                return connection.<Boolean>newPromise().setFailure( failure );
+                return connection.<Record>newPromise().setFailure( failure );
             }
 
-            if ( recordAvailablePromise == null )
+            if ( recordPromise == null )
             {
-                recordAvailablePromise = connection.newPromise();
+                recordPromise = connection.newPromise();
             }
-
-            return recordAvailablePromise;
+            return recordPromise;
         }
         else
         {
-            current = record;
-            return connection.<Boolean>newPromise().setSuccess( true );
+            return connection.<Record>newPromise().setSuccess( record );
         }
-    }
-
-    public Record currentRecord()
-    {
-        Record result = current;
-        current = null;
-        return result;
     }
 
     public synchronized InternalFuture<ResultSummary> summaryAsync()
@@ -170,11 +147,11 @@ public abstract class PullAllResponseHandler implements ResponseHandler
         }
         else
         {
-            if ( summaryAvailablePromise == null )
+            if ( summaryPromise == null )
             {
-                summaryAvailablePromise = connection.newPromise();
+                summaryPromise = connection.newPromise();
             }
-            return summaryAvailablePromise;
+            return summaryPromise;
         }
     }
 
@@ -201,6 +178,26 @@ public abstract class PullAllResponseHandler implements ResponseHandler
             }
         }
         return record;
+    }
+
+    private void succeedRecordPromise( Record record )
+    {
+        if ( recordPromise != null )
+        {
+            InternalPromise<Record> promise = recordPromise;
+            recordPromise = null;
+            promise.setSuccess( record );
+        }
+    }
+
+    private void failRecordPromise( Throwable error )
+    {
+        if ( recordPromise != null )
+        {
+            InternalPromise<Record> promise = recordPromise;
+            recordPromise = null;
+            promise.setFailure( error );
+        }
     }
 
     private ResultSummary extractResultSummary( Map<String,Value> metadata )

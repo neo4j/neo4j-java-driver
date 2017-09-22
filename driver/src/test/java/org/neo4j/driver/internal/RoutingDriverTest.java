@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal;
 
+import io.netty.util.concurrent.GlobalEventExecutor;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -439,7 +440,7 @@ public class RoutingDriverTest
     {
         NetworkSessionWithAddressFactory( ConnectionProvider connectionProvider, Config config )
         {
-            super( connectionProvider, new FixedRetryLogic( 0 ), config );
+            super( connectionProvider, new FixedRetryLogic( 0 ), GlobalEventExecutor.INSTANCE, config );
         }
 
         @Override
@@ -456,7 +457,7 @@ public class RoutingDriverTest
 
         NetworkSessionWithAddress( ConnectionProvider connectionProvider, AccessMode mode, Logging logging )
         {
-            super( connectionProvider, mode, new FixedRetryLogic( 0 ), logging );
+            super( connectionProvider, mode, new FixedRetryLogic( 0 ), GlobalEventExecutor.INSTANCE, logging );
             try ( PooledConnection connection = connectionProvider.acquireConnection( mode ) )
             {
                 this.address = connection.boltServerAddress();

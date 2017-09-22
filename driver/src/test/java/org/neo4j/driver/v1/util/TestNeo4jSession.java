@@ -135,9 +135,21 @@ public class TestNeo4jSession extends TestNeo4j implements Session
     }
 
     @Override
+    public <T> Response<T> readTransactionAsync( TransactionWork<Response<T>> work )
+    {
+        return realSession.readTransactionAsync( work );
+    }
+
+    @Override
     public <T> T writeTransaction( TransactionWork<T> work )
     {
         return realSession.writeTransaction( work );
+    }
+
+    @Override
+    public <T> Response<T> writeTransactionAsync( TransactionWork<Response<T>> work )
+    {
+        return realSession.writeTransactionAsync( work );
     }
 
     @Override

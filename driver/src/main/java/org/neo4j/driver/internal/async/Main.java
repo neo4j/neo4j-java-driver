@@ -158,9 +158,9 @@ public class Main
                 Session session = driver.session();
                 Response<StatementResultCursor> cursorResponse = session.runAsync( QUERY, PARAMS_OBJ );
                 StatementResultCursor cursor = await( cursorResponse );
-                while ( await( cursor.fetchAsync() ) )
+                Record record;
+                while ( (record = await( cursor.nextAsync() )) != null )
                 {
-                    Record record = cursor.current();
                     useRecord( record );
                     recordsRead.increment();
                 }
@@ -202,9 +202,9 @@ public class Main
                 Session session = driver.session();
                 Transaction tx = await( session.beginTransactionAsync() );
                 StatementResultCursor cursor = await( tx.runAsync( QUERY, PARAMS_OBJ ) );
-                while ( await( cursor.fetchAsync() ) )
+                Record record;
+                while ( (record = await( cursor.nextAsync() )) != null )
                 {
-                    Record record = cursor.current();
                     useRecord( record );
                     recordsRead.increment();
                 }

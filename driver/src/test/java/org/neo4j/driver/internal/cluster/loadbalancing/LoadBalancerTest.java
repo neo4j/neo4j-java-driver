@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal.cluster.loadbalancing;
 
+import io.netty.util.concurrent.GlobalEventExecutor;
 import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.invocation.InvocationOnMock;
@@ -384,8 +385,10 @@ public class LoadBalancerTest
     private static Session newSession( LoadBalancer loadBalancer )
     {
         SleeplessClock clock = new SleeplessClock();
-        RetryLogic retryLogic = new ExponentialBackoffRetryLogic( RetrySettings.DEFAULT, clock, DEV_NULL_LOGGING );
-        return new NetworkSession( loadBalancer, AccessMode.WRITE, retryLogic, DEV_NULL_LOGGING );
+        RetryLogic retryLogic = new ExponentialBackoffRetryLogic( RetrySettings.DEFAULT, GlobalEventExecutor.INSTANCE,
+                clock, DEV_NULL_LOGGING );
+        return new NetworkSession( loadBalancer, AccessMode.WRITE, retryLogic, GlobalEventExecutor.INSTANCE,
+                DEV_NULL_LOGGING );
     }
 
     private static PooledConnection newConnectionWithFailingSync( BoltServerAddress address )

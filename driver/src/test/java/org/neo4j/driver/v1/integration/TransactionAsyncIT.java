@@ -23,9 +23,15 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.driver.internal.util.Consumer;
+import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Response;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
@@ -108,10 +114,13 @@ public class TransactionAsyncIT
         Transaction tx = await( session.beginTransactionAsync() );
 
         StatementResultCursor cursor = await( tx.runAsync( "CREATE (n:Node {id: 42}) RETURN n" ) );
-        assertThat( await( cursor.fetchAsync() ), is( true ) );
-        Node node = cursor.current().get( 0 ).asNode();
+
+        Record record = await( cursor.nextAsync() );
+        assertNotNull( record );
+        Node node = record.get( 0 ).asNode();
         assertEquals( "Node", single( node.labels() ) );
         assertEquals( 42, node.get( "id" ).asInt() );
+        assertNull( await( cursor.nextAsync() ) );
 
         assertNull( await( tx.commitAsync() ) );
         assertEquals( 1, countNodes( 42 ) );
@@ -123,10 +132,12 @@ public class TransactionAsyncIT
         Transaction tx = await( session.beginTransactionAsync() );
 
         StatementResultCursor cursor = await( tx.runAsync( "CREATE (n:Node {id: 4242}) RETURN n" ) );
-        assertThat( await( cursor.fetchAsync() ), is( true ) );
-        Node node = cursor.current().get( 0 ).asNode();
+        Record record = await( cursor.nextAsync() );
+        assertNotNull( record );
+        Node node = record.get( 0 ).asNode();
         assertEquals( "Node", single( node.labels() ) );
         assertEquals( 4242, node.get( "id" ).asInt() );
+        assertNull( await( cursor.nextAsync() ) );
 
         assertNull( await( tx.rollbackAsync() ) );
         assertEquals( 0, countNodes( 4242 ) );
@@ -138,13 +149,13 @@ public class TransactionAsyncIT
         Transaction tx = await( session.beginTransactionAsync() );
 
         StatementResultCursor cursor1 = await( tx.runAsync( "CREATE (n:Node {id: 1})" ) );
-        assertThat( await( cursor1.fetchAsync() ), is( false ) );
+        assertNull( await( cursor1.nextAsync() ) );
 
         StatementResultCursor cursor2 = await( tx.runAsync( "CREATE (n:Node {id: 2})" ) );
-        assertThat( await( cursor2.fetchAsync() ), is( false ) );
+        assertNull( await( cursor2.nextAsync() ) );
 
         StatementResultCursor cursor3 = await( tx.runAsync( "CREATE (n:Node {id: 2})" ) );
-        assertThat( await( cursor3.fetchAsync() ), is( false ) );
+        assertNull( await( cursor3.nextAsync() ) );
 
         assertNull( await( tx.commitAsync() ) );
         assertEquals( 1, countNodes( 1 ) );
@@ -171,10 +182,10 @@ public class TransactionAsyncIT
         Transaction tx = await( session.beginTransactionAsync() );
 
         StatementResultCursor cursor1 = await( tx.runAsync( "CREATE (n:Node {id: 1})" ) );
-        assertThat( await( cursor1.fetchAsync() ), is( false ) );
+        assertNull( await( cursor1.nextAsync() ) );
 
         StatementResultCursor cursor2 = await( tx.runAsync( "CREATE (n:Node {id: 42})" ) );
-        assertThat( await( cursor2.fetchAsync() ), is( false ) );
+        assertNull( await( cursor2.nextAsync() ) );
 
         assertNull( await( tx.rollbackAsync() ) );
         assertEquals( 0, countNodes( 1 ) );
@@ -244,12 +255,14 @@ public class TransactionAsyncIT
         Transaction tx = await( session.beginTransactionAsync() );
 
         StatementResultCursor cursor1 = await( tx.runAsync( "CREATE (n:Node) RETURN n" ) );
-        assertThat( await( cursor1.fetchAsync() ), is( true ) );
-        assertTrue( cursor1.current().get( 0 ).asNode().hasLabel( "Node" ) );
+        Record record1 = await( cursor1.nextAsync() );
+        assertNotNull( record1 );
+        assertTrue( record1.get( 0 ).asNode().hasLabel( "Node" ) );
 
         StatementResultCursor cursor2 = await( tx.runAsync( "RETURN 42" ) );
-        assertThat( await( cursor2.fetchAsync() ), is( true ) );
-        assertEquals( 42, cursor2.current().get( 0 ).asInt() );
+        Record record2 = await( cursor2.nextAsync() );
+        assertNotNull( record2 );
+        assertEquals( 42, record2.get( 0 ).asInt() );
 
         try
         {
@@ -278,12 +291,14 @@ public class TransactionAsyncIT
         Transaction tx = await( session.beginTransactionAsync() );
 
         StatementResultCursor cursor1 = await( tx.runAsync( "RETURN 4242" ) );
-        assertThat( await( cursor1.fetchAsync() ), is( true ) );
-        assertEquals( 4242, cursor1.current().get( 0 ).asInt() );
+        Record record1 = await( cursor1.nextAsync() );
+        assertNotNull( record1 );
+        assertEquals( 4242, record1.get( 0 ).asInt() );
 
         StatementResultCursor cursor2 = await( tx.runAsync( "CREATE (n:Node) DELETE n RETURN 42" ) );
-        assertThat( await( cursor2.fetchAsync() ), is( true ) );
-        assertEquals( 42, cursor2.current().get( 0 ).asInt() );
+        Record record2 = await( cursor2.nextAsync() );
+        assertNotNull( record2 );
+        assertEquals( 42, record2.get( 0 ).asInt() );
 
         try
         {
@@ -510,10 +525,90 @@ public class TransactionAsyncIT
         assertThat( summary.resultConsumedAfter( TimeUnit.MILLISECONDS ), greaterThanOrEqualTo( 0L ) );
     }
 
+    @Test
+    public void shouldPeekRecordFromCursor()
+    {
+        Transaction tx = await( session.beginTransactionAsync() );
+        StatementResultCursor cursor = await( tx.runAsync( "UNWIND ['a', 'b', 'c'] AS x RETURN x" ) );
+
+        assertEquals( "a", await( cursor.peekAsync() ).get( 0 ).asString() );
+        assertEquals( "a", await( cursor.peekAsync() ).get( 0 ).asString() );
+
+        assertEquals( "a", await( cursor.nextAsync() ).get( 0 ).asString() );
+
+        assertEquals( "b", await( cursor.peekAsync() ).get( 0 ).asString() );
+        assertEquals( "b", await( cursor.peekAsync() ).get( 0 ).asString() );
+        assertEquals( "b", await( cursor.peekAsync() ).get( 0 ).asString() );
+
+        assertEquals( "b", await( cursor.nextAsync() ).get( 0 ).asString() );
+        assertEquals( "c", await( cursor.nextAsync() ).get( 0 ).asString() );
+
+        assertNull( await( cursor.peekAsync() ) );
+        assertNull( await( cursor.nextAsync() ) );
+
+        await( tx.rollbackAsync() );
+    }
+
+    @Test
+    public void shouldForEachWithEmptyCursor()
+    {
+        testForEach( "MATCH (n:SomeReallyStrangeLabel) RETURN n", 0 );
+    }
+
+    @Test
+    public void shouldForEachWithNonEmptyCursor()
+    {
+        testForEach( "UNWIND range(1, 12555) AS x CREATE (n:Node {id: x}) RETURN n", 12555 );
+    }
+
+    @Test
+    public void shouldConvertToListWithEmptyCursor()
+    {
+        testList( "CREATE (:Person)-[:KNOWS]->(:Person)", Collections.emptyList() );
+    }
+
+    @Test
+    public void shouldConvertToListWithNonEmptyCursor()
+    {
+        testList( "UNWIND [1, '1', 2, '2', 3, '3'] AS x RETURN x", Arrays.asList( 1L, "1", 2L, "2", 3L, "3" ) );
+    }
+
     private int countNodes( Object id )
     {
         StatementResult result = session.run( "MATCH (n:Node {id: $id}) RETURN count(n)", parameters( "id", id ) );
         return result.single().get( 0 ).asInt();
+    }
+
+    private void testForEach( String query, int expectedSeenRecords )
+    {
+        Transaction tx = await( session.beginTransactionAsync() );
+        StatementResultCursor cursor = await( tx.runAsync( query ) );
+
+        final AtomicInteger recordsSeen = new AtomicInteger();
+        Response<Void> forEachDone = cursor.forEachAsync( new Consumer<Record>()
+        {
+            @Override
+            public void accept( Record record )
+            {
+                recordsSeen.incrementAndGet();
+            }
+        } );
+
+        assertNull( await( forEachDone ) );
+        assertEquals( expectedSeenRecords, recordsSeen.get() );
+    }
+
+    private <T> void testList( String query, List<T> expectedList )
+    {
+        Transaction tx = await( session.beginTransactionAsync() );
+        StatementResultCursor cursor = await( tx.runAsync( query ) );
+        List<Record> records = await( cursor.listAsync() );
+        List<Object> actualList = new ArrayList<>();
+        for ( Record record : records )
+        {
+            actualList.add( record.get( 0 ).asObject() );
+        }
+        assertEquals( expectedList, actualList );
     }
 
     private static void assertSyntaxError( Exception e )

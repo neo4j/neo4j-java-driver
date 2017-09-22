@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.async;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
 
+import org.neo4j.driver.internal.util.BiConsumer;
 import org.neo4j.driver.v1.Response;
 import org.neo4j.driver.v1.util.Function;
 
@@ -30,7 +31,7 @@ public interface InternalFuture<T> extends Future<T>, Response<T>
 
     <U> InternalFuture<U> thenApply( Function<T,U> fn );
 
-    <U> InternalFuture<U> thenCombine( Function<T,InternalFuture<U>> fn );
+    <U> InternalFuture<U> thenCompose( Function<T,InternalFuture<U>> fn );
 
-    InternalFuture<T> whenComplete( Runnable action );
+    InternalFuture<T> whenComplete( BiConsumer<T,Throwable> action );
 }

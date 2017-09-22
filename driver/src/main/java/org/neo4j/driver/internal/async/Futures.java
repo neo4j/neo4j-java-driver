@@ -23,6 +23,7 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.Promise;
 
+import org.neo4j.driver.internal.util.BiConsumer;
 import org.neo4j.driver.v1.util.Function;
 
 public final class Futures
@@ -45,14 +46,14 @@ public final class Futures
         return result;
     }
 
-    public static <T, U> InternalFuture<U> thenCombine( InternalFuture<T> future, Function<T,InternalFuture<U>> fn )
+    public static <T, U> InternalFuture<U> thenCompose( InternalFuture<T> future, Function<T,InternalFuture<U>> fn )
     {
         InternalPromise<U> result = new InternalPromise<>( future.eventExecutor() );
-        future.addListener( new ThenCombineListener<>( result, fn ) );
+        future.addListener( new ThenComposeListener<>( result, fn ) );
         return result;
     }
 
-    public static <T> InternalFuture<T> whenComplete( InternalFuture<T> future, Runnable action )
+    public static <T> InternalFuture<T> whenComplete( InternalFuture<T> future, BiConsumer<T,Throwable> action )
     {
         InternalPromise<T> result = new InternalPromise<>( future.eventExecutor() );
         future.addListener( new CompletionListener<>( result, action ) );
@@ -97,12 +98,12 @@ public final class Futures
         }
     }
 
-    private static class ThenCombineListener<T, U> implements GenericFutureListener<Future<T>>
+    private static class ThenComposeListener<T, U> implements GenericFutureListener<Future<T>>
     {
         final Promise<U> result;
         final Function<T,InternalFuture<U>> fn;
 
-        ThenCombineListener( Promise<U> result, Function<T,InternalFuture<U>> fn )
+        ThenComposeListener( Promise<U> result, Function<T,InternalFuture<U>> fn )
         {
             this.result = result;
             this.fn = fn;
@@ -168,9 +169,9 @@ public final class Futures
     private static class CompletionListener<T> implements GenericFutureListener<Future<T>>
     {
         final Promise<T> result;
-        final Runnable action;
+        final BiConsumer<T,Throwable> action;
 
-        CompletionListener( Promise<T> result, Runnable action )
+        CompletionListener( Promise<T> result, BiConsumer<T,Throwable> action )
         {
             this.result = result;
             this.action = action;
@@ -187,7 +188,7 @@ public final class Futures
             {
                 try
                 {
-                    action.run();
+                    action.accept( future.getNow(), null );
                     result.setSuccess( future.getNow() );
                 }
                 catch ( Throwable t )
@@ -200,7 +201,7 @@ public final class Futures
                 Throwable error = future.cause();
                 try
                 {
-                    action.run();
+                    action.accept( null, error );
                 }
                 catch ( Throwable t )
                 {

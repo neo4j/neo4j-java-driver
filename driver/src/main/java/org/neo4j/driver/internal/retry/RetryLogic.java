@@ -18,9 +18,12 @@
  */
 package org.neo4j.driver.internal.retry;
 
+import org.neo4j.driver.internal.async.InternalFuture;
 import org.neo4j.driver.internal.util.Supplier;
 
 public interface RetryLogic
 {
     <T> T retry( Supplier<T> work );
+
+    <T> InternalFuture<T> retryAsync( Supplier<InternalFuture<T>> work );
 }

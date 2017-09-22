@@ -33,6 +33,7 @@ import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
 import org.neo4j.driver.internal.handlers.RollbackTxResponseHandler;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
+import org.neo4j.driver.internal.util.BiConsumer;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Response;
 import org.neo4j.driver.v1.Statement;
@@ -219,7 +220,7 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
         return internalCommitAsync();
     }
 
-    private InternalFuture<Void> internalCommitAsync()
+    InternalFuture<Void> internalCommitAsync()
     {
         if ( state == State.COMMITTED )
         {
@@ -259,12 +260,12 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
         }
     }
 
-    private Runnable releaseConnectionAndNotifySession()
+    private BiConsumer<Void,Throwable> releaseConnectionAndNotifySession()
     {
-        return new Runnable()
+        return new BiConsumer<Void,Throwable>()
         {
             @Override
-            public void run()
+            public void accept( Void result, Throwable error )
             {
                 asyncConnection.release();
                 session.asyncTransactionClosed( ExplicitTransaction.this );

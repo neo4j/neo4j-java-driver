@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal;
 
+import io.netty.util.concurrent.EventExecutorGroup;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -169,7 +170,8 @@ public class DriverFactoryTest
 
         @Override
         protected Driver createRoutingDriver( BoltServerAddress address, ConnectionPool connectionPool, Config config,
-                RoutingSettings routingSettings, SecurityPlan securityPlan, RetryLogic retryLogic )
+                RoutingSettings routingSettings, SecurityPlan securityPlan, RetryLogic retryLogic,
+                EventExecutorGroup eventExecutorGroup )
         {
             throw new UnsupportedOperationException( "Can't create routing driver" );
         }
@@ -200,9 +202,10 @@ public class DriverFactoryTest
 
         @Override
         protected SessionFactory createSessionFactory( ConnectionProvider connectionProvider,
-                RetryLogic retryLogic, Config config )
+                RetryLogic retryLogic, EventExecutorGroup eventExecutorGroup, Config config )
         {
-            SessionFactory sessionFactory = super.createSessionFactory( connectionProvider, retryLogic, config );
+            SessionFactory sessionFactory =
+                    super.createSessionFactory( connectionProvider, retryLogic, eventExecutorGroup, config );
             capturedSessionFactory = sessionFactory;
             return sessionFactory;
         }

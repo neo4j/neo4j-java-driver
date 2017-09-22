@@ -18,34 +18,33 @@
  */
 package org.neo4j.driver.internal.retry;
 
-import org.neo4j.driver.internal.util.Supplier;
+import io.netty.util.concurrent.EventExecutorGroup;
+import io.netty.util.concurrent.GlobalEventExecutor;
 
-public class FixedRetryLogic implements RetryLogic
+import org.neo4j.driver.internal.util.SleeplessClock;
+
+import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
+
+public class FixedRetryLogic extends ExponentialBackoffRetryLogic
 {
     private final int retryCount;
-    private int invokedWork;
+    private int invocationCount;
 
     public FixedRetryLogic( int retryCount )
     {
+        this( retryCount, GlobalEventExecutor.INSTANCE );
+    }
+
+    public FixedRetryLogic( int retryCount, EventExecutorGroup eventExecutorGroup )
+    {
+        super( new RetrySettings( Long.MAX_VALUE ), eventExecutorGroup, new SleeplessClock(),
+                DEV_NULL_LOGGING );
         this.retryCount = retryCount;
     }
 
     @Override
-    public <T> T retry( Supplier<T> work )
+    protected boolean canRetryOn( Throwable error )
     {
-        while ( true )
-        {
-            try
-            {
-                return work.get();
-            }
-            catch ( Throwable error )
-            {
-                if ( invokedWork++ >= retryCount )
-                {
-                    throw error;
-                }
-            }
-        }
+        return invocationCount++ < retryCount;
     }
 }

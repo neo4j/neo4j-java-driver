@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal;
 
+import io.netty.util.concurrent.GlobalEventExecutor;
 import org.junit.Test;
 
 import org.neo4j.driver.internal.retry.FixedRetryLogic;
@@ -61,6 +62,7 @@ public class SessionFactoryImplTest
 
     private static SessionFactory newSessionFactory( Config config )
     {
-        return new SessionFactoryImpl( mock( ConnectionProvider.class ), new FixedRetryLogic( 0 ), config );
+        return new SessionFactoryImpl( mock( ConnectionProvider.class ), new FixedRetryLogic( 0 ),
+                GlobalEventExecutor.INSTANCE, config );
     }
 }

@@ -43,14 +43,14 @@ public final class QueryRunner
         return runAsync( connection, statement, null );
     }
 
-    public static InternalFuture<StatementResultCursor> runAsync( AsyncConnection connection, Statement statement,
+    public static InternalFuture<StatementResultCursor> runAsync( final AsyncConnection connection, Statement statement,
             ExplicitTransaction tx )
     {
         String query = statement.text();
         Map<String,Value> params = statement.parameters().asMap( ofValue() );
 
         InternalPromise<Void> runCompletedPromise = connection.newPromise();
-        final RunResponseHandler runHandler = new RunResponseHandler( runCompletedPromise );
+        final RunResponseHandler runHandler = new RunResponseHandler( runCompletedPromise, tx );
         final PullAllResponseHandler pullAllHandler = newPullAllHandler( statement, runHandler, connection, tx );
 
         connection.run( query, params, runHandler );
@@ -62,7 +62,7 @@ public final class QueryRunner
             @Override
             public StatementResultCursor apply( Void ignore )
             {
-                return new InternalStatementResultCursor( runHandler, pullAllHandler );
+                return new InternalStatementResultCursor( connection, runHandler, pullAllHandler );
             }
         } );
     }
