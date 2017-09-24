@@ -53,7 +53,7 @@ import org.neo4j.driver.v1.util.TestNeo4j;
 import static java.util.Collections.emptyIterator;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.startsWith;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -62,7 +62,9 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.driver.internal.util.Iterables.single;
+import static org.neo4j.driver.internal.util.Matchers.arithmeticError;
 import static org.neo4j.driver.internal.util.Matchers.containsResultAvailableAfterAndResultConsumedAfter;
+import static org.neo4j.driver.internal.util.Matchers.syntaxError;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 import static org.neo4j.driver.v1.util.TestUtil.awaitAll;
@@ -138,7 +140,7 @@ public class SessionAsyncIT
         }
         catch ( Exception e )
         {
-            assertSyntaxError( e );
+            assertThat( e, is( syntaxError( "Unexpected end of input" ) ) );
         }
     }
 
@@ -162,7 +164,7 @@ public class SessionAsyncIT
         }
         catch ( Exception e )
         {
-            assertArithmeticError( e );
+            assertThat( e, is( arithmeticError() ) );
         }
     }
 
@@ -575,19 +577,6 @@ public class SessionAsyncIT
             actualList.add( record.get( 0 ).asObject() );
         }
         assertEquals( expectedList, actualList );
-    }
-
-    private static void assertSyntaxError( Exception e )
-    {
-        assertThat( e, instanceOf( ClientException.class ) );
-        assertThat( ((ClientException) e).code(), containsString( "SyntaxError" ) );
-        assertThat( e.getMessage(), startsWith( "Unexpected end of input" ) );
-    }
-
-    private static void assertArithmeticError( Exception e )
-    {
-        assertThat( e, instanceOf( ClientException.class ) );
-        assertThat( ((ClientException) e).code(), containsString( "ArithmeticError" ) );
     }
 
     private static class InvocationTrackingWork implements TransactionWork<CompletionStage<Record>>

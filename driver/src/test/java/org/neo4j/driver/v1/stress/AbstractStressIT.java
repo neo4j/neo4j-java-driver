@@ -191,6 +191,12 @@ abstract class AbstractStressIT<C extends AbstractContext>
         commands.add( new BlockingWriteQueryInTx<>( this, driver, false ) );
         commands.add( new BlockingWriteQueryInTx<>( this, driver, true ) );
 
+        commands.add( new BlockingWrongQuery<>( driver ) );
+        commands.add( new BlockingWrongQueryInTx<>( driver ) );
+
+        commands.add( new BlockingFailingQuery<>( driver ) );
+        commands.add( new BlockingFailingQueryInTx<>( driver ) );
+
         commands.add( new FailedAuth<>( databaseUri(), logging ) );
 
         commands.addAll( createTestSpecificBlockingCommands() );
@@ -241,6 +247,12 @@ abstract class AbstractStressIT<C extends AbstractContext>
 
         commands.add( new AsyncWriteQueryInTx<>( this, driver, false ) );
         commands.add( new AsyncWriteQueryInTx<>( this, driver, true ) );
+
+        commands.add( new AsyncWrongQuery<>( driver ) );
+        commands.add( new AsyncWrongQueryInTx<>( driver ) );
+
+        commands.add( new AsyncFailingQuery<>( driver ) );
+        commands.add( new AsyncFailingQueryInTx<>( driver ) );
 
         return commands;
     }

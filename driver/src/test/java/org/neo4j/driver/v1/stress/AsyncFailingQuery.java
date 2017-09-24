@@ -25,44 +25,34 @@ import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResultCursor;
 
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.neo4j.driver.internal.util.Matchers.arithmeticError;
 
-public class AsyncWriteQuery<C extends AbstractContext> extends AbstractAsyncQuery<C>
+public class AsyncFailingQuery<C extends AbstractContext> extends AbstractAsyncQuery<C>
 {
-    private AbstractStressIT<C> abstractStressIT;
-
-    public AsyncWriteQuery( AbstractStressIT<C> abstractStressIT, Driver driver, boolean useBookmark )
+    public AsyncFailingQuery( Driver driver )
     {
-        super( driver, useBookmark );
-        this.abstractStressIT = abstractStressIT;
+        super( driver, false );
     }
 
     @Override
     public CompletionStage<Void> execute( C context )
     {
-        Session session = newSession( AccessMode.WRITE, context );
+        Session session = newSession( AccessMode.READ, context );
 
-        return session.runAsync( "CREATE ()" )
-                .thenCompose( StatementResultCursor::summaryAsync )
-                .handle( ( summary, error ) ->
+        return session.runAsync( "UNWIND [10, 5, 0] AS x RETURN 10 / x" )
+                .thenCompose( StatementResultCursor::listAsync )
+                .handle( ( records, error ) ->
                 {
                     session.closeAsync();
 
-                    handleError( error, context );
-                    assertEquals( 1, summary.counters().nodesCreated() );
-                    context.nodeCreated();
+                    assertNull( records );
+                    Throwable cause = error.getCause(); // unwrap CompletionException
+                    assertThat( cause, is( arithmeticError() ) );
+
                     return null;
                 } );
-    }
-
-    private void handleError( Throwable error, C context )
-    {
-        if ( error != null )
-        {
-            if ( !abstractStressIT.handleWriteFailure( error, context ) )
-            {
-                throw new RuntimeException( error );
-            }
-        }
     }
 }

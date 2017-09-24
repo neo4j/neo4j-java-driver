@@ -61,6 +61,7 @@ import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.internal.util.Matchers.containsResultAvailableAfterAndResultConsumedAfter;
+import static org.neo4j.driver.internal.util.Matchers.syntaxError;
 import static org.neo4j.driver.internal.util.ServerVersion.v3_1_0;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.util.TestUtil.await;
@@ -223,7 +224,7 @@ public class TransactionAsyncIT
         }
         catch ( Exception e )
         {
-            assertSyntaxError( e );
+            assertThat( e, is( syntaxError( "Unexpected end of input" ) ) );
         }
 
         try
@@ -249,7 +250,7 @@ public class TransactionAsyncIT
         }
         catch ( Exception e )
         {
-            assertSyntaxError( e );
+            assertThat( e, is( syntaxError( "Unexpected end of input" ) ) );
         }
 
         assertThat( await( tx.rollbackAsync() ), is( nullValue() ) );
@@ -277,7 +278,7 @@ public class TransactionAsyncIT
         }
         catch ( Exception e )
         {
-            assertSyntaxError( e );
+            assertThat( e, is( syntaxError( "Unexpected end of input" ) ) );
         }
 
         try
@@ -313,7 +314,7 @@ public class TransactionAsyncIT
         }
         catch ( Exception e )
         {
-            assertSyntaxError( e );
+            assertThat( e, is( syntaxError( "Unexpected end of input" ) ) );
         }
 
         assertThat( await( tx.rollbackAsync() ), is( nullValue() ) );
@@ -331,7 +332,7 @@ public class TransactionAsyncIT
         }
         catch ( Exception e )
         {
-            assertSyntaxError( e );
+            assertThat( e, is( syntaxError( "Unexpected end of input" ) ) );
         }
 
         try
@@ -625,12 +626,5 @@ public class TransactionAsyncIT
             actualList.add( record.get( 0 ).asObject() );
         }
         assertEquals( expectedList, actualList );
-    }
-
-    private static void assertSyntaxError( Exception e )
-    {
-        assertThat( e, instanceOf( ClientException.class ) );
-        assertThat( ((ClientException) e).code(), containsString( "SyntaxError" ) );
-        assertThat( e.getMessage(), startsWith( "Unexpected end of input" ) );
     }
 }

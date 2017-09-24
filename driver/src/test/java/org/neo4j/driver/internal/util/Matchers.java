@@ -35,6 +35,7 @@ import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.summary.ResultSummary;
 
 import static org.neo4j.driver.internal.util.ServerVersion.v3_1_0;
@@ -188,6 +189,49 @@ public final class Matchers
             public void describeTo( Description description )
             {
                 description.appendText( "resultAvailableAfter and resultConsumedAfter " );
+            }
+        };
+    }
+
+    public static Matcher<Throwable> arithmeticError()
+    {
+        return new TypeSafeMatcher<Throwable>()
+        {
+            @Override
+            protected boolean matchesSafely( Throwable error )
+            {
+                return error instanceof ClientException &&
+                       ((ClientException) error).code().contains( "ArithmeticError" );
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( "client error with code 'ArithmeticError' " );
+            }
+        };
+    }
+
+    public static Matcher<Throwable> syntaxError( String messagePrefix )
+    {
+        return new TypeSafeMatcher<Throwable>()
+        {
+            @Override
+            protected boolean matchesSafely( Throwable error )
+            {
+                if ( error instanceof ClientException )
+                {
+                    ClientException clientError = (ClientException) error;
+                    return clientError.code().contains( "SyntaxError" ) &&
+                           clientError.getMessage().startsWith( messagePrefix );
+                }
+                return false;
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( "client error with code 'SyntaxError' and prefix '" + messagePrefix + "' " );
             }
         };
     }

@@ -39,18 +39,19 @@ public class AsyncReadQueryInTx<C extends AbstractContext> extends AbstractAsync
     }
 
     @Override
-    public CompletionStage<Void> execute( C context )
+    public CompletionStage<Void> execute( C ctx )
     {
-        Session session = newSession( AccessMode.READ, context );
+        Session session = newSession( AccessMode.READ, ctx );
 
         CompletionStage<Void> txCommitted = session.beginTransactionAsync()
                 .thenCompose( tx -> tx.runAsync( "MATCH (n) RETURN n LIMIT 1" )
                         .thenCompose( cursor -> cursor.nextAsync()
                                 .thenCompose( record -> processRecordAndGetSummary( record, cursor )
-                                        .thenCompose(
-                                                summary -> processSummaryAndCommit( summary, tx, context ) ) ) ) );
+                                        .thenCompose( summary -> processSummaryAndCommit( summary, tx, ctx ) ) ) ) );
 
-        return txCommitted.thenCompose( ignore -> session.closeAsync() );
+        txCommitted.whenComplete( ( ignore, error ) -> session.closeAsync() );
+
+        return txCommitted;
     }
 
     private CompletionStage<ResultSummary> processRecordAndGetSummary( Record record, StatementResultCursor cursor )

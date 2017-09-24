@@ -23,7 +23,6 @@ import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Session;
-import org.neo4j.driver.v1.StatementResultCursor;
 import org.neo4j.driver.v1.summary.ResultSummary;
 
 import static org.junit.Assert.assertEquals;
@@ -43,24 +42,19 @@ public class AsyncWriteQueryInTx<C extends AbstractContext> extends AbstractAsyn
     {
         Session session = newSession( AccessMode.WRITE, context );
 
-        return session.beginTransactionAsync().thenCompose( tx ->
+        CompletionStage<ResultSummary> txCommitted = session.beginTransactionAsync().thenCompose( tx ->
+                tx.runAsync( "CREATE ()" ).thenCompose( cursor ->
+                        cursor.summaryAsync().thenCompose( summary ->
+                                tx.commitAsync().thenApply( ignore -> summary ) ) ) );
+
+        return txCommitted.handle( ( summary, error ) ->
         {
-            CompletionStage<StatementResultCursor> queryStage = tx.runAsync( "CREATE ()" );
-            return queryStage.thenCompose( cursor ->
-            {
-                CompletionStage<ResultSummary> summaryStage = cursor.summaryAsync();
-                return summaryStage.thenCompose( summary ->
-                {
-                    CompletionStage<Void> commitStage = tx.commitAsync();
-                    return commitStage.thenApply( ignore -> summary );
-                } );
-            } ).handle( ( summary, error ) ->
-            {
-                handleError( error, context );
-                assertEquals( 1, summary.counters().nodesCreated() );
-                context.nodeCreated();
-                return session;
-            } ).thenCompose( Session::closeAsync );
+            session.closeAsync();
+
+            handleError( error, context );
+            assertEquals( 1, summary.counters().nodesCreated() );
+            context.nodeCreated();
+            return null;
         } );
     }
 
