@@ -18,8 +18,6 @@
  */
 package org.neo4j.driver.internal;
 
-import io.netty.util.concurrent.EventExecutorGroup;
-
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.v1.AccessMode;
@@ -31,15 +29,12 @@ public class SessionFactoryImpl implements SessionFactory
 {
     private final ConnectionProvider connectionProvider;
     private final RetryLogic retryLogic;
-    private final EventExecutorGroup eventExecutorGroup;
     private final Logging logging;
     private final boolean leakedSessionsLoggingEnabled;
 
-    SessionFactoryImpl( ConnectionProvider connectionProvider, RetryLogic retryLogic,
-            EventExecutorGroup eventExecutorGroup, Config config )
+    SessionFactoryImpl( ConnectionProvider connectionProvider, RetryLogic retryLogic, Config config )
     {
         this.connectionProvider = connectionProvider;
-        this.eventExecutorGroup = eventExecutorGroup;
         this.leakedSessionsLoggingEnabled = config.logLeakedSessions();
         this.retryLogic = retryLogic;
         this.logging = config.logging();
@@ -57,8 +52,8 @@ public class SessionFactoryImpl implements SessionFactory
             AccessMode mode, Logging logging )
     {
         return leakedSessionsLoggingEnabled
-               ? new LeakLoggingNetworkSession( connectionProvider, mode, retryLogic, eventExecutorGroup, logging )
-               : new NetworkSession( connectionProvider, mode, retryLogic, eventExecutorGroup, logging );
+               ? new LeakLoggingNetworkSession( connectionProvider, mode, retryLogic, logging )
+               : new NetworkSession( connectionProvider, mode, retryLogic, logging );
     }
 
     @Override

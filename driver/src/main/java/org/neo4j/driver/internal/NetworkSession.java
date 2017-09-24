@@ -18,19 +18,14 @@
  */
 package org.neo4j.driver.internal;
 
-import io.netty.util.concurrent.EventExecutorGroup;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
-
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.ResultResourcesHandler;
 import org.neo4j.driver.internal.async.AsyncConnection;
 import org.neo4j.driver.internal.async.Futures;
-import org.neo4j.driver.internal.async.InternalFuture;
-import org.neo4j.driver.internal.async.InternalPromise;
 import org.neo4j.driver.internal.async.QueryRunner;
 import org.neo4j.driver.internal.logging.DelegatingLogger;
 import org.neo4j.driver.internal.retry.RetryLogic;
@@ -53,10 +48,8 @@ import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.types.TypeSystem;
-import org.neo4j.driver.v1.util.Function;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
-import static org.neo4j.driver.internal.async.Futures.asCompletionStage;
 import static org.neo4j.driver.v1.Values.value;
 
 public class NetworkSession implements Session, SessionResourcesHandler, ResultResourcesHandler
@@ -66,25 +59,23 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     private final ConnectionProvider connectionProvider;
     private final AccessMode mode;
     private final RetryLogic retryLogic;
-    private final EventExecutorGroup eventExecutorGroup;
     protected final Logger logger;
 
     private volatile Bookmark bookmark = Bookmark.empty();
     private PooledConnection currentConnection;
     private ExplicitTransaction currentTransaction;
-    private volatile InternalFuture<ExplicitTransaction> currentAsyncTransactionFuture;
+    private volatile CompletionStage<ExplicitTransaction> asyncTransactionStage;
 
-    private InternalFuture<AsyncConnection> asyncConnectionFuture;
+    private CompletionStage<AsyncConnection> asyncConnectionStage;
 
     private final AtomicBoolean isOpen = new AtomicBoolean( true );
 
     public NetworkSession( ConnectionProvider connectionProvider, AccessMode mode, RetryLogic retryLogic,
-            EventExecutorGroup eventExecutorGroup, Logging logging )
+            Logging logging )
     {
         this.connectionProvider = connectionProvider;
         this.mode = mode;
         this.retryLogic = retryLogic;
-        this.eventExecutorGroup = eventExecutorGroup;
         this.logger = new DelegatingLogger( logging.getLog( LOG_NAME ), String.valueOf( hashCode() ) );
     }
 
@@ -159,10 +150,8 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
         ensureSessionIsOpen();
         ensureNoOpenTransactionBeforeRunningSession();
 
-        InternalFuture<AsyncConnection> connectionFuture = acquireAsyncConnection( mode );
-
-        return asCompletionStage( connectionFuture.thenCompose(
-                connection -> QueryRunner.runAsync( connection, statement ) ) );
+        return acquireAsyncConnection( mode ).thenCompose( connection ->
+                QueryRunner.runAsync( connection, statement ) );
     }
 
     public static StatementResult run( Connection connection, Statement statement,
@@ -240,14 +229,13 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     @Override
     public CompletionStage<Void> closeAsync()
     {
-        if ( asyncConnectionFuture != null )
+        if ( asyncConnectionStage != null )
         {
-            return asCompletionStage( asyncConnectionFuture.thenCompose( AsyncConnection::forceRelease ) );
+            return asyncConnectionStage.thenCompose( AsyncConnection::forceRelease );
         }
-        else if ( currentAsyncTransactionFuture != null )
+        else if ( asyncTransactionStage != null )
         {
-            return asCompletionStage(
-                    currentAsyncTransactionFuture.thenCompose( ExplicitTransaction::internalRollbackAsync ) );
+            return asyncTransactionStage.thenCompose( ExplicitTransaction::rollbackAsync );
         }
         else
         {
@@ -273,7 +261,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     public CompletionStage<Transaction> beginTransactionAsync()
     {
         //noinspection unchecked
-        return (CompletionStage) asCompletionStage( beginTransactionAsync( mode ) );
+        return (CompletionStage) beginTransactionAsync( mode );
     }
 
     @Override
@@ -285,7 +273,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     @Override
     public <T> CompletionStage<T> readTransactionAsync( TransactionWork<CompletionStage<T>> work )
     {
-        return asCompletionStage( transactionAsync( AccessMode.READ, work ) );
+        return transactionAsync( AccessMode.READ, work );
     }
 
     @Override
@@ -297,7 +285,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     @Override
     public <T> CompletionStage<T> writeTransactionAsync( TransactionWork<CompletionStage<T>> work )
     {
-        return asCompletionStage( transactionAsync( AccessMode.WRITE, work ) );
+        return transactionAsync( AccessMode.WRITE, work );
     }
 
     void setBookmark( Bookmark bookmark )
@@ -352,7 +340,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     public void asyncTransactionClosed( ExplicitTransaction tx )
     {
         setBookmark( tx.bookmark() );
-        currentAsyncTransactionFuture = null;
+        asyncTransactionStage = null;
     }
 
     @Override
@@ -399,39 +387,30 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
         } );
     }
 
-    private <T> InternalFuture<T> transactionAsync( final AccessMode mode,
-            final TransactionWork<CompletionStage<T>> work )
+    private <T> CompletionStage<T> transactionAsync( AccessMode mode, TransactionWork<CompletionStage<T>> work )
     {
         return retryLogic.retryAsync( () ->
         {
-            final InternalFuture<ExplicitTransaction> txFuture = beginTransactionAsync( mode );
-            final InternalPromise<T> resultPromise = new InternalPromise<>( txFuture.eventExecutor() );
+            CompletableFuture<T> resultFuture = new CompletableFuture<>();
+            CompletionStage<ExplicitTransaction> txFuture = beginTransactionAsync( mode );
 
-            txFuture.addListener( new FutureListener<ExplicitTransaction>()
+            txFuture.whenComplete( ( tx, error ) ->
             {
-                @Override
-                public void operationComplete( Future<ExplicitTransaction> future ) throws Exception
+                if ( error != null )
                 {
-                    if ( future.isCancelled() )
-                    {
-                        resultPromise.cancel( true );
-                    }
-                    else if ( future.isSuccess() )
-                    {
-                        executeWork( resultPromise, future.getNow(), work );
-                    }
-                    else
-                    {
-                        resultPromise.setFailure( future.cause() );
-                    }
+                    resultFuture.completeExceptionally( error );
+                }
+                else
+                {
+                    executeWork( resultFuture, tx, work );
                 }
             } );
 
-            return resultPromise;
+            return resultFuture;
         } );
     }
 
-    private <T> void executeWork( final InternalPromise<T> resultPromise, final ExplicitTransaction tx,
+    private <T> void executeWork( CompletableFuture<T> resultFuture, ExplicitTransaction tx,
             TransactionWork<CompletionStage<T>> work )
     {
         CompletionStage<T> workFuture = safeExecuteWork( tx, work );
@@ -439,11 +418,11 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
         {
             if ( error != null )
             {
-                rollbackTxAfterFailedTransactionWork( tx, resultPromise, error );
+                rollbackTxAfterFailedTransactionWork( tx, resultFuture, error );
             }
             else
             {
-                commitTxAfterSucceededTransactionWork( tx, resultPromise, result );
+                commitTxAfterSucceededTransactionWork( tx, resultFuture, result );
             }
         } );
     }
@@ -464,8 +443,8 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
         }
     }
 
-    private <T> void rollbackTxAfterFailedTransactionWork( ExplicitTransaction tx,
-            final InternalPromise<T> resultPromise, final Throwable error )
+    private <T> void rollbackTxAfterFailedTransactionWork( ExplicitTransaction tx, CompletableFuture<T> resultFuture,
+            Throwable error )
     {
         if ( tx.isOpen() )
         {
@@ -475,17 +454,17 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
                 {
                     error.addSuppressed( rollbackError );
                 }
-                resultPromise.setFailure( error );
+                resultFuture.completeExceptionally( error );
             } );
         }
         else
         {
-            resultPromise.setFailure( error );
+            resultFuture.completeExceptionally( error );
         }
     }
 
-    private <T> void commitTxAfterSucceededTransactionWork( ExplicitTransaction tx,
-            final InternalPromise<T> resultPromise, final T result )
+    private <T> void commitTxAfterSucceededTransactionWork( ExplicitTransaction tx, CompletableFuture<T> resultFuture,
+            T result )
     {
         if ( tx.isOpen() )
         {
@@ -493,17 +472,17 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
             {
                 if ( commitError != null )
                 {
-                    resultPromise.setFailure( commitError );
+                    resultFuture.completeExceptionally( commitError );
                 }
                 else
                 {
-                    resultPromise.setSuccess( result );
+                    resultFuture.complete( result );
                 }
             } );
         }
         else
         {
-            resultPromise.setSuccess( result );
+            resultFuture.complete( result );
         }
     }
 
@@ -522,25 +501,18 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
         return currentTransaction;
     }
 
-    private synchronized InternalFuture<ExplicitTransaction> beginTransactionAsync( AccessMode mode )
+    private synchronized CompletionStage<ExplicitTransaction> beginTransactionAsync( AccessMode mode )
     {
         ensureSessionIsOpen();
         ensureNoOpenTransactionBeforeOpeningTransaction();
 
-        InternalFuture<AsyncConnection> connectionFuture = acquireAsyncConnection( mode );
+        asyncTransactionStage = acquireAsyncConnection( mode ).thenCompose( connection ->
+        {
+            ExplicitTransaction tx = new ExplicitTransaction( connection, NetworkSession.this );
+            return tx.beginAsync( bookmark );
+        } );
 
-        currentAsyncTransactionFuture = connectionFuture.thenCompose(
-                new Function<AsyncConnection,InternalFuture<ExplicitTransaction>>()
-                {
-                    @Override
-                    public InternalFuture<ExplicitTransaction> apply( AsyncConnection connection )
-                    {
-                        ExplicitTransaction tx = new ExplicitTransaction( connection, NetworkSession.this );
-                        return tx.beginAsync( bookmark );
-                    }
-                } );
-
-        return currentAsyncTransactionFuture;
+        return asyncTransactionStage;
     }
 
     private void ensureNoUnrecoverableError()
@@ -556,7 +528,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     //should be called from a synchronized block
     private void ensureNoOpenTransactionBeforeRunningSession()
     {
-        if ( currentTransaction != null || currentAsyncTransactionFuture != null )
+        if ( currentTransaction != null || asyncTransactionStage != null )
         {
             throw new ClientException( "Statements cannot be run directly on a session with an open transaction;" +
                                        " either run from within the transaction or use a different session." );
@@ -566,7 +538,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     //should be called from a synchronized block
     private void ensureNoOpenTransactionBeforeOpeningTransaction()
     {
-        if ( currentTransaction != null || currentAsyncTransactionFuture != null )
+        if ( currentTransaction != null || asyncTransactionStage != null )
         {
             throw new ClientException( "You cannot begin a transaction on a session with an open transaction;" +
                                        " either run from within the transaction or use a different session." );
@@ -593,36 +565,31 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
         return connection;
     }
 
-    private InternalFuture<AsyncConnection> acquireAsyncConnection( final AccessMode mode )
+    private CompletionStage<AsyncConnection> acquireAsyncConnection( final AccessMode mode )
     {
-        if ( asyncConnectionFuture == null )
+        if ( asyncConnectionStage == null )
         {
-            asyncConnectionFuture = connectionProvider.acquireAsyncConnection( mode );
+            asyncConnectionStage = connectionProvider.acquireAsyncConnection( mode );
         }
         else
         {
             // memorize in local so same instance is transformed and used in callbacks
-            final InternalFuture<AsyncConnection> currentAsyncConnectionFuture = asyncConnectionFuture;
+            CompletionStage<AsyncConnection> currentAsyncConnectionStage = asyncConnectionStage;
 
-            asyncConnectionFuture = currentAsyncConnectionFuture.thenCompose(
-                    new Function<AsyncConnection,InternalFuture<AsyncConnection>>()
-                    {
-                        @Override
-                        public InternalFuture<AsyncConnection> apply( AsyncConnection connection )
-                        {
-                            if ( connection.tryMarkInUse() )
-                            {
-                                return currentAsyncConnectionFuture;
-                            }
-                            else
-                            {
-                                return connectionProvider.acquireAsyncConnection( mode );
-                            }
-                        }
-                    } );
+            asyncConnectionStage = currentAsyncConnectionStage.thenCompose( connection ->
+            {
+                if ( connection.tryMarkInUse() )
+                {
+                    return currentAsyncConnectionStage;
+                }
+                else
+                {
+                    return connectionProvider.acquireAsyncConnection( mode );
+                }
+            } );
         }
 
-        return asyncConnectionFuture;
+        return asyncConnectionStage;
     }
 
     boolean currentConnectionIsOpen()

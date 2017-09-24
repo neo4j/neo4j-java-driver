@@ -20,16 +20,14 @@ package org.neo4j.driver.internal.retry;
 
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.EventExecutorGroup;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.driver.internal.async.InternalFuture;
-import org.neo4j.driver.internal.async.InternalPromise;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Supplier;
 import org.neo4j.driver.v1.Logger;
@@ -122,11 +120,11 @@ public class ExponentialBackoffRetryLogic implements RetryLogic
     }
 
     @Override
-    public <T> InternalFuture<T> retryAsync( Supplier<InternalFuture<T>> work )
+    public <T> CompletionStage<T> retryAsync( Supplier<CompletionStage<T>> work )
     {
-        InternalPromise<T> result = new InternalPromise<>( eventExecutorGroup );
-        executeWorkInEventLoop( result, work );
-        return result;
+        CompletableFuture<T> resultFuture = new CompletableFuture<>();
+        executeWorkInEventLoop( resultFuture, work );
+        return resultFuture;
     }
 
     protected boolean canRetryOn( Throwable error )
@@ -136,23 +134,16 @@ public class ExponentialBackoffRetryLogic implements RetryLogic
                isTransientError( error );
     }
 
-    private <T> void executeWorkInEventLoop( final InternalPromise<T> result, final Supplier<InternalFuture<T>> work )
+    private <T> void executeWorkInEventLoop( CompletableFuture<T> resultFuture, Supplier<CompletionStage<T>> work )
     {
         // this is the very first time we execute given work
         EventExecutor eventExecutor = eventExecutorGroup.next();
 
-        eventExecutor.execute( new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                executeWork( result, work, -1, initialRetryDelayMs, null );
-            }
-        } );
+        eventExecutor.execute( () -> executeWork( resultFuture, work, -1, initialRetryDelayMs, null ) );
     }
 
-    private <T> void retryWorkInEventLoop( final InternalPromise<T> result, final Supplier<InternalFuture<T>> work,
-            final Throwable error, final long startTime, final long delayMs, final List<Throwable> errors )
+    private <T> void retryWorkInEventLoop( CompletableFuture<T> resultFuture, Supplier<CompletionStage<T>> work,
+            Throwable error, long startTime, long delayMs, List<Throwable> errors )
     {
         // work has failed before, we need to schedule retry with the given delay
         EventExecutor eventExecutor = eventExecutorGroup.next();
@@ -160,56 +151,44 @@ public class ExponentialBackoffRetryLogic implements RetryLogic
         long delayWithJitterMs = computeDelayWithJitter( delayMs );
         log.warn( "Async transaction failed and is scheduled to retry in " + delayWithJitterMs + "ms", error );
 
-        eventExecutor.schedule( new Runnable()
+        eventExecutor.schedule( () ->
         {
-            @Override
-            public void run()
-            {
-                long newRetryDelayMs = (long) (delayMs * multiplier);
-                executeWork( result, work, startTime, newRetryDelayMs, errors );
-            }
+            long newRetryDelayMs = (long) (delayMs * multiplier);
+            executeWork( resultFuture, work, startTime, newRetryDelayMs, errors );
         }, delayWithJitterMs, TimeUnit.MILLISECONDS );
     }
 
-    private <T> void executeWork( final InternalPromise<T> result, final Supplier<InternalFuture<T>> work,
-            final long startTime, final long retryDelayMs, final List<Throwable> errors )
+    private <T> void executeWork( CompletableFuture<T> resultFuture, Supplier<CompletionStage<T>> work,
+            long startTime, long retryDelayMs, List<Throwable> errors )
     {
-        InternalFuture<T> workFuture;
+        CompletionStage<T> workStage;
         try
         {
-            workFuture = work.get();
+            workStage = work.get();
         }
         catch ( Throwable error )
         {
             // work failed in a sync way, attempt to schedule a retry
-            retryOnError( result, work, startTime, retryDelayMs, error, errors );
+            retryOnError( resultFuture, work, startTime, retryDelayMs, error, errors );
             return;
         }
 
-        workFuture.addListener( new FutureListener<T>()
+        workStage.whenComplete( ( result, error ) ->
         {
-            @Override
-            public void operationComplete( Future<T> future )
+            if ( error != null )
             {
-                if ( future.isCancelled() )
-                {
-                    result.cancel( true );
-                }
-                else if ( future.isSuccess() )
-                {
-                    result.setSuccess( future.getNow() );
-                }
-                else
-                {
-                    // work failed in async way, attempt to schedule a retry
-                    retryOnError( result, work, startTime, retryDelayMs, future.cause(), errors );
-                }
+                // work failed in async way, attempt to schedule a retry
+                retryOnError( resultFuture, work, startTime, retryDelayMs, error, errors );
+            }
+            else
+            {
+                resultFuture.complete( result );
             }
         } );
     }
 
-    private <T> void retryOnError( InternalPromise<T> result, Supplier<InternalFuture<T>> work, long startTime,
-            long retryDelayMs, Throwable error, List<Throwable> errors )
+    private <T> void retryOnError( CompletableFuture<T> resultFuture, Supplier<CompletionStage<T>> work,
+            long startTime, long retryDelayMs, Throwable error, List<Throwable> errors )
     {
         if ( canRetryOn( error ) )
         {
@@ -223,13 +202,13 @@ public class ExponentialBackoffRetryLogic implements RetryLogic
             if ( elapsedTime < maxRetryTimeMs )
             {
                 errors = recordError( error, errors );
-                retryWorkInEventLoop( result, work, error, startTime, retryDelayMs, errors );
+                retryWorkInEventLoop( resultFuture, work, error, startTime, retryDelayMs, errors );
                 return;
             }
         }
 
         addSuppressed( error, errors );
-        result.setFailure( error );
+        resultFuture.completeExceptionally( error );
     }
 
     private long computeDelayWithJitter( long delayMs )

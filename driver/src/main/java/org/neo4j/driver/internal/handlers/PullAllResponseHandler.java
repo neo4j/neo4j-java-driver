@@ -23,11 +23,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.async.AsyncConnection;
-import org.neo4j.driver.internal.async.InternalFuture;
-import org.neo4j.driver.internal.async.InternalPromise;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.summary.InternalNotification;
 import org.neo4j.driver.internal.summary.InternalPlan;
@@ -44,6 +44,8 @@ import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.summary.StatementType;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.neo4j.driver.internal.async.Futures.failedFuture;
 
 public abstract class PullAllResponseHandler implements ResponseHandler
 {
@@ -59,8 +61,8 @@ public abstract class PullAllResponseHandler implements ResponseHandler
     private Throwable failure;
     private ResultSummary summary;
 
-    private InternalPromise<Record> recordPromise;
-    private InternalPromise<ResultSummary> summaryPromise;
+    private CompletableFuture<Record> recordFuture;
+    private CompletableFuture<ResultSummary> summaryFuture;
 
     public PullAllResponseHandler( Statement statement, RunResponseHandler runResponseHandler,
             AsyncConnection connection )
@@ -74,15 +76,15 @@ public abstract class PullAllResponseHandler implements ResponseHandler
     public synchronized void onSuccess( Map<String,Value> metadata )
     {
         summary = extractResultSummary( metadata );
-        if ( summaryPromise != null )
+        if ( summaryFuture != null )
         {
-            summaryPromise.setSuccess( summary );
-            summaryPromise = null;
+            summaryFuture.complete( summary );
+            summaryFuture = null;
         }
 
         succeeded = true;
         afterSuccess();
-        succeedRecordPromise( null );
+        completeRecordFuture( null );
     }
 
     protected abstract void afterSuccess();
@@ -92,7 +94,7 @@ public abstract class PullAllResponseHandler implements ResponseHandler
     {
         failure = error;
         afterFailure( error );
-        failRecordPromise( error );
+        failRecordFuture( error );
     }
 
     protected abstract void afterFailure( Throwable error );
@@ -102,9 +104,9 @@ public abstract class PullAllResponseHandler implements ResponseHandler
     {
         Record record = new InternalRecord( runResponseHandler.statementKeys(), fields );
 
-        if ( recordPromise != null )
+        if ( recordFuture != null )
         {
-            succeedRecordPromise( record );
+            completeRecordFuture( record );
         }
         else
         {
@@ -112,46 +114,46 @@ public abstract class PullAllResponseHandler implements ResponseHandler
         }
     }
 
-    public synchronized InternalFuture<Record> nextAsync()
+    public synchronized CompletionStage<Record> nextAsync()
     {
         Record record = dequeueRecord();
         if ( record == null )
         {
             if ( succeeded )
             {
-                return connection.<Record>newPromise().setSuccess( null );
+                return completedFuture( null );
             }
 
             if ( failure != null )
             {
-                return connection.<Record>newPromise().setFailure( failure );
+                return failedFuture( failure );
             }
 
-            if ( recordPromise == null )
+            if ( recordFuture == null )
             {
-                recordPromise = connection.newPromise();
+                recordFuture = new CompletableFuture<>();
             }
-            return recordPromise;
+            return recordFuture;
         }
         else
         {
-            return connection.<Record>newPromise().setSuccess( record );
+            return completedFuture( record );
         }
     }
 
-    public synchronized InternalFuture<ResultSummary> summaryAsync()
+    public synchronized CompletionStage<ResultSummary> summaryAsync()
     {
         if ( summary != null )
         {
-            return connection.<ResultSummary>newPromise().setSuccess( summary );
+            return completedFuture( summary );
         }
         else
         {
-            if ( summaryPromise == null )
+            if ( summaryFuture == null )
             {
-                summaryPromise = connection.newPromise();
+                summaryFuture = new CompletableFuture<>();
             }
-            return summaryPromise;
+            return summaryFuture;
         }
     }
 
@@ -180,23 +182,23 @@ public abstract class PullAllResponseHandler implements ResponseHandler
         return record;
     }
 
-    private void succeedRecordPromise( Record record )
+    private void completeRecordFuture( Record record )
     {
-        if ( recordPromise != null )
+        if ( recordFuture != null )
         {
-            InternalPromise<Record> promise = recordPromise;
-            recordPromise = null;
-            promise.setSuccess( record );
+            CompletableFuture<Record> future = recordFuture;
+            recordFuture = null;
+            future.complete( record );
         }
     }
 
-    private void failRecordPromise( Throwable error )
+    private void failRecordFuture( Throwable error )
     {
-        if ( recordPromise != null )
+        if ( recordFuture != null )
         {
-            InternalPromise<Record> promise = recordPromise;
-            recordPromise = null;
-            promise.setFailure( error );
+            CompletableFuture<Record> future = recordFuture;
+            recordFuture = null;
+            future.completeExceptionally( error );
         }
     }
 

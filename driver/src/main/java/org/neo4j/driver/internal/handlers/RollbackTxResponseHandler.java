@@ -18,10 +18,9 @@
  */
 package org.neo4j.driver.internal.handlers;
 
-import io.netty.util.concurrent.Promise;
-
 import java.util.Arrays;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Value;
@@ -30,23 +29,23 @@ import static java.util.Objects.requireNonNull;
 
 public class RollbackTxResponseHandler implements ResponseHandler
 {
-    private final Promise<Void> rollbackTxPromise;
+    private final CompletableFuture<Void> rollbackFuture;
 
-    public RollbackTxResponseHandler( Promise<Void> rollbackTxPromise )
+    public RollbackTxResponseHandler( CompletableFuture<Void> rollbackFuture )
     {
-        this.rollbackTxPromise = requireNonNull( rollbackTxPromise );
+        this.rollbackFuture = requireNonNull( rollbackFuture );
     }
 
     @Override
     public void onSuccess( Map<String,Value> metadata )
     {
-        rollbackTxPromise.setSuccess( null );
+        rollbackFuture.complete( null );
     }
 
     @Override
     public void onFailure( Throwable error )
     {
-        rollbackTxPromise.setFailure( error );
+        rollbackFuture.completeExceptionally( error );
     }
 
     @Override

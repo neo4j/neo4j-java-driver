@@ -18,36 +18,30 @@
  */
 package org.neo4j.driver.internal.async;
 
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Consumer;
 
 import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
-import org.neo4j.driver.internal.util.Consumer;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.StatementResultCursor;
 import org.neo4j.driver.v1.summary.ResultSummary;
 
 import static java.util.Objects.requireNonNull;
-import static org.neo4j.driver.internal.async.Futures.asCompletionStage;
 
 public class InternalStatementResultCursor implements StatementResultCursor
 {
-    private final AsyncConnection connection;
     private final RunResponseHandler runResponseHandler;
     private final PullAllResponseHandler pullAllHandler;
 
-    private InternalFuture<Record> peekedRecordFuture;
+    private CompletionStage<Record> peekedRecordFuture;
 
-    public InternalStatementResultCursor( AsyncConnection connection, RunResponseHandler runResponseHandler,
-            PullAllResponseHandler pullAllHandler )
+    public InternalStatementResultCursor( RunResponseHandler runResponseHandler, PullAllResponseHandler pullAllHandler )
     {
-        this.connection = requireNonNull( connection );
         this.runResponseHandler = requireNonNull( runResponseHandler );
         this.pullAllHandler = requireNonNull( pullAllHandler );
     }
@@ -56,19 +50,28 @@ public class InternalStatementResultCursor implements StatementResultCursor
     public List<String> keys()
     {
         List<String> keys = runResponseHandler.statementKeys();
-        return keys == null ? Collections.<String>emptyList() : Collections.unmodifiableList( keys );
+        return keys == null ? Collections.emptyList() : Collections.unmodifiableList( keys );
     }
 
     @Override
     public CompletionStage<ResultSummary> summaryAsync()
     {
-        return asCompletionStage( pullAllHandler.summaryAsync() );
+        return pullAllHandler.summaryAsync();
     }
 
     @Override
     public CompletionStage<Record> nextAsync()
     {
-        return asCompletionStage( internalNextAsync() );
+        if ( peekedRecordFuture != null )
+        {
+            CompletionStage<Record> result = peekedRecordFuture;
+            peekedRecordFuture = null;
+            return result;
+        }
+        else
+        {
+            return pullAllHandler.nextAsync();
+        }
     }
 
     @Override
@@ -78,104 +81,70 @@ public class InternalStatementResultCursor implements StatementResultCursor
         {
             peekedRecordFuture = pullAllHandler.nextAsync();
         }
-        return asCompletionStage( peekedRecordFuture );
+        return peekedRecordFuture;
     }
 
     @Override
-    public CompletionStage<Void> forEachAsync( final Consumer<Record> action )
+    public CompletionStage<Void> forEachAsync( Consumer<Record> action )
     {
-        InternalPromise<Void> result = connection.newPromise();
-        internalForEachAsync( action, result );
-        return asCompletionStage( result );
+        CompletableFuture<Void> resultFuture = new CompletableFuture<>();
+        internalForEachAsync( action, resultFuture );
+        return resultFuture;
     }
 
     @Override
     public CompletionStage<List<Record>> listAsync()
     {
-        InternalPromise<List<Record>> result = connection.newPromise();
-        internalListAsync( new ArrayList<>(), result );
-        return asCompletionStage( result );
+        CompletableFuture<List<Record>> resultFuture = new CompletableFuture<>();
+        internalListAsync( new ArrayList<>(), resultFuture );
+        return resultFuture;
     }
 
-    private void internalForEachAsync( final Consumer<Record> action, final InternalPromise<Void> result )
+    private void internalForEachAsync( Consumer<Record> action, CompletableFuture<Void> resultFuture )
     {
-        final InternalFuture<Record> recordFuture = internalNextAsync();
+        CompletionStage<Record> recordFuture = nextAsync();
 
-        recordFuture.addListener( new FutureListener<Record>()
+        // use async completion listener because of recursion, otherwise it is possible for
+        // the caller thread to get StackOverflowError when result is large and buffered
+        recordFuture.whenCompleteAsync( ( record, error ) ->
         {
-            @Override
-            public void operationComplete( Future<Record> future )
+            if ( error != null )
             {
-                if ( future.isCancelled() )
-                {
-                    result.cancel( true );
-                }
-                else if ( future.isSuccess() )
-                {
-                    Record record = future.getNow();
-                    if ( record != null )
-                    {
-                        action.accept( record );
-                        internalForEachAsync( action, result );
-                    }
-                    else
-                    {
-                        result.setSuccess( null );
-                    }
-                }
-                else
-                {
-                    result.setFailure( future.cause() );
-                }
+                resultFuture.completeExceptionally( error );
+            }
+            else if ( record != null )
+            {
+                action.accept( record );
+                internalForEachAsync( action, resultFuture );
+            }
+            else
+            {
+                resultFuture.complete( null );
             }
         } );
     }
 
-    private void internalListAsync( final List<Record> records, final InternalPromise<List<Record>> result )
+    private void internalListAsync( List<Record> records, CompletableFuture<List<Record>> resultFuture )
     {
-        final InternalFuture<Record> recordFuture = internalNextAsync();
+        CompletionStage<Record> recordFuture = nextAsync();
 
-        recordFuture.addListener( new FutureListener<Record>()
+        // use async completion listener because of recursion, otherwise it is possible for
+        // the caller thread to get StackOverflowError when result is large and buffered
+        recordFuture.whenCompleteAsync( ( record, error ) ->
         {
-            @Override
-            public void operationComplete( Future<Record> future )
+            if ( error != null )
             {
-                if ( future.isCancelled() )
-                {
-                    result.cancel( true );
-                }
-                else if ( future.isSuccess() )
-                {
-                    Record record = future.getNow();
-                    if ( record != null )
-                    {
-                        records.add( record );
-                        internalListAsync( records, result );
-                    }
-                    else
-                    {
-                        result.setSuccess( records );
-                    }
-                }
-                else
-                {
-                    result.setFailure( future.cause() );
-                }
+                resultFuture.completeExceptionally( error );
+            }
+            else if ( record != null )
+            {
+                records.add( record );
+                internalListAsync( records, resultFuture );
+            }
+            else
+            {
+                resultFuture.complete( records );
             }
         } );
-    }
-
-    private InternalFuture<Record> internalNextAsync()
-    {
-        if ( peekedRecordFuture != null )
-        {
-            InternalFuture<Record> result = peekedRecordFuture;
-            peekedRecordFuture = null;
-            return result;
-        }
-        else
-        {
-            return pullAllHandler.nextAsync();
-        }
     }
 }

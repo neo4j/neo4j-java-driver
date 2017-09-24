@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal.async;
 
 import java.util.Map;
+import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Value;
@@ -38,11 +39,9 @@ public interface AsyncConnection
 
     void flush();
 
-    <T> InternalPromise<T> newPromise();
-
     void release();
 
-    InternalFuture<Void> forceRelease();
+    CompletionStage<Void> forceRelease();
 
     ServerInfo serverInfo();
 }

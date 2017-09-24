@@ -387,8 +387,7 @@ public class LoadBalancerTest
         SleeplessClock clock = new SleeplessClock();
         RetryLogic retryLogic = new ExponentialBackoffRetryLogic( RetrySettings.DEFAULT, GlobalEventExecutor.INSTANCE,
                 clock, DEV_NULL_LOGGING );
-        return new NetworkSession( loadBalancer, AccessMode.WRITE, retryLogic, GlobalEventExecutor.INSTANCE,
-                DEV_NULL_LOGGING );
+        return new NetworkSession( loadBalancer, AccessMode.WRITE, retryLogic, DEV_NULL_LOGGING );
     }
 
     private static PooledConnection newConnectionWithFailingSync( BoltServerAddress address )

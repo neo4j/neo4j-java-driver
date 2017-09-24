@@ -19,10 +19,10 @@
 package org.neo4j.driver.internal.cluster.loadbalancing;
 
 import java.util.Set;
+import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.RoutingErrorHandler;
 import org.neo4j.driver.internal.async.AsyncConnection;
-import org.neo4j.driver.internal.async.InternalFuture;
 import org.neo4j.driver.internal.cluster.AddressSet;
 import org.neo4j.driver.internal.cluster.ClusterComposition;
 import org.neo4j.driver.internal.cluster.ClusterCompositionProvider;
@@ -91,7 +91,7 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
     }
 
     @Override
-    public InternalFuture<AsyncConnection> acquireAsyncConnection( AccessMode mode )
+    public CompletionStage<AsyncConnection> acquireAsyncConnection( AccessMode mode )
     {
         throw new UnsupportedOperationException();
     }

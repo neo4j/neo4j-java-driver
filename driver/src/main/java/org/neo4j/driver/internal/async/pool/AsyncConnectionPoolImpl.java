@@ -24,6 +24,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.pool.ChannelPool;
 import io.netty.util.concurrent.Future;
 
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -31,14 +32,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.driver.internal.async.AsyncConnection;
 import org.neo4j.driver.internal.async.AsyncConnector;
 import org.neo4j.driver.internal.async.Futures;
-import org.neo4j.driver.internal.async.InternalFuture;
 import org.neo4j.driver.internal.async.NettyConnection;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.net.pooling.PoolSettings;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
-import org.neo4j.driver.v1.util.Function;
 
 public class AsyncConnectionPoolImpl implements AsyncConnectionPool
 {
@@ -66,22 +65,18 @@ public class AsyncConnectionPoolImpl implements AsyncConnectionPool
     }
 
     @Override
-    public InternalFuture<AsyncConnection> acquire( final BoltServerAddress address )
+    public CompletionStage<AsyncConnection> acquire( final BoltServerAddress address )
     {
         log.debug( "Acquiring connection from pool for address: %s", address );
 
         assertNotClosed();
-        final ChannelPool pool = getOrCreatePool( address );
-        final Future<Channel> connectionFuture = pool.acquire();
+        ChannelPool pool = getOrCreatePool( address );
+        Future<Channel> connectionFuture = pool.acquire();
 
-        return Futures.thenApply( connectionFuture, bootstrap, new Function<Channel,AsyncConnection>()
+        return Futures.asCompletionStage( connectionFuture ).thenApply( channel ->
         {
-            @Override
-            public AsyncConnection apply( Channel channel )
-            {
-                assertNotClosed( address, channel, pool );
-                return new NettyConnection( channel, pool, clock );
-            }
+            assertNotClosed( address, channel, pool );
+            return new NettyConnection( channel, pool, clock );
         } );
     }
 
@@ -114,7 +109,7 @@ public class AsyncConnectionPoolImpl implements AsyncConnectionPool
     }
 
     @Override
-    public Future<?> closeAsync()
+    public CompletionStage<?> closeAsync()
     {
         if ( closed.compareAndSet( false, true ) )
         {
@@ -133,7 +128,7 @@ public class AsyncConnectionPoolImpl implements AsyncConnectionPool
                 eventLoopGroup().shutdownGracefully();
             }
         }
-        return eventLoopGroup().terminationFuture();
+        return Futures.asCompletionStage( eventLoopGroup().terminationFuture() );
     }
 
     private ChannelPool getOrCreatePool( BoltServerAddress address )

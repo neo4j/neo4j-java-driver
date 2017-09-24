@@ -18,25 +18,21 @@
  */
 package org.neo4j.driver.v1.integration;
 
-import io.netty.util.concurrent.GlobalEventExecutor;
-import io.netty.util.concurrent.Promise;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiConsumer;
 
-import org.neo4j.driver.internal.async.InternalPromise;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
@@ -65,7 +61,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.driver.internal.async.Futures.asCompletionStage;
 import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.internal.util.Matchers.containsResultAvailableAfterAndResultConsumedAfter;
 import static org.neo4j.driver.v1.Values.parameters;
@@ -240,7 +235,7 @@ public class SessionAsyncIT
     }
 
     @Test
-    public void shouldAllowMultipleAsyncRunsWithoutConsumingResults() throws InterruptedException
+    public void shouldAllowMultipleAsyncRunsWithoutConsumingResults()
     {
         int queryCount = 13;
         List<CompletionStage<StatementResultCursor>> cursors = new ArrayList<>();
@@ -483,7 +478,7 @@ public class SessionAsyncIT
     @Test
     public void shouldForEachWithNonEmptyCursor()
     {
-        testForEach( "UNWIND range(1, 10000) AS x RETURN x", 10000 );
+        testForEach( "UNWIND range(1, 100000) AS x RETURN x", 100000 );
     }
 
     @Test
@@ -501,13 +496,13 @@ public class SessionAsyncIT
 
     private Future<List<CompletionStage<Record>>> runNestedQueries( StatementResultCursor inputCursor )
     {
-        Promise<List<CompletionStage<Record>>> resultPromise = GlobalEventExecutor.INSTANCE.newPromise();
-        runNestedQueries( inputCursor, new ArrayList<>(), resultPromise );
-        return resultPromise;
+        CompletableFuture<List<CompletionStage<Record>>> resultFuture = new CompletableFuture<>();
+        runNestedQueries( inputCursor, new ArrayList<>(), resultFuture );
+        return resultFuture;
     }
 
-    private void runNestedQueries( final StatementResultCursor inputCursor, final List<CompletionStage<Record>> stages,
-            final Promise<List<CompletionStage<Record>>> resultPromise )
+    private void runNestedQueries( StatementResultCursor inputCursor, List<CompletionStage<Record>> stages,
+            CompletableFuture<List<CompletionStage<Record>>> resultFuture )
     {
         final CompletionStage<Record> recordResponse = inputCursor.nextAsync();
         stages.add( recordResponse );
@@ -516,21 +511,21 @@ public class SessionAsyncIT
         {
             if ( error != null )
             {
-                resultPromise.setFailure( error );
+                resultFuture.completeExceptionally( error );
             }
             else if ( record != null )
             {
-                runNestedQuery( inputCursor, record, stages, resultPromise );
+                runNestedQuery( inputCursor, record, stages, resultFuture );
             }
             else
             {
-                resultPromise.setSuccess( stages );
+                resultFuture.complete( stages );
             }
         } );
     }
 
-    private void runNestedQuery( final StatementResultCursor inputCursor, Record record,
-            final List<CompletionStage<Record>> stages, final Promise<List<CompletionStage<Record>>> resultPromise )
+    private void runNestedQuery( StatementResultCursor inputCursor, Record record,
+            List<CompletionStage<Record>> stages, CompletableFuture<List<CompletionStage<Record>>> resultFuture )
     {
         Node node = record.get( 0 ).asNode();
         long id = node.get( "id" ).asLong();
@@ -544,12 +539,12 @@ public class SessionAsyncIT
         {
             if ( error != null )
             {
-                resultPromise.setFailure( error );
+                resultFuture.completeExceptionally( error );
             }
             else
             {
                 stages.add( cursor.nextAsync() );
-                runNestedQueries( inputCursor, stages, resultPromise );
+                runNestedQueries( inputCursor, stages, resultFuture );
             }
         } );
     }
@@ -595,39 +590,6 @@ public class SessionAsyncIT
         assertThat( ((ClientException) e).code(), containsString( "ArithmeticError" ) );
     }
 
-    private static class KillDbListener implements BiConsumer<Record,Throwable>
-    {
-        final TestNeo4j neo4j;
-        volatile boolean shouldKillDb = true;
-
-        KillDbListener( TestNeo4j neo4j )
-        {
-            this.neo4j = neo4j;
-        }
-
-        @Override
-        public void accept( Record record, Throwable error )
-        {
-            if ( shouldKillDb )
-            {
-                killDb();
-                shouldKillDb = false;
-            }
-        }
-
-        void killDb()
-        {
-            try
-            {
-                neo4j.killDb();
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
-            }
-        }
-    }
-
     private static class InvocationTrackingWork implements TransactionWork<CompletionStage<Record>>
     {
         final String query;
@@ -669,49 +631,48 @@ public class SessionAsyncIT
                 throw syncFailures.next();
             }
 
-            final InternalPromise<Record> resultPromise = new InternalPromise<>( GlobalEventExecutor.INSTANCE );
+            CompletableFuture<Record> resultFuture = new CompletableFuture<>();
 
             tx.runAsync( query ).whenComplete( ( cursor, error ) ->
-                    processQueryResult( cursor, error, resultPromise ) );
+                    processQueryResult( cursor, error, resultFuture ) );
 
-            return asCompletionStage( resultPromise );
+            return resultFuture;
         }
 
-        private void processQueryResult( final StatementResultCursor cursor, final Throwable error,
-                final InternalPromise<Record> resultPromise )
+        private void processQueryResult( StatementResultCursor cursor, Throwable error,
+                CompletableFuture<Record> resultFuture )
         {
             if ( error != null )
             {
-                resultPromise.setFailure( error );
+                resultFuture.completeExceptionally( error );
                 return;
             }
 
             cursor.nextAsync().whenComplete( ( record, fetchError ) ->
-                    processFetchResult( record, fetchError, resultPromise, cursor ) );
+                    processFetchResult( record, fetchError, resultFuture ) );
         }
 
-        private void processFetchResult( Record record, Throwable error,
-                InternalPromise<Record> resultPromise, StatementResultCursor cursor )
+        private void processFetchResult( Record record, Throwable error, CompletableFuture<Record> resultFuture )
         {
             if ( error != null )
             {
-                resultPromise.setFailure( error );
+                resultFuture.completeExceptionally( error );
                 return;
             }
 
             if ( record == null )
             {
-                resultPromise.setFailure( new AssertionError( "Record not available" ) );
+                resultFuture.completeExceptionally( new AssertionError( "Record not available" ) );
                 return;
             }
 
             if ( asyncFailures.hasNext() )
             {
-                resultPromise.setFailure( asyncFailures.next() );
+                resultFuture.completeExceptionally( asyncFailures.next() );
             }
             else
             {
-                resultPromise.setSuccess( record );
+                resultFuture.complete( record );
             }
         }
     }

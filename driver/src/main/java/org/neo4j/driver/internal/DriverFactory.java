@@ -28,6 +28,7 @@ import java.security.GeneralSecurityException;
 
 import org.neo4j.driver.internal.async.AsyncConnectorImpl;
 import org.neo4j.driver.internal.async.BootstrapFactory;
+import org.neo4j.driver.internal.async.Futures;
 import org.neo4j.driver.internal.async.pool.ActiveChannelTracker;
 import org.neo4j.driver.internal.async.pool.AsyncConnectionPool;
 import org.neo4j.driver.internal.async.pool.AsyncConnectionPoolImpl;
@@ -85,7 +86,7 @@ public class DriverFactory
         try
         {
             return createDriver( uri, address, connectionPool, config, newRoutingSettings, securityPlan, retryLogic,
-                    asyncConnectionPool, eventLoopGroup );
+                    asyncConnectionPool );
         }
         catch ( Throwable driverError )
         {
@@ -93,7 +94,7 @@ public class DriverFactory
             try
             {
                 connectionPool.close();
-                asyncConnectionPool.closeAsync().syncUninterruptibly();
+                Futures.getBlocking( asyncConnectionPool.closeAsync() );
             }
             catch ( Throwable closeError )
             {
@@ -120,19 +121,17 @@ public class DriverFactory
     }
 
     private Driver createDriver( URI uri, BoltServerAddress address, ConnectionPool connectionPool,
-            Config config, RoutingSettings routingSettings, SecurityPlan securityPlan,
-            RetryLogic retryLogic, AsyncConnectionPool asyncConnectionPool, EventExecutorGroup eventExecutorGroup )
+            Config config, RoutingSettings routingSettings, SecurityPlan securityPlan, RetryLogic retryLogic,
+            AsyncConnectionPool asyncConnectionPool )
     {
         String scheme = uri.getScheme().toLowerCase();
         switch ( scheme )
         {
         case BOLT_URI_SCHEME:
             assertNoRoutingContext( uri, routingSettings );
-            return createDirectDriver( address, connectionPool, config, securityPlan, retryLogic, asyncConnectionPool,
-                    eventExecutorGroup );
+            return createDirectDriver( address, connectionPool, config, securityPlan, retryLogic, asyncConnectionPool );
         case BOLT_ROUTING_URI_SCHEME:
-            return createRoutingDriver( address, connectionPool, config, routingSettings, securityPlan, retryLogic,
-                    eventExecutorGroup );
+            return createRoutingDriver( address, connectionPool, config, routingSettings, securityPlan, retryLogic );
         default:
             throw new ClientException( format( "Unsupported URI scheme: %s", scheme ) );
         }
@@ -144,13 +143,12 @@ public class DriverFactory
      * <b>This method is protected only for testing</b>
      */
     protected Driver createDirectDriver( BoltServerAddress address, ConnectionPool connectionPool, Config config,
-            SecurityPlan securityPlan, RetryLogic retryLogic, AsyncConnectionPool asyncConnectionPool,
-            EventExecutorGroup eventExecutorGroup )
+            SecurityPlan securityPlan, RetryLogic retryLogic, AsyncConnectionPool asyncConnectionPool )
     {
         ConnectionProvider connectionProvider =
                 new DirectConnectionProvider( address, connectionPool, asyncConnectionPool );
         SessionFactory sessionFactory =
-                createSessionFactory( connectionProvider, retryLogic, eventExecutorGroup, config );
+                createSessionFactory( connectionProvider, retryLogic, config );
         return createDriver( config, securityPlan, sessionFactory );
     }
 
@@ -160,16 +158,14 @@ public class DriverFactory
      * <b>This method is protected only for testing</b>
      */
     protected Driver createRoutingDriver( BoltServerAddress address, ConnectionPool connectionPool,
-            Config config, RoutingSettings routingSettings, SecurityPlan securityPlan, RetryLogic retryLogic,
-            EventExecutorGroup eventExecutorGroup )
+            Config config, RoutingSettings routingSettings, SecurityPlan securityPlan, RetryLogic retryLogic )
     {
         if ( !securityPlan.isRoutingCompatible() )
         {
             throw new IllegalArgumentException( "The chosen security plan is not compatible with a routing driver" );
         }
         ConnectionProvider connectionProvider = createLoadBalancer( address, connectionPool, config, routingSettings );
-        SessionFactory sessionFactory =
-                createSessionFactory( connectionProvider, retryLogic, eventExecutorGroup, config );
+        SessionFactory sessionFactory = createSessionFactory( connectionProvider, retryLogic, config );
         return createDriver( config, securityPlan, sessionFactory );
     }
 
@@ -251,9 +247,9 @@ public class DriverFactory
      * <b>This method is protected only for testing</b>
      */
     protected SessionFactory createSessionFactory( ConnectionProvider connectionProvider, RetryLogic retryLogic,
-            EventExecutorGroup eventExecutorGroup, Config config )
+            Config config )
     {
-        return new SessionFactoryImpl( connectionProvider, retryLogic, eventExecutorGroup, config );
+        return new SessionFactoryImpl( connectionProvider, retryLogic, config );
     }
 
     /**

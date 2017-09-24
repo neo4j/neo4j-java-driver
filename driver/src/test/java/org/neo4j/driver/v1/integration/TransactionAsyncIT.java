@@ -523,7 +523,6 @@ public class TransactionAsyncIT
         // asserting on profile is a bit fragile and can break when server side changes or with different
         // server versions; that is why do fuzzy assertions in this test based on string content
         String profileAsString = summary.profile().toString();
-        System.out.println( profileAsString );
         assertThat( profileAsString, containsString( "DbHits" ) );
         assertEquals( 0, summary.notifications().size() );
         assertThat( summary, containsResultAvailableAfterAndResultConsumedAfter() );

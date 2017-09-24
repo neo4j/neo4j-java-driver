@@ -23,10 +23,9 @@ import org.mockito.ArgumentCaptor;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.internal.async.InternalFuture;
-import org.neo4j.driver.internal.async.InternalPromise;
+import org.neo4j.driver.internal.async.Futures;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Supplier;
 import org.neo4j.driver.internal.util.TrackingEventExecutor;
@@ -37,6 +36,7 @@ import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 import org.neo4j.driver.v1.exceptions.TransientException;
 
 import static java.lang.Long.MAX_VALUE;
+import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
@@ -54,6 +54,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.driver.internal.async.Futures.failedFuture;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
@@ -174,9 +175,9 @@ public class ExponentialBackoffRetryLogicTest
         ExponentialBackoffRetryLogic retryLogic = newRetryLogic( MAX_VALUE, initialDelay, multiplier, noJitter,
                 Clock.SYSTEM );
 
-        InternalFuture<Object> future = retryAsync( retryLogic, retries, result );
+        CompletionStage<Object> future = retryAsync( retryLogic, retries, result );
 
-        assertEquals( result, future.get() );
+        assertEquals( result, Futures.getBlocking( future ) );
         assertEquals( delaysWithoutJitter( initialDelay, multiplier, retries ), eventExecutor.scheduleDelays() );
     }
 
@@ -211,8 +212,8 @@ public class ExponentialBackoffRetryLogicTest
         ExponentialBackoffRetryLogic retryLogic = newRetryLogic( MAX_VALUE, initialDelay, multiplier, jitterFactor,
                 mock( Clock.class ) );
 
-        InternalFuture<Object> future = retryAsync( retryLogic, retries, result );
-        assertEquals( result, future.get() );
+        CompletionStage<Object> future = retryAsync( retryLogic, retries, result );
+        assertEquals( result, Futures.getBlocking( future ) );
 
         List<Long> scheduleDelays = eventExecutor.scheduleDelays();
         List<Long> delaysWithoutJitter = delaysWithoutJitter( initialDelay, multiplier, retries );
@@ -267,11 +268,11 @@ public class ExponentialBackoffRetryLogicTest
 
         ExponentialBackoffRetryLogic retryLogic = newRetryLogic( maxRetryTimeMs, initialDelay, multiplier, 0, clock );
 
-        Supplier<InternalFuture<Object>> workMock = newWorkMock();
+        Supplier<CompletionStage<Object>> workMock = newWorkMock();
         SessionExpiredException error = sessionExpired();
         when( workMock.get() ).thenReturn( failedFuture( error ) );
 
-        InternalFuture<Object> future = retryLogic.retryAsync( workMock );
+        CompletionStage<Object> future = retryLogic.retryAsync( workMock );
 
         try
         {
@@ -315,9 +316,9 @@ public class ExponentialBackoffRetryLogicTest
 
         ExponentialBackoffRetryLogic retryLogic = newRetryLogic( 1, 42, 1, 0, clock );
 
-        Supplier<InternalFuture<Object>> workMock = newWorkMock();
+        Supplier<CompletionStage<Object>> workMock = newWorkMock();
         SessionExpiredException error = sessionExpired();
-        when( workMock.get() ).thenReturn( failedFuture( error ) ).thenReturn( succeededFuture( result ) );
+        when( workMock.get() ).thenReturn( failedFuture( error ) ).thenReturn( completedFuture( result ) );
 
         assertEquals( result, await( retryLogic.retryAsync( workMock ) ) );
 
@@ -351,9 +352,9 @@ public class ExponentialBackoffRetryLogicTest
 
         ExponentialBackoffRetryLogic retryLogic = newRetryLogic( 1, 4242, 1, 0, clock );
 
-        Supplier<InternalFuture<Object>> workMock = newWorkMock();
+        Supplier<CompletionStage<Object>> workMock = newWorkMock();
         SessionExpiredException error = sessionExpired();
-        when( workMock.get() ).thenReturn( failedFuture( error ) ).thenReturn( succeededFuture( result ) );
+        when( workMock.get() ).thenReturn( failedFuture( error ) ).thenReturn( completedFuture( result ) );
 
         assertEquals( result, await( retryLogic.retryAsync( workMock ) ) );
 
@@ -387,9 +388,9 @@ public class ExponentialBackoffRetryLogicTest
 
         ExponentialBackoffRetryLogic retryLogic = newRetryLogic( 1, 23, 1, 0, clock );
 
-        Supplier<InternalFuture<Object>> workMock = newWorkMock();
+        Supplier<CompletionStage<Object>> workMock = newWorkMock();
         TransientException error = transientException();
-        when( workMock.get() ).thenReturn( failedFuture( error ) ).thenReturn( succeededFuture( result ) );
+        when( workMock.get() ).thenReturn( failedFuture( error ) ).thenReturn( completedFuture( result ) );
 
         assertEquals( result, await( retryLogic.retryAsync( workMock ) ) );
 
@@ -430,7 +431,7 @@ public class ExponentialBackoffRetryLogicTest
 
         ExponentialBackoffRetryLogic retryLogic = newRetryLogic( 1, 1, 1, 1, clock );
 
-        Supplier<InternalFuture<Object>> workMock = newWorkMock();
+        Supplier<CompletionStage<Object>> workMock = newWorkMock();
         IllegalStateException error = new IllegalStateException();
         when( workMock.get() ).thenReturn( failedFuture( error ) );
 
@@ -479,7 +480,7 @@ public class ExponentialBackoffRetryLogicTest
 
         ExponentialBackoffRetryLogic retryLogic = newRetryLogic( 1, 13, 1, 0, clock );
 
-        Supplier<InternalFuture<Object>> workMock = newWorkMock();
+        Supplier<CompletionStage<Object>> workMock = newWorkMock();
         TransientException error = new TransientException( "Neo.TransientError.Transaction.Terminated", "" );
         when( workMock.get() ).thenReturn( failedFuture( error ) );
 
@@ -528,7 +529,7 @@ public class ExponentialBackoffRetryLogicTest
 
         ExponentialBackoffRetryLogic retryLogic = newRetryLogic( 1, 15, 1, 0, clock );
 
-        Supplier<InternalFuture<Object>> workMock = newWorkMock();
+        Supplier<CompletionStage<Object>> workMock = newWorkMock();
         TransientException error = new TransientException( "Neo.TransientError.Transaction.LockClientStopped", "" );
         when( workMock.get() ).thenReturn( failedFuture( error ) );
 
@@ -625,7 +626,7 @@ public class ExponentialBackoffRetryLogicTest
 
         ExponentialBackoffRetryLogic retryLogic = newRetryLogic( maxRetryTime, initialDelay, multiplier, 0, clock );
 
-        Supplier<InternalFuture<Object>> workMock = newWorkMock();
+        Supplier<CompletionStage<Object>> workMock = newWorkMock();
         SessionExpiredException error1 = sessionExpired();
         SessionExpiredException error2 = sessionExpired();
         ServiceUnavailableException error3 = serviceUnavailable();
@@ -635,19 +636,17 @@ public class ExponentialBackoffRetryLogicTest
                 .thenReturn( failedFuture( error2 ) )
                 .thenReturn( failedFuture( error3 ) )
                 .thenReturn( failedFuture( error4 ) )
-                .thenReturn( succeededFuture( result ) );
+                .thenReturn( completedFuture( result ) );
 
         try
         {
-            retryLogic.retryAsync( workMock ).get();
+            Futures.getBlocking( retryLogic.retryAsync( workMock ) );
             fail( "Exception expected" );
         }
         catch ( Exception e )
         {
-            assertThat( e, instanceOf( ExecutionException.class ) );
-            Throwable cause = e.getCause();
-            assertEquals( error4, cause );
-            Throwable[] suppressed = cause.getSuppressed();
+            assertEquals( error4, e );
+            Throwable[] suppressed = e.getSuppressed();
             assertEquals( 3, suppressed.length );
             assertEquals( error1, suppressed[0] );
             assertEquals( error2, suppressed[1] );
@@ -706,22 +705,19 @@ public class ExponentialBackoffRetryLogicTest
 
         ExponentialBackoffRetryLogic retryLogic = newRetryLogic( maxRetryTime, initialDelay, multiplier, 0, clock );
 
-        Supplier<InternalFuture<Object>> workMock = newWorkMock();
+        Supplier<CompletionStage<Object>> workMock = newWorkMock();
         SessionExpiredException error = sessionExpired();
         when( workMock.get() ).thenReturn( failedFuture( error ) );
 
         try
         {
-            retryLogic.retryAsync( workMock ).get();
+            Futures.getBlocking( retryLogic.retryAsync( workMock ) );
             fail( "Exception expected" );
         }
         catch ( Exception e )
         {
-            assertThat( e, instanceOf( ExecutionException.class ) );
-            Throwable cause = e.getCause();
-
-            assertEquals( error, cause );
-            assertEquals( 0, cause.getSuppressed().length );
+            assertEquals( error, e );
+            assertEquals( 0, e.getSuppressed().length );
         }
 
         verify( workMock, times( 3 ) ).get();
@@ -791,22 +787,22 @@ public class ExponentialBackoffRetryLogicTest
         } );
     }
 
-    private InternalFuture<Object> retryAsync( ExponentialBackoffRetryLogic retryLogic, final int times,
+    private CompletionStage<Object> retryAsync( ExponentialBackoffRetryLogic retryLogic, final int times,
             final Object result )
     {
-        return retryLogic.retryAsync( new Supplier<InternalFuture<Object>>()
+        return retryLogic.retryAsync( new Supplier<CompletionStage<Object>>()
         {
             int invoked;
 
             @Override
-            public InternalFuture<Object> get()
+            public CompletionStage<Object> get()
             {
                 if ( invoked < times )
                 {
                     invoked++;
                     return failedFuture( serviceUnavailable() );
                 }
-                return succeededFuture( result );
+                return completedFuture( result );
             }
         } );
     }
@@ -836,16 +832,6 @@ public class ExponentialBackoffRetryLogicTest
     {
         return new ExponentialBackoffRetryLogic( maxRetryTimeMs, initialRetryDelayMs, multiplier, jitterFactor,
                 eventExecutor, clock, DEV_NULL_LOGGING );
-    }
-
-    private InternalFuture<Object> succeededFuture( Object value )
-    {
-        return new InternalPromise<>( eventExecutor ).setSuccess( value );
-    }
-
-    private InternalFuture<Object> failedFuture( Throwable error )
-    {
-        return new InternalPromise<>( eventExecutor ).setFailure( error );
     }
 
     private static ServiceUnavailableException serviceUnavailable()
