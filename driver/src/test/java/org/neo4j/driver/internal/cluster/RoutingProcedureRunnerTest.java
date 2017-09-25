@@ -51,10 +51,10 @@ public class RoutingProcedureRunnerTest
         when( mock.server() ).thenReturn(
                 new InternalServerInfo( new BoltServerAddress( "123:45" ), "Neo4j/3.2.1" ) );
         // When
-        runner.run( mock );
+        RoutingProcedureResponse response = runner.run( mock );
 
         // Then
-        assertThat( runner.invokedProcedure(), equalTo(
+        assertThat( response.procedure(), equalTo(
                 new Statement( "CALL " + GET_ROUTING_TABLE, parameters( GET_ROUTING_TABLE_PARAM, EMPTY_MAP ) ) ) );
     }
 
@@ -69,11 +69,11 @@ public class RoutingProcedureRunnerTest
         when( mock.server() ).thenReturn(
                 new InternalServerInfo( new BoltServerAddress( "123:45" ), "Neo4j/3.2.1" ) );
         // When
-        runner.run( mock );
+        RoutingProcedureResponse response = runner.run( mock );
 
         // Then
         Value expectedParams = parameters( GET_ROUTING_TABLE_PARAM, context.asMap() );
-        assertThat( runner.invokedProcedure(), equalTo(
+        assertThat( response.procedure(), equalTo(
                 new Statement( "CALL " + GET_ROUTING_TABLE, expectedParams ) ) );
     }
 
@@ -88,10 +88,10 @@ public class RoutingProcedureRunnerTest
         when( mock.server() ).thenReturn(
                 new InternalServerInfo( new BoltServerAddress( "123:45" ), "Neo4j/3.1.8" ) );
         // When
-        runner.run( mock );
+        RoutingProcedureResponse response = runner.run( mock );
 
         // Then
-        assertThat( runner.invokedProcedure(), equalTo(
+        assertThat( response.procedure(), equalTo(
                 new Statement( "CALL " + GET_SERVERS ) ) );
     }
 

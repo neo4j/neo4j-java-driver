@@ -26,6 +26,7 @@ import org.neo4j.driver.internal.NetworkSession;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
+import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static org.neo4j.driver.internal.util.ServerVersion.v3_2_0;
 import static org.neo4j.driver.internal.util.ServerVersion.version;
@@ -38,35 +39,37 @@ public class RoutingProcedureRunner
     static final String GET_ROUTING_TABLE = "dbms.cluster.routing.getRoutingTable({" + GET_ROUTING_TABLE_PARAM + "})";
 
     private final RoutingContext context;
-    private Statement invokedProcedure;
 
     public RoutingProcedureRunner( RoutingContext context )
     {
         this.context = context;
     }
 
-    public List<Record> run( Connection connection )
+    public RoutingProcedureResponse run( Connection connection )
     {
+        Statement procedure;
         if( version( connection.server().version() ).greaterThanOrEqual( v3_2_0 ) )
         {
-            invokedProcedure = new Statement( "CALL " + GET_ROUTING_TABLE,
+            procedure = new Statement( "CALL " + GET_ROUTING_TABLE,
                     parameters( GET_ROUTING_TABLE_PARAM, context.asMap() ) );
         }
         else
         {
-            invokedProcedure = new Statement( "CALL " + GET_SERVERS );
+            procedure = new Statement( "CALL " + GET_SERVERS );
         }
 
-        return runProcedure( connection, invokedProcedure );
+        try
+        {
+            return new RoutingProcedureResponse( procedure, runProcedure( connection, procedure ) );
+        }
+        catch ( ClientException error )
+        {
+            return new RoutingProcedureResponse( procedure, error );
+        }
     }
 
     List<Record> runProcedure( Connection connection, Statement procedure )
     {
         return NetworkSession.run( connection, procedure, ResultResourcesHandler.NO_OP ).list();
-    }
-
-    Statement invokedProcedure()
-    {
-        return invokedProcedure;
     }
 }

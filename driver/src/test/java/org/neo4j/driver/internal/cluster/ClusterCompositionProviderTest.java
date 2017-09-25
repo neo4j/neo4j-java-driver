@@ -17,9 +17,9 @@
  * limitations under the License.
  */
 package org.neo4j.driver.internal.cluster;
+
 import org.junit.Test;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -59,8 +59,8 @@ public class ClusterCompositionProviderTest
                 DEV_NULL_LOGGER, mockedRunner );
 
         PooledConnection mockedConn = mock( PooledConnection.class );
-        ArrayList<Record> emptyRecord = new ArrayList<>();
-        when( mockedRunner.run( mockedConn ) ).thenReturn( emptyRecord );
+        RoutingProcedureResponse noRecordsResponse = newRoutingResponse();
+        when( mockedRunner.run( mockedConn ) ).thenReturn( noRecordsResponse );
 
         // When
         ClusterCompositionResponse response = provider.getClusterComposition( mockedConn );
@@ -89,7 +89,8 @@ public class ClusterCompositionProviderTest
 
         PooledConnection mockedConn = mock( PooledConnection.class );
         Record aRecord = new InternalRecord( asList( "key1", "key2" ), new Value[]{ new StringValue( "a value" ) } );
-        when( mockedRunner.run( mockedConn ) ).thenReturn( asList( aRecord, aRecord ) );
+        RoutingProcedureResponse routingResponse = newRoutingResponse( aRecord, aRecord );
+        when( mockedRunner.run( mockedConn ) ).thenReturn( routingResponse );
 
         // When
         ClusterCompositionResponse response = provider.getClusterComposition( mockedConn );
@@ -118,7 +119,8 @@ public class ClusterCompositionProviderTest
 
         PooledConnection mockedConn = mock( PooledConnection.class );
         Record aRecord = new InternalRecord( asList( "key1", "key2" ), new Value[]{ new StringValue( "a value" ) } );
-        when( mockedRunner.run( mockedConn ) ).thenReturn( asList( aRecord ) );
+        RoutingProcedureResponse routingResponse = newRoutingResponse( aRecord );
+        when( mockedRunner.run( mockedConn ) ).thenReturn( routingResponse );
 
         // When
         ClusterCompositionResponse response = provider.getClusterComposition( mockedConn );
@@ -152,7 +154,8 @@ public class ClusterCompositionProviderTest
                 serverInfo( "READ", "one:1337", "two:1337" ),
                 serverInfo( "WRITE", "one:1337" ) ) )
         } );
-        when( mockedRunner.run( mockedConn ) ).thenReturn( asList( record ) );
+        RoutingProcedureResponse routingResponse = newRoutingResponse( record );
+        when( mockedRunner.run( mockedConn ) ).thenReturn( routingResponse );
         when( mockedClock.millis() ).thenReturn( 12345L );
 
         // When
@@ -187,7 +190,8 @@ public class ClusterCompositionProviderTest
                 serverInfo( "WRITE", "one:1337" ),
                 serverInfo( "ROUTE", "one:1337", "two:1337" ) ) )
         } );
-        when( mockedRunner.run( mockedConn ) ).thenReturn( asList( record ) );
+        RoutingProcedureResponse routingResponse = newRoutingResponse( record );
+        when( mockedRunner.run( mockedConn ) ).thenReturn( routingResponse );
         when( mockedClock.millis() ).thenReturn( 12345L );
 
         // When
@@ -254,7 +258,8 @@ public class ClusterCompositionProviderTest
                 serverInfo( "WRITE", "one:1337" ),
                 serverInfo( "ROUTE", "one:1337", "two:1337" ) ) )
         } );
-        when( mockedRunner.run( mockedConn ) ).thenReturn( asList( record ) );
+        RoutingProcedureResponse routingResponse = newRoutingResponse( record );
+        when( mockedRunner.run( mockedConn ) ).thenReturn( routingResponse );
         when( mockedClock.millis() ).thenReturn( 12345L );
 
         // When
@@ -289,8 +294,11 @@ public class ClusterCompositionProviderTest
 
     private static RoutingProcedureRunner newProcedureRunnerMock()
     {
-        RoutingProcedureRunner mock = mock( RoutingProcedureRunner.class );
-        when( mock.invokedProcedure() ).thenReturn( new Statement( "procedure" ) );
-        return mock;
+        return mock( RoutingProcedureRunner.class );
+    }
+
+    private static RoutingProcedureResponse newRoutingResponse( Record... records )
+    {
+        return new RoutingProcedureResponse( new Statement( "procedure" ), asList( records ) );
     }
 }
