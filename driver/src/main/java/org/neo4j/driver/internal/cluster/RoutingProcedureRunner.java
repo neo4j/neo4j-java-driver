@@ -20,12 +20,17 @@
 package org.neo4j.driver.internal.cluster;
 
 import java.util.List;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.ResultResourcesHandler;
 import org.neo4j.driver.internal.NetworkSession;
+import org.neo4j.driver.internal.async.AsyncConnection;
+import org.neo4j.driver.internal.async.QueryRunner;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
+import org.neo4j.driver.v1.StatementResultCursor;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static org.neo4j.driver.internal.util.ServerVersion.v3_2_0;
@@ -47,16 +52,7 @@ public class RoutingProcedureRunner
 
     public RoutingProcedureResponse run( Connection connection )
     {
-        Statement procedure;
-        if( version( connection.server().version() ).greaterThanOrEqual( v3_2_0 ) )
-        {
-            procedure = new Statement( "CALL " + GET_ROUTING_TABLE,
-                    parameters( GET_ROUTING_TABLE_PARAM, context.asMap() ) );
-        }
-        else
-        {
-            procedure = new Statement( "CALL " + GET_SERVERS );
-        }
+        Statement procedure = procedureStatement( connection.server().version() );
 
         try
         {
@@ -68,8 +64,58 @@ public class RoutingProcedureRunner
         }
     }
 
+    public CompletionStage<RoutingProcedureResponse> run( CompletionStage<AsyncConnection> connectionStage )
+    {
+        return connectionStage.thenCompose( connection ->
+        {
+            Statement procedure = procedureStatement( connection.serverInfo().version() );
+            return runProcedure( connection, procedure ).handle( ( records, error ) ->
+            {
+                if ( error != null )
+                {
+                    return handleError( procedure, error );
+                }
+                else
+                {
+                    return new RoutingProcedureResponse( procedure, records );
+                }
+            } );
+        } );
+    }
+
     List<Record> runProcedure( Connection connection, Statement procedure )
     {
         return NetworkSession.run( connection, procedure, ResultResourcesHandler.NO_OP ).list();
+    }
+
+    CompletionStage<List<Record>> runProcedure( AsyncConnection connection, Statement procedure )
+    {
+        return QueryRunner.runAsync( connection, procedure )
+                .thenCompose( StatementResultCursor::listAsync );
+    }
+
+    private Statement procedureStatement( String serverVersionString )
+    {
+        if ( version( serverVersionString ).greaterThanOrEqual( v3_2_0 ) )
+        {
+            return new Statement( "CALL " + GET_ROUTING_TABLE,
+                    parameters( GET_ROUTING_TABLE_PARAM, context.asMap() ) );
+        }
+        else
+        {
+            return new Statement( "CALL " + GET_SERVERS );
+        }
+    }
+
+    private RoutingProcedureResponse handleError( Statement procedure, Throwable error )
+    {
+        if ( error instanceof ClientException )
+        {
+            return new RoutingProcedureResponse( procedure, error );
+        }
+        else
+        {
+            throw new CompletionException( error );
+        }
     }
 }
