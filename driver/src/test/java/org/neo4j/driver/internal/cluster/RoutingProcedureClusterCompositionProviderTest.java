@@ -24,10 +24,11 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.InternalRecord;
+import org.neo4j.driver.internal.async.AsyncConnection;
 import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.value.StringValue;
 import org.neo4j.driver.v1.Record;
@@ -37,6 +38,7 @@ import org.neo4j.driver.v1.exceptions.ProtocolException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
 import static java.util.Arrays.asList;
+import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
@@ -45,25 +47,26 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.driver.internal.async.Futures.getBlocking;
 import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
 import static org.neo4j.driver.v1.Values.value;
 
-public class ClusterCompositionProviderTest
+public class RoutingProcedureClusterCompositionProviderTest
 {
     @Test
-    public void shouldProtocolErrorWhenNoRecord() throws Throwable
+    public void shouldProtocolErrorWhenNoRecord()
     {
         // Given
         RoutingProcedureRunner mockedRunner = newProcedureRunnerMock();
         ClusterCompositionProvider provider = new RoutingProcedureClusterCompositionProvider( mock( Clock.class ),
                 DEV_NULL_LOGGER, mockedRunner );
 
-        PooledConnection mockedConn = mock( PooledConnection.class );
+        CompletionStage<AsyncConnection> connectionStage = completedFuture( mock( AsyncConnection.class ) );
         RoutingProcedureResponse noRecordsResponse = newRoutingResponse();
-        when( mockedRunner.run( mockedConn ) ).thenReturn( noRecordsResponse );
+        when( mockedRunner.run( connectionStage ) ).thenReturn( completedFuture( noRecordsResponse ) );
 
         // When
-        ClusterCompositionResponse response = provider.getClusterComposition( mockedConn );
+        ClusterCompositionResponse response = getBlocking( provider.getClusterComposition( connectionStage ) );
 
         // Then
         assertThat( response, instanceOf( ClusterCompositionResponse.Failure.class ) );
@@ -80,20 +83,20 @@ public class ClusterCompositionProviderTest
     }
 
     @Test
-    public void shouldProtocolErrorWhenMoreThanOneRecord() throws Throwable
+    public void shouldProtocolErrorWhenMoreThanOneRecord()
     {
         // Given
         RoutingProcedureRunner mockedRunner = newProcedureRunnerMock();
         ClusterCompositionProvider provider = new RoutingProcedureClusterCompositionProvider( mock( Clock.class ),
                 DEV_NULL_LOGGER, mockedRunner );
 
-        PooledConnection mockedConn = mock( PooledConnection.class );
+        CompletionStage<AsyncConnection> connectionStage = completedFuture( mock( AsyncConnection.class ) );
         Record aRecord = new InternalRecord( asList( "key1", "key2" ), new Value[]{ new StringValue( "a value" ) } );
         RoutingProcedureResponse routingResponse = newRoutingResponse( aRecord, aRecord );
-        when( mockedRunner.run( mockedConn ) ).thenReturn( routingResponse );
+        when( mockedRunner.run( connectionStage ) ).thenReturn( completedFuture( routingResponse ) );
 
         // When
-        ClusterCompositionResponse response = provider.getClusterComposition( mockedConn );
+        ClusterCompositionResponse response = getBlocking( provider.getClusterComposition( connectionStage ) );
 
         // Then
         assertThat( response, instanceOf( ClusterCompositionResponse.Failure.class ) );
@@ -110,20 +113,20 @@ public class ClusterCompositionProviderTest
     }
 
     @Test
-    public void shouldProtocolErrorWhenUnparsableRecord() throws Throwable
+    public void shouldProtocolErrorWhenUnparsableRecord()
     {
         // Given
         RoutingProcedureRunner mockedRunner = newProcedureRunnerMock();
         ClusterCompositionProvider provider = new RoutingProcedureClusterCompositionProvider( mock( Clock.class ),
                 DEV_NULL_LOGGER, mockedRunner );
 
-        PooledConnection mockedConn = mock( PooledConnection.class );
+        CompletionStage<AsyncConnection> connectionStage = completedFuture( mock( AsyncConnection.class ) );
         Record aRecord = new InternalRecord( asList( "key1", "key2" ), new Value[]{ new StringValue( "a value" ) } );
         RoutingProcedureResponse routingResponse = newRoutingResponse( aRecord );
-        when( mockedRunner.run( mockedConn ) ).thenReturn( routingResponse );
+        when( mockedRunner.run( connectionStage ) ).thenReturn( completedFuture( routingResponse ) );
 
         // When
-        ClusterCompositionResponse response = provider.getClusterComposition( mockedConn );
+        ClusterCompositionResponse response = getBlocking( provider.getClusterComposition( connectionStage ) );
 
         // Then
         assertThat( response, instanceOf( ClusterCompositionResponse.Failure.class ) );
@@ -140,7 +143,7 @@ public class ClusterCompositionProviderTest
     }
 
     @Test
-    public void shouldProtocolErrorWhenNoRouters() throws Throwable
+    public void shouldProtocolErrorWhenNoRouters()
     {
         // Given
         RoutingProcedureRunner mockedRunner = newProcedureRunnerMock();
@@ -148,18 +151,18 @@ public class ClusterCompositionProviderTest
         ClusterCompositionProvider provider = new RoutingProcedureClusterCompositionProvider( mockedClock,
                 DEV_NULL_LOGGER, mockedRunner );
 
-        PooledConnection mockedConn = mock( PooledConnection.class );
+        CompletionStage<AsyncConnection> connectionStage = completedFuture( mock( AsyncConnection.class ) );
         Record record = new InternalRecord( asList( "ttl", "servers" ), new Value[]{
                 value( 100 ), value( asList(
                 serverInfo( "READ", "one:1337", "two:1337" ),
                 serverInfo( "WRITE", "one:1337" ) ) )
         } );
         RoutingProcedureResponse routingResponse = newRoutingResponse( record );
-        when( mockedRunner.run( mockedConn ) ).thenReturn( routingResponse );
+        when( mockedRunner.run( connectionStage ) ).thenReturn( completedFuture( routingResponse ) );
         when( mockedClock.millis() ).thenReturn( 12345L );
 
         // When
-        ClusterCompositionResponse response = provider.getClusterComposition( mockedConn );
+        ClusterCompositionResponse response = getBlocking( provider.getClusterComposition( connectionStage ) );
 
         // Then
         assertThat( response, instanceOf( ClusterCompositionResponse.Failure.class ) );
@@ -176,7 +179,7 @@ public class ClusterCompositionProviderTest
     }
 
     @Test
-    public void shouldProtocolErrorWhenNoReaders() throws Throwable
+    public void shouldProtocolErrorWhenNoReaders()
     {
         // Given
         RoutingProcedureRunner mockedRunner = newProcedureRunnerMock();
@@ -184,18 +187,18 @@ public class ClusterCompositionProviderTest
         ClusterCompositionProvider provider = new RoutingProcedureClusterCompositionProvider( mockedClock,
                 DEV_NULL_LOGGER, mockedRunner );
 
-        PooledConnection mockedConn = mock( PooledConnection.class );
+        CompletionStage<AsyncConnection> connectionStage = completedFuture( mock( AsyncConnection.class ) );
         Record record = new InternalRecord( asList( "ttl", "servers" ), new Value[]{
                 value( 100 ), value( asList(
                 serverInfo( "WRITE", "one:1337" ),
                 serverInfo( "ROUTE", "one:1337", "two:1337" ) ) )
         } );
         RoutingProcedureResponse routingResponse = newRoutingResponse( record );
-        when( mockedRunner.run( mockedConn ) ).thenReturn( routingResponse );
+        when( mockedRunner.run( connectionStage ) ).thenReturn( completedFuture( routingResponse ) );
         when( mockedClock.millis() ).thenReturn( 12345L );
 
         // When
-        ClusterCompositionResponse response = provider.getClusterComposition( mockedConn );
+        ClusterCompositionResponse response = getBlocking( provider.getClusterComposition( connectionStage ) );
 
         // Then
         assertThat( response, instanceOf( ClusterCompositionResponse.Failure.class ) );
@@ -213,26 +216,26 @@ public class ClusterCompositionProviderTest
 
 
     @Test
-    public void shouldPropagateConnectionFailureExceptions() throws Exception
+    public void shouldPropagateConnectionFailureExceptions()
     {
         // Given
         RoutingProcedureRunner mockedRunner = newProcedureRunnerMock();
         ClusterCompositionProvider provider = new RoutingProcedureClusterCompositionProvider( mock( Clock.class ),
                 DEV_NULL_LOGGER, mockedRunner );
 
-        PooledConnection mockedConn = mock( PooledConnection.class );
+        CompletionStage<AsyncConnection> connectionStage = completedFuture( mock( AsyncConnection.class ) );
         Record record = new InternalRecord( asList( "ttl", "servers" ), new Value[]{
                 value( 100 ), value( asList(
                 serverInfo( "WRITE", "one:1337" ),
                 serverInfo( "ROUTE", "one:1337", "two:1337" ) ) )
         } );
         doThrow( new ServiceUnavailableException( "Connection breaks during cypher execution" ) )
-                .when( mockedRunner ).run( mockedConn );
+                .when( mockedRunner ).run( connectionStage );
 
         // When & Then
         try
         {
-            provider.getClusterComposition( mockedConn );
+            provider.getClusterComposition( connectionStage );
             fail( "Expecting a failure but not triggered." );
         }
         catch( Exception e )
@@ -243,7 +246,7 @@ public class ClusterCompositionProviderTest
     }
 
     @Test
-    public void shouldReturnSuccessResultWhenNoError() throws Throwable
+    public void shouldReturnSuccessResultWhenNoError()
     {
         // Given
         Clock mockedClock = mock( Clock.class );
@@ -251,7 +254,7 @@ public class ClusterCompositionProviderTest
         ClusterCompositionProvider provider = new RoutingProcedureClusterCompositionProvider( mockedClock,
                 DEV_NULL_LOGGER, mockedRunner );
 
-        PooledConnection mockedConn = mock( PooledConnection.class );
+        CompletionStage<AsyncConnection> connectionStage = completedFuture( mock( AsyncConnection.class ) );
         Record record = new InternalRecord( asList( "ttl", "servers" ), new Value[]{
                 value( 100 ), value( asList(
                 serverInfo( "READ", "one:1337", "two:1337" ),
@@ -259,11 +262,11 @@ public class ClusterCompositionProviderTest
                 serverInfo( "ROUTE", "one:1337", "two:1337" ) ) )
         } );
         RoutingProcedureResponse routingResponse = newRoutingResponse( record );
-        when( mockedRunner.run( mockedConn ) ).thenReturn( routingResponse );
+        when( mockedRunner.run( connectionStage ) ).thenReturn( completedFuture( routingResponse ) );
         when( mockedClock.millis() ).thenReturn( 12345L );
 
         // When
-        ClusterCompositionResponse response = provider.getClusterComposition( mockedConn );
+        ClusterCompositionResponse response = getBlocking( provider.getClusterComposition( connectionStage ) );
 
         // Then
         assertThat( response, instanceOf( ClusterCompositionResponse.Success.class ) );
