@@ -46,7 +46,7 @@ import static org.neo4j.driver.v1.Config.TrustStrategy.trustAllCertificates;
 public class Cluster
 {
     private static final String ADMIN_USER = "neo4j";
-    private static final int STARTUP_TIMEOUT_SECONDS = 90;
+    private static final int STARTUP_TIMEOUT_SECONDS = 120;
     private static final int ONLINE_MEMBERS_CHECK_SLEEP_MS = 500;
 
     private final Path path;
