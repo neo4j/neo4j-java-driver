@@ -593,6 +593,7 @@ public class TransactionAsyncIT
         }
         catch ( Throwable t )
         {
+            t.printStackTrace();
             assertThat( t, instanceOf( ServiceUnavailableException.class ) );
         }
     }
