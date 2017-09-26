@@ -199,7 +199,6 @@ public class SessionAsyncIT
         }
         catch ( Throwable t )
         {
-            t.printStackTrace();
             assertThat( t, instanceOf( ServiceUnavailableException.class ) );
         }
     }

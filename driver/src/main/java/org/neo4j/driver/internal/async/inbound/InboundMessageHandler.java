@@ -63,9 +63,9 @@ public class InboundMessageHandler extends SimpleChannelInboundHandler<ByteBuf>
     @Override
     public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause )
     {
-        log.warn( "Fatal error in pipeline for channel %s", ctx.channel() );
+        log.warn( "Fatal error in pipeline for channel " + ctx.channel(), cause );
 
-        messageDispatcher.handleFatalError( cause );
+        messageDispatcher.handleFatalError( wrapFatalError( cause ) );
         ctx.close();
     }
 
@@ -75,9 +75,18 @@ public class InboundMessageHandler extends SimpleChannelInboundHandler<ByteBuf>
         log.debug( "Channel inactive: %s", ctx.channel() );
 
         messageDispatcher.handleFatalError( new ServiceUnavailableException(
-                "Connection terminated while receiving data. This can happen due to network " +
-                "instabilities, or due to restarts of the database." ) );
+                "Connection to the database terminated. " +
+                "This can happen due to network instabilities, or due to restarts of the database" ) );
 
         ctx.close();
+    }
+
+    private static Throwable wrapFatalError( Throwable error )
+    {
+        if ( error instanceof IOException )
+        {
+            return new ServiceUnavailableException( "Connection to the database failed", error );
+        }
+        return error;
     }
 }
