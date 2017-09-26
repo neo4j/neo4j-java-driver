@@ -68,10 +68,7 @@ public final class TestUtil
         }
         catch ( ExecutionException e )
         {
-            Throwable cause = e.getCause();
-            // append a dummy exception to see stacktrace
-            cause.addSuppressed( new RuntimeException( "Test stacktrace" ) );
-            throwException( cause );
+            throwException( e.getCause() );
             return null;
         }
         catch ( TimeoutException e )
