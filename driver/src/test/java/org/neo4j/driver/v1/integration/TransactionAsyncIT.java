@@ -74,15 +74,15 @@ public class TransactionAsyncIT
     private Session session;
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         session = neo4j.driver().session();
     }
 
     @After
-    public void tearDown() throws Exception
+    public void tearDown()
     {
-        await( session.closeAsync() );
+        session.closeAsync();
     }
 
     @Test

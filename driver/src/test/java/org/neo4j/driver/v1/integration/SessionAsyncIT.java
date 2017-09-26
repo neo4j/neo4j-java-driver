@@ -88,7 +88,7 @@ public class SessionAsyncIT
     @After
     public void tearDown()
     {
-        await( session.closeAsync() );
+        session.closeAsync();
     }
 
     @Test
