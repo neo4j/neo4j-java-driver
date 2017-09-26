@@ -23,6 +23,7 @@ import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.driver.internal.DirectConnectionProvider;
 import org.neo4j.driver.internal.InternalDriver;
@@ -34,6 +35,9 @@ import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.summary.ResultSummary;
+
+import static org.neo4j.driver.internal.util.ServerVersion.v3_1_0;
 
 public final class Matchers
 {
@@ -155,6 +159,35 @@ public final class Matchers
             public void describeTo( Description description )
             {
                 description.appendText( "cluster 'bolt+routing://' driver " );
+            }
+        };
+    }
+
+    public static Matcher<ResultSummary> containsResultAvailableAfterAndResultConsumedAfter()
+    {
+        return new TypeSafeMatcher<ResultSummary>()
+        {
+            @Override
+            protected boolean matchesSafely( ResultSummary summary )
+            {
+                // resultAvailableAfter and resultConsumedAfter are only returned by 3.1.0+ databases
+                ServerVersion serverVersion = ServerVersion.version( summary.server().version() );
+                if ( serverVersion.greaterThanOrEqual( v3_1_0 ) )
+                {
+                    return summary.resultAvailableAfter( TimeUnit.MILLISECONDS ) >= 0L &&
+                           summary.resultConsumedAfter( TimeUnit.MILLISECONDS ) >= 0L;
+                }
+                else
+                {
+                    return summary.resultAvailableAfter( TimeUnit.MILLISECONDS ) == -1L &&
+                           summary.resultConsumedAfter( TimeUnit.MILLISECONDS ) == -1L;
+                }
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( "resultAvailableAfter and resultConsumedAfter " );
             }
         };
     }

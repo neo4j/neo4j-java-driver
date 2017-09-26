@@ -23,11 +23,11 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.driver.internal.util.Consumer;
@@ -40,13 +40,13 @@ import org.neo4j.driver.v1.StatementResultCursor;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.summary.StatementType;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
@@ -59,7 +59,10 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 import static org.neo4j.driver.internal.util.Iterables.single;
+import static org.neo4j.driver.internal.util.Matchers.containsResultAvailableAfterAndResultConsumedAfter;
+import static org.neo4j.driver.internal.util.ServerVersion.v3_1_0;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
@@ -92,8 +95,12 @@ public class TransactionAsyncIT
 
         String bookmarkAfter = session.lastBookmark();
 
-        assertNotNull( bookmarkAfter );
-        assertNotEquals( bookmarkBefore, bookmarkAfter );
+        if ( neo4j.version().greaterThanOrEqual( v3_1_0 ) )
+        {
+            // bookmarks are only supported in 3.1.0+
+            assertNotNull( bookmarkAfter );
+            assertNotEquals( bookmarkBefore, bookmarkAfter );
+        }
     }
 
     @Test
@@ -343,6 +350,9 @@ public class TransactionAsyncIT
     @Test
     public void shouldFailBoBeginTxWithInvalidBookmark()
     {
+        assumeTrue( "Neo4j " + neo4j.version() + " does not support bookmarks",
+                neo4j.version().greaterThanOrEqual( v3_1_0 ) );
+
         Session session = neo4j.driver().session( "InvalidBookmark" );
 
         try
@@ -462,8 +472,7 @@ public class TransactionAsyncIT
         assertNull( summary.plan() );
         assertNull( summary.profile() );
         assertEquals( 0, summary.notifications().size() );
-        assertThat( summary.resultAvailableAfter( TimeUnit.MILLISECONDS ), greaterThanOrEqualTo( 0L ) );
-        assertThat( summary.resultConsumedAfter( TimeUnit.MILLISECONDS ), greaterThanOrEqualTo( 0L ) );
+        assertThat( summary, containsResultAvailableAfterAndResultConsumedAfter() );
     }
 
     @Test
@@ -487,8 +496,7 @@ public class TransactionAsyncIT
         assertThat( summary.plan().toString(), containsString( "AllNodesScan" ) );
         assertNull( summary.profile() );
         assertEquals( 0, summary.notifications().size() );
-        assertThat( summary.resultAvailableAfter( TimeUnit.MILLISECONDS ), greaterThanOrEqualTo( 0L ) );
-        assertThat( summary.resultConsumedAfter( TimeUnit.MILLISECONDS ), greaterThanOrEqualTo( 0L ) );
+        assertThat( summary, containsResultAvailableAfterAndResultConsumedAfter() );
     }
 
     @Test
@@ -518,11 +526,8 @@ public class TransactionAsyncIT
         String profileAsString = summary.profile().toString();
         System.out.println( profileAsString );
         assertThat( profileAsString, containsString( "DbHits" ) );
-        assertThat( profileAsString, containsString( "PageCacheHits" ) );
-        assertThat( profileAsString, containsString( "AllNodesScan" ) );
         assertEquals( 0, summary.notifications().size() );
-        assertThat( summary.resultAvailableAfter( TimeUnit.MILLISECONDS ), greaterThanOrEqualTo( 0L ) );
-        assertThat( summary.resultConsumedAfter( TimeUnit.MILLISECONDS ), greaterThanOrEqualTo( 0L ) );
+        assertThat( summary, containsResultAvailableAfterAndResultConsumedAfter() );
     }
 
     @Test
@@ -571,6 +576,25 @@ public class TransactionAsyncIT
     public void shouldConvertToListWithNonEmptyCursor()
     {
         testList( "UNWIND [1, '1', 2, '2', 3, '3'] AS x RETURN x", Arrays.asList( 1L, "1", 2L, "2", 3L, "3" ) );
+    }
+
+    @Test
+    public void shouldFailWhenServerIsRestarted() throws IOException
+    {
+        Transaction tx = await( session.beginTransactionAsync() );
+
+        neo4j.killDb();
+
+        try
+        {
+            await( tx.runAsync( "CREATE ()" ) );
+            await( tx.commitAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( Throwable t )
+        {
+            assertThat( t, instanceOf( ServiceUnavailableException.class ) );
+        }
     }
 
     private int countNodes( Object id )

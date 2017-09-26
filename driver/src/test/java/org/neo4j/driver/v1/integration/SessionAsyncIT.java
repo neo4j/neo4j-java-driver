@@ -32,7 +32,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.driver.internal.async.InternalPromise;
@@ -58,7 +57,6 @@ import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static java.util.Collections.emptyIterator;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
@@ -69,6 +67,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.driver.internal.util.Iterables.single;
+import static org.neo4j.driver.internal.util.Matchers.containsResultAvailableAfterAndResultConsumedAfter;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 import static org.neo4j.driver.v1.util.TestUtil.awaitAll;
@@ -173,33 +172,34 @@ public class SessionAsyncIT
     }
 
     @Test
-    public void shouldFailWhenServerIsRestarted() throws Exception
+    public void shouldFailWhenServerIsRestarted()
     {
-        StatementResultCursor cursor = await( session.runAsync(
-                "UNWIND range(0, 1000000) AS x " +
-                "CREATE (n1:Node {value: x})-[r:LINKED {value: x}]->(n2:Node {value: x}) " +
-                "DETACH DELETE n1, n2 " +
-                "RETURN x" ) );
+        int queryCount = 10_000;
+
+        String query = "UNWIND range(1, 100) AS x " +
+                       "CREATE (n1:Node {value: x})-[r:LINKED {value: x}]->(n2:Node {value: x}) " +
+                       "DETACH DELETE n1, n2 " +
+                       "RETURN x";
 
         try
         {
-            Response<Record> recordResponse = cursor.nextAsync();
-
-            // kill db after receiving the first record
-            // do it from a listener so that event loop thread executes the kill operation
-            recordResponse.addListener( new KillDbListener( neo4j ) );
-
-            Record record;
-            while ( (record = await( recordResponse )) != null )
+            for ( int i = 0; i < queryCount; i++ )
             {
-                assertNotNull( record );
-                recordResponse = cursor.nextAsync();
+                StatementResultCursor cursor = await( session.runAsync( query ) );
+
+                if ( i == 0 )
+                {
+                    neo4j.killDb();
+                }
+
+                List<Record> records = await( cursor.listAsync() );
+                assertEquals( 100, records.size() );
             }
             fail( "Exception expected" );
         }
-        catch ( Exception e )
+        catch ( Throwable t )
         {
-            assertThat( e, instanceOf( ServiceUnavailableException.class ) );
+            assertThat( t, instanceOf( ServiceUnavailableException.class ) );
         }
     }
 
@@ -301,8 +301,7 @@ public class SessionAsyncIT
         assertNull( summary.plan() );
         assertNull( summary.profile() );
         assertEquals( 0, summary.notifications().size() );
-        assertThat( summary.resultAvailableAfter( TimeUnit.MILLISECONDS ), greaterThanOrEqualTo( 0L ) );
-        assertThat( summary.resultConsumedAfter( TimeUnit.MILLISECONDS ), greaterThanOrEqualTo( 0L ) );
+        assertThat( summary, containsResultAvailableAfterAndResultConsumedAfter() );
     }
 
     @Test
@@ -329,8 +328,7 @@ public class SessionAsyncIT
         assertThat( planAsString, containsString( "AllNodesScan" ) );
         assertNull( summary.profile() );
         assertEquals( 0, summary.notifications().size() );
-        assertThat( summary.resultAvailableAfter( TimeUnit.MILLISECONDS ), greaterThanOrEqualTo( 0L ) );
-        assertThat( summary.resultConsumedAfter( TimeUnit.MILLISECONDS ), greaterThanOrEqualTo( 0L ) );
+        assertThat( summary, containsResultAvailableAfterAndResultConsumedAfter() );
     }
 
     @Test
@@ -354,12 +352,8 @@ public class SessionAsyncIT
         // server versions; that is why do fuzzy assertions in this test based on string content
         String profileAsString = summary.profile().toString();
         assertThat( profileAsString, containsString( "DbHits" ) );
-        assertThat( profileAsString, containsString( "PageCacheHits" ) );
-        assertThat( profileAsString, containsString( "CreateNode" ) );
-        assertThat( profileAsString, containsString( "CreateRelationship" ) );
         assertEquals( 0, summary.notifications().size() );
-        assertThat( summary.resultAvailableAfter( TimeUnit.MILLISECONDS ), greaterThanOrEqualTo( 0L ) );
-        assertThat( summary.resultConsumedAfter( TimeUnit.MILLISECONDS ), greaterThanOrEqualTo( 0L ) );
+        assertThat( summary, containsResultAvailableAfterAndResultConsumedAfter() );
     }
 
     @Test

@@ -29,6 +29,7 @@ import java.net.URI;
 import java.net.URL;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Session;
@@ -173,5 +174,10 @@ public class TestNeo4j implements TestRule
     public void killDb() throws IOException
     {
         runner.killNeo4j();
+    }
+
+    public ServerVersion version()
+    {
+        return ServerVersion.version( driver() );
     }
 }
