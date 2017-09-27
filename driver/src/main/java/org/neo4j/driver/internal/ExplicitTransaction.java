@@ -45,6 +45,7 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.types.TypeSystem;
 
+import static java.util.Collections.emptyMap;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.neo4j.driver.internal.async.Futures.failedFuture;
 import static org.neo4j.driver.internal.util.ErrorUtil.isRecoverable;
@@ -120,19 +121,16 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
 
     public CompletionStage<ExplicitTransaction> beginAsync( Bookmark initialBookmark )
     {
-        Map<String,Value> parameters = initialBookmark.asBeginTransactionParameters();
-        asyncConnection.run( BEGIN_QUERY, parameters, NoOpResponseHandler.INSTANCE );
-
         if ( initialBookmark.isEmpty() )
         {
-            asyncConnection.pullAll( NoOpResponseHandler.INSTANCE );
+            asyncConnection.run( BEGIN_QUERY, emptyMap(), NoOpResponseHandler.INSTANCE, NoOpResponseHandler.INSTANCE );
             return completedFuture( this );
         }
         else
         {
             CompletableFuture<ExplicitTransaction> beginFuture = new CompletableFuture<>();
-            asyncConnection.pullAll( new BeginTxResponseHandler<>( beginFuture, this ) );
-            asyncConnection.flush();
+            asyncConnection.runAndFlush( BEGIN_QUERY, initialBookmark.asBeginTransactionParameters(),
+                    NoOpResponseHandler.INSTANCE, new BeginTxResponseHandler<>( beginFuture, this ) );
             return beginFuture;
         }
     }
@@ -258,10 +256,8 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
     private CompletionStage<Void> doCommitAsync()
     {
         CompletableFuture<Void> commitFuture = new CompletableFuture<>();
-
-        asyncConnection.run( COMMIT_QUERY, Collections.emptyMap(), NoOpResponseHandler.INSTANCE );
-        asyncConnection.pullAll( new CommitTxResponseHandler( commitFuture, this ) );
-        asyncConnection.flush();
+        asyncConnection.runAndFlush( COMMIT_QUERY, emptyMap(), NoOpResponseHandler.INSTANCE,
+                new CommitTxResponseHandler( commitFuture, this ) );
 
         return commitFuture.thenApply( ignore ->
         {
@@ -273,9 +269,8 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
     private CompletionStage<Void> doRollbackAsync()
     {
         CompletableFuture<Void> rollbackFuture = new CompletableFuture<>();
-        asyncConnection.run( ROLLBACK_QUERY, Collections.emptyMap(), NoOpResponseHandler.INSTANCE );
-        asyncConnection.pullAll( new RollbackTxResponseHandler( rollbackFuture ) );
-        asyncConnection.flush();
+        asyncConnection.runAndFlush( ROLLBACK_QUERY, emptyMap(), NoOpResponseHandler.INSTANCE,
+                new RollbackTxResponseHandler( rollbackFuture ) );
 
         return rollbackFuture.thenApply( ignore ->
         {

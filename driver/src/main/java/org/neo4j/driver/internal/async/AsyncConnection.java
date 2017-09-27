@@ -33,11 +33,11 @@ public interface AsyncConnection
 
     void disableAutoRead();
 
-    void run( String statement, Map<String,Value> parameters, ResponseHandler handler );
+    void run( String statement, Map<String,Value> parameters, ResponseHandler runHandler,
+            ResponseHandler pullAllHandler );
 
-    void pullAll( ResponseHandler handler );
-
-    void flush();
+    void runAndFlush( String statement, Map<String,Value> parameters, ResponseHandler runHandler,
+            ResponseHandler pullAllHandler );
 
     void release();
 
