@@ -72,6 +72,7 @@ public class DriverSecurityComplianceSteps
     @When( "I connect via a TLS-enabled transport for the first time for the given hostname and port$" )
     public void firstUseConnect() throws Throwable
     {
+        closeExistingDriver();
         knownHostsFile = tempFile( "known_hosts", ".tmp" );
         driver = GraphDatabase.driver(
                 Neo4jRunner.DEFAULT_URI,
@@ -104,6 +105,7 @@ public class DriverSecurityComplianceSteps
     @When( "^I connect via a TLS-enabled transport again$" )
     public void iConnectViaATlsEnabledTransportAgain() throws Throwable
     {
+        closeExistingDriver();
         try
         {
             driver = GraphDatabase.driver(
@@ -242,6 +244,7 @@ public class DriverSecurityComplianceSteps
     @When( "^I connect via a TLS-enabled transport$" )
     public void iConnectViaATlsEnabledTransport()
     {
+        closeExistingDriver();
         try
         {
             // give root certificate to driver
@@ -285,12 +288,7 @@ public class DriverSecurityComplianceSteps
     @After( "@tls" )
     public void clearAfterEachScenario() throws Throwable
     {
-        if ( driver != null )
-        {
-            driver.close();
-        }
-
-        driver = null;
+        closeExistingDriver();
         knownHostsFile = null;
         exception = null;
 
@@ -305,6 +303,15 @@ public class DriverSecurityComplianceSteps
     public void resetDbWithDefaultSettings() throws Throwable
     {
         neo4j.restartDb();
+    }
+
+    private void closeExistingDriver()
+    {
+        if ( driver != null )
+        {
+            driver.close();
+            driver = null;
+        }
     }
 
     private File tempFile( String prefix, String suffix ) throws Throwable

@@ -19,6 +19,7 @@
 package org.neo4j.driver.v1.integration;
 
 import org.hamcrest.MatcherAssert;
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -96,36 +97,43 @@ public class SessionIT
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
+    private Driver driver;
+
+    @After
+    public void tearDown()
+    {
+        if ( driver != null )
+        {
+            driver.close();
+        }
+    }
+
     @Test
     public void shouldKnowSessionIsClosed() throws Throwable
     {
         // Given
-        try ( Driver driver = newDriver() )
-        {
-            Session session = driver.session();
+        driver = newDriver();
+        Session session = driver.session();
 
-            // When
-            session.close();
+        // When
+        session.close();
 
-            // Then
-            assertFalse( session.isOpen() );
-        }
+        // Then
+        assertFalse( session.isOpen() );
     }
 
     @Test
     public void shouldHandleNullConfig() throws Throwable
     {
         // Given
-        try ( Driver driver = GraphDatabase.driver( neo4j.uri(), neo4j.authToken(), null ) )
-        {
-            Session session = driver.session();
+        driver = GraphDatabase.driver( neo4j.uri(), neo4j.authToken(), null );
+        Session session = driver.session();
 
-            // When
-            session.close();
+        // When
+        session.close();
 
-            // Then
-            assertFalse( session.isOpen() );
-        }
+        // Then
+        assertFalse( session.isOpen() );
     }
 
     @SuppressWarnings( "ConstantConditions" )
@@ -138,7 +146,7 @@ public class SessionIT
 
         // null auth token should be interpreted as AuthTokens.none() and fail driver creation
         // because server expects basic auth
-        GraphDatabase.driver( neo4j.uri(), token );
+        driver = GraphDatabase.driver( neo4j.uri(), token );
     }
 
     @Test
@@ -146,7 +154,7 @@ public class SessionIT
     {
         neo4j.ensureProcedures( "longRunningStatement.jar" );
         // Given
-        Driver driver = newDriver();
+        driver = newDriver();
 
         int executionTimeout = 10; // 10s
         final int killTimeout = 1; // 1s
@@ -184,7 +192,7 @@ public class SessionIT
     {
         neo4j.ensureProcedures( "longRunningStatement.jar" );
         // Given
-        Driver driver = newDriver();
+        driver = newDriver();
 
         int executionTimeout = 10; // 10s
         final int killTimeout = 1; // 1s
@@ -226,7 +234,7 @@ public class SessionIT
     {
         // Given
         neo4j.ensureProcedures( "longRunningStatement.jar" );
-        Driver driver = newDriver();
+        driver = newDriver();
 
         try ( Session session = driver.session() )
         {
@@ -253,7 +261,7 @@ public class SessionIT
     {
         // Given
         neo4j.ensureProcedures( "longRunningStatement.jar" );
-        Driver driver = newDriver();
+        driver = newDriver();
 
         Session session = driver.session();
         session.run( "CALL test.driver.longRunningStatement({seconds})",
@@ -275,7 +283,7 @@ public class SessionIT
     {
         // Given
         neo4j.ensureProcedures( "longRunningStatement.jar" );
-        Driver driver = newDriver();
+        driver = newDriver();
 
         try ( Session session = driver.session() )
         {

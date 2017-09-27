@@ -301,6 +301,10 @@ public class Cluster
                 {
                     return driver;
                 }
+                else
+                {
+                    driver.close();
+                }
             }
             catch ( Exception e )
             {

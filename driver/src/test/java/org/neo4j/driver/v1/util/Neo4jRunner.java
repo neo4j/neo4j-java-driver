@@ -293,6 +293,7 @@ public class Neo4jRunner
             try
             {
                 debug("Starting shutdown hook");
+                driver.close();
                 stopNeo4j();
                 debug("Finished shutdown hook");
             }

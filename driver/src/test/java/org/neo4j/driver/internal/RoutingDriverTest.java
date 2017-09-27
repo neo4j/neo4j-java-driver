@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal;
 
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -77,6 +78,17 @@ public class RoutingDriverTest
     private static final String GET_SERVERS = "CALL dbms.cluster.routing.getServers";
     private final FakeClock clock = new FakeClock();
 
+    private Driver driver;
+
+    @After
+    public void tearDown()
+    {
+        if ( driver != null )
+        {
+            driver.close();
+        }
+    }
+
     @Test
     public void shouldDiscoveryOnInitialization()
     {
@@ -88,7 +100,7 @@ public class RoutingDriverTest
                 serverInfo( "WRITE", "localhost:3333" ) );
 
         // When
-        driverWithPool( pool );
+        driver = driverWithPool( pool );
 
         // Then
         verify( pool ).acquire( SEED );
@@ -98,7 +110,7 @@ public class RoutingDriverTest
     public void shouldRediscoveryIfNoWritersProvided()
     {
         // Given
-        Driver driver = driverWithPool( pool(
+        driver = driverWithPool( pool(
                 withServers( 10, serverInfo( "ROUTE", "localhost:1111" ),
                         serverInfo( "WRITE" ),
                         serverInfo( "READ", "localhost:5555" ) ),
@@ -117,7 +129,7 @@ public class RoutingDriverTest
     public void shouldNotRediscoveryOnSessionAcquisitionIfNotNecessary()
     {
         // Given
-        Driver driver = driverWithPool( pool(
+        driver = driverWithPool( pool(
                 withServers( 10, serverInfo( "ROUTE", "localhost:1111", "localhost:1112", "localhost:1113" ),
                         serverInfo( "READ", "localhost:2222" ),
                         serverInfo( "WRITE", "localhost:3333" ) ),
@@ -144,7 +156,7 @@ public class RoutingDriverTest
         // When
         try
         {
-            driverWithPool( pool );
+            driver = driverWithPool( pool );
         }
         // Then
         catch ( ServiceUnavailableException e )
@@ -167,7 +179,7 @@ public class RoutingDriverTest
         // When
         try
         {
-            driverWithPool( pool );
+            driver = driverWithPool( pool );
         }
         // Then
         catch ( ProtocolException e )
@@ -189,7 +201,7 @@ public class RoutingDriverTest
         // When
         try
         {
-            driverWithPool( pool );
+            driver = driverWithPool( pool );
         }
         // Then
         catch ( ProtocolException e )
@@ -210,7 +222,7 @@ public class RoutingDriverTest
                         serverInfo( "READ", "localhost:2222" ),
                         serverInfo( "WRITE", "localhost:3333" ) ) );
 
-        Driver driver = driverWithPool( pool );
+        driver = driverWithPool( pool );
 
         // When
         NetworkSessionWithAddress write1 = (NetworkSessionWithAddress) driver.session( AccessMode.WRITE );
@@ -225,7 +237,7 @@ public class RoutingDriverTest
     public void shouldRediscoverOnTimeout()
     {
         // Given
-        Driver driver = driverWithPool( pool(
+        driver = driverWithPool( pool(
                 withServers( 10, serverInfo( "ROUTE", "localhost:1111", "localhost:1112", "localhost:1113" ),
                         serverInfo( "READ", "localhost:2222" ),
                         serverInfo( "WRITE", "localhost:3333" ) ),
@@ -248,7 +260,7 @@ public class RoutingDriverTest
     public void shouldNotRediscoverWhenNoTimeout()
     {
         // Given
-        Driver driver = driverWithPool( pool(
+        driver = driverWithPool( pool(
                 withServers( 10, serverInfo( "ROUTE", "localhost:1111", "localhost:1112", "localhost:1113" ),
                         serverInfo( "READ", "localhost:2222" ),
                         serverInfo( "WRITE", "localhost:3333" ) ),
@@ -270,7 +282,7 @@ public class RoutingDriverTest
     public void shouldRoundRobinAmongReadServers()
     {
         // Given
-        Driver driver = driverWithServers( 60,
+        driver = driverWithServers( 60,
                 serverInfo( "ROUTE", "localhost:1111", "localhost:1112" ),
                 serverInfo( "READ", "localhost:2222", "localhost:2223", "localhost:2224" ),
                 serverInfo( "WRITE", "localhost:3333" ) );
@@ -296,7 +308,7 @@ public class RoutingDriverTest
     public void shouldRoundRobinAmongWriteServers()
     {
         // Given
-        Driver driver = driverWithServers( 60, serverInfo( "ROUTE", "localhost:1111", "localhost:1112" ),
+        driver = driverWithServers( 60, serverInfo( "ROUTE", "localhost:1111", "localhost:1112" ),
                 serverInfo( "READ", "localhost:3333" ),
                 serverInfo( "WRITE", "localhost:2222", "localhost:2223", "localhost:2224" ) );
 
@@ -329,7 +341,7 @@ public class RoutingDriverTest
         try
         {
             // When
-            GraphDatabase.driver( "bolt+routing://127.0.0.1:7687", tofuConfig );
+            driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:7687", tofuConfig );
             fail();
         }
         catch ( IllegalArgumentException e )
