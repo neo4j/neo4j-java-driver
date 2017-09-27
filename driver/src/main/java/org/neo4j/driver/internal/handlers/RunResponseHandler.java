@@ -18,12 +18,11 @@
  */
 package org.neo4j.driver.internal.handlers;
 
-import io.netty.util.concurrent.Promise;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.driver.internal.ExplicitTransaction;
 import org.neo4j.driver.internal.spi.ResponseHandler;
@@ -31,15 +30,15 @@ import org.neo4j.driver.v1.Value;
 
 public class RunResponseHandler implements ResponseHandler
 {
-    private final Promise<Void> runCompletedPromise;
+    private final CompletableFuture<Void> runCompletedFuture;
     private final ExplicitTransaction tx;
 
     private List<String> statementKeys;
     private long resultAvailableAfter;
 
-    public RunResponseHandler( Promise<Void> runCompletedPromise, ExplicitTransaction tx )
+    public RunResponseHandler( CompletableFuture<Void> runCompletedFuture, ExplicitTransaction tx )
     {
-        this.runCompletedPromise = runCompletedPromise;
+        this.runCompletedFuture = runCompletedFuture;
         this.tx = tx;
     }
 
@@ -49,9 +48,9 @@ public class RunResponseHandler implements ResponseHandler
         statementKeys = extractKeys( metadata );
         resultAvailableAfter = extractResultAvailableAfter( metadata );
 
-        if ( runCompletedPromise != null )
+        if ( runCompletedFuture != null )
         {
-            runCompletedPromise.setSuccess( null );
+            runCompletedFuture.complete( null );
         }
     }
 
@@ -62,9 +61,9 @@ public class RunResponseHandler implements ResponseHandler
         {
             tx.resultFailed( error );
         }
-        if ( runCompletedPromise != null )
+        if ( runCompletedFuture != null )
         {
-            runCompletedPromise.setFailure( error );
+            runCompletedFuture.completeExceptionally( error );
         }
     }
 

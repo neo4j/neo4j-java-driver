@@ -22,9 +22,9 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 import java.util.Map;
+import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.Response;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.StatementResultCursor;
@@ -98,13 +98,13 @@ public class TestNeo4jSession extends TestNeo4j implements Session
     }
 
     @Override
-    public Response<Void> closeAsync()
+    public CompletionStage<Void> closeAsync()
     {
         throw new UnsupportedOperationException( "Disallowed on this test session" );
     }
 
     @Override
-    public Response<StatementResultCursor> runAsync( String statement, Map<String,Object> params )
+    public CompletionStage<StatementResultCursor> runAsync( String statement, Map<String,Object> params )
     {
         return realSession.runAsync( statement, params );
     }
@@ -123,7 +123,7 @@ public class TestNeo4jSession extends TestNeo4j implements Session
     }
 
     @Override
-    public Response<Transaction> beginTransactionAsync()
+    public CompletionStage<Transaction> beginTransactionAsync()
     {
         return realSession.beginTransactionAsync();
     }
@@ -135,7 +135,7 @@ public class TestNeo4jSession extends TestNeo4j implements Session
     }
 
     @Override
-    public <T> Response<T> readTransactionAsync( TransactionWork<Response<T>> work )
+    public <T> CompletionStage<T> readTransactionAsync( TransactionWork<CompletionStage<T>> work )
     {
         return realSession.readTransactionAsync( work );
     }
@@ -147,7 +147,7 @@ public class TestNeo4jSession extends TestNeo4j implements Session
     }
 
     @Override
-    public <T> Response<T> writeTransactionAsync( TransactionWork<Response<T>> work )
+    public <T> CompletionStage<T> writeTransactionAsync( TransactionWork<CompletionStage<T>> work )
     {
         return realSession.writeTransactionAsync( work );
     }
@@ -178,7 +178,7 @@ public class TestNeo4jSession extends TestNeo4j implements Session
     }
 
     @Override
-    public Response<StatementResultCursor> runAsync( String statementText, Value parameters )
+    public CompletionStage<StatementResultCursor> runAsync( String statementText, Value parameters )
     {
         return realSession.runAsync( statementText, parameters );
     }
@@ -190,7 +190,7 @@ public class TestNeo4jSession extends TestNeo4j implements Session
     }
 
     @Override
-    public Response<StatementResultCursor> runAsync( String statementTemplate, Record statementParameters )
+    public CompletionStage<StatementResultCursor> runAsync( String statementTemplate, Record statementParameters )
     {
         return realSession.runAsync( statementTemplate, statementParameters );
     }
@@ -202,7 +202,7 @@ public class TestNeo4jSession extends TestNeo4j implements Session
     }
 
     @Override
-    public Response<StatementResultCursor> runAsync( String statementTemplate )
+    public CompletionStage<StatementResultCursor> runAsync( String statementTemplate )
     {
         return realSession.runAsync( statementTemplate );
     }
@@ -214,7 +214,7 @@ public class TestNeo4jSession extends TestNeo4j implements Session
     }
 
     @Override
-    public Response<StatementResultCursor> runAsync( org.neo4j.driver.v1.Statement statement )
+    public CompletionStage<StatementResultCursor> runAsync( org.neo4j.driver.v1.Statement statement )
     {
         return realSession.runAsync( statement );
     }

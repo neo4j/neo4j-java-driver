@@ -19,8 +19,9 @@
 package org.neo4j.driver.v1;
 
 import java.util.List;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Consumer;
 
-import org.neo4j.driver.internal.util.Consumer;
 import org.neo4j.driver.v1.summary.ResultSummary;
 
 public interface StatementResultCursor
@@ -32,13 +33,13 @@ public interface StatementResultCursor
      */
     List<String> keys();
 
-    Response<ResultSummary> summaryAsync();
+    CompletionStage<ResultSummary> summaryAsync();
 
-    Response<Record> nextAsync();
+    CompletionStage<Record> nextAsync();
 
-    Response<Record> peekAsync();
+    CompletionStage<Record> peekAsync();
 
-    Response<Void> forEachAsync( Consumer<Record> action );
+    CompletionStage<Void> forEachAsync( Consumer<Record> action );
 
-    Response<List<Record>> listAsync();
+    CompletionStage<List<Record>> listAsync();
 }

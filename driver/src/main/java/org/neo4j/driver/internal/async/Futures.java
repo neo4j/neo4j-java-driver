@@ -18,13 +18,12 @@
  */
 package org.neo4j.driver.internal.async;
 
-import io.netty.bootstrap.Bootstrap;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
-import io.netty.util.concurrent.Promise;
+import io.netty.util.internal.PlatformDependent;
 
-import org.neo4j.driver.internal.util.BiConsumer;
-import org.neo4j.driver.v1.util.Function;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 public final class Futures
 {
@@ -32,182 +31,77 @@ public final class Futures
     {
     }
 
-    public static <T, U> InternalFuture<U> thenApply( InternalFuture<T> future, Function<T,U> fn )
+    public static <T> CompletionStage<T> asCompletionStage( io.netty.util.concurrent.Future<T> future )
     {
-        InternalPromise<U> result = new InternalPromise<>( future.eventExecutor() );
-        future.addListener( new ThenApplyListener<>( result, fn ) );
+        CompletableFuture<T> result = new CompletableFuture<>();
+        if ( future.isCancelled() )
+        {
+            result.cancel( true );
+        }
+        else if ( future.isSuccess() )
+        {
+            result.complete( future.getNow() );
+        }
+        else
+        {
+            future.addListener( ignore ->
+            {
+                if ( future.isCancelled() )
+                {
+                    result.cancel( true );
+                }
+                else if ( future.isSuccess() )
+                {
+                    result.complete( future.getNow() );
+                }
+                else
+                {
+                    result.completeExceptionally( future.cause() );
+                }
+            } );
+        }
         return result;
     }
 
-    public static <T, U> InternalFuture<U> thenApply( Future<T> future, Bootstrap bootstrap, Function<T,U> fn )
+    public static <T> CompletableFuture<T> failedFuture( Throwable error )
     {
-        InternalPromise<U> result = new InternalPromise<>( bootstrap );
-        future.addListener( new ThenApplyListener<>( result, fn ) );
+        CompletableFuture<T> result = new CompletableFuture<>();
+        result.completeExceptionally( error );
         return result;
     }
 
-    public static <T, U> InternalFuture<U> thenCompose( InternalFuture<T> future, Function<T,InternalFuture<U>> fn )
+    public static <V> V getBlocking( CompletionStage<V> stage )
     {
-        InternalPromise<U> result = new InternalPromise<>( future.eventExecutor() );
-        future.addListener( new ThenComposeListener<>( result, fn ) );
-        return result;
+        Future<V> future = stage.toCompletableFuture();
+        return getBlocking( future );
     }
 
-    public static <T> InternalFuture<T> whenComplete( InternalFuture<T> future, BiConsumer<T,Throwable> action )
+    public static <V> V getBlocking( Future<V> future )
     {
-        InternalPromise<T> result = new InternalPromise<>( future.eventExecutor() );
-        future.addListener( new CompletionListener<>( result, action ) );
-        return result;
-    }
-
-    private static class ThenApplyListener<T, U> implements GenericFutureListener<Future<T>>
-    {
-        final Promise<U> result;
-        final Function<T,U> fn;
-
-        ThenApplyListener( Promise<U> result, Function<T,U> fn )
+        boolean interrupted = false;
+        try
         {
-            this.result = result;
-            this.fn = fn;
-        }
-
-        @Override
-        public void operationComplete( Future<T> future ) throws Exception
-        {
-            if ( future.isCancelled() )
-            {
-                result.cancel( true );
-            }
-            else if ( future.isSuccess() )
+            while ( true )
             {
                 try
                 {
-                    T originalValue = future.getNow();
-                    U newValue = fn.apply( originalValue );
-                    result.setSuccess( newValue );
+                    return future.get();
                 }
-                catch ( Throwable t )
+                catch ( InterruptedException e )
                 {
-                    result.setFailure( t );
+                    interrupted = true;
                 }
-            }
-            else
-            {
-                result.setFailure( future.cause() );
+                catch ( ExecutionException e )
+                {
+                    PlatformDependent.throwException( e.getCause() );
+                }
             }
         }
-    }
-
-    private static class ThenComposeListener<T, U> implements GenericFutureListener<Future<T>>
-    {
-        final Promise<U> result;
-        final Function<T,InternalFuture<U>> fn;
-
-        ThenComposeListener( Promise<U> result, Function<T,InternalFuture<U>> fn )
+        finally
         {
-            this.result = result;
-            this.fn = fn;
-        }
-
-        @Override
-        public void operationComplete( Future<T> future ) throws Exception
-        {
-            if ( future.isCancelled() )
+            if ( interrupted )
             {
-                result.cancel( true );
-            }
-            else if ( future.isSuccess() )
-            {
-                try
-                {
-                    T value = future.getNow();
-                    InternalFuture<U> newFuture = fn.apply( value );
-                    newFuture.addListener( new NestedThenCombineListener<>( result, newFuture ) );
-                }
-                catch ( Throwable t )
-                {
-                    result.setFailure( t );
-                }
-            }
-            else
-            {
-                result.setFailure( future.cause() );
-            }
-        }
-    }
-
-    private static class NestedThenCombineListener<T> implements GenericFutureListener<Future<T>>
-    {
-
-        final Promise<T> result;
-        final Future<T> future;
-
-        NestedThenCombineListener( Promise<T> result, Future<T> future )
-        {
-            this.result = result;
-            this.future = future;
-        }
-
-        @Override
-        public void operationComplete( Future<T> future ) throws Exception
-        {
-            if ( future.isCancelled() )
-            {
-                result.cancel( true );
-            }
-            else if ( future.isSuccess() )
-            {
-                result.setSuccess( future.getNow() );
-            }
-            else
-            {
-                result.setFailure( future.cause() );
-            }
-        }
-    }
-
-    private static class CompletionListener<T> implements GenericFutureListener<Future<T>>
-    {
-        final Promise<T> result;
-        final BiConsumer<T,Throwable> action;
-
-        CompletionListener( Promise<T> result, BiConsumer<T,Throwable> action )
-        {
-            this.result = result;
-            this.action = action;
-        }
-
-        @Override
-        public void operationComplete( Future<T> future ) throws Exception
-        {
-            if ( future.isCancelled() )
-            {
-                result.cancel( true );
-            }
-            else if ( future.isSuccess() )
-            {
-                try
-                {
-                    action.accept( future.getNow(), null );
-                    result.setSuccess( future.getNow() );
-                }
-                catch ( Throwable t )
-                {
-                    result.setFailure( t );
-                }
-            }
-            else
-            {
-                Throwable error = future.cause();
-                try
-                {
-                    action.accept( null, error );
-                }
-                catch ( Throwable t )
-                {
-                    error.addSuppressed( t );
-                }
-                result.setFailure( error );
+                Thread.currentThread().interrupt();
             }
         }
     }

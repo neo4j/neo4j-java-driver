@@ -18,8 +18,9 @@
  */
 package org.neo4j.driver.internal.spi;
 
+import java.util.concurrent.CompletionStage;
+
 import org.neo4j.driver.internal.async.AsyncConnection;
-import org.neo4j.driver.internal.async.InternalFuture;
 import org.neo4j.driver.v1.AccessMode;
 
 /**
@@ -36,5 +37,5 @@ public interface ConnectionProvider extends AutoCloseable
      */
     PooledConnection acquireConnection( AccessMode mode );
 
-    InternalFuture<AsyncConnection> acquireAsyncConnection( AccessMode mode );
+    CompletionStage<AsyncConnection> acquireAsyncConnection( AccessMode mode );
 }

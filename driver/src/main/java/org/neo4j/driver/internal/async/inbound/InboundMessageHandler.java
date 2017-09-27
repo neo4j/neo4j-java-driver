@@ -56,8 +56,14 @@ public class InboundMessageHandler extends SimpleChannelInboundHandler<ByteBuf>
     protected void channelRead0( ChannelHandlerContext ctx, ByteBuf msg ) throws IOException
     {
         input.start( msg );
-        reader.read( messageDispatcher );
-        input.stop();
+        try
+        {
+            reader.read( messageDispatcher );
+        }
+        finally
+        {
+            input.stop();
+        }
     }
 
     @Override

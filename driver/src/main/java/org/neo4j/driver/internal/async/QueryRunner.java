@@ -19,6 +19,8 @@
 package org.neo4j.driver.internal.async;
 
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.ExplicitTransaction;
 import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
@@ -28,7 +30,6 @@ import org.neo4j.driver.internal.handlers.TransactionPullAllResponseHandler;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementResultCursor;
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.util.Function;
 
 import static org.neo4j.driver.v1.Values.ofValue;
 
@@ -38,33 +39,27 @@ public final class QueryRunner
     {
     }
 
-    public static InternalFuture<StatementResultCursor> runAsync( AsyncConnection connection, Statement statement )
+    public static CompletionStage<StatementResultCursor> runAsync( AsyncConnection connection, Statement statement )
     {
         return runAsync( connection, statement, null );
     }
 
-    public static InternalFuture<StatementResultCursor> runAsync( final AsyncConnection connection, Statement statement,
+    public static CompletionStage<StatementResultCursor> runAsync( AsyncConnection connection, Statement statement,
             ExplicitTransaction tx )
     {
         String query = statement.text();
         Map<String,Value> params = statement.parameters().asMap( ofValue() );
 
-        InternalPromise<Void> runCompletedPromise = connection.newPromise();
-        final RunResponseHandler runHandler = new RunResponseHandler( runCompletedPromise, tx );
-        final PullAllResponseHandler pullAllHandler = newPullAllHandler( statement, runHandler, connection, tx );
+        CompletableFuture<Void> runCompletedFuture = new CompletableFuture<>();
+        RunResponseHandler runHandler = new RunResponseHandler( runCompletedFuture, tx );
+        PullAllResponseHandler pullAllHandler = newPullAllHandler( statement, runHandler, connection, tx );
 
         connection.run( query, params, runHandler );
         connection.pullAll( pullAllHandler );
         connection.flush();
 
-        return runCompletedPromise.thenApply( new Function<Void,StatementResultCursor>()
-        {
-            @Override
-            public StatementResultCursor apply( Void ignore )
-            {
-                return new InternalStatementResultCursor( connection, runHandler, pullAllHandler );
-            }
-        } );
+        return runCompletedFuture.thenApply( ignore ->
+                new InternalStatementResultCursor( runHandler, pullAllHandler ) );
     }
 
     private static PullAllResponseHandler newPullAllHandler( Statement statement, RunResponseHandler runHandler,

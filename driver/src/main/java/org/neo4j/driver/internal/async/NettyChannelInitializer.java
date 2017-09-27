@@ -25,7 +25,6 @@ import io.netty.handler.ssl.SslHandler;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLException;
 
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.net.BoltServerAddress;
@@ -67,13 +66,13 @@ public class NettyChannelInitializer extends ChannelInitializer<Channel>
         channelPoolHandler.channelCreated( channel );
     }
 
-    private SslHandler createSslHandler() throws SSLException
+    private SslHandler createSslHandler()
     {
         SSLEngine sslEngine = createSslEngine();
         return new SslHandler( sslEngine );
     }
 
-    private SSLEngine createSslEngine() throws SSLException
+    private SSLEngine createSslEngine()
     {
         SSLContext sslContext = securityPlan.sslContext();
         SSLEngine sslEngine = sslContext.createSSLEngine( address.host(), address.port() );

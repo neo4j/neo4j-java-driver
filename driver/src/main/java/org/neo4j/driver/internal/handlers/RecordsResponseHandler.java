@@ -18,8 +18,6 @@
  */
 package org.neo4j.driver.internal.handlers;
 
-import io.netty.util.concurrent.Promise;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -45,7 +43,6 @@ public class RecordsResponseHandler implements ResponseHandler
     private final RunResponseHandler runResponseHandler;
 
     private final Queue<Record> recordBuffer;
-    private Promise<Boolean> recordAvailablePromise;
 
     private StatementType statementType;
     private SummaryCounters counters;
@@ -73,37 +70,18 @@ public class RecordsResponseHandler implements ResponseHandler
         resultConsumedAfter = extractResultConsumedAfter( metadata );
 
         completed = true;
-
-        if ( recordAvailablePromise != null )
-        {
-            boolean hasMoreRecords = !recordBuffer.isEmpty();
-            recordAvailablePromise.setSuccess( hasMoreRecords );
-            recordAvailablePromise = null;
-        }
     }
 
     @Override
     public void onFailure( Throwable error )
     {
         completed = true;
-
-        if ( recordAvailablePromise != null )
-        {
-            recordAvailablePromise.setFailure( error );
-            recordAvailablePromise = null;
-        }
     }
 
     @Override
     public void onRecord( Value[] fields )
     {
         recordBuffer.add( new InternalRecord( runResponseHandler.statementKeys(), fields ) );
-
-        if ( recordAvailablePromise != null )
-        {
-            recordAvailablePromise.setSuccess( true );
-            recordAvailablePromise = null;
-        }
     }
 
     public Queue<Record> recordBuffer()

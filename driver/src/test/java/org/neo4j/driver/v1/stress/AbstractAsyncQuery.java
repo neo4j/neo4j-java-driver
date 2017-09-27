@@ -16,22 +16,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.async;
+package org.neo4j.driver.v1.stress;
 
-import io.netty.util.concurrent.EventExecutor;
-import io.netty.util.concurrent.Future;
+import org.neo4j.driver.v1.AccessMode;
+import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.Session;
 
-import org.neo4j.driver.internal.util.BiConsumer;
-import org.neo4j.driver.v1.Response;
-import org.neo4j.driver.v1.util.Function;
-
-public interface InternalFuture<T> extends Future<T>, Response<T>
+public abstract class AbstractAsyncQuery<C extends AbstractContext> implements AsyncCommand<C>
 {
-    EventExecutor eventExecutor();
+    protected final Driver driver;
+    protected final boolean useBookmark;
 
-    <U> InternalFuture<U> thenApply( Function<T,U> fn );
+    public AbstractAsyncQuery( Driver driver, boolean useBookmark )
+    {
+        this.driver = driver;
+        this.useBookmark = useBookmark;
+    }
 
-    <U> InternalFuture<U> thenCompose( Function<T,InternalFuture<U>> fn );
-
-    InternalFuture<T> whenComplete( BiConsumer<T,Throwable> action );
+    public Session newSession( AccessMode mode, C context )
+    {
+        if ( useBookmark )
+        {
+            return driver.session( mode, context.getBookmark() );
+        }
+        return driver.session( mode );
+    }
 }

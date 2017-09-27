@@ -60,8 +60,14 @@ public class OutboundMessageHandler extends MessageToMessageEncoder<Message>
 
         ByteBuf messageBuf = ctx.alloc().ioBuffer();
         output.start( messageBuf );
-        writer.write( msg );
-        output.stop();
+        try
+        {
+            writer.write( msg );
+        }
+        finally
+        {
+            output.stop();
+        }
 
         out.add( messageBuf );
         out.add( messageBoundary() );

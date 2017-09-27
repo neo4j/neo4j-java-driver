@@ -28,11 +28,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.driver.internal.util.Consumer;
 import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.Response;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementResult;
@@ -62,6 +61,7 @@ import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.internal.util.Matchers.containsResultAvailableAfterAndResultConsumedAfter;
+import static org.neo4j.driver.internal.util.Matchers.syntaxError;
 import static org.neo4j.driver.internal.util.ServerVersion.v3_1_0;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.util.TestUtil.await;
@@ -224,7 +224,7 @@ public class TransactionAsyncIT
         }
         catch ( Exception e )
         {
-            assertSyntaxError( e );
+            assertThat( e, is( syntaxError( "Unexpected end of input" ) ) );
         }
 
         try
@@ -250,7 +250,7 @@ public class TransactionAsyncIT
         }
         catch ( Exception e )
         {
-            assertSyntaxError( e );
+            assertThat( e, is( syntaxError( "Unexpected end of input" ) ) );
         }
 
         assertThat( await( tx.rollbackAsync() ), is( nullValue() ) );
@@ -278,7 +278,7 @@ public class TransactionAsyncIT
         }
         catch ( Exception e )
         {
-            assertSyntaxError( e );
+            assertThat( e, is( syntaxError( "Unexpected end of input" ) ) );
         }
 
         try
@@ -314,7 +314,7 @@ public class TransactionAsyncIT
         }
         catch ( Exception e )
         {
-            assertSyntaxError( e );
+            assertThat( e, is( syntaxError( "Unexpected end of input" ) ) );
         }
 
         assertThat( await( tx.rollbackAsync() ), is( nullValue() ) );
@@ -332,7 +332,7 @@ public class TransactionAsyncIT
         }
         catch ( Exception e )
         {
-            assertSyntaxError( e );
+            assertThat( e, is( syntaxError( "Unexpected end of input" ) ) );
         }
 
         try
@@ -374,9 +374,9 @@ public class TransactionAsyncIT
         tx.runAsync( "CREATE ()" );
         assertNull( await( tx.commitAsync() ) );
 
-        Response<Void> secondCommit = tx.commitAsync();
+        CompletionStage<Void> secondCommit = tx.commitAsync();
         // second commit should return a completed future
-        assertTrue( secondCommit.isDone() );
+        assertTrue( secondCommit.toCompletableFuture().isDone() );
         assertNull( await( secondCommit ) );
     }
 
@@ -387,9 +387,9 @@ public class TransactionAsyncIT
         tx.runAsync( "CREATE ()" );
         assertNull( await( tx.rollbackAsync() ) );
 
-        Response<Void> secondRollback = tx.rollbackAsync();
+        CompletionStage<Void> secondRollback = tx.rollbackAsync();
         // second rollback should return a completed future
-        assertTrue( secondRollback.isDone() );
+        assertTrue( secondRollback.toCompletableFuture().isDone() );
         assertNull( await( secondRollback ) );
     }
 
@@ -524,7 +524,6 @@ public class TransactionAsyncIT
         // asserting on profile is a bit fragile and can break when server side changes or with different
         // server versions; that is why do fuzzy assertions in this test based on string content
         String profileAsString = summary.profile().toString();
-        System.out.println( profileAsString );
         assertThat( profileAsString, containsString( "DbHits" ) );
         assertEquals( 0, summary.notifications().size() );
         assertThat( summary, containsResultAvailableAfterAndResultConsumedAfter() );
@@ -610,14 +609,7 @@ public class TransactionAsyncIT
         StatementResultCursor cursor = await( tx.runAsync( query ) );
 
         final AtomicInteger recordsSeen = new AtomicInteger();
-        Response<Void> forEachDone = cursor.forEachAsync( new Consumer<Record>()
-        {
-            @Override
-            public void accept( Record record )
-            {
-                recordsSeen.incrementAndGet();
-            }
-        } );
+        CompletionStage<Void> forEachDone = cursor.forEachAsync( record -> recordsSeen.incrementAndGet() );
 
         assertNull( await( forEachDone ) );
         assertEquals( expectedSeenRecords, recordsSeen.get() );
@@ -634,12 +626,5 @@ public class TransactionAsyncIT
             actualList.add( record.get( 0 ).asObject() );
         }
         assertEquals( expectedList, actualList );
-    }
-
-    private static void assertSyntaxError( Exception e )
-    {
-        assertThat( e, instanceOf( ClientException.class ) );
-        assertThat( ((ClientException) e).code(), containsString( "SyntaxError" ) );
-        assertThat( e.getMessage(), startsWith( "Unexpected end of input" ) );
     }
 }

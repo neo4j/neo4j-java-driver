@@ -160,7 +160,7 @@ public class AsyncConnectionPoolImplTest
     public void shouldNotCloseWhenClosed()
     {
         assertNull( await( pool.closeAsync() ) );
-        assertTrue( pool.closeAsync().isDone() );
+        assertTrue( pool.closeAsync().toCompletableFuture().isDone() );
     }
 
     private AsyncConnectionPoolImpl newPool() throws Exception

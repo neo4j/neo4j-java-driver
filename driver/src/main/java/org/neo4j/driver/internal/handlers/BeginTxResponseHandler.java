@@ -18,10 +18,9 @@
  */
 package org.neo4j.driver.internal.handlers;
 
-import io.netty.util.concurrent.Promise;
-
 import java.util.Arrays;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Transaction;
@@ -31,25 +30,25 @@ import static java.util.Objects.requireNonNull;
 
 public class BeginTxResponseHandler<T extends Transaction> implements ResponseHandler
 {
-    private final Promise<T> beginTxPromise;
+    private final CompletableFuture<T> beginTxPromise;
     private final T tx;
 
-    public BeginTxResponseHandler( Promise<T> beginTxPromise, T tx )
+    public BeginTxResponseHandler( CompletableFuture<T> beginFuture, T tx )
     {
-        this.beginTxPromise = requireNonNull( beginTxPromise );
+        this.beginTxPromise = requireNonNull( beginFuture );
         this.tx = requireNonNull( tx );
     }
 
     @Override
     public void onSuccess( Map<String,Value> metadata )
     {
-        beginTxPromise.setSuccess( tx );
+        beginTxPromise.complete( tx );
     }
 
     @Override
     public void onFailure( Throwable error )
     {
-        beginTxPromise.setFailure( error );
+        beginTxPromise.completeExceptionally( error );
     }
 
     @Override

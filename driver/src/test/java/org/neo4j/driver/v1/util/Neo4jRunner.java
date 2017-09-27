@@ -94,7 +94,7 @@ public class Neo4jRunner
         }
     }
 
-    public void ensureRunning( Neo4jSettings neo4jSettings ) throws IOException, InterruptedException
+    public void ensureRunning( Neo4jSettings neo4jSettings )
     {
         ServerStatus status = serverStatus();
         switch( status )
@@ -156,7 +156,7 @@ public class Neo4jRunner
         updateServerSettingsFile();
     }
 
-    public void startNeo4j() throws IOException
+    public void startNeo4j()
     {
         debug( "Starting server..." );
         executeCommand( "neoctrl-create-user", HOME_DIR, USER, PASSWORD );
@@ -164,7 +164,7 @@ public class Neo4jRunner
         debug( "Server started." );
     }
 
-    public synchronized void stopNeo4j() throws IOException
+    public synchronized void stopNeo4j()
     {
         if( serverStatus() == ServerStatus.OFFLINE )
         {
@@ -177,7 +177,7 @@ public class Neo4jRunner
         debug( "Server stopped." );
     }
 
-    public void killNeo4j() throws IOException
+    public void killNeo4j()
     {
         if ( serverStatus() == ServerStatus.OFFLINE )
         {
@@ -190,7 +190,7 @@ public class Neo4jRunner
         debug( "Server killed." );
     }
 
-    public void forceToRestart() throws IOException
+    public void forceToRestart()
     {
         stopNeo4j();
         startNeo4j();
@@ -198,9 +198,8 @@ public class Neo4jRunner
 
     /**
      * Restart the server with default testing server configuration
-     * @throws IOException
      */
-    public void restartNeo4j() throws IOException
+    public void restartNeo4j()
     {
         restartNeo4j( Neo4jSettings.TEST_SETTINGS );
     }
@@ -208,9 +207,8 @@ public class Neo4jRunner
     /**
      * Will only restart the server if any configuration changes happens
      * @param neo4jSettings
-     * @throws IOException
      */
-    public void restartNeo4j( Neo4jSettings neo4jSettings ) throws IOException
+    public void restartNeo4j( Neo4jSettings neo4jSettings )
     {
         if( updateServerSettings( neo4jSettings ) ) // needs to update server setting files
         {

@@ -18,10 +18,9 @@
  */
 package org.neo4j.driver.internal.handlers;
 
-import io.netty.util.concurrent.Promise;
-
 import java.util.Arrays;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.driver.internal.Bookmark;
 import org.neo4j.driver.internal.ExplicitTransaction;
@@ -32,12 +31,12 @@ import static java.util.Objects.requireNonNull;
 
 public class CommitTxResponseHandler implements ResponseHandler
 {
-    private final Promise<Void> commitTxPromise;
+    private final CompletableFuture<Void> commitFuture;
     private final ExplicitTransaction tx;
 
-    public CommitTxResponseHandler( Promise<Void> commitTxPromise, ExplicitTransaction tx )
+    public CommitTxResponseHandler( CompletableFuture<Void> commitFuture, ExplicitTransaction tx )
     {
-        this.commitTxPromise = requireNonNull( commitTxPromise );
+        this.commitFuture = requireNonNull( commitFuture );
         this.tx = requireNonNull( tx );
     }
 
@@ -53,13 +52,13 @@ public class CommitTxResponseHandler implements ResponseHandler
             }
         }
 
-        commitTxPromise.setSuccess( null );
+        commitFuture.complete( null );
     }
 
     @Override
     public void onFailure( Throwable error )
     {
-        commitTxPromise.setFailure( error );
+        commitFuture.completeExceptionally( error );
     }
 
     @Override

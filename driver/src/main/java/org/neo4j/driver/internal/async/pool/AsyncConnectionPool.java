@@ -18,15 +18,14 @@
  */
 package org.neo4j.driver.internal.async.pool;
 
-import io.netty.util.concurrent.Future;
+import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.async.AsyncConnection;
-import org.neo4j.driver.internal.async.InternalFuture;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 
 public interface AsyncConnectionPool
 {
-    InternalFuture<AsyncConnection> acquire( BoltServerAddress address );
+    CompletionStage<AsyncConnection> acquire( BoltServerAddress address );
 
     void purge( BoltServerAddress address );
 
@@ -34,5 +33,5 @@ public interface AsyncConnectionPool
 
     int activeConnections( BoltServerAddress address );
 
-    Future<?> closeAsync();
+    CompletionStage<?> closeAsync();
 }

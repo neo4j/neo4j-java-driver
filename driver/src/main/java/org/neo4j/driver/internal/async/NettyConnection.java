@@ -20,8 +20,10 @@ package org.neo4j.driver.internal.async;
 
 import io.netty.channel.Channel;
 import io.netty.channel.pool.ChannelPool;
+import io.netty.util.concurrent.Promise;
 
 import java.util.Map;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
@@ -35,9 +37,11 @@ import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.summary.ServerInfo;
 
+import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.neo4j.driver.internal.async.ChannelAttributes.address;
 import static org.neo4j.driver.internal.async.ChannelAttributes.messageDispatcher;
 import static org.neo4j.driver.internal.async.ChannelAttributes.serverVersion;
+import static org.neo4j.driver.internal.async.Futures.asCompletionStage;
 
 // todo: keep state flags to prohibit interaction with released connections
 public class NettyConnection implements AsyncConnection
@@ -104,12 +108,6 @@ public class NettyConnection implements AsyncConnection
     }
 
     @Override
-    public <T> InternalPromise<T> newPromise()
-    {
-        return new InternalPromise<>( channel.eventLoop() );
-    }
-
-    @Override
     public void release()
     {
         if ( state.release() )
@@ -119,20 +117,18 @@ public class NettyConnection implements AsyncConnection
     }
 
     @Override
-    public InternalFuture<Void> forceRelease()
+    public CompletionStage<Void> forceRelease()
     {
-        InternalPromise<Void> releasePromise = newPromise();
-
         if ( state.forceRelease() )
         {
+            Promise<Void> releasePromise = channel.eventLoop().newPromise();
             write( ResetMessage.RESET, new ReleaseChannelHandler( channel, channelPool, clock, releasePromise ), true );
+            return asCompletionStage( releasePromise );
         }
         else
         {
-            releasePromise.setSuccess( null );
+            return completedFuture( null );
         }
-
-        return releasePromise;
     }
 
     @Override

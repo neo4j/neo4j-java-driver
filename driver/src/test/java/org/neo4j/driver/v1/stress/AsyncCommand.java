@@ -16,9 +16,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.util;
+package org.neo4j.driver.v1.stress;
 
-public interface BiConsumer<T, U>
+import java.util.concurrent.CompletionStage;
+
+public interface AsyncCommand<C extends AbstractContext>
 {
-    void accept( T t, U u );
+    CompletionStage<Void> execute( C context );
 }

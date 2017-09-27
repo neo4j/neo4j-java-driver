@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.v1;
 
+import java.util.concurrent.CompletionStage;
+
 import org.neo4j.driver.v1.util.Resource;
 
 /**
@@ -79,7 +81,7 @@ public interface Transaction extends Resource, StatementRunner
     @Override
     void close();
 
-    Response<Void> commitAsync();
+    CompletionStage<Void> commitAsync();
 
-    Response<Void> rollbackAsync();
+    CompletionStage<Void> rollbackAsync();
 }

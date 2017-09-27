@@ -18,27 +18,22 @@
  */
 package org.neo4j.driver.v1.integration;
 
-import io.netty.util.concurrent.GlobalEventExecutor;
-import io.netty.util.concurrent.Promise;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.driver.internal.async.InternalPromise;
-import org.neo4j.driver.internal.util.Consumer;
 import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.Response;
-import org.neo4j.driver.v1.ResponseListener;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementResultCursor;
@@ -58,7 +53,7 @@ import org.neo4j.driver.v1.util.TestNeo4j;
 import static java.util.Collections.emptyIterator;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.startsWith;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -67,7 +62,9 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.driver.internal.util.Iterables.single;
+import static org.neo4j.driver.internal.util.Matchers.arithmeticError;
 import static org.neo4j.driver.internal.util.Matchers.containsResultAvailableAfterAndResultConsumedAfter;
+import static org.neo4j.driver.internal.util.Matchers.syntaxError;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 import static org.neo4j.driver.v1.util.TestUtil.awaitAll;
@@ -143,7 +140,7 @@ public class SessionAsyncIT
         }
         catch ( Exception e )
         {
-            assertSyntaxError( e );
+            assertThat( e, is( syntaxError( "Unexpected end of input" ) ) );
         }
     }
 
@@ -167,7 +164,7 @@ public class SessionAsyncIT
         }
         catch ( Exception e )
         {
-            assertArithmeticError( e );
+            assertThat( e, is( arithmeticError() ) );
         }
     }
 
@@ -210,8 +207,8 @@ public class SessionAsyncIT
         StatementResultCursor cursor =
                 await( session.runAsync( "UNWIND [1, 2, 3] AS x CREATE (p:Person {id: x}) RETURN p" ) );
 
-        Future<List<Future<Record>>> queriesExecuted = runNestedQueries( cursor );
-        List<Future<Record>> futures = await( queriesExecuted );
+        Future<List<CompletionStage<Record>>> queriesExecuted = runNestedQueries( cursor );
+        List<CompletionStage<Record>> futures = await( queriesExecuted );
 
         List<Record> futureResults = awaitAll( futures );
         assertEquals( 7, futureResults.size() );
@@ -240,16 +237,16 @@ public class SessionAsyncIT
     }
 
     @Test
-    public void shouldAllowMultipleAsyncRunsWithoutConsumingResults() throws InterruptedException
+    public void shouldAllowMultipleAsyncRunsWithoutConsumingResults()
     {
         int queryCount = 13;
-        List<Future<StatementResultCursor>> cursors = new ArrayList<>();
+        List<CompletionStage<StatementResultCursor>> cursors = new ArrayList<>();
         for ( int i = 0; i < queryCount; i++ )
         {
             cursors.add( session.runAsync( "CREATE (:Person)" ) );
         }
 
-        List<Future<Record>> records = new ArrayList<>();
+        List<CompletionStage<Record>> records = new ArrayList<>();
         for ( StatementResultCursor cursor : awaitAll( cursors ) )
         {
             records.add( cursor.nextAsync() );
@@ -361,9 +358,9 @@ public class SessionAsyncIT
     public void shouldRunAsyncTransactionWithoutRetries()
     {
         InvocationTrackingWork work = new InvocationTrackingWork( "CREATE (:Apa) RETURN 42" );
-        Response<Record> txResponse = session.writeTransactionAsync( work );
+        CompletionStage<Record> txStage = session.writeTransactionAsync( work );
 
-        Record record = await( txResponse );
+        Record record = await( txStage );
         assertNotNull( record );
         assertEquals( 42L, record.get( 0 ).asLong() );
 
@@ -379,9 +376,9 @@ public class SessionAsyncIT
                 new SessionExpiredException( "Ah!" ),
                 new TransientException( "Code", "Message" ) );
 
-        Response<Record> txResponse = session.writeTransactionAsync( work );
+        CompletionStage<Record> txStage = session.writeTransactionAsync( work );
 
-        Record record = await( txResponse );
+        Record record = await( txStage );
         assertNotNull( record );
         assertEquals( 24L, record.get( 0 ).asLong() );
 
@@ -396,9 +393,9 @@ public class SessionAsyncIT
                 new TransientException( "Oh!", "Deadlock!" ),
                 new ServiceUnavailableException( "Oh! Network Failure" ) );
 
-        Response<Record> txResponse = session.writeTransactionAsync( work );
+        CompletionStage<Record> txStage = session.writeTransactionAsync( work );
 
-        Record record = await( txResponse );
+        Record record = await( txStage );
         assertNotNull( record );
         assertEquals( 12L, record.get( 0 ).asLong() );
 
@@ -410,11 +407,11 @@ public class SessionAsyncIT
     public void shouldRunAsyncTransactionThatCanNotBeRetried()
     {
         InvocationTrackingWork work = new InvocationTrackingWork( "UNWIND [10, 5, 0] AS x CREATE (:Hi) RETURN 10/x" );
-        Response<Record> txResponse = session.writeTransactionAsync( work );
+        CompletionStage<Record> txStage = session.writeTransactionAsync( work );
 
         try
         {
-            await( txResponse );
+            await( txStage );
             fail( "Exception expected" );
         }
         catch ( Exception e )
@@ -434,11 +431,11 @@ public class SessionAsyncIT
         InvocationTrackingWork work = new InvocationTrackingWork( "CREATE (:Person) RETURN 1" )
                 .withSyncFailures( new TransientException( "Oh!", "Deadlock!" ) )
                 .withAsyncFailures( new DatabaseException( "Oh!", "OutOfMemory!" ) );
-        Response<Record> txResponse = session.writeTransactionAsync( work );
+        CompletionStage<Record> txStage = session.writeTransactionAsync( work );
 
         try
         {
-            await( txResponse );
+            await( txStage );
             fail( "Exception expected" );
         }
         catch ( Exception e )
@@ -483,7 +480,7 @@ public class SessionAsyncIT
     @Test
     public void shouldForEachWithNonEmptyCursor()
     {
-        testForEach( "UNWIND range(1, 10000) AS x RETURN x", 10000 );
+        testForEach( "UNWIND range(1, 100000) AS x RETURN x", 100000 );
     }
 
     @Test
@@ -499,65 +496,57 @@ public class SessionAsyncIT
                 Arrays.asList( 1L, 11L, 21L, 31L, 41L, 51L, 61L, 71L, 81L, 91L ) );
     }
 
-    private Future<List<Future<Record>>> runNestedQueries( StatementResultCursor inputCursor )
+    private Future<List<CompletionStage<Record>>> runNestedQueries( StatementResultCursor inputCursor )
     {
-        Promise<List<Future<Record>>> resultPromise = GlobalEventExecutor.INSTANCE.newPromise();
-        runNestedQueries( inputCursor, new ArrayList<Future<Record>>(), resultPromise );
-        return resultPromise;
+        CompletableFuture<List<CompletionStage<Record>>> resultFuture = new CompletableFuture<>();
+        runNestedQueries( inputCursor, new ArrayList<>(), resultFuture );
+        return resultFuture;
     }
 
-    private void runNestedQueries( final StatementResultCursor inputCursor, final List<Future<Record>> futures,
-            final Promise<List<Future<Record>>> resultPromise )
+    private void runNestedQueries( StatementResultCursor inputCursor, List<CompletionStage<Record>> stages,
+            CompletableFuture<List<CompletionStage<Record>>> resultFuture )
     {
-        final Response<Record> recordResponse = inputCursor.nextAsync();
-        futures.add( recordResponse );
+        final CompletionStage<Record> recordResponse = inputCursor.nextAsync();
+        stages.add( recordResponse );
 
-        recordResponse.addListener( new ResponseListener<Record>()
+        recordResponse.whenComplete( ( record, error ) ->
         {
-            @Override
-            public void operationCompleted( Record record, Throwable error )
+            if ( error != null )
             {
-                if ( error != null )
-                {
-                    resultPromise.setFailure( error );
-                }
-                else if ( record != null )
-                {
-                    runNestedQuery( inputCursor, record, futures, resultPromise );
-                }
-                else
-                {
-                    resultPromise.setSuccess( futures );
-                }
+                resultFuture.completeExceptionally( error );
+            }
+            else if ( record != null )
+            {
+                runNestedQuery( inputCursor, record, stages, resultFuture );
+            }
+            else
+            {
+                resultFuture.complete( stages );
             }
         } );
     }
 
-    private void runNestedQuery( final StatementResultCursor inputCursor, Record record,
-            final List<Future<Record>> futures, final Promise<List<Future<Record>>> resultPromise )
+    private void runNestedQuery( StatementResultCursor inputCursor, Record record,
+            List<CompletionStage<Record>> stages, CompletableFuture<List<CompletionStage<Record>>> resultFuture )
     {
         Node node = record.get( 0 ).asNode();
         long id = node.get( "id" ).asLong();
         long age = id * 10;
 
-        Response<StatementResultCursor> response =
+        CompletionStage<StatementResultCursor> response =
                 session.runAsync( "MATCH (p:Person {id: $id}) SET p.age = $age RETURN p",
                 parameters( "id", id, "age", age ) );
 
-        response.addListener( new ResponseListener<StatementResultCursor>()
+        response.whenComplete( ( cursor, error ) ->
         {
-            @Override
-            public void operationCompleted( StatementResultCursor cursor, Throwable error )
+            if ( error != null )
             {
-                if ( error != null )
-                {
-                    resultPromise.setFailure( error );
-                }
-                else
-                {
-                    futures.add( cursor.nextAsync() );
-                    runNestedQueries( inputCursor, futures, resultPromise );
-                }
+                resultFuture.completeExceptionally( error );
+            }
+            else
+            {
+                stages.add( cursor.nextAsync() );
+                runNestedQueries( inputCursor, stages, resultFuture );
             }
         } );
     }
@@ -572,14 +561,7 @@ public class SessionAsyncIT
         StatementResultCursor cursor = await( session.runAsync( query ) );
 
         final AtomicInteger recordsSeen = new AtomicInteger();
-        Response<Void> forEachDone = cursor.forEachAsync( new Consumer<Record>()
-        {
-            @Override
-            public void accept( Record record )
-            {
-                recordsSeen.incrementAndGet();
-            }
-        } );
+        CompletionStage<Void> forEachDone = cursor.forEachAsync( record -> recordsSeen.incrementAndGet() );
 
         assertNull( await( forEachDone ) );
         assertEquals( expectedSeenRecords, recordsSeen.get() );
@@ -597,53 +579,7 @@ public class SessionAsyncIT
         assertEquals( expectedList, actualList );
     }
 
-    private static void assertSyntaxError( Exception e )
-    {
-        assertThat( e, instanceOf( ClientException.class ) );
-        assertThat( ((ClientException) e).code(), containsString( "SyntaxError" ) );
-        assertThat( e.getMessage(), startsWith( "Unexpected end of input" ) );
-    }
-
-    private static void assertArithmeticError( Exception e )
-    {
-        assertThat( e, instanceOf( ClientException.class ) );
-        assertThat( ((ClientException) e).code(), containsString( "ArithmeticError" ) );
-    }
-
-    private static class KillDbListener implements ResponseListener<Record>
-    {
-        final TestNeo4j neo4j;
-        volatile boolean shouldKillDb = true;
-
-        KillDbListener( TestNeo4j neo4j )
-        {
-            this.neo4j = neo4j;
-        }
-
-        @Override
-        public void operationCompleted( Record record, Throwable error )
-        {
-            if ( shouldKillDb )
-            {
-                killDb();
-                shouldKillDb = false;
-            }
-        }
-
-        void killDb()
-        {
-            try
-            {
-                neo4j.killDb();
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
-            }
-        }
-    }
-
-    private static class InvocationTrackingWork implements TransactionWork<Response<Record>>
+    private static class InvocationTrackingWork implements TransactionWork<CompletionStage<Record>>
     {
         final String query;
         final AtomicInteger invocationCount;
@@ -675,7 +611,7 @@ public class SessionAsyncIT
         }
 
         @Override
-        public Response<Record> execute( Transaction tx )
+        public CompletionStage<Record> execute( Transaction tx )
         {
             invocationCount.incrementAndGet();
 
@@ -684,61 +620,48 @@ public class SessionAsyncIT
                 throw syncFailures.next();
             }
 
-            final InternalPromise<Record> resultPromise = new InternalPromise<>( GlobalEventExecutor.INSTANCE );
+            CompletableFuture<Record> resultFuture = new CompletableFuture<>();
 
-            tx.runAsync( query ).addListener( new ResponseListener<StatementResultCursor>()
-            {
-                @Override
-                public void operationCompleted( final StatementResultCursor cursor, Throwable error )
-                {
-                    processQueryResult( cursor, error, resultPromise );
-                }
-            } );
+            tx.runAsync( query ).whenComplete( ( cursor, error ) ->
+                    processQueryResult( cursor, error, resultFuture ) );
 
-            return resultPromise;
+            return resultFuture;
         }
 
-        private void processQueryResult( final StatementResultCursor cursor, final Throwable error,
-                final InternalPromise<Record> resultPromise )
+        private void processQueryResult( StatementResultCursor cursor, Throwable error,
+                CompletableFuture<Record> resultFuture )
         {
             if ( error != null )
             {
-                resultPromise.setFailure( error );
+                resultFuture.completeExceptionally( error );
                 return;
             }
 
-            cursor.nextAsync().addListener( new ResponseListener<Record>()
-            {
-                @Override
-                public void operationCompleted( Record record, Throwable error )
-                {
-                    processFetchResult( record, error, resultPromise, cursor );
-                }
-            } );
+            cursor.nextAsync().whenComplete( ( record, fetchError ) ->
+                    processFetchResult( record, fetchError, resultFuture ) );
         }
 
-        private void processFetchResult( Record record, Throwable error,
-                InternalPromise<Record> resultPromise, StatementResultCursor cursor )
+        private void processFetchResult( Record record, Throwable error, CompletableFuture<Record> resultFuture )
         {
             if ( error != null )
             {
-                resultPromise.setFailure( error );
+                resultFuture.completeExceptionally( error );
                 return;
             }
 
             if ( record == null )
             {
-                resultPromise.setFailure( new AssertionError( "Record not available" ) );
+                resultFuture.completeExceptionally( new AssertionError( "Record not available" ) );
                 return;
             }
 
             if ( asyncFailures.hasNext() )
             {
-                resultPromise.setFailure( asyncFailures.next() );
+                resultFuture.completeExceptionally( asyncFailures.next() );
             }
             else
             {
-                resultPromise.setSuccess( record );
+                resultFuture.complete( record );
             }
         }
     }

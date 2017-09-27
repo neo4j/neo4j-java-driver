@@ -5,6 +5,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+      <java.version>1.8</java.version>
   </properties>
 
   <groupId>org.neo4j.driver</groupId>
@@ -125,8 +126,8 @@
         <artifactId>maven-compiler-plugin</artifactId>
         <version>2.3.2</version>
         <configuration>
-          <source>1.7</source>
-          <target>1.7</target>
+            <source>${java.version}</source>
+            <target>${java.version}</target>
         </configuration>
       </plugin>
       <plugin>
@@ -156,7 +157,7 @@
             <script>hljs.initHighlightingOnLoad();</script>
           ]]></top>
           <!-- Required for Java 8u121 or later. See https://github.com/neo4j/neo4j-java-driver/pull/318  -->
-          <!--<additionalparam>&#45;&#45;allow-script-in-comments</additionalparam>-->
+          <additionalparam>--allow-script-in-comments</additionalparam>
         </configuration>
         <executions>
           <execution>

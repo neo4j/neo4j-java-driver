@@ -16,11 +16,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1;
+package org.neo4j.driver.v1.stress;
 
-import java.util.concurrent.Future;
-
-public interface Response<T> extends Future<T>
+public interface BlockingCommand<C extends AbstractContext>
 {
-    void addListener( ResponseListener<T> listener );
+    void execute( C context );
 }
