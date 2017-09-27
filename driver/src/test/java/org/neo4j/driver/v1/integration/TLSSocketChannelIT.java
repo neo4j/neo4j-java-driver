@@ -124,7 +124,7 @@ public class TLSSocketChannelIT
             sslChannel.close();
 
             // Then
-            verify( logger, atLeastOnce() ).debug( "~~ [OPENING SECURE CHANNEL]" );
+            verify( logger, atLeastOnce() ).debug( "Running TLS handshake" );
         }
         finally
         {
@@ -290,7 +290,7 @@ public class TLSSocketChannelIT
         sslChannel.close();
 
         // Then
-        verify( logger, atLeastOnce() ).debug( "~~ [OPENING SECURE CHANNEL]" );
+        verify( logger, atLeastOnce() ).debug( "Running TLS handshake" );
     }
 
     @Test
@@ -357,7 +357,7 @@ public class TLSSocketChannelIT
         sslChannel.close();
 
         // Then
-        verify( logger, atLeastOnce() ).debug( "~~ [CLOSED SECURE CHANNEL]" );
+        verify( logger, atLeastOnce() ).debug( "Closed secure channel" );
     }
 
     private File installRootCertificate() throws Exception

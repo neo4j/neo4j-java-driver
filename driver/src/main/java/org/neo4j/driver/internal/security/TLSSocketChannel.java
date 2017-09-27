@@ -121,7 +121,8 @@ public class TLSSocketChannel implements ByteChannel
      */
     private void runHandshake() throws IOException
     {
-        logger.debug( "~~ [OPENING SECURE CHANNEL]" );
+        logger.debug( "Running TLS handshake" );
+
         sslEngine.beginHandshake();
         HandshakeStatus handshakeStatus = sslEngine.getHandshakeStatus();
         while ( handshakeStatus != FINISHED && handshakeStatus != NOT_HANDSHAKING )
@@ -142,6 +143,8 @@ public class TLSSocketChannel implements ByteChannel
                 break;
             }
         }
+
+        logger.debug( "TLS handshake completed" );
     }
 
     private HandshakeStatus runDelegatedTasks()
@@ -423,7 +426,7 @@ public class TLSSocketChannel implements ByteChannel
             }
             // Close transport
             channel.close();
-            logger.debug( "~~ [CLOSED SECURE CHANNEL]" );
+            logger.debug( "Closed secure channel" );
         }
         catch ( IOException e )
         {

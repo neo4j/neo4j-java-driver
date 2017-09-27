@@ -120,12 +120,17 @@ public class SocketClient
     {
         try
         {
-            logger.debug( "~~ [CONNECT] %s", address );
+            logger.debug( "Connecting to %s, secure: %s", address, securityPlan.requiresEncryption() );
             if( channel == null )
             {
                 setChannel( ChannelFactory.create( address, securityPlan, timeoutMillis, logger ) );
+                logger.debug( "Connected to %s, secure: %s", address, securityPlan.requiresEncryption() );
             }
-            setProtocol( negotiateProtocol() );
+
+            logger.debug( "Negotiating protocol with %s", address );
+            SocketProtocol protocol = negotiateProtocol();
+            setProtocol( protocol );
+            logger.debug( "Selected protocol %s with %s", protocol.getClass(), address );
         }
         catch ( ConnectException e )
         {
@@ -206,7 +211,7 @@ public class SocketClient
             {
                 channel.close();
                 setChannel( null );
-                logger.debug( "~~ [DISCONNECT]" );
+                logger.debug( "Disconnected from %s", address );
             }
         }
         catch ( IOException e )
