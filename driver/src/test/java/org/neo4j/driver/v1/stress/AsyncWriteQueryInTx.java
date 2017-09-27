@@ -29,12 +29,12 @@ import static org.junit.Assert.assertEquals;
 
 public class AsyncWriteQueryInTx<C extends AbstractContext> extends AbstractAsyncQuery<C>
 {
-    private AbstractStressIT<C> abstractStressIT;
+    private AbstractStressTestBase<C> stressTest;
 
-    public AsyncWriteQueryInTx( AbstractStressIT<C> abstractStressIT, Driver driver, boolean useBookmark )
+    public AsyncWriteQueryInTx( AbstractStressTestBase<C> stressTest, Driver driver, boolean useBookmark )
     {
         super( driver, useBookmark );
-        this.abstractStressIT = abstractStressIT;
+        this.stressTest = stressTest;
     }
 
     @Override
@@ -62,7 +62,7 @@ public class AsyncWriteQueryInTx<C extends AbstractContext> extends AbstractAsyn
     {
         if ( error != null )
         {
-            if ( !abstractStressIT.handleWriteFailure( error, context ) )
+            if ( !stressTest.handleWriteFailure( error, context ) )
             {
                 throw new RuntimeException( error );
             }

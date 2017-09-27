@@ -49,7 +49,7 @@ import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.driver.v1.util.cc.ClusterMember.SIMPLE_SCHEME;
 
-public class CausalClusteringStressIT extends AbstractStressIT<CausalClusteringStressIT.Context>
+public class CausalClusteringStressIT extends AbstractStressTestBase<CausalClusteringStressIT.Context>
 {
     @Rule
     public final LocalOrRemoteClusterRule clusterRule = new LocalOrRemoteClusterRule();

@@ -33,7 +33,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
-public class SingleInstanceStressIT extends AbstractStressIT<SingleInstanceStressIT.Context>
+public class SingleInstanceStressIT extends AbstractStressTestBase<SingleInstanceStressIT.Context>
 {
     @Rule
     public final TestNeo4j neo4j = new TestNeo4j();

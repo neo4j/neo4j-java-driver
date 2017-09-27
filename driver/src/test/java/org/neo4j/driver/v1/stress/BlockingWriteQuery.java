@@ -27,12 +27,12 @@ import static org.junit.Assert.assertEquals;
 
 public class BlockingWriteQuery<C extends AbstractContext> extends AbstractBlockingQuery<C>
 {
-    private AbstractStressIT<C> abstractStressIT;
+    private AbstractStressTestBase<C> stressTest;
 
-    public BlockingWriteQuery( AbstractStressIT<C> abstractStressIT, Driver driver, boolean useBookmark )
+    public BlockingWriteQuery( AbstractStressTestBase<C> stressTest, Driver driver, boolean useBookmark )
     {
         super( driver, useBookmark );
-        this.abstractStressIT = abstractStressIT;
+        this.stressTest = stressTest;
     }
 
     @Override
@@ -46,7 +46,7 @@ public class BlockingWriteQuery<C extends AbstractContext> extends AbstractBlock
         }
         catch ( Throwable error )
         {
-            if ( !abstractStressIT.handleWriteFailure( error, context ) )
+            if ( !stressTest.handleWriteFailure( error, context ) )
             {
                 throw error;
             }
