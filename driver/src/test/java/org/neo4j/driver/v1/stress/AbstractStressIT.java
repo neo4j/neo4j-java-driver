@@ -62,7 +62,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assume.assumeTrue;
 
-abstract class AbstractStressIT<C extends AbstractContext>
+public abstract class AbstractStressIT<C extends AbstractContext>
 {
     private static final int THREAD_COUNT = Integer.getInteger( "threadCount", 8 );
     private static final int ASYNC_BATCH_SIZE = Integer.getInteger( "asyncBatchSize", 10 );
