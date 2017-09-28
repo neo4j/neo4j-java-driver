@@ -21,6 +21,7 @@ package org.neo4j.driver.v1;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.neo4j.driver.v1.summary.ResultSummary;
 
@@ -44,4 +45,6 @@ public interface StatementResultCursor
     CompletionStage<ResultSummary> forEachAsync( Consumer<Record> action );
 
     CompletionStage<List<Record>> listAsync();
+
+    <T> CompletionStage<List<T>> listAsync( Function<Record,T> mapFunction );
 }

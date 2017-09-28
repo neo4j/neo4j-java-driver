@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
@@ -117,8 +118,14 @@ public class InternalStatementResultCursor implements StatementResultCursor
     @Override
     public CompletionStage<List<Record>> listAsync()
     {
-        CompletableFuture<List<Record>> resultFuture = new CompletableFuture<>();
-        internalListAsync( new ArrayList<>(), resultFuture );
+        return listAsync( Function.identity() );
+    }
+
+    @Override
+    public <T> CompletionStage<List<T>> listAsync( Function<Record,T> mapFunction )
+    {
+        CompletableFuture<List<T>> resultFuture = new CompletableFuture<>();
+        internalListAsync( new ArrayList<>(), resultFuture, mapFunction );
         return resultFuture;
     }
 
@@ -136,7 +143,15 @@ public class InternalStatementResultCursor implements StatementResultCursor
             }
             else if ( record != null )
             {
-                action.accept( record );
+                try
+                {
+                    action.accept( record );
+                }
+                catch ( Throwable actionError )
+                {
+                    resultFuture.completeExceptionally( actionError );
+                    return;
+                }
                 internalForEachAsync( action, resultFuture );
             }
             else
@@ -146,7 +161,8 @@ public class InternalStatementResultCursor implements StatementResultCursor
         } );
     }
 
-    private void internalListAsync( List<Record> records, CompletableFuture<List<Record>> resultFuture )
+    private <T> void internalListAsync( List<T> result, CompletableFuture<List<T>> resultFuture,
+            Function<Record,T> mapFunction )
     {
         CompletionStage<Record> recordFuture = nextAsync();
 
@@ -160,12 +176,22 @@ public class InternalStatementResultCursor implements StatementResultCursor
             }
             else if ( record != null )
             {
-                records.add( record );
-                internalListAsync( records, resultFuture );
+                T value;
+                try
+                {
+                    value = mapFunction.apply( record );
+                }
+                catch ( Throwable mapError )
+                {
+                    resultFuture.completeExceptionally( mapError );
+                    return;
+                }
+                result.add( value );
+                internalListAsync( result, resultFuture, mapFunction );
             }
             else
             {
-                resultFuture.complete( records );
+                resultFuture.complete( result );
             }
         } );
     }

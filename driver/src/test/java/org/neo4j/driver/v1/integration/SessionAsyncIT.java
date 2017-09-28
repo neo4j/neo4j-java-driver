@@ -22,13 +22,17 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
+import org.junit.rules.Timeout;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -74,8 +78,10 @@ import static org.neo4j.driver.v1.util.TestUtil.awaitAll;
 
 public class SessionAsyncIT
 {
+    private final TestNeo4j neo4j = new TestNeo4j();
+
     @Rule
-    public final TestNeo4j neo4j = new TestNeo4j();
+    public final RuleChain ruleChain = RuleChain.outerRule( Timeout.seconds( 20 ) ).around( neo4j );
 
     private Session session;
 
@@ -486,6 +492,26 @@ public class SessionAsyncIT
     }
 
     @Test
+    public void shouldFailForEachWhenActionFails()
+    {
+        StatementResultCursor cursor = await( session.runAsync( "RETURN 42" ) );
+        IOException error = new IOException( "Hi" );
+
+        try
+        {
+            await( cursor.forEachAsync( record ->
+            {
+                throw new CompletionException( error );
+            } ) );
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertEquals( error, e );
+        }
+    }
+
+    @Test
     public void shouldConvertToListWithEmptyCursor()
     {
         testList( "MATCH (n:NoSuchLabel) RETURN n", Collections.emptyList() );
@@ -496,6 +522,42 @@ public class SessionAsyncIT
     {
         testList( "UNWIND range(1, 100, 10) AS x RETURN x",
                 Arrays.asList( 1L, 11L, 21L, 31L, 41L, 51L, 61L, 71L, 81L, 91L ) );
+    }
+
+    @Test
+    public void shouldConvertToTransformedListWithEmptyCursor()
+    {
+        StatementResultCursor cursor = await( session.runAsync( "CREATE ()" ) );
+        List<String> strings = await( cursor.listAsync( record -> "Hi!" ) );
+        assertEquals( 0, strings.size() );
+    }
+
+    @Test
+    public void shouldConvertToTransformedListWithNonEmptyCursor()
+    {
+        StatementResultCursor cursor = await( session.runAsync( "UNWIND [1,2,3] AS x RETURN x" ) );
+        List<Integer> ints = await( cursor.listAsync( record -> record.get( 0 ).asInt() + 1 ) );
+        assertEquals( Arrays.asList( 2, 3, 4 ), ints );
+    }
+
+    @Test
+    public void shouldFailWhenListTransformationFunctionFails()
+    {
+        StatementResultCursor cursor = await( session.runAsync( "RETURN 42" ) );
+        RuntimeException error = new RuntimeException( "Hi!" );
+
+        try
+        {
+            await( cursor.listAsync( record ->
+            {
+                throw error;
+            } ) );
+            fail( "Exception expected" );
+        }
+        catch ( RuntimeException e )
+        {
+            assertEquals( error, e );
+        }
     }
 
     @Test

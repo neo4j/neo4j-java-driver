@@ -22,11 +22,16 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
+import org.junit.rules.Timeout;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -69,8 +74,10 @@ import static org.neo4j.driver.v1.util.TestUtil.await;
 
 public class TransactionAsyncIT
 {
+    private final TestNeo4j neo4j = new TestNeo4j();
+
     @Rule
-    public final TestNeo4j neo4j = new TestNeo4j();
+    public final RuleChain ruleChain = RuleChain.outerRule( Timeout.seconds( 60 ) ).around( neo4j );
 
     private Session session;
 
@@ -567,6 +574,27 @@ public class TransactionAsyncIT
     }
 
     @Test
+    public void shouldFailForEachWhenActionFails()
+    {
+        Transaction tx = await( session.beginTransactionAsync() );
+        StatementResultCursor cursor = await( tx.runAsync( "RETURN 'Hi!'" ) );
+        RuntimeException error = new RuntimeException();
+
+        try
+        {
+            await( cursor.forEachAsync( record ->
+            {
+                throw error;
+            } ) );
+            fail( "Exception expected" );
+        }
+        catch ( RuntimeException e )
+        {
+            assertEquals( error, e );
+        }
+    }
+
+    @Test
     public void shouldConvertToListWithEmptyCursor()
     {
         testList( "CREATE (:Person)-[:KNOWS]->(:Person)", Collections.emptyList() );
@@ -576,6 +604,45 @@ public class TransactionAsyncIT
     public void shouldConvertToListWithNonEmptyCursor()
     {
         testList( "UNWIND [1, '1', 2, '2', 3, '3'] AS x RETURN x", Arrays.asList( 1L, "1", 2L, "2", 3L, "3" ) );
+    }
+
+    @Test
+    public void shouldConvertToTransformedListWithEmptyCursor()
+    {
+        Transaction tx = await( session.beginTransactionAsync() );
+        StatementResultCursor cursor = await( tx.runAsync( "CREATE ()" ) );
+        List<Map<String,Object>> maps = await( cursor.listAsync( record -> record.get( 0 ).asMap() ) );
+        assertEquals( 0, maps.size() );
+    }
+
+    @Test
+    public void shouldConvertToTransformedListWithNonEmptyCursor()
+    {
+        Transaction tx = await( session.beginTransactionAsync() );
+        StatementResultCursor cursor = await( tx.runAsync( "UNWIND ['a', 'b', 'c'] AS x RETURN x" ) );
+        List<String> strings = await( cursor.listAsync( record -> record.get( 0 ).asString() + "!" ) );
+        assertEquals( Arrays.asList( "a!", "b!", "c!" ), strings );
+    }
+
+    @Test
+    public void shouldFailWhenListTransformationFunctionFails()
+    {
+        Transaction tx = await( session.beginTransactionAsync() );
+        StatementResultCursor cursor = await( tx.runAsync( "RETURN 'Hello'" ) );
+        IOException error = new IOException( "World" );
+
+        try
+        {
+            await( cursor.listAsync( record ->
+            {
+                throw new CompletionException( error );
+            } ) );
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertEquals( error, e );
+        }
     }
 
     @Test
