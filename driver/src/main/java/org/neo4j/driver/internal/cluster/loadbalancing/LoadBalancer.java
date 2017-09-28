@@ -19,10 +19,14 @@
 package org.neo4j.driver.internal.cluster.loadbalancing;
 
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.RoutingErrorHandler;
 import org.neo4j.driver.internal.async.AsyncConnection;
+import org.neo4j.driver.internal.async.Futures;
+import org.neo4j.driver.internal.async.RoutingAsyncConnection;
+import org.neo4j.driver.internal.async.pool.AsyncConnectionPool;
 import org.neo4j.driver.internal.cluster.AddressSet;
 import org.neo4j.driver.internal.cluster.ClusterComposition;
 import org.neo4j.driver.internal.cluster.ClusterCompositionProvider;
@@ -44,48 +48,60 @@ import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 
+import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.neo4j.driver.internal.async.Futures.failedFuture;
+
 public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, AutoCloseable
 {
     private static final String LOAD_BALANCER_LOG_NAME = "LoadBalancer";
 
     private final ConnectionPool connections;
+    private final AsyncConnectionPool asyncConnectionPool;
     private final RoutingTable routingTable;
     private final Rediscovery rediscovery;
     private final LoadBalancingStrategy loadBalancingStrategy;
     private final Logger log;
 
+    private CompletableFuture<RoutingTable> refreshRoutingTableFuture;
+
     public LoadBalancer( BoltServerAddress initialRouter, RoutingSettings settings, ConnectionPool connections,
-            Clock clock, Logging logging, LoadBalancingStrategy loadBalancingStrategy )
+            AsyncConnectionPool asyncConnectionPool, Clock clock, Logging logging,
+            LoadBalancingStrategy loadBalancingStrategy )
     {
-        this( connections, new ClusterRoutingTable( clock, initialRouter ),
+        this( connections, asyncConnectionPool, new ClusterRoutingTable( clock, initialRouter ),
                 createRediscovery( initialRouter, settings, clock, logging ), loadBalancerLogger( logging ),
                 loadBalancingStrategy );
     }
 
     // Used only in testing
-    public LoadBalancer( ConnectionPool connections, RoutingTable routingTable, Rediscovery rediscovery,
-            Logging logging )
+    public LoadBalancer( ConnectionPool connections, AsyncConnectionPool asyncConnectionPool,
+            RoutingTable routingTable, Rediscovery rediscovery, Logging logging )
     {
-        this( connections, routingTable, rediscovery, loadBalancerLogger( logging ),
-                new LeastConnectedLoadBalancingStrategy( connections, logging ) );
+        this( connections, asyncConnectionPool, routingTable, rediscovery, loadBalancerLogger( logging ),
+                new LeastConnectedLoadBalancingStrategy( connections, asyncConnectionPool, logging ) );
     }
 
-    private LoadBalancer( ConnectionPool connections, RoutingTable routingTable, Rediscovery rediscovery, Logger log,
+    private LoadBalancer( ConnectionPool connections, AsyncConnectionPool asyncConnectionPool,
+            RoutingTable routingTable, Rediscovery rediscovery, Logger log,
             LoadBalancingStrategy loadBalancingStrategy )
     {
         this.connections = connections;
+        this.asyncConnectionPool = asyncConnectionPool;
         this.routingTable = routingTable;
         this.rediscovery = rediscovery;
         this.loadBalancingStrategy = loadBalancingStrategy;
         this.log = log;
 
-        refreshRoutingTable();
+        if ( connections != null )
+        {
+            refreshRoutingTable();
+        }
     }
 
     @Override
     public PooledConnection acquireConnection( AccessMode mode )
     {
-        AddressSet addressSet = addressSetFor( mode );
+        AddressSet addressSet = addressSet( mode, routingTable );
         PooledConnection connection = acquireConnection( mode, addressSet );
         return new RoutingPooledConnection( connection, this, mode );
     }
@@ -93,7 +109,22 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
     @Override
     public CompletionStage<AsyncConnection> acquireAsyncConnection( AccessMode mode )
     {
-        throw new UnsupportedOperationException();
+        return freshRoutingTable( mode ).thenCompose( routingTable ->
+        {
+            AddressSet addressSet = addressSet( mode, routingTable );
+            BoltServerAddress address = selectAddressAsync( mode, addressSet );
+
+            // todo: loop like in sync version until we get a successful connection
+
+            if ( address == null )
+            {
+                return failedFuture( new SessionExpiredException(
+                        "Failed to obtain connection towards " + mode + " server. " +
+                        "Known routing table is: " + routingTable ) );
+            }
+
+            return asyncConnectionPool.acquire( address );
+        } ).thenApply( connection -> new RoutingAsyncConnection( connection, mode, this ) );
     }
 
     @Override
@@ -112,6 +143,7 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
     public void close() throws Exception
     {
         connections.close();
+        Futures.getBlocking( asyncConnectionPool.closeAsync() );
     }
 
     private PooledConnection acquireConnection( AccessMode mode, AddressSet servers )
@@ -139,6 +171,7 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
         routingTable.forget( address );
         // drop all current connections to the address
         connections.purge( address );
+        asyncConnectionPool.purge( address );
     }
 
     synchronized void ensureRouting( AccessMode mode )
@@ -165,7 +198,67 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
         log.info( "Refreshed routing information. %s", routingTable );
     }
 
-    private AddressSet addressSetFor( AccessMode mode )
+    private synchronized CompletionStage<RoutingTable> freshRoutingTable( AccessMode mode )
+    {
+        if ( refreshRoutingTableFuture != null )
+        {
+            // refresh is already happening concurrently, just use it's result
+            return refreshRoutingTableFuture;
+        }
+        else if ( routingTable.isStaleFor( mode ) )
+        {
+            // existing routing table is not fresh and should be updated
+            log.info( "Routing information is stale. %s", routingTable );
+
+            CompletableFuture<RoutingTable> resultFuture = new CompletableFuture<>();
+            refreshRoutingTableFuture = resultFuture;
+
+            rediscovery.lookupClusterCompositionAsync( routingTable, asyncConnectionPool )
+                    .whenComplete( ( composition, error ) ->
+                    {
+                        if ( error != null )
+                        {
+                            clusterCompositionLookupFailed( error );
+                        }
+                        else
+                        {
+                            freshClusterCompositionFetched( composition );
+                        }
+                    } );
+
+            return resultFuture;
+        }
+        else
+        {
+            // existing routing table is fresh, use it
+            return completedFuture( routingTable );
+        }
+    }
+
+    private synchronized void freshClusterCompositionFetched( ClusterComposition composition )
+    {
+        Set<BoltServerAddress> removed = routingTable.update( composition );
+
+        for ( BoltServerAddress address : removed )
+        {
+            asyncConnectionPool.purge( address );
+        }
+
+        log.info( "Refreshed routing information. %s", routingTable );
+
+        CompletableFuture<RoutingTable> routingTableFuture = refreshRoutingTableFuture;
+        refreshRoutingTableFuture = null;
+        routingTableFuture.complete( routingTable );
+    }
+
+    private synchronized void clusterCompositionLookupFailed( Throwable error )
+    {
+        CompletableFuture<RoutingTable> routingTableFuture = refreshRoutingTableFuture;
+        refreshRoutingTableFuture = null;
+        routingTableFuture.completeExceptionally( error );
+    }
+
+    private static AddressSet addressSet( AccessMode mode, RoutingTable routingTable )
     {
         switch ( mode )
         {
@@ -188,6 +281,21 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
             return loadBalancingStrategy.selectReader( addresses );
         case WRITE:
             return loadBalancingStrategy.selectWriter( addresses );
+        default:
+            throw unknownMode( mode );
+        }
+    }
+
+    private BoltServerAddress selectAddressAsync( AccessMode mode, AddressSet servers )
+    {
+        BoltServerAddress[] addresses = servers.toArray();
+
+        switch ( mode )
+        {
+        case READ:
+            return loadBalancingStrategy.selectReaderAsync( addresses );
+        case WRITE:
+            return loadBalancingStrategy.selectWriterAsync( addresses );
         default:
             throw unknownMode( mode );
         }

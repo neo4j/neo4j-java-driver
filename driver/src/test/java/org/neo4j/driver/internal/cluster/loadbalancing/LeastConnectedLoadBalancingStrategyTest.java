@@ -22,6 +22,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 
+import org.neo4j.driver.internal.async.pool.AsyncConnectionPool;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.v1.Logger;
@@ -44,13 +45,15 @@ public class LeastConnectedLoadBalancingStrategyTest
 {
     @Mock
     private ConnectionPool connectionPool;
+    @Mock
+    private AsyncConnectionPool asyncConnectionPool;
     private LeastConnectedLoadBalancingStrategy strategy;
 
     @Before
     public void setUp() throws Exception
     {
         initMocks( this );
-        strategy = new LeastConnectedLoadBalancingStrategy( connectionPool, DEV_NULL_LOGGING );
+        strategy = new LeastConnectedLoadBalancingStrategy( connectionPool, asyncConnectionPool, DEV_NULL_LOGGING );
     }
 
     @Test
@@ -166,7 +169,8 @@ public class LeastConnectedLoadBalancingStrategyTest
         Logger logger = mock( Logger.class );
         when( logging.getLog( anyString() ) ).thenReturn( logger );
 
-        LoadBalancingStrategy strategy = new LeastConnectedLoadBalancingStrategy( connectionPool, logging );
+        LoadBalancingStrategy strategy = new LeastConnectedLoadBalancingStrategy( connectionPool, asyncConnectionPool,
+                logging );
 
         strategy.selectReader( new BoltServerAddress[0] );
         strategy.selectWriter( new BoltServerAddress[0] );
@@ -184,7 +188,8 @@ public class LeastConnectedLoadBalancingStrategyTest
 
         when( connectionPool.activeConnections( any( BoltServerAddress.class ) ) ).thenReturn( 42 );
 
-        LoadBalancingStrategy strategy = new LeastConnectedLoadBalancingStrategy( connectionPool, logging );
+        LoadBalancingStrategy strategy = new LeastConnectedLoadBalancingStrategy( connectionPool, asyncConnectionPool,
+                logging );
 
         strategy.selectReader( new BoltServerAddress[]{A} );
         strategy.selectWriter( new BoltServerAddress[]{A} );

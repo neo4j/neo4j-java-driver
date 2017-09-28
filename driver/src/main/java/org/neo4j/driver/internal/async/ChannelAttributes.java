@@ -23,29 +23,40 @@ import io.netty.util.AttributeKey;
 
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.util.ServerVersion;
 
 import static io.netty.util.AttributeKey.newInstance;
 
 public final class ChannelAttributes
 {
-    private static final AttributeKey<BoltServerAddress> ADDRESS = newInstance( "address" );
+    private static final AttributeKey<BoltServerAddress> ADDRESS = newInstance( "serverAddress" );
+    private static final AttributeKey<ServerVersion> SERVER_VERSION = newInstance( "serverVersion" );
     private static final AttributeKey<Long> CREATION_TIMESTAMP = newInstance( "creationTimestamp" );
     private static final AttributeKey<Long> LAST_USED_TIMESTAMP = newInstance( "lastUsedTimestamp" );
     private static final AttributeKey<InboundMessageDispatcher> MESSAGE_DISPATCHER = newInstance( "messageDispatcher" );
-    private static final AttributeKey<String> SERVER_VERSION = newInstance( "serverVersion" );
 
     private ChannelAttributes()
     {
     }
 
-    public static BoltServerAddress address( Channel channel )
+    public static BoltServerAddress serverAddress( Channel channel )
     {
         return get( channel, ADDRESS );
     }
 
-    public static void setAddress( Channel channel, BoltServerAddress address )
+    public static void setServerAddress( Channel channel, BoltServerAddress address )
     {
         setOnce( channel, ADDRESS, address );
+    }
+
+    public static ServerVersion serverVersion( Channel channel )
+    {
+        return get( channel, SERVER_VERSION );
+    }
+
+    public static void setServerVersion( Channel channel, ServerVersion version )
+    {
+        setOnce( channel, SERVER_VERSION, version );
     }
 
     public static long creationTimestamp( Channel channel )
@@ -76,16 +87,6 @@ public final class ChannelAttributes
     public static void setMessageDispatcher( Channel channel, InboundMessageDispatcher messageDispatcher )
     {
         setOnce( channel, MESSAGE_DISPATCHER, messageDispatcher );
-    }
-
-    public static String serverVersion( Channel channel )
-    {
-        return get( channel, SERVER_VERSION );
-    }
-
-    public static void setServerVersion( Channel channel, String serverVersion )
-    {
-        setOnce( channel, SERVER_VERSION, serverVersion );
     }
 
     private static <T> T get( Channel channel, AttributeKey<T> key )

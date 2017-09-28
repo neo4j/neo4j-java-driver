@@ -50,6 +50,7 @@ import static org.neo4j.driver.internal.async.Futures.getBlocking;
 import static org.neo4j.driver.internal.cluster.RoutingProcedureRunner.GET_ROUTING_TABLE;
 import static org.neo4j.driver.internal.cluster.RoutingProcedureRunner.GET_ROUTING_TABLE_PARAM;
 import static org.neo4j.driver.internal.cluster.RoutingProcedureRunner.GET_SERVERS;
+import static org.neo4j.driver.internal.util.ServerVersion.version;
 import static org.neo4j.driver.v1.Values.parameters;
 
 public class RoutingProcedureRunnerTest
@@ -186,8 +187,8 @@ public class RoutingProcedureRunnerTest
     private static CompletionStage<AsyncConnection> connectionStage( String serverVersion )
     {
         AsyncConnection connection = mock( AsyncConnection.class );
-        InternalServerInfo serverInfo = new InternalServerInfo( new BoltServerAddress( "123:45" ), serverVersion );
-        when( connection.serverInfo() ).thenReturn( serverInfo );
+        when( connection.serverAddress() ).thenReturn( new BoltServerAddress( "123:45" ) );
+        when( connection.serverVersion() ).thenReturn( version( serverVersion ) );
         return completedFuture( connection );
     }
 

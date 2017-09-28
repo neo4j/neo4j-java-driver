@@ -31,9 +31,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 
+import org.neo4j.driver.internal.async.pool.AsyncConnectionPool;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.cluster.loadbalancing.LeastConnectedLoadBalancingStrategy;
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
+import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancingStrategy;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.retry.FixedRetryLogic;
 import org.neo4j.driver.internal.retry.RetryLogic;
@@ -360,8 +362,11 @@ public class RoutingDriverTest
     {
         Logging logging = DEV_NULL_LOGGING;
         RoutingSettings settings = new RoutingSettings( 10, 5_000, null );
-        ConnectionProvider connectionProvider = new LoadBalancer( SEED, settings, pool, clock, logging,
-                new LeastConnectedLoadBalancingStrategy( pool, logging ) );
+        AsyncConnectionPool asyncConnectionPool = mock( AsyncConnectionPool.class );
+        LoadBalancingStrategy loadBalancingStrategy = new LeastConnectedLoadBalancingStrategy( pool,
+                asyncConnectionPool, logging );
+        ConnectionProvider connectionProvider = new LoadBalancer( SEED, settings, pool, asyncConnectionPool, clock,
+                logging, loadBalancingStrategy );
         Config config = Config.build().withLogging( logging ).toConfig();
         SessionFactory sessionFactory = new NetworkSessionWithAddressFactory( connectionProvider, config );
         return new InternalDriver( insecure(), sessionFactory, logging );

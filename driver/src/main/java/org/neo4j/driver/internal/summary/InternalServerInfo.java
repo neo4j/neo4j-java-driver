@@ -20,12 +20,18 @@
 package org.neo4j.driver.internal.summary;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.summary.ServerInfo;
 
 public class InternalServerInfo implements ServerInfo
 {
     private final BoltServerAddress address;
     private final String version;
+
+    public InternalServerInfo( BoltServerAddress address, ServerVersion version )
+    {
+        this( address, version.toString() );
+    }
 
     public InternalServerInfo( BoltServerAddress address, String version )
     {

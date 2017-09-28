@@ -29,7 +29,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.driver.internal.async.ChannelAttributes.setAddress;
+import static org.neo4j.driver.internal.async.ChannelAttributes.setServerAddress;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
@@ -138,7 +138,7 @@ public class ActiveChannelTrackerTest
     private Channel newChannel()
     {
         EmbeddedChannel channel = new EmbeddedChannel();
-        setAddress( channel, address );
+        setServerAddress( channel, address );
         return channel;
     }
 }

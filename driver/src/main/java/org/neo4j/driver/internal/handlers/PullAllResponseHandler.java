@@ -33,6 +33,7 @@ import org.neo4j.driver.internal.summary.InternalNotification;
 import org.neo4j.driver.internal.summary.InternalPlan;
 import org.neo4j.driver.internal.summary.InternalProfiledPlan;
 import org.neo4j.driver.internal.summary.InternalResultSummary;
+import org.neo4j.driver.internal.summary.InternalServerInfo;
 import org.neo4j.driver.internal.summary.InternalSummaryCounters;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
@@ -204,7 +205,9 @@ public abstract class PullAllResponseHandler implements ResponseHandler
 
     private ResultSummary extractResultSummary( Map<String,Value> metadata )
     {
-        return new InternalResultSummary( statement, connection.serverInfo(), extractStatementType( metadata ),
+        InternalServerInfo serverInfo = new InternalServerInfo( connection.serverAddress(),
+                connection.serverVersion() );
+        return new InternalResultSummary( statement, serverInfo, extractStatementType( metadata ),
                 extractCounters( metadata ), extractPlan( metadata ), extractProfiledPlan( metadata ),
                 extractNotifications( metadata ), runResponseHandler.resultAvailableAfter(),
                 extractResultConsumedAfter( metadata ) );

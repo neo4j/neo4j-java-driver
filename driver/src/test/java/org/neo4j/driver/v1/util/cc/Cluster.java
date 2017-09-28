@@ -30,16 +30,17 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.util.Consumer;
+import org.neo4j.driver.internal.util.DriverFactoryWithOneEventLoopThread;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
-import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 
 import static java.util.Collections.unmodifiableSet;
+import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.v1.Config.TrustStrategy.trustAllCertificates;
 
@@ -318,13 +319,13 @@ public class Cluster
 
     private static List<Record> findClusterOverview( Session session )
     {
-        StatementResult result = session.run( "call dbms.cluster.overview" );
+        StatementResult result = session.run( "CALL dbms.cluster.overview()" );
         return result.list();
     }
 
     private static boolean isCoreMember( Session session )
     {
-        Record record = single( session.run( "call dbms.cluster.role" ).list() );
+        Record record = single( session.run( "call dbms.cluster.role()" ).list() );
         ClusterMemberRole role = extractRole( record );
         return role != ClusterMemberRole.READ_REPLICA;
     }
@@ -412,15 +413,18 @@ public class Cluster
 
     private static Driver createDriver( URI boltUri, String password )
     {
-        return GraphDatabase.driver( boltUri, AuthTokens.basic( ADMIN_USER, password ), driverConfig() );
+        DriverFactoryWithOneEventLoopThread factory = new DriverFactoryWithOneEventLoopThread();
+        return factory.newInstance( boltUri, AuthTokens.basic( ADMIN_USER, password ), driverConfig() );
     }
 
     private static Config driverConfig()
     {
         // try to build config for a very lightweight driver
         return Config.build()
+                .withLogging( DEV_NULL_LOGGING )
                 .withTrustStrategy( trustAllCertificates() )
                 .withEncryption()
+                .withMaxConnectionPoolSize( 1 )
                 .withMaxIdleConnections( 1 )
                 .withConnectionLivenessCheckTimeout( 1, TimeUnit.HOURS )
                 .toConfig();

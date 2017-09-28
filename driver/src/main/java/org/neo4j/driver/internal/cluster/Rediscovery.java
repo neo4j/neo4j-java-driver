@@ -21,7 +21,12 @@ package org.neo4j.driver.internal.cluster;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.CompletionStage;
 
+import org.neo4j.driver.internal.async.AsyncConnection;
+import org.neo4j.driver.internal.async.pool.AsyncConnectionPool;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
@@ -31,6 +36,8 @@ import org.neo4j.driver.v1.exceptions.SecurityException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
 import static java.lang.String.format;
+import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.neo4j.driver.internal.async.Futures.failedFuture;
 
 public class Rediscovery
 {
@@ -43,7 +50,7 @@ public class Rediscovery
     private final ClusterCompositionProvider provider;
     private final HostNameResolver hostNameResolver;
 
-    private boolean useInitialRouter;
+    private volatile boolean useInitialRouter;
 
     public Rediscovery( BoltServerAddress initialRouter, RoutingSettings settings, Clock clock, Logger logger,
             ClusterCompositionProvider provider, HostNameResolver hostNameResolver )
@@ -87,6 +94,31 @@ public class Rediscovery
         }
     }
 
+    public CompletionStage<ClusterComposition> lookupClusterCompositionAsync( RoutingTable routingTable,
+            AsyncConnectionPool connectionPool )
+    {
+        return lookupClusterCompositionAsync( routingTable, connectionPool, 0 );
+    }
+
+    private CompletionStage<ClusterComposition> lookupClusterCompositionAsync( RoutingTable routingTable,
+            AsyncConnectionPool connectionPool, int failures )
+    {
+        if ( failures >= settings.maxRoutingFailures() )
+        {
+            return failedFuture( new ServiceUnavailableException( NO_ROUTERS_AVAILABLE ) );
+        }
+
+        // todo: use settings.retryTimeoutDelay()?
+        return lookupAsync( routingTable, connectionPool ).thenCompose( composition ->
+        {
+            if ( composition != null )
+            {
+                return completedFuture( composition );
+            }
+            return lookupClusterCompositionAsync( routingTable, connectionPool, failures + 1 );
+        } );
+    }
+
     private ClusterComposition lookup( RoutingTable routingTable, ConnectionPool connections )
     {
         ClusterComposition composition;
@@ -109,6 +141,30 @@ public class Rediscovery
         return composition;
     }
 
+    private CompletionStage<ClusterComposition> lookupAsync( RoutingTable routingTable,
+            AsyncConnectionPool connectionPool )
+    {
+        CompletionStage<ClusterComposition> compositionStage;
+
+        if ( useInitialRouter )
+        {
+            compositionStage = lookupOnInitialRouterThenOnKnownRoutersAsync( routingTable, connectionPool );
+            useInitialRouter = false;
+        }
+        else
+        {
+            compositionStage = lookupOnKnownRoutersThenOnInitialRouterAsync( routingTable, connectionPool );
+        }
+
+        return compositionStage.whenComplete( ( composition, error ) ->
+        {
+            if ( composition != null && !composition.hasWriters() )
+            {
+                useInitialRouter = true;
+            }
+        } );
+    }
+
     private ClusterComposition lookupOnKnownRoutersThenOnInitialRouter( RoutingTable routingTable,
             ConnectionPool connections )
     {
@@ -121,6 +177,20 @@ public class Rediscovery
         return composition;
     }
 
+    private CompletionStage<ClusterComposition> lookupOnKnownRoutersThenOnInitialRouterAsync( RoutingTable routingTable,
+            AsyncConnectionPool connectionPool )
+    {
+        Set<BoltServerAddress> seenServers = new HashSet<>();
+        return lookupOnKnownRoutersAsync( routingTable, connectionPool, seenServers ).thenCompose( composition ->
+        {
+            if ( composition != null )
+            {
+                return completedFuture( composition );
+            }
+            return lookupOnInitialRouterAsync( routingTable, connectionPool, seenServers );
+        } );
+    }
+
     private ClusterComposition lookupOnInitialRouterThenOnKnownRouters( RoutingTable routingTable,
             ConnectionPool connections )
     {
@@ -131,6 +201,20 @@ public class Rediscovery
             return lookupOnKnownRouters( routingTable, connections, new HashSet<BoltServerAddress>() );
         }
         return composition;
+    }
+
+    private CompletionStage<ClusterComposition> lookupOnInitialRouterThenOnKnownRoutersAsync( RoutingTable routingTable,
+            AsyncConnectionPool connectionPool )
+    {
+        Set<BoltServerAddress> seenServers = Collections.emptySet();
+        return lookupOnInitialRouterAsync( routingTable, connectionPool, seenServers ).thenCompose( composition ->
+        {
+            if ( composition != null )
+            {
+                return completedFuture( composition );
+            }
+            return lookupOnKnownRoutersAsync( routingTable, connectionPool, new HashSet<>() );
+        } );
     }
 
     private ClusterComposition lookupOnKnownRouters( RoutingTable routingTable, ConnectionPool connections,
@@ -154,11 +238,35 @@ public class Rediscovery
         return null;
     }
 
+    private CompletionStage<ClusterComposition> lookupOnKnownRoutersAsync( RoutingTable routingTable,
+            AsyncConnectionPool connectionPool, Set<BoltServerAddress> seenServers )
+    {
+        BoltServerAddress[] addresses = routingTable.routers().toArray();
+
+        CompletableFuture<ClusterComposition> result = completedFuture( null );
+        for ( BoltServerAddress address : addresses )
+        {
+            result = result.thenCompose( composition ->
+            {
+                if ( composition != null )
+                {
+                    return completedFuture( composition );
+                }
+                else
+                {
+                    return lookupOnRouterAsync( address, routingTable, connectionPool )
+                            .whenComplete( ( ignore, error ) -> seenServers.add( address ) );
+                }
+            } );
+        }
+        return result;
+    }
+
     private ClusterComposition lookupOnInitialRouter( RoutingTable routingTable,
-            ConnectionPool connections, Set<BoltServerAddress> triedServers )
+            ConnectionPool connections, Set<BoltServerAddress> seenServers )
     {
         Set<BoltServerAddress> ips = hostNameResolver.resolve( initialRouter );
-        ips.removeAll( triedServers );
+        ips.removeAll( seenServers );
         for ( BoltServerAddress address : ips )
         {
             ClusterComposition composition = lookupOnRouter( address, routingTable, connections );
@@ -169,6 +277,27 @@ public class Rediscovery
         }
 
         return null;
+    }
+
+    private CompletionStage<ClusterComposition> lookupOnInitialRouterAsync( RoutingTable routingTable,
+            AsyncConnectionPool connectionPool, Set<BoltServerAddress> seenServers )
+    {
+        Set<BoltServerAddress> addresses = hostNameResolver.resolve( initialRouter );
+        addresses.removeAll( seenServers );
+
+        CompletableFuture<ClusterComposition> result = completedFuture( null );
+        for ( BoltServerAddress address : addresses )
+        {
+            result = result.thenCompose( composition ->
+            {
+                if ( composition != null )
+                {
+                    return completedFuture( composition );
+                }
+                return lookupOnRouterAsync( address, routingTable, connectionPool );
+            } );
+        }
+        return result;
     }
 
     private ClusterComposition lookupOnRouter( BoltServerAddress routerAddress, RoutingTable routingTable,
@@ -195,6 +324,43 @@ public class Rediscovery
         ClusterComposition cluster = response.clusterComposition();
         logger.info( "Got cluster composition %s", cluster );
         return cluster;
+    }
+
+    private CompletionStage<ClusterComposition> lookupOnRouterAsync( BoltServerAddress routerAddress,
+            RoutingTable routingTable, AsyncConnectionPool connectionPool )
+    {
+        CompletionStage<AsyncConnection> connectionStage = connectionPool.acquire( routerAddress );
+
+        return provider.getClusterComposition( connectionStage ).handle( ( response, error ) ->
+        {
+            if ( error != null )
+            {
+                return handleRoutingProcedureError( error, routingTable, routerAddress );
+            }
+            else
+            {
+                ClusterComposition cluster = response.clusterComposition();
+                logger.info( "Got cluster composition %s", cluster );
+                return cluster;
+            }
+        } );
+    }
+
+    private ClusterComposition handleRoutingProcedureError( Throwable error, RoutingTable routingTable,
+            BoltServerAddress routerAddress )
+    {
+        if ( error instanceof SecurityException )
+        {
+            // auth error happened, terminate the discovery procedure immediately
+            throw new CompletionException( error );
+        }
+        else
+        {
+            // connection turned out to be broken
+            logger.error( format( "Failed to connect to routing server '%s'.", routerAddress ), error );
+            routingTable.forget( routerAddress );
+            return null;
+        }
     }
 
     private void sleep( long millis )

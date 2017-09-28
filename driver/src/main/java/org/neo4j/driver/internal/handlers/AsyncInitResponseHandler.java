@@ -32,6 +32,7 @@ import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.Value;
 
 import static org.neo4j.driver.internal.async.ChannelAttributes.setServerVersion;
+import static org.neo4j.driver.internal.util.ServerVersion.version;
 
 public class AsyncInitResponseHandler implements ResponseHandler
 {
@@ -47,14 +48,23 @@ public class AsyncInitResponseHandler implements ResponseHandler
     @Override
     public void onSuccess( Map<String,Value> metadata )
     {
-        Value versionValue = metadata.get( "server" );
-        if ( versionValue != null )
+        try
         {
-            String serverVersion = versionValue.asString();
-            setServerVersion( channel, serverVersion );
-            updatePipelineIfNeeded( serverVersion, channel.pipeline() );
+            Value versionValue = metadata.get( "server" );
+            if ( versionValue != null )
+            {
+                String versionString = versionValue.asString();
+                ServerVersion version = version( versionString );
+                setServerVersion( channel, version );
+                updatePipelineIfNeeded( version, channel.pipeline() );
+            }
+            connectionInitializedPromise.setSuccess();
         }
-        connectionInitializedPromise.setSuccess();
+        catch ( Throwable error )
+        {
+            connectionInitializedPromise.setFailure( error );
+            throw error;
+        }
     }
 
     @Override
@@ -76,9 +86,8 @@ public class AsyncInitResponseHandler implements ResponseHandler
         throw new UnsupportedOperationException();
     }
 
-    private static void updatePipelineIfNeeded( String serverVersionString, ChannelPipeline pipeline )
+    private static void updatePipelineIfNeeded( ServerVersion serverVersion, ChannelPipeline pipeline )
     {
-        ServerVersion serverVersion = ServerVersion.version( serverVersionString );
         if ( serverVersion.lessThan( ServerVersion.v3_2_0 ) )
         {
             OutboundMessageHandler outboundHandler = pipeline.get( OutboundMessageHandler.class );

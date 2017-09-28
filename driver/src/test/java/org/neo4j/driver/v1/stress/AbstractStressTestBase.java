@@ -60,7 +60,6 @@ import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assume.assumeTrue;
 
 public abstract class AbstractStressTestBase<C extends AbstractContext>
 {
@@ -110,9 +109,6 @@ public abstract class AbstractStressTestBase<C extends AbstractContext>
     @Test
     public void asyncApiStressTest() throws Throwable
     {
-        // todo: re-enable when async is supported in routing driver
-        assumeTrue( "bolt".equalsIgnoreCase( databaseUri().getScheme() ) );
-
         runStressTest( this::launchAsyncWorkerThreads );
     }
 
