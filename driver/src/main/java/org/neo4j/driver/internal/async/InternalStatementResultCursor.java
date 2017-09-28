@@ -108,6 +108,14 @@ public class InternalStatementResultCursor implements StatementResultCursor
     }
 
     @Override
+    public CompletionStage<ResultSummary> consumeAsync()
+    {
+        return forEachAsync( record ->
+        {
+        } );
+    }
+
+    @Override
     public CompletionStage<ResultSummary> forEachAsync( Consumer<Record> action )
     {
         CompletableFuture<Void> resultFuture = new CompletableFuture<>();

@@ -634,6 +634,18 @@ public class SessionAsyncIT
         }
     }
 
+    @Test
+    public void shouldConsumeEmptyCursor()
+    {
+        testConsume( "CREATE ()" );
+    }
+
+    @Test
+    public void shouldConsumeNonEmptyCursor()
+    {
+        testConsume( "UNWIND [42, 42] AS x RETURN x" );
+    }
+
     private Future<List<CompletionStage<Record>>> runNestedQueries( StatementResultCursor inputCursor )
     {
         CompletableFuture<List<CompletionStage<Record>>> resultFuture = new CompletableFuture<>();
@@ -718,6 +730,19 @@ public class SessionAsyncIT
             actualList.add( record.get( 0 ).asObject() );
         }
         assertEquals( expectedList, actualList );
+    }
+
+    private void testConsume( String query )
+    {
+        StatementResultCursor cursor = await( session.runAsync( query ) );
+        ResultSummary summary = await( cursor.consumeAsync() );
+
+        assertNotNull( summary );
+        assertEquals( query, summary.statement().text() );
+        assertEquals( emptyMap(), summary.statement().parameters().asMap() );
+
+        // no records should be available, they should all be consumed
+        assertNull( await( cursor.nextAsync() ) );
     }
 
     private static class InvocationTrackingWork implements TransactionWork<CompletionStage<Record>>

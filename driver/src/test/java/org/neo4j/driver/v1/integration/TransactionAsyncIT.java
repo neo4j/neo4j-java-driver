@@ -743,6 +743,18 @@ public class TransactionAsyncIT
         }
     }
 
+    @Test
+    public void shouldConsumeEmptyCursor()
+    {
+        testConsume( "MATCH (n:NoSuchLabel) RETURN n" );
+    }
+
+    @Test
+    public void shouldConsumeNonEmptyCursor()
+    {
+        testConsume( "RETURN 42" );
+    }
+
     private int countNodes( Object id )
     {
         StatementResult result = session.run( "MATCH (n:Node {id: $id}) RETURN count(n)", parameters( "id", id ) );
@@ -775,5 +787,19 @@ public class TransactionAsyncIT
             actualList.add( record.get( 0 ).asObject() );
         }
         assertEquals( expectedList, actualList );
+    }
+
+    private void testConsume( String query )
+    {
+        Transaction tx = await( session.beginTransactionAsync() );
+        StatementResultCursor cursor = await( tx.runAsync( query ) );
+        ResultSummary summary = await( cursor.consumeAsync() );
+
+        assertNotNull( summary );
+        assertEquals( query, summary.statement().text() );
+        assertEquals( emptyMap(), summary.statement().parameters().asMap() );
+
+        // no records should be available, they should all be consumed
+        assertNull( await( cursor.nextAsync() ) );
     }
 }
