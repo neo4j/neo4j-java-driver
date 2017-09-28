@@ -39,6 +39,8 @@ public interface StatementResultCursor
 
     CompletionStage<Record> peekAsync();
 
+    CompletionStage<Record> singleAsync();
+
     CompletionStage<Void> forEachAsync( Consumer<Record> action );
 
     CompletionStage<List<Record>> listAsync();

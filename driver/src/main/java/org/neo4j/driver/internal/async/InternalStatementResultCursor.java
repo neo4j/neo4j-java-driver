@@ -29,6 +29,7 @@ import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.StatementResultCursor;
+import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
 import org.neo4j.driver.v1.summary.ResultSummary;
 
 import static java.util.Objects.requireNonNull;
@@ -82,6 +83,27 @@ public class InternalStatementResultCursor implements StatementResultCursor
             peekedRecordFuture = pullAllHandler.nextAsync();
         }
         return peekedRecordFuture;
+    }
+
+    @Override
+    public CompletionStage<Record> singleAsync()
+    {
+        return nextAsync().thenCompose( firstRecord ->
+        {
+            if ( firstRecord == null )
+            {
+                throw new NoSuchRecordException( "Cannot retrieve a single record, because this cursor is empty." );
+            }
+            return nextAsync().thenApply( secondRecord ->
+            {
+                if ( secondRecord != null )
+                {
+                    throw new NoSuchRecordException( "Expected cursor with a single record, but it contains " +
+                                                     "at least one more. Ensure your query returns only one record." );
+                }
+                return firstRecord;
+            } );
+        } );
     }
 
     @Override
