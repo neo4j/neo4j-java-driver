@@ -45,6 +45,7 @@ import org.neo4j.driver.v1.summary.StatementType;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
+import static java.util.Collections.emptyMap;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -686,10 +687,13 @@ public class TransactionAsyncIT
         Transaction tx = await( session.beginTransactionAsync() );
         StatementResultCursor cursor = await( tx.runAsync( query ) );
 
-        final AtomicInteger recordsSeen = new AtomicInteger();
-        CompletionStage<Void> forEachDone = cursor.forEachAsync( record -> recordsSeen.incrementAndGet() );
+        AtomicInteger recordsSeen = new AtomicInteger();
+        CompletionStage<ResultSummary> forEachDone = cursor.forEachAsync( record -> recordsSeen.incrementAndGet() );
+        ResultSummary summary = await( forEachDone );
 
-        assertNull( await( forEachDone ) );
+        assertNotNull( summary );
+        assertEquals( query, summary.statement().text() );
+        assertEquals( emptyMap(), summary.statement().parameters().asMap() );
         assertEquals( expectedSeenRecords, recordsSeen.get() );
     }
 

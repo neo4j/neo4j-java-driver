@@ -41,7 +41,7 @@ public interface StatementResultCursor
 
     CompletionStage<Record> singleAsync();
 
-    CompletionStage<Void> forEachAsync( Consumer<Record> action );
+    CompletionStage<ResultSummary> forEachAsync( Consumer<Record> action );
 
     CompletionStage<List<Record>> listAsync();
 }
