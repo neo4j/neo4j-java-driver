@@ -20,12 +20,12 @@ package org.neo4j.driver.internal.async.pool;
 
 import io.netty.channel.Channel;
 import io.netty.channel.pool.ChannelPoolHandler;
+import io.netty.util.internal.ConcurrentSet;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.internal.util.ConcurrentSet;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 

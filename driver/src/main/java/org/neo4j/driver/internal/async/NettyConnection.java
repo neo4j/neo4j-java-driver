@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal.async;
 
 import io.netty.channel.Channel;
+import io.netty.channel.EventLoop;
 import io.netty.channel.pool.ChannelPool;
 import io.netty.util.concurrent.Promise;
 
@@ -74,7 +75,6 @@ public class NettyConnection implements AsyncConnection
     {
         if ( autoReadEnabled.compareAndSet( false, true ) )
         {
-            System.out.println( "=== enableAutoRead" );
             setAutoRead( true );
         }
     }
@@ -84,27 +84,22 @@ public class NettyConnection implements AsyncConnection
     {
         if ( autoReadEnabled.compareAndSet( true, false ) )
         {
-            System.out.println( "=== disableAutoRead" );
             setAutoRead( false );
         }
     }
 
     @Override
-    public void run( String statement, Map<String,Value> parameters, ResponseHandler handler )
+    public void run( String statement, Map<String,Value> parameters, ResponseHandler runHandler,
+            ResponseHandler pullAllHandler )
     {
-        write( new RunMessage( statement, parameters ), handler, false );
+        run( statement, parameters, runHandler, pullAllHandler, false );
     }
 
     @Override
-    public void pullAll( ResponseHandler handler )
+    public void runAndFlush( String statement, Map<String,Value> parameters, ResponseHandler runHandler,
+            ResponseHandler pullAllHandler )
     {
-        write( PullAllMessage.PULL_ALL, handler, false );
-    }
-
-    @Override
-    public void flush()
-    {
-        channel.flush();
+        run( statement, parameters, runHandler, pullAllHandler, true );
     }
 
     @Override
@@ -112,7 +107,7 @@ public class NettyConnection implements AsyncConnection
     {
         if ( state.release() )
         {
-            write( ResetMessage.RESET, new ReleaseChannelHandler( channel, channelPool, clock ), true );
+            reset( new ReleaseChannelHandler( channel, channelPool, clock ) );
         }
     }
 
@@ -122,7 +117,7 @@ public class NettyConnection implements AsyncConnection
         if ( state.forceRelease() )
         {
             Promise<Void> releasePromise = channel.eventLoop().newPromise();
-            write( ResetMessage.RESET, new ReleaseChannelHandler( channel, channelPool, clock, releasePromise ), true );
+            reset( new ReleaseChannelHandler( channel, channelPool, clock, releasePromise ) );
             return asCompletionStage( releasePromise );
         }
         else
@@ -137,17 +132,69 @@ public class NettyConnection implements AsyncConnection
         return new InternalServerInfo( address( channel ), serverVersion( channel ) );
     }
 
-    private void write( Message message, ResponseHandler handler, boolean flush )
+    private void run( String statement, Map<String,Value> parameters, ResponseHandler runHandler,
+            ResponseHandler pullAllHandler, boolean flush )
     {
-        messageDispatcher.queue( handler );
-        if ( flush )
+        writeMessagesInEventLoop( new RunMessage( statement, parameters ), runHandler, PullAllMessage.PULL_ALL,
+                pullAllHandler, flush );
+    }
+
+    private void reset( ResponseHandler resetHandler )
+    {
+        writeAndFlushMessageInEventLoop( ResetMessage.RESET, resetHandler );
+    }
+
+    private void writeMessagesInEventLoop( Message message1, ResponseHandler handler1, Message message2,
+            ResponseHandler handler2, boolean flush )
+    {
+        EventLoop eventLoop = channel.eventLoop();
+
+        if ( eventLoop.inEventLoop() )
         {
-            channel.writeAndFlush( message );
+            writeMessages( message1, handler1, message2, handler2, flush );
         }
         else
         {
-            channel.write( message );
+            eventLoop.execute( () -> writeMessages( message1, handler1, message2, handler2, flush ) );
         }
+    }
+
+    private void writeAndFlushMessageInEventLoop( Message message, ResponseHandler handler )
+    {
+        EventLoop eventLoop = channel.eventLoop();
+
+        if ( eventLoop.inEventLoop() )
+        {
+            writeAndFlushMessage( message, handler );
+        }
+        else
+        {
+            eventLoop.execute( () -> writeAndFlushMessage( message, handler ) );
+        }
+    }
+
+    private void writeMessages( Message message1, ResponseHandler handler1, Message message2, ResponseHandler handler2,
+            boolean flush )
+    {
+        messageDispatcher.queue( handler1 );
+        messageDispatcher.queue( handler2 );
+
+        channel.write( message1 );
+
+        if ( flush )
+        {
+            channel.writeAndFlush( message2 );
+        }
+        else
+        {
+            channel.write( message2 );
+        }
+    }
+
+    private void writeAndFlushMessage( Message message, ResponseHandler handler )
+    {
+        messageDispatcher.queue( handler );
+        channel.writeAndFlush( message );
     }
 
     private void setAutoRead( boolean value )

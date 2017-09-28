@@ -54,9 +54,7 @@ public final class QueryRunner
         RunResponseHandler runHandler = new RunResponseHandler( runCompletedFuture, tx );
         PullAllResponseHandler pullAllHandler = newPullAllHandler( statement, runHandler, connection, tx );
 
-        connection.run( query, params, runHandler );
-        connection.pullAll( pullAllHandler );
-        connection.flush();
+        connection.runAndFlush( query, params, runHandler, pullAllHandler );
 
         return runCompletedFuture.thenApply( ignore ->
                 new InternalStatementResultCursor( runHandler, pullAllHandler ) );

@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.v1.stress;
 
+import io.netty.util.internal.ConcurrentSet;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -43,7 +44,6 @@ import java.util.logging.Level;
 
 import org.neo4j.driver.internal.logging.ConsoleLogging;
 import org.neo4j.driver.internal.logging.DevNullLogger;
-import org.neo4j.driver.internal.util.ConcurrentSet;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
