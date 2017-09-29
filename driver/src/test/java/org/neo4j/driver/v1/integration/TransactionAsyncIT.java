@@ -694,7 +694,7 @@ public class TransactionAsyncIT
         }
         catch ( NoSuchRecordException e )
         {
-            assertThat( e.getMessage(), startsWith( "Expected cursor with a single record" ) );
+            assertThat( e.getMessage(), startsWith( "Expected a cursor with a single record" ) );
         }
     }
 

@@ -99,8 +99,9 @@ public class InternalStatementResultCursor implements StatementResultCursor
             {
                 if ( secondRecord != null )
                 {
-                    throw new NoSuchRecordException( "Expected cursor with a single record, but it contains " +
-                                                     "at least one more. Ensure your query returns only one record." );
+                    throw new NoSuchRecordException( "Expected a cursor with a single record, but this cursor " +
+                                                     "contains at least one more. Ensure your query returns only " +
+                                                     "one record." );
                 }
                 return firstRecord;
             } );
