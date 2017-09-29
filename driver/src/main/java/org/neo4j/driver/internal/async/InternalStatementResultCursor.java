@@ -24,11 +24,13 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.StatementResultCursor;
+import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
 import org.neo4j.driver.v1.summary.ResultSummary;
 
 import static java.util.Objects.requireNonNull;
@@ -85,18 +87,54 @@ public class InternalStatementResultCursor implements StatementResultCursor
     }
 
     @Override
-    public CompletionStage<Void> forEachAsync( Consumer<Record> action )
+    public CompletionStage<Record> singleAsync()
+    {
+        return nextAsync().thenCompose( firstRecord ->
+        {
+            if ( firstRecord == null )
+            {
+                throw new NoSuchRecordException( "Cannot retrieve a single record, because this cursor is empty." );
+            }
+            return nextAsync().thenApply( secondRecord ->
+            {
+                if ( secondRecord != null )
+                {
+                    throw new NoSuchRecordException( "Expected a cursor with a single record, but this cursor " +
+                                                     "contains at least one more. Ensure your query returns only " +
+                                                     "one record." );
+                }
+                return firstRecord;
+            } );
+        } );
+    }
+
+    @Override
+    public CompletionStage<ResultSummary> consumeAsync()
+    {
+        return forEachAsync( record ->
+        {
+        } );
+    }
+
+    @Override
+    public CompletionStage<ResultSummary> forEachAsync( Consumer<Record> action )
     {
         CompletableFuture<Void> resultFuture = new CompletableFuture<>();
         internalForEachAsync( action, resultFuture );
-        return resultFuture;
+        return resultFuture.thenCompose( ignore -> summaryAsync() );
     }
 
     @Override
     public CompletionStage<List<Record>> listAsync()
     {
-        CompletableFuture<List<Record>> resultFuture = new CompletableFuture<>();
-        internalListAsync( new ArrayList<>(), resultFuture );
+        return listAsync( Function.identity() );
+    }
+
+    @Override
+    public <T> CompletionStage<List<T>> listAsync( Function<Record,T> mapFunction )
+    {
+        CompletableFuture<List<T>> resultFuture = new CompletableFuture<>();
+        internalListAsync( new ArrayList<>(), resultFuture, mapFunction );
         return resultFuture;
     }
 
@@ -114,7 +152,15 @@ public class InternalStatementResultCursor implements StatementResultCursor
             }
             else if ( record != null )
             {
-                action.accept( record );
+                try
+                {
+                    action.accept( record );
+                }
+                catch ( Throwable actionError )
+                {
+                    resultFuture.completeExceptionally( actionError );
+                    return;
+                }
                 internalForEachAsync( action, resultFuture );
             }
             else
@@ -124,7 +170,8 @@ public class InternalStatementResultCursor implements StatementResultCursor
         } );
     }
 
-    private void internalListAsync( List<Record> records, CompletableFuture<List<Record>> resultFuture )
+    private <T> void internalListAsync( List<T> result, CompletableFuture<List<T>> resultFuture,
+            Function<Record,T> mapFunction )
     {
         CompletionStage<Record> recordFuture = nextAsync();
 
@@ -138,12 +185,22 @@ public class InternalStatementResultCursor implements StatementResultCursor
             }
             else if ( record != null )
             {
-                records.add( record );
-                internalListAsync( records, resultFuture );
+                T value;
+                try
+                {
+                    value = mapFunction.apply( record );
+                }
+                catch ( Throwable mapError )
+                {
+                    resultFuture.completeExceptionally( mapError );
+                    return;
+                }
+                result.add( value );
+                internalListAsync( result, resultFuture, mapFunction );
             }
             else
             {
-                resultFuture.complete( records );
+                resultFuture.complete( result );
             }
         } );
     }

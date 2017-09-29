@@ -106,9 +106,8 @@ public class InternalStatementResult implements StatementResult
 
             if ( hasMoreThanOne )
             {
-                throw new NoSuchRecordException( "Expected a result with a single record, but this result contains at least one more. " +
-                        "Ensure your query returns only one record, or use `first` instead of `single` if " +
-                        "you do not care about the number of records in the result." );
+                throw new NoSuchRecordException( "Expected a result with a single record, but this result contains " +
+                                                 "at least one more. Ensure your query returns only one record." );
             }
 
             return single;

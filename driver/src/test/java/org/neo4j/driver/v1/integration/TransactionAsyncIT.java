@@ -22,12 +22,16 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
+import org.junit.rules.Timeout;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -39,12 +43,14 @@ import org.neo4j.driver.v1.StatementResultCursor;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.summary.StatementType;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
+import static java.util.Collections.emptyMap;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -68,8 +74,10 @@ import static org.neo4j.driver.v1.util.TestUtil.await;
 
 public class TransactionAsyncIT
 {
+    private final TestNeo4j neo4j = new TestNeo4j();
+
     @Rule
-    public final TestNeo4j neo4j = new TestNeo4j();
+    public final RuleChain ruleChain = RuleChain.outerRule( Timeout.seconds( 60 ) ).around( neo4j );
 
     private Session session;
 
@@ -566,6 +574,27 @@ public class TransactionAsyncIT
     }
 
     @Test
+    public void shouldFailForEachWhenActionFails()
+    {
+        Transaction tx = await( session.beginTransactionAsync() );
+        StatementResultCursor cursor = await( tx.runAsync( "RETURN 'Hi!'" ) );
+        RuntimeException error = new RuntimeException();
+
+        try
+        {
+            await( cursor.forEachAsync( record ->
+            {
+                throw error;
+            } ) );
+            fail( "Exception expected" );
+        }
+        catch ( RuntimeException e )
+        {
+            assertEquals( error, e );
+        }
+    }
+
+    @Test
     public void shouldConvertToListWithEmptyCursor()
     {
         testList( "CREATE (:Person)-[:KNOWS]->(:Person)", Collections.emptyList() );
@@ -578,7 +607,46 @@ public class TransactionAsyncIT
     }
 
     @Test
-    public void shouldFailWhenServerIsRestarted() throws IOException
+    public void shouldConvertToTransformedListWithEmptyCursor()
+    {
+        Transaction tx = await( session.beginTransactionAsync() );
+        StatementResultCursor cursor = await( tx.runAsync( "CREATE ()" ) );
+        List<Map<String,Object>> maps = await( cursor.listAsync( record -> record.get( 0 ).asMap() ) );
+        assertEquals( 0, maps.size() );
+    }
+
+    @Test
+    public void shouldConvertToTransformedListWithNonEmptyCursor()
+    {
+        Transaction tx = await( session.beginTransactionAsync() );
+        StatementResultCursor cursor = await( tx.runAsync( "UNWIND ['a', 'b', 'c'] AS x RETURN x" ) );
+        List<String> strings = await( cursor.listAsync( record -> record.get( 0 ).asString() + "!" ) );
+        assertEquals( Arrays.asList( "a!", "b!", "c!" ), strings );
+    }
+
+    @Test
+    public void shouldFailWhenListTransformationFunctionFails()
+    {
+        Transaction tx = await( session.beginTransactionAsync() );
+        StatementResultCursor cursor = await( tx.runAsync( "RETURN 'Hello'" ) );
+        IOException error = new IOException( "World" );
+
+        try
+        {
+            await( cursor.listAsync( record ->
+            {
+                throw new CompletionException( error );
+            } ) );
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertEquals( error, e );
+        }
+    }
+
+    @Test
+    public void shouldFailWhenServerIsRestarted()
     {
         Transaction tx = await( session.beginTransactionAsync() );
 
@@ -592,9 +660,99 @@ public class TransactionAsyncIT
         }
         catch ( Throwable t )
         {
-            t.printStackTrace();
             assertThat( t, instanceOf( ServiceUnavailableException.class ) );
         }
+    }
+
+    @Test
+    public void shouldFailSingleWithEmptyCursor()
+    {
+        Transaction tx = await( session.beginTransactionAsync() );
+        StatementResultCursor cursor = await( tx.runAsync( "MATCH (n:NoSuchLabel) RETURN n" ) );
+
+        try
+        {
+            await( cursor.singleAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( NoSuchRecordException e )
+        {
+            assertThat( e.getMessage(), containsString( "cursor is empty" ) );
+        }
+    }
+
+    @Test
+    public void shouldFailSingleWithMultiRecordCursor()
+    {
+        Transaction tx = await( session.beginTransactionAsync() );
+        StatementResultCursor cursor = await( tx.runAsync( "UNWIND ['a', 'b'] AS x RETURN x" ) );
+
+        try
+        {
+            await( cursor.singleAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( NoSuchRecordException e )
+        {
+            assertThat( e.getMessage(), startsWith( "Expected a cursor with a single record" ) );
+        }
+    }
+
+    @Test
+    public void shouldReturnSingleWithSingleRecordCursor()
+    {
+        Transaction tx = await( session.beginTransactionAsync() );
+        StatementResultCursor cursor = await( tx.runAsync( "RETURN 'Hello!'" ) );
+
+        Record record = await( cursor.singleAsync() );
+
+        assertEquals( "Hello!", record.get( 0 ).asString() );
+    }
+
+    @Test
+    public void shouldPropagateFailureFromFirstRecordInSingleAsync()
+    {
+        Transaction tx = await( session.beginTransactionAsync() );
+        StatementResultCursor cursor = await( tx.runAsync( "UNWIND [0] AS x RETURN 10 / x" ) );
+
+        try
+        {
+            await( cursor.singleAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e.getMessage(), containsString( "/ by zero" ) );
+        }
+    }
+
+    @Test
+    public void shouldNotPropagateFailureFromSecondRecordInSingleAsync()
+    {
+        Transaction tx = await( session.beginTransactionAsync() );
+        StatementResultCursor cursor = await( tx.runAsync( "UNWIND [1, 0] AS x RETURN 10 / x" ) );
+
+        try
+        {
+            await( cursor.singleAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e.getMessage(), containsString( "/ by zero" ) );
+        }
+    }
+
+    @Test
+    public void shouldConsumeEmptyCursor()
+    {
+        testConsume( "MATCH (n:NoSuchLabel) RETURN n" );
+    }
+
+    @Test
+    public void shouldConsumeNonEmptyCursor()
+    {
+        testConsume( "RETURN 42" );
     }
 
     private int countNodes( Object id )
@@ -608,10 +766,13 @@ public class TransactionAsyncIT
         Transaction tx = await( session.beginTransactionAsync() );
         StatementResultCursor cursor = await( tx.runAsync( query ) );
 
-        final AtomicInteger recordsSeen = new AtomicInteger();
-        CompletionStage<Void> forEachDone = cursor.forEachAsync( record -> recordsSeen.incrementAndGet() );
+        AtomicInteger recordsSeen = new AtomicInteger();
+        CompletionStage<ResultSummary> forEachDone = cursor.forEachAsync( record -> recordsSeen.incrementAndGet() );
+        ResultSummary summary = await( forEachDone );
 
-        assertNull( await( forEachDone ) );
+        assertNotNull( summary );
+        assertEquals( query, summary.statement().text() );
+        assertEquals( emptyMap(), summary.statement().parameters().asMap() );
         assertEquals( expectedSeenRecords, recordsSeen.get() );
     }
 
@@ -626,5 +787,19 @@ public class TransactionAsyncIT
             actualList.add( record.get( 0 ).asObject() );
         }
         assertEquals( expectedList, actualList );
+    }
+
+    private void testConsume( String query )
+    {
+        Transaction tx = await( session.beginTransactionAsync() );
+        StatementResultCursor cursor = await( tx.runAsync( query ) );
+        ResultSummary summary = await( cursor.consumeAsync() );
+
+        assertNotNull( summary );
+        assertEquals( query, summary.statement().text() );
+        assertEquals( emptyMap(), summary.statement().parameters().asMap() );
+
+        // no records should be available, they should all be consumed
+        assertNull( await( cursor.nextAsync() ) );
     }
 }

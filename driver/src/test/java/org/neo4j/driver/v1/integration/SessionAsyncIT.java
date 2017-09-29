@@ -22,13 +22,17 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
+import org.junit.rules.Timeout;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -42,6 +46,7 @@ import org.neo4j.driver.v1.TransactionWork;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.DatabaseException;
+import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 import org.neo4j.driver.v1.exceptions.TransientException;
@@ -51,9 +56,11 @@ import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static java.util.Collections.emptyIterator;
+import static java.util.Collections.emptyMap;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -71,8 +78,10 @@ import static org.neo4j.driver.v1.util.TestUtil.awaitAll;
 
 public class SessionAsyncIT
 {
+    private final TestNeo4j neo4j = new TestNeo4j();
+
     @Rule
-    public final TestNeo4j neo4j = new TestNeo4j();
+    public final RuleChain ruleChain = RuleChain.outerRule( Timeout.seconds( 20 ) ).around( neo4j );
 
     private Session session;
 
@@ -196,7 +205,6 @@ public class SessionAsyncIT
         }
         catch ( Throwable t )
         {
-            t.printStackTrace();
             assertThat( t, instanceOf( ServiceUnavailableException.class ) );
         }
     }
@@ -484,6 +492,26 @@ public class SessionAsyncIT
     }
 
     @Test
+    public void shouldFailForEachWhenActionFails()
+    {
+        StatementResultCursor cursor = await( session.runAsync( "RETURN 42" ) );
+        IOException error = new IOException( "Hi" );
+
+        try
+        {
+            await( cursor.forEachAsync( record ->
+            {
+                throw new CompletionException( error );
+            } ) );
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertEquals( error, e );
+        }
+    }
+
+    @Test
     public void shouldConvertToListWithEmptyCursor()
     {
         testList( "MATCH (n:NoSuchLabel) RETURN n", Collections.emptyList() );
@@ -494,6 +522,128 @@ public class SessionAsyncIT
     {
         testList( "UNWIND range(1, 100, 10) AS x RETURN x",
                 Arrays.asList( 1L, 11L, 21L, 31L, 41L, 51L, 61L, 71L, 81L, 91L ) );
+    }
+
+    @Test
+    public void shouldConvertToTransformedListWithEmptyCursor()
+    {
+        StatementResultCursor cursor = await( session.runAsync( "CREATE ()" ) );
+        List<String> strings = await( cursor.listAsync( record -> "Hi!" ) );
+        assertEquals( 0, strings.size() );
+    }
+
+    @Test
+    public void shouldConvertToTransformedListWithNonEmptyCursor()
+    {
+        StatementResultCursor cursor = await( session.runAsync( "UNWIND [1,2,3] AS x RETURN x" ) );
+        List<Integer> ints = await( cursor.listAsync( record -> record.get( 0 ).asInt() + 1 ) );
+        assertEquals( Arrays.asList( 2, 3, 4 ), ints );
+    }
+
+    @Test
+    public void shouldFailWhenListTransformationFunctionFails()
+    {
+        StatementResultCursor cursor = await( session.runAsync( "RETURN 42" ) );
+        RuntimeException error = new RuntimeException( "Hi!" );
+
+        try
+        {
+            await( cursor.listAsync( record ->
+            {
+                throw error;
+            } ) );
+            fail( "Exception expected" );
+        }
+        catch ( RuntimeException e )
+        {
+            assertEquals( error, e );
+        }
+    }
+
+    @Test
+    public void shouldFailSingleWithEmptyCursor()
+    {
+        StatementResultCursor cursor = await( session.runAsync( "CREATE ()" ) );
+
+        try
+        {
+            await( cursor.singleAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( NoSuchRecordException e )
+        {
+            assertThat( e.getMessage(), containsString( "cursor is empty" ) );
+        }
+    }
+
+    @Test
+    public void shouldFailSingleWithMultiRecordCursor()
+    {
+        StatementResultCursor cursor = await( session.runAsync( "UNWIND [1, 2, 3] AS x RETURN x" ) );
+
+        try
+        {
+            await( cursor.singleAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( NoSuchRecordException e )
+        {
+            assertThat( e.getMessage(), startsWith( "Expected a cursor with a single record" ) );
+        }
+    }
+
+    @Test
+    public void shouldReturnSingleWithSingleRecordCursor()
+    {
+        StatementResultCursor cursor = await( session.runAsync( "RETURN 42" ) );
+
+        Record record = await( cursor.singleAsync() );
+
+        assertEquals( 42, record.get( 0 ).asInt() );
+    }
+
+    @Test
+    public void shouldPropagateFailureFromFirstRecordInSingleAsync()
+    {
+        StatementResultCursor cursor = await( session.runAsync( "UNWIND [0] AS x RETURN 10 / x" ) );
+
+        try
+        {
+            await( cursor.singleAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e.getMessage(), containsString( "/ by zero" ) );
+        }
+    }
+
+    @Test
+    public void shouldNotPropagateFailureFromSecondRecordInSingleAsync()
+    {
+        StatementResultCursor cursor = await( session.runAsync( "UNWIND [1, 0] AS x RETURN 10 / x" ) );
+
+        try
+        {
+            await( cursor.singleAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e.getMessage(), containsString( "/ by zero" ) );
+        }
+    }
+
+    @Test
+    public void shouldConsumeEmptyCursor()
+    {
+        testConsume( "CREATE ()" );
+    }
+
+    @Test
+    public void shouldConsumeNonEmptyCursor()
+    {
+        testConsume( "UNWIND [42, 42] AS x RETURN x" );
     }
 
     private Future<List<CompletionStage<Record>>> runNestedQueries( StatementResultCursor inputCursor )
@@ -560,10 +710,13 @@ public class SessionAsyncIT
     {
         StatementResultCursor cursor = await( session.runAsync( query ) );
 
-        final AtomicInteger recordsSeen = new AtomicInteger();
-        CompletionStage<Void> forEachDone = cursor.forEachAsync( record -> recordsSeen.incrementAndGet() );
+        AtomicInteger recordsSeen = new AtomicInteger();
+        CompletionStage<ResultSummary> forEachDone = cursor.forEachAsync( record -> recordsSeen.incrementAndGet() );
+        ResultSummary summary = await( forEachDone );
 
-        assertNull( await( forEachDone ) );
+        assertNotNull( summary );
+        assertEquals( query, summary.statement().text() );
+        assertEquals( emptyMap(), summary.statement().parameters().asMap() );
         assertEquals( expectedSeenRecords, recordsSeen.get() );
     }
 
@@ -577,6 +730,19 @@ public class SessionAsyncIT
             actualList.add( record.get( 0 ).asObject() );
         }
         assertEquals( expectedList, actualList );
+    }
+
+    private void testConsume( String query )
+    {
+        StatementResultCursor cursor = await( session.runAsync( query ) );
+        ResultSummary summary = await( cursor.consumeAsync() );
+
+        assertNotNull( summary );
+        assertEquals( query, summary.statement().text() );
+        assertEquals( emptyMap(), summary.statement().parameters().asMap() );
+
+        // no records should be available, they should all be consumed
+        assertNull( await( cursor.nextAsync() ) );
     }
 
     private static class InvocationTrackingWork implements TransactionWork<CompletionStage<Record>>
