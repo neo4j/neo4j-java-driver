@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal.cluster;
 
+import io.netty.util.concurrent.GlobalEventExecutor;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -381,7 +382,8 @@ public class RoutingPooledConnectionErrorHandlingTest
         Rediscovery rediscovery = mock( Rediscovery.class );
         when( rediscovery.lookupClusterComposition( routingTable, connectionPool ) ).thenReturn( clusterComposition );
         AsyncConnectionPool asyncConnectionPool = mock( AsyncConnectionPool.class );
-        return new LoadBalancer( connectionPool, asyncConnectionPool, routingTable, rediscovery, DEV_NULL_LOGGING );
+        return new LoadBalancer( connectionPool, asyncConnectionPool, routingTable, rediscovery,
+                GlobalEventExecutor.INSTANCE, DEV_NULL_LOGGING );
     }
 
     private interface ConnectionMethod

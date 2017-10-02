@@ -35,6 +35,7 @@ import org.neo4j.driver.internal.ExplicitTransaction;
 import org.neo4j.driver.internal.NetworkSession;
 import org.neo4j.driver.internal.SessionResourcesHandler;
 import org.neo4j.driver.internal.async.AsyncConnection;
+import org.neo4j.driver.internal.async.Futures;
 import org.neo4j.driver.internal.async.pool.AsyncConnectionPool;
 import org.neo4j.driver.internal.cluster.AddressSet;
 import org.neo4j.driver.internal.cluster.ClusterComposition;
@@ -89,6 +90,7 @@ import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.net.BoltServerAddress.LOCAL_DEFAULT;
 import static org.neo4j.driver.v1.AccessMode.READ;
 import static org.neo4j.driver.v1.AccessMode.WRITE;
+import static org.neo4j.driver.v1.util.TestUtil.asOrderedSet;
 
 public class LoadBalancerTest
 {
@@ -103,7 +105,8 @@ public class LoadBalancerTest
         when( routingTable.update( any( ClusterComposition.class ) ) ).thenReturn( set );
 
         // when
-        LoadBalancer balancer = new LoadBalancer( conns, null, routingTable, rediscovery, DEV_NULL_LOGGING );
+        LoadBalancer balancer = new LoadBalancer( conns, null, routingTable, rediscovery, GlobalEventExecutor.INSTANCE,
+                DEV_NULL_LOGGING );
 
         // then
         assertNotNull( balancer );
@@ -134,7 +137,8 @@ public class LoadBalancerTest
                 .thenReturn( completedFuture( clusterComposition ) );
 
         LoadBalancer loadBalancer =
-                new LoadBalancer( null, asyncConnectionPool, routingTable, rediscovery, DEV_NULL_LOGGING );
+                new LoadBalancer( null, asyncConnectionPool, routingTable, rediscovery, GlobalEventExecutor.INSTANCE,
+                        DEV_NULL_LOGGING );
 
         assertNotNull( getBlocking( loadBalancer.acquireAsyncConnection( READ ) ) );
 
@@ -165,7 +169,8 @@ public class LoadBalancerTest
                 .thenReturn( completedFuture( clusterComposition ) );
 
         LoadBalancer loadBalancer =
-                new LoadBalancer( null, asyncConnectionPool, routingTable, rediscovery, DEV_NULL_LOGGING );
+                new LoadBalancer( null, asyncConnectionPool, routingTable, rediscovery, GlobalEventExecutor.INSTANCE,
+                        DEV_NULL_LOGGING );
 
         assertNotNull( getBlocking( loadBalancer.acquireAsyncConnection( READ ) ) );
 
@@ -180,7 +185,7 @@ public class LoadBalancerTest
         // given & when
         final AtomicInteger refreshRoutingTableCounter = new AtomicInteger( 0 );
         LoadBalancer balancer = new LoadBalancer( mock( ConnectionPool.class ), null,
-                mock( RoutingTable.class ), mock( Rediscovery.class ), DEV_NULL_LOGGING )
+                mock( RoutingTable.class ), mock( Rediscovery.class ), GlobalEventExecutor.INSTANCE, DEV_NULL_LOGGING )
         {
             @Override
             synchronized void refreshRoutingTable()
@@ -237,7 +242,7 @@ public class LoadBalancerTest
 
         Rediscovery rediscovery = mock( Rediscovery.class );
         LoadBalancer loadBalancer = new LoadBalancer( connectionPool, asyncConnectionPool, routingTable, rediscovery,
-                DEV_NULL_LOGGING );
+                GlobalEventExecutor.INSTANCE, DEV_NULL_LOGGING );
         BoltServerAddress address = new BoltServerAddress( "host", 42 );
 
         PooledConnection connection = newConnectionWithFailingSync( address );
@@ -273,7 +278,7 @@ public class LoadBalancerTest
         when( connectionPool.acquire( any( BoltServerAddress.class ) ) ).thenReturn( connectionWithFailingSync );
         Rediscovery rediscovery = mock( Rediscovery.class );
         LoadBalancer loadBalancer = new LoadBalancer( connectionPool, asyncConnectionPool, routingTable, rediscovery,
-                DEV_NULL_LOGGING );
+                GlobalEventExecutor.INSTANCE, DEV_NULL_LOGGING );
 
         Session session = newSession( loadBalancer );
         // begin transaction to make session obtain a connection
@@ -345,7 +350,7 @@ public class LoadBalancerTest
         when( routingTable.writers() ).thenReturn( new AddressSet() );
 
         LoadBalancer loadBalancer = new LoadBalancer( connections, asyncConnectionPool, routingTable, rediscovery,
-                DEV_NULL_LOGGING );
+                GlobalEventExecutor.INSTANCE, DEV_NULL_LOGGING );
 
         try
         {
@@ -373,7 +378,7 @@ public class LoadBalancerTest
     @Test
     public void shouldThrowWhenRediscoveryReturnsNoSuitableServersAsync()
     {
-        AsyncConnectionPool asyncConnectionPool = mock( AsyncConnectionPool.class );
+        AsyncConnectionPool asyncConnectionPool = newAsyncConnectionPoolMock();
         RoutingTable routingTable = mock( RoutingTable.class );
         when( routingTable.isStaleFor( any( AccessMode.class ) ) ).thenReturn( true );
         Rediscovery rediscovery = mock( Rediscovery.class );
@@ -384,7 +389,7 @@ public class LoadBalancerTest
         when( routingTable.writers() ).thenReturn( new AddressSet() );
 
         LoadBalancer loadBalancer = new LoadBalancer( null, asyncConnectionPool, routingTable, rediscovery,
-                DEV_NULL_LOGGING );
+                GlobalEventExecutor.INSTANCE, DEV_NULL_LOGGING );
 
         try
         {
@@ -426,7 +431,7 @@ public class LoadBalancerTest
         Rediscovery rediscovery = mock( Rediscovery.class );
 
         LoadBalancer loadBalancer = new LoadBalancer( connectionPool, asyncConnectionPool, routingTable, rediscovery,
-                DEV_NULL_LOGGING );
+                GlobalEventExecutor.INSTANCE, DEV_NULL_LOGGING );
 
         Set<BoltServerAddress> seenAddresses = new HashSet<>();
         for ( int i = 0; i < 10; i++ )
@@ -457,7 +462,8 @@ public class LoadBalancerTest
         Rediscovery rediscovery = mock( Rediscovery.class );
 
         LoadBalancer loadBalancer =
-                new LoadBalancer( null, asyncConnectionPool, routingTable, rediscovery, DEV_NULL_LOGGING );
+                new LoadBalancer( null, asyncConnectionPool, routingTable, rediscovery, GlobalEventExecutor.INSTANCE,
+                        DEV_NULL_LOGGING );
 
         Set<BoltServerAddress> seenAddresses = new HashSet<>();
         for ( int i = 0; i < 10; i++ )
@@ -485,7 +491,7 @@ public class LoadBalancerTest
         Rediscovery rediscovery = mock( Rediscovery.class );
 
         LoadBalancer loadBalancer = new LoadBalancer( connectionPool, asyncConnectionPool, routingTable, rediscovery,
-                DEV_NULL_LOGGING );
+                GlobalEventExecutor.INSTANCE, DEV_NULL_LOGGING );
 
         Set<BoltServerAddress> seenAddresses = new HashSet<>();
         for ( int i = 0; i < 10; i++ )
@@ -512,7 +518,7 @@ public class LoadBalancerTest
         Rediscovery rediscovery = mock( Rediscovery.class );
 
         LoadBalancer loadBalancer = new LoadBalancer( connectionPool, asyncConnectionPool, routingTable, rediscovery,
-                DEV_NULL_LOGGING );
+                GlobalEventExecutor.INSTANCE, DEV_NULL_LOGGING );
 
         Set<BoltServerAddress> seenAddresses = new HashSet<>();
         for ( int i = 0; i < 10; i++ )
@@ -525,6 +531,30 @@ public class LoadBalancerTest
         assertTrue( seenAddresses.containsAll( Arrays.asList( A, B, C ) ) );
     }
 
+    @Test
+    public void shouldTryMultipleServersAfterRediscovery()
+    {
+        Set<BoltServerAddress> unavailableAddresses = asOrderedSet( A );
+        AsyncConnectionPool asyncConnectionPool = newAsyncConnectionPoolMockWithFailures( unavailableAddresses );
+
+        ClusterRoutingTable routingTable = new ClusterRoutingTable( new FakeClock(), A );
+        Rediscovery rediscovery = mock( Rediscovery.class );
+        ClusterComposition clusterComposition = new ClusterComposition( 42,
+                asOrderedSet( A, B ), asOrderedSet( A, B ), asOrderedSet( A, B ) );
+        when( rediscovery.lookupClusterCompositionAsync( any(), any() ) )
+                .thenReturn( completedFuture( clusterComposition ) );
+
+        LoadBalancer loadBalancer = new LoadBalancer( null, asyncConnectionPool, routingTable, rediscovery,
+                GlobalEventExecutor.INSTANCE, DEV_NULL_LOGGING );
+
+        AsyncConnection connection = getBlocking( loadBalancer.acquireAsyncConnection( READ ) );
+
+        assertNotNull( connection );
+        assertEquals( B, connection.serverAddress() );
+        // routing table should've forgotten A
+        assertArrayEquals( new BoltServerAddress[]{B}, routingTable.readers().toArray() );
+    }
+
     private void testRediscoveryWhenStale( AccessMode mode )
     {
         ConnectionPool connections = mock( ConnectionPool.class );
@@ -534,7 +564,7 @@ public class LoadBalancerTest
         Rediscovery rediscovery = newRediscoveryMock();
 
         LoadBalancer loadBalancer = new LoadBalancer( connections, null, routingTable, rediscovery,
-                DEV_NULL_LOGGING );
+                GlobalEventExecutor.INSTANCE, DEV_NULL_LOGGING );
         verify( rediscovery ).lookupClusterComposition( routingTable, connections );
 
         assertNotNull( loadBalancer.acquireConnection( mode ) );
@@ -552,7 +582,8 @@ public class LoadBalancerTest
         Rediscovery rediscovery = newRediscoveryMock();
 
         LoadBalancer loadBalancer =
-                new LoadBalancer( null, asyncConnectionPool, routingTable, rediscovery, DEV_NULL_LOGGING );
+                new LoadBalancer( null, asyncConnectionPool, routingTable, rediscovery, GlobalEventExecutor.INSTANCE,
+                        DEV_NULL_LOGGING );
         AsyncConnection connection = getBlocking( loadBalancer.acquireAsyncConnection( mode ) );
         assertNotNull( connection );
 
@@ -569,7 +600,7 @@ public class LoadBalancerTest
         Rediscovery rediscovery = newRediscoveryMock();
 
         LoadBalancer loadBalancer = new LoadBalancer( connections, null, routingTable, rediscovery,
-                DEV_NULL_LOGGING );
+                GlobalEventExecutor.INSTANCE, DEV_NULL_LOGGING );
         verify( rediscovery ).lookupClusterComposition( routingTable, connections );
 
         assertNotNull( loadBalancer.acquireConnection( notStaleMode ) );
@@ -587,7 +618,7 @@ public class LoadBalancerTest
         Rediscovery rediscovery = newRediscoveryMock();
 
         LoadBalancer loadBalancer = new LoadBalancer( null, asyncConnectionPool, routingTable, rediscovery,
-                DEV_NULL_LOGGING );
+                GlobalEventExecutor.INSTANCE, DEV_NULL_LOGGING );
 
         assertNotNull( getBlocking( loadBalancer.acquireAsyncConnection( notStaleMode ) ) );
         verify( routingTable ).isStaleFor( notStaleMode );
@@ -605,7 +636,6 @@ public class LoadBalancerTest
 
         AsyncConnectionPool asyncConnectionPool = mock( AsyncConnectionPool.class );
 
-
         AddressSet writerAddrs = mock( AddressSet.class );
         when( writerAddrs.toArray() ).thenReturn( new BoltServerAddress[]{writer} );
 
@@ -618,7 +648,8 @@ public class LoadBalancerTest
 
         Rediscovery rediscovery = mock( Rediscovery.class );
 
-        return new LoadBalancer( connPool, asyncConnectionPool, routingTable, rediscovery, DEV_NULL_LOGGING );
+        return new LoadBalancer( connPool, asyncConnectionPool, routingTable, rediscovery, GlobalEventExecutor.INSTANCE,
+                DEV_NULL_LOGGING );
     }
 
     private static Session newSession( LoadBalancer loadBalancer )
@@ -684,10 +715,20 @@ public class LoadBalancerTest
 
     private static AsyncConnectionPool newAsyncConnectionPoolMock()
     {
+        return newAsyncConnectionPoolMockWithFailures( emptySet() );
+    }
+
+    private static AsyncConnectionPool newAsyncConnectionPoolMockWithFailures(
+            Set<BoltServerAddress> unavailableAddresses )
+    {
         AsyncConnectionPool pool = mock( AsyncConnectionPool.class );
         when( pool.acquire( any( BoltServerAddress.class ) ) ).then( invocation ->
         {
             BoltServerAddress requestedAddress = invocation.getArgumentAt( 0, BoltServerAddress.class );
+            if ( unavailableAddresses.contains( requestedAddress ) )
+            {
+                return Futures.failedFuture( new ServiceUnavailableException( requestedAddress + " is unavailable!" ) );
+            }
             AsyncConnection connection = mock( AsyncConnection.class );
             when( connection.serverAddress() ).thenReturn( requestedAddress );
             return completedFuture( connection );

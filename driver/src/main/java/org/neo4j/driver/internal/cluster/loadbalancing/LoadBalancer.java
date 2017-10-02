@@ -51,7 +51,6 @@ import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
-import static org.neo4j.driver.internal.async.Futures.failedFuture;
 
 public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, AutoCloseable
 {
@@ -62,6 +61,7 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
     private final RoutingTable routingTable;
     private final Rediscovery rediscovery;
     private final LoadBalancingStrategy loadBalancingStrategy;
+    private final EventExecutorGroup eventExecutorGroup;
     private final Logger log;
 
     private CompletableFuture<RoutingTable> refreshRoutingTableFuture;
@@ -72,26 +72,28 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
     {
         this( connections, asyncConnectionPool, new ClusterRoutingTable( clock, initialRouter ),
                 createRediscovery( initialRouter, settings, eventExecutorGroup, clock, logging ),
-                loadBalancerLogger( logging ), loadBalancingStrategy );
+                loadBalancerLogger( logging ), loadBalancingStrategy, eventExecutorGroup );
     }
 
     // Used only in testing
     public LoadBalancer( ConnectionPool connections, AsyncConnectionPool asyncConnectionPool,
-            RoutingTable routingTable, Rediscovery rediscovery, Logging logging )
+            RoutingTable routingTable, Rediscovery rediscovery, EventExecutorGroup eventExecutorGroup, Logging logging )
     {
         this( connections, asyncConnectionPool, routingTable, rediscovery, loadBalancerLogger( logging ),
-                new LeastConnectedLoadBalancingStrategy( connections, asyncConnectionPool, logging ) );
+                new LeastConnectedLoadBalancingStrategy( connections, asyncConnectionPool, logging ),
+                eventExecutorGroup );
     }
 
     private LoadBalancer( ConnectionPool connections, AsyncConnectionPool asyncConnectionPool,
             RoutingTable routingTable, Rediscovery rediscovery, Logger log,
-            LoadBalancingStrategy loadBalancingStrategy )
+            LoadBalancingStrategy loadBalancingStrategy, EventExecutorGroup eventExecutorGroup )
     {
         this.connections = connections;
         this.asyncConnectionPool = asyncConnectionPool;
         this.routingTable = routingTable;
         this.rediscovery = rediscovery;
         this.loadBalancingStrategy = loadBalancingStrategy;
+        this.eventExecutorGroup = eventExecutorGroup;
         this.log = log;
 
         if ( connections != null )
@@ -111,22 +113,51 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
     @Override
     public CompletionStage<AsyncConnection> acquireAsyncConnection( AccessMode mode )
     {
-        return freshRoutingTable( mode ).thenCompose( routingTable ->
+        return freshRoutingTable( mode )
+                .thenCompose( routingTable -> acquire( mode, routingTable ) )
+                .thenApply( connection -> new RoutingAsyncConnection( connection, mode, this ) );
+    }
+
+    private CompletionStage<AsyncConnection> acquire( AccessMode mode, RoutingTable routingTable )
+    {
+        AddressSet addresses = addressSet( mode, routingTable );
+        CompletableFuture<AsyncConnection> result = new CompletableFuture<>();
+        acquire( mode, addresses, result );
+        return result;
+    }
+
+    private void acquire( AccessMode mode, AddressSet addresses, CompletableFuture<AsyncConnection> result )
+    {
+        BoltServerAddress address = selectAddressAsync( mode, addresses );
+
+        if ( address == null )
         {
-            AddressSet addressSet = addressSet( mode, routingTable );
-            BoltServerAddress address = selectAddressAsync( mode, addressSet );
+            result.completeExceptionally( new SessionExpiredException(
+                    "Failed to obtain connection towards " + mode + " server. " +
+                    "Known routing table is: " + routingTable ) );
+            return;
+        }
 
-            // todo: loop like in sync version until we get a successful connection
-
-            if ( address == null )
+        asyncConnectionPool.acquire( address ).whenComplete( ( connection, error ) ->
+        {
+            if ( error != null )
             {
-                return failedFuture( new SessionExpiredException(
-                        "Failed to obtain connection towards " + mode + " server. " +
-                        "Known routing table is: " + routingTable ) );
+                if ( error instanceof ServiceUnavailableException )
+                {
+                    log.error( "Failed to obtain a connection towards address " + address, error );
+                    forget( address );
+                    eventExecutorGroup.next().execute( () -> acquire( mode, addresses, result ) );
+                }
+                else
+                {
+                    result.completeExceptionally( error );
+                }
             }
-
-            return asyncConnectionPool.acquire( address );
-        } ).thenApply( connection -> new RoutingAsyncConnection( connection, mode, this ) );
+            else
+            {
+                result.complete( connection );
+            }
+        } );
     }
 
     @Override
@@ -172,7 +203,10 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
         // First remove from the load balancer, to prevent concurrent threads from making connections to them.
         routingTable.forget( address );
         // drop all current connections to the address
-        connections.purge( address );
+        if ( connections != null )
+        {
+            connections.purge( address );
+        }
         asyncConnectionPool.purge( address );
     }
 
