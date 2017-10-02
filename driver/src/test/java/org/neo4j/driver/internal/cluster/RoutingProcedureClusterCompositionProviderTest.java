@@ -44,9 +44,10 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.doThrow;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.driver.internal.async.Futures.failedFuture;
 import static org.neo4j.driver.internal.async.Futures.getBlocking;
 import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
 import static org.neo4j.driver.v1.Values.value;
@@ -224,18 +225,13 @@ public class RoutingProcedureClusterCompositionProviderTest
                 DEV_NULL_LOGGER, mockedRunner );
 
         CompletionStage<AsyncConnection> connectionStage = completedFuture( mock( AsyncConnection.class ) );
-        Record record = new InternalRecord( asList( "ttl", "servers" ), new Value[]{
-                value( 100 ), value( asList(
-                serverInfo( "WRITE", "one:1337" ),
-                serverInfo( "ROUTE", "one:1337", "two:1337" ) ) )
-        } );
-        doThrow( new ServiceUnavailableException( "Connection breaks during cypher execution" ) )
-                .when( mockedRunner ).run( connectionStage );
+        when( mockedRunner.run( connectionStage ) ).thenReturn( failedFuture(
+                new ServiceUnavailableException( "Connection breaks during cypher execution" ) ) );
 
         // When & Then
         try
         {
-            provider.getClusterComposition( connectionStage );
+            getBlocking( provider.getClusterComposition( connectionStage ) );
             fail( "Expecting a failure but not triggered." );
         }
         catch( Exception e )
@@ -277,6 +273,32 @@ public class RoutingProcedureClusterCompositionProviderTest
         assertEquals( serverSet( "one:1337", "two:1337" ), cluster.routers() );
     }
 
+    @Test
+    @SuppressWarnings( "unchecked" )
+    public void shouldReturnFailureWhenProcedureRunnerFails()
+    {
+        RoutingProcedureRunner procedureRunner = newProcedureRunnerMock();
+        RuntimeException error = new RuntimeException( "hi" );
+        when( procedureRunner.run( any( CompletionStage.class ) ) )
+                .thenReturn( completedFuture( newRoutingResponse( error ) ) );
+
+        RoutingProcedureClusterCompositionProvider provider = new RoutingProcedureClusterCompositionProvider(
+                mock( Clock.class ), DEV_NULL_LOGGER, procedureRunner );
+
+        CompletionStage<AsyncConnection> connectionStage = completedFuture( mock( AsyncConnection.class ) );
+        ClusterCompositionResponse response = getBlocking( provider.getClusterComposition( connectionStage ) );
+
+        try
+        {
+            response.clusterComposition();
+            fail( "Exception expected" );
+        }
+        catch ( ServiceUnavailableException e )
+        {
+            assertEquals( error, e.getCause() );
+        }
+    }
+
     public static Map<String,Object> serverInfo( String role, String... addresses )
     {
         Map<String,Object> map = new HashMap<>();
@@ -303,5 +325,10 @@ public class RoutingProcedureClusterCompositionProviderTest
     private static RoutingProcedureResponse newRoutingResponse( Record... records )
     {
         return new RoutingProcedureResponse( new Statement( "procedure" ), asList( records ) );
+    }
+
+    private static RoutingProcedureResponse newRoutingResponse( Throwable error )
+    {
+        return new RoutingProcedureResponse( new Statement( "procedure" ), error );
     }
 }

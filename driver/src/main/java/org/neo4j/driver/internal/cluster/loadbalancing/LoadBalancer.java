@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.internal.cluster.loadbalancing;
 
+import io.netty.util.concurrent.EventExecutorGroup;
+
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -65,12 +67,12 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
     private CompletableFuture<RoutingTable> refreshRoutingTableFuture;
 
     public LoadBalancer( BoltServerAddress initialRouter, RoutingSettings settings, ConnectionPool connections,
-            AsyncConnectionPool asyncConnectionPool, Clock clock, Logging logging,
-            LoadBalancingStrategy loadBalancingStrategy )
+            AsyncConnectionPool asyncConnectionPool, EventExecutorGroup eventExecutorGroup, Clock clock,
+            Logging logging, LoadBalancingStrategy loadBalancingStrategy )
     {
         this( connections, asyncConnectionPool, new ClusterRoutingTable( clock, initialRouter ),
-                createRediscovery( initialRouter, settings, clock, logging ), loadBalancerLogger( logging ),
-                loadBalancingStrategy );
+                createRediscovery( initialRouter, settings, eventExecutorGroup, clock, logging ),
+                loadBalancerLogger( logging ), loadBalancingStrategy );
     }
 
     // Used only in testing
@@ -302,12 +304,13 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
     }
 
     private static Rediscovery createRediscovery( BoltServerAddress initialRouter, RoutingSettings settings,
-            Clock clock, Logging logging )
+            EventExecutorGroup eventExecutorGroup, Clock clock, Logging logging )
     {
         Logger log = loadBalancerLogger( logging );
-        ClusterCompositionProvider clusterComposition =
+        ClusterCompositionProvider clusterCompositionProvider =
                 new RoutingProcedureClusterCompositionProvider( clock, log, settings );
-        return new Rediscovery( initialRouter, settings, clock, log, clusterComposition, new DnsResolver( log ) );
+        return new Rediscovery( initialRouter, settings, clusterCompositionProvider, eventExecutorGroup,
+                new DnsResolver( log ), clock, log );
     }
 
     private static Logger loadBalancerLogger( Logging logging )

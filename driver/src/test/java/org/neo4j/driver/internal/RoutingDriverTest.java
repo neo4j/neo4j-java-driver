@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal;
 
+import io.netty.util.concurrent.GlobalEventExecutor;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -365,8 +366,8 @@ public class RoutingDriverTest
         AsyncConnectionPool asyncConnectionPool = mock( AsyncConnectionPool.class );
         LoadBalancingStrategy loadBalancingStrategy = new LeastConnectedLoadBalancingStrategy( pool,
                 asyncConnectionPool, logging );
-        ConnectionProvider connectionProvider = new LoadBalancer( SEED, settings, pool, asyncConnectionPool, clock,
-                logging, loadBalancingStrategy );
+        ConnectionProvider connectionProvider = new LoadBalancer( SEED, settings, pool, asyncConnectionPool,
+                GlobalEventExecutor.INSTANCE, clock, logging, loadBalancingStrategy );
         Config config = Config.build().withLogging( logging ).toConfig();
         SessionFactory sessionFactory = new NetworkSessionWithAddressFactory( connectionProvider, config );
         return new InternalDriver( insecure(), sessionFactory, logging );

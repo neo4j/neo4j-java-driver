@@ -184,6 +184,23 @@ public class RoutingProcedureRunnerTest
         }
     }
 
+    @Test
+    public void shouldPropagateErrorFromConnectionStage()
+    {
+        RuntimeException error = new RuntimeException( "Hi" );
+        RoutingProcedureRunner runner = new TestRoutingProcedureRunner( RoutingContext.EMPTY );
+
+        try
+        {
+            getBlocking( runner.run( failedFuture( error ) ) );
+            fail( "Exception expected" );
+        }
+        catch ( RuntimeException e )
+        {
+            assertEquals( error, e );
+        }
+    }
+
     private static CompletionStage<AsyncConnection> connectionStage( String serverVersion )
     {
         AsyncConnection connection = mock( AsyncConnection.class );

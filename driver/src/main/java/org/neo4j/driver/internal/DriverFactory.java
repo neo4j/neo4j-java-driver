@@ -19,7 +19,6 @@
 package org.neo4j.driver.internal;
 
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.EventLoopGroup;
 import io.netty.util.concurrent.EventExecutorGroup;
 
 import java.io.IOException;
@@ -77,8 +76,8 @@ public class DriverFactory
         ConnectionPool connectionPool = createConnectionPool( authToken, securityPlan, config );
 
         Bootstrap bootstrap = createBootstrap();
-        EventLoopGroup eventLoopGroup = bootstrap.config().group();
-        RetryLogic retryLogic = createRetryLogic( retrySettings, eventLoopGroup, config.logging() );
+        EventExecutorGroup eventExecutorGroup = bootstrap.config().group();
+        RetryLogic retryLogic = createRetryLogic( retrySettings, eventExecutorGroup, config.logging() );
 
         AsyncConnectionPool asyncConnectionPool = createAsyncConnectionPool( authToken, securityPlan, bootstrap,
                 config );
@@ -86,7 +85,7 @@ public class DriverFactory
         try
         {
             return createDriver( uri, address, connectionPool, asyncConnectionPool, config, newRoutingSettings,
-                    securityPlan, retryLogic );
+                    eventExecutorGroup, securityPlan, retryLogic );
         }
         catch ( Throwable driverError )
         {
@@ -122,7 +121,7 @@ public class DriverFactory
 
     private Driver createDriver( URI uri, BoltServerAddress address, ConnectionPool connectionPool,
             AsyncConnectionPool asyncConnectionPool, Config config, RoutingSettings routingSettings,
-            SecurityPlan securityPlan, RetryLogic retryLogic )
+            EventExecutorGroup eventExecutorGroup, SecurityPlan securityPlan, RetryLogic retryLogic )
     {
         String scheme = uri.getScheme().toLowerCase();
         switch ( scheme )
@@ -132,7 +131,7 @@ public class DriverFactory
             return createDirectDriver( address, connectionPool, config, securityPlan, retryLogic, asyncConnectionPool );
         case BOLT_ROUTING_URI_SCHEME:
             return createRoutingDriver( address, connectionPool, asyncConnectionPool, config, routingSettings,
-                    securityPlan, retryLogic );
+                    securityPlan, retryLogic, eventExecutorGroup );
         default:
             throw new ClientException( format( "Unsupported URI scheme: %s", scheme ) );
         }
@@ -160,14 +159,14 @@ public class DriverFactory
      */
     protected Driver createRoutingDriver( BoltServerAddress address, ConnectionPool connectionPool,
             AsyncConnectionPool asyncConnectionPool, Config config, RoutingSettings routingSettings,
-            SecurityPlan securityPlan, RetryLogic retryLogic )
+            SecurityPlan securityPlan, RetryLogic retryLogic, EventExecutorGroup eventExecutorGroup )
     {
         if ( !securityPlan.isRoutingCompatible() )
         {
             throw new IllegalArgumentException( "The chosen security plan is not compatible with a routing driver" );
         }
         ConnectionProvider connectionProvider = createLoadBalancer( address, connectionPool, asyncConnectionPool,
-                config, routingSettings );
+                eventExecutorGroup, config, routingSettings );
         SessionFactory sessionFactory = createSessionFactory( connectionProvider, retryLogic, config );
         return createDriver( config, securityPlan, sessionFactory );
     }
@@ -188,10 +187,13 @@ public class DriverFactory
      * <b>This method is protected only for testing</b>
      */
     protected LoadBalancer createLoadBalancer( BoltServerAddress address, ConnectionPool connectionPool,
-            AsyncConnectionPool asyncConnectionPool, Config config, RoutingSettings routingSettings )
+            AsyncConnectionPool asyncConnectionPool, EventExecutorGroup eventExecutorGroup,
+            Config config, RoutingSettings routingSettings )
     {
-        return new LoadBalancer( address, routingSettings, connectionPool, asyncConnectionPool, createClock(),
-                config.logging(), createLoadBalancingStrategy( config, connectionPool, asyncConnectionPool ) );
+        LoadBalancingStrategy loadBalancingStrategy =
+                createLoadBalancingStrategy( config, connectionPool, asyncConnectionPool );
+        return new LoadBalancer( address, routingSettings, connectionPool, asyncConnectionPool, eventExecutorGroup,
+                createClock(), config.logging(), loadBalancingStrategy );
     }
 
     private static LoadBalancingStrategy createLoadBalancingStrategy( Config config, ConnectionPool connectionPool,

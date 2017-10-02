@@ -18,12 +18,15 @@
  */
 package org.neo4j.driver.internal.cluster;
 
+import io.netty.util.concurrent.EventExecutorGroup;
+
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.driver.internal.async.AsyncConnection;
 import org.neo4j.driver.internal.async.pool.AsyncConnectionPool;
@@ -37,7 +40,6 @@ import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
 import static java.lang.String.format;
 import static java.util.concurrent.CompletableFuture.completedFuture;
-import static org.neo4j.driver.internal.async.Futures.failedFuture;
 
 public class Rediscovery
 {
@@ -49,11 +51,21 @@ public class Rediscovery
     private final Logger logger;
     private final ClusterCompositionProvider provider;
     private final HostNameResolver hostNameResolver;
+    private final EventExecutorGroup eventExecutorGroup;
 
     private volatile boolean useInitialRouter;
 
-    public Rediscovery( BoltServerAddress initialRouter, RoutingSettings settings, Clock clock, Logger logger,
-            ClusterCompositionProvider provider, HostNameResolver hostNameResolver )
+    public Rediscovery( BoltServerAddress initialRouter, RoutingSettings settings, ClusterCompositionProvider provider,
+            EventExecutorGroup eventExecutorGroup, HostNameResolver hostNameResolver, Clock clock, Logger logger )
+    {
+        // todo: set useInitialRouter to true when driver only does async
+        this( initialRouter, settings, provider, hostNameResolver, eventExecutorGroup, clock, logger, false );
+    }
+
+    // Test-only constructor
+    public Rediscovery( BoltServerAddress initialRouter, RoutingSettings settings, ClusterCompositionProvider provider,
+            HostNameResolver hostNameResolver, EventExecutorGroup eventExecutorGroup, Clock clock, Logger logger,
+            boolean useInitialRouter )
     {
         this.initialRouter = initialRouter;
         this.settings = settings;
@@ -61,6 +73,8 @@ public class Rediscovery
         this.logger = logger;
         this.provider = provider;
         this.hostNameResolver = hostNameResolver;
+        this.eventExecutorGroup = eventExecutorGroup;
+        this.useInitialRouter = useInitialRouter;
     }
 
     /**
@@ -97,25 +111,39 @@ public class Rediscovery
     public CompletionStage<ClusterComposition> lookupClusterCompositionAsync( RoutingTable routingTable,
             AsyncConnectionPool connectionPool )
     {
-        return lookupClusterCompositionAsync( routingTable, connectionPool, 0 );
+        CompletableFuture<ClusterComposition> result = new CompletableFuture<>();
+        lookupClusterComposition( routingTable, connectionPool, 0, 0, result );
+        return result;
     }
 
-    private CompletionStage<ClusterComposition> lookupClusterCompositionAsync( RoutingTable routingTable,
-            AsyncConnectionPool connectionPool, int failures )
+    private void lookupClusterComposition( RoutingTable routingTable, AsyncConnectionPool pool,
+            int failures, long previousDelay, CompletableFuture<ClusterComposition> result )
     {
         if ( failures >= settings.maxRoutingFailures() )
         {
-            return failedFuture( new ServiceUnavailableException( NO_ROUTERS_AVAILABLE ) );
+            result.completeExceptionally( new ServiceUnavailableException( NO_ROUTERS_AVAILABLE ) );
+            return;
         }
 
-        // todo: use settings.retryTimeoutDelay()?
-        return lookupAsync( routingTable, connectionPool ).thenCompose( composition ->
+        lookupAsync( routingTable, pool ).whenComplete( ( composition, error ) ->
         {
-            if ( composition != null )
+            if ( error != null )
             {
-                return completedFuture( composition );
+                result.completeExceptionally( error );
             }
-            return lookupClusterCompositionAsync( routingTable, connectionPool, failures + 1 );
+            else if ( composition != null )
+            {
+                result.complete( composition );
+            }
+            else
+            {
+                long nextDelay = Math.max( settings.retryTimeoutDelay(), previousDelay * 2 );
+                logger.info( "Unable to fetch new routing table, will try again in " + nextDelay + "ms" );
+                eventExecutorGroup.next().schedule(
+                        () -> lookupClusterComposition( routingTable, pool, failures + 1, nextDelay, result ),
+                        nextDelay, TimeUnit.MILLISECONDS
+                );
+            }
         } );
     }
 
@@ -356,6 +384,7 @@ public class Rediscovery
         }
         else
         {
+            System.err.println( error );
             // connection turned out to be broken
             logger.error( format( "Failed to connect to routing server '%s'.", routerAddress ), error );
             routingTable.forget( routerAddress );
