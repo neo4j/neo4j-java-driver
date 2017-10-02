@@ -123,6 +123,29 @@ public class ExamplesIT
     }
 
     @Test
+    public void testShouldRunConfigConnectionPoolExample() throws Exception
+    {
+        // Given
+        try ( ConfigConnectionPoolExample example = new ConfigConnectionPoolExample( uri, USER, PASSWORD ) )
+        {
+            // Then
+            assertTrue( example.canConnect() );
+        }
+    }
+
+    @Test
+    public void testShouldRunConfigLoadBalancingStrategyExample() throws Exception
+    {
+        // Given
+        try ( ConfigLoadBalancingStrategyExample example =
+                      new ConfigLoadBalancingStrategyExample( uri, USER, PASSWORD ) )
+        {
+            // Then
+            assertTrue( example.canConnect() );
+        }
+    }
+
+    @Test
     public void testShouldRunBasicAuthExample() throws Exception
     {
         // Given
