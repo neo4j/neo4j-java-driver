@@ -114,50 +114,8 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
     public CompletionStage<AsyncConnection> acquireAsyncConnection( AccessMode mode )
     {
         return freshRoutingTable( mode )
-                .thenCompose( routingTable -> acquire( mode, routingTable ) )
+                .thenCompose( routingTable -> acquireAsync( mode, routingTable ) )
                 .thenApply( connection -> new RoutingAsyncConnection( connection, mode, this ) );
-    }
-
-    private CompletionStage<AsyncConnection> acquire( AccessMode mode, RoutingTable routingTable )
-    {
-        AddressSet addresses = addressSet( mode, routingTable );
-        CompletableFuture<AsyncConnection> result = new CompletableFuture<>();
-        acquire( mode, addresses, result );
-        return result;
-    }
-
-    private void acquire( AccessMode mode, AddressSet addresses, CompletableFuture<AsyncConnection> result )
-    {
-        BoltServerAddress address = selectAddressAsync( mode, addresses );
-
-        if ( address == null )
-        {
-            result.completeExceptionally( new SessionExpiredException(
-                    "Failed to obtain connection towards " + mode + " server. " +
-                    "Known routing table is: " + routingTable ) );
-            return;
-        }
-
-        asyncConnectionPool.acquire( address ).whenComplete( ( connection, error ) ->
-        {
-            if ( error != null )
-            {
-                if ( error instanceof ServiceUnavailableException )
-                {
-                    log.error( "Failed to obtain a connection towards address " + address, error );
-                    forget( address );
-                    eventExecutorGroup.next().execute( () -> acquire( mode, addresses, result ) );
-                }
-                else
-                {
-                    result.completeExceptionally( error );
-                }
-            }
-            else
-            {
-                result.complete( connection );
-            }
-        } );
     }
 
     @Override
@@ -292,6 +250,48 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
         CompletableFuture<RoutingTable> routingTableFuture = refreshRoutingTableFuture;
         refreshRoutingTableFuture = null;
         routingTableFuture.completeExceptionally( error );
+    }
+
+    private CompletionStage<AsyncConnection> acquireAsync( AccessMode mode, RoutingTable routingTable )
+    {
+        AddressSet addresses = addressSet( mode, routingTable );
+        CompletableFuture<AsyncConnection> result = new CompletableFuture<>();
+        acquireAsync( mode, addresses, result );
+        return result;
+    }
+
+    private void acquireAsync( AccessMode mode, AddressSet addresses, CompletableFuture<AsyncConnection> result )
+    {
+        BoltServerAddress address = selectAddressAsync( mode, addresses );
+
+        if ( address == null )
+        {
+            result.completeExceptionally( new SessionExpiredException(
+                    "Failed to obtain connection towards " + mode + " server. " +
+                    "Known routing table is: " + routingTable ) );
+            return;
+        }
+
+        asyncConnectionPool.acquire( address ).whenComplete( ( connection, error ) ->
+        {
+            if ( error != null )
+            {
+                if ( error instanceof ServiceUnavailableException )
+                {
+                    log.error( "Failed to obtain a connection towards address " + address, error );
+                    forget( address );
+                    eventExecutorGroup.next().execute( () -> acquireAsync( mode, addresses, result ) );
+                }
+                else
+                {
+                    result.completeExceptionally( error );
+                }
+            }
+            else
+            {
+                result.complete( connection );
+            }
+        } );
     }
 
     private static AddressSet addressSet( AccessMode mode, RoutingTable routingTable )
