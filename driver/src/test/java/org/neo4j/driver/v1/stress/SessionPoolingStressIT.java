@@ -35,7 +35,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Session;
@@ -45,6 +44,7 @@ import org.neo4j.driver.v1.util.TestNeo4j;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.driver.v1.GraphDatabase.driver;
+import static org.neo4j.driver.v1.util.DaemonThreadFactory.daemon;
 
 public class SessionPoolingStressIT
 {
@@ -87,7 +87,7 @@ public class SessionPoolingStressIT
     @Before
     public void setUp() throws Exception
     {
-        executor = Executors.newFixedThreadPool( N_THREADS );
+        executor = Executors.newFixedThreadPool( N_THREADS, daemon( getClass().getSimpleName() + "-thread-" ) );
     }
 
     @After
@@ -122,7 +122,7 @@ public class SessionPoolingStressIT
 
         stop.set( true );
         executor.shutdown();
-        assertTrue( executor.awaitTermination( 20, TimeUnit.SECONDS ) );
+        assertTrue( executor.awaitTermination( 30, TimeUnit.SECONDS ) );
 
         Throwable failure = failureReference.get();
         if ( failure != null )

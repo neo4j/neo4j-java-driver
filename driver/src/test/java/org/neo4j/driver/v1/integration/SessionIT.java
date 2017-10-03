@@ -31,6 +31,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -62,7 +63,6 @@ import org.neo4j.driver.v1.exceptions.TransientException;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static java.lang.String.format;
-import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -98,6 +98,7 @@ public class SessionIT
     public ExpectedException exception = ExpectedException.none();
 
     private Driver driver;
+    private ExecutorService executor;
 
     @After
     public void tearDown()
@@ -105,6 +106,10 @@ public class SessionIT
         if ( driver != null )
         {
             driver.close();
+        }
+        if ( executor != null )
+        {
+            executor.shutdownNow();
         }
     }
 
@@ -1451,9 +1456,12 @@ public class SessionIT
         assertEquals( "Neo.TransientError.Transaction.DeadlockDetected", errorCode );
     }
 
-    private static <T> Future<T> executeInDifferentThread( Callable<T> callable )
+    private <T> Future<T> executeInDifferentThread( Callable<T> callable )
     {
-        ExecutorService executor = newSingleThreadExecutor( daemon( "test-thread-" ) );
+        if ( executor == null )
+        {
+            executor = Executors.newCachedThreadPool( daemon( getClass().getSimpleName() + "-thread-" ) );
+        }
         return executor.submit( callable );
     }
 
@@ -1470,7 +1478,7 @@ public class SessionIT
         }
     }
 
-    private static abstract class NodeIdUpdater
+    private abstract class NodeIdUpdater
     {
         final Future<Void> update( final Driver driver, final int nodeId, final int newNodeId,
                 final AtomicReference<Session> usedSessionRef, final CountDownLatch latchToWait )
