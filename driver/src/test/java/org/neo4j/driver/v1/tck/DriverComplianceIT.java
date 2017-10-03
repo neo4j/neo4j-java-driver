@@ -24,6 +24,7 @@ import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 
+import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.driver.v1.util.TestNeo4j;
@@ -37,7 +38,7 @@ import org.neo4j.driver.v1.util.TestNeo4j;
 public class DriverComplianceIT
 {
     @Rule
-    TemporaryFolder folder = new TemporaryFolder();
+    TemporaryFolder folder = new TemporaryFolder( new File( "target" ) );
 
     @ClassRule
     public static TestNeo4j neo4j = new TestNeo4j();
