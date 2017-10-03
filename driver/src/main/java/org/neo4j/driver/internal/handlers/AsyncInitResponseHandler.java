@@ -19,8 +19,6 @@
 package org.neo4j.driver.internal.handlers;
 
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 
@@ -32,7 +30,6 @@ import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.Value;
 
 import static org.neo4j.driver.internal.async.ChannelAttributes.setServerVersion;
-import static org.neo4j.driver.internal.util.ServerVersion.version;
 
 public class AsyncInitResponseHandler implements ResponseHandler
 {
@@ -50,14 +47,9 @@ public class AsyncInitResponseHandler implements ResponseHandler
     {
         try
         {
-            Value versionValue = metadata.get( "server" );
-            if ( versionValue != null )
-            {
-                String versionString = versionValue.asString();
-                ServerVersion version = version( versionString );
-                setServerVersion( channel, version );
-                updatePipelineIfNeeded( version, channel.pipeline() );
-            }
+            ServerVersion serverVersion = extractServerVersion( metadata );
+            setServerVersion( channel, serverVersion );
+            updatePipelineIfNeeded( serverVersion, channel.pipeline() );
             connectionInitializedPromise.setSuccess();
         }
         catch ( Throwable error )
@@ -68,22 +60,22 @@ public class AsyncInitResponseHandler implements ResponseHandler
     }
 
     @Override
-    public void onFailure( final Throwable error )
+    public void onFailure( Throwable error )
     {
-        channel.close().addListener( new ChannelFutureListener()
-        {
-            @Override
-            public void operationComplete( ChannelFuture future ) throws Exception
-            {
-                connectionInitializedPromise.setFailure( error );
-            }
-        } );
+        channel.close().addListener( future -> connectionInitializedPromise.setFailure( error ) );
     }
 
     @Override
     public void onRecord( Value[] fields )
     {
         throw new UnsupportedOperationException();
+    }
+
+    private static ServerVersion extractServerVersion( Map<String,Value> metadata )
+    {
+        Value versionValue = metadata.get( "server" );
+        boolean versionAbsent = versionValue == null || versionValue.isNull();
+        return versionAbsent ? ServerVersion.v3_0_0 : ServerVersion.version( versionValue.asString() );
     }
 
     private static void updatePipelineIfNeeded( ServerVersion serverVersion, ChannelPipeline pipeline )

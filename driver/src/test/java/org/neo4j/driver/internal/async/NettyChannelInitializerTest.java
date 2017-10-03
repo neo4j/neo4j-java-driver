@@ -19,7 +19,6 @@
 package org.neo4j.driver.internal.async;
 
 import io.netty.channel.embedded.EmbeddedChannel;
-import io.netty.channel.pool.ChannelPoolHandler;
 import io.netty.handler.ssl.SslHandler;
 import org.junit.Test;
 
@@ -31,11 +30,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.driver.internal.async.ChannelAttributes.address;
 import static org.neo4j.driver.internal.async.ChannelAttributes.creationTimestamp;
 import static org.neo4j.driver.internal.async.ChannelAttributes.messageDispatcher;
+import static org.neo4j.driver.internal.async.ChannelAttributes.serverAddress;
 import static org.neo4j.driver.internal.net.BoltServerAddress.LOCAL_DEFAULT;
 
 public class NettyChannelInitializerTest
@@ -43,9 +41,8 @@ public class NettyChannelInitializerTest
     @Test
     public void shouldAddSslHandlerWhenRequiresEncryption() throws Exception
     {
-        SecurityPlan securityPlan = SecurityPlan.forAllCertificates();
-        NettyChannelInitializer initializer = new NettyChannelInitializer( LOCAL_DEFAULT, securityPlan,
-                mock( ChannelPoolHandler.class ), new FakeClock() );
+        SecurityPlan security = SecurityPlan.forAllCertificates();
+        NettyChannelInitializer initializer = new NettyChannelInitializer( LOCAL_DEFAULT, security, new FakeClock() );
 
         EmbeddedChannel channel = new EmbeddedChannel();
         initializer.initChannel( channel );
@@ -54,11 +51,10 @@ public class NettyChannelInitializerTest
     }
 
     @Test
-    public void shouldNotAddSslHandlerWhenDoesNotRequireEncryption() throws Exception
+    public void shouldNotAddSslHandlerWhenDoesNotRequireEncryption()
     {
-        SecurityPlan securityPlan = SecurityPlan.insecure();
-        NettyChannelInitializer initializer = new NettyChannelInitializer( LOCAL_DEFAULT, securityPlan,
-                mock( ChannelPoolHandler.class ), new FakeClock() );
+        SecurityPlan security = SecurityPlan.insecure();
+        NettyChannelInitializer initializer = new NettyChannelInitializer( LOCAL_DEFAULT, security, new FakeClock() );
 
         EmbeddedChannel channel = new EmbeddedChannel();
         initializer.initChannel( channel );
@@ -67,31 +63,18 @@ public class NettyChannelInitializerTest
     }
 
     @Test
-    public void shouldUpdateChannelAttributes() throws Exception
+    public void shouldUpdateChannelAttributes()
     {
         Clock clock = mock( Clock.class );
         when( clock.millis() ).thenReturn( 42L );
-        NettyChannelInitializer initializer = new NettyChannelInitializer( LOCAL_DEFAULT, SecurityPlan.insecure(),
-                mock( ChannelPoolHandler.class ), clock );
+        SecurityPlan security = SecurityPlan.insecure();
+        NettyChannelInitializer initializer = new NettyChannelInitializer( LOCAL_DEFAULT, security, clock );
 
         EmbeddedChannel channel = new EmbeddedChannel();
         initializer.initChannel( channel );
 
-        assertEquals( LOCAL_DEFAULT, address( channel ) );
+        assertEquals( LOCAL_DEFAULT, serverAddress( channel ) );
         assertEquals( 42L, creationTimestamp( channel ) );
         assertNotNull( messageDispatcher( channel ) );
-    }
-
-    @Test
-    public void shouldNotifyPoolHandlerAboutCreatedConnection() throws Exception
-    {
-        ChannelPoolHandler poolHandler = mock( ChannelPoolHandler.class );
-        NettyChannelInitializer initializer = new NettyChannelInitializer( LOCAL_DEFAULT, SecurityPlan.insecure(),
-                poolHandler, new FakeClock() );
-
-        EmbeddedChannel channel = new EmbeddedChannel();
-        initializer.initChannel( channel );
-
-        verify( poolHandler ).channelCreated( channel );
     }
 }

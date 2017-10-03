@@ -99,8 +99,7 @@ public class HandshakeResponseHandler extends ReplayingDecoder<Void>
 
     private void fail( ChannelHandlerContext ctx, Throwable error )
     {
-        ctx.close();
-        handshakeCompletedPromise.setFailure( error );
+        ctx.close().addListener( future -> handshakeCompletedPromise.setFailure( error ) );
     }
 
     private static Throwable protocolNoSupportedByServerError()

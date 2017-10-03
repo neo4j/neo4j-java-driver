@@ -21,7 +21,6 @@ package org.neo4j.driver.internal.async;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.pool.ChannelPoolHandler;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -48,7 +47,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
@@ -70,7 +68,7 @@ public class AsyncConnectorImplTest
     {
         if ( bootstrap != null )
         {
-            bootstrap.config().group().shutdownGracefully();
+            bootstrap.config().group().shutdownGracefully().syncUninterruptibly();
         }
     }
 
@@ -161,7 +159,6 @@ public class AsyncConnectorImplTest
     private AsyncConnectorImpl newConnector( AuthToken authToken, int connectTimeoutMillis ) throws Exception
     {
         ConnectionSettings settings = new ConnectionSettings( authToken, 1000 );
-        return new AsyncConnectorImpl( settings, SecurityPlan.forAllCertificates(),
-                mock( ChannelPoolHandler.class ), DEV_NULL_LOGGING, new FakeClock() );
+        return new AsyncConnectorImpl( settings, SecurityPlan.forAllCertificates(), DEV_NULL_LOGGING, new FakeClock() );
     }
 }

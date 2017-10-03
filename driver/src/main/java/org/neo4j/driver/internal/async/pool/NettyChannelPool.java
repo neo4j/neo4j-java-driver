@@ -57,6 +57,15 @@ public class NettyChannelPool extends FixedChannelPool
     @Override
     protected ChannelFuture connectChannel( Bootstrap bootstrap )
     {
-        return connector.connect( address, bootstrap );
+        ChannelFuture channelFuture = connector.connect( address, bootstrap );
+        channelFuture.addListener( future ->
+        {
+            if ( future.isSuccess() )
+            {
+                // notify pool handler about a successful connection
+                handler().channelCreated( channelFuture.channel() );
+            }
+        } );
+        return channelFuture;
     }
 }
