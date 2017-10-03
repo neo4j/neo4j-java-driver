@@ -92,7 +92,7 @@ public class DriverFactory
             try
             {
                 connectionPool.close();
-                Futures.getBlocking( asyncConnectionPool.closeAsync() );
+                Futures.getBlocking( asyncConnectionPool.close() );
             }
             catch ( Throwable closeError )
             {

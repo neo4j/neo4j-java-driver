@@ -63,7 +63,7 @@ public class AsyncConnectionPoolImplTest
     @After
     public void tearDown() throws Exception
     {
-        pool.closeAsync();
+        pool.close();
     }
 
     @Test
@@ -104,7 +104,7 @@ public class AsyncConnectionPoolImplTest
     {
         AsyncConnection connection = await( pool.acquire( neo4j.address() ) );
         await( connection.forceRelease() );
-        await( pool.closeAsync() );
+        await( pool.close() );
 
         try
         {
@@ -159,8 +159,8 @@ public class AsyncConnectionPoolImplTest
     @Test
     public void shouldNotCloseWhenClosed()
     {
-        assertNull( await( pool.closeAsync() ) );
-        assertTrue( pool.closeAsync().toCompletableFuture().isDone() );
+        assertNull( await( pool.close() ) );
+        assertTrue( pool.close().toCompletableFuture().isDone() );
     }
 
     private AsyncConnectionPoolImpl newPool() throws Exception

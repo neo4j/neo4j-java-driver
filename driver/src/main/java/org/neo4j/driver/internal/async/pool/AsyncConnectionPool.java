@@ -33,5 +33,5 @@ public interface AsyncConnectionPool
 
     int activeConnections( BoltServerAddress address );
 
-    CompletionStage<?> closeAsync();
+    CompletionStage<Void> close();
 }

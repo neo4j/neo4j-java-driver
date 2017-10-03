@@ -109,7 +109,7 @@ public class AsyncConnectionPoolImpl implements AsyncConnectionPool
     }
 
     @Override
-    public CompletionStage<?> closeAsync()
+    public CompletionStage<Void> close()
     {
         if ( closed.compareAndSet( false, true ) )
         {
@@ -128,7 +128,8 @@ public class AsyncConnectionPoolImpl implements AsyncConnectionPool
                 eventLoopGroup().shutdownGracefully();
             }
         }
-        return Futures.asCompletionStage( eventLoopGroup().terminationFuture() );
+        return Futures.asCompletionStage( eventLoopGroup().terminationFuture() )
+                .thenApply( ignore -> null );
     }
 
     private ChannelPool getOrCreatePool( BoltServerAddress address )

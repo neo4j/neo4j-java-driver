@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.v1;
 
+import java.util.concurrent.CompletionStage;
+
 /**
  * Accessor for a specific Neo4j graph database.
  * <p>
@@ -140,4 +142,6 @@ public interface Driver extends AutoCloseable
      * Close all the resources assigned to this driver, including any open connections.
      */
     void close();
+
+    CompletionStage<Void> closeAsync();
 }
