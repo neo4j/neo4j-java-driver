@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal.cluster;
 
 import java.util.LinkedHashSet;
+import java.util.Objects;
 import java.util.Set;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
@@ -95,14 +96,38 @@ public final class ClusterComposition
     }
 
     @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        ClusterComposition that = (ClusterComposition) o;
+        return expirationTimestamp == that.expirationTimestamp &&
+               Objects.equals( readers, that.readers ) &&
+               Objects.equals( writers, that.writers ) &&
+               Objects.equals( routers, that.routers );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( readers, writers, routers, expirationTimestamp );
+    }
+
+    @Override
     public String toString()
     {
         return "ClusterComposition{" +
-                "expirationTimestamp=" + expirationTimestamp +
-                ", readers=" + readers +
-                ", writers=" + writers +
-                ", routers=" + routers +
-                '}';
+               "readers=" + readers +
+               ", writers=" + writers +
+               ", routers=" + routers +
+               ", expirationTimestamp=" + expirationTimestamp +
+               '}';
     }
 
     public static ClusterComposition parse( Record record, long now )

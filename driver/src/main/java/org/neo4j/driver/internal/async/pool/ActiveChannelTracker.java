@@ -29,7 +29,7 @@ import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 
-import static org.neo4j.driver.internal.async.ChannelAttributes.address;
+import static org.neo4j.driver.internal.async.ChannelAttributes.serverAddress;
 
 public class ActiveChannelTracker implements ChannelPoolHandler
 {
@@ -83,7 +83,7 @@ public class ActiveChannelTracker implements ChannelPoolHandler
 
     private void channelActive( Channel channel )
     {
-        BoltServerAddress address = address( channel );
+        BoltServerAddress address = serverAddress( channel );
         ConcurrentSet<Channel> activeChannels = addressToActiveChannelCount.get( address );
         if ( activeChannels == null )
         {
@@ -105,7 +105,7 @@ public class ActiveChannelTracker implements ChannelPoolHandler
 
     private void channelInactive( Channel channel )
     {
-        BoltServerAddress address = address( channel );
+        BoltServerAddress address = serverAddress( channel );
         ConcurrentSet<Channel> activeChannels = addressToActiveChannelCount.get( address );
         if ( activeChannels == null )
         {

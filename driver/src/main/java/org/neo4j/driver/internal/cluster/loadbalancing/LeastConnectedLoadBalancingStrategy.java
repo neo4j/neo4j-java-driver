@@ -18,6 +18,9 @@
  */
 package org.neo4j.driver.internal.cluster.loadbalancing;
 
+import java.util.function.Function;
+
+import org.neo4j.driver.internal.async.pool.AsyncConnectionPool;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.v1.Logger;
@@ -36,28 +39,44 @@ public class LeastConnectedLoadBalancingStrategy implements LoadBalancingStrateg
     private final RoundRobinArrayIndex writersIndex = new RoundRobinArrayIndex();
 
     private final ConnectionPool connectionPool;
+    private final AsyncConnectionPool asyncConnectionPool;
     private final Logger log;
 
-    public LeastConnectedLoadBalancingStrategy( ConnectionPool connectionPool, Logging logging )
+    public LeastConnectedLoadBalancingStrategy( ConnectionPool connectionPool, AsyncConnectionPool asyncConnectionPool,
+            Logging logging )
     {
         this.connectionPool = connectionPool;
+        this.asyncConnectionPool = asyncConnectionPool;
         this.log = logging.getLog( LOGGER_NAME );
     }
 
     @Override
     public BoltServerAddress selectReader( BoltServerAddress[] knownReaders )
     {
-        return select( knownReaders, readersIndex, "reader" );
+        return select( knownReaders, readersIndex, "reader", connectionPool::activeConnections );
+    }
+
+    @Override
+    public BoltServerAddress selectReaderAsync( BoltServerAddress[] knownReaders )
+    {
+        return select( knownReaders, readersIndex, "reader", asyncConnectionPool::activeConnections );
     }
 
     @Override
     public BoltServerAddress selectWriter( BoltServerAddress[] knownWriters )
     {
-        return select( knownWriters, writersIndex, "writer" );
+        return select( knownWriters, writersIndex, "writer", connectionPool::activeConnections );
     }
 
+    @Override
+    public BoltServerAddress selectWriterAsync( BoltServerAddress[] knownWriters )
+    {
+        return select( knownWriters, writersIndex, "writer", asyncConnectionPool::activeConnections );
+    }
+
+    // todo: remove Function from params when only async is supported
     private BoltServerAddress select( BoltServerAddress[] addresses, RoundRobinArrayIndex addressesIndex,
-            String addressType )
+            String addressType, Function<BoltServerAddress,Integer> activeConnectionFunction )
     {
         int size = addresses.length;
         if ( size == 0 )
@@ -77,7 +96,7 @@ public class LeastConnectedLoadBalancingStrategy implements LoadBalancingStrateg
         do
         {
             BoltServerAddress address = addresses[index];
-            int activeConnections = connectionPool.activeConnections( address );
+            int activeConnections = activeConnectionFunction.apply( address );
 
             if ( activeConnections < leastActiveConnections )
             {

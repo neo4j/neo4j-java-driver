@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal.cluster;
 
+import io.netty.util.concurrent.GlobalEventExecutor;
 import org.junit.Test;
 import org.junit.experimental.runners.Enclosed;
 import org.junit.runner.RunWith;
@@ -106,7 +107,8 @@ public class RediscoveryTest
             ClusterCompositionProvider mockedProvider = mock( ClusterCompositionProvider.class );
             when( mockedProvider.getClusterComposition( any( Connection.class ) ) ).thenThrow( new RuntimeException() );
 
-            Rediscovery rediscovery = new Rediscovery( A, settings, clock, DEV_NULL_LOGGER, mockedProvider, directMapProvider );
+            Rediscovery rediscovery = new Rediscovery( A, settings, mockedProvider, GlobalEventExecutor.INSTANCE,
+                    directMapProvider, clock, DEV_NULL_LOGGER );
 
             // when
             try
@@ -245,8 +247,9 @@ public class RediscoveryTest
             when( mockedProvider.getClusterComposition( initialRouterConn ) )
                     .thenReturn( success( VALID_CLUSTER_COMPOSITION ) );
 
-            Rediscovery rediscovery = new Rediscovery( F, new RoutingSettings( 1, 0 ), new FakeClock(),
-                    DEV_NULL_LOGGER, mockedProvider, directMapProvider );
+            Rediscovery rediscovery = new Rediscovery( F, new RoutingSettings( 1, 0 ), mockedProvider,
+                    GlobalEventExecutor.INSTANCE, directMapProvider, new FakeClock(),
+                    DEV_NULL_LOGGER );
 
             // first rediscovery should accept table with no writers
             ClusterComposition composition1 = rediscovery.lookupClusterComposition( routingTable, mockedConnections );
@@ -481,8 +484,9 @@ public class RediscoveryTest
             Clock mockedClock = mock( Clock.class );
             Logger mockedLogger = mock( Logger.class );
 
-            Rediscovery rediscovery = new Rediscovery( A, settings, mockedClock, mockedLogger, clusterComposition,
-                    directMapProvider );
+            Rediscovery rediscovery = new Rediscovery( A, settings, clusterComposition, GlobalEventExecutor.INSTANCE,
+                    directMapProvider, mockedClock, mockedLogger
+            );
 
             ClusterComposition composition1 = rediscovery.lookupClusterComposition( routingTable, connections );
             assertEquals( VALID_CLUSTER_COMPOSITION, composition1 );
@@ -512,8 +516,9 @@ public class RediscoveryTest
         Clock mockedClock = mock( Clock.class );
         Logger mockedLogger = mock( Logger.class );
 
-        Rediscovery rediscovery = new Rediscovery( initialRouter, settings, mockedClock, mockedLogger, provider,
-                directMapProvider );
+        Rediscovery rediscovery = new Rediscovery( initialRouter, settings, provider, GlobalEventExecutor.INSTANCE,
+                directMapProvider, mockedClock, mockedLogger
+        );
         return rediscovery.lookupClusterComposition( routingTable, connections );
     }
 

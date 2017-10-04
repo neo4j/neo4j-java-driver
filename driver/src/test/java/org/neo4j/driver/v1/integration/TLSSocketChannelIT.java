@@ -66,7 +66,7 @@ public class TLSSocketChannelIT
     public TestNeo4j neo4j = new TestNeo4j();
 
     @Rule
-    public TemporaryFolder folder = new TemporaryFolder();
+    public TemporaryFolder folder = new TemporaryFolder( new File( "target" ) );
 
     @BeforeClass
     public static void setup() throws IOException, InterruptedException

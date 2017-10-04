@@ -19,9 +19,13 @@
 package org.neo4j.driver.v1.util;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.util.internal.PlatformDependent;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -66,7 +70,7 @@ public final class TestUtil
         }
         catch ( ExecutionException e )
         {
-            throwException( e.getCause() );
+            PlatformDependent.throwException( e.getCause() );
             return null;
         }
         catch ( TimeoutException e )
@@ -112,15 +116,10 @@ public final class TestUtil
         }
     }
 
-    private static void throwException( Throwable t )
+    @SafeVarargs
+    public static <T> Set<T> asOrderedSet( T... elements )
     {
-        TestUtil.<RuntimeException>doThrowException( t );
-    }
-
-    @SuppressWarnings( "unchecked" )
-    private static <E extends Throwable> void doThrowException( Throwable t ) throws E
-    {
-        throw (E) t;
+        return new LinkedHashSet<>( Arrays.asList( elements ) );
     }
 
     private static Number read( ByteBuf buf, Class<? extends Number> type )

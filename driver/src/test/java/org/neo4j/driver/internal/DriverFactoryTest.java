@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal;
 
+import io.netty.util.concurrent.EventExecutorGroup;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -28,6 +29,7 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 
+import org.neo4j.driver.internal.async.pool.AsyncConnectionPool;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
 import org.neo4j.driver.internal.net.BoltServerAddress;
@@ -168,8 +170,9 @@ public class DriverFactoryTest
         }
 
         @Override
-        protected Driver createRoutingDriver( BoltServerAddress address, ConnectionPool connectionPool, Config config,
-                RoutingSettings routingSettings, SecurityPlan securityPlan, RetryLogic retryLogic )
+        protected Driver createRoutingDriver( BoltServerAddress address, ConnectionPool connectionPool,
+                AsyncConnectionPool asyncConnectionPool, Config config, RoutingSettings routingSettings,
+                SecurityPlan securityPlan, RetryLogic retryLogic, EventExecutorGroup eventExecutorGroup )
         {
             throw new UnsupportedOperationException( "Can't create routing driver" );
         }
@@ -193,6 +196,7 @@ public class DriverFactoryTest
 
         @Override
         protected LoadBalancer createLoadBalancer( BoltServerAddress address, ConnectionPool connectionPool,
+                AsyncConnectionPool asyncConnectionPool, EventExecutorGroup eventExecutorGroup,
                 Config config, RoutingSettings routingSettings )
         {
             return null;

@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal;
 
+import io.netty.util.concurrent.GlobalEventExecutor;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -31,9 +32,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 
+import org.neo4j.driver.internal.async.pool.AsyncConnectionPool;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.cluster.loadbalancing.LeastConnectedLoadBalancingStrategy;
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
+import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancingStrategy;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.retry.FixedRetryLogic;
 import org.neo4j.driver.internal.retry.RetryLogic;
@@ -65,7 +68,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.driver.internal.cluster.ClusterCompositionProviderTest.serverInfo;
+import static org.neo4j.driver.internal.cluster.RoutingProcedureClusterCompositionProviderTest.serverInfo;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.security.SecurityPlan.insecure;
 import static org.neo4j.driver.v1.Values.value;
@@ -360,8 +363,11 @@ public class RoutingDriverTest
     {
         Logging logging = DEV_NULL_LOGGING;
         RoutingSettings settings = new RoutingSettings( 10, 5_000, null );
-        ConnectionProvider connectionProvider = new LoadBalancer( SEED, settings, pool, clock, logging,
-                new LeastConnectedLoadBalancingStrategy( pool, logging ) );
+        AsyncConnectionPool asyncConnectionPool = mock( AsyncConnectionPool.class );
+        LoadBalancingStrategy loadBalancingStrategy = new LeastConnectedLoadBalancingStrategy( pool,
+                asyncConnectionPool, logging );
+        ConnectionProvider connectionProvider = new LoadBalancer( SEED, settings, pool, asyncConnectionPool,
+                GlobalEventExecutor.INSTANCE, clock, logging, loadBalancingStrategy );
         Config config = Config.build().withLogging( logging ).toConfig();
         SessionFactory sessionFactory = new NetworkSessionWithAddressFactory( connectionProvider, config );
         return new InternalDriver( insecure(), sessionFactory, logging );

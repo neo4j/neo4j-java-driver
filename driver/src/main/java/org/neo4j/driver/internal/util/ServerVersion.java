@@ -152,6 +152,8 @@ public class ServerVersion
     @Override
     public String toString()
     {
-        return String.format( "%s.%s.%s", major, minor, patch );
+        return this == vInDev
+               ? NEO4J_IN_DEV_VERSION_STRING
+               : String.format( "Neo4j/%s.%s.%s", major, minor, patch );
     }
 }

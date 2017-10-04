@@ -18,14 +18,18 @@
  */
 package org.neo4j.driver.internal.async;
 
+import io.netty.util.internal.ConcurrentSet;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
@@ -37,13 +41,15 @@ import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.StatementResultCursor;
 import org.neo4j.driver.v1.Transaction;
 
+// todo: remove this class
 public class Main
 {
-    private static final int ITERATIONS = 100;
+    private static final int ITERATIONS = 200;
 
-    private static final String QUERY1 = "MATCH (n:ActiveItem) RETURN n LIMIT 10000";
+    private static final String QUERY1 = "RETURN 1";
+    private static final String QUERY2 = "MATCH (n:ActiveItem) RETURN n LIMIT 50000";
 
-    private static final String QUERY =
+    private static final String QUERY3 =
             "MATCH (s:Sku{sku_no: {skuNo}})-[:HAS_ITEM_SOURCE]->(i:ItemSource{itemsource: {itemSource}})\n" +
             "//Get master sku for auxiliary item\n" +
             "OPTIONAL MATCH (s)-[:AUXILIARY_FOR]->(master_sku:Sku) WHERE NOT s.display_auxiliary_content\n" +
@@ -97,24 +103,30 @@ public class Main
             "\thasThirdPartyContent: sku.has_third_party_content\n" +
             "}) AS overview;\n";
 
-    private static final Map<String,Object> PARAMS_OBJ = new HashMap<>();
+    private static final String QUERY = QUERY2;
 
+    private static final Map<String,Object> PARAMS1 = new HashMap<>();
+    private static final Map<String,Object> PARAMS2 = new HashMap<>();
+
+    private static final Map<String,Object> PARAMS = PARAMS1;
+
+    private static final String SCHEME = "bolt+routing";
     private static final String USER = "neo4j";
     private static final String PASSWORD = "test";
-    private static final String HOST = "ec2-54-73-57-164.eu-west-1.compute.amazonaws.com";
-    private static final int PORT = 7687;
-    private static final String URI = "bolt://" + HOST + ":" + PORT;
+    private static final String HOST = "ec2-34-249-23-195.eu-west-1.compute.amazonaws.com";
+    private static final int PORT = 26000;
+    private static final String URI = SCHEME + "://" + HOST + ":" + PORT;
 
     static
     {
-        PARAMS_OBJ.put( "skuNo", 366421 );
-        PARAMS_OBJ.put( "itemSource", "REG" );
-        PARAMS_OBJ.put( "catalogId", 2 );
-        PARAMS_OBJ.put( "locale", "en" );
+        PARAMS1.put( "skuNo", 366421 );
+        PARAMS1.put( "itemSource", "REG" );
+        PARAMS1.put( "catalogId", 2 );
+        PARAMS1.put( "locale", "en" );
         Map<String,Object> tmpObj = new HashMap<>();
         tmpObj.put( "skuNo", 366421 );
         tmpObj.put( "itemSource", "REG" );
-        PARAMS_OBJ.put( "itemList", Collections.singletonList( tmpObj ) );
+        PARAMS1.put( "itemList", Collections.singletonList( tmpObj ) );
     }
 
     public static void main( String[] args ) throws Throwable
@@ -131,17 +143,18 @@ public class Main
         test( "Session#run()", new Action()
         {
             @Override
-            public void apply( Driver driver, MutableInt recordsRead )
+            public void apply( Driver driver, MutableInt recordsRead, Set<String> serversUsed )
             {
-                try ( Session session = driver.session() )
+                try ( Session session = driver.session( AccessMode.READ ) )
                 {
-                    StatementResult result = session.run( QUERY, PARAMS_OBJ );
+                    StatementResult result = session.run( QUERY, PARAMS );
                     while ( result.hasNext() )
                     {
                         Record record = result.next();
                         useRecord( record );
                         recordsRead.increment();
                     }
+                    serversUsed.add( result.summary().server().address() );
                 }
             }
         } );
@@ -152,10 +165,10 @@ public class Main
         test( "Session#runAsync()", new Action()
         {
             @Override
-            public void apply( Driver driver, MutableInt recordsRead )
+            public void apply( Driver driver, MutableInt recordsRead, Set<String> serversUsed )
             {
-                Session session = driver.session();
-                CompletionStage<StatementResultCursor> cursorFuture = session.runAsync( QUERY, PARAMS_OBJ );
+                Session session = driver.session( AccessMode.READ );
+                CompletionStage<StatementResultCursor> cursorFuture = session.runAsync( QUERY, PARAMS );
                 StatementResultCursor cursor = await( cursorFuture );
                 Record record;
                 while ( (record = await( cursor.nextAsync() )) != null )
@@ -163,6 +176,7 @@ public class Main
                     useRecord( record );
                     recordsRead.increment();
                 }
+                serversUsed.add( await( cursor.summaryAsync() ).server().address() );
                 await( session.closeAsync() );
             }
         } );
@@ -173,12 +187,12 @@ public class Main
         test( "Transaction#run()", new Action()
         {
             @Override
-            public void apply( Driver driver, MutableInt recordsRead )
+            public void apply( Driver driver, MutableInt recordsRead, Set<String> serversUsed )
             {
-                try ( Session session = driver.session();
+                try ( Session session = driver.session( AccessMode.READ );
                       Transaction tx = session.beginTransaction() )
                 {
-                    StatementResult result = tx.run( QUERY, PARAMS_OBJ );
+                    StatementResult result = tx.run( QUERY, PARAMS );
                     while ( result.hasNext() )
                     {
                         Record record = result.next();
@@ -186,6 +200,7 @@ public class Main
                         recordsRead.increment();
                     }
                     tx.success();
+                    serversUsed.add( result.summary().server().address() );
                 }
             }
         } );
@@ -196,17 +211,18 @@ public class Main
         test( "Transaction#runAsync()", new Action()
         {
             @Override
-            public void apply( Driver driver, MutableInt recordsRead )
+            public void apply( Driver driver, MutableInt recordsRead, Set<String> serversUsed )
             {
-                Session session = driver.session();
+                Session session = driver.session( AccessMode.READ );
                 Transaction tx = await( session.beginTransactionAsync() );
-                StatementResultCursor cursor = await( tx.runAsync( QUERY, PARAMS_OBJ ) );
+                StatementResultCursor cursor = await( tx.runAsync( QUERY, PARAMS ) );
                 Record record;
                 while ( (record = await( cursor.nextAsync() )) != null )
                 {
                     useRecord( record );
                     recordsRead.increment();
                 }
+                serversUsed.add( await( cursor.summaryAsync() ).server().address() );
                 await( tx.commitAsync() );
                 await( session.closeAsync() );
             }
@@ -220,6 +236,7 @@ public class Main
 
         List<Long> timings = new ArrayList<>();
         MutableInt recordsRead = new MutableInt();
+        ConcurrentSet<String> serversUsed = new ConcurrentSet<>();
 
         try ( Driver driver = GraphDatabase.driver( URI, authToken, config ) )
         {
@@ -227,7 +244,7 @@ public class Main
             {
                 long start = System.nanoTime();
 
-                action.apply( driver, recordsRead );
+                action.apply( driver, recordsRead, serversUsed );
 
                 long end = System.nanoTime();
                 timings.add( TimeUnit.NANOSECONDS.toMillis( end - start ) );
@@ -240,6 +257,7 @@ public class Main
         System.out.println( actionName + ": mean --> " + mean( timings ) + "ms, stdDev --> " + stdDev( timings ) );
         System.out.println( actionName + ": timings --> " + timings );
         System.out.println( actionName + ": recordsRead --> " + recordsRead );
+        System.out.println( actionName + ": serversUsed --> " + serversUsed );
         System.out.println( "============================================================" );
     }
 
@@ -306,7 +324,7 @@ public class Main
 
     private interface Action
     {
-        void apply( Driver driver, MutableInt recordsRead );
+        void apply( Driver driver, MutableInt recordsRead, Set<String> serversUsed );
     }
 
     private static class MutableInt

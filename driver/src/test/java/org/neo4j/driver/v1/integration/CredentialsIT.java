@@ -23,6 +23,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import java.io.File;
 import java.util.HashMap;
 
 import org.neo4j.driver.internal.security.InternalAuthToken;
@@ -52,7 +53,7 @@ import static org.neo4j.driver.v1.Values.parameters;
 public class CredentialsIT
 {
     @ClassRule
-    public static TemporaryFolder tempDir = new TemporaryFolder();
+    public static TemporaryFolder tempDir = new TemporaryFolder( new File( "target" ) );
 
     @ClassRule
     public static TestNeo4j neo4j = new TestNeo4j();

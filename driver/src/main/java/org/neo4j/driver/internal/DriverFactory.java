@@ -19,7 +19,6 @@
 package org.neo4j.driver.internal;
 
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.EventLoopGroup;
 import io.netty.util.concurrent.EventExecutorGroup;
 
 import java.io.IOException;
@@ -76,17 +75,17 @@ public class DriverFactory
         SecurityPlan securityPlan = createSecurityPlan( address, config );
         ConnectionPool connectionPool = createConnectionPool( authToken, securityPlan, config );
 
-        Bootstrap bootstrap = BootstrapFactory.newBootstrap();
-        EventLoopGroup eventLoopGroup = bootstrap.config().group();
-        RetryLogic retryLogic = createRetryLogic( retrySettings, eventLoopGroup, config.logging() );
+        Bootstrap bootstrap = createBootstrap();
+        EventExecutorGroup eventExecutorGroup = bootstrap.config().group();
+        RetryLogic retryLogic = createRetryLogic( retrySettings, eventExecutorGroup, config.logging() );
 
         AsyncConnectionPool asyncConnectionPool = createAsyncConnectionPool( authToken, securityPlan, bootstrap,
                 config );
 
         try
         {
-            return createDriver( uri, address, connectionPool, config, newRoutingSettings, securityPlan, retryLogic,
-                    asyncConnectionPool );
+            return createDriver( uri, address, connectionPool, asyncConnectionPool, config, newRoutingSettings,
+                    eventExecutorGroup, securityPlan, retryLogic );
         }
         catch ( Throwable driverError )
         {
@@ -121,8 +120,8 @@ public class DriverFactory
     }
 
     private Driver createDriver( URI uri, BoltServerAddress address, ConnectionPool connectionPool,
-            Config config, RoutingSettings routingSettings, SecurityPlan securityPlan, RetryLogic retryLogic,
-            AsyncConnectionPool asyncConnectionPool )
+            AsyncConnectionPool asyncConnectionPool, Config config, RoutingSettings routingSettings,
+            EventExecutorGroup eventExecutorGroup, SecurityPlan securityPlan, RetryLogic retryLogic )
     {
         String scheme = uri.getScheme().toLowerCase();
         switch ( scheme )
@@ -131,7 +130,8 @@ public class DriverFactory
             assertNoRoutingContext( uri, routingSettings );
             return createDirectDriver( address, connectionPool, config, securityPlan, retryLogic, asyncConnectionPool );
         case BOLT_ROUTING_URI_SCHEME:
-            return createRoutingDriver( address, connectionPool, config, routingSettings, securityPlan, retryLogic );
+            return createRoutingDriver( address, connectionPool, asyncConnectionPool, config, routingSettings,
+                    securityPlan, retryLogic, eventExecutorGroup );
         default:
             throw new ClientException( format( "Unsupported URI scheme: %s", scheme ) );
         }
@@ -158,13 +158,15 @@ public class DriverFactory
      * <b>This method is protected only for testing</b>
      */
     protected Driver createRoutingDriver( BoltServerAddress address, ConnectionPool connectionPool,
-            Config config, RoutingSettings routingSettings, SecurityPlan securityPlan, RetryLogic retryLogic )
+            AsyncConnectionPool asyncConnectionPool, Config config, RoutingSettings routingSettings,
+            SecurityPlan securityPlan, RetryLogic retryLogic, EventExecutorGroup eventExecutorGroup )
     {
         if ( !securityPlan.isRoutingCompatible() )
         {
             throw new IllegalArgumentException( "The chosen security plan is not compatible with a routing driver" );
         }
-        ConnectionProvider connectionProvider = createLoadBalancer( address, connectionPool, config, routingSettings );
+        ConnectionProvider connectionProvider = createLoadBalancer( address, connectionPool, asyncConnectionPool,
+                eventExecutorGroup, config, routingSettings );
         SessionFactory sessionFactory = createSessionFactory( connectionProvider, retryLogic, config );
         return createDriver( config, securityPlan, sessionFactory );
     }
@@ -184,21 +186,25 @@ public class DriverFactory
      * <p>
      * <b>This method is protected only for testing</b>
      */
-    protected LoadBalancer createLoadBalancer( BoltServerAddress address, ConnectionPool connectionPool, Config config,
-            RoutingSettings routingSettings )
+    protected LoadBalancer createLoadBalancer( BoltServerAddress address, ConnectionPool connectionPool,
+            AsyncConnectionPool asyncConnectionPool, EventExecutorGroup eventExecutorGroup,
+            Config config, RoutingSettings routingSettings )
     {
-        return new LoadBalancer( address, routingSettings, connectionPool, createClock(), config.logging(),
-                createLoadBalancingStrategy( config, connectionPool ) );
+        LoadBalancingStrategy loadBalancingStrategy =
+                createLoadBalancingStrategy( config, connectionPool, asyncConnectionPool );
+        return new LoadBalancer( address, routingSettings, connectionPool, asyncConnectionPool, eventExecutorGroup,
+                createClock(), config.logging(), loadBalancingStrategy );
     }
 
-    private static LoadBalancingStrategy createLoadBalancingStrategy( Config config, ConnectionPool connectionPool )
+    private static LoadBalancingStrategy createLoadBalancingStrategy( Config config, ConnectionPool connectionPool,
+            AsyncConnectionPool asyncConnectionPool )
     {
         switch ( config.loadBalancingStrategy() )
         {
         case ROUND_ROBIN:
             return new RoundRobinLoadBalancingStrategy( config.logging() );
         case LEAST_CONNECTED:
-            return new LeastConnectedLoadBalancingStrategy( connectionPool, config.logging() );
+            return new LeastConnectedLoadBalancingStrategy( connectionPool, asyncConnectionPool, config.logging() );
         default:
             throw new IllegalArgumentException( "Unknown load balancing strategy: " + config.loadBalancingStrategy() );
         }
@@ -253,7 +259,7 @@ public class DriverFactory
     }
 
     /**
-     * Creates new {@link RetryLogic >}.
+     * Creates new {@link RetryLogic}.
      * <p>
      * <b>This method is protected only for testing</b>
      */
@@ -261,6 +267,16 @@ public class DriverFactory
             Logging logging )
     {
         return new ExponentialBackoffRetryLogic( settings, eventExecutorGroup, createClock(), logging );
+    }
+
+    /**
+     * Creates new {@link Bootstrap}.
+     * <p>
+     * <b>This method is protected only for testing</b>
+     */
+    protected Bootstrap createBootstrap()
+    {
+        return BootstrapFactory.newBootstrap();
     }
 
     private static SecurityPlan createSecurityPlan( BoltServerAddress address, Config config )

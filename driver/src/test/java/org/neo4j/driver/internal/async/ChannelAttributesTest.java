@@ -24,6 +24,7 @@ import org.junit.Test;
 
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.util.ServerVersion;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
@@ -31,16 +32,17 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.driver.internal.async.ChannelAttributes.address;
 import static org.neo4j.driver.internal.async.ChannelAttributes.creationTimestamp;
 import static org.neo4j.driver.internal.async.ChannelAttributes.lastUsedTimestamp;
 import static org.neo4j.driver.internal.async.ChannelAttributes.messageDispatcher;
+import static org.neo4j.driver.internal.async.ChannelAttributes.serverAddress;
 import static org.neo4j.driver.internal.async.ChannelAttributes.serverVersion;
-import static org.neo4j.driver.internal.async.ChannelAttributes.setAddress;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setCreationTimestamp;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setLastUsedTimestamp;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setMessageDispatcher;
+import static org.neo4j.driver.internal.async.ChannelAttributes.setServerAddress;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setServerVersion;
+import static org.neo4j.driver.internal.util.ServerVersion.version;
 
 public class ChannelAttributesTest
 {
@@ -56,18 +58,18 @@ public class ChannelAttributesTest
     public void shouldSetAndGetAddress()
     {
         BoltServerAddress address = new BoltServerAddress( "local:42" );
-        setAddress( channel, address );
-        assertEquals( address, address( channel ) );
+        setServerAddress( channel, address );
+        assertEquals( address, serverAddress( channel ) );
     }
 
     @Test
     public void shouldFailToSetAddressTwice()
     {
-        setAddress( channel, BoltServerAddress.LOCAL_DEFAULT );
+        setServerAddress( channel, BoltServerAddress.LOCAL_DEFAULT );
 
         try
         {
-            setAddress( channel, BoltServerAddress.LOCAL_DEFAULT );
+            setServerAddress( channel, BoltServerAddress.LOCAL_DEFAULT );
             fail( "Exception expected" );
         }
         catch ( Exception e )
@@ -144,18 +146,19 @@ public class ChannelAttributesTest
     @Test
     public void shouldSetAndGetServerVersion()
     {
-        setServerVersion( channel, "3.2.1" );
-        assertEquals( "3.2.1", serverVersion( channel ) );
+        ServerVersion version = version( "3.2.1" );
+        setServerVersion( channel, version );
+        assertEquals( version, serverVersion( channel ) );
     }
 
     @Test
     public void shouldFailToSetServerVersionTwice()
     {
-        setServerVersion( channel, "3.2.2" );
+        setServerVersion( channel, version( "3.2.2" ) );
 
         try
         {
-            setServerVersion( channel, "3.2.3" );
+            setServerVersion( channel, version( "3.2.3" ) );
             fail( "Exception expected" );
         }
         catch ( Exception e )
