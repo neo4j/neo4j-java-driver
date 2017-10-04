@@ -38,6 +38,7 @@ import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.util.TestUtil;
 
 import static java.util.Collections.unmodifiableSet;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
@@ -81,14 +82,7 @@ public class Cluster
 
     public void deleteData()
     {
-        leaderTx( new Consumer<Session>()
-        {
-            @Override
-            public void accept( Session session )
-            {
-                session.run( "MATCH (n) DETACH DELETE n" ).consume();
-            }
-        } );
+        leaderTx( TestUtil::cleanDb );
     }
 
     public ClusterMember leaderTx( Consumer<Session> tx )

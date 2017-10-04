@@ -31,6 +31,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 
+import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.StatementResult;
+
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -120,6 +124,30 @@ public final class TestUtil
     public static <T> Set<T> asOrderedSet( T... elements )
     {
         return new LinkedHashSet<>( Arrays.asList( elements ) );
+    }
+
+    public static void cleanDb( Driver driver )
+    {
+        try ( Session session = driver.session() )
+        {
+            cleanDb( session );
+        }
+    }
+
+    public static void cleanDb( Session session )
+    {
+        int nodesDeleted;
+        do
+        {
+            nodesDeleted = deleteBatchOfNodes( session );
+        }
+        while ( nodesDeleted > 0 );
+    }
+
+    private static int deleteBatchOfNodes( Session session )
+    {
+        StatementResult result = session.run( "MATCH (n) WITH n LIMIT 10000 DETACH DELETE n RETURN count(n)" );
+        return result.single().get( 0 ).asInt();
     }
 
     private static Number read( ByteBuf buf, Class<? extends Number> type )

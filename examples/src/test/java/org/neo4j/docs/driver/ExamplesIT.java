@@ -30,6 +30,7 @@ import org.neo4j.driver.v1.TransactionWork;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.util.StdIOCapture;
 import org.neo4j.driver.v1.util.TestNeo4j;
+import org.neo4j.driver.v1.util.TestUtil;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.containsString;
@@ -91,11 +92,6 @@ public class ExamplesIT
         write( statement, parameters() );
     }
 
-    private void clean()
-    {
-        write( "MATCH (a) DETACH DELETE a" );
-    }
-
     private int personCount( String name )
     {
         return readInt( "MATCH (a:Person {name: $name}) RETURN count(a)", parameters( "name", name ) );
@@ -105,7 +101,7 @@ public class ExamplesIT
     public void setUp()
     {
         uri = neo4j.uri().toString();
-        clean();
+        TestUtil.cleanDb( neo4j.driver() );
     }
 
     @Test

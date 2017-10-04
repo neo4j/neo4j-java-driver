@@ -22,10 +22,14 @@ import org.junit.rules.ExternalResource;
 
 import java.net.URI;
 
+import org.neo4j.driver.internal.util.DriverFactoryWithOneEventLoopThread;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.AuthTokens;
+import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.util.TestUtil;
 
 import static org.neo4j.driver.internal.DriverFactory.BOLT_ROUTING_URI_SCHEME;
+import static org.neo4j.driver.v1.Config.defaultConfig;
 
 public class LocalOrRemoteClusterRule extends ExternalResource
 {
@@ -72,7 +76,15 @@ public class LocalOrRemoteClusterRule extends ExternalResource
     @Override
     protected void after()
     {
-        if ( !externalClusterExists() )
+        if ( externalClusterExists() )
+        {
+            DriverFactoryWithOneEventLoopThread driverFactory = new DriverFactoryWithOneEventLoopThread();
+            try ( Driver driver = driverFactory.newInstance( getClusterUri(), getAuthToken(), defaultConfig() ) )
+            {
+                TestUtil.cleanDb( driver );
+            }
+        }
+        else
         {
             localClusterRule.after();
             localClusterRule = null;

@@ -27,13 +27,13 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.driver.v1.Driver;
-import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.tck.tck.util.Types;
 import org.neo4j.driver.v1.tck.tck.util.runners.CypherStatementRunner;
 import org.neo4j.driver.v1.tck.tck.util.runners.MappedParametersRunner;
 import org.neo4j.driver.v1.tck.tck.util.runners.StatementRunner;
 import org.neo4j.driver.v1.tck.tck.util.runners.StringRunner;
+import org.neo4j.driver.v1.util.TestUtil;
 
 import static org.neo4j.driver.v1.tck.DriverComplianceIT.neo4j;
 
@@ -80,9 +80,6 @@ public class Environment
     public void emptyDatabase()
     {
         Driver driver = neo4j.driver();
-        try ( Session session = driver.session())
-        {
-            session.run( "MATCH (n) DETACH DELETE n" );
-        }
+        TestUtil.cleanDb( driver );
     }
 }

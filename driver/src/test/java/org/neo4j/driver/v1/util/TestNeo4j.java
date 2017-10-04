@@ -32,7 +32,6 @@ import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.Driver;
-import org.neo4j.driver.v1.Session;
 
 import static org.neo4j.driver.v1.util.Neo4jRunner.DEFAULT_ADDRESS;
 import static org.neo4j.driver.v1.util.Neo4jRunner.DEFAULT_AUTH_TOKEN;
@@ -69,10 +68,7 @@ public class TestNeo4j implements TestRule
             {
                 runner = getOrCreateGlobalRunner();
                 runner.ensureRunning( settings );
-                try ( Session session = driver().session() )
-                {
-                    clearDatabaseContents( session, description.toString() );
-                }
+                TestUtil.cleanDb( driver() );
                 base.evaluate();
             }
         };
@@ -122,14 +118,6 @@ public class TestNeo4j implements TestRule
     public BoltServerAddress address()
     {
         return DEFAULT_ADDRESS;
-    }
-
-    static void clearDatabaseContents( Session session, String reason )
-    {
-        // Note - this hangs for extended periods some times, because there are tests that leave sessions running.
-        // Thus, we need to wait for open sessions and transactions to time out before this will go through.
-        // This could be helped by an extension in the future.
-        session.run( "MATCH (n) DETACH DELETE n" ).consume();
     }
 
     public void updateEncryptionKeyAndCert( File key, File cert ) throws Exception
