@@ -77,7 +77,7 @@ public class TransactionAsyncIT
     private final TestNeo4j neo4j = new TestNeo4j();
 
     @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( Timeout.seconds( 60 ) ).around( neo4j );
+    public final RuleChain ruleChain = RuleChain.outerRule( Timeout.seconds( 180 ) ).around( neo4j );
 
     private Session session;
 
