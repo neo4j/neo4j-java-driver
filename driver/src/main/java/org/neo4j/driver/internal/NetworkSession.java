@@ -266,7 +266,7 @@ public class NetworkSession implements Session
 
     private <T> CompletionStage<T> transactionAsync( AccessMode mode, TransactionWork<CompletionStage<T>> work )
     {
-        return retryLogic.retryAsync( () ->
+        return retryLogic.retry( () ->
         {
             CompletableFuture<T> resultFuture = new CompletableFuture<>();
             CompletionStage<ExplicitTransaction> txFuture = beginTransactionAsync( mode );
