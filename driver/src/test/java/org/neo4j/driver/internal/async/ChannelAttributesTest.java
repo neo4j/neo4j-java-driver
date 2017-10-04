@@ -23,7 +23,6 @@ import org.junit.After;
 import org.junit.Test;
 
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
-import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.util.ServerVersion;
 
 import static org.hamcrest.Matchers.instanceOf;

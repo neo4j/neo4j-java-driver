@@ -21,8 +21,6 @@ package org.neo4j.driver.internal.async;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 
-import org.neo4j.driver.internal.net.BoltServerAddress;
-
 public interface AsyncConnector
 {
     ChannelFuture connect( BoltServerAddress address, Bootstrap bootstrap );

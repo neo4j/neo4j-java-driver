@@ -28,7 +28,7 @@ import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.async.BoltServerAddress;
 import org.neo4j.driver.internal.util.Consumer;
 import org.neo4j.driver.internal.util.DriverFactoryWithOneEventLoopThread;
 import org.neo4j.driver.v1.AccessMode;

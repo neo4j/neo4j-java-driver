@@ -32,7 +32,6 @@ import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.PullAllMessage;
 import org.neo4j.driver.internal.messaging.ResetMessage;
 import org.neo4j.driver.internal.messaging.RunMessage;
-import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.ServerVersion;
@@ -101,6 +100,7 @@ public class NettyConnection implements AsyncConnection
     }
 
     @Override
+    // TODO change this to return future
     public void release()
     {
         if ( state.release() )

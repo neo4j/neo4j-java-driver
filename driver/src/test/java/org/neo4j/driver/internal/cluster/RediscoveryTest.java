@@ -32,7 +32,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.async.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.PooledConnection;
@@ -67,7 +67,7 @@ import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.F;
 import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.VALID_CLUSTER_COMPOSITION;
 import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.createClusterComposition;
 import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
-import static org.neo4j.driver.internal.net.BoltServerAddress.LOCAL_DEFAULT;
+import static org.neo4j.driver.internal.async.BoltServerAddress.LOCAL_DEFAULT;
 
 @RunWith( Enclosed.class )
 public class RediscoveryTest

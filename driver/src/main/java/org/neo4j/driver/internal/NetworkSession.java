@@ -23,15 +23,12 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.driver.ResultResourcesHandler;
 import org.neo4j.driver.internal.async.AsyncConnection;
 import org.neo4j.driver.internal.async.Futures;
 import org.neo4j.driver.internal.async.QueryRunner;
 import org.neo4j.driver.internal.logging.DelegatingLogger;
 import org.neo4j.driver.internal.retry.RetryLogic;
-import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
-import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.internal.util.Supplier;
 import org.neo4j.driver.v1.AccessMode;
@@ -52,7 +49,7 @@ import org.neo4j.driver.v1.types.TypeSystem;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.neo4j.driver.v1.Values.value;
 
-public class NetworkSession implements Session, SessionResourcesHandler, ResultResourcesHandler
+public class NetworkSession implements Session
 {
     private static final String LOG_NAME = "Session";
 
@@ -62,10 +59,8 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     protected final Logger logger;
 
     private volatile Bookmark bookmark = Bookmark.empty();
-    private PooledConnection currentConnection;
-    private ExplicitTransaction currentTransaction;
-    private volatile CompletionStage<ExplicitTransaction> asyncTransactionStage;
 
+    private volatile CompletionStage<ExplicitTransaction> asyncTransactionStage;
     private CompletionStage<AsyncConnection> asyncConnectionStage;
 
     private final AtomicBoolean isOpen = new AtomicBoolean( true );
@@ -138,10 +133,9 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
         ensureSessionIsOpen();
         ensureNoOpenTransactionBeforeRunningSession();
 
-        syncAndCloseCurrentConnection();
-        currentConnection = acquireConnection( mode );
-
-        return run( currentConnection, statement, this );
+        StatementResultCursor cursor = Futures.getBlocking( acquireAsyncConnection( mode )
+                .thenCompose( connection -> QueryRunner.run( connection, statement ) ) );
+        return new CursorBasedStatementResult( cursor );
     }
 
     @Override
@@ -152,36 +146,6 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
 
         return acquireAsyncConnection( mode ).thenCompose( connection ->
                 QueryRunner.runAsync( connection, statement ) );
-    }
-
-    public static StatementResult run( Connection connection, Statement statement,
-            ResultResourcesHandler resourcesHandler )
-    {
-        InternalStatementResult result = new InternalStatementResult( statement, connection, resourcesHandler );
-        connection.run( statement.text(), statement.parameters().asMap( Values.ofValue() ),
-                result.runResponseHandler() );
-        connection.pullAll( result.pullAllResponseHandler() );
-        connection.flush();
-        return result;
-    }
-
-    @Deprecated
-    @Override
-    public synchronized void reset()
-    {
-        ensureSessionIsOpen();
-        ensureNoUnrecoverableError();
-
-        if ( currentTransaction != null )
-        {
-            currentTransaction.markToClose();
-            setBookmark( currentTransaction.bookmark() );
-            currentTransaction = null;
-        }
-        if ( currentConnection != null )
-        {
-            currentConnection.resetAsync();
-        }
     }
 
     @Override
@@ -198,23 +162,6 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
         {
             throw new ClientException( "This session has already been closed." );
         }
-
-        synchronized ( this )
-        {
-            if ( currentTransaction != null )
-            {
-                try
-                {
-                    currentTransaction.close();
-                }
-                catch ( Throwable e )
-                {
-                    logger.error( "Failed to close transaction", e );
-                }
-            }
-        }
-
-        syncAndCloseCurrentConnection();
 
         try
         {
@@ -308,56 +255,11 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
         return InternalTypeSystem.TYPE_SYSTEM;
     }
 
-    @Override
-    public synchronized void onResultConsumed()
-    {
-        closeCurrentConnection();
-    }
-
-    @Override
-    public void resultFetched()
-    {
-        closeCurrentConnection();
-    }
-
-    @Override
-    public void resultFailed( Throwable error )
-    {
-        resultFetched();
-    }
-
-    @Override
-    public synchronized void onTransactionClosed( ExplicitTransaction tx )
-    {
-        if ( currentTransaction != null && currentTransaction == tx )
-        {
-            closeCurrentConnection();
-            setBookmark( currentTransaction.bookmark() );
-            currentTransaction = null;
-        }
-    }
 
     public void asyncTransactionClosed( ExplicitTransaction tx )
     {
         setBookmark( tx.bookmark() );
         asyncTransactionStage = null;
-    }
-
-    @Override
-    public synchronized void onConnectionError( boolean recoverable )
-    {
-        // must check if transaction has been closed
-        if ( currentTransaction != null )
-        {
-            if ( recoverable )
-            {
-                currentTransaction.failure();
-            }
-            else
-            {
-                currentTransaction.markToClose();
-            }
-        }
     }
 
     private <T> T transaction( final AccessMode mode, final TransactionWork<T> work )
@@ -488,17 +390,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
 
     private synchronized Transaction beginTransaction( AccessMode mode )
     {
-        ensureSessionIsOpen();
-        ensureNoOpenTransactionBeforeOpeningTransaction();
-
-        syncAndCloseCurrentConnection();
-        currentConnection = acquireConnection( mode );
-
-        ExplicitTransaction tx = new ExplicitTransaction( currentConnection, this );
-        tx.begin( bookmark );
-        currentTransaction = tx;
-        currentConnection.setResourcesHandler( this );
-        return currentTransaction;
+        return Futures.getBlocking( beginTransactionAsync( mode ) );
     }
 
     private synchronized CompletionStage<ExplicitTransaction> beginTransactionAsync( AccessMode mode )
@@ -515,20 +407,10 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
         return asyncTransactionStage;
     }
 
-    private void ensureNoUnrecoverableError()
-    {
-        if ( currentConnection != null && currentConnection.hasUnrecoverableErrors() )
-        {
-            throw new ClientException( "Cannot run more statements in the current session as an unrecoverable error " +
-                                       "has happened. Please close the current session and re-run your statement in a" +
-                                       " new session." );
-        }
-    }
-
     //should be called from a synchronized block
     private void ensureNoOpenTransactionBeforeRunningSession()
     {
-        if ( currentTransaction != null || asyncTransactionStage != null )
+        if ( asyncTransactionStage != null )
         {
             throw new ClientException( "Statements cannot be run directly on a session with an open transaction;" +
                                        " either run from within the transaction or use a different session." );
@@ -538,7 +420,7 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
     //should be called from a synchronized block
     private void ensureNoOpenTransactionBeforeOpeningTransaction()
     {
-        if ( currentTransaction != null || asyncTransactionStage != null )
+        if ( asyncTransactionStage != null )
         {
             throw new ClientException( "You cannot begin a transaction on a session with an open transaction;" +
                                        " either run from within the transaction or use a different session." );
@@ -556,13 +438,6 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
                     "closed " +
                     "or you are trying to reuse a session that you have called `reset` on it." );
         }
-    }
-
-    private PooledConnection acquireConnection( AccessMode mode )
-    {
-        PooledConnection connection = connectionProvider.acquireConnection( mode );
-        logger.debug( "Acquired connection " + connection.hashCode() );
-        return connection;
     }
 
     private CompletionStage<AsyncConnection> acquireAsyncConnection( final AccessMode mode )
@@ -590,43 +465,5 @@ public class NetworkSession implements Session, SessionResourcesHandler, ResultR
         }
 
         return asyncConnectionStage;
-    }
-
-    boolean currentConnectionIsOpen()
-    {
-        return currentConnection != null && currentConnection.isOpen();
-    }
-
-    private void syncAndCloseCurrentConnection()
-    {
-        closeCurrentConnection( true );
-    }
-
-    private void closeCurrentConnection()
-    {
-        closeCurrentConnection( false );
-    }
-
-    private void closeCurrentConnection( boolean sync )
-    {
-        if ( currentConnection == null )
-        {
-            return;
-        }
-
-        PooledConnection connection = currentConnection;
-        currentConnection = null;
-        try
-        {
-            if ( sync && connection.isOpen() )
-            {
-                connection.sync();
-            }
-        }
-        finally
-        {
-            connection.close();
-            logger.debug( "Released connection " + connection.hashCode() );
-        }
     }
 }

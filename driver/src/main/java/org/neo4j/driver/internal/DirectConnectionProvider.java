@@ -21,11 +21,9 @@ package org.neo4j.driver.internal;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.async.AsyncConnection;
+import org.neo4j.driver.internal.async.BoltServerAddress;
 import org.neo4j.driver.internal.async.pool.AsyncConnectionPool;
-import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
-import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.v1.AccessMode;
 
 /**
@@ -35,22 +33,12 @@ import org.neo4j.driver.v1.AccessMode;
 public class DirectConnectionProvider implements ConnectionProvider
 {
     private final BoltServerAddress address;
-    private final ConnectionPool pool;
     private final AsyncConnectionPool asyncPool;
 
-    DirectConnectionProvider( BoltServerAddress address, ConnectionPool pool, AsyncConnectionPool asyncPool )
+    DirectConnectionProvider( BoltServerAddress address, AsyncConnectionPool asyncPool )
     {
         this.address = address;
-        this.pool = pool;
         this.asyncPool = asyncPool;
-
-        verifyConnectivity();
-    }
-
-    @Override
-    public PooledConnection acquireConnection( AccessMode mode )
-    {
-        return pool.acquire( address );
     }
 
     @Override
@@ -62,29 +50,11 @@ public class DirectConnectionProvider implements ConnectionProvider
     @Override
     public CompletionStage<Void> close()
     {
-        // todo: remove this try-catch when blocking API works on top of async
-        try
-        {
-            pool.close();
-        }
-        catch ( Exception e )
-        {
-            throw new RuntimeException( e );
-        }
         return asyncPool.close();
     }
 
     public BoltServerAddress getAddress()
     {
         return address;
-    }
-
-    /**
-     * Acquires and releases a connection to verify connectivity so this connection provider fails fast. This is
-     * especially valuable when driver was created with incorrect credentials.
-     */
-    private void verifyConnectivity()
-    {
-        acquireConnection( AccessMode.READ ).close();
     }
 }

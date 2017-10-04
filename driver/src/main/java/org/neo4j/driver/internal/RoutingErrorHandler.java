@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal;
 
-import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.async.BoltServerAddress;
 
 /**
  * Interface used for tracking errors when connected to a cluster.

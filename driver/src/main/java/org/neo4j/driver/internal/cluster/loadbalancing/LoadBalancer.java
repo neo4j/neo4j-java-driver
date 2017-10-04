@@ -38,7 +38,7 @@ import org.neo4j.driver.internal.cluster.RoutingPooledConnection;
 import org.neo4j.driver.internal.cluster.RoutingProcedureClusterCompositionProvider;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.cluster.RoutingTable;
-import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.async.BoltServerAddress;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.spi.PooledConnection;

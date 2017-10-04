@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Queue;
 
+import org.neo4j.driver.internal.async.BoltServerAddress;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.SuccessMessage;
 import org.neo4j.driver.internal.summary.InternalServerInfo;
@@ -48,7 +49,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
-import static org.neo4j.driver.internal.net.BoltServerAddress.LOCAL_DEFAULT;
+import static org.neo4j.driver.internal.async.BoltServerAddress.LOCAL_DEFAULT;
 import static org.neo4j.driver.v1.Values.parameters;
 
 public class SocketConnectionTest

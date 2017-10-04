@@ -20,7 +20,7 @@ package org.neo4j.driver.internal.cluster;
 
 import java.util.Set;
 
-import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.async.BoltServerAddress;
 import org.neo4j.driver.v1.AccessMode;
 
 public interface RoutingTable

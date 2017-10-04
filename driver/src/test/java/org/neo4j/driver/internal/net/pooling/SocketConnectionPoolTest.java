@@ -38,7 +38,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.async.BoltServerAddress;
+import org.neo4j.driver.internal.async.pool.PoolSettings;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.Connector;
 import org.neo4j.driver.internal.spi.PooledConnection;
@@ -69,10 +70,10 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.driver.internal.net.BoltServerAddress.DEFAULT_PORT;
-import static org.neo4j.driver.internal.net.BoltServerAddress.LOCAL_DEFAULT;
-import static org.neo4j.driver.internal.net.pooling.PoolSettings.INFINITE_CONNECTION_LIFETIME;
-import static org.neo4j.driver.internal.net.pooling.PoolSettings.NO_IDLE_CONNECTION_TEST;
+import static org.neo4j.driver.internal.async.BoltServerAddress.DEFAULT_PORT;
+import static org.neo4j.driver.internal.async.BoltServerAddress.LOCAL_DEFAULT;
+import static org.neo4j.driver.internal.async.pool.PoolSettings.INFINITE_CONNECTION_LIFETIME;
+import static org.neo4j.driver.internal.async.pool.PoolSettings.NO_IDLE_CONNECTION_TEST;
 import static org.neo4j.driver.v1.Values.value;
 
 public class SocketConnectionPoolTest

@@ -21,7 +21,7 @@ package org.neo4j.driver.internal.cluster.loadbalancing;
 import java.util.function.Function;
 
 import org.neo4j.driver.internal.async.pool.AsyncConnectionPool;
-import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.async.BoltServerAddress;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;

@@ -26,20 +26,18 @@ import java.net.URI;
 import java.security.GeneralSecurityException;
 
 import org.neo4j.driver.internal.async.AsyncConnectorImpl;
+import org.neo4j.driver.internal.async.BoltServerAddress;
 import org.neo4j.driver.internal.async.BootstrapFactory;
 import org.neo4j.driver.internal.async.Futures;
 import org.neo4j.driver.internal.async.pool.AsyncConnectionPool;
 import org.neo4j.driver.internal.async.pool.AsyncConnectionPoolImpl;
+import org.neo4j.driver.internal.async.pool.PoolSettings;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.cluster.loadbalancing.LeastConnectedLoadBalancingStrategy;
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancingStrategy;
 import org.neo4j.driver.internal.cluster.loadbalancing.RoundRobinLoadBalancingStrategy;
-import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.internal.net.SocketConnector;
-import org.neo4j.driver.internal.net.pooling.PoolSettings;
-import org.neo4j.driver.internal.net.pooling.SocketConnectionPool;
 import org.neo4j.driver.internal.retry.ExponentialBackoffRetryLogic;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.retry.RetrySettings;
@@ -72,7 +70,6 @@ public class DriverFactory
         BoltServerAddress address = new BoltServerAddress( uri );
         RoutingSettings newRoutingSettings = routingSettings.withRoutingContext( new RoutingContext( uri ) );
         SecurityPlan securityPlan = createSecurityPlan( address, config );
-        ConnectionPool connectionPool = createConnectionPool( authToken, securityPlan, config );
 
         Bootstrap bootstrap = createBootstrap();
         EventExecutorGroup eventExecutorGroup = bootstrap.config().group();
@@ -83,7 +80,7 @@ public class DriverFactory
 
         try
         {
-            return createDriver( uri, address, connectionPool, asyncConnectionPool, config, newRoutingSettings,
+            return createDriver( uri, address, asyncConnectionPool, config, newRoutingSettings,
                     eventExecutorGroup, securityPlan, retryLogic );
         }
         catch ( Throwable driverError )
@@ -91,7 +88,6 @@ public class DriverFactory
             // we need to close the connection pool if driver creation threw exception
             try
             {
-                connectionPool.close();
                 Futures.getBlocking( asyncConnectionPool.close() );
             }
             catch ( Throwable closeError )
@@ -115,7 +111,7 @@ public class DriverFactory
         return new AsyncConnectionPoolImpl( connector, bootstrap, poolSettings, config.logging(), clock );
     }
 
-    private Driver createDriver( URI uri, BoltServerAddress address, ConnectionPool connectionPool,
+    private Driver createDriver( URI uri, BoltServerAddress address,
             AsyncConnectionPool asyncConnectionPool, Config config, RoutingSettings routingSettings,
             EventExecutorGroup eventExecutorGroup, SecurityPlan securityPlan, RetryLogic retryLogic )
     {
@@ -124,7 +120,7 @@ public class DriverFactory
         {
         case BOLT_URI_SCHEME:
             assertNoRoutingContext( uri, routingSettings );
-            return createDirectDriver( address, connectionPool, config, securityPlan, retryLogic, asyncConnectionPool );
+            return createDirectDriver( address, config, securityPlan, retryLogic, asyncConnectionPool );
         case BOLT_ROUTING_URI_SCHEME:
             return createRoutingDriver( address, connectionPool, asyncConnectionPool, config, routingSettings,
                     securityPlan, retryLogic, eventExecutorGroup );
@@ -138,11 +134,11 @@ public class DriverFactory
      * <p>
      * <b>This method is protected only for testing</b>
      */
-    protected Driver createDirectDriver( BoltServerAddress address, ConnectionPool connectionPool, Config config,
+    protected Driver createDirectDriver( BoltServerAddress address, Config config,
             SecurityPlan securityPlan, RetryLogic retryLogic, AsyncConnectionPool asyncConnectionPool )
     {
         ConnectionProvider connectionProvider =
-                new DirectConnectionProvider( address, connectionPool, asyncConnectionPool );
+                new DirectConnectionProvider( address, asyncConnectionPool );
         SessionFactory sessionFactory =
                 createSessionFactory( connectionProvider, retryLogic, config );
         return createDriver( config, securityPlan, sessionFactory );
@@ -204,22 +200,6 @@ public class DriverFactory
         default:
             throw new IllegalArgumentException( "Unknown load balancing strategy: " + config.loadBalancingStrategy() );
         }
-    }
-
-    /**
-     * Creates new {@link ConnectionPool}.
-     * <p>
-     * <b>This method is protected only for testing</b>
-     */
-    protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Config config )
-    {
-        ConnectionSettings connectionSettings = new ConnectionSettings( authToken, config.connectionTimeoutMillis() );
-        PoolSettings poolSettings = new PoolSettings( config.maxIdleConnectionPoolSize(),
-                config.idleTimeBeforeConnectionTest(), config.maxConnectionLifetimeMillis(),
-                config.maxConnectionPoolSize(), config.connectionAcquisitionTimeoutMillis() );
-        Connector connector = createConnector( connectionSettings, securityPlan, config.logging() );
-
-        return new SocketConnectionPool( poolSettings, connector, createClock(), config.logging() );
     }
 
     /**

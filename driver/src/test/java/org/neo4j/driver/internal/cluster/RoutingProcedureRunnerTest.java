@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.async.AsyncConnection;
-import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.async.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.summary.InternalServerInfo;
 import org.neo4j.driver.v1.Record;

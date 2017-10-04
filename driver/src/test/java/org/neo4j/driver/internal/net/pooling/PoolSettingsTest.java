@@ -20,6 +20,8 @@ package org.neo4j.driver.internal.net.pooling;
 
 import org.junit.Test;
 
+import org.neo4j.driver.internal.async.pool.PoolSettings;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;

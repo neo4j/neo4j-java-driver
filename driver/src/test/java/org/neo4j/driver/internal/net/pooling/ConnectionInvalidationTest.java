@@ -25,7 +25,7 @@ import java.io.IOException;
 import java.util.HashMap;
 
 import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
-import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.async.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.PooledConnection;
@@ -51,7 +51,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.driver.internal.net.BoltServerAddress.LOCAL_DEFAULT;
+import static org.neo4j.driver.internal.async.BoltServerAddress.LOCAL_DEFAULT;
 
 public class ConnectionInvalidationTest
 {

@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.Queue;
 
 import org.neo4j.driver.internal.messaging.Message;
-import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.async.BoltServerAddress;
 import org.neo4j.driver.internal.net.SocketClient;
 import org.neo4j.driver.internal.net.SocketConnection;
 import org.neo4j.driver.internal.spi.Connection;
@@ -54,7 +54,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
 import static org.neo4j.driver.internal.messaging.ResetMessage.RESET;
-import static org.neo4j.driver.internal.net.BoltServerAddress.LOCAL_DEFAULT;
+import static org.neo4j.driver.internal.async.BoltServerAddress.LOCAL_DEFAULT;
 
 public class PooledConnectionValidatorTest
 {

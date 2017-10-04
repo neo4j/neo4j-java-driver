@@ -23,7 +23,6 @@ import java.util.Objects;
 import java.util.concurrent.CompletionException;
 
 import org.neo4j.driver.internal.RoutingErrorHandler;
-import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Value;

@@ -21,7 +21,7 @@ package org.neo4j.driver.internal.async.pool;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.async.AsyncConnection;
-import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.async.BoltServerAddress;
 
 public interface AsyncConnectionPool
 {

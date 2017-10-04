@@ -22,7 +22,6 @@ import io.netty.channel.Channel;
 import io.netty.util.AttributeKey;
 
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
-import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.util.ServerVersion;
 
 import static io.netty.util.AttributeKey.newInstance;

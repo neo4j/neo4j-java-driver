@@ -20,7 +20,7 @@ package org.neo4j.driver.internal.util;
 
 import java.util.List;
 
-import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.async.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.Connector;
 

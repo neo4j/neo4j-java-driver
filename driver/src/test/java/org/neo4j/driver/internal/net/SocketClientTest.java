@@ -30,6 +30,7 @@ import java.nio.channels.ByteChannel;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.driver.internal.async.BoltServerAddress;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
@@ -40,7 +41,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
-import static org.neo4j.driver.internal.net.BoltServerAddress.LOCAL_DEFAULT;
+import static org.neo4j.driver.internal.async.BoltServerAddress.LOCAL_DEFAULT;
 
 public class SocketClientTest
 {

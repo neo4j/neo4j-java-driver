@@ -26,6 +26,7 @@ import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.ResultResourcesHandler;
 import org.neo4j.driver.internal.NetworkSession;
 import org.neo4j.driver.internal.async.AsyncConnection;
+import org.neo4j.driver.internal.async.Futures;
 import org.neo4j.driver.internal.async.QueryRunner;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.ServerVersion;
@@ -81,11 +82,6 @@ public class RoutingProcedureRunner
                 }
             } );
         } );
-    }
-
-    List<Record> runProcedure( Connection connection, Statement procedure )
-    {
-        return NetworkSession.run( connection, procedure, ResultResourcesHandler.NO_OP ).list();
     }
 
     CompletionStage<List<Record>> runProcedure( AsyncConnection connection, Statement procedure )

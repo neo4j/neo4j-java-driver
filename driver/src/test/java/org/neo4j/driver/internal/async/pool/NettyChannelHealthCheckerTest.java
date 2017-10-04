@@ -28,7 +28,6 @@ import java.util.Collections;
 
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.messaging.ResetMessage;
-import org.neo4j.driver.internal.net.pooling.PoolSettings;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.Value;
 
@@ -40,11 +39,11 @@ import static org.neo4j.driver.internal.async.ChannelAttributes.setCreationTimes
 import static org.neo4j.driver.internal.async.ChannelAttributes.setLastUsedTimestamp;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setMessageDispatcher;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
-import static org.neo4j.driver.internal.net.pooling.PoolSettings.DEFAULT_CONNECTION_ACQUISITION_TIMEOUT;
-import static org.neo4j.driver.internal.net.pooling.PoolSettings.DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST;
-import static org.neo4j.driver.internal.net.pooling.PoolSettings.DEFAULT_MAX_CONNECTION_POOL_SIZE;
-import static org.neo4j.driver.internal.net.pooling.PoolSettings.DEFAULT_MAX_IDLE_CONNECTION_POOL_SIZE;
-import static org.neo4j.driver.internal.net.pooling.PoolSettings.NOT_CONFIGURED;
+import static org.neo4j.driver.internal.async.pool.PoolSettings.DEFAULT_CONNECTION_ACQUISITION_TIMEOUT;
+import static org.neo4j.driver.internal.async.pool.PoolSettings.DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST;
+import static org.neo4j.driver.internal.async.pool.PoolSettings.DEFAULT_MAX_CONNECTION_POOL_SIZE;
+import static org.neo4j.driver.internal.async.pool.PoolSettings.DEFAULT_MAX_IDLE_CONNECTION_POOL_SIZE;
+import static org.neo4j.driver.internal.async.pool.PoolSettings.NOT_CONFIGURED;
 import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 

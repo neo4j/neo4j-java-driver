@@ -26,7 +26,7 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 
-import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.async.BoltServerAddress;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
@@ -42,7 +42,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
-import static org.neo4j.driver.internal.net.BoltServerAddress.LOCAL_DEFAULT;
+import static org.neo4j.driver.internal.async.BoltServerAddress.LOCAL_DEFAULT;
 import static org.neo4j.driver.internal.util.Matchers.directDriverWithAddress;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.util.StubServer.INSECURE_CONFIG;

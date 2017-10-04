@@ -138,8 +138,8 @@ public interface Session extends Resource, StatementRunner
      * contains procedures to list and terminate running queries. These functions should be used instead of calling
      * this method.
      */
-    @Deprecated
-    void reset();
+//    @Deprecated
+//    void reset();
 
     /**
      * Signal that you are done using this session. In the default driver usage, closing

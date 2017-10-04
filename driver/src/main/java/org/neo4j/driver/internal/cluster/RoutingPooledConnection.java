@@ -23,7 +23,7 @@ import java.util.Objects;
 
 import org.neo4j.driver.internal.RoutingErrorHandler;
 import org.neo4j.driver.internal.SessionResourcesHandler;
-import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.async.BoltServerAddress;
 import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.AccessMode;

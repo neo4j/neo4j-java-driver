@@ -25,7 +25,7 @@ import io.netty.util.internal.ConcurrentSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.async.BoltServerAddress;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 

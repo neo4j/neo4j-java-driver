@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.neo4j.driver.internal.ConnectionSettings;
+import org.neo4j.driver.internal.async.BoltServerAddress;
 import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.Connection;
@@ -50,7 +51,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.driver.internal.net.BoltServerAddress.LOCAL_DEFAULT;
+import static org.neo4j.driver.internal.async.BoltServerAddress.LOCAL_DEFAULT;
 import static org.neo4j.driver.internal.security.SecurityPlan.insecure;
 
 public class SocketConnectorTest

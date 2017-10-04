@@ -29,14 +29,6 @@ import org.neo4j.driver.v1.AccessMode;
  */
 public interface ConnectionProvider
 {
-    /**
-     * Acquire new {@link PooledConnection pooled connection} for the given {@link AccessMode mode}.
-     *
-     * @param mode the access mode for the connection.
-     * @return free or new pooled connection.
-     */
-    PooledConnection acquireConnection( AccessMode mode );
-
     CompletionStage<AsyncConnection> acquireAsyncConnection( AccessMode mode );
 
     CompletionStage<Void> close();

@@ -39,9 +39,27 @@ public final class QueryRunner
     {
     }
 
+    public static CompletionStage<StatementResultCursor> run( AsyncConnection connection, Statement statement )
+    {
+        return run( connection, statement, null );
+    }
+
     public static CompletionStage<StatementResultCursor> runAsync( AsyncConnection connection, Statement statement )
     {
         return runAsync( connection, statement, null );
+    }
+
+    public static CompletionStage<StatementResultCursor> run( AsyncConnection connection, Statement statement,
+            ExplicitTransaction tx )
+    {
+        String query = statement.text();
+        Map<String,Value> params = statement.parameters().asMap( ofValue() );
+
+        RunResponseHandler runHandler = new RunResponseHandler( new CompletableFuture<>(), tx );
+        PullAllResponseHandler pullAllHandler = newPullAllHandler( statement, runHandler, connection, tx );
+        connection.runAndFlush( query, params, runHandler, pullAllHandler );
+
+        return CompletableFuture.completedFuture( new InternalStatementResultCursor( runHandler, pullAllHandler ) );
     }
 
     public static CompletionStage<StatementResultCursor> runAsync( AsyncConnection connection, Statement statement,

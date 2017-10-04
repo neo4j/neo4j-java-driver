@@ -24,7 +24,7 @@ import java.util.logging.Level;
 
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.logging.JULogging;
-import org.neo4j.driver.internal.net.pooling.PoolSettings;
+import org.neo4j.driver.internal.async.pool.PoolSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
