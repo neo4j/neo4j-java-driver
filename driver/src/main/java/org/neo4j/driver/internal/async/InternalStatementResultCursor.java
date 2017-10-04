@@ -19,7 +19,6 @@
 package org.neo4j.driver.internal.async;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -51,8 +50,7 @@ public class InternalStatementResultCursor implements StatementResultCursor
     @Override
     public List<String> keys()
     {
-        List<String> keys = runResponseHandler.statementKeys();
-        return keys == null ? Collections.emptyList() : Collections.unmodifiableList( keys );
+        return runResponseHandler.statementKeys();
     }
 
     @Override

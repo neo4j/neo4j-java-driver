@@ -19,7 +19,6 @@
 package org.neo4j.driver.internal.handlers;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -27,11 +26,13 @@ import java.util.concurrent.CompletableFuture;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Value;
 
+import static java.util.Collections.emptyList;
+
 public class RunResponseHandler implements ResponseHandler
 {
     private final CompletableFuture<Void> runCompletedFuture;
 
-    private List<String> statementKeys;
+    private List<String> statementKeys = emptyList();
     private long resultAvailableAfter;
 
     public RunResponseHandler( CompletableFuture<Void> runCompletedFuture )
@@ -45,19 +46,13 @@ public class RunResponseHandler implements ResponseHandler
         statementKeys = extractKeys( metadata );
         resultAvailableAfter = extractResultAvailableAfter( metadata );
 
-        if ( runCompletedFuture != null )
-        {
-            runCompletedFuture.complete( null );
-        }
+        runCompletedFuture.complete( null );
     }
 
     @Override
     public void onFailure( Throwable error )
     {
-        if ( runCompletedFuture != null )
-        {
-            runCompletedFuture.completeExceptionally( error );
-        }
+        runCompletedFuture.completeExceptionally( error );
     }
 
     @Override
@@ -92,7 +87,7 @@ public class RunResponseHandler implements ResponseHandler
                 return keys;
             }
         }
-        return Collections.emptyList();
+        return emptyList();
     }
 
     private static long extractResultAvailableAfter( Map<String,Value> metadata )

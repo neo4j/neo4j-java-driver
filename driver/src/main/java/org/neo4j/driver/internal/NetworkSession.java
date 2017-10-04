@@ -130,7 +130,7 @@ public class NetworkSession implements Session
     public StatementResult run( Statement statement )
     {
         StatementResultCursor cursor = getBlocking( run( statement, false ) );
-        return new CursorBasedStatementResult( cursor );
+        return new InternalStatementResult( cursor );
     }
 
     @Override

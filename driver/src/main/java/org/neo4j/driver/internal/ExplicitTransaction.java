@@ -269,7 +269,7 @@ public class ExplicitTransaction implements Transaction
     {
         ensureNotFailed();
         StatementResultCursor cursor = getBlocking( QueryRunner.runSync( connection, statement, this ) );
-        return new CursorBasedStatementResult( cursor );
+        return new InternalStatementResult( cursor );
     }
 
     @Override

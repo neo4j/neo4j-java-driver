@@ -18,226 +18,100 @@
  */
 package org.neo4j.driver.internal;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
-import org.neo4j.driver.ResultResourcesHandler;
-import org.neo4j.driver.internal.handlers.RecordsResponseHandler;
-import org.neo4j.driver.internal.handlers.RunResponseHandler;
-import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.spi.ResponseHandler;
-import org.neo4j.driver.internal.summary.InternalResultSummary;
 import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.StatementResultCursor;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
 import org.neo4j.driver.v1.summary.ResultSummary;
-import org.neo4j.driver.v1.util.Function;
-import org.neo4j.driver.v1.util.Functions;
 
-import static java.util.Collections.emptyList;
+import static org.neo4j.driver.internal.async.Futures.getBlocking;
 
 public class InternalStatementResult implements StatementResult
 {
-    private final Statement statement;
-    private final Connection connection;
-    private final ResultResourcesHandler resourcesHandler;
-    private final RunResponseHandler runResponseHandler;
-    private final RecordsResponseHandler pullAllResponseHandler;
+    private final StatementResultCursor cursor;
+    private List<String> keys;
 
-    InternalStatementResult( Statement statement, Connection connection, ResultResourcesHandler resourcesHandler )
+    public InternalStatementResult( StatementResultCursor cursor )
     {
-        this.statement = statement;
-        this.connection = connection;
-        this.runResponseHandler = new RunResponseHandler( null, null );
-        this.pullAllResponseHandler = new RecordsResponseHandler( runResponseHandler );
-        this.resourcesHandler = resourcesHandler;
-    }
-
-    ResponseHandler runResponseHandler()
-    {
-        return runResponseHandler;
-    }
-
-    ResponseHandler pullAllResponseHandler()
-    {
-        return pullAllResponseHandler;
+        this.cursor = cursor;
     }
 
     @Override
     public List<String> keys()
     {
-        if ( runResponseHandler.statementKeys() == null )
+        if ( keys == null )
         {
-            tryFetchNext();
+            getBlocking( cursor.peekAsync() );
+            keys = cursor.keys();
         }
-        return runResponseHandler.statementKeys();
+        return keys;
     }
 
     @Override
     public boolean hasNext()
     {
-        return tryFetchNext();
+        return getBlocking( cursor.peekAsync() ) != null;
     }
 
     @Override
     public Record next()
     {
-        if ( tryFetchNext() )
-        {
-            return pullAllResponseHandler.recordBuffer().poll();
-        }
-        else
+        Record record = getBlocking( cursor.nextAsync() );
+        if ( record == null )
         {
             throw new NoSuchRecordException( "No more records" );
         }
+        return record;
     }
 
     @Override
     public Record single()
     {
-        if ( hasNext() )
-        {
-            Record single = next();
-            boolean hasMoreThanOne = hasNext();
-
-            consume();
-
-            if ( hasMoreThanOne )
-            {
-                throw new NoSuchRecordException( "Expected a result with a single record, but this result contains " +
-                                                 "at least one more. Ensure your query returns only one record." );
-            }
-
-            return single;
-        }
-        else
-        {
-            throw new NoSuchRecordException( "Cannot retrieve a single record, because this result is empty." );
-        }
+        return getBlocking( cursor.singleAsync() );
     }
 
     @Override
     public Record peek()
     {
-        if ( tryFetchNext() )
-        {
-            return pullAllResponseHandler.recordBuffer().peek();
-        }
-        else
+        Record record = getBlocking( cursor.peekAsync() );
+        if ( record == null )
         {
             throw new NoSuchRecordException( "Cannot peek past the last record" );
         }
+        return record;
     }
 
     @Override
     public List<Record> list()
     {
-        return list( Functions.<Record>identity() );
+        return getBlocking( cursor.listAsync() );
     }
 
     @Override
     public <T> List<T> list( Function<Record, T> mapFunction )
     {
-        if ( hasNext() )
-        {
-            List<T> result = new ArrayList<>();
-
-            do
-            {
-                result.add( mapFunction.apply( next() ) );
-            }
-            while ( hasNext() );
-
-            return result;
-        }
-        else
-        {
-            return emptyList();
-        }
+        return getBlocking( cursor.listAsync( mapFunction ) );
     }
 
     @Override
     public ResultSummary consume()
     {
-        if ( pullAllResponseHandler.isCompleted() )
-        {
-            pullAllResponseHandler.recordBuffer().clear();
-        }
-        else
-        {
-            do
-            {
-                receiveOne();
-                pullAllResponseHandler.recordBuffer().clear();
-            }
-            while ( !pullAllResponseHandler.isCompleted() );
-        }
-
-        return createResultSummary();
+        return getBlocking( cursor.consumeAsync() );
     }
 
     @Override
     public ResultSummary summary()
     {
-        while ( !pullAllResponseHandler.isCompleted() )
-        {
-            receiveOne();
-        }
-
-        return createResultSummary();
+        return getBlocking( cursor.summaryAsync() );
     }
 
     @Override
     public void remove()
     {
         throw new ClientException( "Removing records from a result is not supported." );
-    }
-
-    private boolean tryFetchNext()
-    {
-        while ( pullAllResponseHandler.recordBuffer().isEmpty() )
-        {
-            if ( pullAllResponseHandler.isCompleted() )
-            {
-                return false;
-            }
-            receiveOne();
-        }
-
-        return true;
-    }
-
-    private void receiveOne()
-    {
-        try
-        {
-            connection.receiveOne();
-        }
-        catch ( Throwable error )
-        {
-            resourcesHandler.resultFailed( error );
-            throw error;
-        }
-        if ( pullAllResponseHandler.isCompleted() )
-        {
-            resourcesHandler.resultFetched();
-        }
-    }
-
-    private ResultSummary createResultSummary()
-    {
-        return new InternalResultSummary(
-                statement,
-                connection.server(),
-                pullAllResponseHandler.statementType(),
-                pullAllResponseHandler.counters(),
-                pullAllResponseHandler.plan(),
-                pullAllResponseHandler.profile(),
-                pullAllResponseHandler.notifications(),
-                runResponseHandler.resultAvailableAfter(),
-                pullAllResponseHandler.resultConsumedAfter()
-        );
     }
 }
