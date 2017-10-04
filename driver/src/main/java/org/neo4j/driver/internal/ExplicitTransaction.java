@@ -24,7 +24,6 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.BiConsumer;
 
 import org.neo4j.driver.internal.async.AsyncConnection;
-import org.neo4j.driver.internal.async.Futures;
 import org.neo4j.driver.internal.async.QueryRunner;
 import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
 import org.neo4j.driver.internal.handlers.CommitTxResponseHandler;
@@ -44,6 +43,7 @@ import org.neo4j.driver.v1.types.TypeSystem;
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.neo4j.driver.internal.async.Futures.failedFuture;
+import static org.neo4j.driver.internal.async.Futures.getBlocking;
 import static org.neo4j.driver.v1.Values.value;
 
 public class ExplicitTransaction implements Transaction
@@ -76,15 +76,15 @@ public class ExplicitTransaction implements Transaction
         ROLLED_BACK
     }
 
-    private final AsyncConnection asyncConnection;
+    private final AsyncConnection connection;
     private final NetworkSession session;
 
     private volatile Bookmark bookmark = Bookmark.empty();
     private volatile State state = State.ACTIVE;
 
-    public ExplicitTransaction( AsyncConnection asyncConnection, NetworkSession session )
+    public ExplicitTransaction( AsyncConnection connection, NetworkSession session )
     {
-        this.asyncConnection = asyncConnection;
+        this.connection = connection;
         this.session = session;
     }
 
@@ -92,13 +92,13 @@ public class ExplicitTransaction implements Transaction
     {
         if ( initialBookmark.isEmpty() )
         {
-            asyncConnection.run( BEGIN_QUERY, emptyMap(), NoOpResponseHandler.INSTANCE, NoOpResponseHandler.INSTANCE );
+            connection.run( BEGIN_QUERY, emptyMap(), NoOpResponseHandler.INSTANCE, NoOpResponseHandler.INSTANCE );
             return completedFuture( this );
         }
         else
         {
             CompletableFuture<ExplicitTransaction> beginFuture = new CompletableFuture<>();
-            asyncConnection.runAndFlush( BEGIN_QUERY, initialBookmark.asBeginTransactionParameters(),
+            connection.runAndFlush( BEGIN_QUERY, initialBookmark.asBeginTransactionParameters(),
                     NoOpResponseHandler.INSTANCE, new BeginTxResponseHandler<>( beginFuture, this ) );
             return beginFuture;
         }
@@ -127,11 +127,11 @@ public class ExplicitTransaction implements Transaction
     {
         if ( state == State.MARKED_SUCCESS )
         {
-            Futures.getBlocking( commitAsync() );
+            getBlocking( commitAsync() );
         }
         else if ( state == State.MARKED_FAILED || state == State.ACTIVE )
         {
-            Futures.getBlocking( rollbackAsync() );
+            getBlocking( rollbackAsync() );
         }
         else if ( state == State.FAILED )
         {
@@ -179,7 +179,7 @@ public class ExplicitTransaction implements Transaction
     {
         return ( ignore, error ) ->
         {
-            asyncConnection.release();
+            connection.release();
             session.asyncTransactionClosed( ExplicitTransaction.this );
         };
     }
@@ -187,7 +187,7 @@ public class ExplicitTransaction implements Transaction
     private CompletionStage<Void> doCommitAsync()
     {
         CompletableFuture<Void> commitFuture = new CompletableFuture<>();
-        asyncConnection.runAndFlush( COMMIT_QUERY, emptyMap(), NoOpResponseHandler.INSTANCE,
+        connection.runAndFlush( COMMIT_QUERY, emptyMap(), NoOpResponseHandler.INSTANCE,
                 new CommitTxResponseHandler( commitFuture, this ) );
 
         return commitFuture.thenApply( ignore ->
@@ -200,7 +200,7 @@ public class ExplicitTransaction implements Transaction
     private CompletionStage<Void> doRollbackAsync()
     {
         CompletableFuture<Void> rollbackFuture = new CompletableFuture<>();
-        asyncConnection.runAndFlush( ROLLBACK_QUERY, emptyMap(), NoOpResponseHandler.INSTANCE,
+        connection.runAndFlush( ROLLBACK_QUERY, emptyMap(), NoOpResponseHandler.INSTANCE,
                 new RollbackTxResponseHandler( rollbackFuture ) );
 
         return rollbackFuture.thenApply( ignore ->
@@ -267,7 +267,7 @@ public class ExplicitTransaction implements Transaction
     public StatementResult run( Statement statement )
     {
         ensureNotFailed();
-        StatementResultCursor cursor = Futures.getBlocking( QueryRunner.run( asyncConnection, statement, this ) );
+        StatementResultCursor cursor = getBlocking( QueryRunner.runSync( connection, statement, this ) );
         return new CursorBasedStatementResult( cursor );
     }
 
@@ -275,7 +275,7 @@ public class ExplicitTransaction implements Transaction
     public CompletionStage<StatementResultCursor> runAsync( Statement statement )
     {
         ensureNotFailed();
-        return QueryRunner.runAsync( asyncConnection, statement, this );
+        return QueryRunner.runAsync( connection, statement, this );
     }
 
     @Override
