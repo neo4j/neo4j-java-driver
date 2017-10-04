@@ -21,12 +21,9 @@ package org.neo4j.driver.internal.cluster;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.async.AsyncConnection;
-import org.neo4j.driver.internal.spi.Connection;
 
 public interface ClusterCompositionProvider
 {
-    ClusterCompositionResponse getClusterComposition( Connection connection );
-
     CompletionStage<ClusterCompositionResponse> getClusterComposition(
             CompletionStage<AsyncConnection> connectionStage );
 }

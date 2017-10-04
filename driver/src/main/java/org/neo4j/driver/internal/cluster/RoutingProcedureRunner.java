@@ -23,12 +23,8 @@ import java.util.List;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.ResultResourcesHandler;
-import org.neo4j.driver.internal.NetworkSession;
 import org.neo4j.driver.internal.async.AsyncConnection;
-import org.neo4j.driver.internal.async.Futures;
 import org.neo4j.driver.internal.async.QueryRunner;
-import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
@@ -49,20 +45,6 @@ public class RoutingProcedureRunner
     public RoutingProcedureRunner( RoutingContext context )
     {
         this.context = context;
-    }
-
-    public RoutingProcedureResponse run( Connection connection )
-    {
-        Statement procedure = procedureStatement( ServerVersion.version( connection.server().version() ) );
-
-        try
-        {
-            return new RoutingProcedureResponse( procedure, runProcedure( connection, procedure ) );
-        }
-        catch ( ClientException error )
-        {
-            return new RoutingProcedureResponse( procedure, error );
-        }
     }
 
     public CompletionStage<RoutingProcedureResponse> run( CompletionStage<AsyncConnection> connectionStage )

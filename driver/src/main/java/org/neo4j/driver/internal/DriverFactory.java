@@ -42,9 +42,7 @@ import org.neo4j.driver.internal.retry.ExponentialBackoffRetryLogic;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.SecurityPlan;
-import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
-import org.neo4j.driver.internal.spi.Connector;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.AuthTokens;
@@ -75,12 +73,11 @@ public class DriverFactory
         EventExecutorGroup eventExecutorGroup = bootstrap.config().group();
         RetryLogic retryLogic = createRetryLogic( retrySettings, eventExecutorGroup, config.logging() );
 
-        AsyncConnectionPool asyncConnectionPool = createAsyncConnectionPool( authToken, securityPlan, bootstrap,
-                config );
+        AsyncConnectionPool connectionPool = createConnectionPool( authToken, securityPlan, bootstrap, config );
 
         try
         {
-            return createDriver( uri, address, asyncConnectionPool, config, newRoutingSettings,
+            return createDriver( uri, address, connectionPool, config, newRoutingSettings,
                     eventExecutorGroup, securityPlan, retryLogic );
         }
         catch ( Throwable driverError )
@@ -88,7 +85,7 @@ public class DriverFactory
             // we need to close the connection pool if driver creation threw exception
             try
             {
-                Futures.getBlocking( asyncConnectionPool.close() );
+                Futures.getBlocking( connectionPool.close() );
             }
             catch ( Throwable closeError )
             {
@@ -98,7 +95,7 @@ public class DriverFactory
         }
     }
 
-    private AsyncConnectionPool createAsyncConnectionPool( AuthToken authToken, SecurityPlan securityPlan,
+    private AsyncConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan,
             Bootstrap bootstrap, Config config )
     {
         Clock clock = createClock();
@@ -112,7 +109,7 @@ public class DriverFactory
     }
 
     private Driver createDriver( URI uri, BoltServerAddress address,
-            AsyncConnectionPool asyncConnectionPool, Config config, RoutingSettings routingSettings,
+            AsyncConnectionPool connectionPool, Config config, RoutingSettings routingSettings,
             EventExecutorGroup eventExecutorGroup, SecurityPlan securityPlan, RetryLogic retryLogic )
     {
         String scheme = uri.getScheme().toLowerCase();
@@ -120,10 +117,10 @@ public class DriverFactory
         {
         case BOLT_URI_SCHEME:
             assertNoRoutingContext( uri, routingSettings );
-            return createDirectDriver( address, config, securityPlan, retryLogic, asyncConnectionPool );
+            return createDirectDriver( address, config, securityPlan, retryLogic, connectionPool );
         case BOLT_ROUTING_URI_SCHEME:
-            return createRoutingDriver( address, connectionPool, asyncConnectionPool, config, routingSettings,
-                    securityPlan, retryLogic, eventExecutorGroup );
+            return createRoutingDriver( address, connectionPool, config, routingSettings, securityPlan, retryLogic,
+                    eventExecutorGroup );
         default:
             throw new ClientException( format( "Unsupported URI scheme: %s", scheme ) );
         }
@@ -135,10 +132,10 @@ public class DriverFactory
      * <b>This method is protected only for testing</b>
      */
     protected Driver createDirectDriver( BoltServerAddress address, Config config,
-            SecurityPlan securityPlan, RetryLogic retryLogic, AsyncConnectionPool asyncConnectionPool )
+            SecurityPlan securityPlan, RetryLogic retryLogic, AsyncConnectionPool connectionPool )
     {
         ConnectionProvider connectionProvider =
-                new DirectConnectionProvider( address, asyncConnectionPool );
+                new DirectConnectionProvider( address, connectionPool );
         SessionFactory sessionFactory =
                 createSessionFactory( connectionProvider, retryLogic, config );
         return createDriver( config, securityPlan, sessionFactory );
@@ -149,16 +146,16 @@ public class DriverFactory
      * <p>
      * <b>This method is protected only for testing</b>
      */
-    protected Driver createRoutingDriver( BoltServerAddress address, ConnectionPool connectionPool,
-            AsyncConnectionPool asyncConnectionPool, Config config, RoutingSettings routingSettings,
-            SecurityPlan securityPlan, RetryLogic retryLogic, EventExecutorGroup eventExecutorGroup )
+    protected Driver createRoutingDriver( BoltServerAddress address, AsyncConnectionPool connectionPool, Config config,
+            RoutingSettings routingSettings, SecurityPlan securityPlan, RetryLogic retryLogic,
+            EventExecutorGroup eventExecutorGroup )
     {
         if ( !securityPlan.isRoutingCompatible() )
         {
             throw new IllegalArgumentException( "The chosen security plan is not compatible with a routing driver" );
         }
-        ConnectionProvider connectionProvider = createLoadBalancer( address, connectionPool, asyncConnectionPool,
-                eventExecutorGroup, config, routingSettings );
+        ConnectionProvider connectionProvider = createLoadBalancer( address, connectionPool, eventExecutorGroup,
+                config, routingSettings );
         SessionFactory sessionFactory = createSessionFactory( connectionProvider, retryLogic, config );
         return createDriver( config, securityPlan, sessionFactory );
     }
@@ -178,25 +175,23 @@ public class DriverFactory
      * <p>
      * <b>This method is protected only for testing</b>
      */
-    protected LoadBalancer createLoadBalancer( BoltServerAddress address, ConnectionPool connectionPool,
-            AsyncConnectionPool asyncConnectionPool, EventExecutorGroup eventExecutorGroup,
-            Config config, RoutingSettings routingSettings )
+    protected LoadBalancer createLoadBalancer( BoltServerAddress address, AsyncConnectionPool connectionPool,
+            EventExecutorGroup eventExecutorGroup, Config config, RoutingSettings routingSettings )
     {
-        LoadBalancingStrategy loadBalancingStrategy =
-                createLoadBalancingStrategy( config, connectionPool, asyncConnectionPool );
-        return new LoadBalancer( address, routingSettings, connectionPool, asyncConnectionPool, eventExecutorGroup,
-                createClock(), config.logging(), loadBalancingStrategy );
+        LoadBalancingStrategy loadBalancingStrategy = createLoadBalancingStrategy( config, connectionPool );
+        return new LoadBalancer( address, routingSettings, connectionPool, eventExecutorGroup, createClock(),
+                config.logging(), loadBalancingStrategy );
     }
 
-    private static LoadBalancingStrategy createLoadBalancingStrategy( Config config, ConnectionPool connectionPool,
-            AsyncConnectionPool asyncConnectionPool )
+    private static LoadBalancingStrategy createLoadBalancingStrategy( Config config,
+            AsyncConnectionPool connectionPool )
     {
         switch ( config.loadBalancingStrategy() )
         {
         case ROUND_ROBIN:
             return new RoundRobinLoadBalancingStrategy( config.logging() );
         case LEAST_CONNECTED:
-            return new LeastConnectedLoadBalancingStrategy( connectionPool, asyncConnectionPool, config.logging() );
+            return new LeastConnectedLoadBalancingStrategy( connectionPool, config.logging() );
         default:
             throw new IllegalArgumentException( "Unknown load balancing strategy: " + config.loadBalancingStrategy() );
         }
@@ -210,17 +205,6 @@ public class DriverFactory
     protected Clock createClock()
     {
         return Clock.SYSTEM;
-    }
-
-    /**
-     * Creates new {@link Connector}.
-     * <p>
-     * <b>This method is protected only for testing</b>
-     */
-    protected Connector createConnector( final ConnectionSettings connectionSettings, SecurityPlan securityPlan,
-            Logging logging )
-    {
-        return new SocketConnector( connectionSettings, securityPlan, logging );
     }
 
     /**

@@ -26,6 +26,7 @@ import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.RoutingErrorHandler;
 import org.neo4j.driver.internal.async.AsyncConnection;
+import org.neo4j.driver.internal.async.BoltServerAddress;
 import org.neo4j.driver.internal.async.RoutingAsyncConnection;
 import org.neo4j.driver.internal.async.pool.AsyncConnectionPool;
 import org.neo4j.driver.internal.cluster.AddressSet;
@@ -34,14 +35,10 @@ import org.neo4j.driver.internal.cluster.ClusterCompositionProvider;
 import org.neo4j.driver.internal.cluster.ClusterRoutingTable;
 import org.neo4j.driver.internal.cluster.DnsResolver;
 import org.neo4j.driver.internal.cluster.Rediscovery;
-import org.neo4j.driver.internal.cluster.RoutingPooledConnection;
 import org.neo4j.driver.internal.cluster.RoutingProcedureClusterCompositionProvider;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.cluster.RoutingTable;
-import org.neo4j.driver.internal.async.BoltServerAddress;
-import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
-import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Logger;
@@ -55,8 +52,7 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
 {
     private static final String LOAD_BALANCER_LOG_NAME = "LoadBalancer";
 
-    private final ConnectionPool connections;
-    private final AsyncConnectionPool asyncConnectionPool;
+    private final AsyncConnectionPool connectionPool;
     private final RoutingTable routingTable;
     private final Rediscovery rediscovery;
     private final LoadBalancingStrategy loadBalancingStrategy;
@@ -65,48 +61,33 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
 
     private CompletableFuture<RoutingTable> refreshRoutingTableFuture;
 
-    public LoadBalancer( BoltServerAddress initialRouter, RoutingSettings settings, ConnectionPool connections,
-            AsyncConnectionPool asyncConnectionPool, EventExecutorGroup eventExecutorGroup, Clock clock,
-            Logging logging, LoadBalancingStrategy loadBalancingStrategy )
+    public LoadBalancer( BoltServerAddress initialRouter, RoutingSettings settings, AsyncConnectionPool connectionPool,
+            EventExecutorGroup eventExecutorGroup, Clock clock, Logging logging,
+            LoadBalancingStrategy loadBalancingStrategy )
     {
-        this( connections, asyncConnectionPool, new ClusterRoutingTable( clock, initialRouter ),
+        this( connectionPool, new ClusterRoutingTable( clock, initialRouter ),
                 createRediscovery( initialRouter, settings, eventExecutorGroup, clock, logging ),
                 loadBalancerLogger( logging ), loadBalancingStrategy, eventExecutorGroup );
     }
 
     // Used only in testing
-    public LoadBalancer( ConnectionPool connections, AsyncConnectionPool asyncConnectionPool,
-            RoutingTable routingTable, Rediscovery rediscovery, EventExecutorGroup eventExecutorGroup, Logging logging )
+    public LoadBalancer( AsyncConnectionPool connectionPool, RoutingTable routingTable, Rediscovery rediscovery,
+            EventExecutorGroup eventExecutorGroup, Logging logging )
     {
-        this( connections, asyncConnectionPool, routingTable, rediscovery, loadBalancerLogger( logging ),
-                new LeastConnectedLoadBalancingStrategy( connections, asyncConnectionPool, logging ),
+        this( connectionPool, routingTable, rediscovery, loadBalancerLogger( logging ),
+                new LeastConnectedLoadBalancingStrategy( connectionPool, logging ),
                 eventExecutorGroup );
     }
 
-    private LoadBalancer( ConnectionPool connections, AsyncConnectionPool asyncConnectionPool,
-            RoutingTable routingTable, Rediscovery rediscovery, Logger log,
-            LoadBalancingStrategy loadBalancingStrategy, EventExecutorGroup eventExecutorGroup )
+    private LoadBalancer( AsyncConnectionPool connectionPool, RoutingTable routingTable, Rediscovery rediscovery,
+            Logger log, LoadBalancingStrategy loadBalancingStrategy, EventExecutorGroup eventExecutorGroup )
     {
-        this.connections = connections;
-        this.asyncConnectionPool = asyncConnectionPool;
+        this.connectionPool = connectionPool;
         this.routingTable = routingTable;
         this.rediscovery = rediscovery;
         this.loadBalancingStrategy = loadBalancingStrategy;
         this.eventExecutorGroup = eventExecutorGroup;
         this.log = log;
-
-        if ( connections != null )
-        {
-            refreshRoutingTable();
-        }
-    }
-
-    @Override
-    public PooledConnection acquireConnection( AccessMode mode )
-    {
-        AddressSet addressSet = addressSet( mode, routingTable );
-        PooledConnection connection = acquireConnection( mode, addressSet );
-        return new RoutingPooledConnection( connection, this, mode );
     }
 
     @Override
@@ -132,35 +113,7 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
     @Override
     public CompletionStage<Void> close()
     {
-        try
-        {
-            connections.close();
-        }
-        catch ( Exception e )
-        {
-            throw new RuntimeException( e );
-        }
-
-        return asyncConnectionPool.close();
-    }
-
-    private PooledConnection acquireConnection( AccessMode mode, AddressSet servers )
-    {
-        ensureRouting( mode );
-        for ( BoltServerAddress address; (address = selectAddress( mode, servers )) != null; )
-        {
-            try
-            {
-                return connections.acquire( address );
-            }
-            catch ( ServiceUnavailableException e )
-            {
-                log.error( "Failed to obtain a connection towards address " + address, e );
-                forget( address );
-            }
-        }
-        throw new SessionExpiredException(
-                "Failed to obtain connection towards " + mode + " server. Known routing table is: " + routingTable );
+        return connectionPool.close();
     }
 
     private synchronized void forget( BoltServerAddress address )
@@ -168,35 +121,7 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
         // First remove from the load balancer, to prevent concurrent threads from making connections to them.
         routingTable.forget( address );
         // drop all current connections to the address
-        if ( connections != null )
-        {
-            connections.purge( address );
-        }
-        asyncConnectionPool.purge( address );
-    }
-
-    synchronized void ensureRouting( AccessMode mode )
-    {
-        if ( routingTable.isStaleFor( mode ) )
-        {
-            refreshRoutingTable();
-        }
-    }
-
-    synchronized void refreshRoutingTable()
-    {
-        log.info( "Routing information is stale. %s", routingTable );
-
-        // get a new routing table
-        ClusterComposition cluster = rediscovery.lookupClusterComposition( routingTable, connections );
-        Set<BoltServerAddress> removed = routingTable.update( cluster );
-        // purge connections to removed addresses
-        for ( BoltServerAddress address : removed )
-        {
-            connections.purge( address );
-        }
-
-        log.info( "Refreshed routing information. %s", routingTable );
+        connectionPool.purge( address );
     }
 
     private synchronized CompletionStage<RoutingTable> freshRoutingTable( AccessMode mode )
@@ -214,7 +139,7 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
             CompletableFuture<RoutingTable> resultFuture = new CompletableFuture<>();
             refreshRoutingTableFuture = resultFuture;
 
-            rediscovery.lookupClusterCompositionAsync( routingTable, asyncConnectionPool )
+            rediscovery.lookupClusterCompositionAsync( routingTable, connectionPool )
                     .whenComplete( ( composition, error ) ->
                     {
                         if ( error != null )
@@ -242,7 +167,7 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
 
         for ( BoltServerAddress address : removed )
         {
-            asyncConnectionPool.purge( address );
+            connectionPool.purge( address );
         }
 
         log.info( "Refreshed routing information. %s", routingTable );
@@ -279,7 +204,7 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
             return;
         }
 
-        asyncConnectionPool.acquire( address ).whenComplete( ( connection, error ) ->
+        connectionPool.acquire( address ).whenComplete( ( connection, error ) ->
         {
             if ( error != null )
             {
@@ -314,7 +239,7 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
         }
     }
 
-    private BoltServerAddress selectAddress( AccessMode mode, AddressSet servers )
+    private BoltServerAddress selectAddressAsync( AccessMode mode, AddressSet servers )
     {
         BoltServerAddress[] addresses = servers.toArray();
 
@@ -329,21 +254,6 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
         }
     }
 
-    private BoltServerAddress selectAddressAsync( AccessMode mode, AddressSet servers )
-    {
-        BoltServerAddress[] addresses = servers.toArray();
-
-        switch ( mode )
-        {
-        case READ:
-            return loadBalancingStrategy.selectReaderAsync( addresses );
-        case WRITE:
-            return loadBalancingStrategy.selectWriterAsync( addresses );
-        default:
-            throw unknownMode( mode );
-        }
-    }
-
     private static Rediscovery createRediscovery( BoltServerAddress initialRouter, RoutingSettings settings,
             EventExecutorGroup eventExecutorGroup, Clock clock, Logging logging )
     {
@@ -351,7 +261,7 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
         ClusterCompositionProvider clusterCompositionProvider =
                 new RoutingProcedureClusterCompositionProvider( clock, log, settings );
         return new Rediscovery( initialRouter, settings, clusterCompositionProvider, eventExecutorGroup,
-                new DnsResolver( log ), clock, log );
+                new DnsResolver( log ), log );
     }
 
     private static Logger loadBalancerLogger( Logging logging )
