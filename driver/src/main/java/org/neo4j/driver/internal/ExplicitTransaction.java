@@ -44,6 +44,7 @@ import static java.util.Collections.emptyMap;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.neo4j.driver.internal.async.Futures.failedFuture;
 import static org.neo4j.driver.internal.async.Futures.getBlocking;
+import static org.neo4j.driver.internal.util.ErrorUtil.isRecoverable;
 import static org.neo4j.driver.v1.Values.value;
 
 public class ExplicitTransaction implements Transaction
@@ -300,6 +301,18 @@ public class ExplicitTransaction implements Transaction
     public TypeSystem typeSystem()
     {
         return InternalTypeSystem.TYPE_SYSTEM;
+    }
+
+    public void resultFailed( Throwable error )
+    {
+        if ( isRecoverable( error ) )
+        {
+            failure();
+        }
+        else
+        {
+            markToClose();
+        }
     }
 
     public void markToClose()

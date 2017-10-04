@@ -24,22 +24,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-import org.neo4j.driver.internal.ExplicitTransaction;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Value;
 
 public class RunResponseHandler implements ResponseHandler
 {
     private final CompletableFuture<Void> runCompletedFuture;
-    private final ExplicitTransaction tx;
 
     private List<String> statementKeys;
     private long resultAvailableAfter;
 
-    public RunResponseHandler( CompletableFuture<Void> runCompletedFuture, ExplicitTransaction tx )
+    public RunResponseHandler( CompletableFuture<Void> runCompletedFuture )
     {
         this.runCompletedFuture = runCompletedFuture;
-        this.tx = tx;
     }
 
     @Override
@@ -57,10 +54,6 @@ public class RunResponseHandler implements ResponseHandler
     @Override
     public void onFailure( Throwable error )
     {
-        if ( tx != null )
-        {
-            tx.resultFailed( error );
-        }
         if ( runCompletedFuture != null )
         {
             runCompletedFuture.completeExceptionally( error );

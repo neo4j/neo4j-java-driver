@@ -69,7 +69,7 @@ public final class QueryRunner
         Map<String,Value> params = statement.parameters().asMap( ofValue() );
 
         CompletableFuture<Void> runCompletedFuture = new CompletableFuture<>();
-        RunResponseHandler runHandler = new RunResponseHandler( runCompletedFuture, tx );
+        RunResponseHandler runHandler = new RunResponseHandler( runCompletedFuture );
         PullAllResponseHandler pullAllHandler = newPullAllHandler( statement, runHandler, connection, tx );
 
         connection.runAndFlush( query, params, runHandler, pullAllHandler );
