@@ -52,12 +52,12 @@ public class AsyncConnectionPoolImpl implements AsyncConnectionPool
     private final ConcurrentMap<BoltServerAddress,ChannelPool> pools = new ConcurrentHashMap<>();
     private final AtomicBoolean closed = new AtomicBoolean();
 
-    public AsyncConnectionPoolImpl( AsyncConnector connector, Bootstrap bootstrap,
-            ActiveChannelTracker activeChannelTracker, PoolSettings settings, Logging logging, Clock clock )
+    public AsyncConnectionPoolImpl( AsyncConnector connector, Bootstrap bootstrap, PoolSettings settings,
+            Logging logging, Clock clock )
     {
         this.connector = connector;
         this.bootstrap = bootstrap;
-        this.activeChannelTracker = activeChannelTracker;
+        this.activeChannelTracker = new ActiveChannelTracker( logging );
         this.channelHealthChecker = new NettyChannelHealthChecker( settings, clock );
         this.settings = settings;
         this.clock = clock;

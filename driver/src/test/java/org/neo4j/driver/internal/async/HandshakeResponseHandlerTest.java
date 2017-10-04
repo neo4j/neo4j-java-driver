@@ -51,13 +51,13 @@ public class HandshakeResponseHandlerTest
     private final EmbeddedChannel channel = new EmbeddedChannel();
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         setMessageDispatcher( channel, new InboundMessageDispatcher( channel, DEV_NULL_LOGGING ) );
     }
 
     @After
-    public void tearDown() throws Exception
+    public void tearDown()
     {
         channel.close();
     }

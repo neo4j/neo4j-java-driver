@@ -55,15 +55,11 @@ public class ChannelConnectedListener implements ChannelFutureListener
             channel.pipeline().addLast( new HandshakeResponseHandler( handshakeCompletedPromise, logging ) );
             ChannelFuture handshakeFuture = channel.writeAndFlush( handshake() );
 
-            handshakeFuture.addListener( new ChannelFutureListener()
+            handshakeFuture.addListener( channelFuture ->
             {
-                @Override
-                public void operationComplete( ChannelFuture future ) throws Exception
+                if ( !channelFuture.isSuccess() )
                 {
-                    if ( !future.isSuccess() )
-                    {
-                        handshakeCompletedPromise.setFailure( future.cause() );
-                    }
+                    handshakeCompletedPromise.setFailure( channelFuture.cause() );
                 }
             } );
         }

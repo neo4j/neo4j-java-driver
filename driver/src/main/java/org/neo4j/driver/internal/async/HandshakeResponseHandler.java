@@ -54,13 +54,13 @@ public class HandshakeResponseHandler extends ReplayingDecoder<Void>
     }
 
     @Override
-    public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause ) throws Exception
+    public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause )
     {
         fail( ctx, cause );
     }
 
     @Override
-    protected void decode( ChannelHandlerContext ctx, ByteBuf in, List<Object> out ) throws Exception
+    protected void decode( ChannelHandlerContext ctx, ByteBuf in, List<Object> out )
     {
         int serverSuggestedVersion = in.readInt();
         log.debug( "Server suggested protocol version: %s", serverSuggestedVersion );
@@ -99,8 +99,7 @@ public class HandshakeResponseHandler extends ReplayingDecoder<Void>
 
     private void fail( ChannelHandlerContext ctx, Throwable error )
     {
-        ctx.close();
-        handshakeCompletedPromise.setFailure( error );
+        ctx.close().addListener( future -> handshakeCompletedPromise.setFailure( error ) );
     }
 
     private static Throwable protocolNoSupportedByServerError()

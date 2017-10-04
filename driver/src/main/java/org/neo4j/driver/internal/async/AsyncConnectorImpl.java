@@ -23,7 +23,6 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPromise;
-import io.netty.channel.pool.ChannelPoolHandler;
 
 import java.util.Map;
 
@@ -46,18 +45,16 @@ public class AsyncConnectorImpl implements AsyncConnector
     private final Map<String,Value> authToken;
     private final SecurityPlan securityPlan;
     private final int connectTimeoutMillis;
-    private final ChannelPoolHandler channelPoolHandler;
     private final Logging logging;
     private final Clock clock;
 
-    public AsyncConnectorImpl( ConnectionSettings connectionSettings, SecurityPlan securityPlan,
-            ChannelPoolHandler channelPoolHandler, Logging logging, Clock clock )
+    public AsyncConnectorImpl( ConnectionSettings connectionSettings, SecurityPlan securityPlan, Logging logging,
+            Clock clock )
     {
         this.userAgent = connectionSettings.userAgent();
         this.authToken = tokenAsMap( connectionSettings.authToken() );
         this.connectTimeoutMillis = connectionSettings.connectTimeoutMillis();
         this.securityPlan = requireNonNull( securityPlan );
-        this.channelPoolHandler = requireNonNull( channelPoolHandler );
         this.logging = requireNonNull( logging );
         this.clock = requireNonNull( clock );
     }
@@ -66,7 +63,7 @@ public class AsyncConnectorImpl implements AsyncConnector
     public ChannelFuture connect( BoltServerAddress address, Bootstrap bootstrap )
     {
         bootstrap.option( ChannelOption.CONNECT_TIMEOUT_MILLIS, connectTimeoutMillis );
-        bootstrap.handler( new NettyChannelInitializer( address, securityPlan, channelPoolHandler, clock ) );
+        bootstrap.handler( new NettyChannelInitializer( address, securityPlan, clock ) );
 
         ChannelFuture channelConnected = bootstrap.connect( address.toSocketAddress() );
 
