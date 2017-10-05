@@ -20,10 +20,10 @@ package org.neo4j.driver.v1;
 
 import java.util.List;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Consumer;
-import java.util.function.Function;
 
 import org.neo4j.driver.v1.summary.ResultSummary;
+import org.neo4j.driver.v1.util.Consumer;
+import org.neo4j.driver.v1.util.Function;
 
 public interface StatementResultCursor
 {

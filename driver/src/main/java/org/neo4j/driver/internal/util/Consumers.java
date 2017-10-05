@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.internal.util;
 
+import org.neo4j.driver.v1.util.Consumer;
+
 public final class Consumers
 {
     private Consumers()

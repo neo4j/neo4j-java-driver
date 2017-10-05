@@ -19,7 +19,6 @@
 package org.neo4j.driver.internal;
 
 import java.util.List;
-import java.util.function.Function;
 
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.StatementResult;
@@ -27,6 +26,7 @@ import org.neo4j.driver.v1.StatementResultCursor;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
 import org.neo4j.driver.v1.summary.ResultSummary;
+import org.neo4j.driver.v1.util.Function;
 
 import static org.neo4j.driver.internal.async.Futures.getBlocking;
 

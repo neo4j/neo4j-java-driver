@@ -18,28 +18,31 @@
  */
 package org.neo4j.driver.internal.util;
 
+import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+
 import java.util.List;
 
+import org.neo4j.driver.internal.async.AsyncConnector;
 import org.neo4j.driver.internal.async.BoltServerAddress;
-import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.spi.Connector;
 
-public class ConnectionTrackingConnector implements Connector
+public class ChannelTrackingConnector implements AsyncConnector
 {
-    private final Connector realConnector;
-    private final List<Connection> connections;
+    private final AsyncConnector realConnector;
+    private final List<Channel> channels;
 
-    public ConnectionTrackingConnector( Connector realConnector, List<Connection> connections )
+    public ChannelTrackingConnector( AsyncConnector realConnector, List<Channel> channels )
     {
         this.realConnector = realConnector;
-        this.connections = connections;
+        this.channels = channels;
     }
 
     @Override
-    public Connection connect( BoltServerAddress address )
+    public ChannelFuture connect( BoltServerAddress address, Bootstrap bootstrap )
     {
-        Connection connection = realConnector.connect( address );
-        connections.add( connection );
-        return connection;
+        ChannelFuture channelFuture = realConnector.connect( address, bootstrap );
+        channels.add( channelFuture.channel() );
+        return channelFuture;
     }
 }

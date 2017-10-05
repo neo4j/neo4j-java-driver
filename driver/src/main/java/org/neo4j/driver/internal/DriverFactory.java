@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.security.GeneralSecurityException;
 
+import org.neo4j.driver.internal.async.AsyncConnector;
 import org.neo4j.driver.internal.async.AsyncConnectorImpl;
 import org.neo4j.driver.internal.async.BoltServerAddress;
 import org.neo4j.driver.internal.async.BootstrapFactory;
@@ -100,12 +101,18 @@ public class DriverFactory
     {
         Clock clock = createClock();
         ConnectionSettings settings = new ConnectionSettings( authToken, config.connectionTimeoutMillis() );
-        AsyncConnectorImpl connector = new AsyncConnectorImpl( settings, securityPlan, config.logging(), clock );
+        AsyncConnector connector = createConnector( settings, securityPlan, config, clock );
         PoolSettings poolSettings = new PoolSettings( config.maxIdleConnectionPoolSize(),
                 config.idleTimeBeforeConnectionTest(), config.maxConnectionLifetimeMillis(),
                 config.maxConnectionPoolSize(),
                 config.connectionAcquisitionTimeoutMillis() );
         return new AsyncConnectionPoolImpl( connector, bootstrap, poolSettings, config.logging(), clock );
+    }
+
+    protected AsyncConnector createConnector( ConnectionSettings settings, SecurityPlan securityPlan,
+            Config config, Clock clock )
+    {
+        return new AsyncConnectorImpl( settings, securityPlan, config.logging(), clock );
     }
 
     private Driver createDriver( URI uri, BoltServerAddress address,

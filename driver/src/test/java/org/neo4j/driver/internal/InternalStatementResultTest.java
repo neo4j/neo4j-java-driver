@@ -21,17 +21,18 @@ package org.neo4j.driver.internal;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
-import org.neo4j.driver.ResultResourcesHandler;
-import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.async.AsyncConnection;
+import org.neo4j.driver.internal.async.InternalStatementResultCursor;
+import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
+import org.neo4j.driver.internal.handlers.RunResponseHandler;
+import org.neo4j.driver.internal.handlers.SessionPullAllResponseHandler;
+import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
@@ -41,19 +42,19 @@ import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
 import org.neo4j.driver.v1.util.Pair;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.neo4j.driver.internal.async.BoltServerAddress.LOCAL_DEFAULT;
 import static org.neo4j.driver.v1.Records.column;
 import static org.neo4j.driver.v1.Values.ofString;
 import static org.neo4j.driver.v1.Values.value;
@@ -389,151 +390,24 @@ public class InternalStatementResultTest
         Record future = result.peek();
     }
 
-    @Test
-    public void shouldNotifyResourcesHandlerWhenFetchedViaList()
-    {
-        ResultResourcesHandler resourcesHandler = mock( ResultResourcesHandler.class );
-        StatementResult result = createResult( 10, resourcesHandler );
-
-        List<Record> records = result.list();
-        assertEquals( 10, records.size() );
-
-        verify( resourcesHandler ).resultFetched();
-    }
-
-    @Test
-    public void shouldNotifyResourcesHandlerWhenFetchedViaSingle()
-    {
-        ResultResourcesHandler resourcesHandler = mock( ResultResourcesHandler.class );
-        StatementResult result = createResult( 1, resourcesHandler );
-
-        Record record = result.single();
-        assertEquals( "v1-1", record.get( "k1" ).asString() );
-
-        verify( resourcesHandler ).resultFetched();
-    }
-
-    @Test
-    public void shouldNotifyResourcesHandlerWhenFetchedViaIterator()
-    {
-        ResultResourcesHandler resourcesHandler = mock( ResultResourcesHandler.class );
-        StatementResult result = createResult( 1, resourcesHandler );
-
-        while ( result.hasNext() )
-        {
-            assertNotNull( result.next() );
-        }
-
-        verify( resourcesHandler ).resultFetched();
-    }
-
-    @Test
-    public void shouldNotifyResourcesHandlerWhenSummary()
-    {
-        ResultResourcesHandler resourcesHandler = mock( ResultResourcesHandler.class );
-        StatementResult result = createResult( 10, resourcesHandler );
-
-        assertNotNull( result.summary() );
-
-        verify( resourcesHandler ).resultFetched();
-    }
-
-    @Test
-    public void shouldNotifyResourcesHandlerWhenConsumed()
-    {
-        ResultResourcesHandler resourcesHandler = mock( ResultResourcesHandler.class );
-        StatementResult result = createResult( 5, resourcesHandler );
-
-        result.consume();
-
-        verify( resourcesHandler ).resultFetched();
-    }
-
-    @Test
-    public void shouldNotifyResourcesHandlerOnlyOnceWhenConsumed()
-    {
-        ResultResourcesHandler resourcesHandler = mock( ResultResourcesHandler.class );
-        StatementResult result = createResult( 8, resourcesHandler );
-
-        assertEquals( 8, result.list().size() );
-        assertNotNull( result.summary() );
-        assertNotNull( result.consume() );
-        assertNotNull( result.summary() );
-
-        verify( resourcesHandler ).resultFetched();
-    }
-
     private StatementResult createResult( int numberOfRecords )
     {
-        return createResult( numberOfRecords, ResultResourcesHandler.NO_OP );
-    }
+        RunResponseHandler runHandler = new RunResponseHandler( new CompletableFuture<>() );
+        runHandler.onSuccess( singletonMap( "fields", value( Arrays.asList( "k1", "k2" ) ) ) );
 
-    private StatementResult createResult( int numberOfRecords, ResultResourcesHandler resourcesHandler )
-    {
-        Connection connection = mock( Connection.class );
-        String statement = "<unknown>";
+        Statement statement = new Statement( "<unknown>" );
+        AsyncConnection connection = mock( AsyncConnection.class );
+        when( connection.serverAddress() ).thenReturn( LOCAL_DEFAULT );
+        when( connection.serverVersion() ).thenReturn( ServerVersion.v3_2_0 );
+        PullAllResponseHandler pullAllHandler = new SessionPullAllResponseHandler( statement, runHandler, connection );
 
-        Statement stmt = new Statement( statement );
-        InternalStatementResult result = new InternalStatementResult( stmt, connection, resourcesHandler );
-
-        // Each time the cursor calls `recieveOne`, we'll run one of these,
-        // to emulate how messages are handed over to the cursor
-        final LinkedList<Runnable> inboundMessages = new LinkedList<>();
-
-        inboundMessages.add( streamHeadMessage( result ) );
-        for ( int i = 1; i <= numberOfRecords; i++ )
+        for ( int i = 0; i < numberOfRecords; i++ )
         {
-            inboundMessages.add( recordMessage( result, i ) );
+            pullAllHandler.onRecord( new Value[]{value( "v1-" + i ), value( "v2-" + i )} );
         }
-        inboundMessages.add( streamTailMessage( result ) );
+        pullAllHandler.onSuccess( emptyMap() );
 
-        doAnswer( new Answer()
-        {
-            @Override
-            public Object answer( InvocationOnMock invocationOnMock ) throws Throwable
-            {
-                inboundMessages.poll().run();
-                return null;
-            }
-        } ).when( connection ).receiveOne();
-
-        return result;
-    }
-
-    private Runnable streamTailMessage( final InternalStatementResult cursor )
-    {
-        return new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                cursor.pullAllResponseHandler().onSuccess( Collections.<String,Value>emptyMap() );
-            }
-        };
-    }
-
-    private Runnable recordMessage( final InternalStatementResult cursor, final int val )
-    {
-        return new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                cursor.pullAllResponseHandler().onRecord( new Value[]{value( "v1-" + val ), value( "v2-" + val )} );
-            }
-        };
-    }
-
-    private Runnable streamHeadMessage( final InternalStatementResult cursor )
-    {
-        return new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                cursor.runResponseHandler().onSuccess( singletonMap( "fields", value( Arrays.asList( "k1", "k2" ) ) ) );
-            }
-        };
+        return new InternalStatementResult( new InternalStatementResultCursor( runHandler, pullAllHandler ) );
     }
 
     private List<Value> values( Record record )

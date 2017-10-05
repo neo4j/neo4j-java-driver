@@ -59,6 +59,7 @@ public class HandshakeResponseHandler extends ReplayingDecoder<Void>
         fail( ctx, cause );
     }
 
+    // todo: do not use DEV_NULL_LOGGING
     @Override
     protected void decode( ChannelHandlerContext ctx, ByteBuf in, List<Object> out )
     {

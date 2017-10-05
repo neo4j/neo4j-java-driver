@@ -18,44 +18,45 @@
  */
 package org.neo4j.driver.internal.util;
 
+import io.netty.channel.Channel;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.neo4j.driver.internal.ConnectionSettings;
+import org.neo4j.driver.internal.async.AsyncConnector;
 import org.neo4j.driver.internal.security.SecurityPlan;
-import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.spi.Connector;
-import org.neo4j.driver.v1.Logging;
+import org.neo4j.driver.v1.Config;
 
-public class ConnectionTrackingDriverFactory extends DriverFactoryWithClock
+public class ChannelTrackingDriverFactory extends DriverFactoryWithClock
 {
-    private final List<Connection> connections = new CopyOnWriteArrayList<>();
+    private final List<Channel> channels = new CopyOnWriteArrayList<>();
 
-    public ConnectionTrackingDriverFactory( Clock clock )
+    public ChannelTrackingDriverFactory( Clock clock )
     {
         super( clock );
     }
 
     @Override
-    protected Connector createConnector( ConnectionSettings connectionSettings, SecurityPlan securityPlan,
-            Logging logging )
+    protected AsyncConnector createConnector( ConnectionSettings settings, SecurityPlan securityPlan, Config config,
+            Clock clock )
     {
-        Connector connector = super.createConnector( connectionSettings, securityPlan, logging );
-        return new ConnectionTrackingConnector( connector, connections );
+        AsyncConnector connector = super.createConnector( settings, securityPlan, config, clock );
+        return new ChannelTrackingConnector( connector, channels );
     }
 
-    public List<Connection> connections()
+    public List<Channel> channels()
     {
-        return new ArrayList<>( connections );
+        return new ArrayList<>( channels );
     }
 
     public void closeConnections()
     {
-        for ( Connection connection : connections )
+        for ( Channel channel : channels )
         {
-            connection.close();
+            channel.close().syncUninterruptibly();
         }
-        connections.clear();
+        channels.clear();
     }
 }

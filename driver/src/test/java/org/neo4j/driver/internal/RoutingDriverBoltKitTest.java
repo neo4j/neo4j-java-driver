@@ -84,14 +84,8 @@ public class RoutingDriverBoltKitTest
         try ( Driver driver = GraphDatabase.driver( uri, config );
               Session session = driver.session( AccessMode.READ ) )
         {
-            List<String> result = session.run( "MATCH (n) RETURN n.name" ).list( new Function<Record,String>()
-            {
-                @Override
-                public String apply( Record record )
-                {
-                    return record.get( "n.name" ).asString();
-                }
-            } );
+            List<String> result = session.run( "MATCH (n) RETURN n.name" )
+                    .list( record -> record.get( "n.name" ).asString() );
 
             assertThat( result, equalTo( asList( "Bob", "Alice", "Tina" ) ) );
 

@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.v1.integration;
 
+import io.netty.channel.Channel;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -28,8 +29,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.driver.internal.cluster.RoutingSettings;
-import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.util.ConnectionTrackingDriverFactory;
+import org.neo4j.driver.internal.util.ChannelTrackingDriverFactory;
 import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
@@ -74,25 +74,25 @@ public class ConnectionPoolIT
     }
 
     @Test
-    public void shouldDisposeConnectionsBasedOnMaxLifetime()
+    public void shouldDisposeChannelsBasedOnMaxLifetime()
     {
         FakeClock clock = new FakeClock();
-        ConnectionTrackingDriverFactory driverFactory = new ConnectionTrackingDriverFactory( clock );
+        ChannelTrackingDriverFactory driverFactory = new ChannelTrackingDriverFactory( clock );
 
         int maxConnLifetimeHours = 3;
         Config config = Config.build().withMaxConnectionLifetime( maxConnLifetimeHours, TimeUnit.HOURS ).toConfig();
         RoutingSettings routingSettings = new RoutingSettings( 1, 1 );
         driver = driverFactory.newInstance( neo4j.uri(), neo4j.authToken(), routingSettings, DEFAULT, config );
 
-        // force driver create two connections and return them to the connection pool
+        // force driver create two channels and return them to the pool
         startAndCloseSessions( driver, 3 );
 
-        // verify that two connections were created, they should be open and idle in the pool
-        List<Connection> connections1 = driverFactory.connections();
-        assertEquals( 3, connections1.size() );
-        assertTrue( connections1.get( 0 ).isOpen() );
-        assertTrue( connections1.get( 1 ).isOpen() );
-        assertTrue( connections1.get( 2 ).isOpen() );
+        // verify that two channels were created, they should be open and idle in the pool
+        List<Channel> channels1 = driverFactory.channels();
+        assertEquals( 3, channels1.size() );
+        assertTrue( channels1.get( 0 ).isActive() );
+        assertTrue( channels1.get( 1 ).isActive() );
+        assertTrue( channels1.get( 2 ).isActive() );
 
         // move the clock forward so that two idle connections seem too old
         clock.progress( TimeUnit.HOURS.toMillis( maxConnLifetimeHours + 1 ) );
@@ -100,13 +100,13 @@ public class ConnectionPoolIT
         // force driver to acquire new connection and put it back to the pool
         startAndCloseSessions( driver, 1 );
 
-        // all existing connections should be closed because they are too old, new connection was created
-        List<Connection> connections2 = driverFactory.connections();
-        assertEquals( 4, connections2.size() );
-        assertFalse( connections2.get( 0 ).isOpen() );
-        assertFalse( connections2.get( 1 ).isOpen() );
-        assertFalse( connections2.get( 2 ).isOpen() );
-        assertTrue( connections2.get( 3 ).isOpen() );
+        // all existing channels should be closed because they are too old, new channel should be created
+        List<Channel> channels2 = driverFactory.channels();
+        assertEquals( 4, channels2.size() );
+        assertFalse( channels2.get( 0 ).isActive() );
+        assertFalse( channels2.get( 1 ).isActive() );
+        assertFalse( channels2.get( 2 ).isActive() );
+        assertTrue( channels2.get( 3 ).isActive() );
     }
 
     @After

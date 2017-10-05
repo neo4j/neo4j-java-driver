@@ -18,31 +18,38 @@
  */
 package org.neo4j.driver.internal.messaging;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelPipeline;
+import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
-import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 
 import org.neo4j.driver.internal.InternalNode;
 import org.neo4j.driver.internal.InternalPath;
 import org.neo4j.driver.internal.InternalRelationship;
-import org.neo4j.driver.internal.packstream.BufferedChannelInput;
+import org.neo4j.driver.internal.async.inbound.ChunkDecoder;
+import org.neo4j.driver.internal.async.inbound.InboundMessageHandler;
+import org.neo4j.driver.internal.async.inbound.MessageDecoder;
+import org.neo4j.driver.internal.async.outbound.OutboundMessageHandler;
 import org.neo4j.driver.internal.packstream.BufferedChannelOutput;
 import org.neo4j.driver.internal.packstream.PackStream;
-import org.neo4j.driver.internal.util.BytePrinter;
 import org.neo4j.driver.v1.Value;
 
 import static java.util.Arrays.asList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.startsWith;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.v1.Values.EmptyMap;
 import static org.neo4j.driver.v1.Values.ofValue;
 import static org.neo4j.driver.v1.Values.parameters;
@@ -56,23 +63,23 @@ public class MessageFormatTest
     public ExpectedException exception = ExpectedException.none();
 
     @Test
-    public void shouldPackAllRequests() throws Throwable
+    public void shouldPackAllRequests()
     {
-        assertSerializes( new RunMessage( "Hello", parameters().asMap( ofValue())) );
-        assertSerializes( new RunMessage( "Hello", parameters( "a", 12 ).asMap( ofValue()) ) );
+        assertSerializes( new RunMessage( "Hello", parameters().asMap( ofValue() ) ) );
+        assertSerializes( new RunMessage( "Hello", parameters( "a", 12 ).asMap( ofValue() ) ) );
         assertSerializes( new PullAllMessage() );
         assertSerializes( new DiscardAllMessage() );
         assertSerializes( new IgnoredMessage() );
         assertSerializes( new FailureMessage( "Neo.Banana.Bork.Birk", "Hello, world!" ) );
         assertSerializes( new ResetMessage() );
-        assertSerializes( new InitMessage( "JavaDriver/1.0.0", parameters().asMap( ofValue()) ) );
+        assertSerializes( new InitMessage( "JavaDriver/1.0.0", parameters().asMap( ofValue() ) ) );
     }
 
     @Test
-    public void shouldUnpackAllResponses() throws Throwable
+    public void shouldUnpackAllResponses()
     {
         assertSerializes( new RecordMessage( new Value[]{value( 1337L )} ) );
-        //assertSerializes( new SuccessMessage( new HashMap<String,Value>() ) );
+        assertSerializes( new SuccessMessage( new HashMap<>() ) );
     }
 
     @Test
@@ -83,21 +90,21 @@ public class MessageFormatTest
         assertSerializesValue( value( asList( "k", 12, "a", "banana" ) ) );
         assertSerializesValue( value(
                 new InternalNode( 1, Collections.singletonList( "User" ), parameters( "name", "Bob", "age", 45 ).asMap(
-                        ofValue()) )
+                        ofValue() ) )
         ) );
         assertSerializesValue( value( new InternalNode( 1 ) ) );
         assertSerializesValue( value(
                 new InternalRelationship( 1, 1, 1,
                         "KNOWS",
-                        parameters( "name", "Bob", "age", 45 ).asMap( ofValue()) ) ) );
+                        parameters( "name", "Bob", "age", 45 ).asMap( ofValue() ) ) ) );
         assertSerializesValue( value(
                 new InternalPath(
                         new InternalNode( 1 ),
                         new InternalRelationship( 2, 1, 3,
-                                "KNOWS", EmptyMap.asMap( ofValue()) ),
+                                "KNOWS", EmptyMap.asMap( ofValue() ) ),
                         new InternalNode( 3 ),
                         new InternalRelationship( 4, 3, 5,
-                                "LIKES", EmptyMap.asMap( ofValue()) ),
+                                "LIKES", EmptyMap.asMap( ofValue() ) ),
                         new InternalNode( 5 )
                 ) ) );
         assertSerializesValue( value( new InternalPath( new InternalNode( 1 ) ) ) );
@@ -123,48 +130,60 @@ public class MessageFormatTest
                 "received NODE structure has 0 fields." ) );
 
         // When
-        unpack( format, out.toByteArray() );
+        unpack( Unpooled.wrappedBuffer( out.toByteArray() ), newEmbeddedChannel() );
     }
 
-    private void assertSerializesValue( Value value ) throws IOException
+    private void assertSerializesValue( Value value )
     {
         assertSerializes( new RecordMessage( new Value[]{value} ) );
     }
 
-    private void assertSerializes( Message... messages ) throws IOException
+    private void assertSerializes( Message message )
     {
-        // Pack
-        final ByteArrayOutputStream out = new ByteArrayOutputStream( 128 );
-        BufferedChannelOutput output = new BufferedChannelOutput( Channels.newChannel( out ) );
-        MessageFormat.Writer writer = format.newWriter( output, true );
-        for ( Message message : messages )
-        {
-            writer.write( message );
-        }
-        writer.flush();
+        EmbeddedChannel channel = newEmbeddedChannel();
 
-        // Unpack
-        ArrayList<Message> unpackedMessages = unpack( format, out.toByteArray() );
-        assertThat( unpackedMessages.toString(), equalTo( asList( messages ).toString() ) );
+        ByteBuf packed = pack( message, channel );
+        Message unpackedMessage = unpack( packed, channel );
+
+        assertEquals( message, unpackedMessage );
     }
 
-    private ArrayList<Message> unpack( MessageFormat format, byte[] bytes ) throws IOException
+    private EmbeddedChannel newEmbeddedChannel()
     {
-        try
-        {
-            ByteArrayInputStream inputStream = new ByteArrayInputStream( bytes );
-            BufferedChannelInput input = new BufferedChannelInput( Channels.newChannel( inputStream ) );
-            MessageFormat.Reader reader = format.newReader( input );
-            ArrayList<Message> messages = new ArrayList<>();
-            DumpMessage.unpack( messages, reader );
-            return messages;
-        }
-        catch( Exception e )
-        {
-            throw new RuntimeException(
-                    String.format( "Failed to unpack value: %s Raw data:\n%s",
-                            e.getMessage(), BytePrinter.hex( bytes ) ), e );
-        }
+        EmbeddedChannel channel = new EmbeddedChannel();
+        ChannelPipeline pipeline = channel.pipeline();
+
+        pipeline.addLast( new ChunkDecoder() );
+        pipeline.addLast( new MessageDecoder() );
+        pipeline.addLast( new InboundMessageHandler( format, DEV_NULL_LOGGING ) );
+
+        pipeline.addLast( new OutboundMessageHandler( format, DEV_NULL_LOGGING ) );
+
+        return channel;
     }
 
+    private ByteBuf pack( Message message, EmbeddedChannel channel )
+    {
+        assertTrue( channel.writeOutbound( message ) );
+
+        ByteBuf[] packedMessages = channel.outboundMessages()
+                .stream()
+                .map( msg -> (ByteBuf) msg )
+                .toArray( ByteBuf[]::new );
+
+        return Unpooled.wrappedBuffer( packedMessages );
+    }
+
+    private Message unpack( ByteBuf packed, EmbeddedChannel channel )
+    {
+        assertTrue( channel.writeInbound( packed ) );
+
+        List<Message> unpackedMessages = channel.inboundMessages()
+                .stream()
+                .map( msg -> (Message) msg )
+                .collect( toList() );
+
+        assertEquals( 1, unpackedMessages.size() );
+        return unpackedMessages.get( 0 );
+    }
 }

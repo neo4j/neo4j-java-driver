@@ -22,8 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Consumer;
-import java.util.function.Function;
 
 import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
@@ -31,6 +29,9 @@ import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.StatementResultCursor;
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
 import org.neo4j.driver.v1.summary.ResultSummary;
+import org.neo4j.driver.v1.util.Consumer;
+import org.neo4j.driver.v1.util.Function;
+import org.neo4j.driver.v1.util.Functions;
 
 import static java.util.Objects.requireNonNull;
 
@@ -125,7 +126,7 @@ public class InternalStatementResultCursor implements StatementResultCursor
     @Override
     public CompletionStage<List<Record>> listAsync()
     {
-        return listAsync( Function.identity() );
+        return listAsync( Functions.identity() );
     }
 
     @Override

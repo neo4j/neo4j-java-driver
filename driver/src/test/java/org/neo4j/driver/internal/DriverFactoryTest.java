@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal;
 
+import io.netty.bootstrap.Bootstrap;
 import io.netty.util.concurrent.EventExecutorGroup;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -29,27 +30,27 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 
+import org.neo4j.driver.internal.async.AsyncConnection;
+import org.neo4j.driver.internal.async.BoltServerAddress;
+import org.neo4j.driver.internal.async.Futures;
 import org.neo4j.driver.internal.async.pool.AsyncConnectionPool;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
-import org.neo4j.driver.internal.async.BoltServerAddress;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.SecurityPlan;
-import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
-import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 
+import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -74,7 +75,7 @@ public class DriverFactoryTest
     @Test
     public void connectionPoolClosedWhenDriverCreationFails() throws Exception
     {
-        ConnectionPool connectionPool = connectionPoolMock();
+        AsyncConnectionPool connectionPool = connectionPoolMock();
         DriverFactory factory = new ThrowingDriverFactory( connectionPool );
 
         try
@@ -92,9 +93,9 @@ public class DriverFactoryTest
     @Test
     public void connectionPoolCloseExceptionIsSupressedWhenDriverCreationFails() throws Exception
     {
-        ConnectionPool connectionPool = connectionPoolMock();
+        AsyncConnectionPool connectionPool = connectionPoolMock();
         RuntimeException poolCloseError = new RuntimeException( "Pool close error" );
-        doThrow( poolCloseError ).when( connectionPool ).close();
+        when( connectionPool.close() ).thenReturn( Futures.failedFuture( poolCloseError ) );
 
         DriverFactory factory = new ThrowingDriverFactory( connectionPool );
 
@@ -147,18 +148,19 @@ public class DriverFactoryTest
         return driverFactory.newInstance( uri, auth, routingSettings, RetrySettings.DEFAULT, config );
     }
 
-    private static ConnectionPool connectionPoolMock()
+    private static AsyncConnectionPool connectionPoolMock()
     {
-        ConnectionPool pool = mock( ConnectionPool.class );
-        when( pool.acquire( any( BoltServerAddress.class ) ) ).thenReturn( mock( PooledConnection.class ) );
+        AsyncConnectionPool pool = mock( AsyncConnectionPool.class );
+        AsyncConnection connection = mock( AsyncConnection.class );
+        when( pool.acquire( any( BoltServerAddress.class ) ) ).thenReturn( completedFuture( connection ) );
         return pool;
     }
 
     private static class ThrowingDriverFactory extends DriverFactory
     {
-        final ConnectionPool connectionPool;
+        final AsyncConnectionPool connectionPool;
 
-        ThrowingDriverFactory( ConnectionPool connectionPool )
+        ThrowingDriverFactory( AsyncConnectionPool connectionPool )
         {
             this.connectionPool = connectionPool;
         }
@@ -170,15 +172,16 @@ public class DriverFactoryTest
         }
 
         @Override
-        protected Driver createRoutingDriver( BoltServerAddress address, ConnectionPool connectionPool,
-                AsyncConnectionPool asyncConnectionPool, Config config, RoutingSettings routingSettings,
-                SecurityPlan securityPlan, RetryLogic retryLogic, EventExecutorGroup eventExecutorGroup )
+        protected Driver createRoutingDriver( BoltServerAddress address, AsyncConnectionPool connectionPool,
+                Config config, RoutingSettings routingSettings, SecurityPlan securityPlan, RetryLogic retryLogic,
+                EventExecutorGroup eventExecutorGroup )
         {
             throw new UnsupportedOperationException( "Can't create routing driver" );
         }
 
         @Override
-        protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Config config )
+        protected AsyncConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan,
+                Bootstrap bootstrap, Config config )
         {
             return connectionPool;
         }
@@ -195,9 +198,8 @@ public class DriverFactoryTest
         }
 
         @Override
-        protected LoadBalancer createLoadBalancer( BoltServerAddress address, ConnectionPool connectionPool,
-                AsyncConnectionPool asyncConnectionPool, EventExecutorGroup eventExecutorGroup,
-                Config config, RoutingSettings routingSettings )
+        protected LoadBalancer createLoadBalancer( BoltServerAddress address, AsyncConnectionPool connectionPool,
+                EventExecutorGroup eventExecutorGroup, Config config, RoutingSettings routingSettings )
         {
             return null;
         }
@@ -212,7 +214,8 @@ public class DriverFactoryTest
         }
 
         @Override
-        protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Config config )
+        protected AsyncConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan,
+                Bootstrap bootstrap, Config config )
         {
             return connectionPoolMock();
         }
