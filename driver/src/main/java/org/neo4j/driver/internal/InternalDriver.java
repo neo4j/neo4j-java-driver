@@ -18,8 +18,10 @@
  */
 package org.neo4j.driver.internal;
 
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.driver.internal.async.Futures;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Driver;
@@ -27,7 +29,7 @@ import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Session;
 
-import static java.lang.String.format;
+import static java.util.concurrent.CompletableFuture.completedFuture;
 
 public class InternalDriver implements Driver
 {
@@ -95,11 +97,7 @@ public class InternalDriver implements Driver
         Session session = sessionFactory.newInstance( mode, bookmark );
         if ( closed.get() )
         {
-            // the driver is already closed and we either 1. obtain this session from the old session pool
-            // or 2. we obtain this session from a new session pool
-            // For 1. this closeResources will take no effect as everything is already closed.
-            // For 2. this closeResources will close the new connection pool just created to ensure no resource leak.
-            closeResources();
+            // session does not immediately acquire connection, it is fine to just throw
             throw driverCloseException();
         }
         return session;
@@ -108,10 +106,17 @@ public class InternalDriver implements Driver
     @Override
     public final void close()
     {
+        Futures.getBlocking( closeAsync() );
+    }
+
+    @Override
+    public CompletionStage<Void> closeAsync()
+    {
         if ( closed.compareAndSet( false, true ) )
         {
-            closeResources();
+            return sessionFactory.close();
         }
+        return completedFuture( null );
     }
 
     /**
@@ -124,18 +129,6 @@ public class InternalDriver implements Driver
     public final SessionFactory getSessionFactory()
     {
         return sessionFactory;
-    }
-
-    private void closeResources()
-    {
-        try
-        {
-            sessionFactory.close();
-        }
-        catch ( Exception ex )
-        {
-            log.error( format( "~~ [ERROR] %s", ex.getMessage() ), ex );
-        }
     }
 
     private void assertOpen()

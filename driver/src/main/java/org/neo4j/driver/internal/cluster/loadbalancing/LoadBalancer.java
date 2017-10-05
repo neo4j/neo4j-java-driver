@@ -26,7 +26,6 @@ import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.RoutingErrorHandler;
 import org.neo4j.driver.internal.async.AsyncConnection;
-import org.neo4j.driver.internal.async.Futures;
 import org.neo4j.driver.internal.async.RoutingAsyncConnection;
 import org.neo4j.driver.internal.async.pool.AsyncConnectionPool;
 import org.neo4j.driver.internal.cluster.AddressSet;
@@ -52,7 +51,7 @@ import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
-public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, AutoCloseable
+public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
 {
     private static final String LOAD_BALANCER_LOG_NAME = "LoadBalancer";
 
@@ -131,10 +130,18 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
     }
 
     @Override
-    public void close() throws Exception
+    public CompletionStage<Void> close()
     {
-        connections.close();
-        Futures.getBlocking( asyncConnectionPool.closeAsync() );
+        try
+        {
+            connections.close();
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException( e );
+        }
+
+        return asyncConnectionPool.close();
     }
 
     private PooledConnection acquireConnection( AccessMode mode, AddressSet servers )

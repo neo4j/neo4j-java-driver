@@ -21,7 +21,6 @@ package org.neo4j.driver.internal;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.async.AsyncConnection;
-import org.neo4j.driver.internal.async.Futures;
 import org.neo4j.driver.internal.async.pool.AsyncConnectionPool;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.ConnectionPool;
@@ -61,10 +60,18 @@ public class DirectConnectionProvider implements ConnectionProvider
     }
 
     @Override
-    public void close() throws Exception
+    public CompletionStage<Void> close()
     {
-        pool.close();
-        Futures.getBlocking( asyncPool.closeAsync() );
+        // todo: remove this try-catch when blocking API works on top of async
+        try
+        {
+            pool.close();
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException( e );
+        }
+        return asyncPool.close();
     }
 
     public BoltServerAddress getAddress()

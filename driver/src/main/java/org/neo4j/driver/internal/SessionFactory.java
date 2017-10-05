@@ -18,10 +18,14 @@
  */
 package org.neo4j.driver.internal;
 
+import java.util.concurrent.CompletionStage;
+
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Session;
 
-public interface SessionFactory extends AutoCloseable
+public interface SessionFactory
 {
     Session newInstance( AccessMode mode, Bookmark bookmark );
+
+    CompletionStage<Void> close();
 }

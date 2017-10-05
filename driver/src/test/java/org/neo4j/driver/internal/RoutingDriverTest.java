@@ -57,6 +57,7 @@ import org.neo4j.driver.v1.exceptions.ProtocolException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
 import static java.util.Arrays.asList;
+import static java.util.concurrent.CompletableFuture.completedFuture;
 import static junit.framework.TestCase.fail;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
@@ -364,6 +365,7 @@ public class RoutingDriverTest
         Logging logging = DEV_NULL_LOGGING;
         RoutingSettings settings = new RoutingSettings( 10, 5_000, null );
         AsyncConnectionPool asyncConnectionPool = mock( AsyncConnectionPool.class );
+        when( asyncConnectionPool.close() ).thenReturn( completedFuture( null ) );
         LoadBalancingStrategy loadBalancingStrategy = new LeastConnectedLoadBalancingStrategy( pool,
                 asyncConnectionPool, logging );
         ConnectionProvider connectionProvider = new LoadBalancer( SEED, settings, pool, asyncConnectionPool,

@@ -27,7 +27,7 @@ import org.neo4j.driver.v1.AccessMode;
  * Interface defines a layer used by the driver to obtain connections. It is meant to be the only component that
  * differs between "direct" and "routing" driver.
  */
-public interface ConnectionProvider extends AutoCloseable
+public interface ConnectionProvider
 {
     /**
      * Acquire new {@link PooledConnection pooled connection} for the given {@link AccessMode mode}.
@@ -38,4 +38,6 @@ public interface ConnectionProvider extends AutoCloseable
     PooledConnection acquireConnection( AccessMode mode );
 
     CompletionStage<AsyncConnection> acquireAsyncConnection( AccessMode mode );
+
+    CompletionStage<Void> close();
 }

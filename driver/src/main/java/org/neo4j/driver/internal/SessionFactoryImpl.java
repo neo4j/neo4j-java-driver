@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.internal;
 
+import java.util.concurrent.CompletionStage;
+
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.v1.AccessMode;
@@ -57,9 +59,9 @@ public class SessionFactoryImpl implements SessionFactory
     }
 
     @Override
-    public final void close() throws Exception
+    public final CompletionStage<Void> close()
     {
-        connectionProvider.close();
+        return connectionProvider.close();
     }
 
     /**
