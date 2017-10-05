@@ -368,7 +368,7 @@ public class NetworkSession implements Session
         ensureSessionIsOpen();
         ensureNoOpenTransactionBeforeRunningSession();
 
-        return acquireAsyncConnection( mode ).thenCompose( connection ->
+        return acquireConnection( mode ).thenCompose( connection ->
                 {
                     if ( async )
                     {
@@ -384,7 +384,7 @@ public class NetworkSession implements Session
         ensureSessionIsOpen();
         ensureNoOpenTransactionBeforeOpeningTransaction();
 
-        transactionStage = acquireAsyncConnection( mode ).thenCompose( connection ->
+        transactionStage = acquireConnection( mode ).thenCompose( connection ->
         {
             ExplicitTransaction tx = new ExplicitTransaction( connection, NetworkSession.this );
             return tx.beginAsync( bookmark );
@@ -393,11 +393,11 @@ public class NetworkSession implements Session
         return transactionStage;
     }
 
-    private CompletionStage<AsyncConnection> acquireAsyncConnection( final AccessMode mode )
+    private CompletionStage<AsyncConnection> acquireConnection( final AccessMode mode )
     {
         if ( connectionStage == null )
         {
-            connectionStage = connectionProvider.acquireAsyncConnection( mode );
+            connectionStage = connectionProvider.acquireConnection( mode );
         }
         else
         {
@@ -412,7 +412,7 @@ public class NetworkSession implements Session
                 }
                 else
                 {
-                    return connectionProvider.acquireAsyncConnection( mode );
+                    return connectionProvider.acquireConnection( mode );
                 }
             } );
         }

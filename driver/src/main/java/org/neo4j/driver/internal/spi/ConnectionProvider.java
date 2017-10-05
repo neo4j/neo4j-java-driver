@@ -29,7 +29,7 @@ import org.neo4j.driver.v1.AccessMode;
  */
 public interface ConnectionProvider
 {
-    CompletionStage<AsyncConnection> acquireAsyncConnection( AccessMode mode );
+    CompletionStage<AsyncConnection> acquireConnection( AccessMode mode );
 
     CompletionStage<Void> close();
 }

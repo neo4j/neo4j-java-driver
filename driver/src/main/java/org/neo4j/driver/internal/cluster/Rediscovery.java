@@ -79,7 +79,7 @@ public class Rediscovery
      * @param connectionPool connection pool.
      * @return new cluster composition.
      */
-    public CompletionStage<ClusterComposition> lookupClusterCompositionAsync( RoutingTable routingTable,
+    public CompletionStage<ClusterComposition> lookupClusterComposition( RoutingTable routingTable,
             AsyncConnectionPool connectionPool )
     {
         CompletableFuture<ClusterComposition> result = new CompletableFuture<>();
@@ -96,7 +96,7 @@ public class Rediscovery
             return;
         }
 
-        lookupAsync( routingTable, pool ).whenComplete( ( composition, error ) ->
+        lookup( routingTable, pool ).whenComplete( ( composition, error ) ->
         {
             if ( error != null )
             {
@@ -118,19 +118,18 @@ public class Rediscovery
         } );
     }
 
-    private CompletionStage<ClusterComposition> lookupAsync( RoutingTable routingTable,
-            AsyncConnectionPool connectionPool )
+    private CompletionStage<ClusterComposition> lookup( RoutingTable routingTable, AsyncConnectionPool connectionPool )
     {
         CompletionStage<ClusterComposition> compositionStage;
 
         if ( useInitialRouter )
         {
-            compositionStage = lookupOnInitialRouterThenOnKnownRoutersAsync( routingTable, connectionPool );
+            compositionStage = lookupOnInitialRouterThenOnKnownRouters( routingTable, connectionPool );
             useInitialRouter = false;
         }
         else
         {
-            compositionStage = lookupOnKnownRoutersThenOnInitialRouterAsync( routingTable, connectionPool );
+            compositionStage = lookupOnKnownRoutersThenOnInitialRouter( routingTable, connectionPool );
         }
 
         return compositionStage.whenComplete( ( composition, error ) ->
@@ -142,35 +141,35 @@ public class Rediscovery
         } );
     }
 
-    private CompletionStage<ClusterComposition> lookupOnKnownRoutersThenOnInitialRouterAsync( RoutingTable routingTable,
+    private CompletionStage<ClusterComposition> lookupOnKnownRoutersThenOnInitialRouter( RoutingTable routingTable,
             AsyncConnectionPool connectionPool )
     {
         Set<BoltServerAddress> seenServers = new HashSet<>();
-        return lookupOnKnownRoutersAsync( routingTable, connectionPool, seenServers ).thenCompose( composition ->
+        return lookupOnKnownRouters( routingTable, connectionPool, seenServers ).thenCompose( composition ->
         {
             if ( composition != null )
             {
                 return completedFuture( composition );
             }
-            return lookupOnInitialRouterAsync( routingTable, connectionPool, seenServers );
+            return lookupOnInitialRouter( routingTable, connectionPool, seenServers );
         } );
     }
 
-    private CompletionStage<ClusterComposition> lookupOnInitialRouterThenOnKnownRoutersAsync( RoutingTable routingTable,
+    private CompletionStage<ClusterComposition> lookupOnInitialRouterThenOnKnownRouters( RoutingTable routingTable,
             AsyncConnectionPool connectionPool )
     {
         Set<BoltServerAddress> seenServers = Collections.emptySet();
-        return lookupOnInitialRouterAsync( routingTable, connectionPool, seenServers ).thenCompose( composition ->
+        return lookupOnInitialRouter( routingTable, connectionPool, seenServers ).thenCompose( composition ->
         {
             if ( composition != null )
             {
                 return completedFuture( composition );
             }
-            return lookupOnKnownRoutersAsync( routingTable, connectionPool, new HashSet<>() );
+            return lookupOnKnownRouters( routingTable, connectionPool, new HashSet<>() );
         } );
     }
 
-    private CompletionStage<ClusterComposition> lookupOnKnownRoutersAsync( RoutingTable routingTable,
+    private CompletionStage<ClusterComposition> lookupOnKnownRouters( RoutingTable routingTable,
             AsyncConnectionPool connectionPool, Set<BoltServerAddress> seenServers )
     {
         BoltServerAddress[] addresses = routingTable.routers().toArray();
@@ -186,7 +185,7 @@ public class Rediscovery
                 }
                 else
                 {
-                    return lookupOnRouterAsync( address, routingTable, connectionPool )
+                    return lookupOnRouter( address, routingTable, connectionPool )
                             .whenComplete( ( ignore, error ) -> seenServers.add( address ) );
                 }
             } );
@@ -194,7 +193,7 @@ public class Rediscovery
         return result;
     }
 
-    private CompletionStage<ClusterComposition> lookupOnInitialRouterAsync( RoutingTable routingTable,
+    private CompletionStage<ClusterComposition> lookupOnInitialRouter( RoutingTable routingTable,
             AsyncConnectionPool connectionPool, Set<BoltServerAddress> seenServers )
     {
         Set<BoltServerAddress> addresses = hostNameResolver.resolve( initialRouter );
@@ -209,13 +208,13 @@ public class Rediscovery
                 {
                     return completedFuture( composition );
                 }
-                return lookupOnRouterAsync( address, routingTable, connectionPool );
+                return lookupOnRouter( address, routingTable, connectionPool );
             } );
         }
         return result;
     }
 
-    private CompletionStage<ClusterComposition> lookupOnRouterAsync( BoltServerAddress routerAddress,
+    private CompletionStage<ClusterComposition> lookupOnRouter( BoltServerAddress routerAddress,
             RoutingTable routingTable, AsyncConnectionPool connectionPool )
     {
         CompletionStage<AsyncConnection> connectionStage = connectionPool.acquire( routerAddress );

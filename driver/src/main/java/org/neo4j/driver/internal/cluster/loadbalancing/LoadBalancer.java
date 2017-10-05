@@ -91,10 +91,10 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
     }
 
     @Override
-    public CompletionStage<AsyncConnection> acquireAsyncConnection( AccessMode mode )
+    public CompletionStage<AsyncConnection> acquireConnection( AccessMode mode )
     {
         return freshRoutingTable( mode )
-                .thenCompose( routingTable -> acquireAsync( mode, routingTable ) )
+                .thenCompose( routingTable -> acquire( mode, routingTable ) )
                 .thenApply( connection -> new RoutingAsyncConnection( connection, mode, this ) );
     }
 
@@ -139,7 +139,7 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
             CompletableFuture<RoutingTable> resultFuture = new CompletableFuture<>();
             refreshRoutingTableFuture = resultFuture;
 
-            rediscovery.lookupClusterCompositionAsync( routingTable, connectionPool )
+            rediscovery.lookupClusterComposition( routingTable, connectionPool )
                     .whenComplete( ( composition, error ) ->
                     {
                         if ( error != null )
@@ -184,17 +184,17 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
         routingTableFuture.completeExceptionally( error );
     }
 
-    private CompletionStage<AsyncConnection> acquireAsync( AccessMode mode, RoutingTable routingTable )
+    private CompletionStage<AsyncConnection> acquire( AccessMode mode, RoutingTable routingTable )
     {
         AddressSet addresses = addressSet( mode, routingTable );
         CompletableFuture<AsyncConnection> result = new CompletableFuture<>();
-        acquireAsync( mode, addresses, result );
+        acquire( mode, addresses, result );
         return result;
     }
 
-    private void acquireAsync( AccessMode mode, AddressSet addresses, CompletableFuture<AsyncConnection> result )
+    private void acquire( AccessMode mode, AddressSet addresses, CompletableFuture<AsyncConnection> result )
     {
-        BoltServerAddress address = selectAddressAsync( mode, addresses );
+        BoltServerAddress address = selectAddress( mode, addresses );
 
         if ( address == null )
         {
@@ -212,7 +212,7 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
                 {
                     log.error( "Failed to obtain a connection towards address " + address, error );
                     forget( address );
-                    eventExecutorGroup.next().execute( () -> acquireAsync( mode, addresses, result ) );
+                    eventExecutorGroup.next().execute( () -> acquire( mode, addresses, result ) );
                 }
                 else
                 {
@@ -239,7 +239,7 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
         }
     }
 
-    private BoltServerAddress selectAddressAsync( AccessMode mode, AddressSet servers )
+    private BoltServerAddress selectAddress( AccessMode mode, AddressSet servers )
     {
         BoltServerAddress[] addresses = servers.toArray();
 

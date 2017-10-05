@@ -86,15 +86,15 @@ public class LoadBalancerTest
         Set<BoltServerAddress> routers = new LinkedHashSet<>( singletonList( router1 ) );
         ClusterComposition clusterComposition = new ClusterComposition( 42, readers, writers, routers );
         Rediscovery rediscovery = mock( Rediscovery.class );
-        when( rediscovery.lookupClusterCompositionAsync( routingTable, connectionPool ) )
+        when( rediscovery.lookupClusterComposition( routingTable, connectionPool ) )
                 .thenReturn( completedFuture( clusterComposition ) );
 
         LoadBalancer loadBalancer = new LoadBalancer( connectionPool, routingTable, rediscovery,
                 GlobalEventExecutor.INSTANCE, DEV_NULL_LOGGING );
 
-        assertNotNull( getBlocking( loadBalancer.acquireAsyncConnection( READ ) ) );
+        assertNotNull( getBlocking( loadBalancer.acquireConnection( READ ) ) );
 
-        verify( rediscovery ).lookupClusterCompositionAsync( routingTable, connectionPool );
+        verify( rediscovery ).lookupClusterComposition( routingTable, connectionPool );
         assertArrayEquals( new BoltServerAddress[]{reader1, reader2}, routingTable.readers().toArray() );
         assertArrayEquals( new BoltServerAddress[]{writer1}, routingTable.writers().toArray() );
         assertArrayEquals( new BoltServerAddress[]{router1}, routingTable.routers().toArray() );
@@ -117,15 +117,15 @@ public class LoadBalancerTest
         Set<BoltServerAddress> routers = new HashSet<>( singletonList( router ) );
         ClusterComposition clusterComposition = new ClusterComposition( 42, readers, writers, routers );
         Rediscovery rediscovery = mock( Rediscovery.class );
-        when( rediscovery.lookupClusterCompositionAsync( routingTable, connectionPool ) )
+        when( rediscovery.lookupClusterComposition( routingTable, connectionPool ) )
                 .thenReturn( completedFuture( clusterComposition ) );
 
         LoadBalancer loadBalancer = new LoadBalancer( connectionPool, routingTable, rediscovery,
                 GlobalEventExecutor.INSTANCE, DEV_NULL_LOGGING );
 
-        assertNotNull( getBlocking( loadBalancer.acquireAsyncConnection( READ ) ) );
+        assertNotNull( getBlocking( loadBalancer.acquireConnection( READ ) ) );
 
-        verify( rediscovery ).lookupClusterCompositionAsync( routingTable, connectionPool );
+        verify( rediscovery ).lookupClusterComposition( routingTable, connectionPool );
         verify( connectionPool ).purge( initialRouter1 );
         verify( connectionPool ).purge( initialRouter2 );
     }
@@ -162,7 +162,7 @@ public class LoadBalancerTest
         when( routingTable.isStaleFor( any( AccessMode.class ) ) ).thenReturn( true );
         Rediscovery rediscovery = mock( Rediscovery.class );
         ClusterComposition emptyClusterComposition = new ClusterComposition( 42, emptySet(), emptySet(), emptySet() );
-        when( rediscovery.lookupClusterCompositionAsync( routingTable, connectionPool ) )
+        when( rediscovery.lookupClusterComposition( routingTable, connectionPool ) )
                 .thenReturn( completedFuture( emptyClusterComposition ) );
         when( routingTable.readers() ).thenReturn( new AddressSet() );
         when( routingTable.writers() ).thenReturn( new AddressSet() );
@@ -172,7 +172,7 @@ public class LoadBalancerTest
 
         try
         {
-            getBlocking( loadBalancer.acquireAsyncConnection( READ ) );
+            getBlocking( loadBalancer.acquireConnection( READ ) );
             fail( "Exception expected" );
         }
         catch ( Exception e )
@@ -183,7 +183,7 @@ public class LoadBalancerTest
 
         try
         {
-            getBlocking( loadBalancer.acquireAsyncConnection( WRITE ) );
+            getBlocking( loadBalancer.acquireConnection( WRITE ) );
             fail( "Exception expected" );
         }
         catch ( Exception e )
@@ -215,7 +215,7 @@ public class LoadBalancerTest
         Set<BoltServerAddress> seenAddresses = new HashSet<>();
         for ( int i = 0; i < 10; i++ )
         {
-            AsyncConnection connection = getBlocking( loadBalancer.acquireAsyncConnection( READ ) );
+            AsyncConnection connection = getBlocking( loadBalancer.acquireConnection( READ ) );
             seenAddresses.add( connection.serverAddress() );
         }
 
@@ -242,7 +242,7 @@ public class LoadBalancerTest
         Set<BoltServerAddress> seenAddresses = new HashSet<>();
         for ( int i = 0; i < 10; i++ )
         {
-            AsyncConnection connection = getBlocking( loadBalancer.acquireAsyncConnection( READ ) );
+            AsyncConnection connection = getBlocking( loadBalancer.acquireConnection( READ ) );
             seenAddresses.add( connection.serverAddress() );
         }
 
@@ -260,13 +260,13 @@ public class LoadBalancerTest
         Rediscovery rediscovery = mock( Rediscovery.class );
         ClusterComposition clusterComposition = new ClusterComposition( 42,
                 asOrderedSet( A, B ), asOrderedSet( A, B ), asOrderedSet( A, B ) );
-        when( rediscovery.lookupClusterCompositionAsync( any(), any() ) )
+        when( rediscovery.lookupClusterComposition( any(), any() ) )
                 .thenReturn( completedFuture( clusterComposition ) );
 
         LoadBalancer loadBalancer = new LoadBalancer( connectionPool, routingTable, rediscovery,
                 GlobalEventExecutor.INSTANCE, DEV_NULL_LOGGING );
 
-        AsyncConnection connection = getBlocking( loadBalancer.acquireAsyncConnection( READ ) );
+        AsyncConnection connection = getBlocking( loadBalancer.acquireConnection( READ ) );
 
         assertNotNull( connection );
         assertEquals( B, connection.serverAddress() );
@@ -285,11 +285,11 @@ public class LoadBalancerTest
 
         LoadBalancer loadBalancer = new LoadBalancer( connectionPool, routingTable, rediscovery,
                 GlobalEventExecutor.INSTANCE, DEV_NULL_LOGGING );
-        AsyncConnection connection = getBlocking( loadBalancer.acquireAsyncConnection( mode ) );
+        AsyncConnection connection = getBlocking( loadBalancer.acquireConnection( mode ) );
         assertNotNull( connection );
 
         verify( routingTable ).isStaleFor( mode );
-        verify( rediscovery ).lookupClusterCompositionAsync( routingTable, connectionPool );
+        verify( rediscovery ).lookupClusterComposition( routingTable, connectionPool );
     }
 
     private void testNoRediscoveryWhenNotStale( AccessMode staleMode, AccessMode notStaleMode )
@@ -304,9 +304,9 @@ public class LoadBalancerTest
         LoadBalancer loadBalancer = new LoadBalancer( connectionPool, routingTable, rediscovery,
                 GlobalEventExecutor.INSTANCE, DEV_NULL_LOGGING );
 
-        assertNotNull( getBlocking( loadBalancer.acquireAsyncConnection( notStaleMode ) ) );
+        assertNotNull( getBlocking( loadBalancer.acquireConnection( notStaleMode ) ) );
         verify( routingTable ).isStaleFor( notStaleMode );
-        verify( rediscovery, never() ).lookupClusterCompositionAsync( routingTable, connectionPool );
+        verify( rediscovery, never() ).lookupClusterComposition( routingTable, connectionPool );
     }
 
     private static RoutingTable newStaleRoutingTableMock( AccessMode mode )
@@ -328,7 +328,7 @@ public class LoadBalancerTest
         Rediscovery rediscovery = mock( Rediscovery.class );
         Set<BoltServerAddress> noServers = Collections.emptySet();
         ClusterComposition clusterComposition = new ClusterComposition( 1, noServers, noServers, noServers );
-        when( rediscovery.lookupClusterCompositionAsync( any( RoutingTable.class ), any( AsyncConnectionPool.class ) ) )
+        when( rediscovery.lookupClusterComposition( any( RoutingTable.class ), any( AsyncConnectionPool.class ) ) )
                 .thenReturn( completedFuture( clusterComposition ) );
         return rediscovery;
     }

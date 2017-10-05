@@ -33,24 +33,24 @@ import org.neo4j.driver.v1.AccessMode;
 public class DirectConnectionProvider implements ConnectionProvider
 {
     private final BoltServerAddress address;
-    private final AsyncConnectionPool asyncPool;
+    private final AsyncConnectionPool connectionPool;
 
-    DirectConnectionProvider( BoltServerAddress address, AsyncConnectionPool asyncPool )
+    DirectConnectionProvider( BoltServerAddress address, AsyncConnectionPool connectionPool )
     {
         this.address = address;
-        this.asyncPool = asyncPool;
+        this.connectionPool = connectionPool;
     }
 
     @Override
-    public CompletionStage<AsyncConnection> acquireAsyncConnection( AccessMode mode )
+    public CompletionStage<AsyncConnection> acquireConnection( AccessMode mode )
     {
-        return asyncPool.acquire( address );
+        return connectionPool.acquire( address );
     }
 
     @Override
     public CompletionStage<Void> close()
     {
-        return asyncPool.close();
+        return connectionPool.close();
     }
 
     public BoltServerAddress getAddress()
