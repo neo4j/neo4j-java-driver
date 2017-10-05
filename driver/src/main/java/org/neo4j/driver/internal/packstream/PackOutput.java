@@ -45,7 +45,4 @@ public interface PackOutput
 
     /** Produce an 8-byte IEEE 754 "double format" floating-point number */
     PackOutput writeDouble( double value ) throws IOException;
-
-    // todo: remove this method! it is temporary!
-    Runnable messageBoundaryHook();
 }

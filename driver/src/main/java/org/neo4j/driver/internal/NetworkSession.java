@@ -446,4 +446,13 @@ public class NetworkSession implements Session
                     "No more interaction with this session are allowed as the current session is already closed. " );
         }
     }
+
+    protected CompletionStage<Boolean> currentConnectionIsOpen()
+    {
+        if(connectionStage == null)
+        {
+            return CompletableFuture.completedFuture( false );
+        }
+        return connectionStage.handle( ( x, error ) -> error == null && x.isInUse() );
+    }
 }

@@ -110,6 +110,13 @@ public class NettyConnection implements AsyncConnection
     }
 
     @Override
+    public boolean isInUse()
+    {
+        return state.isInUse();
+    }
+
+
+    @Override
     public CompletionStage<Void> forceRelease()
     {
         if ( state.forceRelease() )

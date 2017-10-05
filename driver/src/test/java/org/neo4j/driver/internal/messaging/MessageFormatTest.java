@@ -33,12 +33,11 @@ import java.util.Collections;
 import org.neo4j.driver.internal.InternalNode;
 import org.neo4j.driver.internal.InternalPath;
 import org.neo4j.driver.internal.InternalRelationship;
-import org.neo4j.driver.internal.net.BufferingChunkedInput;
-import org.neo4j.driver.internal.net.ChunkedOutput;
+import org.neo4j.driver.internal.packstream.BufferedChannelInput;
+import org.neo4j.driver.internal.packstream.BufferedChannelOutput;
 import org.neo4j.driver.internal.packstream.PackStream;
 import org.neo4j.driver.internal.util.BytePrinter;
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.util.DumpMessage;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -110,7 +109,7 @@ public class MessageFormatTest
         // Given
         ByteArrayOutputStream out = new ByteArrayOutputStream( 128 );
         WritableByteChannel writable = Channels.newChannel( out );
-        PackStream.Packer packer = new PackStream.Packer( new ChunkedOutput( writable ) );
+        PackStream.Packer packer = new PackStream.Packer( new BufferedChannelOutput( writable ) );
 
         packer.packStructHeader( 1, PackStreamMessageFormatV1.MSG_RECORD );
         packer.packListHeader( 1 );
@@ -136,7 +135,7 @@ public class MessageFormatTest
     {
         // Pack
         final ByteArrayOutputStream out = new ByteArrayOutputStream( 128 );
-        ChunkedOutput output = new ChunkedOutput( Channels.newChannel( out ) );
+        BufferedChannelOutput output = new BufferedChannelOutput( Channels.newChannel( out ) );
         MessageFormat.Writer writer = format.newWriter( output, true );
         for ( Message message : messages )
         {
@@ -154,7 +153,7 @@ public class MessageFormatTest
         try
         {
             ByteArrayInputStream inputStream = new ByteArrayInputStream( bytes );
-            BufferingChunkedInput input = new BufferingChunkedInput( Channels.newChannel( inputStream ) );
+            BufferedChannelInput input = new BufferedChannelInput( Channels.newChannel( inputStream ) );
             MessageFormat.Reader reader = format.newReader( input );
             ArrayList<Message> messages = new ArrayList<>();
             DumpMessage.unpack( messages, reader );

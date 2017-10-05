@@ -95,7 +95,7 @@ public class DriverFactory
         }
     }
 
-    private AsyncConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan,
+    protected AsyncConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan,
             Bootstrap bootstrap, Config config )
     {
         Clock clock = createClock();

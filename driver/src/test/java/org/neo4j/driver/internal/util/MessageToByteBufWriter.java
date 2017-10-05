@@ -39,7 +39,7 @@ public final class MessageToByteBufWriter
         {
             ByteBuf buf = Unpooled.buffer();
             ByteBufOutput output = new ByteBufOutput( buf );
-            new PackStreamMessageFormatV1.Writer( output, output.messageBoundaryHook(), true ).write( message );
+            new PackStreamMessageFormatV1.Writer( output, true ).write( message );
             return buf;
         }
         catch ( IOException e )
@@ -103,18 +103,6 @@ public final class MessageToByteBufWriter
         {
             buf.writeDouble( value );
             return this;
-        }
-
-        @Override
-        public Runnable messageBoundaryHook()
-        {
-            return new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                }
-            };
         }
     }
 }

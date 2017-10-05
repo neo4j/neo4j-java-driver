@@ -81,6 +81,12 @@ public class RoutingAsyncConnection implements AsyncConnection
     }
 
     @Override
+    public boolean isInUse()
+    {
+        return delegate.isInUse();
+    }
+
+    @Override
     public CompletionStage<Void> forceRelease()
     {
         return delegate.forceRelease();

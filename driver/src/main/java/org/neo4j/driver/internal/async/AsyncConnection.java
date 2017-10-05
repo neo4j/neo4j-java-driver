@@ -41,6 +41,8 @@ public interface AsyncConnection
 
     void release();
 
+    boolean isInUse();
+
     CompletionStage<Void> forceRelease();
 
     BoltServerAddress serverAddress();

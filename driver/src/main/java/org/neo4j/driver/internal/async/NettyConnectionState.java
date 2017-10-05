@@ -68,4 +68,9 @@ public class NettyConnectionState
             return true;
         }
     }
+
+    public boolean isInUse()
+    {
+        return usageCounter.get() >=0;
+    }
 }

@@ -130,18 +130,6 @@ public class ChunkAwareByteBufOutput implements PackOutput
         return this;
     }
 
-    @Override
-    public Runnable messageBoundaryHook()
-    {
-        return new Runnable()
-        {
-            @Override
-            public void run()
-            {
-            }
-        };
-    }
-
     private void ensureCanFitInCurrentChunk( int numberOfBytes )
     {
         int targetChunkSize = currentChunkSize + numberOfBytes;
