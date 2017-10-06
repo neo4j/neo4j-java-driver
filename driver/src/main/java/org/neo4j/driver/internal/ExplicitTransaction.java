@@ -181,7 +181,7 @@ public class ExplicitTransaction implements Transaction
         return ( ignore, error ) ->
         {
             connection.release();
-            session.asyncTransactionClosed( ExplicitTransaction.this );
+            session.transactionClosed( ExplicitTransaction.this );
         };
     }
 

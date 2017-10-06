@@ -21,62 +21,45 @@ package org.neo4j.driver.internal;
 import org.junit.Test;
 import org.mockito.InOrder;
 
-import java.util.Collections;
-import java.util.Map;
-
-import org.neo4j.driver.internal.handlers.BookmarkResponseHandler;
-import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
-import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.spi.ResponseHandler;
+import org.neo4j.driver.internal.async.AsyncConnection;
 import org.neo4j.driver.v1.Transaction;
-import org.neo4j.driver.v1.Value;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.only;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
+import static org.neo4j.driver.internal.async.Futures.getBlocking;
 
 public class ExplicitTransactionTest
 {
     @Test
-    public void shouldRollbackOnImplicitFailure() throws Throwable
+    public void shouldRollbackOnImplicitFailure()
     {
         // Given
-        Connection conn = mock( Connection.class );
-        when( conn.isOpen() ).thenReturn( true );
-        SessionResourcesHandler resourcesHandler = mock( SessionResourcesHandler.class );
-        ExplicitTransaction tx = beginTx( conn, resourcesHandler );
+        AsyncConnection connection = mock( AsyncConnection.class );
+        ExplicitTransaction tx = beginTx( connection );
 
         // When
         tx.close();
 
         // Then
-        InOrder order = inOrder( conn );
-        order.verify( conn ).run( "BEGIN", Collections.<String,Value>emptyMap(), NoOpResponseHandler.INSTANCE );
-        order.verify( conn ).pullAll( any( ResponseHandler.class ) );
-        order.verify( conn ).isOpen();
-        order.verify( conn ).run( "ROLLBACK", Collections.<String,Value>emptyMap(), NoOpResponseHandler.INSTANCE );
-        order.verify( conn ).pullAll( any( ResponseHandler.class ) );
-        order.verify( conn ).sync();
-        verify( resourcesHandler, only() ).onTransactionClosed( tx );
-        verifyNoMoreInteractions( conn, resourcesHandler );
+        InOrder order = inOrder( connection );
+        order.verify( connection ).run( eq( "BEGIN" ), any(), any(), any() );
+        order.verify( connection ).run( eq( "ROLLBACK" ), any(), any(), any() );
+        order.verify( connection ).release();
     }
 
     @Test
-    public void shouldRollbackOnExplicitFailure() throws Throwable
+    public void shouldRollbackOnExplicitFailure()
     {
         // Given
-        Connection conn = mock( Connection.class );
-        when( conn.isOpen() ).thenReturn( true );
-        SessionResourcesHandler resourcesHandler = mock( SessionResourcesHandler.class );
-        ExplicitTransaction tx = beginTx( conn, resourcesHandler );
+        AsyncConnection connection = mock( AsyncConnection.class );
+        ExplicitTransaction tx = beginTx( connection );
 
         // When
         tx.failure();
@@ -84,76 +67,57 @@ public class ExplicitTransactionTest
         tx.close();
 
         // Then
-        InOrder order = inOrder( conn );
-        order.verify( conn ).run( "BEGIN", Collections.<String,Value>emptyMap(), NoOpResponseHandler.INSTANCE );
-        order.verify( conn ).pullAll( any( BookmarkResponseHandler.class ) );
-        order.verify( conn ).isOpen();
-        order.verify( conn ).run( "ROLLBACK", Collections.<String,Value>emptyMap(), NoOpResponseHandler.INSTANCE );
-        order.verify( conn ).pullAll( any( BookmarkResponseHandler.class ) );
-        order.verify( conn ).sync();
-        verify( resourcesHandler, only() ).onTransactionClosed( tx );
-        verifyNoMoreInteractions( conn, resourcesHandler );
+        InOrder order = inOrder( connection );
+        order.verify( connection ).run( eq( "BEGIN" ), any(), any(), any() );
+        order.verify( connection ).run( eq( "ROLLBACK" ), any(), any(), any() );
+        order.verify( connection ).release();
     }
 
     @Test
-    public void shouldCommitOnSuccess() throws Throwable
+    public void shouldCommitOnSuccess()
     {
         // Given
-        Connection conn = mock( Connection.class );
-        when( conn.isOpen() ).thenReturn( true );
-        SessionResourcesHandler resourcesHandler = mock( SessionResourcesHandler.class );
-        ExplicitTransaction tx = beginTx( conn, resourcesHandler );
+        AsyncConnection connection = mock( AsyncConnection.class );
+        ExplicitTransaction tx = beginTx( connection );
 
         // When
         tx.success();
         tx.close();
 
         // Then
-
-        InOrder order = inOrder( conn );
-        order.verify( conn ).run( "BEGIN", Collections.<String,Value>emptyMap(), NoOpResponseHandler.INSTANCE );
-        order.verify( conn ).pullAll( any( BookmarkResponseHandler.class ) );
-        order.verify( conn ).isOpen();
-        order.verify( conn ).run( "COMMIT", Collections.<String,Value>emptyMap(), NoOpResponseHandler.INSTANCE );
-        order.verify( conn ).pullAll( any( BookmarkResponseHandler.class ) );
-        order.verify( conn ).sync();
-        verify( resourcesHandler, only() ).onTransactionClosed( tx );
-        verifyNoMoreInteractions( conn, resourcesHandler );
+        InOrder order = inOrder( connection );
+        order.verify( connection ).run( eq( "BEGIN" ), any(), any(), any() );
+        order.verify( connection ).run( eq( "COMMIT" ), any(), any(), any() );
+        order.verify( connection ).release();
     }
 
     @Test
     public void shouldOnlyQueueMessagesWhenNoBookmarkGiven()
     {
-        Connection connection = mock( Connection.class );
+        AsyncConnection connection = mock( AsyncConnection.class );
 
-        beginTx( connection, mock( SessionResourcesHandler.class ), Bookmark.empty() );
+        beginTx( connection, Bookmark.empty() );
 
-        InOrder inOrder = inOrder( connection );
-        inOrder.verify( connection ).run( "BEGIN", Collections.<String,Value>emptyMap(), NoOpResponseHandler.INSTANCE );
-        inOrder.verify( connection ).pullAll( NoOpResponseHandler.INSTANCE );
-        inOrder.verify( connection, never() ).sync();
+        verify( connection ).run( eq( "BEGIN" ), any(), any(), any() );
+        verify( connection, never() ).runAndFlush( any(), any(), any(), any() );
     }
 
     @Test
-    public void shouldSyncWhenBookmarkGiven()
+    public void shouldFlushWhenBookmarkGiven()
     {
         Bookmark bookmark = Bookmark.from( "hi, I'm bookmark" );
-        Connection connection = mock( Connection.class );
+        AsyncConnection connection = mock( AsyncConnection.class );
 
-        beginTx( connection, mock( SessionResourcesHandler.class ), bookmark );
+        beginTx( connection, bookmark );
 
-        Map<String,Value> expectedParams = bookmark.asBeginTransactionParameters();
-
-        InOrder inOrder = inOrder( connection );
-        inOrder.verify( connection ).run( "BEGIN", expectedParams, NoOpResponseHandler.INSTANCE );
-        inOrder.verify( connection ).pullAll( NoOpResponseHandler.INSTANCE );
-        inOrder.verify( connection ).sync();
+        verify( connection ).runAndFlush( eq( "BEGIN" ), any(), any(), any() );
+        verify( connection, never() ).run( any(), any(), any(), any() );
     }
 
     @Test
     public void shouldBeOpenAfterConstruction()
     {
-        Transaction tx = beginTx( openConnectionMock(), mock( SessionResourcesHandler.class ) );
+        Transaction tx = beginTx( connectionMock() );
 
         assertTrue( tx.isOpen() );
     }
@@ -161,7 +125,7 @@ public class ExplicitTransactionTest
     @Test
     public void shouldBeOpenWhenMarkedForSuccess()
     {
-        Transaction tx = beginTx( openConnectionMock(), mock( SessionResourcesHandler.class ) );
+        Transaction tx = beginTx( connectionMock() );
 
         tx.success();
 
@@ -171,7 +135,7 @@ public class ExplicitTransactionTest
     @Test
     public void shouldBeOpenWhenMarkedForFailure()
     {
-        Transaction tx = beginTx( openConnectionMock(), mock( SessionResourcesHandler.class ) );
+        Transaction tx = beginTx( connectionMock() );
 
         tx.failure();
 
@@ -181,7 +145,7 @@ public class ExplicitTransactionTest
     @Test
     public void shouldBeOpenWhenMarkedToClose()
     {
-        ExplicitTransaction tx = beginTx( openConnectionMock(), mock( SessionResourcesHandler.class ) );
+        ExplicitTransaction tx = beginTx( connectionMock() );
 
         tx.markToClose();
 
@@ -191,7 +155,7 @@ public class ExplicitTransactionTest
     @Test
     public void shouldBeClosedAfterCommit()
     {
-        Transaction tx = beginTx( openConnectionMock(), mock( SessionResourcesHandler.class ) );
+        Transaction tx = beginTx( connectionMock() );
 
         tx.success();
         tx.close();
@@ -202,7 +166,7 @@ public class ExplicitTransactionTest
     @Test
     public void shouldBeClosedAfterRollback()
     {
-        Transaction tx = beginTx( openConnectionMock(), mock( SessionResourcesHandler.class ) );
+        Transaction tx = beginTx( connectionMock() );
 
         tx.failure();
         tx.close();
@@ -213,7 +177,7 @@ public class ExplicitTransactionTest
     @Test
     public void shouldBeClosedWhenMarkedToCloseAndClosed()
     {
-        ExplicitTransaction tx = beginTx( openConnectionMock(), mock( SessionResourcesHandler.class ) );
+        ExplicitTransaction tx = beginTx( connectionMock() );
 
         tx.markToClose();
         tx.close();
@@ -224,22 +188,21 @@ public class ExplicitTransactionTest
     @Test
     public void shouldHaveEmptyBookmarkInitially()
     {
-        ExplicitTransaction tx = beginTx( openConnectionMock(), mock( SessionResourcesHandler.class ) );
+        ExplicitTransaction tx = beginTx( connectionMock() );
         assertTrue( tx.bookmark().isEmpty() );
     }
 
     @Test
     public void shouldNotKeepInitialBookmark()
     {
-        ExplicitTransaction tx = beginTx( openConnectionMock(), mock( SessionResourcesHandler.class ),
-                Bookmark.from( "Dog" ) );
+        ExplicitTransaction tx = beginTx( connectionMock(), Bookmark.from( "Dog" ) );
         assertTrue( tx.bookmark().isEmpty() );
     }
 
     @Test
     public void shouldNotOverwriteBookmarkWithNull()
     {
-        ExplicitTransaction tx = beginTx( openConnectionMock(), mock( SessionResourcesHandler.class ) );
+        ExplicitTransaction tx = beginTx( connectionMock() );
         tx.setBookmark( Bookmark.from( "Cat" ) );
         assertEquals( "Cat", tx.bookmark().maxBookmarkAsString() );
         tx.setBookmark( null );
@@ -249,30 +212,32 @@ public class ExplicitTransactionTest
     @Test
     public void shouldNotOverwriteBookmarkWithEmptyBookmark()
     {
-        ExplicitTransaction tx = beginTx( openConnectionMock(), mock( SessionResourcesHandler.class ) );
+        ExplicitTransaction tx = beginTx( connectionMock() );
         tx.setBookmark( Bookmark.from( "Cat" ) );
         assertEquals( "Cat", tx.bookmark().maxBookmarkAsString() );
         tx.setBookmark( Bookmark.empty() );
         assertEquals( "Cat", tx.bookmark().maxBookmarkAsString() );
     }
 
-    private static Connection openConnectionMock()
+    private static AsyncConnection connectionMock()
     {
-        Connection connection = mock( Connection.class );
-        when( connection.isOpen() ).thenReturn( true );
-        return connection;
+        return mock( AsyncConnection.class );
     }
 
-    private static ExplicitTransaction beginTx( Connection connection, SessionResourcesHandler resourcesHandler )
+    private static ExplicitTransaction beginTx( AsyncConnection connection )
     {
-        return beginTx( connection, resourcesHandler, Bookmark.empty() );
+        return beginTx( connection, Bookmark.empty() );
     }
 
-    private static ExplicitTransaction beginTx( Connection connection, SessionResourcesHandler resourcesHandler,
+    private static ExplicitTransaction beginTx( AsyncConnection connection, Bookmark initialBookmark )
+    {
+        return beginTx( connection, mock( NetworkSession.class ), initialBookmark );
+    }
+
+    private static ExplicitTransaction beginTx( AsyncConnection connection, NetworkSession session,
             Bookmark initialBookmark )
     {
-        ExplicitTransaction tx = new ExplicitTransaction( connection, resourcesHandler );
-        tx.begin( initialBookmark );
-        return tx;
+        ExplicitTransaction tx = new ExplicitTransaction( connection, session );
+        return getBlocking( tx.beginAsync( initialBookmark ) );
     }
 }

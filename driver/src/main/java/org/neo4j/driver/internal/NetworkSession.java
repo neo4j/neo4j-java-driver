@@ -241,8 +241,7 @@ public class NetworkSession implements Session
         return InternalTypeSystem.TYPE_SYSTEM;
     }
 
-
-    public void asyncTransactionClosed( ExplicitTransaction tx )
+    public void transactionClosed( ExplicitTransaction tx )
     {
         setBookmark( tx.bookmark() );
         transactionStage = null;
