@@ -20,6 +20,7 @@ package org.neo4j.driver.v1.stress;
 
 import java.util.concurrent.CompletionStage;
 
+import org.neo4j.driver.internal.async.Futures;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Session;
@@ -46,7 +47,7 @@ public class AsyncWrongQuery<C extends AbstractContext> extends AbstractAsyncQue
             session.closeAsync();
 
             assertNull( cursor );
-            Throwable cause = error.getCause(); // unwrap CompletionException
+            Throwable cause = Futures.completionErrorCause( error );
             assertThat( cause, is( syntaxError( "Unexpected end of input" ) ) );
 
             return null;

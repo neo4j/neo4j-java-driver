@@ -38,17 +38,17 @@ import java.util.concurrent.TimeoutException;
 import static java.util.Collections.unmodifiableList;
 import static org.mockito.Mockito.mock;
 
-public class TrackingEventExecutor implements EventExecutor
+public class ImmediateSchedulingEventExecutor implements EventExecutor
 {
     private final EventExecutor delegate;
     private final List<Long> scheduleDelays;
 
-    public TrackingEventExecutor()
+    public ImmediateSchedulingEventExecutor()
     {
         this( GlobalEventExecutor.INSTANCE );
     }
 
-    public TrackingEventExecutor( EventExecutor delegate )
+    public ImmediateSchedulingEventExecutor( EventExecutor delegate )
     {
         this.delegate = delegate;
         this.scheduleDelays = new CopyOnWriteArrayList<>();

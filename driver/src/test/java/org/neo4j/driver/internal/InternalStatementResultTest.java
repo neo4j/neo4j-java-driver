@@ -401,7 +401,7 @@ public class InternalStatementResultTest
         when( connection.serverVersion() ).thenReturn( ServerVersion.v3_2_0 );
         PullAllResponseHandler pullAllHandler = new SessionPullAllResponseHandler( statement, runHandler, connection );
 
-        for ( int i = 0; i < numberOfRecords; i++ )
+        for ( int i = 1; i <= numberOfRecords; i++ )
         {
             pullAllHandler.onRecord( new Value[]{value( "v1-" + i ), value( "v2-" + i )} );
         }

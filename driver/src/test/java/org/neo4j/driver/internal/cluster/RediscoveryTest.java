@@ -32,7 +32,7 @@ import org.neo4j.driver.internal.async.BoltServerAddress;
 import org.neo4j.driver.internal.async.pool.AsyncConnectionPool;
 import org.neo4j.driver.internal.cluster.ClusterCompositionResponse.Failure;
 import org.neo4j.driver.internal.cluster.ClusterCompositionResponse.Success;
-import org.neo4j.driver.internal.util.TrackingEventExecutor;
+import org.neo4j.driver.internal.util.ImmediateSchedulingEventExecutor;
 import org.neo4j.driver.v1.exceptions.AuthenticationException;
 import org.neo4j.driver.v1.exceptions.ProtocolException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
@@ -318,7 +318,7 @@ public class RediscoveryTest
                 .thenReturn( asOrderedSet( A ) )
                 .thenReturn( asOrderedSet( E ) );
 
-        TrackingEventExecutor eventExecutor = new TrackingEventExecutor();
+        ImmediateSchedulingEventExecutor eventExecutor = new ImmediateSchedulingEventExecutor();
         RoutingSettings settings = new RoutingSettings( maxRoutingFailures, retryTimeoutDelay );
         Rediscovery rediscovery = new Rediscovery( A, settings, compositionProvider, resolver, eventExecutor,
                 DEV_NULL_LOGGER, false );

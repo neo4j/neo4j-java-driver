@@ -26,9 +26,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.io.ByteArrayOutputStream;
-import java.nio.channels.Channels;
-import java.nio.channels.WritableByteChannel;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -37,18 +34,22 @@ import org.neo4j.driver.internal.InternalNode;
 import org.neo4j.driver.internal.InternalPath;
 import org.neo4j.driver.internal.InternalRelationship;
 import org.neo4j.driver.internal.async.inbound.ChunkDecoder;
+import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.async.inbound.InboundMessageHandler;
 import org.neo4j.driver.internal.async.inbound.MessageDecoder;
+import org.neo4j.driver.internal.async.outbound.ChunkAwareByteBufOutput;
 import org.neo4j.driver.internal.async.outbound.OutboundMessageHandler;
-import org.neo4j.driver.internal.packstream.BufferedChannelOutput;
 import org.neo4j.driver.internal.packstream.PackStream;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static java.util.Arrays.asList;
-import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.driver.internal.async.ChannelAttributes.messageDispatcher;
+import static org.neo4j.driver.internal.async.ChannelAttributes.setMessageDispatcher;
+import static org.neo4j.driver.internal.async.ProtocolUtil.messageBoundary;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.v1.Values.EmptyMap;
 import static org.neo4j.driver.v1.Values.ofValue;
@@ -63,7 +64,7 @@ public class MessageFormatTest
     public ExpectedException exception = ExpectedException.none();
 
     @Test
-    public void shouldPackAllRequests()
+    public void shouldPackAllRequests() throws Throwable
     {
         assertSerializes( new RunMessage( "Hello", parameters().asMap( ofValue() ) ) );
         assertSerializes( new RunMessage( "Hello", parameters( "a", 12 ).asMap( ofValue() ) ) );
@@ -76,7 +77,7 @@ public class MessageFormatTest
     }
 
     @Test
-    public void shouldUnpackAllResponses()
+    public void shouldUnpackAllResponses() throws Throwable
     {
         assertSerializes( new RecordMessage( new Value[]{value( 1337L )} ) );
         assertSerializes( new SuccessMessage( new HashMap<>() ) );
@@ -114,31 +115,33 @@ public class MessageFormatTest
     public void shouldGiveHelpfulErrorOnMalformedNodeStruct() throws Throwable
     {
         // Given
-        ByteArrayOutputStream out = new ByteArrayOutputStream( 128 );
-        WritableByteChannel writable = Channels.newChannel( out );
-        PackStream.Packer packer = new PackStream.Packer( new BufferedChannelOutput( writable ) );
+        ChunkAwareByteBufOutput output = new ChunkAwareByteBufOutput();
+        ByteBuf buf = Unpooled.buffer();
+        output.start( buf );
+        PackStream.Packer packer = new PackStream.Packer( output );
 
         packer.packStructHeader( 1, PackStreamMessageFormatV1.MSG_RECORD );
         packer.packListHeader( 1 );
         packer.packStructHeader( 0, PackStreamMessageFormatV1.NODE );
-        packer.flush();
+
+        output.stop();
 
         // Expect
-        exception.expect( RuntimeException.class );
+        exception.expect( ClientException.class );
         exception.expectMessage( startsWith(
-                "Failed to unpack value: Invalid message received, serialized NODE structures should have 3 fields, " +
+                "Invalid message received, serialized NODE structures should have 3 fields, " +
                 "received NODE structure has 0 fields." ) );
 
         // When
-        unpack( Unpooled.wrappedBuffer( out.toByteArray() ), newEmbeddedChannel() );
+        unpack( Unpooled.wrappedBuffer( buf, messageBoundary() ), newEmbeddedChannel() );
     }
 
-    private void assertSerializesValue( Value value )
+    private void assertSerializesValue( Value value ) throws Throwable
     {
         assertSerializes( new RecordMessage( new Value[]{value} ) );
     }
 
-    private void assertSerializes( Message message )
+    private void assertSerializes( Message message ) throws Throwable
     {
         EmbeddedChannel channel = newEmbeddedChannel();
 
@@ -152,6 +155,8 @@ public class MessageFormatTest
     {
         EmbeddedChannel channel = new EmbeddedChannel();
         ChannelPipeline pipeline = channel.pipeline();
+
+        setMessageDispatcher( channel, new MemorizingInboundMessageDispatcher( channel, DEV_NULL_LOGGING ) );
 
         pipeline.addLast( new ChunkDecoder() );
         pipeline.addLast( new MessageDecoder() );
@@ -174,14 +179,20 @@ public class MessageFormatTest
         return Unpooled.wrappedBuffer( packedMessages );
     }
 
-    private Message unpack( ByteBuf packed, EmbeddedChannel channel )
+    private Message unpack( ByteBuf packed, EmbeddedChannel channel ) throws Throwable
     {
-        assertTrue( channel.writeInbound( packed ) );
+        channel.writeInbound( packed );
 
-        List<Message> unpackedMessages = channel.inboundMessages()
-                .stream()
-                .map( msg -> (Message) msg )
-                .collect( toList() );
+        InboundMessageDispatcher dispatcher = messageDispatcher( channel );
+        MemorizingInboundMessageDispatcher memorizingDispatcher = ((MemorizingInboundMessageDispatcher) dispatcher);
+
+        Throwable error = memorizingDispatcher.currentError();
+        if ( error != null )
+        {
+            throw error;
+        }
+
+        List<Message> unpackedMessages = memorizingDispatcher.messages();
 
         assertEquals( 1, unpackedMessages.size() );
         return unpackedMessages.get( 0 );

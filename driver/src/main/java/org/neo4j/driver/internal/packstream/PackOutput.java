@@ -25,6 +25,7 @@ import java.io.IOException;
  */
 public interface PackOutput
 {
+    // todo: remove flush method
     /** If implementation has been buffering data, it should flush those buffers now. */
     PackOutput flush() throws IOException;
 

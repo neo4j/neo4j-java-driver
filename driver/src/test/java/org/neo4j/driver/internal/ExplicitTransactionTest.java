@@ -34,6 +34,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.driver.internal.async.Futures.getBlocking;
+import static org.neo4j.driver.v1.util.TestUtil.connectionMock;
 
 public class ExplicitTransactionTest
 {
@@ -41,7 +42,7 @@ public class ExplicitTransactionTest
     public void shouldRollbackOnImplicitFailure()
     {
         // Given
-        AsyncConnection connection = mock( AsyncConnection.class );
+        AsyncConnection connection = connectionMock();
         ExplicitTransaction tx = beginTx( connection );
 
         // When
@@ -50,7 +51,7 @@ public class ExplicitTransactionTest
         // Then
         InOrder order = inOrder( connection );
         order.verify( connection ).run( eq( "BEGIN" ), any(), any(), any() );
-        order.verify( connection ).run( eq( "ROLLBACK" ), any(), any(), any() );
+        order.verify( connection ).runAndFlush( eq( "ROLLBACK" ), any(), any(), any() );
         order.verify( connection ).release();
     }
 
@@ -58,7 +59,7 @@ public class ExplicitTransactionTest
     public void shouldRollbackOnExplicitFailure()
     {
         // Given
-        AsyncConnection connection = mock( AsyncConnection.class );
+        AsyncConnection connection = connectionMock();
         ExplicitTransaction tx = beginTx( connection );
 
         // When
@@ -69,7 +70,7 @@ public class ExplicitTransactionTest
         // Then
         InOrder order = inOrder( connection );
         order.verify( connection ).run( eq( "BEGIN" ), any(), any(), any() );
-        order.verify( connection ).run( eq( "ROLLBACK" ), any(), any(), any() );
+        order.verify( connection ).runAndFlush( eq( "ROLLBACK" ), any(), any(), any() );
         order.verify( connection ).release();
     }
 
@@ -77,7 +78,7 @@ public class ExplicitTransactionTest
     public void shouldCommitOnSuccess()
     {
         // Given
-        AsyncConnection connection = mock( AsyncConnection.class );
+        AsyncConnection connection = connectionMock();
         ExplicitTransaction tx = beginTx( connection );
 
         // When
@@ -87,14 +88,14 @@ public class ExplicitTransactionTest
         // Then
         InOrder order = inOrder( connection );
         order.verify( connection ).run( eq( "BEGIN" ), any(), any(), any() );
-        order.verify( connection ).run( eq( "COMMIT" ), any(), any(), any() );
+        order.verify( connection ).runAndFlush( eq( "COMMIT" ), any(), any(), any() );
         order.verify( connection ).release();
     }
 
     @Test
     public void shouldOnlyQueueMessagesWhenNoBookmarkGiven()
     {
-        AsyncConnection connection = mock( AsyncConnection.class );
+        AsyncConnection connection = connectionMock();
 
         beginTx( connection, Bookmark.empty() );
 
@@ -106,7 +107,7 @@ public class ExplicitTransactionTest
     public void shouldFlushWhenBookmarkGiven()
     {
         Bookmark bookmark = Bookmark.from( "hi, I'm bookmark" );
-        AsyncConnection connection = mock( AsyncConnection.class );
+        AsyncConnection connection = connectionMock();
 
         beginTx( connection, bookmark );
 
@@ -217,11 +218,6 @@ public class ExplicitTransactionTest
         assertEquals( "Cat", tx.bookmark().maxBookmarkAsString() );
         tx.setBookmark( Bookmark.empty() );
         assertEquals( "Cat", tx.bookmark().maxBookmarkAsString() );
-    }
-
-    private static AsyncConnection connectionMock()
-    {
-        return mock( AsyncConnection.class );
     }
 
     private static ExplicitTransaction beginTx( AsyncConnection connection )

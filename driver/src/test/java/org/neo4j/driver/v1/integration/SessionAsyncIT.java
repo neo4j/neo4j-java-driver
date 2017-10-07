@@ -37,6 +37,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.driver.internal.async.Futures;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
@@ -68,6 +69,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.driver.internal.async.Futures.getBlocking;
 import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.internal.util.Matchers.arithmeticError;
 import static org.neo4j.driver.internal.util.Matchers.containsResultAvailableAfterAndResultConsumedAfter;
@@ -646,6 +648,72 @@ public class SessionAsyncIT
         testConsume( "UNWIND [42, 42] AS x RETURN x" );
     }
 
+    @Test
+    public void shouldRunAfterRunFailureToAcquireConnection()
+    {
+        neo4j.killDb();
+
+        try
+        {
+            getBlocking( session.runAsync( "RETURN 42" ) );
+            fail( "Exception expected" );
+        }
+        catch ( ServiceUnavailableException e )
+        {
+            // expected
+        }
+
+        neo4j.startDb();
+
+        StatementResultCursor cursor = getBlocking( session.runAsync( "RETURN 42" ) );
+        Record record = getBlocking( cursor.singleAsync() );
+        assertEquals( 42, record.get( 0 ).asInt() );
+    }
+
+    @Test
+    public void shouldRunAfterBeginTxFailureOnBookmark()
+    {
+        session = neo4j.driver().session( "Illegal Bookmark" );
+
+        try
+        {
+            getBlocking( session.beginTransactionAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            // expected
+        }
+
+        StatementResultCursor cursor = getBlocking( session.runAsync( "RETURN 'Hello!'" ) );
+        Record record = getBlocking( cursor.singleAsync() );
+        assertEquals( "Hello!", record.get( 0 ).asString() );
+    }
+
+    @Test
+    public void shouldBeginTxAfterRunFailureToAcquireConnection()
+    {
+        neo4j.killDb();
+
+        try
+        {
+            getBlocking( session.runAsync( "RETURN 42" ) );
+            fail( "Exception expected" );
+        }
+        catch ( ServiceUnavailableException e )
+        {
+            // expected
+        }
+
+        neo4j.startDb();
+
+        Transaction tx = getBlocking( session.beginTransactionAsync() );
+        StatementResultCursor cursor = getBlocking( tx.runAsync( "RETURN 42" ) );
+        Record record = getBlocking( cursor.singleAsync() );
+        assertEquals( 42, record.get( 0 ).asInt() );
+        assertNull( getBlocking( tx.rollbackAsync() ) );
+    }
+
     private Future<List<CompletionStage<Record>>> runNestedQueries( StatementResultCursor inputCursor )
     {
         CompletableFuture<List<CompletionStage<Record>>> resultFuture = new CompletableFuture<>();
@@ -691,7 +759,7 @@ public class SessionAsyncIT
         {
             if ( error != null )
             {
-                resultFuture.completeExceptionally( error );
+                resultFuture.completeExceptionally( Futures.completionErrorCause( error ) );
             }
             else
             {
@@ -789,7 +857,7 @@ public class SessionAsyncIT
             CompletableFuture<Record> resultFuture = new CompletableFuture<>();
 
             tx.runAsync( query ).whenComplete( ( cursor, error ) ->
-                    processQueryResult( cursor, error, resultFuture ) );
+                    processQueryResult( cursor, Futures.completionErrorCause( error ), resultFuture ) );
 
             return resultFuture;
         }
@@ -804,7 +872,7 @@ public class SessionAsyncIT
             }
 
             cursor.nextAsync().whenComplete( ( record, fetchError ) ->
-                    processFetchResult( record, fetchError, resultFuture ) );
+                    processFetchResult( record, Futures.completionErrorCause( fetchError ), resultFuture ) );
         }
 
         private void processFetchResult( Record record, Throwable error, CompletableFuture<Record> resultFuture )

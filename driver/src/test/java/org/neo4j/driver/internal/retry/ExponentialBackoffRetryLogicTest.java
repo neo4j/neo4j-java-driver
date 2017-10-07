@@ -26,8 +26,8 @@ import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.async.Futures;
 import org.neo4j.driver.internal.util.Clock;
+import org.neo4j.driver.internal.util.ImmediateSchedulingEventExecutor;
 import org.neo4j.driver.internal.util.Supplier;
-import org.neo4j.driver.internal.util.TrackingEventExecutor;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
@@ -55,7 +55,7 @@ import static org.neo4j.driver.v1.util.TestUtil.await;
 
 public class ExponentialBackoffRetryLogicTest
 {
-    private final TrackingEventExecutor eventExecutor = new TrackingEventExecutor();
+    private final ImmediateSchedulingEventExecutor eventExecutor = new ImmediateSchedulingEventExecutor();
 
     @Test
     public void throwsForIllegalMaxRetryTime()

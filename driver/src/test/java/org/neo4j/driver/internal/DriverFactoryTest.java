@@ -172,7 +172,7 @@ public class DriverFactoryTest
         }
 
         @Override
-        protected Driver createRoutingDriver( BoltServerAddress address, AsyncConnectionPool connectionPool,
+        protected InternalDriver createRoutingDriver( BoltServerAddress address, AsyncConnectionPool connectionPool,
                 Config config, RoutingSettings routingSettings, SecurityPlan securityPlan, RetryLogic retryLogic,
                 EventExecutorGroup eventExecutorGroup )
         {

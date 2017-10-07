@@ -24,6 +24,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.internal.async.AsyncConnection;
+import org.neo4j.driver.internal.async.Futures;
 import org.neo4j.driver.internal.async.QueryRunner;
 import org.neo4j.driver.internal.logging.DelegatingLogger;
 import org.neo4j.driver.internal.retry.RetryLogic;
@@ -59,8 +60,8 @@ public class NetworkSession implements Session
     protected final Logger logger;
 
     private volatile Bookmark bookmark = Bookmark.empty();
-    private volatile CompletionStage<ExplicitTransaction> transactionStage;
-    private volatile CompletionStage<AsyncConnection> connectionStage;
+    private volatile CompletionStage<ExplicitTransaction> transactionStage = completedFuture( null );
+    private volatile CompletionStage<AsyncConnection> connectionStage = completedFuture( null );
 
     private final AtomicBoolean open = new AtomicBoolean( true );
 
@@ -129,14 +130,18 @@ public class NetworkSession implements Session
     @Override
     public StatementResult run( Statement statement )
     {
-        StatementResultCursor cursor = getBlocking( run( statement, false ) );
+        StatementResultCursor cursor = getBlocking( runAsync( statement ) );
         return new InternalStatementResult( cursor );
     }
 
     @Override
     public CompletionStage<StatementResultCursor> runAsync( Statement statement )
     {
-        return run( statement, true );
+        ensureSessionIsOpen();
+
+        return ensureNoOpenTxBeforeRunningQuery()
+                .thenCompose( ignore -> acquireConnection( mode ) )
+                .thenCompose( connection -> QueryRunner.runAsync( connection, statement ) );
     }
 
     @Override
@@ -156,15 +161,7 @@ public class NetworkSession implements Session
     {
         if ( open.compareAndSet( true, false ) )
         {
-            if ( transactionStage != null )
-            {
-                return transactionStage.thenCompose( ExplicitTransaction::rollbackAsync );
-            }
-
-            if ( connectionStage != null )
-            {
-                return connectionStage.thenCompose( AsyncConnection::forceRelease );
-            }
+            return forceReleaseResources();
         }
         return completedFuture( null );
     }
@@ -231,8 +228,7 @@ public class NetworkSession implements Session
     @Override
     public void reset()
     {
-        // todo: implement this by simply sending a RESET message
-        throw new UnsupportedOperationException();
+        getBlocking( forceReleaseResources() );
     }
 
     @Override
@@ -241,10 +237,13 @@ public class NetworkSession implements Session
         return InternalTypeSystem.TYPE_SYSTEM;
     }
 
-    public void transactionClosed( ExplicitTransaction tx )
+    protected CompletionStage<Boolean> currentConnectionIsOpen()
     {
-        setBookmark( tx.bookmark() );
-        transactionStage = null;
+        if ( connectionStage == null )
+        {
+            return completedFuture( false );
+        }
+        return connectionStage.handle( ( connection, error ) -> error == null && connection.isInUse() );
     }
 
     private <T> T transaction( AccessMode mode, TransactionWork<T> work )
@@ -270,8 +269,9 @@ public class NetworkSession implements Session
             CompletableFuture<T> resultFuture = new CompletableFuture<>();
             CompletionStage<ExplicitTransaction> txFuture = beginTransactionAsync( mode );
 
-            txFuture.whenComplete( ( tx, error ) ->
+            txFuture.whenComplete( ( tx, completionError ) ->
             {
+                Throwable error = Futures.completionErrorCause( completionError );
                 if ( error != null )
                 {
                     resultFuture.completeExceptionally( error );
@@ -290,15 +290,16 @@ public class NetworkSession implements Session
             TransactionWork<CompletionStage<T>> work )
     {
         CompletionStage<T> workFuture = safeExecuteWork( tx, work );
-        workFuture.whenComplete( ( result, error ) ->
+        workFuture.whenComplete( ( result, completionError ) ->
         {
+            Throwable error = Futures.completionErrorCause( completionError );
             if ( error != null )
             {
                 rollbackTxAfterFailedTransactionWork( tx, resultFuture, error );
             }
             else
             {
-                commitTxAfterSucceededTransactionWork( tx, resultFuture, result );
+                closeTxAfterSucceededTransactionWork( tx, resultFuture, result );
             }
         } );
     }
@@ -339,13 +340,15 @@ public class NetworkSession implements Session
         }
     }
 
-    private <T> void commitTxAfterSucceededTransactionWork( ExplicitTransaction tx, CompletableFuture<T> resultFuture,
+    private <T> void closeTxAfterSucceededTransactionWork( ExplicitTransaction tx, CompletableFuture<T> resultFuture,
             T result )
     {
         if ( tx.isOpen() )
         {
-            tx.commitAsync().whenComplete( ( ignore, commitError ) ->
+            tx.success();
+            tx.closeAsync().whenComplete( ( ignore, completionError ) ->
             {
+                Throwable commitError = Futures.completionErrorCause( completionError );
                 if ( commitError != null )
                 {
                     resultFuture.completeExceptionally( commitError );
@@ -362,79 +365,106 @@ public class NetworkSession implements Session
         }
     }
 
-    private CompletionStage<StatementResultCursor> run( Statement statement, boolean async )
-    {
-        ensureSessionIsOpen();
-        ensureNoOpenTransactionBeforeRunningSession();
-
-        return acquireConnection( mode ).thenCompose( connection ->
-                {
-                    if ( async )
-                    {
-                        return QueryRunner.runAsync( connection, statement );
-                    }
-                    return QueryRunner.runSync( connection, statement );
-                }
-        );
-    }
-
     private CompletionStage<ExplicitTransaction> beginTransactionAsync( AccessMode mode )
     {
         ensureSessionIsOpen();
-        ensureNoOpenTransactionBeforeOpeningTransaction();
 
-        transactionStage = acquireConnection( mode ).thenCompose( connection ->
-        {
-            ExplicitTransaction tx = new ExplicitTransaction( connection, NetworkSession.this );
-            return tx.beginAsync( bookmark );
-        } );
+        transactionStage = ensureNoOpenTxBeforeStartingTx()
+                .thenCompose( ignore -> acquireConnection( mode ) )
+                .thenCompose( connection ->
+                {
+                    ExplicitTransaction tx = new ExplicitTransaction( connection, NetworkSession.this );
+                    return tx.beginAsync( bookmark );
+                } );
 
         return transactionStage;
     }
 
-    private CompletionStage<AsyncConnection> acquireConnection( final AccessMode mode )
+    private CompletionStage<AsyncConnection> acquireConnection( AccessMode mode )
     {
-        if ( connectionStage == null )
-        {
-            connectionStage = connectionProvider.acquireConnection( mode );
-        }
-        else
-        {
-            // memorize in local so same instance is transformed and used in callbacks
-            CompletionStage<AsyncConnection> currentAsyncConnectionStage = connectionStage;
+        // memorize in local so same instance is transformed and used in callbacks
+        CompletionStage<AsyncConnection> currentAsyncConnectionStage = connectionStage;
 
-            connectionStage = currentAsyncConnectionStage.thenCompose( connection ->
-            {
-                if ( connection.tryMarkInUse() )
+        connectionStage = currentAsyncConnectionStage
+                .exceptionally( error -> null ) // handle previous acquisition failures
+                .thenCompose( connection ->
                 {
-                    return currentAsyncConnectionStage;
-                }
-                else
-                {
-                    return connectionProvider.acquireConnection( mode );
-                }
-            } );
-        }
+                    if ( connection != null && connection.tryMarkInUse() )
+                    {
+                        // previous acquisition attempt was successful and connection has not been released yet
+                        // continue using same connection
+                        return currentAsyncConnectionStage;
+                    }
+                    else
+                    {
+                        // previous acquisition attempt failed or connection has been released
+                        // acquire new connection
+                        return connectionProvider.acquireConnection( mode );
+                    }
+                } );
 
         return connectionStage;
     }
 
-    private void ensureNoOpenTransactionBeforeRunningSession()
+    private CompletionStage<Void> forceReleaseResources()
     {
-        if ( transactionStage != null )
-        {
-            throw new ClientException( "Statements cannot be run directly on a session with an open transaction; " +
-                                       "either run from within the transaction or use a different session." );
-        }
+        return rollbackTransaction().thenCompose( ignore -> forceReleaseConnection() );
     }
 
-    private void ensureNoOpenTransactionBeforeOpeningTransaction()
+    private CompletionStage<Void> rollbackTransaction()
     {
-        if ( transactionStage != null )
-        {
-            throw new ClientException( "You cannot begin a transaction on a session with an open transaction; " +
-                                       "either run from within the transaction or use a different session." );
-        }
+        return transactionStage
+                .exceptionally( error -> null ) // handle previous acquisition failures
+                .thenCompose( tx ->
+                {
+                    if ( tx != null && tx.isOpen() )
+                    {
+                        return tx.rollbackAsync();
+                    }
+                    return completedFuture( null );
+                } );
+    }
+
+    private CompletionStage<Void> forceReleaseConnection()
+    {
+        return connectionStage
+                .exceptionally( error -> null ) // handle previous acquisition failures
+                .thenCompose( connection ->
+                {
+                    if ( connection != null )
+                    {
+                        return connection.forceRelease();
+                    }
+                    return completedFuture( null );
+                } ).exceptionally( error ->
+                {
+                    logger.error( "Failed to rollback active transaction", error );
+                    return null;
+                } );
+    }
+
+    private CompletionStage<Void> ensureNoOpenTxBeforeRunningQuery()
+    {
+        return ensureNoOpenTx( "Statements cannot be run directly on a session with an open transaction; " +
+                               "either run from within the transaction or use a different session." );
+    }
+
+    private CompletionStage<Void> ensureNoOpenTxBeforeStartingTx()
+    {
+        return ensureNoOpenTx( "You cannot begin a transaction on a session with an open transaction; " +
+                               "either run from within the transaction or use a different session." );
+    }
+
+    private CompletionStage<Void> ensureNoOpenTx( String errorMessage )
+    {
+        return transactionStage.exceptionally( error -> null )
+                .thenAccept( tx ->
+                {
+                    if ( tx != null && tx.isOpen() )
+                    {
+                        throw new ClientException( errorMessage );
+                    }
+                } );
     }
 
     private void ensureSessionIsOpen()
@@ -444,14 +474,5 @@ public class NetworkSession implements Session
             throw new ClientException(
                     "No more interaction with this session are allowed as the current session is already closed. " );
         }
-    }
-
-    protected CompletionStage<Boolean> currentConnectionIsOpen()
-    {
-        if(connectionStage == null)
-        {
-            return CompletableFuture.completedFuture( false );
-        }
-        return connectionStage.handle( ( x, error ) -> error == null && x.isInUse() );
     }
 }

@@ -126,19 +126,29 @@ public class ExplicitTransaction implements Transaction
     @Override
     public void close()
     {
+        getBlocking( closeAsync() );
+    }
+
+    CompletionStage<Void> closeAsync()
+    {
         if ( state == State.MARKED_SUCCESS )
         {
-            getBlocking( commitAsync() );
+            return commitAsync();
         }
         else if ( state == State.MARKED_FAILED || state == State.ACTIVE )
         {
-            getBlocking( rollbackAsync() );
+            return rollbackAsync();
         }
         else if ( state == State.FAILED )
         {
             // unrecoverable error happened, transaction should've been rolled back on the server
             // update state so that this transaction does not remain open
             state = State.ROLLED_BACK;
+            return completedFuture( null );
+        }
+        else
+        {
+            return completedFuture( null );
         }
     }
 
@@ -155,7 +165,7 @@ public class ExplicitTransaction implements Transaction
         }
         else
         {
-            return doCommitAsync().whenComplete( releaseConnectionAndNotifySession() );
+            return doCommitAsync().whenComplete( transactionClosed( State.COMMITTED ) );
         }
     }
 
@@ -172,16 +182,18 @@ public class ExplicitTransaction implements Transaction
         }
         else
         {
-            return doRollbackAsync().whenComplete( releaseConnectionAndNotifySession() );
+            return doRollbackAsync().whenComplete( transactionClosed( State.ROLLED_BACK ) );
         }
     }
 
-    private BiConsumer<Void,Throwable> releaseConnectionAndNotifySession()
+    private BiConsumer<Void,Throwable> transactionClosed( State newState )
     {
         return ( ignore, error ) ->
         {
+            // todo: test that this state transition always happens when commit or rollback
+            state = newState;
             connection.release();
-            session.transactionClosed( ExplicitTransaction.this );
+            session.setBookmark( bookmark );
         };
     }
 
@@ -191,11 +203,7 @@ public class ExplicitTransaction implements Transaction
         connection.runAndFlush( COMMIT_QUERY, emptyMap(), NoOpResponseHandler.INSTANCE,
                 new CommitTxResponseHandler( commitFuture, this ) );
 
-        return commitFuture.thenApply( ignore ->
-        {
-            ExplicitTransaction.this.state = State.COMMITTED;
-            return null;
-        } );
+        return commitFuture.thenRun( () -> state = State.COMMITTED );
     }
 
     private CompletionStage<Void> doRollbackAsync()
@@ -204,11 +212,7 @@ public class ExplicitTransaction implements Transaction
         connection.runAndFlush( ROLLBACK_QUERY, emptyMap(), NoOpResponseHandler.INSTANCE,
                 new RollbackTxResponseHandler( rollbackFuture ) );
 
-        return rollbackFuture.thenApply( ignore ->
-        {
-            ExplicitTransaction.this.state = State.ROLLED_BACK;
-            return null;
-        } );
+        return rollbackFuture.thenRun( () -> state = State.ROLLED_BACK );
     }
 
     @Override
@@ -267,7 +271,7 @@ public class ExplicitTransaction implements Transaction
     @Override
     public StatementResult run( Statement statement )
     {
-        ensureNotFailed();
+        ensureCanRunQueries();
         StatementResultCursor cursor = getBlocking( QueryRunner.runSync( connection, statement, this ) );
         return new InternalStatementResult( cursor );
     }
@@ -275,7 +279,7 @@ public class ExplicitTransaction implements Transaction
     @Override
     public CompletionStage<StatementResultCursor> runAsync( Statement statement )
     {
-        ensureNotFailed();
+        ensureCanRunQueries();
         return QueryRunner.runAsync( connection, statement, this );
     }
 
@@ -285,9 +289,18 @@ public class ExplicitTransaction implements Transaction
         return state != State.COMMITTED && state != State.ROLLED_BACK;
     }
 
-    private void ensureNotFailed()
+    private void ensureCanRunQueries()
     {
-        if ( state == State.FAILED || state == State.MARKED_FAILED || state == State.ROLLED_BACK )
+        // todo: test these two new branches
+        if ( state == State.COMMITTED )
+        {
+            throw new ClientException( "Cannot run more statements in this transaction, it has been committed" );
+        }
+        else if ( state == State.ROLLED_BACK )
+        {
+            throw new ClientException( "Cannot run more statements in this transaction, it has been rolled back" );
+        }
+        else if ( state == State.FAILED || state == State.MARKED_FAILED )
         {
             throw new ClientException(
                     "Cannot run more statements in this transaction, because previous statements in the " +

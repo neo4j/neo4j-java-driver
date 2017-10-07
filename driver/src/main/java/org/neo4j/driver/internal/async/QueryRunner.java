@@ -40,11 +40,7 @@ public final class QueryRunner
     {
     }
 
-    public static CompletionStage<StatementResultCursor> runSync( AsyncConnection connection, Statement statement )
-    {
-        return runSync( connection, statement, null );
-    }
-
+    // todo: better method naming here!
     public static CompletionStage<StatementResultCursor> runSync( AsyncConnection connection, Statement statement,
             ExplicitTransaction tx )
     {

@@ -23,21 +23,28 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.InOrder;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 import org.mockito.verification.VerificationMode;
+
+import java.util.Map;
 
 import org.neo4j.driver.internal.async.AsyncConnection;
 import org.neo4j.driver.internal.retry.FixedRetryLogic;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
+import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.Supplier;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.TransactionWork;
+import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 
+import static java.util.Collections.emptyMap;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -52,6 +59,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.RETURNS_MOCKS;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -59,9 +67,11 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.driver.internal.async.Futures.failedFuture;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.v1.AccessMode.READ;
 import static org.neo4j.driver.v1.AccessMode.WRITE;
+import static org.neo4j.driver.v1.util.TestUtil.connectionMock;
 
 public class NetworkSessionTest
 {
@@ -75,7 +85,8 @@ public class NetworkSessionTest
     @Before
     public void setUp()
     {
-        connection = mock( AsyncConnection.class );
+        connection = connectionMock();
+        when( connection.forceRelease() ).thenReturn( completedFuture( null ) );
         connectionProvider = mock( ConnectionProvider.class );
         when( connectionProvider.acquireConnection( any( AccessMode.class ) ) )
                 .thenReturn( completedFuture( connection ) );
@@ -143,30 +154,15 @@ public class NetworkSessionTest
     }
 
     @Test
-    public void shouldGetExceptionIfTryingToCloseSessionMoreThanOnce()
+    public void shouldNotCloseAlreadyClosedSession()
     {
-        // Given
-        ConnectionProvider connectionProvider = mock( ConnectionProvider.class, RETURNS_MOCKS );
-        NetworkSession sess = newSession( connectionProvider, READ );
-        try
-        {
-            sess.close();
-        }
-        catch ( Exception e )
-        {
-            fail( "Should not get any problem to close first time" );
-        }
+        Transaction tx = session.beginTransaction();
 
-        // When
-        try
-        {
-            sess.close();
-            fail( "Should have received an error to close second time" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e.getMessage(), equalTo( "This session has already been closed." ) );
-        }
+        session.close();
+        session.close();
+        session.close();
+
+        verifyRollbackTx( connection, times( 1 ) );
     }
 
     @Test
@@ -217,12 +213,12 @@ public class NetworkSessionTest
         verify( connectionProvider ).acquireConnection( READ );
 
         session.run( "RETURN 2" );
-        verify( connectionProvider, times( 2 ) ).acquireConnection( READ );
+        verify( connectionProvider ).acquireConnection( READ );
 
         InOrder inOrder = inOrder( connection );
         inOrder.verify( connection ).runAndFlush( eq( "RETURN 1" ), any(), any(), any() );
         inOrder.verify( connection ).tryMarkInUse();
-        inOrder.verify( connection ).runAndFlush( eq( "RETURN 1" ), any(), any(), any() );
+        inOrder.verify( connection ).runAndFlush( eq( "RETURN 2" ), any(), any(), any() );
     }
 
     @Test
@@ -246,7 +242,7 @@ public class NetworkSessionTest
         InOrder inOrder = inOrder( connection1, connection2 );
         inOrder.verify( connection1 ).runAndFlush( eq( "RETURN 1" ), any(), any(), any() );
         inOrder.verify( connection1 ).tryMarkInUse();
-        inOrder.verify( connection2 ).runAndFlush( eq( "RETURN 1" ), any(), any(), any() );
+        inOrder.verify( connection2 ).runAndFlush( eq( "RETURN 2" ), any(), any(), any() );
     }
 
     @Test
@@ -290,7 +286,7 @@ public class NetworkSessionTest
         Transaction tx = session.beginTransaction();
 
         assertNotNull( tx );
-        verify( connectionProvider ).acquireConnection( WRITE );
+        verify( connectionProvider ).acquireConnection( READ );
     }
 
     @Test
@@ -305,7 +301,7 @@ public class NetworkSessionTest
 
         session.run( "RETURN 1" );
         verify( connectionProvider ).acquireConnection( READ );
-        verify( connection ).run( eq( "RETURN 1" ), any(), any(), any() );
+        verify( connection ).runAndFlush( eq( "RETURN 1" ), any(), any(), any() );
 
         Transaction tx = session.beginTransaction();
         assertNotNull( tx );
@@ -336,7 +332,7 @@ public class NetworkSessionTest
         InOrder inOrder = inOrder( connection1, connection2 );
         inOrder.verify( connection1 ).runAndFlush( eq( "RETURN 1" ), any(), any(), any() );
         inOrder.verify( connection1 ).tryMarkInUse();
-        inOrder.verify( connection2 ).runAndFlush( eq( "BEGIN" ), any(), any(), any() );
+        inOrder.verify( connection2 ).run( eq( "BEGIN" ), any(), any(), any() );
     }
 
     @Test
@@ -358,20 +354,18 @@ public class NetworkSessionTest
         tx.run( "RETURN 1" );
 
         verify( connectionProvider ).acquireConnection( READ );
-        verify( connection ).run( eq( "RETURN 1" ), any(), any(), any() );
+        verify( connection ).runAndFlush( eq( "RETURN 1" ), any(), any(), any() );
 
         tx.close();
         verify( connection ).release();
     }
 
     @Test
-    public void bookmarkIsUpdatedWhenTxClosed()
+    public void bookmarkCanBeSet()
     {
-        ExplicitTransaction tx = mock( ExplicitTransaction.class );
         Bookmark bookmark = Bookmark.from( "neo4j:bookmark:v1:tx100" );
-        when( tx.bookmark() ).thenReturn( bookmark );
 
-        session.transactionClosed( tx );
+        session.setBookmark( bookmark );
 
         assertEquals( bookmark.maxBookmarkAsString(), session.lastBookmark() );
     }
@@ -392,7 +386,7 @@ public class NetworkSessionTest
     {
         Bookmark bookmark = Bookmark.from( "Bookmark" );
         NetworkSession session = newSession( connectionProvider, READ );
-        session.setBookmark(bookmark);
+        session.setBookmark( bookmark );
 
         Transaction tx = session.beginTransaction();
         assertNotNull( tx );
@@ -407,26 +401,25 @@ public class NetworkSessionTest
 
         NetworkSession session = newSession( connectionProvider, READ );
 
-        Transaction tx1 = session.beginTransaction();
-        assertNotNull( tx1 );
-        setBookmark( tx1, bookmark1 );
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            setBookmark( tx, bookmark1 );
+        }
 
-        assertEquals( bookmark1.maxBookmarkAsString(), session.lastBookmark() );
+        assertEquals( bookmark1, Bookmark.from( session.lastBookmark() ) );
 
-        Transaction tx2 = session.beginTransaction();
-        assertNotNull( tx2 );
-        verifyBeginTx( connection, bookmark1 );
-        assertTrue( getBookmark( tx2 ).isEmpty() );
-        setBookmark( tx2, bookmark2 );
-
-        assertEquals( bookmark2.maxBookmarkAsString(), session.lastBookmark() );
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            verifyBeginTx( connection, bookmark1 );
+            assertTrue( getBookmark( tx ).isEmpty() );
+            setBookmark( tx, bookmark2 );
+        }
+        assertEquals( bookmark2, Bookmark.from( session.lastBookmark() ) );
     }
 
     @Test
     public void accessModeUsedToAcquireConnections()
     {
-        ConnectionProvider connectionProvider = mock( ConnectionProvider.class, RETURNS_MOCKS );
-
         NetworkSession session1 = newSession( connectionProvider, READ );
         session1.beginTransaction();
         verify( connectionProvider ).acquireConnection( READ );
@@ -540,13 +533,13 @@ public class NetworkSessionTest
     @Test
     public void readTxRetriedUntilSuccessWhenTxCloseThrows()
     {
-        testTxIsRetriedUntilSuccessWhenTxCloseThrows( READ );
+        testTxIsRetriedUntilSuccessWhenCommitThrows( READ );
     }
 
     @Test
     public void writeTxRetriedUntilSuccessWhenTxCloseThrows()
     {
-        testTxIsRetriedUntilSuccessWhenTxCloseThrows( WRITE );
+        testTxIsRetriedUntilSuccessWhenCommitThrows( WRITE );
     }
 
     @Test
@@ -564,18 +557,33 @@ public class NetworkSessionTest
     @Test
     public void readTxRetriedUntilFailureWhenTxCloseThrows()
     {
-        testTxIsRetriedUntilFailureWhenTxCloseThrows( READ );
+        testTxIsRetriedUntilFailureWhenCommitFails( READ );
     }
 
     @Test
     public void writeTxRetriedUntilFailureWhenTxCloseThrows()
     {
-        testTxIsRetriedUntilFailureWhenTxCloseThrows( WRITE );
+        testTxIsRetriedUntilFailureWhenCommitFails( WRITE );
     }
 
     @Test
     @SuppressWarnings( "deprecation" )
-    public void transactionShouldBeOpenAfterSessionReset()
+    public void connectionShouldBeReleasedAfterSessionReset()
+    {
+        NetworkSession session = newSession( connectionProvider, READ );
+        session.run( "RETURN 1" );
+
+        verify( connection, never() ).release();
+        verify( connection, never() ).forceRelease();
+
+        session.reset();
+        verify( connection, never() ).release();
+        verify( connection ).forceRelease();
+    }
+
+    @Test
+    @SuppressWarnings( "deprecation" )
+    public void transactionShouldBeRolledBackAfterSessionReset()
     {
         NetworkSession session = newSession( connectionProvider, READ );
         Transaction tx = session.beginTransaction();
@@ -583,22 +591,6 @@ public class NetworkSessionTest
         assertTrue( tx.isOpen() );
 
         session.reset();
-        assertTrue( tx.isOpen() );
-    }
-
-    @Test
-    @SuppressWarnings( "deprecation" )
-    public void transactionShouldBeClosedAfterSessionResetAndClose()
-    {
-        NetworkSession session = newSession( connectionProvider, READ );
-        Transaction tx = session.beginTransaction();
-
-        assertTrue( tx.isOpen() );
-
-        session.reset();
-        assertTrue( tx.isOpen() );
-
-        tx.close();
         assertFalse( tx.isOpen() );
     }
 
@@ -625,6 +617,133 @@ public class NetworkSessionTest
         assertEquals( "Cat", session.lastBookmark() );
         session.setBookmark( Bookmark.empty() );
         assertEquals( "Cat", session.lastBookmark() );
+    }
+
+    @Test
+    public void shouldDoNothingWhenClosingWithoutAcquiredConnection()
+    {
+        RuntimeException error = new RuntimeException( "Hi" );
+        when( connectionProvider.acquireConnection( READ ) ).thenReturn( failedFuture( error ) );
+
+        try
+        {
+            session.run( "RETURN 1" );
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertEquals( error, e );
+        }
+
+        session.close();
+    }
+
+    @Test
+    public void shouldRunAfterRunFailureToAcquireConnection()
+    {
+        RuntimeException error = new RuntimeException( "Hi" );
+        when( connectionProvider.acquireConnection( READ ) )
+                .thenReturn( failedFuture( error ) ).thenReturn( completedFuture( connection ) );
+
+        try
+        {
+            session.run( "RETURN 1" );
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertEquals( error, e );
+        }
+
+        session.run( "RETURN 2" );
+
+        verify( connectionProvider, times( 2 ) ).acquireConnection( READ );
+        verifyRunAndFlush( connection, "RETURN 2", times( 1 ) );
+    }
+
+    @Test
+    public void shouldRunAfterBeginTxFailureOnBookmark()
+    {
+        RuntimeException error = new RuntimeException( "Hi" );
+        AsyncConnection connection1 = connectionMock();
+        setupFailingBegin( connection1, error );
+        AsyncConnection connection2 = connectionMock();
+
+        when( connectionProvider.acquireConnection( READ ) )
+                .thenReturn( completedFuture( connection1 ) ).thenReturn( completedFuture( connection2 ) );
+
+        Bookmark bookmark = Bookmark.from( "neo4j:bookmark:v1:tx42" );
+        session.setBookmark( bookmark );
+
+        try
+        {
+            session.beginTransaction();
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertEquals( error, e );
+        }
+
+        session.run( "RETURN 2" );
+
+        verify( connectionProvider, times( 2 ) ).acquireConnection( READ );
+        verifyBeginTx( connection1, bookmark );
+        verifyRunAndFlush( connection2, "RETURN 2", times( 1 ) );
+    }
+
+    @Test
+    public void shouldBeginTxAfterBeginTxFailureOnBookmark()
+    {
+        RuntimeException error = new RuntimeException( "Hi" );
+        AsyncConnection connection1 = connectionMock();
+        setupFailingBegin( connection1, error );
+        AsyncConnection connection2 = connectionMock();
+
+        when( connectionProvider.acquireConnection( READ ) )
+                .thenReturn( completedFuture( connection1 ) ).thenReturn( completedFuture( connection2 ) );
+
+        Bookmark bookmark = Bookmark.from( "neo4j:bookmark:v1:tx42" );
+        session.setBookmark( bookmark );
+
+        try
+        {
+            session.beginTransaction();
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertEquals( error, e );
+        }
+
+        session.beginTransaction();
+
+        verify( connectionProvider, times( 2 ) ).acquireConnection( READ );
+        verifyBeginTx( connection1, bookmark );
+        verifyBeginTx( connection2, bookmark );
+    }
+
+    @Test
+    public void shouldBeginTxAfterRunFailureToAcquireConnection()
+    {
+        RuntimeException error = new RuntimeException( "Hi" );
+        when( connectionProvider.acquireConnection( READ ) )
+                .thenReturn( failedFuture( error ) ).thenReturn( completedFuture( connection ) );
+
+        try
+        {
+            session.run( "RETURN 1" );
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertEquals( error, e );
+        }
+
+        session.beginTransaction();
+
+        verify( connectionProvider, times( 2 ) ).acquireConnection( READ );
+        verifyBeginTx( connection, times( 1 ) );
     }
 
     private void testConnectionAcquisition( AccessMode sessionMode, AccessMode transactionMode )
@@ -717,12 +836,13 @@ public class NetworkSessionTest
         verifyRollbackTx( connection, times( failures ) );
     }
 
-    private void testTxIsRetriedUntilSuccessWhenTxCloseThrows( AccessMode mode )
+    private void testTxIsRetriedUntilSuccessWhenCommitThrows( AccessMode mode )
     {
         int failures = 13;
         int retries = failures + 1;
 
         RetryLogic retryLogic = new FixedRetryLogic( retries );
+        setupFailingCommit( connection, failures );
         NetworkSession session = newSession( connectionProvider, retryLogic );
 
         TxWork work = spy( new TxWork( 43 ) );
@@ -731,7 +851,6 @@ public class NetworkSessionTest
         assertEquals( 43, answer );
         verifyInvocationCount( work, failures + 1 );
         verifyCommitTx( connection, times( retries ) );
-        verifyRollbackTx( connection, times( failures ) );
     }
 
     private void testTxIsRetriedUntilFailureWhenFunctionThrows( AccessMode mode )
@@ -758,12 +877,13 @@ public class NetworkSessionTest
         }
     }
 
-    private void testTxIsRetriedUntilFailureWhenTxCloseThrows( AccessMode mode )
+    private void testTxIsRetriedUntilFailureWhenCommitFails( AccessMode mode )
     {
         int failures = 17;
         int retries = failures - 1;
 
         RetryLogic retryLogic = new FixedRetryLogic( retries );
+        setupFailingCommit( connection, failures );
         NetworkSession session = newSession( connectionProvider, retryLogic );
 
         TxWork work = spy( new TxWork( 42 ) );
@@ -777,7 +897,6 @@ public class NetworkSessionTest
             assertThat( e, instanceOf( ServiceUnavailableException.class ) );
             verifyInvocationCount( work, failures );
             verifyCommitTx( connection, times( failures ) );
-            verifyRollbackTx( connection, times( failures ) );
         }
     }
 
@@ -828,27 +947,35 @@ public class NetworkSessionTest
 
     private static void verifyBeginTx( AsyncConnection connectionMock, VerificationMode mode )
     {
-        verifyRun( connectionMock, "BEGIN", mode );
+        verify( connectionMock, mode ).run( eq( "BEGIN" ), any(), any(), any() );
     }
 
     private static void verifyBeginTx( AsyncConnection connectionMock, Bookmark bookmark )
     {
-        verify( connectionMock ).run( "BEGIN", bookmark.asBeginTransactionParameters(), any(), any() );
+        if ( bookmark.isEmpty() )
+        {
+            verify( connectionMock ).run( eq( "BEGIN" ), any(), any(), any() );
+        }
+        else
+        {
+            Map<String,Value> params = bookmark.asBeginTransactionParameters();
+            verify( connectionMock ).runAndFlush( eq( "BEGIN" ), eq( params ), any(), any() );
+        }
     }
 
     private static void verifyCommitTx( AsyncConnection connectionMock, VerificationMode mode )
     {
-        verifyRun( connectionMock, "COMMIT", mode );
+        verifyRunAndFlush( connectionMock, "COMMIT", mode );
     }
 
     private static void verifyRollbackTx( AsyncConnection connectionMock, VerificationMode mode )
     {
-        verifyRun( connectionMock, "ROLLBACK", mode );
+        verifyRunAndFlush( connectionMock, "ROLLBACK", mode );
     }
 
-    private static void verifyRun( AsyncConnection connectionMock, String statement, VerificationMode mode )
+    private static void verifyRunAndFlush( AsyncConnection connectionMock, String statement, VerificationMode mode )
     {
-        verify( connectionMock, mode ).run( eq( statement ), any(), any(), any() );
+        verify( connectionMock, mode ).runAndFlush( eq( statement ), any(), any(), any() );
     }
 
     private static Bookmark getBookmark( Transaction tx )
@@ -859,6 +986,39 @@ public class NetworkSessionTest
     private static void setBookmark( Transaction tx, Bookmark bookmark )
     {
         ((ExplicitTransaction) tx).setBookmark( bookmark );
+    }
+
+    private static void setupFailingCommit( AsyncConnection connection, int times )
+    {
+        doAnswer( new Answer<Void>()
+        {
+            int invoked;
+
+            @Override
+            public Void answer( InvocationOnMock invocation )
+            {
+                ResponseHandler handler = invocation.getArgumentAt( 3, ResponseHandler.class );
+                if ( invoked++ < times )
+                {
+                    handler.onFailure( new ServiceUnavailableException( "" ) );
+                }
+                else
+                {
+                    handler.onSuccess( emptyMap() );
+                }
+                return null;
+            }
+        } ).when( connection ).runAndFlush( eq( "COMMIT" ), any(), any(), any() );
+    }
+
+    private static void setupFailingBegin( AsyncConnection connection, Throwable error )
+    {
+        doAnswer( (Answer<Void>) invocation ->
+        {
+            ResponseHandler handler = invocation.getArgumentAt( 3, ResponseHandler.class );
+            handler.onFailure( error );
+            return null;
+        } ).when( connection ).runAndFlush( eq( "BEGIN" ), any(), any(), any() );
     }
 
     private static class TxWork implements TransactionWork<Integer>

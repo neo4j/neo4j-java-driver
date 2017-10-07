@@ -28,7 +28,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.async.Futures.getBlocking;
-import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 
 public class InternalDriverTest
 {
@@ -57,7 +56,7 @@ public class InternalDriverTest
 
     private static InternalDriver newDriver( SessionFactory sessionFactory )
     {
-        return new InternalDriver( SecurityPlan.insecure(), sessionFactory, DEV_NULL_LOGGING );
+        return new InternalDriver( SecurityPlan.insecure(), sessionFactory );
     }
 
     private static SessionFactory sessionFactoryMock()
