@@ -38,6 +38,7 @@ public class InboundMessageHandler extends SimpleChannelInboundHandler<ByteBuf>
     private final Logger log;
 
     private InboundMessageDispatcher messageDispatcher;
+    private boolean exceptionCaught;
 
     public InboundMessageHandler( MessageFormat messageFormat, Logging logging )
     {
@@ -69,10 +70,18 @@ public class InboundMessageHandler extends SimpleChannelInboundHandler<ByteBuf>
     @Override
     public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause )
     {
-        log.warn( "Fatal error in pipeline for channel " + ctx.channel(), cause );
+        if ( exceptionCaught )
+        {
+            log.warn( "Another fatal error in pipeline for channel " + ctx.channel(), cause );
+        }
+        else
+        {
+            exceptionCaught = true;
 
-        messageDispatcher.handleFatalError( wrapFatalError( cause ) );
-        ctx.close();
+            log.warn( "Fatal error in pipeline for channel " + ctx.channel(), cause );
+            messageDispatcher.handleFatalError( wrapFatalError( cause ) );
+            ctx.close();
+        }
     }
 
     @Override
@@ -80,11 +89,16 @@ public class InboundMessageHandler extends SimpleChannelInboundHandler<ByteBuf>
     {
         log.debug( "Channel inactive: %s", ctx.channel() );
 
-        messageDispatcher.handleFatalError( new ServiceUnavailableException(
-                "Connection to the database terminated. " +
-                "This can happen due to network instabilities, or due to restarts of the database" ) );
+        if ( !exceptionCaught )
+        {
+            // channel became inactive not because of a fatal exception that came from exceptionCaught
+            // it is most likely inactive because actual network connection broke
+            messageDispatcher.handleFatalError( new ServiceUnavailableException(
+                    "Connection to the database terminated. " +
+                    "This can happen due to network instabilities, or due to restarts of the database" ) );
 
-        ctx.close();
+            ctx.close();
+        }
     }
 
     private static Throwable wrapFatalError( Throwable error )

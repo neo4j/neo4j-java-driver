@@ -35,9 +35,14 @@ import org.neo4j.driver.internal.messaging.SuccessMessage;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
+import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -122,6 +127,17 @@ public class InboundMessageHandlerTest
     }
 
     @Test
+    public void shouldNotifyDispatcherWhenChannelInactive()
+    {
+        assertNull( dispatcher.currentError() );
+
+        channel.pipeline().fireChannelInactive();
+
+        assertNotNull( dispatcher.currentError() );
+        assertThat( dispatcher.currentError(), instanceOf( ServiceUnavailableException.class ) );
+    }
+
+    @Test
     public void shouldCloseContextWhenExceptionCaught()
     {
         assertTrue( channel.isOpen() );
@@ -129,5 +145,30 @@ public class InboundMessageHandlerTest
         channel.pipeline().fireExceptionCaught( new RuntimeException( "Hi!" ) );
 
         assertFalse( channel.isOpen() );
+    }
+
+    @Test
+    public void shouldNotifyDispatcherWhenExceptionCaught()
+    {
+        assertNull( dispatcher.currentError() );
+
+        RuntimeException error = new RuntimeException( "Hi!" );
+        channel.pipeline().fireExceptionCaught( error );
+
+        assertEquals( error, dispatcher.currentError() );
+    }
+
+    @Test
+    public void shouldNotifyDispatcherOnlyWhenFirstExceptionCaught()
+    {
+        assertNull( dispatcher.currentError() );
+
+        RuntimeException error1 = new RuntimeException( "Hi!" );
+        RuntimeException error2 = new RuntimeException( "Hello!" );
+
+        channel.pipeline().fireExceptionCaught( error1 );
+        channel.pipeline().fireExceptionCaught( error2 );
+
+        assertEquals( error1, dispatcher.currentError() );
     }
 }
