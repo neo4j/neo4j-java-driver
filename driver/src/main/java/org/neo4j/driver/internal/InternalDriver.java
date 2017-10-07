@@ -113,6 +113,7 @@ public class InternalDriver implements Driver
         return completedFuture( null );
     }
 
+    // todo: test this method and it's usage in DriverFactory
     public CompletionStage<Void> verifyConnectivity()
     {
         return sessionFactory.verifyConnectivity();

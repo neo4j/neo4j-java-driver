@@ -91,7 +91,7 @@ public class DriverFactoryTest
     }
 
     @Test
-    public void connectionPoolCloseExceptionIsSupressedWhenDriverCreationFails() throws Exception
+    public void connectionPoolCloseExceptionIsSuppressedWhenDriverCreationFails() throws Exception
     {
         AsyncConnectionPool connectionPool = connectionPoolMock();
         RuntimeException poolCloseError = new RuntimeException( "Pool close error" );
@@ -153,6 +153,7 @@ public class DriverFactoryTest
         AsyncConnectionPool pool = mock( AsyncConnectionPool.class );
         AsyncConnection connection = mock( AsyncConnection.class );
         when( pool.acquire( any( BoltServerAddress.class ) ) ).thenReturn( completedFuture( connection ) );
+        when( pool.close() ).thenReturn( completedFuture( null ) );
         return pool;
     }
 
@@ -194,7 +195,9 @@ public class DriverFactoryTest
         @Override
         protected InternalDriver createDriver( Config config, SecurityPlan securityPlan, SessionFactory sessionFactory )
         {
-            return null;
+            InternalDriver driver = mock( InternalDriver.class );
+            when( driver.verifyConnectivity() ).thenReturn( completedFuture( null ) );
+            return driver;
         }
 
         @Override

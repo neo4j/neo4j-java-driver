@@ -33,6 +33,7 @@ import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Session;
 
+import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -103,8 +104,8 @@ public class LeakLoggingNetworkSessionTest
     private static ConnectionProvider connectionProviderMock( boolean inUseConnection )
     {
         ConnectionProvider provider = mock( ConnectionProvider.class );
-        when( provider.acquireConnection( any( AccessMode.class ) ) )
-                .thenAnswer( invocation -> connectionMock( inUseConnection ) );
+        AsyncConnection connection = connectionMock( inUseConnection );
+        when( provider.acquireConnection( any( AccessMode.class ) ) ).thenReturn( completedFuture( connection ) );
         return provider;
     }
 

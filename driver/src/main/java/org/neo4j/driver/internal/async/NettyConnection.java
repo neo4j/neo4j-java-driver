@@ -99,8 +99,8 @@ public class NettyConnection implements AsyncConnection
         run( statement, parameters, runHandler, pullAllHandler, true );
     }
 
+    // TODO change this to return future or say that it does stuff in the background in the method name?
     @Override
-    // TODO change this to return future
     public void release()
     {
         if ( state.release() )

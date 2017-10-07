@@ -34,13 +34,18 @@ import org.neo4j.driver.v1.Value;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.neo4j.driver.v1.Values.ofValue;
 
+// todo: better method naming in this class and tests!
 public final class QueryRunner
 {
     private QueryRunner()
     {
     }
 
-    // todo: better method naming here!
+    public static CompletionStage<StatementResultCursor> runSync( AsyncConnection connection, Statement statement )
+    {
+        return runSync( connection, statement, null );
+    }
+
     public static CompletionStage<StatementResultCursor> runSync( AsyncConnection connection, Statement statement,
             ExplicitTransaction tx )
     {

@@ -27,6 +27,8 @@ import org.neo4j.driver.v1.Value;
 
 public interface AsyncConnection
 {
+    boolean isInUse();
+
     boolean tryMarkInUse();
 
     void enableAutoRead();
@@ -40,8 +42,6 @@ public interface AsyncConnection
             ResponseHandler pullAllHandler );
 
     void release();
-
-    boolean isInUse();
 
     CompletionStage<Void> forceRelease();
 

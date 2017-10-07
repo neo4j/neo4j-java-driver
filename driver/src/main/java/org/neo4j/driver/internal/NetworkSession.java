@@ -130,18 +130,14 @@ public class NetworkSession implements Session
     @Override
     public StatementResult run( Statement statement )
     {
-        StatementResultCursor cursor = getBlocking( runAsync( statement ) );
+        StatementResultCursor cursor = getBlocking( runAsync( statement, false ) );
         return new InternalStatementResult( cursor );
     }
 
     @Override
     public CompletionStage<StatementResultCursor> runAsync( Statement statement )
     {
-        ensureSessionIsOpen();
-
-        return ensureNoOpenTxBeforeRunningQuery()
-                .thenCompose( ignore -> acquireConnection( mode ) )
-                .thenCompose( connection -> QueryRunner.runAsync( connection, statement ) );
+        return runAsync( statement, true );
     }
 
     @Override
@@ -237,13 +233,16 @@ public class NetworkSession implements Session
         return InternalTypeSystem.TYPE_SYSTEM;
     }
 
-    protected CompletionStage<Boolean> currentConnectionIsOpen()
+    CompletionStage<Boolean> currentConnectionIsOpen()
     {
         if ( connectionStage == null )
         {
             return completedFuture( false );
         }
-        return connectionStage.handle( ( connection, error ) -> error == null && connection.isInUse() );
+        return connectionStage.handle( ( connection, error ) ->
+                error == null && // no acquisition error
+                connection != null && // some connection has actually been acquired
+                connection.isInUse() ); // and it's still being used
     }
 
     private <T> T transaction( AccessMode mode, TransactionWork<T> work )
@@ -363,6 +362,25 @@ public class NetworkSession implements Session
         {
             resultFuture.complete( result );
         }
+    }
+
+    private CompletionStage<StatementResultCursor> runAsync( Statement statement, boolean waitForRunResponse )
+    {
+        ensureSessionIsOpen();
+
+        return ensureNoOpenTxBeforeRunningQuery()
+                .thenCompose( ignore -> acquireConnection( mode ) )
+                .thenCompose( connection ->
+                {
+                    if ( waitForRunResponse )
+                    {
+                        return QueryRunner.runAsync( connection, statement );
+                    }
+                    else
+                    {
+                        return QueryRunner.runSync( connection, statement );
+                    }
+                } );
     }
 
     private CompletionStage<ExplicitTransaction> beginTransactionAsync( AccessMode mode )
