@@ -31,5 +31,7 @@ public interface ConnectionProvider
 {
     CompletionStage<AsyncConnection> acquireConnection( AccessMode mode );
 
+    CompletionStage<Void> verifyConnectivity();
+
     CompletionStage<Void> close();
 }

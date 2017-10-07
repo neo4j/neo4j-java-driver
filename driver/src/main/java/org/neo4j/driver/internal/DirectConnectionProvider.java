@@ -26,6 +26,8 @@ import org.neo4j.driver.internal.async.pool.AsyncConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.v1.AccessMode;
 
+import static org.neo4j.driver.v1.AccessMode.READ;
+
 /**
  * Simple {@link ConnectionProvider connection provider} that obtains connections form the given pool only for
  * the given address.
@@ -45,6 +47,12 @@ public class DirectConnectionProvider implements ConnectionProvider
     public CompletionStage<AsyncConnection> acquireConnection( AccessMode mode )
     {
         return connectionPool.acquire( address );
+    }
+
+    @Override
+    public CompletionStage<Void> verifyConnectivity()
+    {
+        return acquireConnection( READ ).thenCompose( AsyncConnection::forceRelease );
     }
 
     @Override

@@ -78,8 +78,10 @@ public class DriverFactory
 
         try
         {
-            return createDriver( uri, address, connectionPool, config, newRoutingSettings,
+            InternalDriver driver = createDriver( uri, address, connectionPool, config, newRoutingSettings,
                     eventExecutorGroup, securityPlan, retryLogic );
+            Futures.getBlocking( driver.verifyConnectivity() );
+            return driver;
         }
         catch ( Throwable driverError )
         {
@@ -115,7 +117,7 @@ public class DriverFactory
         return new AsyncConnectorImpl( settings, securityPlan, config.logging(), clock );
     }
 
-    private Driver createDriver( URI uri, BoltServerAddress address,
+    private InternalDriver createDriver( URI uri, BoltServerAddress address,
             AsyncConnectionPool connectionPool, Config config, RoutingSettings routingSettings,
             EventExecutorGroup eventExecutorGroup, SecurityPlan securityPlan, RetryLogic retryLogic )
     {
@@ -138,7 +140,7 @@ public class DriverFactory
      * <p>
      * <b>This method is protected only for testing</b>
      */
-    protected Driver createDirectDriver( BoltServerAddress address, Config config,
+    protected InternalDriver createDirectDriver( BoltServerAddress address, Config config,
             SecurityPlan securityPlan, RetryLogic retryLogic, AsyncConnectionPool connectionPool )
     {
         ConnectionProvider connectionProvider =
@@ -153,8 +155,8 @@ public class DriverFactory
      * <p>
      * <b>This method is protected only for testing</b>
      */
-    protected Driver createRoutingDriver( BoltServerAddress address, AsyncConnectionPool connectionPool, Config config,
-            RoutingSettings routingSettings, SecurityPlan securityPlan, RetryLogic retryLogic,
+    protected InternalDriver createRoutingDriver( BoltServerAddress address, AsyncConnectionPool connectionPool,
+            Config config, RoutingSettings routingSettings, SecurityPlan securityPlan, RetryLogic retryLogic,
             EventExecutorGroup eventExecutorGroup )
     {
         if ( !securityPlan.isRoutingCompatible() )
@@ -174,7 +176,7 @@ public class DriverFactory
      */
     protected InternalDriver createDriver( Config config, SecurityPlan securityPlan, SessionFactory sessionFactory )
     {
-        return new InternalDriver( securityPlan, sessionFactory, config.logging() );
+        return new InternalDriver( securityPlan, sessionFactory );
     }
 
     /**
