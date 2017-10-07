@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.async;
 import io.netty.util.internal.PlatformDependent;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -104,5 +105,15 @@ public final class Futures
                 Thread.currentThread().interrupt();
             }
         }
+    }
+
+    // todo: test all call sites
+    public static Throwable completionErrorCause( Throwable error )
+    {
+        if ( error instanceof CompletionException )
+        {
+            return error.getCause();
+        }
+        return error;
     }
 }

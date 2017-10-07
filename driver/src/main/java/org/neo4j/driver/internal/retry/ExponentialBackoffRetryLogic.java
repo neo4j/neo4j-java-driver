@@ -28,6 +28,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.driver.internal.async.Futures;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Supplier;
 import org.neo4j.driver.v1.Logger;
@@ -132,8 +133,9 @@ public class ExponentialBackoffRetryLogic implements RetryLogic
             return;
         }
 
-        workStage.whenComplete( ( result, error ) ->
+        workStage.whenComplete( ( result, completionError ) ->
         {
+            Throwable error = Futures.completionErrorCause( completionError );
             if ( error != null )
             {
                 // work failed in async way, attempt to schedule a retry

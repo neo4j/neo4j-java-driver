@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.driver.internal.async.AsyncConnection;
 import org.neo4j.driver.internal.async.BoltServerAddress;
+import org.neo4j.driver.internal.async.Futures;
 import org.neo4j.driver.internal.async.pool.AsyncConnectionPool;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.exceptions.SecurityException;
@@ -96,8 +97,9 @@ public class Rediscovery
             return;
         }
 
-        lookup( routingTable, pool ).whenComplete( ( composition, error ) ->
+        lookup( routingTable, pool ).whenComplete( ( composition, completionError ) ->
         {
+            Throwable error = Futures.completionErrorCause( completionError );
             if ( error != null )
             {
                 result.completeExceptionally( error );
@@ -221,9 +223,10 @@ public class Rediscovery
 
         return provider.getClusterComposition( connectionStage ).handle( ( response, error ) ->
         {
-            if ( error != null )
+            Throwable cause = Futures.completionErrorCause( error );
+            if ( cause != null )
             {
-                return handleRoutingProcedureError( error, routingTable, routerAddress );
+                return handleRoutingProcedureError( cause, routingTable, routerAddress );
             }
             else
             {

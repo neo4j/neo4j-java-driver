@@ -27,6 +27,7 @@ import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.internal.RoutingErrorHandler;
 import org.neo4j.driver.internal.async.AsyncConnection;
 import org.neo4j.driver.internal.async.BoltServerAddress;
+import org.neo4j.driver.internal.async.Futures;
 import org.neo4j.driver.internal.async.RoutingAsyncConnection;
 import org.neo4j.driver.internal.async.pool.AsyncConnectionPool;
 import org.neo4j.driver.internal.cluster.AddressSet;
@@ -99,6 +100,12 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
     }
 
     @Override
+    public CompletionStage<Void> verifyConnectivity()
+    {
+        return freshRoutingTable( AccessMode.READ ).thenApply( routingTable -> null );
+    }
+
+    @Override
     public void onConnectionFailure( BoltServerAddress address )
     {
         forget( address );
@@ -140,8 +147,9 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
             refreshRoutingTableFuture = resultFuture;
 
             rediscovery.lookupClusterComposition( routingTable, connectionPool )
-                    .whenComplete( ( composition, error ) ->
+                    .whenComplete( ( composition, completionError ) ->
                     {
+                        Throwable error = Futures.completionErrorCause( completionError );
                         if ( error != null )
                         {
                             clusterCompositionLookupFailed( error );
@@ -204,8 +212,9 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
             return;
         }
 
-        connectionPool.acquire( address ).whenComplete( ( connection, error ) ->
+        connectionPool.acquire( address ).whenComplete( ( connection, completionError ) ->
         {
+            Throwable error = Futures.completionErrorCause( completionError );
             if ( error != null )
             {
                 if ( error instanceof ServiceUnavailableException )

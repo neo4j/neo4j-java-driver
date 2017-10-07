@@ -143,8 +143,9 @@ public class InternalStatementResultCursor implements StatementResultCursor
 
         // use async completion listener because of recursion, otherwise it is possible for
         // the caller thread to get StackOverflowError when result is large and buffered
-        recordFuture.whenCompleteAsync( ( record, error ) ->
+        recordFuture.whenCompleteAsync( ( record, completionError ) ->
         {
+            Throwable error = Futures.completionErrorCause( completionError );
             if ( error != null )
             {
                 resultFuture.completeExceptionally( error );
@@ -176,8 +177,9 @@ public class InternalStatementResultCursor implements StatementResultCursor
 
         // use async completion listener because of recursion, otherwise it is possible for
         // the caller thread to get StackOverflowError when result is large and buffered
-        recordFuture.whenCompleteAsync( ( record, error ) ->
+        recordFuture.whenCompleteAsync( ( record, completionError ) ->
         {
+            Throwable error = Futures.completionErrorCause( completionError );
             if ( error != null )
             {
                 resultFuture.completeExceptionally( error );

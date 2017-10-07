@@ -68,8 +68,9 @@ public class RoutingResponseHandler implements ResponseHandler
         delegate.onRecord( fields );
     }
 
-    private Throwable handledError( Throwable error )
+    private Throwable handledError( Throwable receivedError )
     {
+        Throwable error = Futures.completionErrorCause( receivedError );
         if ( error instanceof CompletionException )
         {
             error = error.getCause();

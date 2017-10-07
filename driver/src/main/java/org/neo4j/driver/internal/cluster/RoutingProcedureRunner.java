@@ -24,6 +24,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.async.AsyncConnection;
+import org.neo4j.driver.internal.async.Futures;
 import org.neo4j.driver.internal.async.QueryRunner;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.Record;
@@ -54,9 +55,10 @@ public class RoutingProcedureRunner
             Statement procedure = procedureStatement( connection.serverVersion() );
             return runProcedure( connection, procedure ).handle( ( records, error ) ->
             {
-                if ( error != null )
+                Throwable cause = Futures.completionErrorCause( error );
+                if ( cause != null )
                 {
-                    return handleError( procedure, error );
+                    return handleError( procedure, cause );
                 }
                 else
                 {
