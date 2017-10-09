@@ -204,34 +204,36 @@ public class ConnectionHandlingIT
     }
 
     @Test
-    public void previousSessionRunResultIsBufferedBeforeRunningNewStatement()
+    public void activeConnectionFromSessionRunCanBeReusedForNextSessionRun()
     {
         Session session = driver.session();
 
         StatementResult result1 = createNodes( 3, session );
         AsyncConnection connection1 = connectionPool.lastAcquiredConnectionSpy;
-        verify( connection1, never() ).release();
 
         StatementResult result2 = createNodes( 2, session );
-        verify( connection1 ).release();
 
         assertEquals( 3, result1.list().size() );
         assertEquals( 2, result2.list().size() );
+
+        verify( connection1 ).tryMarkInUse();
+        verify( connection1, times( 2 ) ).release();
     }
 
     @Test
-    public void previousSessionRunResultIsBufferedBeforeStartingNewTransaction()
+    public void activeConnectionFromSessionRunCanBeReusedForNewTransaction()
     {
         Session session = driver.session();
 
         StatementResult result1 = createNodes( 3, session );
         AsyncConnection connection1 = connectionPool.lastAcquiredConnectionSpy;
-        verify( connection1, never() ).release();
 
         session.beginTransaction();
-        verify( connection1 ).release();
 
         assertEquals( 3, result1.list().size() );
+
+        verify( connection1 ).tryMarkInUse();
+        verify( connection1 ).release();
     }
 
     @Test
@@ -284,11 +286,13 @@ public class ConnectionHandlingIT
             session.run( "CREATE CONSTRAINT ON (book:Book) ASSERT exists(book.isbn)" );
         }
 
-        Session session = driver.session();
-
-        Transaction tx = session.beginTransaction();
         AsyncConnection connection1 = connectionPool.lastAcquiredConnectionSpy;
-        verify( connection1 ).release(); // connection previously used for constraint creation
+        verify( connection1 ).release(); // connection used for constraint creation
+
+        Session session = driver.session();
+        Transaction tx = session.beginTransaction();
+        AsyncConnection connection2 = connectionPool.lastAcquiredConnectionSpy;
+        verify( connection2, never() ).release();
 
         // property existence constraints are verified on commit, try to violate it
         tx.run( "CREATE (:Book)" );
@@ -304,10 +308,8 @@ public class ConnectionHandlingIT
             assertThat( e, instanceOf( ClientException.class ) );
         }
 
-        AsyncConnection connection2 = connectionPool.lastAcquiredConnectionSpy;
-        assertSame( connection1, connection2 );
-        // connection should have been closed twice: for constraint creation and for node creation
-        verify( connection1, times( 2 ) ).release();
+        // connection should have been released after failed node creation
+        verify( connection2 ).release();
     }
 
     private StatementResult createNodesInNewSession( int nodesToCreate )

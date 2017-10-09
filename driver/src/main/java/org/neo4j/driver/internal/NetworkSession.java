@@ -20,11 +20,13 @@ package org.neo4j.driver.internal;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.internal.async.AsyncConnection;
 import org.neo4j.driver.internal.async.Futures;
+import org.neo4j.driver.internal.async.InternalStatementResultCursor;
 import org.neo4j.driver.internal.async.QueryRunner;
 import org.neo4j.driver.internal.logging.DelegatingLogger;
 import org.neo4j.driver.internal.retry.RetryLogic;
@@ -62,6 +64,7 @@ public class NetworkSession implements Session
     private volatile Bookmark bookmark = Bookmark.empty();
     private volatile CompletionStage<ExplicitTransaction> transactionStage = completedFuture( null );
     private volatile CompletionStage<AsyncConnection> connectionStage = completedFuture( null );
+    private volatile CompletionStage<InternalStatementResultCursor> lastResultStage = completedFuture( null );
 
     private final AtomicBoolean open = new AtomicBoolean( true );
 
@@ -137,7 +140,8 @@ public class NetworkSession implements Session
     @Override
     public CompletionStage<StatementResultCursor> runAsync( Statement statement )
     {
-        return runAsync( statement, true );
+        //noinspection unchecked
+        return (CompletionStage) runAsync( statement, true );
     }
 
     @Override
@@ -149,17 +153,43 @@ public class NetworkSession implements Session
     @Override
     public void close()
     {
-        getBlocking( closeAsync() );
+        if ( open.compareAndSet( true, false ) )
+        {
+            // todo: should closeAsync() also do this waiting for buffered result?
+            // todo: unit test result buffering?
+            getBlocking( lastResultStage
+                    .exceptionally( error -> null )
+                    .thenCompose( this::ensureBuffered )
+                    .thenCompose( error -> forceReleaseResources().thenApply( ignore ->
+                    {
+                        if ( error != null )
+                        {
+                            throw new CompletionException( error );
+                        }
+                        return null;
+                    } ) ) );
+        }
     }
 
     @Override
     public CompletionStage<Void> closeAsync()
     {
+        // todo: wait for buffered result?
         if ( open.compareAndSet( true, false ) )
         {
             return forceReleaseResources();
         }
         return completedFuture( null );
+    }
+
+    // todo: test this method
+    CompletionStage<Throwable> ensureBuffered( InternalStatementResultCursor cursor )
+    {
+        if ( cursor == null )
+        {
+            return completedFuture( null );
+        }
+        return cursor.resultBuffered();
     }
 
     @Override
@@ -251,8 +281,17 @@ public class NetworkSession implements Session
         {
             try
             {
-                T result = work.execute( tx );
-                return completedFuture( result );
+                // todo: given lambda can't be executed in even loop thread because it deadlocks
+                // todo: event loop executes a blocking operation and waits for itself to read from the network
+                // todo: this is most likely what happens...
+
+                // todo: use of supplyAsync is a hack and it makes blocking API very different from 1.4
+                // todo: because we now execute function in FJP.commonPool()
+
+                // todo: bring back blocking retries with sleeps and etc. so that we execute TxWork in caller thread
+                return CompletableFuture.supplyAsync( () -> work.execute( tx ) );
+//                T result = work.execute( tx );
+//                return completedFuture( result );
             }
             catch ( Throwable error )
             {
@@ -364,23 +403,25 @@ public class NetworkSession implements Session
         }
     }
 
-    private CompletionStage<StatementResultCursor> runAsync( Statement statement, boolean waitForRunResponse )
+    private CompletionStage<InternalStatementResultCursor> runAsync( Statement statement, boolean waitForRunResponse )
     {
         ensureSessionIsOpen();
 
-        return ensureNoOpenTxBeforeRunningQuery()
+        lastResultStage = ensureNoOpenTxBeforeRunningQuery()
                 .thenCompose( ignore -> acquireConnection( mode ) )
                 .thenCompose( connection ->
                 {
                     if ( waitForRunResponse )
                     {
-                        return QueryRunner.runAsync( connection, statement );
+                        return QueryRunner.runAsAsync( connection, statement );
                     }
                     else
                     {
-                        return QueryRunner.runSync( connection, statement );
+                        return QueryRunner.runAsBlocking( connection, statement );
                     }
                 } );
+
+        return lastResultStage;
     }
 
     private CompletionStage<ExplicitTransaction> beginTransactionAsync( AccessMode mode )

@@ -272,7 +272,7 @@ public class ExplicitTransaction implements Transaction
     public StatementResult run( Statement statement )
     {
         ensureCanRunQueries();
-        StatementResultCursor cursor = getBlocking( QueryRunner.runSync( connection, statement, this ) );
+        StatementResultCursor cursor = getBlocking( QueryRunner.runAsBlocking( connection, statement, this ) );
         return new InternalStatementResult( cursor );
     }
 
@@ -280,7 +280,7 @@ public class ExplicitTransaction implements Transaction
     public CompletionStage<StatementResultCursor> runAsync( Statement statement )
     {
         ensureCanRunQueries();
-        return QueryRunner.runAsync( connection, statement, this );
+        return (CompletionStage) QueryRunner.runAsAsync( connection, statement, this );
     }
 
     @Override

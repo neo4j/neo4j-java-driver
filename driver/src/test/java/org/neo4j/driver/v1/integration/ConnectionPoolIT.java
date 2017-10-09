@@ -36,12 +36,10 @@ import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
-import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.exceptions.DatabaseException;
-import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.v1.exceptions.SessionExpiredException;
+import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static junit.framework.TestCase.fail;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -74,7 +72,7 @@ public class ConnectionPoolIT
     }
 
     @Test
-    public void shouldDisposeChannelsBasedOnMaxLifetime()
+    public void shouldDisposeChannelsBasedOnMaxLifetime() throws Exception
     {
         FakeClock clock = new FakeClock();
         ChannelTrackingDriverFactory driverFactory = new ChannelTrackingDriverFactory( clock );
@@ -84,29 +82,35 @@ public class ConnectionPoolIT
         RoutingSettings routingSettings = new RoutingSettings( 1, 1 );
         driver = driverFactory.newInstance( neo4j.uri(), neo4j.authToken(), routingSettings, DEFAULT, config );
 
-        // force driver create two channels and return them to the pool
-        startAndCloseSessions( driver, 3 );
+        // force driver create channel and return it to the pool
+        startAndCloseTransactions( driver, 1 );
 
-        // verify that two channels were created, they should be open and idle in the pool
+        // verify that channel was created, it should be open and idle in the pool
         List<Channel> channels1 = driverFactory.channels();
-        assertEquals( 3, channels1.size() );
+        assertEquals( 1, channels1.size() );
         assertTrue( channels1.get( 0 ).isActive() );
-        assertTrue( channels1.get( 1 ).isActive() );
-        assertTrue( channels1.get( 2 ).isActive() );
 
-        // move the clock forward so that two idle connections seem too old
+        // await channel to be returned to the pool
+        awaitNoActiveChannels( driverFactory, 20, SECONDS );
+        // move the clock forward so that idle channel seem too old
         clock.progress( TimeUnit.HOURS.toMillis( maxConnLifetimeHours + 1 ) );
 
         // force driver to acquire new connection and put it back to the pool
-        startAndCloseSessions( driver, 1 );
+        startAndCloseTransactions( driver, 1 );
 
-        // all existing channels should be closed because they are too old, new channel should be created
+        // old existing channel should not be reused because it is too old
         List<Channel> channels2 = driverFactory.channels();
-        assertEquals( 4, channels2.size() );
-        assertFalse( channels2.get( 0 ).isActive() );
-        assertFalse( channels2.get( 1 ).isActive() );
-        assertFalse( channels2.get( 2 ).isActive() );
-        assertTrue( channels2.get( 3 ).isActive() );
+        assertEquals( 2, channels2.size() );
+
+        Channel channel1 = channels2.get( 0 );
+        Channel channel2 = channels2.get( 1 );
+
+        // old existing should be closed in reasonable time
+        assertTrue( channel1.closeFuture().await( 20, SECONDS ) );
+        assertFalse( channel1.isActive() );
+
+        // new channel should remain open and idle in the pool
+        assertTrue( channel2.isActive() );
     }
 
     @After
@@ -123,18 +127,22 @@ public class ConnectionPoolIT
         }
     }
 
-    private static void startAndCloseSessions( Driver driver, int sessionCount )
+    private static void startAndCloseTransactions( Driver driver, int txCount )
     {
-        List<Session> sessions = new ArrayList<>( sessionCount );
-        List<StatementResult> results = new ArrayList<>( sessionCount );
+        List<Session> sessions = new ArrayList<>( txCount );
+        List<Transaction> transactions = new ArrayList<>( txCount );
+        List<StatementResult> results = new ArrayList<>( txCount );
         try
         {
-            for ( int i = 0; i < sessionCount; i++ )
+            for ( int i = 0; i < txCount; i++ )
             {
                 Session session = driver.session();
                 sessions.add( session );
 
-                StatementResult result = session.run( "RETURN 1" );
+                Transaction tx = session.beginTransaction();
+                transactions.add( tx );
+
+                StatementResult result = tx.run( "RETURN 1" );
                 results.add( result );
             }
         }
@@ -144,11 +152,36 @@ public class ConnectionPoolIT
             {
                 result.consume();
             }
+            for ( Transaction tx : transactions )
+            {
+                tx.success();
+                tx.close();
+            }
             for ( Session session : sessions )
             {
                 session.close();
             }
         }
+    }
+
+    private void awaitNoActiveChannels( ChannelTrackingDriverFactory driverFactory, long value, TimeUnit unit )
+            throws InterruptedException
+    {
+        long deadline = System.currentTimeMillis() + unit.toMillis( value );
+        int activeChannels = -1;
+        while ( System.currentTimeMillis() < deadline )
+        {
+            activeChannels = driverFactory.activeChannels( neo4j.address() );
+            if ( activeChannels == 0 )
+            {
+                return;
+            }
+            else
+            {
+                Thread.sleep( 100 );
+            }
+        }
+        throw new AssertionError( "Active channels present: " + activeChannels );
     }
 
     /**
@@ -185,21 +218,15 @@ public class ConnectionPoolIT
                     try
                     {
                         // Try and launch 8 concurrent sessions
-                        startAndCloseSessions( driver, 8 );
+                        startAndCloseTransactions( driver, 8 );
 
                         // Success! We created 8 sessions without failures
                         sessionsAreAvailable = true;
                     }
-                    catch ( ClientException | DatabaseException | SessionExpiredException |
-                            ServiceUnavailableException e )
-                    {
-                        lastExceptionFromDriver = e;
-                        sessionsAreAvailable = false;
-                    }
                     catch ( Throwable e )
                     {
                         lastExceptionFromDriver = e;
-                        throw new RuntimeException( e );
+                        sessionsAreAvailable = false;
                     }
                 }
             } finally
@@ -230,7 +257,7 @@ public class ConnectionPoolIT
         public void stop() throws InterruptedException
         {
             run = false;
-            stopped.await(10, TimeUnit.SECONDS );
+            stopped.await( 10, SECONDS );
         }
     }
 }

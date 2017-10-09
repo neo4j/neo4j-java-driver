@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal.util;
 
+import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 
 import java.util.ArrayList;
@@ -26,12 +27,16 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.async.AsyncConnector;
+import org.neo4j.driver.internal.async.BoltServerAddress;
+import org.neo4j.driver.internal.async.pool.AsyncConnectionPool;
 import org.neo4j.driver.internal.security.SecurityPlan;
+import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.Config;
 
 public class ChannelTrackingDriverFactory extends DriverFactoryWithClock
 {
     private final List<Channel> channels = new CopyOnWriteArrayList<>();
+    private AsyncConnectionPool pool;
 
     public ChannelTrackingDriverFactory( Clock clock )
     {
@@ -46,17 +51,30 @@ public class ChannelTrackingDriverFactory extends DriverFactoryWithClock
         return new ChannelTrackingConnector( connector, channels );
     }
 
+    @Override
+    protected AsyncConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan,
+            Bootstrap bootstrap, Config config )
+    {
+        pool = super.createConnectionPool( authToken, securityPlan, bootstrap, config );
+        return pool;
+    }
+
     public List<Channel> channels()
     {
         return new ArrayList<>( channels );
     }
 
-    public void closeConnections()
+    public void closeChannels()
     {
         for ( Channel channel : channels )
         {
             channel.close().syncUninterruptibly();
         }
         channels.clear();
+    }
+
+    public int activeChannels( BoltServerAddress address )
+    {
+        return pool == null ? 0 : pool.activeConnections( address );
     }
 }

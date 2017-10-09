@@ -101,11 +101,6 @@ public class ServerKilledIT
                     }
                 }
             }
-
-            if ( toleratedFailures > 0 )
-            {
-                fail( "This query should have failed " + toleratedFailures + " times" );
-            }
         }
     }
 

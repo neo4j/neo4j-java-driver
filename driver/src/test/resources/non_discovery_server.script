@@ -1,11 +1,10 @@
 !: AUTO INIT
 !: AUTO RESET
 !: AUTO PULL_ALL
+!: AUTO ACK_FAILURE
 
 C: RUN "CALL dbms.cluster.routing.getServers" {}
 C: PULL_ALL
 S: FAILURE {"code": "Neo.ClientError.Procedure.ProcedureNotFound", "message": "blabla"}
 S: IGNORED
-C: ACK_FAILURE
-S: SUCCESS {}
 S: <EXIT>

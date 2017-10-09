@@ -96,6 +96,9 @@ public class HandshakeResponseHandlerTest
 
         channel.pipeline().fireChannelRead( copyInt( PROTOCOL_VERSION_1 ) );
 
+        // handshake handler itself should be removed
+        assertNull( channel.pipeline().get( HandshakeResponseHandler.class ) );
+
         // all inbound handlers should be set
         assertNotNull( channel.pipeline().get( ChunkDecoder.class ) );
         assertNotNull( channel.pipeline().get( MessageDecoder.class ) );
@@ -133,6 +136,9 @@ public class HandshakeResponseHandlerTest
         channel.pipeline().addLast( handler );
 
         channel.pipeline().fireChannelRead( copyInt( serverSuggestedVersion ) );
+
+        // handshake handler itself should be removed
+        assertNull( channel.pipeline().get( HandshakeResponseHandler.class ) );
 
         try
         {

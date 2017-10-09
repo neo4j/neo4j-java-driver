@@ -244,7 +244,7 @@ public class CausalClusteringIT
             createNodesInDifferentThreads( concurrentSessionsCount, driver );
 
             // now pool contains many sessions, make them all invalid
-            driverFactory.closeConnections();
+            driverFactory.closeChannels();
             // move clock forward more than configured liveness check timeout
             clock.progress( TimeUnit.MINUTES.toMillis( livenessCheckTimeoutMinutes + 1 ) );
 

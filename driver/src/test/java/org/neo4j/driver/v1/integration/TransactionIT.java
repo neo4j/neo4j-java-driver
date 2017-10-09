@@ -242,9 +242,7 @@ public class TransactionIT
     {
         // Expect
         exception.expect( ClientException.class );
-        exception.expectMessage( "Cannot run more statements in this transaction, because previous statements in the " +
-                                 "transaction has failed and the transaction has been rolled back. Please start a new" +
-                                 " transaction to run another statement." );
+        exception.expectMessage( "Cannot run more statements in this transaction, it has been rolled back" );
         // When
         Transaction tx = session.beginTransaction();
         session.reset();

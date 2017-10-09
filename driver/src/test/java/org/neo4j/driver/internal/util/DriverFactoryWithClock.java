@@ -20,7 +20,6 @@ package org.neo4j.driver.internal.util;
 
 import org.neo4j.driver.internal.DriverFactory;
 
-// todo: remove this factory? it was useful when retries needed clock and sleep
 public class DriverFactoryWithClock extends DriverFactory
 {
     private final Clock clock;

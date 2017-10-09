@@ -36,9 +36,9 @@ public class NettyChannelPool extends FixedChannelPool
      */
     private static final int MAX_PENDING_ACQUIRES = Integer.MAX_VALUE;
     /**
-     * Check channels when they are returned to the pool.
+     * Do not check channels when they are returned to the pool.
      */
-    private static final boolean RELEASE_HEALTH_CHECK = true;
+    private static final boolean RELEASE_HEALTH_CHECK = false;
 
     private final BoltServerAddress address;
     private final AsyncConnector connector;

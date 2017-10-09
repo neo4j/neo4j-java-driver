@@ -111,6 +111,8 @@ public class Rediscovery
             else
             {
                 long nextDelay = Math.max( settings.retryTimeoutDelay(), previousDelay * 2 );
+                // todo: this will log even when retryTimes=1, fix by checking number of failures here and not inside
+                // lookupClusterComposition
                 logger.info( "Unable to fetch new routing table, will try again in " + nextDelay + "ms" );
                 eventExecutorGroup.next().schedule(
                         () -> lookupClusterComposition( routingTable, pool, failures + 1, nextDelay, result ),

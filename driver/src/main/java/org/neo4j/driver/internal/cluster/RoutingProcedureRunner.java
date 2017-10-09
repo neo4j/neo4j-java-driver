@@ -70,7 +70,7 @@ public class RoutingProcedureRunner
 
     CompletionStage<List<Record>> runProcedure( AsyncConnection connection, Statement procedure )
     {
-        return QueryRunner.runAsync( connection, procedure )
+        return QueryRunner.runAsAsync( connection, procedure )
                 .thenCompose( StatementResultCursor::listAsync );
     }
 

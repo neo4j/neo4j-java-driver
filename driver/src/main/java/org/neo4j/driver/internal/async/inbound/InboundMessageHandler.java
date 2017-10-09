@@ -29,6 +29,7 @@ import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
+import static io.netty.buffer.ByteBufUtil.prettyHexDump;
 import static org.neo4j.driver.internal.async.ChannelAttributes.messageDispatcher;
 
 public class InboundMessageHandler extends SimpleChannelInboundHandler<ByteBuf>
@@ -60,6 +61,12 @@ public class InboundMessageHandler extends SimpleChannelInboundHandler<ByteBuf>
         try
         {
             reader.read( messageDispatcher );
+        }
+        catch ( Throwable error )
+        {
+            // todo: test fatal error logging
+            log.error( "Fatal error while decoding inbound message:\n" + prettyHexDump( msg ), error );
+            throw error;
         }
         finally
         {

@@ -28,7 +28,6 @@ import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.handlers.SessionPullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.TransactionPullAllResponseHandler;
 import org.neo4j.driver.v1.Statement;
-import org.neo4j.driver.v1.StatementResultCursor;
 import org.neo4j.driver.v1.Value;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
@@ -41,30 +40,34 @@ public final class QueryRunner
     {
     }
 
-    public static CompletionStage<StatementResultCursor> runSync( AsyncConnection connection, Statement statement )
+    public static CompletionStage<InternalStatementResultCursor> runAsBlocking( AsyncConnection connection,
+            Statement statement )
     {
-        return runSync( connection, statement, null );
+        return runAsBlocking( connection, statement, null );
     }
 
-    public static CompletionStage<StatementResultCursor> runSync( AsyncConnection connection, Statement statement,
+    public static CompletionStage<InternalStatementResultCursor> runAsBlocking( AsyncConnection connection,
+            Statement statement,
             ExplicitTransaction tx )
     {
-        return runAsync( connection, statement, tx, false );
+        return runAsAsync( connection, statement, tx, false );
     }
 
-    public static CompletionStage<StatementResultCursor> runAsync( AsyncConnection connection, Statement statement )
+    public static CompletionStage<InternalStatementResultCursor> runAsAsync( AsyncConnection connection,
+            Statement statement )
     {
-        return runAsync( connection, statement, null );
+        return runAsAsync( connection, statement, null );
     }
 
-    public static CompletionStage<StatementResultCursor> runAsync( AsyncConnection connection, Statement statement,
+    public static CompletionStage<InternalStatementResultCursor> runAsAsync( AsyncConnection connection,
+            Statement statement,
             ExplicitTransaction tx )
     {
-        return runAsync( connection, statement, tx, true );
+        return runAsAsync( connection, statement, tx, true );
     }
 
-    private static CompletionStage<StatementResultCursor> runAsync( AsyncConnection connection, Statement statement,
-            ExplicitTransaction tx, boolean waitForRunResponse )
+    private static CompletionStage<InternalStatementResultCursor> runAsAsync( AsyncConnection connection,
+            Statement statement, ExplicitTransaction tx, boolean async )
     {
         String query = statement.text();
         Map<String,Value> params = statement.parameters().asMap( ofValue() );
@@ -75,12 +78,16 @@ public final class QueryRunner
 
         connection.runAndFlush( query, params, runHandler, pullAllHandler );
 
-        InternalStatementResultCursor cursor = new InternalStatementResultCursor( runHandler, pullAllHandler );
-        if ( waitForRunResponse )
+        if ( async )
         {
-            return runCompletedFuture.thenApply( ignore -> cursor );
+            // wait for response of RUN before proceeding when execution is async
+            return runCompletedFuture.thenApply( ignore ->
+                    InternalStatementResultCursor.forAsyncRun( runHandler, pullAllHandler ) );
         }
-        return completedFuture( cursor );
+        else
+        {
+            return completedFuture( InternalStatementResultCursor.forBlockingRun( runHandler, pullAllHandler ) );
+        }
     }
 
     private static PullAllResponseHandler newPullAllHandler( Statement statement, RunResponseHandler runHandler,

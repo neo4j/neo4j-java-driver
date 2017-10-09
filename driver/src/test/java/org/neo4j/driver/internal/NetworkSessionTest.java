@@ -68,6 +68,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.async.Futures.failedFuture;
+import static org.neo4j.driver.internal.async.Futures.getBlocking;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.v1.AccessMode.READ;
 import static org.neo4j.driver.v1.AccessMode.WRITE;
@@ -250,7 +251,7 @@ public class NetworkSessionTest
     {
         session.run( "RETURN 1" );
 
-        session.close();
+        getBlocking( session.closeAsync() );
 
         InOrder inOrder = inOrder( connection );
         inOrder.verify( connection ).runAndFlush( eq( "RETURN 1" ), any(), any(), any() );

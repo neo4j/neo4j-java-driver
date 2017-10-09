@@ -33,19 +33,34 @@ import org.neo4j.driver.v1.util.Consumer;
 import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.util.Functions;
 
-import static java.util.Objects.requireNonNull;
-
 public class InternalStatementResultCursor implements StatementResultCursor
 {
+    // todo: maybe smth better than these two string constants?
+    private static final String BLOCKING_NAME = "result";
+    private static final String ASYNC_NAME = "cursor";
+
+    private final String name;
     private final RunResponseHandler runResponseHandler;
     private final PullAllResponseHandler pullAllHandler;
 
-    private CompletionStage<Record> peekedRecordFuture;
-
-    public InternalStatementResultCursor( RunResponseHandler runResponseHandler, PullAllResponseHandler pullAllHandler )
+    private InternalStatementResultCursor( String name, RunResponseHandler runResponseHandler,
+            PullAllResponseHandler pullAllHandler )
     {
-        this.runResponseHandler = requireNonNull( runResponseHandler );
-        this.pullAllHandler = requireNonNull( pullAllHandler );
+        this.name = name;
+        this.runResponseHandler = runResponseHandler;
+        this.pullAllHandler = pullAllHandler;
+    }
+
+    public static InternalStatementResultCursor forBlockingRun( RunResponseHandler runResponseHandler,
+            PullAllResponseHandler pullAllHandler )
+    {
+        return new InternalStatementResultCursor( BLOCKING_NAME, runResponseHandler, pullAllHandler );
+    }
+
+    public static InternalStatementResultCursor forAsyncRun( RunResponseHandler runResponseHandler,
+            PullAllResponseHandler pullAllHandler )
+    {
+        return new InternalStatementResultCursor( ASYNC_NAME, runResponseHandler, pullAllHandler );
     }
 
     @Override
@@ -63,26 +78,13 @@ public class InternalStatementResultCursor implements StatementResultCursor
     @Override
     public CompletionStage<Record> nextAsync()
     {
-        if ( peekedRecordFuture != null )
-        {
-            CompletionStage<Record> result = peekedRecordFuture;
-            peekedRecordFuture = null;
-            return result;
-        }
-        else
-        {
-            return pullAllHandler.nextAsync();
-        }
+        return pullAllHandler.nextAsync();
     }
 
     @Override
     public CompletionStage<Record> peekAsync()
     {
-        if ( peekedRecordFuture == null )
-        {
-            peekedRecordFuture = pullAllHandler.nextAsync();
-        }
-        return peekedRecordFuture;
+        return pullAllHandler.peekAsync();
     }
 
     @Override
@@ -92,15 +94,17 @@ public class InternalStatementResultCursor implements StatementResultCursor
         {
             if ( firstRecord == null )
             {
-                throw new NoSuchRecordException( "Cannot retrieve a single record, because this cursor is empty." );
+                throw new NoSuchRecordException(
+                        "Cannot retrieve a single record, because this " + name + " is empty." );
             }
             return nextAsync().thenApply( secondRecord ->
             {
                 if ( secondRecord != null )
                 {
-                    throw new NoSuchRecordException( "Expected a cursor with a single record, but this cursor " +
-                                                     "contains at least one more. Ensure your query returns only " +
-                                                     "one record." );
+                    throw new NoSuchRecordException(
+                            "Expected a " + name + " with a single record, but this " + name + " " +
+                            "contains at least one more. Ensure your query returns only " +
+                            "one record." );
                 }
                 return firstRecord;
             } );
@@ -135,6 +139,12 @@ public class InternalStatementResultCursor implements StatementResultCursor
         CompletableFuture<List<T>> resultFuture = new CompletableFuture<>();
         internalListAsync( new ArrayList<>(), resultFuture, mapFunction );
         return resultFuture;
+    }
+
+    // todo: test this method and give it better name
+    public CompletionStage<Throwable> resultBuffered()
+    {
+        return pullAllHandler.resultBuffered();
     }
 
     private void internalForEachAsync( Consumer<Record> action, CompletableFuture<Void> resultFuture )

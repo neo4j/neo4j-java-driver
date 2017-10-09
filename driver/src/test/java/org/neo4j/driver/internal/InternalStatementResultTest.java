@@ -37,6 +37,7 @@ import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.StatementResultCursor;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
 import org.neo4j.driver.v1.util.Pair;
@@ -407,7 +408,8 @@ public class InternalStatementResultTest
         }
         pullAllHandler.onSuccess( emptyMap() );
 
-        return new InternalStatementResult( new InternalStatementResultCursor( runHandler, pullAllHandler ) );
+        StatementResultCursor cursor = InternalStatementResultCursor.forBlockingRun( runHandler, pullAllHandler );
+        return new InternalStatementResult( cursor );
     }
 
     private List<Value> values( Record record )
