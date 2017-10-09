@@ -45,6 +45,8 @@ public final class ProtocolUtil
 
     private static final ByteBuf MESSAGE_BOUNDARY_BUF = unreleasableBuffer( copyShort( 0 ) ).asReadOnly();
 
+    private static final ByteBuf CHUNK_HEADER_PLACEHOLDER_BUF = unreleasableBuffer( copyShort( 0 ) ).asReadOnly();
+
     private ProtocolUtil()
     {
     }
@@ -57,5 +59,10 @@ public final class ProtocolUtil
     public static ByteBuf messageBoundary()
     {
         return MESSAGE_BOUNDARY_BUF.duplicate();
+    }
+
+    public static ByteBuf chunkHeaderPlaceholder()
+    {
+        return CHUNK_HEADER_PLACEHOLDER_BUF.duplicate();
     }
 }
