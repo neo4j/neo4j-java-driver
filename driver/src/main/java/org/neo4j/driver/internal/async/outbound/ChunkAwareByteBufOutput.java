@@ -25,6 +25,7 @@ import org.neo4j.driver.internal.packstream.PackOutput;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.driver.internal.async.ProtocolUtil.CHUNK_HEADER_SIZE_BYTES;
 import static org.neo4j.driver.internal.async.ProtocolUtil.DEFAULT_MAX_OUTBOUND_CHUNK_SIZE_BYTES;
+import static org.neo4j.driver.internal.async.ProtocolUtil.chunkHeaderPlaceholder;
 
 public class ChunkAwareByteBufOutput implements PackOutput
 {
@@ -130,18 +131,6 @@ public class ChunkAwareByteBufOutput implements PackOutput
         return this;
     }
 
-    @Override
-    public Runnable messageBoundaryHook()
-    {
-        return new Runnable()
-        {
-            @Override
-            public void run()
-            {
-            }
-        };
-    }
-
     private void ensureCanFitInCurrentChunk( int numberOfBytes )
     {
         int targetChunkSize = currentChunkSize + numberOfBytes;
@@ -155,7 +144,7 @@ public class ChunkAwareByteBufOutput implements PackOutput
     private void startNewChunk( int index )
     {
         currentChunkStartIndex = index;
-        buf.writerIndex( currentChunkStartIndex + CHUNK_HEADER_SIZE_BYTES );
+        buf.writeBytes( chunkHeaderPlaceholder() );
         currentChunkSize = CHUNK_HEADER_SIZE_BYTES;
     }
 

@@ -28,12 +28,10 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.driver.internal.async.AsyncConnection;
-import org.neo4j.driver.internal.async.pool.AsyncConnectionPool;
-import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.async.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
-import org.neo4j.driver.internal.util.Clock;
+import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.exceptions.SecurityException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
@@ -47,7 +45,6 @@ public class Rediscovery
 
     private final BoltServerAddress initialRouter;
     private final RoutingSettings settings;
-    private final Clock clock;
     private final Logger logger;
     private final ClusterCompositionProvider provider;
     private final HostNameResolver hostNameResolver;
@@ -56,20 +53,18 @@ public class Rediscovery
     private volatile boolean useInitialRouter;
 
     public Rediscovery( BoltServerAddress initialRouter, RoutingSettings settings, ClusterCompositionProvider provider,
-            EventExecutorGroup eventExecutorGroup, HostNameResolver hostNameResolver, Clock clock, Logger logger )
+            EventExecutorGroup eventExecutorGroup, HostNameResolver hostNameResolver, Logger logger )
     {
-        // todo: set useInitialRouter to true when driver only does async
-        this( initialRouter, settings, provider, hostNameResolver, eventExecutorGroup, clock, logger, false );
+        this( initialRouter, settings, provider, hostNameResolver, eventExecutorGroup, logger, true );
     }
 
     // Test-only constructor
     public Rediscovery( BoltServerAddress initialRouter, RoutingSettings settings, ClusterCompositionProvider provider,
-            HostNameResolver hostNameResolver, EventExecutorGroup eventExecutorGroup, Clock clock, Logger logger,
+            HostNameResolver hostNameResolver, EventExecutorGroup eventExecutorGroup, Logger logger,
             boolean useInitialRouter )
     {
         this.initialRouter = initialRouter;
         this.settings = settings;
-        this.clock = clock;
         this.logger = logger;
         this.provider = provider;
         this.hostNameResolver = hostNameResolver;
@@ -82,41 +77,18 @@ public class Rediscovery
      * cluster composition, which would be used to update the routing table and connection pool.
      *
      * @param routingTable current routing table.
-     * @param connections connection pool.
+     * @param connectionPool connection pool.
      * @return new cluster composition.
      */
-    public ClusterComposition lookupClusterComposition( RoutingTable routingTable, ConnectionPool connections )
-    {
-        int failures = 0;
-
-        for ( long start = clock.millis(), delay = 0; ; delay = Math.max( settings.retryTimeoutDelay(), delay * 2 ) )
-        {
-            long waitTime = start + delay - clock.millis();
-            sleep( waitTime );
-            start = clock.millis();
-
-            ClusterComposition composition = lookup( routingTable, connections );
-            if ( composition != null )
-            {
-                return composition;
-            }
-
-            if ( ++failures >= settings.maxRoutingFailures() )
-            {
-                throw new ServiceUnavailableException( NO_ROUTERS_AVAILABLE );
-            }
-        }
-    }
-
-    public CompletionStage<ClusterComposition> lookupClusterCompositionAsync( RoutingTable routingTable,
-            AsyncConnectionPool connectionPool )
+    public CompletionStage<ClusterComposition> lookupClusterComposition( RoutingTable routingTable,
+            ConnectionPool connectionPool )
     {
         CompletableFuture<ClusterComposition> result = new CompletableFuture<>();
         lookupClusterComposition( routingTable, connectionPool, 0, 0, result );
         return result;
     }
 
-    private void lookupClusterComposition( RoutingTable routingTable, AsyncConnectionPool pool,
+    private void lookupClusterComposition( RoutingTable routingTable, ConnectionPool pool,
             int failures, long previousDelay, CompletableFuture<ClusterComposition> result )
     {
         if ( failures >= settings.maxRoutingFailures() )
@@ -125,8 +97,9 @@ public class Rediscovery
             return;
         }
 
-        lookupAsync( routingTable, pool ).whenComplete( ( composition, error ) ->
+        lookup( routingTable, pool ).whenComplete( ( composition, completionError ) ->
         {
+            Throwable error = Futures.completionErrorCause( completionError );
             if ( error != null )
             {
                 result.completeExceptionally( error );
@@ -138,6 +111,8 @@ public class Rediscovery
             else
             {
                 long nextDelay = Math.max( settings.retryTimeoutDelay(), previousDelay * 2 );
+                // todo: this will log even when retryTimes=1, fix by checking number of failures here and not inside
+                // lookupClusterComposition
                 logger.info( "Unable to fetch new routing table, will try again in " + nextDelay + "ms" );
                 eventExecutorGroup.next().schedule(
                         () -> lookupClusterComposition( routingTable, pool, failures + 1, nextDelay, result ),
@@ -147,41 +122,18 @@ public class Rediscovery
         } );
     }
 
-    private ClusterComposition lookup( RoutingTable routingTable, ConnectionPool connections )
-    {
-        ClusterComposition composition;
-
-        if ( useInitialRouter )
-        {
-            composition = lookupOnInitialRouterThenOnKnownRouters( routingTable, connections );
-            useInitialRouter = false;
-        }
-        else
-        {
-            composition = lookupOnKnownRoutersThenOnInitialRouter( routingTable, connections );
-        }
-
-        if ( composition != null && !composition.hasWriters() )
-        {
-            useInitialRouter = true;
-        }
-
-        return composition;
-    }
-
-    private CompletionStage<ClusterComposition> lookupAsync( RoutingTable routingTable,
-            AsyncConnectionPool connectionPool )
+    private CompletionStage<ClusterComposition> lookup( RoutingTable routingTable, ConnectionPool connectionPool )
     {
         CompletionStage<ClusterComposition> compositionStage;
 
         if ( useInitialRouter )
         {
-            compositionStage = lookupOnInitialRouterThenOnKnownRoutersAsync( routingTable, connectionPool );
+            compositionStage = lookupOnInitialRouterThenOnKnownRouters( routingTable, connectionPool );
             useInitialRouter = false;
         }
         else
         {
-            compositionStage = lookupOnKnownRoutersThenOnInitialRouterAsync( routingTable, connectionPool );
+            compositionStage = lookupOnKnownRoutersThenOnInitialRouter( routingTable, connectionPool );
         }
 
         return compositionStage.whenComplete( ( composition, error ) ->
@@ -193,81 +145,36 @@ public class Rediscovery
         } );
     }
 
-    private ClusterComposition lookupOnKnownRoutersThenOnInitialRouter( RoutingTable routingTable,
-            ConnectionPool connections )
+    private CompletionStage<ClusterComposition> lookupOnKnownRoutersThenOnInitialRouter( RoutingTable routingTable,
+            ConnectionPool connectionPool )
     {
         Set<BoltServerAddress> seenServers = new HashSet<>();
-        ClusterComposition composition = lookupOnKnownRouters( routingTable, connections, seenServers );
-        if ( composition == null )
-        {
-            return lookupOnInitialRouter( routingTable, connections, seenServers );
-        }
-        return composition;
-    }
-
-    private CompletionStage<ClusterComposition> lookupOnKnownRoutersThenOnInitialRouterAsync( RoutingTable routingTable,
-            AsyncConnectionPool connectionPool )
-    {
-        Set<BoltServerAddress> seenServers = new HashSet<>();
-        return lookupOnKnownRoutersAsync( routingTable, connectionPool, seenServers ).thenCompose( composition ->
+        return lookupOnKnownRouters( routingTable, connectionPool, seenServers ).thenCompose( composition ->
         {
             if ( composition != null )
             {
                 return completedFuture( composition );
             }
-            return lookupOnInitialRouterAsync( routingTable, connectionPool, seenServers );
+            return lookupOnInitialRouter( routingTable, connectionPool, seenServers );
         } );
     }
 
-    private ClusterComposition lookupOnInitialRouterThenOnKnownRouters( RoutingTable routingTable,
-            ConnectionPool connections )
+    private CompletionStage<ClusterComposition> lookupOnInitialRouterThenOnKnownRouters( RoutingTable routingTable,
+            ConnectionPool connectionPool )
     {
         Set<BoltServerAddress> seenServers = Collections.emptySet();
-        ClusterComposition composition = lookupOnInitialRouter( routingTable, connections, seenServers );
-        if ( composition == null )
-        {
-            return lookupOnKnownRouters( routingTable, connections, new HashSet<BoltServerAddress>() );
-        }
-        return composition;
-    }
-
-    private CompletionStage<ClusterComposition> lookupOnInitialRouterThenOnKnownRoutersAsync( RoutingTable routingTable,
-            AsyncConnectionPool connectionPool )
-    {
-        Set<BoltServerAddress> seenServers = Collections.emptySet();
-        return lookupOnInitialRouterAsync( routingTable, connectionPool, seenServers ).thenCompose( composition ->
+        return lookupOnInitialRouter( routingTable, connectionPool, seenServers ).thenCompose( composition ->
         {
             if ( composition != null )
             {
                 return completedFuture( composition );
             }
-            return lookupOnKnownRoutersAsync( routingTable, connectionPool, new HashSet<>() );
+            return lookupOnKnownRouters( routingTable, connectionPool, new HashSet<>() );
         } );
     }
 
-    private ClusterComposition lookupOnKnownRouters( RoutingTable routingTable, ConnectionPool connections,
-            Set<BoltServerAddress> seenServers )
-    {
-        BoltServerAddress[] addresses = routingTable.routers().toArray();
-
-        for ( BoltServerAddress address : addresses )
-        {
-            ClusterComposition composition = lookupOnRouter( address, routingTable, connections );
-            if ( composition != null )
-            {
-                return composition;
-            }
-            else
-            {
-                seenServers.add( address );
-            }
-        }
-
-        return null;
-    }
-
-    private CompletionStage<ClusterComposition> lookupOnKnownRoutersAsync( RoutingTable routingTable,
-            AsyncConnectionPool connectionPool, Set<BoltServerAddress> seenServers )
+    private CompletionStage<ClusterComposition> lookupOnKnownRouters( RoutingTable routingTable,
+            ConnectionPool connectionPool, Set<BoltServerAddress> seenServers )
     {
         BoltServerAddress[] addresses = routingTable.routers().toArray();
 
@@ -282,7 +189,7 @@ public class Rediscovery
                 }
                 else
                 {
-                    return lookupOnRouterAsync( address, routingTable, connectionPool )
+                    return lookupOnRouter( address, routingTable, connectionPool )
                             .whenComplete( ( ignore, error ) -> seenServers.add( address ) );
                 }
             } );
@@ -290,25 +197,8 @@ public class Rediscovery
         return result;
     }
 
-    private ClusterComposition lookupOnInitialRouter( RoutingTable routingTable,
-            ConnectionPool connections, Set<BoltServerAddress> seenServers )
-    {
-        Set<BoltServerAddress> ips = hostNameResolver.resolve( initialRouter );
-        ips.removeAll( seenServers );
-        for ( BoltServerAddress address : ips )
-        {
-            ClusterComposition composition = lookupOnRouter( address, routingTable, connections );
-            if ( composition != null )
-            {
-                return composition;
-            }
-        }
-
-        return null;
-    }
-
-    private CompletionStage<ClusterComposition> lookupOnInitialRouterAsync( RoutingTable routingTable,
-            AsyncConnectionPool connectionPool, Set<BoltServerAddress> seenServers )
+    private CompletionStage<ClusterComposition> lookupOnInitialRouter( RoutingTable routingTable,
+            ConnectionPool connectionPool, Set<BoltServerAddress> seenServers )
     {
         Set<BoltServerAddress> addresses = hostNameResolver.resolve( initialRouter );
         addresses.removeAll( seenServers );
@@ -322,48 +212,23 @@ public class Rediscovery
                 {
                     return completedFuture( composition );
                 }
-                return lookupOnRouterAsync( address, routingTable, connectionPool );
+                return lookupOnRouter( address, routingTable, connectionPool );
             } );
         }
         return result;
     }
 
-    private ClusterComposition lookupOnRouter( BoltServerAddress routerAddress, RoutingTable routingTable,
-            ConnectionPool connections )
+    private CompletionStage<ClusterComposition> lookupOnRouter( BoltServerAddress routerAddress,
+            RoutingTable routingTable, ConnectionPool connectionPool )
     {
-        ClusterCompositionResponse response;
-        try ( Connection connection = connections.acquire( routerAddress ) )
-        {
-            response = provider.getClusterComposition( connection );
-        }
-        catch ( SecurityException e )
-        {
-            // auth error happened, terminate the discovery procedure immediately
-            throw e;
-        }
-        catch ( Throwable t )
-        {
-            // connection turned out to be broken
-            logger.error( format( "Failed to connect to routing server '%s'.", routerAddress ), t );
-            routingTable.forget( routerAddress );
-            return null;
-        }
-
-        ClusterComposition cluster = response.clusterComposition();
-        logger.info( "Got cluster composition %s", cluster );
-        return cluster;
-    }
-
-    private CompletionStage<ClusterComposition> lookupOnRouterAsync( BoltServerAddress routerAddress,
-            RoutingTable routingTable, AsyncConnectionPool connectionPool )
-    {
-        CompletionStage<AsyncConnection> connectionStage = connectionPool.acquire( routerAddress );
+        CompletionStage<Connection> connectionStage = connectionPool.acquire( routerAddress );
 
         return provider.getClusterComposition( connectionStage ).handle( ( response, error ) ->
         {
-            if ( error != null )
+            Throwable cause = Futures.completionErrorCause( error );
+            if ( cause != null )
             {
-                return handleRoutingProcedureError( error, routingTable, routerAddress );
+                return handleRoutingProcedureError( cause, routingTable, routerAddress );
             }
             else
             {
@@ -391,20 +256,4 @@ public class Rediscovery
         }
     }
 
-    private void sleep( long millis )
-    {
-        if ( millis > 0 )
-        {
-            try
-            {
-                clock.sleep( millis );
-            }
-            catch ( InterruptedException e )
-            {
-                // restore the interrupted status
-                Thread.currentThread().interrupt();
-                throw new ServiceUnavailableException( "Thread was interrupted while performing discovery", e );
-            }
-        }
-    }
 }

@@ -18,17 +18,13 @@
  */
 package org.neo4j.driver.internal;
 
-import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiConsumer;
 
-import org.neo4j.driver.ResultResourcesHandler;
-import org.neo4j.driver.internal.async.AsyncConnection;
 import org.neo4j.driver.internal.async.QueryRunner;
 import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
-import org.neo4j.driver.internal.handlers.BookmarkResponseHandler;
 import org.neo4j.driver.internal.handlers.CommitTxResponseHandler;
 import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
 import org.neo4j.driver.internal.handlers.RollbackTxResponseHandler;
@@ -42,17 +38,16 @@ import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.types.TypeSystem;
 
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.CompletableFuture.completedFuture;
-import static org.neo4j.driver.internal.async.Futures.failedFuture;
 import static org.neo4j.driver.internal.util.ErrorUtil.isRecoverable;
-import static org.neo4j.driver.v1.Values.ofValue;
+import static org.neo4j.driver.internal.util.Futures.failedFuture;
+import static org.neo4j.driver.internal.util.Futures.getBlocking;
 import static org.neo4j.driver.v1.Values.value;
 
-public class ExplicitTransaction implements Transaction, ResultResourcesHandler
+public class ExplicitTransaction implements Transaction
 {
     private static final String BEGIN_QUERY = "BEGIN";
     private static final String COMMIT_QUERY = "COMMIT";
@@ -82,54 +77,29 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
         ROLLED_BACK
     }
 
-    private final SessionResourcesHandler resourcesHandler;
     private final Connection connection;
-    private final AsyncConnection asyncConnection;
     private final NetworkSession session;
 
     private volatile Bookmark bookmark = Bookmark.empty();
     private volatile State state = State.ACTIVE;
 
-    public ExplicitTransaction( Connection connection, SessionResourcesHandler resourcesHandler )
+    public ExplicitTransaction( Connection connection, NetworkSession session )
     {
         this.connection = connection;
-        this.asyncConnection = null;
-        this.session = null;
-        this.resourcesHandler = resourcesHandler;
-    }
-
-    public ExplicitTransaction( AsyncConnection asyncConnection, NetworkSession session )
-    {
-        this.connection = null;
-        this.asyncConnection = asyncConnection;
         this.session = session;
-        this.resourcesHandler = SessionResourcesHandler.NO_OP;
-    }
-
-    public void begin( Bookmark initialBookmark )
-    {
-        Map<String,Value> parameters = initialBookmark.asBeginTransactionParameters();
-
-        connection.run( BEGIN_QUERY, parameters, NoOpResponseHandler.INSTANCE );
-        connection.pullAll( NoOpResponseHandler.INSTANCE );
-
-        if ( !initialBookmark.isEmpty() )
-        {
-            connection.sync();
-        }
     }
 
     public CompletionStage<ExplicitTransaction> beginAsync( Bookmark initialBookmark )
     {
         if ( initialBookmark.isEmpty() )
         {
-            asyncConnection.run( BEGIN_QUERY, emptyMap(), NoOpResponseHandler.INSTANCE, NoOpResponseHandler.INSTANCE );
+            connection.run( BEGIN_QUERY, emptyMap(), NoOpResponseHandler.INSTANCE, NoOpResponseHandler.INSTANCE );
             return completedFuture( this );
         }
         else
         {
             CompletableFuture<ExplicitTransaction> beginFuture = new CompletableFuture<>();
-            asyncConnection.runAndFlush( BEGIN_QUERY, initialBookmark.asBeginTransactionParameters(),
+            connection.runAndFlush( BEGIN_QUERY, initialBookmark.asBeginTransactionParameters(),
                     NoOpResponseHandler.INSTANCE, new BeginTxResponseHandler<>( beginFuture, this ) );
             return beginFuture;
         }
@@ -156,58 +126,30 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
     @Override
     public void close()
     {
-        try
-        {
-            if ( connection != null && connection.isOpen() )
-            {
-                if ( state == State.MARKED_SUCCESS )
-                {
-                    try
-                    {
-                        connection.run( COMMIT_QUERY, Collections.<String,Value>emptyMap(),
-                                NoOpResponseHandler.INSTANCE );
-                        connection.pullAll( new BookmarkResponseHandler( this ) );
-                        connection.sync();
-                        state = State.COMMITTED;
-                    }
-                    catch ( Throwable e )
-                    {
-                        // failed to commit
-                        try
-                        {
-                            rollbackTx();
-                        }
-                        catch ( Throwable ignored )
-                        {
-                            // best effort.
-                        }
-                        throw e;
-                    }
-                }
-                else if ( state == State.MARKED_FAILED || state == State.ACTIVE )
-                {
-                    rollbackTx();
-                }
-                else if ( state == State.FAILED )
-                {
-                    // unrecoverable error happened, transaction should've been rolled back on the server
-                    // update state so that this transaction does not remain open
-                    state = State.ROLLED_BACK;
-                }
-            }
-        }
-        finally
-        {
-            resourcesHandler.onTransactionClosed( this );
-        }
+        getBlocking( closeAsync() );
     }
 
-    private void rollbackTx()
+    CompletionStage<Void> closeAsync()
     {
-        connection.run( ROLLBACK_QUERY, Collections.<String,Value>emptyMap(), NoOpResponseHandler.INSTANCE );
-        connection.pullAll( new BookmarkResponseHandler( this ) );
-        connection.sync();
-        state = State.ROLLED_BACK;
+        if ( state == State.MARKED_SUCCESS )
+        {
+            return commitAsync();
+        }
+        else if ( state == State.MARKED_FAILED || state == State.ACTIVE )
+        {
+            return rollbackAsync();
+        }
+        else if ( state == State.FAILED )
+        {
+            // unrecoverable error happened, transaction should've been rolled back on the server
+            // update state so that this transaction does not remain open
+            state = State.ROLLED_BACK;
+            return completedFuture( null );
+        }
+        else
+        {
+            return completedFuture( null );
+        }
     }
 
     @Override
@@ -223,7 +165,7 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
         }
         else
         {
-            return doCommitAsync().whenComplete( releaseConnectionAndNotifySession() );
+            return doCommitAsync().whenComplete( transactionClosed( State.COMMITTED ) );
         }
     }
 
@@ -240,43 +182,37 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
         }
         else
         {
-            return doRollbackAsync().whenComplete( releaseConnectionAndNotifySession() );
+            return doRollbackAsync().whenComplete( transactionClosed( State.ROLLED_BACK ) );
         }
     }
 
-    private BiConsumer<Void,Throwable> releaseConnectionAndNotifySession()
+    private BiConsumer<Void,Throwable> transactionClosed( State newState )
     {
         return ( ignore, error ) ->
         {
-            asyncConnection.release();
-            session.asyncTransactionClosed( ExplicitTransaction.this );
+            // todo: test that this state transition always happens when commit or rollback
+            state = newState;
+            connection.release();
+            session.setBookmark( bookmark );
         };
     }
 
     private CompletionStage<Void> doCommitAsync()
     {
         CompletableFuture<Void> commitFuture = new CompletableFuture<>();
-        asyncConnection.runAndFlush( COMMIT_QUERY, emptyMap(), NoOpResponseHandler.INSTANCE,
+        connection.runAndFlush( COMMIT_QUERY, emptyMap(), NoOpResponseHandler.INSTANCE,
                 new CommitTxResponseHandler( commitFuture, this ) );
 
-        return commitFuture.thenApply( ignore ->
-        {
-            ExplicitTransaction.this.state = State.COMMITTED;
-            return null;
-        } );
+        return commitFuture.thenRun( () -> state = State.COMMITTED );
     }
 
     private CompletionStage<Void> doRollbackAsync()
     {
         CompletableFuture<Void> rollbackFuture = new CompletableFuture<>();
-        asyncConnection.runAndFlush( ROLLBACK_QUERY, emptyMap(), NoOpResponseHandler.INSTANCE,
+        connection.runAndFlush( ROLLBACK_QUERY, emptyMap(), NoOpResponseHandler.INSTANCE,
                 new RollbackTxResponseHandler( rollbackFuture ) );
 
-        return rollbackFuture.thenApply( ignore ->
-        {
-            ExplicitTransaction.this.state = State.ROLLED_BACK;
-            return null;
-        } );
+        return rollbackFuture.thenRun( () -> state = State.ROLLED_BACK );
     }
 
     @Override
@@ -335,33 +271,16 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
     @Override
     public StatementResult run( Statement statement )
     {
-        ensureNotFailed();
-
-        try
-        {
-            InternalStatementResult result =
-                    new InternalStatementResult( statement, connection, ResultResourcesHandler.NO_OP );
-            connection.run( statement.text(),
-                    statement.parameters().asMap( ofValue() ),
-                    result.runResponseHandler() );
-            connection.pullAll( result.pullAllResponseHandler() );
-            connection.flush();
-            return result;
-        }
-        catch ( Neo4jException e )
-        {
-            // Failed to send messages to the server probably due to IOException in the socket.
-            // So we should stop sending more messages in this transaction
-            state = State.FAILED;
-            throw e;
-        }
+        ensureCanRunQueries();
+        StatementResultCursor cursor = getBlocking( QueryRunner.runAsBlocking( connection, statement, this ) );
+        return new InternalStatementResult( cursor );
     }
 
     @Override
     public CompletionStage<StatementResultCursor> runAsync( Statement statement )
     {
-        ensureNotFailed();
-        return QueryRunner.runAsync( asyncConnection, statement, this );
+        ensureCanRunQueries();
+        return (CompletionStage) QueryRunner.runAsAsync( connection, statement, this );
     }
 
     @Override
@@ -370,9 +289,18 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
         return state != State.COMMITTED && state != State.ROLLED_BACK;
     }
 
-    private void ensureNotFailed()
+    private void ensureCanRunQueries()
     {
-        if ( state == State.FAILED || state == State.MARKED_FAILED || state == State.ROLLED_BACK )
+        // todo: test these two new branches
+        if ( state == State.COMMITTED )
+        {
+            throw new ClientException( "Cannot run more statements in this transaction, it has been committed" );
+        }
+        else if ( state == State.ROLLED_BACK )
+        {
+            throw new ClientException( "Cannot run more statements in this transaction, it has been rolled back" );
+        }
+        else if ( state == State.FAILED || state == State.MARKED_FAILED )
         {
             throw new ClientException(
                     "Cannot run more statements in this transaction, because previous statements in the " +
@@ -388,16 +316,8 @@ public class ExplicitTransaction implements Transaction, ResultResourcesHandler
         return InternalTypeSystem.TYPE_SYSTEM;
     }
 
-    @Override
-    public void resultFetched()
-    {
-        // no resources to release when result is fully fetched
-    }
-
-    @Override
     public void resultFailed( Throwable error )
     {
-        // RUN failed, this transaction should not commit
         if ( isRecoverable( error ) )
         {
             failure();

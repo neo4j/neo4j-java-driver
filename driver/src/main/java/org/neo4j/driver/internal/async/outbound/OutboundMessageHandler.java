@@ -64,6 +64,12 @@ public class OutboundMessageHandler extends MessageToMessageEncoder<Message>
         {
             writer.write( msg );
         }
+        catch ( Throwable error )
+        {
+            // todo: test fatal error logging
+            log.error( "Fatal error while encoding outbound message: " + msg, error );
+            throw error;
+        }
         finally
         {
             output.stop();

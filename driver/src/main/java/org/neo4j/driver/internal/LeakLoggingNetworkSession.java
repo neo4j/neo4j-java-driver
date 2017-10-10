@@ -20,6 +20,7 @@ package org.neo4j.driver.internal;
 
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
+import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Logging;
 
@@ -45,14 +46,14 @@ class LeakLoggingNetworkSession extends NetworkSession
 
     private void logLeakIfNeeded()
     {
-        if ( currentConnectionIsOpen() )
+        Boolean isOpen = Futures.getBlocking( currentConnectionIsOpen() );
+        if ( isOpen )
         {
             logger.error( "Neo4j Session object leaked, please ensure that your application" +
                           "calls the `close` method on Sessions before disposing of the objects.\n" +
                           "Session was create at:\n" + stackTrace, null );
         }
     }
-
     private static String captureStackTrace()
     {
         StringBuilder result = new StringBuilder();

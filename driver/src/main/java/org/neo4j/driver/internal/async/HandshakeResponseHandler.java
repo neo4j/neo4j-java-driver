@@ -22,9 +22,11 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
+import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.ReplayingDecoder;
 
 import java.util.List;
+import javax.net.ssl.SSLHandshakeException;
 
 import org.neo4j.driver.internal.async.inbound.ChunkDecoder;
 import org.neo4j.driver.internal.async.inbound.InboundMessageHandler;
@@ -35,6 +37,7 @@ import org.neo4j.driver.internal.messaging.PackStreamMessageFormatV1;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.SecurityException;
 
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.driver.internal.async.ProtocolUtil.HTTP;
@@ -54,25 +57,35 @@ public class HandshakeResponseHandler extends ReplayingDecoder<Void>
     }
 
     @Override
-    public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause )
+    public void exceptionCaught( ChannelHandlerContext ctx, Throwable error )
     {
-        fail( ctx, cause );
+        // todo: test this unwrapping and SSLHandshakeException propagation
+        Throwable cause = error instanceof DecoderException ? error.getCause() : error;
+        if ( cause instanceof SSLHandshakeException )
+        {
+            fail( ctx, new SecurityException( "Failed to establish secured connection with the server", cause ) );
+        }
+        else
+        {
+            fail( ctx, cause );
+        }
     }
 
+    // todo: do not use DEV_NULL_LOGGING
     @Override
     protected void decode( ChannelHandlerContext ctx, ByteBuf in, List<Object> out )
     {
         int serverSuggestedVersion = in.readInt();
         log.debug( "Server suggested protocol version: %s", serverSuggestedVersion );
 
+        ChannelPipeline pipeline = ctx.pipeline();
+        // this is a one-time handler, remove it when protocol version has been read
+        pipeline.remove( this );
+
         switch ( serverSuggestedVersion )
         {
         case PROTOCOL_VERSION_1:
-
             MessageFormat format = new PackStreamMessageFormatV1();
-            ChannelPipeline pipeline = ctx.pipeline();
-
-            pipeline.remove( this );
 
             // inbound handlers
             pipeline.addLast( new ChunkDecoder() );

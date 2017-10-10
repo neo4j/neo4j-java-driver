@@ -31,7 +31,7 @@ import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
 import java.security.cert.X509Certificate;
 
-import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.async.BoltServerAddress;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.security.TLSSocketChannel;
 import org.neo4j.driver.internal.util.CertificateTool;

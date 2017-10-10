@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal.security;
 
-import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.async.BoltServerAddress;
 import org.neo4j.driver.v1.*;
 
 import javax.net.ssl.KeyManager;

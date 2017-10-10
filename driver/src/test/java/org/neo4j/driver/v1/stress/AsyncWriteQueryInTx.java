@@ -20,6 +20,7 @@ package org.neo4j.driver.v1.stress;
 
 import java.util.concurrent.CompletionStage;
 
+import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Session;
@@ -51,7 +52,7 @@ public class AsyncWriteQueryInTx<C extends AbstractContext> extends AbstractAsyn
         {
             session.closeAsync();
 
-            handleError( error, context );
+            handleError( Futures.completionErrorCause( error ), context );
             assertEquals( 1, summary.counters().nodesCreated() );
             context.nodeCreated();
             return null;

@@ -43,23 +43,21 @@ public class SessionFactoryImpl implements SessionFactory
     }
 
     @Override
-    public final Session newInstance( AccessMode mode, Bookmark bookmark )
+    public Session newInstance( AccessMode mode, Bookmark bookmark )
     {
         NetworkSession session = createSession( connectionProvider, retryLogic, mode, logging );
         session.setBookmark( bookmark );
         return session;
     }
 
-    protected NetworkSession createSession( ConnectionProvider connectionProvider, RetryLogic retryLogic,
-            AccessMode mode, Logging logging )
+    @Override
+    public CompletionStage<Void> verifyConnectivity()
     {
-        return leakedSessionsLoggingEnabled
-               ? new LeakLoggingNetworkSession( connectionProvider, mode, retryLogic, logging )
-               : new NetworkSession( connectionProvider, mode, retryLogic, logging );
+        return connectionProvider.verifyConnectivity();
     }
 
     @Override
-    public final CompletionStage<Void> close()
+    public CompletionStage<Void> close()
     {
         return connectionProvider.close();
     }
@@ -71,8 +69,16 @@ public class SessionFactoryImpl implements SessionFactory
      *
      * @return the connection provider used by this factory.
      */
-    public final ConnectionProvider getConnectionProvider()
+    public ConnectionProvider getConnectionProvider()
     {
         return connectionProvider;
+    }
+
+    private NetworkSession createSession( ConnectionProvider connectionProvider, RetryLogic retryLogic,
+            AccessMode mode, Logging logging )
+    {
+        return leakedSessionsLoggingEnabled
+               ? new LeakLoggingNetworkSession( connectionProvider, mode, retryLogic, logging )
+               : new NetworkSession( connectionProvider, mode, retryLogic, logging );
     }
 }

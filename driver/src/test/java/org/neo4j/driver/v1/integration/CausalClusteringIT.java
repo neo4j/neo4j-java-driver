@@ -35,7 +35,7 @@ import java.util.concurrent.TimeoutException;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.logging.DevNullLogger;
 import org.neo4j.driver.internal.retry.RetrySettings;
-import org.neo4j.driver.internal.util.ConnectionTrackingDriverFactory;
+import org.neo4j.driver.internal.util.ChannelTrackingDriverFactory;
 import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.AuthToken;
@@ -231,7 +231,7 @@ public class CausalClusteringIT
                 .toConfig();
 
         FakeClock clock = new FakeClock();
-        ConnectionTrackingDriverFactory driverFactory = new ConnectionTrackingDriverFactory( clock );
+        ChannelTrackingDriverFactory driverFactory = new ChannelTrackingDriverFactory( clock );
 
         URI routingUri = cluster.leader().getRoutingUri();
         AuthToken auth = clusterRule.getDefaultAuthToken();
@@ -244,7 +244,7 @@ public class CausalClusteringIT
             createNodesInDifferentThreads( concurrentSessionsCount, driver );
 
             // now pool contains many sessions, make them all invalid
-            driverFactory.closeConnections();
+            driverFactory.closeChannels();
             // move clock forward more than configured liveness check timeout
             clock.progress( TimeUnit.MINUTES.toMillis( livenessCheckTimeoutMinutes + 1 ) );
 

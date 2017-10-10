@@ -27,8 +27,8 @@ import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.InternalRecord;
-import org.neo4j.driver.internal.async.AsyncConnection;
-import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.async.BoltServerAddress;
+import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.value.StringValue;
 import org.neo4j.driver.v1.Record;
@@ -47,9 +47,9 @@ import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.driver.internal.async.Futures.failedFuture;
-import static org.neo4j.driver.internal.async.Futures.getBlocking;
 import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
+import static org.neo4j.driver.internal.util.Futures.failedFuture;
+import static org.neo4j.driver.internal.util.Futures.getBlocking;
 import static org.neo4j.driver.v1.Values.value;
 
 public class RoutingProcedureClusterCompositionProviderTest
@@ -62,7 +62,7 @@ public class RoutingProcedureClusterCompositionProviderTest
         ClusterCompositionProvider provider = new RoutingProcedureClusterCompositionProvider( mock( Clock.class ),
                 DEV_NULL_LOGGER, mockedRunner );
 
-        CompletionStage<AsyncConnection> connectionStage = completedFuture( mock( AsyncConnection.class ) );
+        CompletionStage<Connection> connectionStage = completedFuture( mock( Connection.class ) );
         RoutingProcedureResponse noRecordsResponse = newRoutingResponse();
         when( mockedRunner.run( connectionStage ) ).thenReturn( completedFuture( noRecordsResponse ) );
 
@@ -91,7 +91,7 @@ public class RoutingProcedureClusterCompositionProviderTest
         ClusterCompositionProvider provider = new RoutingProcedureClusterCompositionProvider( mock( Clock.class ),
                 DEV_NULL_LOGGER, mockedRunner );
 
-        CompletionStage<AsyncConnection> connectionStage = completedFuture( mock( AsyncConnection.class ) );
+        CompletionStage<Connection> connectionStage = completedFuture( mock( Connection.class ) );
         Record aRecord = new InternalRecord( asList( "key1", "key2" ), new Value[]{ new StringValue( "a value" ) } );
         RoutingProcedureResponse routingResponse = newRoutingResponse( aRecord, aRecord );
         when( mockedRunner.run( connectionStage ) ).thenReturn( completedFuture( routingResponse ) );
@@ -121,7 +121,7 @@ public class RoutingProcedureClusterCompositionProviderTest
         ClusterCompositionProvider provider = new RoutingProcedureClusterCompositionProvider( mock( Clock.class ),
                 DEV_NULL_LOGGER, mockedRunner );
 
-        CompletionStage<AsyncConnection> connectionStage = completedFuture( mock( AsyncConnection.class ) );
+        CompletionStage<Connection> connectionStage = completedFuture( mock( Connection.class ) );
         Record aRecord = new InternalRecord( asList( "key1", "key2" ), new Value[]{ new StringValue( "a value" ) } );
         RoutingProcedureResponse routingResponse = newRoutingResponse( aRecord );
         when( mockedRunner.run( connectionStage ) ).thenReturn( completedFuture( routingResponse ) );
@@ -152,7 +152,7 @@ public class RoutingProcedureClusterCompositionProviderTest
         ClusterCompositionProvider provider = new RoutingProcedureClusterCompositionProvider( mockedClock,
                 DEV_NULL_LOGGER, mockedRunner );
 
-        CompletionStage<AsyncConnection> connectionStage = completedFuture( mock( AsyncConnection.class ) );
+        CompletionStage<Connection> connectionStage = completedFuture( mock( Connection.class ) );
         Record record = new InternalRecord( asList( "ttl", "servers" ), new Value[]{
                 value( 100 ), value( asList(
                 serverInfo( "READ", "one:1337", "two:1337" ),
@@ -188,7 +188,7 @@ public class RoutingProcedureClusterCompositionProviderTest
         ClusterCompositionProvider provider = new RoutingProcedureClusterCompositionProvider( mockedClock,
                 DEV_NULL_LOGGER, mockedRunner );
 
-        CompletionStage<AsyncConnection> connectionStage = completedFuture( mock( AsyncConnection.class ) );
+        CompletionStage<Connection> connectionStage = completedFuture( mock( Connection.class ) );
         Record record = new InternalRecord( asList( "ttl", "servers" ), new Value[]{
                 value( 100 ), value( asList(
                 serverInfo( "WRITE", "one:1337" ),
@@ -224,7 +224,7 @@ public class RoutingProcedureClusterCompositionProviderTest
         ClusterCompositionProvider provider = new RoutingProcedureClusterCompositionProvider( mock( Clock.class ),
                 DEV_NULL_LOGGER, mockedRunner );
 
-        CompletionStage<AsyncConnection> connectionStage = completedFuture( mock( AsyncConnection.class ) );
+        CompletionStage<Connection> connectionStage = completedFuture( mock( Connection.class ) );
         when( mockedRunner.run( connectionStage ) ).thenReturn( failedFuture(
                 new ServiceUnavailableException( "Connection breaks during cypher execution" ) ) );
 
@@ -250,7 +250,7 @@ public class RoutingProcedureClusterCompositionProviderTest
         ClusterCompositionProvider provider = new RoutingProcedureClusterCompositionProvider( mockedClock,
                 DEV_NULL_LOGGER, mockedRunner );
 
-        CompletionStage<AsyncConnection> connectionStage = completedFuture( mock( AsyncConnection.class ) );
+        CompletionStage<Connection> connectionStage = completedFuture( mock( Connection.class ) );
         Record record = new InternalRecord( asList( "ttl", "servers" ), new Value[]{
                 value( 100 ), value( asList(
                 serverInfo( "READ", "one:1337", "two:1337" ),
@@ -285,7 +285,7 @@ public class RoutingProcedureClusterCompositionProviderTest
         RoutingProcedureClusterCompositionProvider provider = new RoutingProcedureClusterCompositionProvider(
                 mock( Clock.class ), DEV_NULL_LOGGER, procedureRunner );
 
-        CompletionStage<AsyncConnection> connectionStage = completedFuture( mock( AsyncConnection.class ) );
+        CompletionStage<Connection> connectionStage = completedFuture( mock( Connection.class ) );
         ClusterCompositionResponse response = getBlocking( provider.getClusterComposition( connectionStage ) );
 
         try

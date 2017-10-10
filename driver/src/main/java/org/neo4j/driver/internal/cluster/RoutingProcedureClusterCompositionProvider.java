@@ -21,7 +21,6 @@ package org.neo4j.driver.internal.cluster;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.internal.async.AsyncConnection;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.Logger;
@@ -54,15 +53,8 @@ public class RoutingProcedureClusterCompositionProvider implements ClusterCompos
     }
 
     @Override
-    public ClusterCompositionResponse getClusterComposition( Connection connection )
-    {
-        RoutingProcedureResponse response = routingProcedureRunner.run( connection );
-        return processRoutingResponse( response );
-    }
-
-    @Override
     public CompletionStage<ClusterCompositionResponse> getClusterComposition(
-            CompletionStage<AsyncConnection> connectionStage )
+            CompletionStage<Connection> connectionStage )
     {
         return routingProcedureRunner.run( connectionStage )
                 .thenApply( this::processRoutingResponse );

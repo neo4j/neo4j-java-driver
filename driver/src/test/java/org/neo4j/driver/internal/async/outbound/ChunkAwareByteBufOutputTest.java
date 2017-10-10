@@ -21,15 +21,36 @@ package org.neo4j.driver.internal.async.outbound;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
+import java.util.List;
+import java.util.stream.IntStream;
+
+import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.v1.util.TestUtil.assertByteBufContains;
 
+@RunWith( Parameterized.class )
 public class ChunkAwareByteBufOutputTest
 {
+    private final ByteBuf buf;
+
+    public ChunkAwareByteBufOutputTest( int bufferCapacity )
+    {
+        this.buf = Unpooled.buffer( bufferCapacity );
+    }
+
+    @Parameters( name = "buffer capacity {0}" )
+    public static List<Integer> bufferSizes()
+    {
+        return IntStream.iterate( 1, size -> size * 2 ).limit( 20 ).boxed().collect( toList() );
+    }
+
     @Test
     public void shouldThrowForIllegalMaxChunkSize()
     {
@@ -81,7 +102,6 @@ public class ChunkAwareByteBufOutputTest
     public void shouldWriteByteAtTheBeginningOfChunk()
     {
         ChunkAwareByteBufOutput output = new ChunkAwareByteBufOutput( 16 );
-        ByteBuf buf = Unpooled.buffer();
 
         output.start( buf );
         output.writeByte( (byte) 42 );
@@ -94,7 +114,6 @@ public class ChunkAwareByteBufOutputTest
     public void shouldWriteByteWhenCurrentChunkContainsSpace()
     {
         ChunkAwareByteBufOutput output = new ChunkAwareByteBufOutput( 16 );
-        ByteBuf buf = Unpooled.buffer();
 
         output.start( buf );
         output.writeByte( (byte) 1 );
@@ -111,7 +130,6 @@ public class ChunkAwareByteBufOutputTest
     public void shouldWriteByteWhenCurrentChunkIsFull()
     {
         ChunkAwareByteBufOutput output = new ChunkAwareByteBufOutput( 5 );
-        ByteBuf buf = Unpooled.buffer();
 
         output.start( buf );
         output.writeByte( (byte) 5 );
@@ -131,7 +149,6 @@ public class ChunkAwareByteBufOutputTest
     public void shouldWriteShortAtTheBeginningOfChunk()
     {
         ChunkAwareByteBufOutput output = new ChunkAwareByteBufOutput( 10 );
-        ByteBuf buf = Unpooled.buffer();
 
         output.start( buf );
         output.writeShort( Short.MAX_VALUE );
@@ -144,7 +161,6 @@ public class ChunkAwareByteBufOutputTest
     public void shouldWriteShortWhenCurrentChunkContainsSpace()
     {
         ChunkAwareByteBufOutput output = new ChunkAwareByteBufOutput( 12 );
-        ByteBuf buf = Unpooled.buffer();
 
         output.start( buf );
         output.writeShort( (short) 1 );
@@ -162,7 +178,6 @@ public class ChunkAwareByteBufOutputTest
     public void shouldWriteShortWhenCurrentChunkIsFull()
     {
         ChunkAwareByteBufOutput output = new ChunkAwareByteBufOutput( 8 );
-        ByteBuf buf = Unpooled.buffer();
 
         output.start( buf );
         output.writeShort( (short) 14 );
@@ -182,7 +197,6 @@ public class ChunkAwareByteBufOutputTest
     public void shouldWriteIntAtTheBeginningOfChunk()
     {
         ChunkAwareByteBufOutput output = new ChunkAwareByteBufOutput( 18 );
-        ByteBuf buf = Unpooled.buffer();
 
         output.start( buf );
         output.writeInt( 73649 );
@@ -195,7 +209,6 @@ public class ChunkAwareByteBufOutputTest
     public void shouldWriteIntWhenCurrentChunkContainsSpace()
     {
         ChunkAwareByteBufOutput output = new ChunkAwareByteBufOutput( 40 );
-        ByteBuf buf = Unpooled.buffer();
 
         output.start( buf );
         output.writeInt( Integer.MAX_VALUE );
@@ -212,7 +225,6 @@ public class ChunkAwareByteBufOutputTest
     public void shouldWriteIntWhenCurrentChunkIsFull()
     {
         ChunkAwareByteBufOutput output = new ChunkAwareByteBufOutput( 27 );
-        ByteBuf buf = Unpooled.buffer();
 
         output.start( buf );
         output.writeInt( 42 );
@@ -235,7 +247,6 @@ public class ChunkAwareByteBufOutputTest
     public void shouldWriteLongAtTheBeginningOfChunk()
     {
         ChunkAwareByteBufOutput output = new ChunkAwareByteBufOutput( 12 );
-        ByteBuf buf = Unpooled.buffer();
 
         output.start( buf );
         output.writeLong( 15 );
@@ -248,7 +259,6 @@ public class ChunkAwareByteBufOutputTest
     public void shouldWriteLongWhenCurrentChunkContainsSpace()
     {
         ChunkAwareByteBufOutput output = new ChunkAwareByteBufOutput( 34 );
-        ByteBuf buf = Unpooled.buffer();
 
         output.start( buf );
         output.writeLong( Long.MAX_VALUE );
@@ -265,7 +275,6 @@ public class ChunkAwareByteBufOutputTest
     public void shouldWriteLongWhenCurrentChunkIsFull()
     {
         ChunkAwareByteBufOutput output = new ChunkAwareByteBufOutput( 38 );
-        ByteBuf buf = Unpooled.buffer();
 
         output.start( buf );
         output.writeLong( 12 );
@@ -286,7 +295,6 @@ public class ChunkAwareByteBufOutputTest
     public void shouldWriteDoubleAtTheBeginningOfChunk()
     {
         ChunkAwareByteBufOutput output = new ChunkAwareByteBufOutput( 10 );
-        ByteBuf buf = Unpooled.buffer();
 
         output.start( buf );
         output.writeDouble( 12.99937 );
@@ -299,7 +307,6 @@ public class ChunkAwareByteBufOutputTest
     public void shouldWriteDoubleWhenCurrentChunkContainsSpace()
     {
         ChunkAwareByteBufOutput output = new ChunkAwareByteBufOutput( 18 );
-        ByteBuf buf = Unpooled.buffer();
 
         output.start( buf );
         output.writeDouble( -5 );
@@ -314,7 +321,6 @@ public class ChunkAwareByteBufOutputTest
     public void shouldWriteDoubleWhenCurrentChunkIsFull()
     {
         ChunkAwareByteBufOutput output = new ChunkAwareByteBufOutput( 20 );
-        ByteBuf buf = Unpooled.buffer();
 
         output.start( buf );
         output.writeDouble( 1839 );
@@ -333,7 +339,6 @@ public class ChunkAwareByteBufOutputTest
     public void shouldWriteBytesAtTheBeginningOfChunk()
     {
         ChunkAwareByteBufOutput output = new ChunkAwareByteBufOutput( 10 );
-        ByteBuf buf = Unpooled.buffer();
 
         output.start( buf );
         output.writeBytes( new byte[]{1, 2, 3, -1, -2, -3, 127} );
@@ -347,7 +352,6 @@ public class ChunkAwareByteBufOutputTest
     public void shouldWriteBytesWhenCurrentChunkContainsSpace()
     {
         ChunkAwareByteBufOutput output = new ChunkAwareByteBufOutput( 13 );
-        ByteBuf buf = Unpooled.buffer();
 
         output.start( buf );
         output.writeBytes( new byte[]{9, 8, -10} );
@@ -365,7 +369,6 @@ public class ChunkAwareByteBufOutputTest
     public void shouldWriteBytesWhenCurrentChunkIsFull()
     {
         ChunkAwareByteBufOutput output = new ChunkAwareByteBufOutput( 9 );
-        ByteBuf buf = Unpooled.buffer();
 
         output.start( buf );
         output.writeBytes( new byte[]{1, 2} );
@@ -385,7 +388,6 @@ public class ChunkAwareByteBufOutputTest
     public void shouldWriteBytesThatSpanMultipleChunks()
     {
         ChunkAwareByteBufOutput output = new ChunkAwareByteBufOutput( 7 );
-        ByteBuf buf = Unpooled.buffer();
 
         output.start( buf );
         output.writeBytes( new byte[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18} );
@@ -403,7 +405,6 @@ public class ChunkAwareByteBufOutputTest
     public void shouldWriteDataToMultipleChunks()
     {
         ChunkAwareByteBufOutput output = new ChunkAwareByteBufOutput( 13 );
-        ByteBuf buf = Unpooled.buffer();
 
         output.start( buf );
         output.writeDouble( 12.3 );

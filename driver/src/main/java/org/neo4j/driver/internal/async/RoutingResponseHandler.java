@@ -23,8 +23,8 @@ import java.util.Objects;
 import java.util.concurrent.CompletionException;
 
 import org.neo4j.driver.internal.RoutingErrorHandler;
-import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.ResponseHandler;
+import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
@@ -69,8 +69,9 @@ public class RoutingResponseHandler implements ResponseHandler
         delegate.onRecord( fields );
     }
 
-    private Throwable handledError( Throwable error )
+    private Throwable handledError( Throwable receivedError )
     {
+        Throwable error = Futures.completionErrorCause( receivedError );
         if ( error instanceof CompletionException )
         {
             error = error.getCause();

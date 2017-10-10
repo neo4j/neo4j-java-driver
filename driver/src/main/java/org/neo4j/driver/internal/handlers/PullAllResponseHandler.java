@@ -27,7 +27,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.InternalRecord;
-import org.neo4j.driver.internal.async.AsyncConnection;
+import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.summary.InternalNotification;
 import org.neo4j.driver.internal.summary.InternalPlan;
@@ -44,9 +44,10 @@ import org.neo4j.driver.v1.summary.ProfiledPlan;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.summary.StatementType;
 
+import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
-import static org.neo4j.driver.internal.async.Futures.failedFuture;
+import static org.neo4j.driver.internal.util.Futures.failedFuture;
 
 public abstract class PullAllResponseHandler implements ResponseHandler
 {
@@ -54,19 +55,21 @@ public abstract class PullAllResponseHandler implements ResponseHandler
 
     private final Statement statement;
     private final RunResponseHandler runResponseHandler;
-    protected final AsyncConnection connection;
+    protected final Connection connection;
 
     private final Queue<Record> records = new LinkedList<>();
 
-    private boolean succeeded;
+    // todo: use presence of summary as a "finished" indicator and remove this field
+    private boolean finished;
     private Throwable failure;
     private ResultSummary summary;
 
     private CompletableFuture<Record> recordFuture;
     private CompletableFuture<ResultSummary> summaryFuture;
+    private CompletableFuture<Throwable> resultBufferedFuture;
 
     public PullAllResponseHandler( Statement statement, RunResponseHandler runResponseHandler,
-            AsyncConnection connection )
+            Connection connection )
     {
         this.statement = requireNonNull( statement );
         this.runResponseHandler = requireNonNull( runResponseHandler );
@@ -76,16 +79,14 @@ public abstract class PullAllResponseHandler implements ResponseHandler
     @Override
     public synchronized void onSuccess( Map<String,Value> metadata )
     {
+        finished = true;
         summary = extractResultSummary( metadata );
-        if ( summaryFuture != null )
-        {
-            summaryFuture.complete( summary );
-            summaryFuture = null;
-        }
 
-        succeeded = true;
         afterSuccess();
+
         completeRecordFuture( null );
+        completeSummaryFuture( summary );
+        completeResultBufferedFuture( null );
     }
 
     protected abstract void afterSuccess();
@@ -93,9 +94,35 @@ public abstract class PullAllResponseHandler implements ResponseHandler
     @Override
     public synchronized void onFailure( Throwable error )
     {
-        failure = error;
+        finished = true;
+        summary = extractResultSummary( emptyMap() );
+
         afterFailure( error );
-        failRecordFuture( error );
+
+        boolean failedRecordFuture = failRecordFuture( error );
+        if ( failedRecordFuture )
+        {
+            // error propagated through record future, complete other two
+            completeSummaryFuture( summary );
+            completeResultBufferedFuture( null );
+        }
+        else
+        {
+            boolean failedSummaryFuture = failSummaryFuture( error );
+            if ( failedSummaryFuture )
+            {
+                // error propagated through summary future, complete other one
+                completeResultBufferedFuture( null );
+            }
+            else
+            {
+                boolean completedResultBufferedFuture = completeResultBufferedFuture( error );
+                if ( !completedResultBufferedFuture )
+                {
+                    failure = error;
+                }
+            }
+        }
     }
 
     protected abstract void afterFailure( Throwable error );
@@ -104,30 +131,25 @@ public abstract class PullAllResponseHandler implements ResponseHandler
     public synchronized void onRecord( Value[] fields )
     {
         Record record = new InternalRecord( runResponseHandler.statementKeys(), fields );
-
-        if ( recordFuture != null )
-        {
-            completeRecordFuture( record );
-        }
-        else
-        {
-            queueRecord( record );
-        }
+        queueRecord( record );
+        completeRecordFuture( record );
     }
 
-    public synchronized CompletionStage<Record> nextAsync()
+    public synchronized CompletionStage<Record> peekAsync()
     {
-        Record record = dequeueRecord();
+        Record record = records.peek();
         if ( record == null )
         {
-            if ( succeeded )
-            {
-                return completedFuture( null );
-            }
-
             if ( failure != null )
             {
-                return failedFuture( failure );
+                Throwable error = failure;
+                failure = null; // propagate failure only once
+                return failedFuture( error );
+            }
+
+            if ( finished )
+            {
+                return completedFuture( null );
             }
 
             if ( recordFuture == null )
@@ -140,6 +162,15 @@ public abstract class PullAllResponseHandler implements ResponseHandler
         {
             return completedFuture( record );
         }
+    }
+
+    public synchronized CompletionStage<Record> nextAsync()
+    {
+        return peekAsync().thenApply( record ->
+        {
+            dequeueRecord();
+            return record;
+        } );
     }
 
     public synchronized CompletionStage<ResultSummary> summaryAsync()
@@ -155,6 +186,28 @@ public abstract class PullAllResponseHandler implements ResponseHandler
                 summaryFuture = new CompletableFuture<>();
             }
             return summaryFuture;
+        }
+    }
+
+    public synchronized CompletionStage<Throwable> resultBuffered()
+    {
+        if ( failure != null )
+        {
+            Throwable error = failure;
+            failure = null; // propagate failure only once
+            return completedFuture( error );
+        }
+        else if ( finished )
+        {
+            return completedFuture( null );
+        }
+        else
+        {
+            if ( resultBufferedFuture == null )
+            {
+                resultBufferedFuture = new CompletableFuture<>();
+            }
+            return resultBufferedFuture;
         }
     }
 
@@ -193,14 +246,50 @@ public abstract class PullAllResponseHandler implements ResponseHandler
         }
     }
 
-    private void failRecordFuture( Throwable error )
+    private boolean failRecordFuture( Throwable error )
     {
         if ( recordFuture != null )
         {
             CompletableFuture<Record> future = recordFuture;
             recordFuture = null;
             future.completeExceptionally( error );
+            return true;
         }
+        return false;
+    }
+
+    private void completeSummaryFuture( ResultSummary summary )
+    {
+        if ( summaryFuture != null )
+        {
+            CompletableFuture<ResultSummary> future = summaryFuture;
+            summaryFuture = null;
+            future.complete( summary );
+        }
+    }
+
+    private boolean failSummaryFuture( Throwable error )
+    {
+        if ( summaryFuture != null )
+        {
+            CompletableFuture<ResultSummary> future = summaryFuture;
+            summaryFuture = null;
+            future.completeExceptionally( error );
+            return true;
+        }
+        return false;
+    }
+
+    private boolean completeResultBufferedFuture( Throwable error )
+    {
+        if ( resultBufferedFuture != null )
+        {
+            CompletableFuture<Throwable> future = resultBufferedFuture;
+            resultBufferedFuture = null;
+            future.complete( error );
+            return true;
+        }
+        return false;
     }
 
     private ResultSummary extractResultSummary( Map<String,Value> metadata )

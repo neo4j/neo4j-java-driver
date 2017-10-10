@@ -32,7 +32,7 @@ import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.PullAllMessage;
 import org.neo4j.driver.internal.messaging.ResetMessage;
 import org.neo4j.driver.internal.messaging.RunMessage;
-import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.ServerVersion;
@@ -40,10 +40,10 @@ import org.neo4j.driver.v1.Value;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.neo4j.driver.internal.async.ChannelAttributes.messageDispatcher;
-import static org.neo4j.driver.internal.async.Futures.asCompletionStage;
+import static org.neo4j.driver.internal.util.Futures.asCompletionStage;
 
 // todo: keep state flags to prohibit interaction with released connections
-public class NettyConnection implements AsyncConnection
+public class NettyConnection implements Connection
 {
     private final Channel channel;
     private final InboundMessageDispatcher messageDispatcher;
@@ -100,6 +100,7 @@ public class NettyConnection implements AsyncConnection
         run( statement, parameters, runHandler, pullAllHandler, true );
     }
 
+    // TODO change this to return future or say that it does stuff in the background in the method name?
     @Override
     public void release()
     {
@@ -107,6 +108,12 @@ public class NettyConnection implements AsyncConnection
         {
             reset( new ReleaseChannelHandler( channel, channelPool, clock ) );
         }
+    }
+
+    @Override
+    public boolean isInUse()
+    {
+        return state.isInUse();
     }
 
     @Override

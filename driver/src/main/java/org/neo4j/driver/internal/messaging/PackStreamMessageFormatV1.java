@@ -78,13 +78,13 @@ public class PackStreamMessageFormatV1 implements MessageFormat
     @Override
     public MessageFormat.Writer newWriter( PackOutput output, boolean byteArraySupportEnabled )
     {
-        return new Writer( output, output.messageBoundaryHook(), byteArraySupportEnabled );
+        return new Writer( output, byteArraySupportEnabled );
     }
 
     @Override
     public MessageFormat.Reader newReader( PackInput input )
     {
-        return new Reader( input, input.messageBoundaryHook() );
+        return new Reader( input );
     }
 
     @Override
@@ -96,16 +96,13 @@ public class PackStreamMessageFormatV1 implements MessageFormat
     public static class Writer implements MessageFormat.Writer, MessageHandler
     {
         private final PackStream.Packer packer;
-        private final Runnable onMessageComplete;
 
         /**
          * @param output interface to write messages to
-         * @param onMessageComplete invoked for each message, after it's done writing to the output
          * @param byteArraySupportEnabled specify if support to pack/write byte array to server
          */
-        public Writer( PackOutput output, Runnable onMessageComplete, boolean byteArraySupportEnabled )
+        public Writer( PackOutput output, boolean byteArraySupportEnabled )
         {
-            this.onMessageComplete = onMessageComplete;
             if( byteArraySupportEnabled )
             {
                 packer = new PackStream.Packer( output );
@@ -122,7 +119,6 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             packer.packStructHeader( 1, MSG_INIT );
             packer.pack( clientNameAndVersion );
             packRawMap( authToken );
-            onMessageComplete.run();
         }
 
         @Override
@@ -131,35 +127,30 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             packer.packStructHeader( 2, MSG_RUN );
             packer.pack( statement );
             packRawMap( parameters );
-            onMessageComplete.run();
         }
 
         @Override
         public void handlePullAllMessage() throws IOException
         {
             packer.packStructHeader( 0, MSG_PULL_ALL );
-            onMessageComplete.run();
         }
 
         @Override
         public void handleDiscardAllMessage() throws IOException
         {
             packer.packStructHeader( 0, MSG_DISCARD_ALL );
-            onMessageComplete.run();
         }
 
         @Override
         public void handleResetMessage() throws IOException
         {
             packer.packStructHeader( 0, MSG_RESET );
-            onMessageComplete.run();
         }
 
         @Override
         public void handleAckFailureMessage() throws IOException
         {
             packer.packStructHeader( 0, MSG_ACK_FAILURE );
-            onMessageComplete.run();
         }
 
         @Override
@@ -167,7 +158,6 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         {
             packer.packStructHeader( 1, MSG_SUCCESS );
             packRawMap( meta );
-            onMessageComplete.run();
         }
 
         @Override
@@ -179,7 +169,6 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             {
                 packValue( field );
             }
-            onMessageComplete.run();
         }
 
         @Override
@@ -193,14 +182,12 @@ public class PackStreamMessageFormatV1 implements MessageFormat
 
             packer.pack( "message" );
             packValue( value( message ) );
-            onMessageComplete.run();
         }
 
         @Override
         public void handleIgnoredMessage() throws IOException
         {
             packer.packStructHeader( 0, MSG_IGNORED );
-            onMessageComplete.run();
         }
 
         private void packRawMap( Map<String,Value> map ) throws IOException
@@ -383,12 +370,10 @@ public class PackStreamMessageFormatV1 implements MessageFormat
     public static class Reader implements MessageFormat.Reader
     {
         private final PackStream.Unpacker unpacker;
-        private final Runnable onMessageComplete;
 
-        public Reader( PackInput input, Runnable onMessageComplete )
+        public Reader( PackInput input )
         {
             unpacker = new PackStream.Unpacker( input );
-            this.onMessageComplete = onMessageComplete;
         }
 
         @Override
@@ -442,19 +427,16 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         private void unpackResetMessage( MessageHandler handler ) throws IOException
         {
             handler.handleResetMessage();
-            onMessageComplete.run();
         }
 
         private void unpackInitMessage( MessageHandler handler ) throws IOException
         {
             handler.handleInitMessage( unpacker.unpackString(), unpackMap() );
-            onMessageComplete.run();
         }
 
         private void unpackIgnoredMessage( MessageHandler output ) throws IOException
         {
             output.handleIgnoredMessage();
-            onMessageComplete.run();
         }
 
         private void unpackFailureMessage( MessageHandler output ) throws IOException
@@ -463,7 +445,6 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             String code = params.get( "code" ).asString();
             String message = params.get( "message" ).asString();
             output.handleFailureMessage( code, message );
-            onMessageComplete.run();
         }
 
         private void unpackRunMessage( MessageHandler output ) throws IOException
@@ -471,26 +452,22 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             String statement = unpacker.unpackString();
             Map<String,Value> params = unpackMap();
             output.handleRunMessage( statement, params );
-            onMessageComplete.run();
         }
 
         private void unpackDiscardAllMessage( MessageHandler output ) throws IOException
         {
             output.handleDiscardAllMessage();
-            onMessageComplete.run();
         }
 
         private void unpackPullAllMessage( MessageHandler output ) throws IOException
         {
             output.handlePullAllMessage();
-            onMessageComplete.run();
         }
 
         private void unpackSuccessMessage( MessageHandler output ) throws IOException
         {
             Map<String,Value> map = unpackMap();
             output.handleSuccessMessage( map );
-            onMessageComplete.run();
         }
 
         private void unpackRecordMessage(MessageHandler output) throws IOException
@@ -502,7 +479,6 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                 fields[i] = unpackValue();
             }
             output.handleRecordMessage( fields );
-            onMessageComplete.run();
         }
 
         private Value unpackValue() throws IOException

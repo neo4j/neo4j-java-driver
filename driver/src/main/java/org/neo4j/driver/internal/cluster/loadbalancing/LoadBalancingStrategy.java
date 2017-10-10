@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal.cluster.loadbalancing;
 
-import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.async.BoltServerAddress;
 
 /**
  * A facility to select most appropriate reader or writer among the given addresses for request processing.
@@ -33,8 +33,6 @@ public interface LoadBalancingStrategy
      */
     BoltServerAddress selectReader( BoltServerAddress[] knownReaders );
 
-    BoltServerAddress selectReaderAsync( BoltServerAddress[] knownReaders );
-
     /**
      * Select most appropriate write address from the given array of addresses.
      *
@@ -42,6 +40,4 @@ public interface LoadBalancingStrategy
      * @return most appropriate writer or {@code null} if it can't be selected.
      */
     BoltServerAddress selectWriter( BoltServerAddress[] knownWriters );
-
-    BoltServerAddress selectWriterAsync( BoltServerAddress[] knownWriters );
 }

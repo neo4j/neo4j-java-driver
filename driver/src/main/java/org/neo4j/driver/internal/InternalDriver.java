@@ -21,60 +21,54 @@ package org.neo4j.driver.internal;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.driver.internal.async.Futures;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Driver;
-import org.neo4j.driver.v1.Logger;
-import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Session;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.neo4j.driver.internal.util.Futures.getBlocking;
 
 public class InternalDriver implements Driver
 {
-    private final static String DRIVER_LOG_NAME = "Driver";
-
     private final SecurityPlan securityPlan;
     private final SessionFactory sessionFactory;
-    private final Logger log;
 
     private AtomicBoolean closed = new AtomicBoolean( false );
 
-    InternalDriver( SecurityPlan securityPlan, SessionFactory sessionFactory, Logging logging )
+    InternalDriver( SecurityPlan securityPlan, SessionFactory sessionFactory )
     {
         this.securityPlan = securityPlan;
         this.sessionFactory = sessionFactory;
-        this.log = logging.getLog( DRIVER_LOG_NAME );
     }
 
     @Override
-    public final boolean isEncrypted()
+    public boolean isEncrypted()
     {
         assertOpen();
         return securityPlan.requiresEncryption();
     }
 
     @Override
-    public final Session session()
+    public Session session()
     {
         return session( AccessMode.WRITE );
     }
 
     @Override
-    public final Session session( AccessMode mode )
+    public Session session( AccessMode mode )
     {
         return newSession( mode, Bookmark.empty() );
     }
 
     @Override
-    public final Session session( String bookmark )
+    public Session session( String bookmark )
     {
         return session( AccessMode.WRITE, bookmark );
     }
 
     @Override
-    public final Session session( AccessMode mode, String bookmark )
+    public Session session( AccessMode mode, String bookmark )
     {
         return newSession( mode, Bookmark.from( bookmark ) );
     }
@@ -104,9 +98,9 @@ public class InternalDriver implements Driver
     }
 
     @Override
-    public final void close()
+    public void close()
     {
-        Futures.getBlocking( closeAsync() );
+        getBlocking( closeAsync() );
     }
 
     @Override
@@ -119,6 +113,12 @@ public class InternalDriver implements Driver
         return completedFuture( null );
     }
 
+    // todo: test this method and it's usage in DriverFactory
+    public CompletionStage<Void> verifyConnectivity()
+    {
+        return sessionFactory.verifyConnectivity();
+    }
+
     /**
      * Get the underlying session factory.
      * <p>
@@ -126,7 +126,7 @@ public class InternalDriver implements Driver
      *
      * @return the session factory used by this driver.
      */
-    public final SessionFactory getSessionFactory()
+    public SessionFactory getSessionFactory()
     {
         return sessionFactory;
     }

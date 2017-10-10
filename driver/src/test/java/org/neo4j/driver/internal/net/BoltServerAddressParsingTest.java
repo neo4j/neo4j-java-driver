@@ -24,8 +24,10 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
+import org.neo4j.driver.internal.async.BoltServerAddress;
+
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.driver.internal.net.BoltServerAddress.DEFAULT_PORT;
+import static org.neo4j.driver.internal.async.BoltServerAddress.DEFAULT_PORT;
 
 @RunWith( Parameterized.class )
 public class BoltServerAddressParsingTest

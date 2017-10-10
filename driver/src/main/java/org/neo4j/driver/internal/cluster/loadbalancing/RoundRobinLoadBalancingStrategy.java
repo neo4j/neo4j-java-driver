@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal.cluster.loadbalancing;
 
-import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.async.BoltServerAddress;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 
@@ -47,21 +47,9 @@ public class RoundRobinLoadBalancingStrategy implements LoadBalancingStrategy
     }
 
     @Override
-    public BoltServerAddress selectReaderAsync( BoltServerAddress[] knownReaders )
-    {
-        return selectReader( knownReaders );
-    }
-
-    @Override
     public BoltServerAddress selectWriter( BoltServerAddress[] knownWriters )
     {
         return select( knownWriters, writersIndex, "writer" );
-    }
-
-    @Override
-    public BoltServerAddress selectWriterAsync( BoltServerAddress[] knownWriters )
-    {
-        return selectWriter( knownWriters );
     }
 
     private BoltServerAddress select( BoltServerAddress[] addresses, RoundRobinArrayIndex roundRobinIndex,

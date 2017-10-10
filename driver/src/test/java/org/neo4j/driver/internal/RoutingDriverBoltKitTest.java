@@ -84,14 +84,8 @@ public class RoutingDriverBoltKitTest
         try ( Driver driver = GraphDatabase.driver( uri, config );
               Session session = driver.session( AccessMode.READ ) )
         {
-            List<String> result = session.run( "MATCH (n) RETURN n.name" ).list( new Function<Record,String>()
-            {
-                @Override
-                public String apply( Record record )
-                {
-                    return record.get( "n.name" ).asString();
-                }
-            } );
+            List<String> result = session.run( "MATCH (n) RETURN n.name" )
+                    .list( record -> record.get( "n.name" ).asString() );
 
             assertThat( result, equalTo( asList( "Bob", "Alice", "Tina" ) ) );
 
@@ -519,44 +513,17 @@ public class RoutingDriverBoltKitTest
     }
 
     @Test
-    public void shouldHandleLeaderSwitchWhenWritingInTransactionWithoutConsuming()
-            throws IOException, InterruptedException, StubServer.ForceKilled
-    {
-        // Given
-        StubServer server = StubServer.start( "acquire_endpoints.script", 9001 );
-
-        //START a write server that doesn't accept writes
-        StubServer.start( "not_able_to_write_server.script", 9007 );
-        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
-        Driver driver = GraphDatabase.driver( uri, config );
-        boolean failed = false;
-        try ( Session session = driver.session( AccessMode.WRITE );
-              Transaction tx = session.beginTransaction() )
-        {
-            tx.run( "CREATE ()" );
-        }
-        catch ( SessionExpiredException e )
-        {
-            failed = true;
-            assertThat( e.getMessage(), equalTo( "Server at 127.0.0.1:9007 no longer accepts writes" ) );
-        }
-        assertTrue( failed );
-
-        driver.close();
-        // Finally
-        assertThat( server.exitStatus(), equalTo( 0 ) );
-    }
-
-    @Test
+    @SuppressWarnings( "deprecation" )
     public void shouldSendAndReceiveBookmark() throws Exception
     {
         StubServer router = StubServer.start( "acquire_endpoints.script", 9001 );
         StubServer writer = StubServer.start( "write_tx_with_bookmarks.script", 9007 );
 
         try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9001", config );
-              Session session = driver.session( "OldBookmark" ) )
+              Session session = driver.session() )
         {
-            try ( Transaction tx = session.beginTransaction() )
+            // intentionally test deprecated API
+            try ( Transaction tx = session.beginTransaction( "OldBookmark" ) )
             {
                 tx.run( "CREATE (n {name:'Bob'})" );
                 tx.success();

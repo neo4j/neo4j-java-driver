@@ -27,5 +27,7 @@ public interface SessionFactory
 {
     Session newInstance( AccessMode mode, Bookmark bookmark );
 
+    CompletionStage<Void> verifyConnectivity();
+
     CompletionStage<Void> close();
 }

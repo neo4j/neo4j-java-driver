@@ -19,103 +19,33 @@
 package org.neo4j.driver.internal.spi;
 
 import java.util.Map;
+import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.async.BoltServerAddress;
+import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.summary.ServerInfo;
 
-/**
- * A connection is an abstraction provided by an underlying transport implementation,
- * it is the medium that a session is conducted over.
- */
-public interface Connection extends AutoCloseable
+public interface Connection
 {
-    /**
-     * Initialize the connection. This must be done before any other action is allowed.
-     * @param clientName should be the driver name and version: "java-driver/1.1.0"
-     * @param authToken a map value
-     */
-    void init( String clientName, Map<String,Value> authToken );
+    boolean isInUse();
 
-    /**
-     * Queue up a run action. The result handler will be called with metadata about the stream when that becomes
-     * available for retrieval.
-     * @param parameters a map value of parameters
-     */
-    void run( String statement, Map<String,Value> parameters, ResponseHandler handler );
+    boolean tryMarkInUse();
 
-    /**
-     * Queue a discard all action, consuming any items left in the current stream.This will
-     * close the stream once its completed, allowing another {@link #run(String, java.util.Map, ResponseHandler) run}
-     */
-    void discardAll( ResponseHandler handler );
+    void enableAutoRead();
 
-    /**
-     * Queue a pull-all action, output will be handed to the response handler once the pull starts. This will
-     * close the stream once its completed, allowing another {@link #run(String, java.util.Map, ResponseHandler) run}
-     */
-    void pullAll( ResponseHandler handler );
+    void disableAutoRead();
 
-    /**
-     * Queue a reset action, throw {@link org.neo4j.driver.v1.exceptions.ClientException} if an ignored message is
-     * received. This will close the stream once its completed, allowing another
-     * {@link #run(String, java.util.Map, ResponseHandler) run}.
-     */
-    void reset();
+    void run( String statement, Map<String,Value> parameters, ResponseHandler runHandler,
+            ResponseHandler pullAllHandler );
 
-    /**
-     * Queue a ack_failure action, valid output could only be success. This will close the stream once it is completed,
-     * allowing another {@link #run(String, java.util.Map, ResponseHandler) run}.
-     */
-    void ackFailure();
+    void runAndFlush( String statement, Map<String,Value> parameters, ResponseHandler runHandler,
+            ResponseHandler pullAllHandler );
 
-    /**
-     * Ensure all outstanding actions are carried out on the server.
-     */
-    void sync();
+    void release();
 
-    /**
-     * Send all pending messages to the server and return the number of messages sent.
-     */
-    void flush();
+    CompletionStage<Void> forceRelease();
 
-    /**
-     * Receive the next message available.
-     */
-    void receiveOne();
+    BoltServerAddress serverAddress();
 
-    @Override
-    void close();
-
-    /**
-     * Test if the underlying socket connection with the server is still open.
-     * When the socket connection with the server is closed,
-     * the connection cannot take on any task, but be {@link #close() closed} to release resources it occupies.
-     * Note: Invocation of {@link #close()} method would make this method to return false,
-     * however this method cannot indicate whether {@link #close()} is already be called or not.
-     * @return true if the socket connection with the server is open, otherwise false.
-     */
-    boolean isOpen();
-
-    /**
-     * Asynchronously sending reset to the socket output channel.
-     */
-    void resetAsync();
-
-    /**
-     * Return true if ack_failure message is temporarily muted as the failure message will be acked using reset instead
-     * @return true if no ack_failre message should be sent when ackable failures are received.
-     */
-    boolean isAckFailureMuted();
-
-    /**
-     * Returns the basic information of the server connected to.
-     * @return The basic information of the server connected to.
-     */
-    ServerInfo server();
-
-    /**
-     * Returns the BoltServerAddress connected to
-     */
-    BoltServerAddress boltServerAddress();
+    ServerVersion serverVersion();
 }

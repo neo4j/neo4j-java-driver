@@ -23,11 +23,9 @@ import java.util.List;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.ResultResourcesHandler;
-import org.neo4j.driver.internal.NetworkSession;
-import org.neo4j.driver.internal.async.AsyncConnection;
 import org.neo4j.driver.internal.async.QueryRunner;
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
@@ -50,30 +48,17 @@ public class RoutingProcedureRunner
         this.context = context;
     }
 
-    public RoutingProcedureResponse run( Connection connection )
-    {
-        Statement procedure = procedureStatement( ServerVersion.version( connection.server().version() ) );
-
-        try
-        {
-            return new RoutingProcedureResponse( procedure, runProcedure( connection, procedure ) );
-        }
-        catch ( ClientException error )
-        {
-            return new RoutingProcedureResponse( procedure, error );
-        }
-    }
-
-    public CompletionStage<RoutingProcedureResponse> run( CompletionStage<AsyncConnection> connectionStage )
+    public CompletionStage<RoutingProcedureResponse> run( CompletionStage<Connection> connectionStage )
     {
         return connectionStage.thenCompose( connection ->
         {
             Statement procedure = procedureStatement( connection.serverVersion() );
             return runProcedure( connection, procedure ).handle( ( records, error ) ->
             {
-                if ( error != null )
+                Throwable cause = Futures.completionErrorCause( error );
+                if ( cause != null )
                 {
-                    return handleError( procedure, error );
+                    return handleError( procedure, cause );
                 }
                 else
                 {
@@ -83,14 +68,9 @@ public class RoutingProcedureRunner
         } );
     }
 
-    List<Record> runProcedure( Connection connection, Statement procedure )
+    CompletionStage<List<Record>> runProcedure( Connection connection, Statement procedure )
     {
-        return NetworkSession.run( connection, procedure, ResultResourcesHandler.NO_OP ).list();
-    }
-
-    CompletionStage<List<Record>> runProcedure( AsyncConnection connection, Statement procedure )
-    {
-        return QueryRunner.runAsync( connection, procedure )
+        return QueryRunner.runAsAsync( connection, procedure )
                 .thenCompose( StatementResultCursor::listAsync );
     }
 

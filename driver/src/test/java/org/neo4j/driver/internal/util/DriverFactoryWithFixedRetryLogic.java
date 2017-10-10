@@ -20,18 +20,18 @@ package org.neo4j.driver.internal.util;
 
 import io.netty.util.concurrent.EventExecutorGroup;
 
+import org.neo4j.driver.internal.DriverFactory;
 import org.neo4j.driver.internal.retry.FixedRetryLogic;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.v1.Logging;
 
-public class DriverFactoryWithFixedRetryLogic extends DriverFactoryWithClock
+public class DriverFactoryWithFixedRetryLogic extends DriverFactory
 {
     private final int retryCount;
 
     public DriverFactoryWithFixedRetryLogic( int retryCount )
     {
-        super( new SleeplessClock() );
         this.retryCount = retryCount;
     }
 
@@ -39,6 +39,6 @@ public class DriverFactoryWithFixedRetryLogic extends DriverFactoryWithClock
     protected RetryLogic createRetryLogic( RetrySettings settings, EventExecutorGroup eventExecutorGroup,
             Logging logging )
     {
-        return new FixedRetryLogic( retryCount, eventExecutorGroup );
+        return new FixedRetryLogic( retryCount );
     }
 }

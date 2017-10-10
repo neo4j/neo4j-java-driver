@@ -25,7 +25,6 @@ import io.netty.util.concurrent.Promise;
 
 import org.neo4j.driver.internal.handlers.PingResponseHandler;
 import org.neo4j.driver.internal.messaging.ResetMessage;
-import org.neo4j.driver.internal.net.pooling.PoolSettings;
 import org.neo4j.driver.internal.util.Clock;
 
 import static java.util.Objects.requireNonNull;

@@ -31,13 +31,20 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 
+import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 
+import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
 
 public final class TestUtil
 {
@@ -142,6 +149,25 @@ public final class TestUtil
             nodesDeleted = deleteBatchOfNodes( session );
         }
         while ( nodesDeleted > 0 );
+    }
+
+    public static Connection connectionMock()
+    {
+        Connection connection = mock( Connection.class );
+        setupSuccessfulPullAll( connection, "COMMIT" );
+        setupSuccessfulPullAll( connection, "ROLLBACK" );
+        setupSuccessfulPullAll( connection, "BEGIN" );
+        return connection;
+    }
+
+    private static void setupSuccessfulPullAll( Connection connection, String statement )
+    {
+        doAnswer( invocation ->
+        {
+            ResponseHandler commitHandler = invocation.getArgumentAt( 3, ResponseHandler.class );
+            commitHandler.onSuccess( emptyMap() );
+            return null;
+        } ).when( connection ).runAndFlush( eq( statement ), any(), any(), any() );
     }
 
     private static int deleteBatchOfNodes( Session session )

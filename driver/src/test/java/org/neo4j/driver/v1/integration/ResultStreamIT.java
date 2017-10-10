@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
@@ -157,6 +158,26 @@ public class ResultStreamIT
         assertThat( summary.counters().nodesCreated(), equalTo( 0 ) );
     }
 
+    @Test
+    public void shouldBeAbleToAccessSummaryAfterTransactionFailure()
+    {
+        StatementResult result = null;
+        try
+        {
+            try ( Transaction tx = session.beginTransaction() )
+            {
+                result = tx.run( "UNWIND [1,2,0] AS x RETURN 10/x" );
+                tx.success();
+            }
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( ClientException.class ) );
+            assertNotNull( result );
+            assertEquals( 0, result.summary().counters().nodesCreated() );
+        }
+    }
 
     @Test
     public void shouldBufferRecordsAfterSummary() throws Throwable

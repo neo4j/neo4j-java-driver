@@ -22,19 +22,18 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 import org.mockito.ArgumentCaptor;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import java.lang.reflect.Method;
 
 import org.neo4j.driver.internal.retry.FixedRetryLogic;
+import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
-import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Session;
 
+import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -96,30 +95,24 @@ public class LeakLoggingNetworkSessionTest
         finalizeMethod.invoke( session );
     }
 
-    private static LeakLoggingNetworkSession newSession( Logging logging, boolean openConnection )
+    private static LeakLoggingNetworkSession newSession( Logging logging, boolean inUseConnection )
     {
-        return new LeakLoggingNetworkSession( connectionProviderMock( openConnection ), READ,
+        return new LeakLoggingNetworkSession( connectionProviderMock( inUseConnection ), READ,
                 new FixedRetryLogic( 0 ), logging );
     }
 
-    private static ConnectionProvider connectionProviderMock( final boolean openConnection )
+    private static ConnectionProvider connectionProviderMock( boolean inUseConnection )
     {
         ConnectionProvider provider = mock( ConnectionProvider.class );
-        when( provider.acquireConnection( any( AccessMode.class ) ) ).thenAnswer( new Answer<PooledConnection>()
-        {
-            @Override
-            public PooledConnection answer( InvocationOnMock invocation ) throws Throwable
-            {
-                return connectionMock( openConnection );
-            }
-        } );
+        Connection connection = connectionMock( inUseConnection );
+        when( provider.acquireConnection( any( AccessMode.class ) ) ).thenReturn( completedFuture( connection ) );
         return provider;
     }
 
-    private static PooledConnection connectionMock( boolean open )
+    private static Connection connectionMock( boolean inUse )
     {
-        PooledConnection connection = mock( PooledConnection.class );
-        when( connection.isOpen() ).thenReturn( open );
+        Connection connection = mock( Connection.class );
+        when( connection.isInUse() ).thenReturn( inUse );
         return connection;
     }
 }

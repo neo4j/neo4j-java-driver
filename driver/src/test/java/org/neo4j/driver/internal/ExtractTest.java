@@ -31,26 +31,19 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.driver.ResultResourcesHandler;
-import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Extract;
-import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.util.Pair;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.neo4j.driver.v1.Values.ofValue;
 import static org.neo4j.driver.v1.Values.value;
 
 public class ExtractTest
@@ -169,21 +162,9 @@ public class ExtractTest
     public void testFields() throws Exception
     {
         // GIVEN
-        Connection connection = mock( Connection.class );
-        String statement = "<unknown>";
-
-        Statement stmt = new Statement( statement );
-        InternalStatementResult result = new InternalStatementResult( stmt, connection, ResultResourcesHandler.NO_OP );
-        result.runResponseHandler().onSuccess( singletonMap( "fields", value( singletonList( "k1" ) ) ) );
-        result.pullAllResponseHandler().onRecord( new Value[]{value( 42 )} );
-        result.pullAllResponseHandler().onSuccess( Collections.<String,Value>emptyMap() );
-
-        connection.run( statement, Values.EmptyMap.asMap( ofValue() ), result.runResponseHandler() );
-        connection.pullAll( result.pullAllResponseHandler() );
-        connection.flush();
-
+        InternalRecord record = new InternalRecord( Arrays.asList( "k1" ), new Value[]{value( 42 )} );
         // WHEN
-        List<Pair<String, Integer>> fields = Extract.fields( result.single(), integerExtractor() );
+        List<Pair<String, Integer>> fields = Extract.fields( record, integerExtractor() );
 
 
         // THEN
