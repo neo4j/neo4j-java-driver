@@ -88,18 +88,6 @@ public class ByteBufInput implements PackInput
         return buf.getByte( buf.readerIndex() );
     }
 
-    @Override
-    public Runnable messageBoundaryHook()
-    {
-        return new Runnable()
-        {
-            @Override
-            public void run()
-            {
-            }
-        };
-    }
-
     private void assertNotStarted()
     {
         if ( buf != null )

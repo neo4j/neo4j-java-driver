@@ -84,7 +84,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
     @Override
     public MessageFormat.Reader newReader( PackInput input )
     {
-        return new Reader( input, input.messageBoundaryHook() );
+        return new Reader( input );
     }
 
     @Override
@@ -370,12 +370,10 @@ public class PackStreamMessageFormatV1 implements MessageFormat
     public static class Reader implements MessageFormat.Reader
     {
         private final PackStream.Unpacker unpacker;
-        private final Runnable onMessageComplete;
 
-        public Reader( PackInput input, Runnable onMessageComplete )
+        public Reader( PackInput input )
         {
             unpacker = new PackStream.Unpacker( input );
-            this.onMessageComplete = onMessageComplete;
         }
 
         @Override
@@ -429,19 +427,16 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         private void unpackResetMessage( MessageHandler handler ) throws IOException
         {
             handler.handleResetMessage();
-            onMessageComplete.run();
         }
 
         private void unpackInitMessage( MessageHandler handler ) throws IOException
         {
             handler.handleInitMessage( unpacker.unpackString(), unpackMap() );
-            onMessageComplete.run();
         }
 
         private void unpackIgnoredMessage( MessageHandler output ) throws IOException
         {
             output.handleIgnoredMessage();
-            onMessageComplete.run();
         }
 
         private void unpackFailureMessage( MessageHandler output ) throws IOException
@@ -450,7 +445,6 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             String code = params.get( "code" ).asString();
             String message = params.get( "message" ).asString();
             output.handleFailureMessage( code, message );
-            onMessageComplete.run();
         }
 
         private void unpackRunMessage( MessageHandler output ) throws IOException
@@ -458,26 +452,22 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             String statement = unpacker.unpackString();
             Map<String,Value> params = unpackMap();
             output.handleRunMessage( statement, params );
-            onMessageComplete.run();
         }
 
         private void unpackDiscardAllMessage( MessageHandler output ) throws IOException
         {
             output.handleDiscardAllMessage();
-            onMessageComplete.run();
         }
 
         private void unpackPullAllMessage( MessageHandler output ) throws IOException
         {
             output.handlePullAllMessage();
-            onMessageComplete.run();
         }
 
         private void unpackSuccessMessage( MessageHandler output ) throws IOException
         {
             Map<String,Value> map = unpackMap();
             output.handleSuccessMessage( map );
-            onMessageComplete.run();
         }
 
         private void unpackRecordMessage(MessageHandler output) throws IOException
@@ -489,7 +479,6 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                 fields[i] = unpackValue();
             }
             output.handleRecordMessage( fields );
-            onMessageComplete.run();
         }
 
         private Value unpackValue() throws IOException

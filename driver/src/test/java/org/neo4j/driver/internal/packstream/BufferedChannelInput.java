@@ -114,18 +114,6 @@ public class BufferedChannelInput implements PackInput
         return buffer.get( buffer.position() );
     }
 
-    @Override
-    public Runnable messageBoundaryHook()
-    {
-        return new Runnable()
-        {
-            @Override
-            public void run()
-            {
-            }
-        };
-    }
-
     private boolean attempt( int numBytes ) throws IOException
     {
         if ( buffer.remaining() >= numBytes )
