@@ -25,11 +25,11 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.driver.internal.ConnectionSettings;
-import org.neo4j.driver.internal.async.AsyncConnection;
-import org.neo4j.driver.internal.async.AsyncConnectorImpl;
-import org.neo4j.driver.internal.async.BootstrapFactory;
 import org.neo4j.driver.internal.async.BoltServerAddress;
+import org.neo4j.driver.internal.async.BootstrapFactory;
+import org.neo4j.driver.internal.async.ChannelConnectorImpl;
 import org.neo4j.driver.internal.security.SecurityPlan;
+import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.util.TestNeo4j;
@@ -46,12 +46,12 @@ import static org.junit.Assert.fail;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
-public class AsyncConnectionPoolImplTest
+public class ConnectionPoolImplTest
 {
     @Rule
     public final TestNeo4j neo4j = new TestNeo4j();
 
-    private AsyncConnectionPoolImpl pool;
+    private ConnectionPoolImpl pool;
 
     @Before
     public void setUp() throws Exception
@@ -68,7 +68,7 @@ public class AsyncConnectionPoolImplTest
     @Test
     public void shouldAcquireConnectionWhenPoolIsEmpty() throws Exception
     {
-        AsyncConnection connection = await( pool.acquire( neo4j.address() ) );
+        Connection connection = await( pool.acquire( neo4j.address() ) );
 
         assertNotNull( connection );
     }
@@ -76,10 +76,10 @@ public class AsyncConnectionPoolImplTest
     @Test
     public void shouldAcquireIdleConnection() throws Exception
     {
-        AsyncConnection connection1 = await( pool.acquire( neo4j.address() ) );
+        Connection connection1 = await( pool.acquire( neo4j.address() ) );
         await( connection1.forceRelease() );
 
-        AsyncConnection connection2 = await( pool.acquire( neo4j.address() ) );
+        Connection connection2 = await( pool.acquire( neo4j.address() ) );
         assertNotNull( connection2 );
     }
 
@@ -101,7 +101,7 @@ public class AsyncConnectionPoolImplTest
     @Test
     public void shouldFailToAcquireWhenPoolClosed() throws Exception
     {
-        AsyncConnection connection = await( pool.acquire( neo4j.address() ) );
+        Connection connection = await( pool.acquire( neo4j.address() ) );
         await( connection.forceRelease() );
         await( pool.close() );
 
@@ -120,9 +120,9 @@ public class AsyncConnectionPoolImplTest
     @Test
     public void shouldPurgeAddressWithConnections()
     {
-        AsyncConnection connection1 = await( pool.acquire( neo4j.address() ) );
-        AsyncConnection connection2 = await( pool.acquire( neo4j.address() ) );
-        AsyncConnection connection3 = await( pool.acquire( neo4j.address() ) );
+        Connection connection1 = await( pool.acquire( neo4j.address() ) );
+        Connection connection2 = await( pool.acquire( neo4j.address() ) );
+        Connection connection3 = await( pool.acquire( neo4j.address() ) );
 
         assertNotNull( connection1 );
         assertNotNull( connection2 );
@@ -162,14 +162,15 @@ public class AsyncConnectionPoolImplTest
         assertTrue( pool.close().toCompletableFuture().isDone() );
     }
 
-    private AsyncConnectionPoolImpl newPool() throws Exception
+    private ConnectionPoolImpl newPool() throws Exception
     {
         FakeClock clock = new FakeClock();
         ConnectionSettings connectionSettings = new ConnectionSettings( neo4j.authToken(), 5000 );
-        AsyncConnectorImpl connector = new AsyncConnectorImpl( connectionSettings, SecurityPlan.forAllCertificates(),
+        ChannelConnectorImpl connector =
+                new ChannelConnectorImpl( connectionSettings, SecurityPlan.forAllCertificates(),
                 DEV_NULL_LOGGING, clock );
         PoolSettings poolSettings = new PoolSettings( 5, -1, -1, 10, 5000 );
         Bootstrap bootstrap = BootstrapFactory.newBootstrap( 1 );
-        return new AsyncConnectionPoolImpl( connector, bootstrap, poolSettings, DEV_NULL_LOGGING, clock );
+        return new ConnectionPoolImpl( connector, bootstrap, poolSettings, DEV_NULL_LOGGING, clock );
     }
 }

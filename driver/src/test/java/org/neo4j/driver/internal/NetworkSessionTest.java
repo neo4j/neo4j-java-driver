@@ -29,9 +29,9 @@ import org.mockito.verification.VerificationMode;
 
 import java.util.Map;
 
-import org.neo4j.driver.internal.async.AsyncConnection;
 import org.neo4j.driver.internal.retry.FixedRetryLogic;
 import org.neo4j.driver.internal.retry.RetryLogic;
+import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.Supplier;
@@ -67,9 +67,9 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.driver.internal.async.Futures.failedFuture;
-import static org.neo4j.driver.internal.async.Futures.getBlocking;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
+import static org.neo4j.driver.internal.util.Futures.failedFuture;
+import static org.neo4j.driver.internal.util.Futures.getBlocking;
 import static org.neo4j.driver.v1.AccessMode.READ;
 import static org.neo4j.driver.v1.AccessMode.WRITE;
 import static org.neo4j.driver.v1.util.TestUtil.connectionMock;
@@ -79,7 +79,7 @@ public class NetworkSessionTest
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
-    private AsyncConnection connection;
+    private Connection connection;
     private ConnectionProvider connectionProvider;
     private NetworkSession session;
 
@@ -190,7 +190,7 @@ public class NetworkSessionTest
     public void acquiresNewConnectionForRun()
     {
         ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
-        AsyncConnection connection = mock( AsyncConnection.class );
+        Connection connection = mock( Connection.class );
         when( connectionProvider.acquireConnection( READ ) ).thenReturn( completedFuture( connection ) );
         NetworkSession session = newSession( connectionProvider, READ );
 
@@ -204,7 +204,7 @@ public class NetworkSessionTest
     public void marksPreviousConnectionInUseForNewRun()
     {
         ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
-        AsyncConnection connection = mock( AsyncConnection.class );
+        Connection connection = mock( Connection.class );
         when( connection.tryMarkInUse() ).thenReturn( true );
 
         when( connectionProvider.acquireConnection( READ ) ).thenReturn( completedFuture( connection ) );
@@ -226,8 +226,8 @@ public class NetworkSessionTest
     public void acquiresNewConnectionWhenUnableToUseCurrentOneForRun()
     {
         ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
-        AsyncConnection connection1 = mock( AsyncConnection.class );
-        AsyncConnection connection2 = mock( AsyncConnection.class );
+        Connection connection1 = mock( Connection.class );
+        Connection connection2 = mock( Connection.class );
         when( connection1.tryMarkInUse() ).thenReturn( false );
 
         when( connectionProvider.acquireConnection( READ ) )
@@ -294,7 +294,7 @@ public class NetworkSessionTest
     public void marksPreviousConnectionInUseForBeginTx()
     {
         ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
-        AsyncConnection connection = mock( AsyncConnection.class );
+        Connection connection = mock( Connection.class );
         when( connection.tryMarkInUse() ).thenReturn( true );
 
         when( connectionProvider.acquireConnection( READ ) ).thenReturn( completedFuture( connection ) );
@@ -317,8 +317,8 @@ public class NetworkSessionTest
     public void acquiresNewConnectionWhenUnableToUseCurrentOneForBeginTx()
     {
         ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
-        AsyncConnection connection1 = mock( AsyncConnection.class );
-        AsyncConnection connection2 = mock( AsyncConnection.class );
+        Connection connection1 = mock( Connection.class );
+        Connection connection2 = mock( Connection.class );
         when( connection1.tryMarkInUse() ).thenReturn( false );
 
         when( connectionProvider.acquireConnection( READ ) )
@@ -666,9 +666,9 @@ public class NetworkSessionTest
     public void shouldRunAfterBeginTxFailureOnBookmark()
     {
         RuntimeException error = new RuntimeException( "Hi" );
-        AsyncConnection connection1 = connectionMock();
+        Connection connection1 = connectionMock();
         setupFailingBegin( connection1, error );
-        AsyncConnection connection2 = connectionMock();
+        Connection connection2 = connectionMock();
 
         when( connectionProvider.acquireConnection( READ ) )
                 .thenReturn( completedFuture( connection1 ) ).thenReturn( completedFuture( connection2 ) );
@@ -697,9 +697,9 @@ public class NetworkSessionTest
     public void shouldBeginTxAfterBeginTxFailureOnBookmark()
     {
         RuntimeException error = new RuntimeException( "Hi" );
-        AsyncConnection connection1 = connectionMock();
+        Connection connection1 = connectionMock();
         setupFailingBegin( connection1, error );
-        AsyncConnection connection2 = connectionMock();
+        Connection connection2 = connectionMock();
 
         when( connectionProvider.acquireConnection( READ ) )
                 .thenReturn( completedFuture( connection1 ) ).thenReturn( completedFuture( connection2 ) );
@@ -946,12 +946,12 @@ public class NetworkSessionTest
         verify( workSpy, times( expectedInvocationCount ) ).execute( any( Transaction.class ) );
     }
 
-    private static void verifyBeginTx( AsyncConnection connectionMock, VerificationMode mode )
+    private static void verifyBeginTx( Connection connectionMock, VerificationMode mode )
     {
         verify( connectionMock, mode ).run( eq( "BEGIN" ), any(), any(), any() );
     }
 
-    private static void verifyBeginTx( AsyncConnection connectionMock, Bookmark bookmark )
+    private static void verifyBeginTx( Connection connectionMock, Bookmark bookmark )
     {
         if ( bookmark.isEmpty() )
         {
@@ -964,17 +964,17 @@ public class NetworkSessionTest
         }
     }
 
-    private static void verifyCommitTx( AsyncConnection connectionMock, VerificationMode mode )
+    private static void verifyCommitTx( Connection connectionMock, VerificationMode mode )
     {
         verifyRunAndFlush( connectionMock, "COMMIT", mode );
     }
 
-    private static void verifyRollbackTx( AsyncConnection connectionMock, VerificationMode mode )
+    private static void verifyRollbackTx( Connection connectionMock, VerificationMode mode )
     {
         verifyRunAndFlush( connectionMock, "ROLLBACK", mode );
     }
 
-    private static void verifyRunAndFlush( AsyncConnection connectionMock, String statement, VerificationMode mode )
+    private static void verifyRunAndFlush( Connection connectionMock, String statement, VerificationMode mode )
     {
         verify( connectionMock, mode ).runAndFlush( eq( statement ), any(), any(), any() );
     }
@@ -989,7 +989,7 @@ public class NetworkSessionTest
         ((ExplicitTransaction) tx).setBookmark( bookmark );
     }
 
-    private static void setupFailingCommit( AsyncConnection connection, int times )
+    private static void setupFailingCommit( Connection connection, int times )
     {
         doAnswer( new Answer<Void>()
         {
@@ -1012,7 +1012,7 @@ public class NetworkSessionTest
         } ).when( connection ).runAndFlush( eq( "COMMIT" ), any(), any(), any() );
     }
 
-    private static void setupFailingBegin( AsyncConnection connection, Throwable error )
+    private static void setupFailingBegin( Connection connection, Throwable error )
     {
         doAnswer( (Answer<Void>) invocation ->
         {

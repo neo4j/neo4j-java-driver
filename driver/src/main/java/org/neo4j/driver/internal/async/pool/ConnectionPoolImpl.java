@@ -29,18 +29,19 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.driver.internal.async.AsyncConnection;
-import org.neo4j.driver.internal.async.AsyncConnector;
-import org.neo4j.driver.internal.async.Futures;
-import org.neo4j.driver.internal.async.NettyConnection;
 import org.neo4j.driver.internal.async.BoltServerAddress;
+import org.neo4j.driver.internal.async.ChannelConnector;
+import org.neo4j.driver.internal.async.NettyConnection;
+import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Clock;
+import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 
-public class AsyncConnectionPoolImpl implements AsyncConnectionPool
+public class ConnectionPoolImpl implements ConnectionPool
 {
-    private final AsyncConnector connector;
+    private final ChannelConnector connector;
     private final Bootstrap bootstrap;
     private final ActiveChannelTracker activeChannelTracker;
     private final NettyChannelHealthChecker channelHealthChecker;
@@ -51,7 +52,7 @@ public class AsyncConnectionPoolImpl implements AsyncConnectionPool
     private final ConcurrentMap<BoltServerAddress,ChannelPool> pools = new ConcurrentHashMap<>();
     private final AtomicBoolean closed = new AtomicBoolean();
 
-    public AsyncConnectionPoolImpl( AsyncConnector connector, Bootstrap bootstrap, PoolSettings settings,
+    public ConnectionPoolImpl( ChannelConnector connector, Bootstrap bootstrap, PoolSettings settings,
             Logging logging, Clock clock )
     {
         this.connector = connector;
@@ -64,7 +65,7 @@ public class AsyncConnectionPoolImpl implements AsyncConnectionPool
     }
 
     @Override
-    public CompletionStage<AsyncConnection> acquire( final BoltServerAddress address )
+    public CompletionStage<Connection> acquire( final BoltServerAddress address )
     {
         log.debug( "Acquiring connection from pool for address: %s", address );
 

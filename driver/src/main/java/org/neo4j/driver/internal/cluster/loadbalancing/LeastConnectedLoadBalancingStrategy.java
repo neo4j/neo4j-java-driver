@@ -19,7 +19,7 @@
 package org.neo4j.driver.internal.cluster.loadbalancing;
 
 import org.neo4j.driver.internal.async.BoltServerAddress;
-import org.neo4j.driver.internal.async.pool.AsyncConnectionPool;
+import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 
@@ -35,10 +35,10 @@ public class LeastConnectedLoadBalancingStrategy implements LoadBalancingStrateg
     private final RoundRobinArrayIndex readersIndex = new RoundRobinArrayIndex();
     private final RoundRobinArrayIndex writersIndex = new RoundRobinArrayIndex();
 
-    private final AsyncConnectionPool connectionPool;
+    private final ConnectionPool connectionPool;
     private final Logger log;
 
-    public LeastConnectedLoadBalancingStrategy( AsyncConnectionPool connectionPool, Logging logging )
+    public LeastConnectedLoadBalancingStrategy( ConnectionPool connectionPool, Logging logging )
     {
         this.connectionPool = connectionPool;
         this.log = logging.getLog( LOGGER_NAME );

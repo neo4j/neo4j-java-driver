@@ -26,17 +26,17 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.neo4j.driver.internal.ConnectionSettings;
-import org.neo4j.driver.internal.async.AsyncConnector;
 import org.neo4j.driver.internal.async.BoltServerAddress;
-import org.neo4j.driver.internal.async.pool.AsyncConnectionPool;
+import org.neo4j.driver.internal.async.ChannelConnector;
 import org.neo4j.driver.internal.security.SecurityPlan;
+import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.Config;
 
 public class ChannelTrackingDriverFactory extends DriverFactoryWithClock
 {
     private final List<Channel> channels = new CopyOnWriteArrayList<>();
-    private AsyncConnectionPool pool;
+    private ConnectionPool pool;
 
     public ChannelTrackingDriverFactory( Clock clock )
     {
@@ -44,15 +44,15 @@ public class ChannelTrackingDriverFactory extends DriverFactoryWithClock
     }
 
     @Override
-    protected AsyncConnector createConnector( ConnectionSettings settings, SecurityPlan securityPlan, Config config,
+    protected ChannelConnector createConnector( ConnectionSettings settings, SecurityPlan securityPlan, Config config,
             Clock clock )
     {
-        AsyncConnector connector = super.createConnector( settings, securityPlan, config, clock );
+        ChannelConnector connector = super.createConnector( settings, securityPlan, config, clock );
         return new ChannelTrackingConnector( connector, channels );
     }
 
     @Override
-    protected AsyncConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan,
+    protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan,
             Bootstrap bootstrap, Config config )
     {
         pool = super.createConnectionPool( authToken, securityPlan, bootstrap, config );

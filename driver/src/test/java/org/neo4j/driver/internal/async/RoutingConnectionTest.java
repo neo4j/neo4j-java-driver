@@ -22,6 +22,7 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
 import org.neo4j.driver.internal.RoutingErrorHandler;
+import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 
 import static java.util.Collections.emptyMap;
@@ -32,7 +33,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.driver.v1.AccessMode.READ;
 
-public class RoutingAsyncConnectionTest
+public class RoutingConnectionTest
 {
     @Test
     public void shouldWrapGivenHandlersInRun()
@@ -48,9 +49,9 @@ public class RoutingAsyncConnectionTest
 
     private static void testHandlersWrapping( boolean flush )
     {
-        AsyncConnection connection = mock( AsyncConnection.class );
+        Connection connection = mock( Connection.class );
         RoutingErrorHandler errorHandler = mock( RoutingErrorHandler.class );
-        RoutingAsyncConnection routingConnection = new RoutingAsyncConnection( connection, READ, errorHandler );
+        RoutingConnection routingConnection = new RoutingConnection( connection, READ, errorHandler );
 
         if ( flush )
         {

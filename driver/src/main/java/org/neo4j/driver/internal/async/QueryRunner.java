@@ -27,6 +27,7 @@ import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.handlers.SessionPullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.TransactionPullAllResponseHandler;
+import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Value;
 
@@ -40,33 +41,33 @@ public final class QueryRunner
     {
     }
 
-    public static CompletionStage<InternalStatementResultCursor> runAsBlocking( AsyncConnection connection,
+    public static CompletionStage<InternalStatementResultCursor> runAsBlocking( Connection connection,
             Statement statement )
     {
         return runAsBlocking( connection, statement, null );
     }
 
-    public static CompletionStage<InternalStatementResultCursor> runAsBlocking( AsyncConnection connection,
+    public static CompletionStage<InternalStatementResultCursor> runAsBlocking( Connection connection,
             Statement statement,
             ExplicitTransaction tx )
     {
         return runAsAsync( connection, statement, tx, false );
     }
 
-    public static CompletionStage<InternalStatementResultCursor> runAsAsync( AsyncConnection connection,
+    public static CompletionStage<InternalStatementResultCursor> runAsAsync( Connection connection,
             Statement statement )
     {
         return runAsAsync( connection, statement, null );
     }
 
-    public static CompletionStage<InternalStatementResultCursor> runAsAsync( AsyncConnection connection,
+    public static CompletionStage<InternalStatementResultCursor> runAsAsync( Connection connection,
             Statement statement,
             ExplicitTransaction tx )
     {
         return runAsAsync( connection, statement, tx, true );
     }
 
-    private static CompletionStage<InternalStatementResultCursor> runAsAsync( AsyncConnection connection,
+    private static CompletionStage<InternalStatementResultCursor> runAsAsync( Connection connection,
             Statement statement, ExplicitTransaction tx, boolean async )
     {
         String query = statement.text();
@@ -91,7 +92,7 @@ public final class QueryRunner
     }
 
     private static PullAllResponseHandler newPullAllHandler( Statement statement, RunResponseHandler runHandler,
-            AsyncConnection connection, ExplicitTransaction tx )
+            Connection connection, ExplicitTransaction tx )
     {
         if ( tx != null )
         {

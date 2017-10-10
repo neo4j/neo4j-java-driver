@@ -27,7 +27,7 @@ import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Session;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
-import static org.neo4j.driver.internal.async.Futures.getBlocking;
+import static org.neo4j.driver.internal.util.Futures.getBlocking;
 
 public class InternalDriver implements Driver
 {

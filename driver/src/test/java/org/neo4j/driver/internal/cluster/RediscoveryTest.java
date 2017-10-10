@@ -27,11 +27,11 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.internal.async.AsyncConnection;
 import org.neo4j.driver.internal.async.BoltServerAddress;
-import org.neo4j.driver.internal.async.pool.AsyncConnectionPool;
 import org.neo4j.driver.internal.cluster.ClusterCompositionResponse.Failure;
 import org.neo4j.driver.internal.cluster.ClusterCompositionResponse.Success;
+import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.ImmediateSchedulingEventExecutor;
 import org.neo4j.driver.v1.exceptions.AuthenticationException;
 import org.neo4j.driver.v1.exceptions.ProtocolException;
@@ -50,19 +50,19 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.driver.internal.async.Futures.failedFuture;
-import static org.neo4j.driver.internal.async.Futures.getBlocking;
 import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.A;
 import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.B;
 import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.C;
 import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.D;
 import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.E;
 import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
+import static org.neo4j.driver.internal.util.Futures.failedFuture;
+import static org.neo4j.driver.internal.util.Futures.getBlocking;
 import static org.neo4j.driver.v1.util.TestUtil.asOrderedSet;
 
 public class RediscoveryTest
 {
-    private final AsyncConnectionPool pool = asyncConnectionPoolMock();
+    private final ConnectionPool pool = asyncConnectionPoolMock();
 
     @Test
     public void shouldUseFirstRouterInTable()
@@ -353,7 +353,7 @@ public class RediscoveryTest
         ClusterCompositionProvider provider = mock( ClusterCompositionProvider.class );
         when( provider.getClusterComposition( any( CompletionStage.class ) ) ).then( invocation ->
         {
-            CompletionStage<AsyncConnection> connectionStage = invocation.getArgumentAt( 0, CompletionStage.class );
+            CompletionStage<Connection> connectionStage = invocation.getArgumentAt( 0, CompletionStage.class );
             BoltServerAddress address = getBlocking( connectionStage ).serverAddress();
             Object response = responsesByAddress.get( address );
             assertNotNull( response );
@@ -376,9 +376,9 @@ public class RediscoveryTest
         return resolver;
     }
 
-    private static AsyncConnectionPool asyncConnectionPoolMock()
+    private static ConnectionPool asyncConnectionPoolMock()
     {
-        AsyncConnectionPool pool = mock( AsyncConnectionPool.class );
+        ConnectionPool pool = mock( ConnectionPool.class );
         when( pool.acquire( any() ) ).then( invocation ->
         {
             BoltServerAddress address = invocation.getArgumentAt( 0, BoltServerAddress.class );
@@ -387,9 +387,9 @@ public class RediscoveryTest
         return pool;
     }
 
-    private static AsyncConnection asyncConnectionMock( BoltServerAddress address )
+    private static Connection asyncConnectionMock( BoltServerAddress address )
     {
-        AsyncConnection connection = mock( AsyncConnection.class );
+        Connection connection = mock( Connection.class );
         when( connection.serverAddress() ).thenReturn( address );
         return connection;
     }

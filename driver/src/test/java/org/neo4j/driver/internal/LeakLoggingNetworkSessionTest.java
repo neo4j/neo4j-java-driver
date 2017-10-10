@@ -25,8 +25,8 @@ import org.mockito.ArgumentCaptor;
 
 import java.lang.reflect.Method;
 
-import org.neo4j.driver.internal.async.AsyncConnection;
 import org.neo4j.driver.internal.retry.FixedRetryLogic;
+import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Logger;
@@ -104,14 +104,14 @@ public class LeakLoggingNetworkSessionTest
     private static ConnectionProvider connectionProviderMock( boolean inUseConnection )
     {
         ConnectionProvider provider = mock( ConnectionProvider.class );
-        AsyncConnection connection = connectionMock( inUseConnection );
+        Connection connection = connectionMock( inUseConnection );
         when( provider.acquireConnection( any( AccessMode.class ) ) ).thenReturn( completedFuture( connection ) );
         return provider;
     }
 
-    private static AsyncConnection connectionMock( boolean inUse )
+    private static Connection connectionMock( boolean inUse )
     {
-        AsyncConnection connection = mock( AsyncConnection.class );
+        Connection connection = mock( Connection.class );
         when( connection.isInUse() ).thenReturn( inUse );
         return connection;
     }

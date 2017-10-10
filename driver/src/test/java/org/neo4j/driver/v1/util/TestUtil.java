@@ -31,7 +31,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 
-import org.neo4j.driver.internal.async.AsyncConnection;
+import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Session;
@@ -151,16 +151,16 @@ public final class TestUtil
         while ( nodesDeleted > 0 );
     }
 
-    public static AsyncConnection connectionMock()
+    public static Connection connectionMock()
     {
-        AsyncConnection connection = mock( AsyncConnection.class );
+        Connection connection = mock( Connection.class );
         setupSuccessfulPullAll( connection, "COMMIT" );
         setupSuccessfulPullAll( connection, "ROLLBACK" );
         setupSuccessfulPullAll( connection, "BEGIN" );
         return connection;
     }
 
-    private static void setupSuccessfulPullAll( AsyncConnection connection, String statement )
+    private static void setupSuccessfulPullAll( Connection connection, String statement )
     {
         doAnswer( invocation ->
         {

@@ -24,15 +24,15 @@ import io.netty.channel.ChannelFuture;
 
 import java.util.List;
 
-import org.neo4j.driver.internal.async.AsyncConnector;
 import org.neo4j.driver.internal.async.BoltServerAddress;
+import org.neo4j.driver.internal.async.ChannelConnector;
 
-public class ChannelTrackingConnector implements AsyncConnector
+public class ChannelTrackingConnector implements ChannelConnector
 {
-    private final AsyncConnector realConnector;
+    private final ChannelConnector realConnector;
     private final List<Channel> channels;
 
-    public ChannelTrackingConnector( AsyncConnector realConnector, List<Channel> channels )
+    public ChannelTrackingConnector( ChannelConnector realConnector, List<Channel> channels )
     {
         this.realConnector = realConnector;
         this.channels = channels;

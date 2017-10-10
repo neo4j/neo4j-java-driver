@@ -20,10 +20,10 @@ package org.neo4j.driver.internal.cluster;
 
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.internal.async.AsyncConnection;
+import org.neo4j.driver.internal.spi.Connection;
 
 public interface ClusterCompositionProvider
 {
     CompletionStage<ClusterCompositionResponse> getClusterComposition(
-            CompletionStage<AsyncConnection> connectionStage );
+            CompletionStage<Connection> connectionStage );
 }

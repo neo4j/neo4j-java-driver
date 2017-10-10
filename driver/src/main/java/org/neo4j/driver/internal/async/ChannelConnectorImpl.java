@@ -38,7 +38,7 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static java.util.Objects.requireNonNull;
 
-public class AsyncConnectorImpl implements AsyncConnector
+public class ChannelConnectorImpl implements ChannelConnector
 {
     private final String userAgent;
     private final Map<String,Value> authToken;
@@ -47,7 +47,7 @@ public class AsyncConnectorImpl implements AsyncConnector
     private final Logging logging;
     private final Clock clock;
 
-    public AsyncConnectorImpl( ConnectionSettings connectionSettings, SecurityPlan securityPlan, Logging logging,
+    public ChannelConnectorImpl( ConnectionSettings connectionSettings, SecurityPlan securityPlan, Logging logging,
             Clock clock )
     {
         this.userAgent = connectionSettings.userAgent();

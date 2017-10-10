@@ -25,13 +25,11 @@ import java.io.IOException;
 import java.net.URI;
 import java.security.GeneralSecurityException;
 
-import org.neo4j.driver.internal.async.AsyncConnector;
-import org.neo4j.driver.internal.async.AsyncConnectorImpl;
 import org.neo4j.driver.internal.async.BoltServerAddress;
 import org.neo4j.driver.internal.async.BootstrapFactory;
-import org.neo4j.driver.internal.async.Futures;
-import org.neo4j.driver.internal.async.pool.AsyncConnectionPool;
-import org.neo4j.driver.internal.async.pool.AsyncConnectionPoolImpl;
+import org.neo4j.driver.internal.async.ChannelConnector;
+import org.neo4j.driver.internal.async.ChannelConnectorImpl;
+import org.neo4j.driver.internal.async.pool.ConnectionPoolImpl;
 import org.neo4j.driver.internal.async.pool.PoolSettings;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
@@ -43,8 +41,10 @@ import org.neo4j.driver.internal.retry.ExponentialBackoffRetryLogic;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.SecurityPlan;
+import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.util.Clock;
+import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
@@ -74,7 +74,7 @@ public class DriverFactory
         EventExecutorGroup eventExecutorGroup = bootstrap.config().group();
         RetryLogic retryLogic = createRetryLogic( retrySettings, eventExecutorGroup, config.logging() );
 
-        AsyncConnectionPool connectionPool = createConnectionPool( authToken, securityPlan, bootstrap, config );
+        ConnectionPool connectionPool = createConnectionPool( authToken, securityPlan, bootstrap, config );
 
         try
         {
@@ -98,27 +98,27 @@ public class DriverFactory
         }
     }
 
-    protected AsyncConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan,
+    protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan,
             Bootstrap bootstrap, Config config )
     {
         Clock clock = createClock();
         ConnectionSettings settings = new ConnectionSettings( authToken, config.connectionTimeoutMillis() );
-        AsyncConnector connector = createConnector( settings, securityPlan, config, clock );
+        ChannelConnector connector = createConnector( settings, securityPlan, config, clock );
         PoolSettings poolSettings = new PoolSettings( config.maxIdleConnectionPoolSize(),
                 config.idleTimeBeforeConnectionTest(), config.maxConnectionLifetimeMillis(),
                 config.maxConnectionPoolSize(),
                 config.connectionAcquisitionTimeoutMillis() );
-        return new AsyncConnectionPoolImpl( connector, bootstrap, poolSettings, config.logging(), clock );
+        return new ConnectionPoolImpl( connector, bootstrap, poolSettings, config.logging(), clock );
     }
 
-    protected AsyncConnector createConnector( ConnectionSettings settings, SecurityPlan securityPlan,
+    protected ChannelConnector createConnector( ConnectionSettings settings, SecurityPlan securityPlan,
             Config config, Clock clock )
     {
-        return new AsyncConnectorImpl( settings, securityPlan, config.logging(), clock );
+        return new ChannelConnectorImpl( settings, securityPlan, config.logging(), clock );
     }
 
     private InternalDriver createDriver( URI uri, BoltServerAddress address,
-            AsyncConnectionPool connectionPool, Config config, RoutingSettings routingSettings,
+            ConnectionPool connectionPool, Config config, RoutingSettings routingSettings,
             EventExecutorGroup eventExecutorGroup, SecurityPlan securityPlan, RetryLogic retryLogic )
     {
         String scheme = uri.getScheme().toLowerCase();
@@ -141,7 +141,7 @@ public class DriverFactory
      * <b>This method is protected only for testing</b>
      */
     protected InternalDriver createDirectDriver( BoltServerAddress address, Config config,
-            SecurityPlan securityPlan, RetryLogic retryLogic, AsyncConnectionPool connectionPool )
+            SecurityPlan securityPlan, RetryLogic retryLogic, ConnectionPool connectionPool )
     {
         ConnectionProvider connectionProvider =
                 new DirectConnectionProvider( address, connectionPool );
@@ -155,7 +155,7 @@ public class DriverFactory
      * <p>
      * <b>This method is protected only for testing</b>
      */
-    protected InternalDriver createRoutingDriver( BoltServerAddress address, AsyncConnectionPool connectionPool,
+    protected InternalDriver createRoutingDriver( BoltServerAddress address, ConnectionPool connectionPool,
             Config config, RoutingSettings routingSettings, SecurityPlan securityPlan, RetryLogic retryLogic,
             EventExecutorGroup eventExecutorGroup )
     {
@@ -184,7 +184,7 @@ public class DriverFactory
      * <p>
      * <b>This method is protected only for testing</b>
      */
-    protected LoadBalancer createLoadBalancer( BoltServerAddress address, AsyncConnectionPool connectionPool,
+    protected LoadBalancer createLoadBalancer( BoltServerAddress address, ConnectionPool connectionPool,
             EventExecutorGroup eventExecutorGroup, Config config, RoutingSettings routingSettings )
     {
         LoadBalancingStrategy loadBalancingStrategy = createLoadBalancingStrategy( config, connectionPool );
@@ -193,7 +193,7 @@ public class DriverFactory
     }
 
     private static LoadBalancingStrategy createLoadBalancingStrategy( Config config,
-            AsyncConnectionPool connectionPool )
+            ConnectionPool connectionPool )
     {
         switch ( config.loadBalancingStrategy() )
         {

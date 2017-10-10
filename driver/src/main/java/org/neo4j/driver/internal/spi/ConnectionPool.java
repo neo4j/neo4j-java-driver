@@ -16,16 +16,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.async.pool;
+package org.neo4j.driver.internal.spi;
 
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.internal.async.AsyncConnection;
 import org.neo4j.driver.internal.async.BoltServerAddress;
 
-public interface AsyncConnectionPool
+public interface ConnectionPool
 {
-    CompletionStage<AsyncConnection> acquire( BoltServerAddress address );
+    CompletionStage<Connection> acquire( BoltServerAddress address );
 
     void purge( BoltServerAddress address );
 

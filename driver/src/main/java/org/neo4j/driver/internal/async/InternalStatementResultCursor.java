@@ -25,6 +25,7 @@ import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
+import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.StatementResultCursor;
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException;

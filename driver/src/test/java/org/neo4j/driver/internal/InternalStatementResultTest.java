@@ -27,11 +27,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-import org.neo4j.driver.internal.async.AsyncConnection;
 import org.neo4j.driver.internal.async.InternalStatementResultCursor;
 import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.handlers.SessionPullAllResponseHandler;
+import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.v1.Record;
@@ -397,7 +397,7 @@ public class InternalStatementResultTest
         runHandler.onSuccess( singletonMap( "fields", value( Arrays.asList( "k1", "k2" ) ) ) );
 
         Statement statement = new Statement( "<unknown>" );
-        AsyncConnection connection = mock( AsyncConnection.class );
+        Connection connection = mock( Connection.class );
         when( connection.serverAddress() ).thenReturn( LOCAL_DEFAULT );
         when( connection.serverVersion() ).thenReturn( ServerVersion.v3_2_0 );
         PullAllResponseHandler pullAllHandler = new SessionPullAllResponseHandler( statement, runHandler, connection );

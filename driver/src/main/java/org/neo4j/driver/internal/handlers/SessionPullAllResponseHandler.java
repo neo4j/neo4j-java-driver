@@ -18,13 +18,13 @@
  */
 package org.neo4j.driver.internal.handlers;
 
-import org.neo4j.driver.internal.async.AsyncConnection;
+import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.v1.Statement;
 
 public class SessionPullAllResponseHandler extends PullAllResponseHandler
 {
     public SessionPullAllResponseHandler( Statement statement, RunResponseHandler runResponseHandler,
-            AsyncConnection connection )
+            Connection connection )
     {
         super( statement, runResponseHandler, connection );
     }

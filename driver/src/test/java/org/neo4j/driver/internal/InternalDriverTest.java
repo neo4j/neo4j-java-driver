@@ -27,7 +27,7 @@ import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.driver.internal.async.Futures.getBlocking;
+import static org.neo4j.driver.internal.util.Futures.getBlocking;
 
 public class InternalDriverTest
 {

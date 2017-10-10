@@ -20,9 +20,9 @@ package org.neo4j.driver.internal;
 
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.internal.async.AsyncConnection;
 import org.neo4j.driver.internal.async.BoltServerAddress;
-import org.neo4j.driver.internal.async.pool.AsyncConnectionPool;
+import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.v1.AccessMode;
 
@@ -35,16 +35,16 @@ import static org.neo4j.driver.v1.AccessMode.READ;
 public class DirectConnectionProvider implements ConnectionProvider
 {
     private final BoltServerAddress address;
-    private final AsyncConnectionPool connectionPool;
+    private final ConnectionPool connectionPool;
 
-    DirectConnectionProvider( BoltServerAddress address, AsyncConnectionPool connectionPool )
+    DirectConnectionProvider( BoltServerAddress address, ConnectionPool connectionPool )
     {
         this.address = address;
         this.connectionPool = connectionPool;
     }
 
     @Override
-    public CompletionStage<AsyncConnection> acquireConnection( AccessMode mode )
+    public CompletionStage<Connection> acquireConnection( AccessMode mode )
     {
         return connectionPool.acquire( address );
     }
@@ -52,7 +52,7 @@ public class DirectConnectionProvider implements ConnectionProvider
     @Override
     public CompletionStage<Void> verifyConnectivity()
     {
-        return acquireConnection( READ ).thenCompose( AsyncConnection::forceRelease );
+        return acquireConnection( READ ).thenCompose( Connection::forceRelease );
     }
 
     @Override

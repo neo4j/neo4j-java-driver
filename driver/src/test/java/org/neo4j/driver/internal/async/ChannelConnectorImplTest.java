@@ -49,7 +49,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
-public class AsyncConnectorImplTest
+public class ChannelConnectorImplTest
 {
     @Rule
     public final TestNeo4j neo4j = new TestNeo4j();
@@ -74,7 +74,7 @@ public class AsyncConnectorImplTest
     @Test
     public void shouldConnect() throws Exception
     {
-        AsyncConnectorImpl connector = newConnector( neo4j.authToken() );
+        ChannelConnectorImpl connector = newConnector( neo4j.authToken() );
 
         ChannelFuture channelFuture = connector.connect( neo4j.address(), bootstrap );
         assertTrue( channelFuture.await( 10, TimeUnit.SECONDS ) );
@@ -87,7 +87,7 @@ public class AsyncConnectorImplTest
     @Test
     public void shouldFailToConnectToWrongAddress() throws Exception
     {
-        AsyncConnectorImpl connector = newConnector( neo4j.authToken() );
+        ChannelConnectorImpl connector = newConnector( neo4j.authToken() );
 
         ChannelFuture channelFuture = connector.connect( new BoltServerAddress( "wrong-localhost" ), bootstrap );
         assertTrue( channelFuture.await( 10, TimeUnit.SECONDS ) );
@@ -111,7 +111,7 @@ public class AsyncConnectorImplTest
     public void shouldFailToConnectWithWrongCredentials() throws Exception
     {
         AuthToken authToken = AuthTokens.basic( "neo4j", "wrong-password" );
-        AsyncConnectorImpl connector = newConnector( authToken );
+        ChannelConnectorImpl connector = newConnector( authToken );
 
         ChannelFuture channelFuture = connector.connect( neo4j.address(), bootstrap );
         assertTrue( channelFuture.await( 10, TimeUnit.SECONDS ) );
@@ -133,7 +133,7 @@ public class AsyncConnectorImplTest
     @Test( timeout = 10000 )
     public void shouldEnforceConnectTimeout() throws Exception
     {
-        AsyncConnectorImpl connector = newConnector( neo4j.authToken(), 1000 );
+        ChannelConnectorImpl connector = newConnector( neo4j.authToken(), 1000 );
 
         // try connect to a non-routable ip address 10.0.0.0, it will never respond
         ChannelFuture channelFuture = connector.connect( new BoltServerAddress( "10.0.0.0" ), bootstrap );
@@ -150,14 +150,15 @@ public class AsyncConnectorImplTest
         }
     }
 
-    private AsyncConnectorImpl newConnector( AuthToken authToken ) throws Exception
+    private ChannelConnectorImpl newConnector( AuthToken authToken ) throws Exception
     {
         return newConnector( authToken, Integer.MAX_VALUE );
     }
 
-    private AsyncConnectorImpl newConnector( AuthToken authToken, int connectTimeoutMillis ) throws Exception
+    private ChannelConnectorImpl newConnector( AuthToken authToken, int connectTimeoutMillis ) throws Exception
     {
         ConnectionSettings settings = new ConnectionSettings( authToken, 1000 );
-        return new AsyncConnectorImpl( settings, SecurityPlan.forAllCertificates(), DEV_NULL_LOGGING, new FakeClock() );
+        return new ChannelConnectorImpl( settings, SecurityPlan.forAllCertificates(), DEV_NULL_LOGGING,
+                new FakeClock() );
     }
 }

@@ -23,9 +23,9 @@ import java.util.List;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.internal.async.AsyncConnection;
-import org.neo4j.driver.internal.async.Futures;
 import org.neo4j.driver.internal.async.QueryRunner;
+import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
@@ -48,7 +48,7 @@ public class RoutingProcedureRunner
         this.context = context;
     }
 
-    public CompletionStage<RoutingProcedureResponse> run( CompletionStage<AsyncConnection> connectionStage )
+    public CompletionStage<RoutingProcedureResponse> run( CompletionStage<Connection> connectionStage )
     {
         return connectionStage.thenCompose( connection ->
         {
@@ -68,7 +68,7 @@ public class RoutingProcedureRunner
         } );
     }
 
-    CompletionStage<List<Record>> runProcedure( AsyncConnection connection, Statement procedure )
+    CompletionStage<List<Record>> runProcedure( Connection connection, Statement procedure )
     {
         return QueryRunner.runAsAsync( connection, procedure )
                 .thenCompose( StatementResultCursor::listAsync );

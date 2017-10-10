@@ -20,7 +20,6 @@ package org.neo4j.driver.internal.spi;
 
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.internal.async.AsyncConnection;
 import org.neo4j.driver.v1.AccessMode;
 
 /**
@@ -29,7 +28,7 @@ import org.neo4j.driver.v1.AccessMode;
  */
 public interface ConnectionProvider
 {
-    CompletionStage<AsyncConnection> acquireConnection( AccessMode mode );
+    CompletionStage<Connection> acquireConnection( AccessMode mode );
 
     CompletionStage<Void> verifyConnectivity();
 

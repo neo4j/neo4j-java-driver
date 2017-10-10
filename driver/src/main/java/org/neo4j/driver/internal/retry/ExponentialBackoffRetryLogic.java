@@ -28,8 +28,8 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.driver.internal.async.Futures;
 import org.neo4j.driver.internal.util.Clock;
+import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.Supplier;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;

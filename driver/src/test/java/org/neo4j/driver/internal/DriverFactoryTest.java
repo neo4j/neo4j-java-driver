@@ -30,16 +30,16 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 
-import org.neo4j.driver.internal.async.AsyncConnection;
 import org.neo4j.driver.internal.async.BoltServerAddress;
-import org.neo4j.driver.internal.async.Futures;
-import org.neo4j.driver.internal.async.pool.AsyncConnectionPool;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.SecurityPlan;
+import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
+import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
@@ -75,7 +75,7 @@ public class DriverFactoryTest
     @Test
     public void connectionPoolClosedWhenDriverCreationFails() throws Exception
     {
-        AsyncConnectionPool connectionPool = connectionPoolMock();
+        ConnectionPool connectionPool = connectionPoolMock();
         DriverFactory factory = new ThrowingDriverFactory( connectionPool );
 
         try
@@ -93,7 +93,7 @@ public class DriverFactoryTest
     @Test
     public void connectionPoolCloseExceptionIsSuppressedWhenDriverCreationFails() throws Exception
     {
-        AsyncConnectionPool connectionPool = connectionPoolMock();
+        ConnectionPool connectionPool = connectionPoolMock();
         RuntimeException poolCloseError = new RuntimeException( "Pool close error" );
         when( connectionPool.close() ).thenReturn( Futures.failedFuture( poolCloseError ) );
 
@@ -148,10 +148,10 @@ public class DriverFactoryTest
         return driverFactory.newInstance( uri, auth, routingSettings, RetrySettings.DEFAULT, config );
     }
 
-    private static AsyncConnectionPool connectionPoolMock()
+    private static ConnectionPool connectionPoolMock()
     {
-        AsyncConnectionPool pool = mock( AsyncConnectionPool.class );
-        AsyncConnection connection = mock( AsyncConnection.class );
+        ConnectionPool pool = mock( ConnectionPool.class );
+        Connection connection = mock( Connection.class );
         when( pool.acquire( any( BoltServerAddress.class ) ) ).thenReturn( completedFuture( connection ) );
         when( pool.close() ).thenReturn( completedFuture( null ) );
         return pool;
@@ -159,9 +159,9 @@ public class DriverFactoryTest
 
     private static class ThrowingDriverFactory extends DriverFactory
     {
-        final AsyncConnectionPool connectionPool;
+        final ConnectionPool connectionPool;
 
-        ThrowingDriverFactory( AsyncConnectionPool connectionPool )
+        ThrowingDriverFactory( ConnectionPool connectionPool )
         {
             this.connectionPool = connectionPool;
         }
@@ -173,7 +173,7 @@ public class DriverFactoryTest
         }
 
         @Override
-        protected InternalDriver createRoutingDriver( BoltServerAddress address, AsyncConnectionPool connectionPool,
+        protected InternalDriver createRoutingDriver( BoltServerAddress address, ConnectionPool connectionPool,
                 Config config, RoutingSettings routingSettings, SecurityPlan securityPlan, RetryLogic retryLogic,
                 EventExecutorGroup eventExecutorGroup )
         {
@@ -181,7 +181,7 @@ public class DriverFactoryTest
         }
 
         @Override
-        protected AsyncConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan,
+        protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan,
                 Bootstrap bootstrap, Config config )
         {
             return connectionPool;
@@ -201,7 +201,7 @@ public class DriverFactoryTest
         }
 
         @Override
-        protected LoadBalancer createLoadBalancer( BoltServerAddress address, AsyncConnectionPool connectionPool,
+        protected LoadBalancer createLoadBalancer( BoltServerAddress address, ConnectionPool connectionPool,
                 EventExecutorGroup eventExecutorGroup, Config config, RoutingSettings routingSettings )
         {
             return null;
@@ -217,7 +217,7 @@ public class DriverFactoryTest
         }
 
         @Override
-        protected AsyncConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan,
+        protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan,
                 Bootstrap bootstrap, Config config )
         {
             return connectionPoolMock();

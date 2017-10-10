@@ -22,18 +22,19 @@ import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.RoutingErrorHandler;
+import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Value;
 
-public class RoutingAsyncConnection implements AsyncConnection
+public class RoutingConnection implements Connection
 {
-    private final AsyncConnection delegate;
+    private final Connection delegate;
     private final AccessMode accessMode;
     private final RoutingErrorHandler errorHandler;
 
-    public RoutingAsyncConnection( AsyncConnection delegate, AccessMode accessMode, RoutingErrorHandler errorHandler )
+    public RoutingConnection( Connection delegate, AccessMode accessMode, RoutingErrorHandler errorHandler )
     {
         this.delegate = delegate;
         this.accessMode = accessMode;

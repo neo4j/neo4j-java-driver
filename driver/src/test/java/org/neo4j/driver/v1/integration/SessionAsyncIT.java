@@ -37,7 +37,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.driver.internal.async.Futures;
+import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
@@ -69,7 +69,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.driver.internal.async.Futures.getBlocking;
+import static org.neo4j.driver.internal.util.Futures.getBlocking;
 import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.internal.util.Matchers.arithmeticError;
 import static org.neo4j.driver.internal.util.Matchers.containsResultAvailableAfterAndResultConsumedAfter;

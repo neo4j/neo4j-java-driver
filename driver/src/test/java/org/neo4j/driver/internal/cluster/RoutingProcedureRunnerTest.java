@@ -24,8 +24,8 @@ import java.net.URI;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.internal.async.AsyncConnection;
 import org.neo4j.driver.internal.async.BoltServerAddress;
+import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Value;
@@ -41,11 +41,11 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.driver.internal.async.Futures.failedFuture;
-import static org.neo4j.driver.internal.async.Futures.getBlocking;
 import static org.neo4j.driver.internal.cluster.RoutingProcedureRunner.GET_ROUTING_TABLE;
 import static org.neo4j.driver.internal.cluster.RoutingProcedureRunner.GET_ROUTING_TABLE_PARAM;
 import static org.neo4j.driver.internal.cluster.RoutingProcedureRunner.GET_SERVERS;
+import static org.neo4j.driver.internal.util.Futures.failedFuture;
+import static org.neo4j.driver.internal.util.Futures.getBlocking;
 import static org.neo4j.driver.internal.util.ServerVersion.version;
 import static org.neo4j.driver.v1.Values.parameters;
 
@@ -144,9 +144,9 @@ public class RoutingProcedureRunnerTest
         }
     }
 
-    private static CompletionStage<AsyncConnection> connectionStage( String serverVersion )
+    private static CompletionStage<Connection> connectionStage( String serverVersion )
     {
-        AsyncConnection connection = mock( AsyncConnection.class );
+        Connection connection = mock( Connection.class );
         when( connection.serverAddress() ).thenReturn( new BoltServerAddress( "123:45" ) );
         when( connection.serverVersion() ).thenReturn( version( serverVersion ) );
         return completedFuture( connection );
@@ -168,7 +168,7 @@ public class RoutingProcedureRunnerTest
         }
 
         @Override
-        CompletionStage<List<Record>> runProcedure( AsyncConnection connection, Statement procedure )
+        CompletionStage<List<Record>> runProcedure( Connection connection, Statement procedure )
         {
             return runProcedureResult;
         }

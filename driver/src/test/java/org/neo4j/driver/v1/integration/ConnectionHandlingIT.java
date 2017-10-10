@@ -31,18 +31,18 @@ import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.DriverFactory;
-import org.neo4j.driver.internal.async.AsyncConnection;
-import org.neo4j.driver.internal.async.AsyncConnector;
-import org.neo4j.driver.internal.async.AsyncConnectorImpl;
 import org.neo4j.driver.internal.async.BoltServerAddress;
-import org.neo4j.driver.internal.async.Futures;
-import org.neo4j.driver.internal.async.pool.AsyncConnectionPool;
-import org.neo4j.driver.internal.async.pool.AsyncConnectionPoolImpl;
+import org.neo4j.driver.internal.async.ChannelConnector;
+import org.neo4j.driver.internal.async.ChannelConnectorImpl;
+import org.neo4j.driver.internal.async.pool.ConnectionPoolImpl;
 import org.neo4j.driver.internal.async.pool.PoolSettings;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.SecurityPlan;
+import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Clock;
+import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
@@ -100,12 +100,12 @@ public class ConnectionHandlingIT
     {
         StatementResult result = createNodesInNewSession( 12 );
 
-        AsyncConnection connection1 = connectionPool.lastAcquiredConnectionSpy;
+        Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
         verify( connection1, never() ).release();
 
         result.consume();
 
-        AsyncConnection connection2 = connectionPool.lastAcquiredConnectionSpy;
+        Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
         assertSame( connection1, connection2 );
         verify( connection1 ).release();
     }
@@ -115,13 +115,13 @@ public class ConnectionHandlingIT
     {
         StatementResult result = createNodesInNewSession( 5 );
 
-        AsyncConnection connection1 = connectionPool.lastAcquiredConnectionSpy;
+        Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
         verify( connection1, never() ).release();
 
         ResultSummary summary = result.summary();
 
         assertEquals( 5, summary.counters().nodesCreated() );
-        AsyncConnection connection2 = connectionPool.lastAcquiredConnectionSpy;
+        Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
         assertSame( connection1, connection2 );
         verify( connection1 ).release();
     }
@@ -131,13 +131,13 @@ public class ConnectionHandlingIT
     {
         StatementResult result = createNodesInNewSession( 2 );
 
-        AsyncConnection connection1 = connectionPool.lastAcquiredConnectionSpy;
+        Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
         verify( connection1, never() ).release();
 
         List<Record> records = result.list();
         assertEquals( 2, records.size() );
 
-        AsyncConnection connection2 = connectionPool.lastAcquiredConnectionSpy;
+        Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
         assertSame( connection1, connection2 );
         verify( connection1 ).release();
     }
@@ -147,12 +147,12 @@ public class ConnectionHandlingIT
     {
         StatementResult result = createNodesInNewSession( 1 );
 
-        AsyncConnection connection1 = connectionPool.lastAcquiredConnectionSpy;
+        Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
         verify( connection1, never() ).release();
 
         assertNotNull( result.single() );
 
-        AsyncConnection connection2 = connectionPool.lastAcquiredConnectionSpy;
+        Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
         assertSame( connection1, connection2 );
         verify( connection1 ).release();
     }
@@ -162,7 +162,7 @@ public class ConnectionHandlingIT
     {
         StatementResult result = createNodesInNewSession( 6 );
 
-        AsyncConnection connection1 = connectionPool.lastAcquiredConnectionSpy;
+        Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
         verify( connection1, never() ).release();
 
         int seenRecords = 0;
@@ -173,7 +173,7 @@ public class ConnectionHandlingIT
         }
         assertEquals( 6, seenRecords );
 
-        AsyncConnection connection2 = connectionPool.lastAcquiredConnectionSpy;
+        Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
         assertSame( connection1, connection2 );
         verify( connection1 ).release();
     }
@@ -185,7 +185,7 @@ public class ConnectionHandlingIT
         // provoke division by zero
         StatementResult result = session.run( "UNWIND range(10, 0, -1) AS i CREATE (n {index: 10/i}) RETURN n" );
 
-        AsyncConnection connection1 = connectionPool.lastAcquiredConnectionSpy;
+        Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
         verify( connection1, never() ).release();
 
         try
@@ -198,7 +198,7 @@ public class ConnectionHandlingIT
             assertThat( e, instanceOf( ClientException.class ) );
         }
 
-        AsyncConnection connection2 = connectionPool.lastAcquiredConnectionSpy;
+        Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
         assertSame( connection1, connection2 );
         verify( connection1 ).release();
     }
@@ -209,7 +209,7 @@ public class ConnectionHandlingIT
         Session session = driver.session();
 
         StatementResult result1 = createNodes( 3, session );
-        AsyncConnection connection1 = connectionPool.lastAcquiredConnectionSpy;
+        Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
 
         StatementResult result2 = createNodes( 2, session );
 
@@ -226,7 +226,7 @@ public class ConnectionHandlingIT
         Session session = driver.session();
 
         StatementResult result1 = createNodes( 3, session );
-        AsyncConnection connection1 = connectionPool.lastAcquiredConnectionSpy;
+        Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
 
         session.beginTransaction();
 
@@ -243,14 +243,14 @@ public class ConnectionHandlingIT
 
         Transaction tx = session.beginTransaction();
 
-        AsyncConnection connection1 = connectionPool.lastAcquiredConnectionSpy;
+        Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
         verify( connection1, never() ).release();
 
         StatementResult result = createNodes( 5, tx );
         tx.success();
         tx.close();
 
-        AsyncConnection connection2 = connectionPool.lastAcquiredConnectionSpy;
+        Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
         assertSame( connection1, connection2 );
         verify( connection1 ).release();
 
@@ -264,14 +264,14 @@ public class ConnectionHandlingIT
 
         Transaction tx = session.beginTransaction();
 
-        AsyncConnection connection1 = connectionPool.lastAcquiredConnectionSpy;
+        Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
         verify( connection1, never() ).release();
 
         StatementResult result = createNodes( 8, tx );
         tx.failure();
         tx.close();
 
-        AsyncConnection connection2 = connectionPool.lastAcquiredConnectionSpy;
+        Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
         assertSame( connection1, connection2 );
         verify( connection1 ).release();
 
@@ -286,12 +286,12 @@ public class ConnectionHandlingIT
             session.run( "CREATE CONSTRAINT ON (book:Book) ASSERT exists(book.isbn)" );
         }
 
-        AsyncConnection connection1 = connectionPool.lastAcquiredConnectionSpy;
+        Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
         verify( connection1 ).release(); // connection used for constraint creation
 
         Session session = driver.session();
         Transaction tx = session.beginTransaction();
-        AsyncConnection connection2 = connectionPool.lastAcquiredConnectionSpy;
+        Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
         verify( connection2, never() ).release();
 
         // property existence constraints are verified on commit, try to violate it
@@ -328,7 +328,7 @@ public class ConnectionHandlingIT
         MemorizingConnectionPool connectionPool;
 
         @Override
-        protected AsyncConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan,
+        protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan,
                 Bootstrap bootstrap, Config config )
         {
             ConnectionSettings connectionSettings = new ConnectionSettings( authToken, 1000 );
@@ -336,19 +336,19 @@ public class ConnectionHandlingIT
                     config.idleTimeBeforeConnectionTest(), config.maxConnectionLifetimeMillis(),
                     config.maxConnectionPoolSize(), config.connectionAcquisitionTimeoutMillis() );
             Clock clock = createClock();
-            AsyncConnectorImpl connector =
-                    new AsyncConnectorImpl( connectionSettings, securityPlan, config.logging(), clock );
+            ChannelConnectorImpl connector =
+                    new ChannelConnectorImpl( connectionSettings, securityPlan, config.logging(), clock );
             connectionPool = new MemorizingConnectionPool(  connector, bootstrap, poolSettings,  config.logging(), clock);
             return connectionPool;
         }
     }
 
-    private static class MemorizingConnectionPool extends AsyncConnectionPoolImpl
+    private static class MemorizingConnectionPool extends ConnectionPoolImpl
     {
-        AsyncConnection lastAcquiredConnectionSpy;
+        Connection lastAcquiredConnectionSpy;
         boolean memorize;
 
-        public MemorizingConnectionPool( AsyncConnector connector,
+        public MemorizingConnectionPool( ChannelConnector connector,
                 Bootstrap bootstrap, PoolSettings settings, Logging logging,
                 Clock clock )
         {
@@ -362,9 +362,9 @@ public class ConnectionHandlingIT
         }
 
         @Override
-        public CompletionStage<AsyncConnection> acquire( final BoltServerAddress address )
+        public CompletionStage<Connection> acquire( final BoltServerAddress address )
         {
-            AsyncConnection connection = Futures.getBlocking( super.acquire( address ) );
+            Connection connection = Futures.getBlocking( super.acquire( address ) );
 
             if ( memorize )
             {

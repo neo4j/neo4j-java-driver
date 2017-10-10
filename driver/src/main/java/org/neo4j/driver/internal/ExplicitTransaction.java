@@ -23,12 +23,12 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiConsumer;
 
-import org.neo4j.driver.internal.async.AsyncConnection;
 import org.neo4j.driver.internal.async.QueryRunner;
 import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
 import org.neo4j.driver.internal.handlers.CommitTxResponseHandler;
 import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
 import org.neo4j.driver.internal.handlers.RollbackTxResponseHandler;
+import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
@@ -42,9 +42,9 @@ import org.neo4j.driver.v1.types.TypeSystem;
 
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.CompletableFuture.completedFuture;
-import static org.neo4j.driver.internal.async.Futures.failedFuture;
-import static org.neo4j.driver.internal.async.Futures.getBlocking;
 import static org.neo4j.driver.internal.util.ErrorUtil.isRecoverable;
+import static org.neo4j.driver.internal.util.Futures.failedFuture;
+import static org.neo4j.driver.internal.util.Futures.getBlocking;
 import static org.neo4j.driver.v1.Values.value;
 
 public class ExplicitTransaction implements Transaction
@@ -77,13 +77,13 @@ public class ExplicitTransaction implements Transaction
         ROLLED_BACK
     }
 
-    private final AsyncConnection connection;
+    private final Connection connection;
     private final NetworkSession session;
 
     private volatile Bookmark bookmark = Bookmark.empty();
     private volatile State state = State.ACTIVE;
 
-    public ExplicitTransaction( AsyncConnection connection, NetworkSession session )
+    public ExplicitTransaction( Connection connection, NetworkSession session )
     {
         this.connection = connection;
         this.session = session;

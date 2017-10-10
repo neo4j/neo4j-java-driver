@@ -27,7 +27,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.InternalRecord;
-import org.neo4j.driver.internal.async.AsyncConnection;
+import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.summary.InternalNotification;
 import org.neo4j.driver.internal.summary.InternalPlan;
@@ -47,7 +47,7 @@ import org.neo4j.driver.v1.summary.StatementType;
 import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
-import static org.neo4j.driver.internal.async.Futures.failedFuture;
+import static org.neo4j.driver.internal.util.Futures.failedFuture;
 
 public abstract class PullAllResponseHandler implements ResponseHandler
 {
@@ -55,7 +55,7 @@ public abstract class PullAllResponseHandler implements ResponseHandler
 
     private final Statement statement;
     private final RunResponseHandler runResponseHandler;
-    protected final AsyncConnection connection;
+    protected final Connection connection;
 
     private final Queue<Record> records = new LinkedList<>();
 
@@ -69,7 +69,7 @@ public abstract class PullAllResponseHandler implements ResponseHandler
     private CompletableFuture<Throwable> resultBufferedFuture;
 
     public PullAllResponseHandler( Statement statement, RunResponseHandler runResponseHandler,
-            AsyncConnection connection )
+            Connection connection )
     {
         this.statement = requireNonNull( statement );
         this.runResponseHandler = requireNonNull( runResponseHandler );

@@ -21,7 +21,7 @@ package org.neo4j.driver.internal;
 import org.junit.Test;
 import org.mockito.InOrder;
 
-import org.neo4j.driver.internal.async.AsyncConnection;
+import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.v1.Transaction;
 
 import static org.junit.Assert.assertEquals;
@@ -33,7 +33,7 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.driver.internal.async.Futures.getBlocking;
+import static org.neo4j.driver.internal.util.Futures.getBlocking;
 import static org.neo4j.driver.v1.util.TestUtil.connectionMock;
 
 public class ExplicitTransactionTest
@@ -42,7 +42,7 @@ public class ExplicitTransactionTest
     public void shouldRollbackOnImplicitFailure()
     {
         // Given
-        AsyncConnection connection = connectionMock();
+        Connection connection = connectionMock();
         ExplicitTransaction tx = beginTx( connection );
 
         // When
@@ -59,7 +59,7 @@ public class ExplicitTransactionTest
     public void shouldRollbackOnExplicitFailure()
     {
         // Given
-        AsyncConnection connection = connectionMock();
+        Connection connection = connectionMock();
         ExplicitTransaction tx = beginTx( connection );
 
         // When
@@ -78,7 +78,7 @@ public class ExplicitTransactionTest
     public void shouldCommitOnSuccess()
     {
         // Given
-        AsyncConnection connection = connectionMock();
+        Connection connection = connectionMock();
         ExplicitTransaction tx = beginTx( connection );
 
         // When
@@ -95,7 +95,7 @@ public class ExplicitTransactionTest
     @Test
     public void shouldOnlyQueueMessagesWhenNoBookmarkGiven()
     {
-        AsyncConnection connection = connectionMock();
+        Connection connection = connectionMock();
 
         beginTx( connection, Bookmark.empty() );
 
@@ -107,7 +107,7 @@ public class ExplicitTransactionTest
     public void shouldFlushWhenBookmarkGiven()
     {
         Bookmark bookmark = Bookmark.from( "hi, I'm bookmark" );
-        AsyncConnection connection = connectionMock();
+        Connection connection = connectionMock();
 
         beginTx( connection, bookmark );
 
@@ -220,17 +220,17 @@ public class ExplicitTransactionTest
         assertEquals( "Cat", tx.bookmark().maxBookmarkAsString() );
     }
 
-    private static ExplicitTransaction beginTx( AsyncConnection connection )
+    private static ExplicitTransaction beginTx( Connection connection )
     {
         return beginTx( connection, Bookmark.empty() );
     }
 
-    private static ExplicitTransaction beginTx( AsyncConnection connection, Bookmark initialBookmark )
+    private static ExplicitTransaction beginTx( Connection connection, Bookmark initialBookmark )
     {
         return beginTx( connection, mock( NetworkSession.class ), initialBookmark );
     }
 
-    private static ExplicitTransaction beginTx( AsyncConnection connection, NetworkSession session,
+    private static ExplicitTransaction beginTx( Connection connection, NetworkSession session,
             Bookmark initialBookmark )
     {
         ExplicitTransaction tx = new ExplicitTransaction( connection, session );

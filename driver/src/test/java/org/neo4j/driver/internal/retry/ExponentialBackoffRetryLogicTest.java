@@ -24,8 +24,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.internal.async.Futures;
 import org.neo4j.driver.internal.util.Clock;
+import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.ImmediateSchedulingEventExecutor;
 import org.neo4j.driver.internal.util.Supplier;
 import org.neo4j.driver.v1.Logger;
@@ -49,8 +49,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.driver.internal.async.Futures.failedFuture;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
+import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
 public class ExponentialBackoffRetryLogicTest

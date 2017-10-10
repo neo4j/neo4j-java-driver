@@ -24,14 +24,14 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.driver.internal.async.AsyncConnection;
-import org.neo4j.driver.internal.async.Futures;
 import org.neo4j.driver.internal.async.InternalStatementResultCursor;
 import org.neo4j.driver.internal.async.QueryRunner;
 import org.neo4j.driver.internal.logging.DelegatingLogger;
 import org.neo4j.driver.internal.retry.RetryLogic;
+import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
+import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
@@ -48,8 +48,8 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.types.TypeSystem;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
-import static org.neo4j.driver.internal.async.Futures.failedFuture;
-import static org.neo4j.driver.internal.async.Futures.getBlocking;
+import static org.neo4j.driver.internal.util.Futures.failedFuture;
+import static org.neo4j.driver.internal.util.Futures.getBlocking;
 import static org.neo4j.driver.v1.Values.value;
 
 public class NetworkSession implements Session
@@ -63,7 +63,7 @@ public class NetworkSession implements Session
 
     private volatile Bookmark bookmark = Bookmark.empty();
     private volatile CompletionStage<ExplicitTransaction> transactionStage = completedFuture( null );
-    private volatile CompletionStage<AsyncConnection> connectionStage = completedFuture( null );
+    private volatile CompletionStage<Connection> connectionStage = completedFuture( null );
     private volatile CompletionStage<InternalStatementResultCursor> lastResultStage = completedFuture( null );
 
     private final AtomicBoolean open = new AtomicBoolean( true );
@@ -439,10 +439,10 @@ public class NetworkSession implements Session
         return transactionStage;
     }
 
-    private CompletionStage<AsyncConnection> acquireConnection( AccessMode mode )
+    private CompletionStage<Connection> acquireConnection( AccessMode mode )
     {
         // memorize in local so same instance is transformed and used in callbacks
-        CompletionStage<AsyncConnection> currentAsyncConnectionStage = connectionStage;
+        CompletionStage<Connection> currentAsyncConnectionStage = connectionStage;
 
         connectionStage = currentAsyncConnectionStage
                 .exceptionally( error -> null ) // handle previous acquisition failures

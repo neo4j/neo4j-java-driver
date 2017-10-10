@@ -24,8 +24,8 @@ import io.netty.channel.pool.ChannelHealthChecker;
 import io.netty.channel.pool.ChannelPoolHandler;
 import io.netty.channel.pool.FixedChannelPool;
 
-import org.neo4j.driver.internal.async.AsyncConnector;
 import org.neo4j.driver.internal.async.BoltServerAddress;
+import org.neo4j.driver.internal.async.ChannelConnector;
 
 import static java.util.Objects.requireNonNull;
 
@@ -41,9 +41,9 @@ public class NettyChannelPool extends FixedChannelPool
     private static final boolean RELEASE_HEALTH_CHECK = false;
 
     private final BoltServerAddress address;
-    private final AsyncConnector connector;
+    private final ChannelConnector connector;
 
-    public NettyChannelPool( BoltServerAddress address, AsyncConnector connector, Bootstrap bootstrap,
+    public NettyChannelPool( BoltServerAddress address, ChannelConnector connector, Bootstrap bootstrap,
             ChannelPoolHandler handler, ChannelHealthChecker healthCheck, long acquireTimeoutMillis,
             int maxConnections )
     {

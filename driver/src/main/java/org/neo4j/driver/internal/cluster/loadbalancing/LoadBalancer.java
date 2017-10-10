@@ -25,11 +25,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.RoutingErrorHandler;
-import org.neo4j.driver.internal.async.AsyncConnection;
 import org.neo4j.driver.internal.async.BoltServerAddress;
-import org.neo4j.driver.internal.async.Futures;
-import org.neo4j.driver.internal.async.RoutingAsyncConnection;
-import org.neo4j.driver.internal.async.pool.AsyncConnectionPool;
+import org.neo4j.driver.internal.async.RoutingConnection;
 import org.neo4j.driver.internal.cluster.AddressSet;
 import org.neo4j.driver.internal.cluster.ClusterComposition;
 import org.neo4j.driver.internal.cluster.ClusterCompositionProvider;
@@ -39,8 +36,11 @@ import org.neo4j.driver.internal.cluster.Rediscovery;
 import org.neo4j.driver.internal.cluster.RoutingProcedureClusterCompositionProvider;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.cluster.RoutingTable;
+import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.util.Clock;
+import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
@@ -53,7 +53,7 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
 {
     private static final String LOAD_BALANCER_LOG_NAME = "LoadBalancer";
 
-    private final AsyncConnectionPool connectionPool;
+    private final ConnectionPool connectionPool;
     private final RoutingTable routingTable;
     private final Rediscovery rediscovery;
     private final LoadBalancingStrategy loadBalancingStrategy;
@@ -62,7 +62,7 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
 
     private CompletableFuture<RoutingTable> refreshRoutingTableFuture;
 
-    public LoadBalancer( BoltServerAddress initialRouter, RoutingSettings settings, AsyncConnectionPool connectionPool,
+    public LoadBalancer( BoltServerAddress initialRouter, RoutingSettings settings, ConnectionPool connectionPool,
             EventExecutorGroup eventExecutorGroup, Clock clock, Logging logging,
             LoadBalancingStrategy loadBalancingStrategy )
     {
@@ -72,7 +72,7 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
     }
 
     // Used only in testing
-    public LoadBalancer( AsyncConnectionPool connectionPool, RoutingTable routingTable, Rediscovery rediscovery,
+    public LoadBalancer( ConnectionPool connectionPool, RoutingTable routingTable, Rediscovery rediscovery,
             EventExecutorGroup eventExecutorGroup, Logging logging )
     {
         this( connectionPool, routingTable, rediscovery, loadBalancerLogger( logging ),
@@ -80,7 +80,7 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
                 eventExecutorGroup );
     }
 
-    private LoadBalancer( AsyncConnectionPool connectionPool, RoutingTable routingTable, Rediscovery rediscovery,
+    private LoadBalancer( ConnectionPool connectionPool, RoutingTable routingTable, Rediscovery rediscovery,
             Logger log, LoadBalancingStrategy loadBalancingStrategy, EventExecutorGroup eventExecutorGroup )
     {
         this.connectionPool = connectionPool;
@@ -92,11 +92,11 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
     }
 
     @Override
-    public CompletionStage<AsyncConnection> acquireConnection( AccessMode mode )
+    public CompletionStage<Connection> acquireConnection( AccessMode mode )
     {
         return freshRoutingTable( mode )
                 .thenCompose( routingTable -> acquire( mode, routingTable ) )
-                .thenApply( connection -> new RoutingAsyncConnection( connection, mode, this ) );
+                .thenApply( connection -> new RoutingConnection( connection, mode, this ) );
     }
 
     @Override
@@ -192,15 +192,15 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
         routingTableFuture.completeExceptionally( error );
     }
 
-    private CompletionStage<AsyncConnection> acquire( AccessMode mode, RoutingTable routingTable )
+    private CompletionStage<Connection> acquire( AccessMode mode, RoutingTable routingTable )
     {
         AddressSet addresses = addressSet( mode, routingTable );
-        CompletableFuture<AsyncConnection> result = new CompletableFuture<>();
+        CompletableFuture<Connection> result = new CompletableFuture<>();
         acquire( mode, addresses, result );
         return result;
     }
 
-    private void acquire( AccessMode mode, AddressSet addresses, CompletableFuture<AsyncConnection> result )
+    private void acquire( AccessMode mode, AddressSet addresses, CompletableFuture<Connection> result )
     {
         BoltServerAddress address = selectAddress( mode, addresses );
 

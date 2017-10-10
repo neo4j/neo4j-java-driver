@@ -28,7 +28,7 @@ import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.util.Function;
 
-import static org.neo4j.driver.internal.async.Futures.getBlocking;
+import static org.neo4j.driver.internal.util.Futures.getBlocking;
 
 public class InternalStatementResult implements StatementResult
 {
