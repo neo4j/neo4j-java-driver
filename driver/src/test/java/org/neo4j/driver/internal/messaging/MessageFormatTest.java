@@ -20,7 +20,6 @@ package org.neo4j.driver.internal.messaging;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.ChannelPipeline;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Rule;
 import org.junit.Test;
@@ -33,12 +32,9 @@ import java.util.List;
 import org.neo4j.driver.internal.InternalNode;
 import org.neo4j.driver.internal.InternalPath;
 import org.neo4j.driver.internal.InternalRelationship;
-import org.neo4j.driver.internal.async.inbound.ChunkDecoder;
+import org.neo4j.driver.internal.async.ChannelPipelineBuilder;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
-import org.neo4j.driver.internal.async.inbound.InboundMessageHandler;
-import org.neo4j.driver.internal.async.inbound.MessageDecoder;
 import org.neo4j.driver.internal.async.outbound.ChunkAwareByteBufOutput;
-import org.neo4j.driver.internal.async.outbound.OutboundMessageHandler;
 import org.neo4j.driver.internal.packstream.PackStream;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
@@ -154,16 +150,8 @@ public class MessageFormatTest
     private EmbeddedChannel newEmbeddedChannel()
     {
         EmbeddedChannel channel = new EmbeddedChannel();
-        ChannelPipeline pipeline = channel.pipeline();
-
         setMessageDispatcher( channel, new MemorizingInboundMessageDispatcher( channel, DEV_NULL_LOGGING ) );
-
-        pipeline.addLast( new ChunkDecoder() );
-        pipeline.addLast( new MessageDecoder() );
-        pipeline.addLast( new InboundMessageHandler( format, DEV_NULL_LOGGING ) );
-
-        pipeline.addLast( new OutboundMessageHandler( format, DEV_NULL_LOGGING ) );
-
+        ChannelPipelineBuilder.buildPipeline( channel, format, DEV_NULL_LOGGING );
         return channel;
     }
 

@@ -135,7 +135,7 @@ public class InboundMessageDispatcher implements MessageHandler
 
         // queue ACK_FAILURE before notifying the next response handler
         queue( new AckFailureResponseHandler( this ) );
-        channel.writeAndFlush( AckFailureMessage.ACK_FAILURE );
+        channel.writeAndFlush( AckFailureMessage.ACK_FAILURE, channel.voidPromise() );
 
         ResponseHandler handler = handlers.remove();
         handler.onFailure( currentError );

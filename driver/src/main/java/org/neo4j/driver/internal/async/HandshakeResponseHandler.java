@@ -28,10 +28,6 @@ import io.netty.handler.codec.ReplayingDecoder;
 import java.util.List;
 import javax.net.ssl.SSLHandshakeException;
 
-import org.neo4j.driver.internal.async.inbound.ChunkDecoder;
-import org.neo4j.driver.internal.async.inbound.InboundMessageHandler;
-import org.neo4j.driver.internal.async.inbound.MessageDecoder;
-import org.neo4j.driver.internal.async.outbound.OutboundMessageHandler;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.PackStreamMessageFormatV1;
 import org.neo4j.driver.v1.Logger;
@@ -39,20 +35,20 @@ import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.SecurityException;
 
-import static java.util.Objects.requireNonNull;
 import static org.neo4j.driver.internal.async.ProtocolUtil.HTTP;
 import static org.neo4j.driver.internal.async.ProtocolUtil.NO_PROTOCOL_VERSION;
 import static org.neo4j.driver.internal.async.ProtocolUtil.PROTOCOL_VERSION_1;
-import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 
 public class HandshakeResponseHandler extends ReplayingDecoder<Void>
 {
     private final ChannelPromise handshakeCompletedPromise;
+    private final Logging logging;
     private final Logger log;
 
     public HandshakeResponseHandler( ChannelPromise handshakeCompletedPromise, Logging logging )
     {
-        this.handshakeCompletedPromise = requireNonNull( handshakeCompletedPromise );
+        this.handshakeCompletedPromise = handshakeCompletedPromise;
+        this.logging = logging;
         this.log = logging.getLog( getClass().getSimpleName() );
     }
 
@@ -71,7 +67,6 @@ public class HandshakeResponseHandler extends ReplayingDecoder<Void>
         }
     }
 
-    // todo: do not use DEV_NULL_LOGGING
     @Override
     protected void decode( ChannelHandlerContext ctx, ByteBuf in, List<Object> out )
     {
@@ -86,15 +81,7 @@ public class HandshakeResponseHandler extends ReplayingDecoder<Void>
         {
         case PROTOCOL_VERSION_1:
             MessageFormat format = new PackStreamMessageFormatV1();
-
-            // inbound handlers
-            pipeline.addLast( new ChunkDecoder() );
-            pipeline.addLast( new MessageDecoder() );
-            pipeline.addLast( new InboundMessageHandler( format, DEV_NULL_LOGGING ) );
-
-            // outbound handlers
-            pipeline.addLast( OutboundMessageHandler.NAME, new OutboundMessageHandler( format, DEV_NULL_LOGGING ) );
-
+            ChannelPipelineBuilder.buildPipeline( ctx.channel(), format, logging );
             handshakeCompletedPromise.setSuccess();
 
             break;

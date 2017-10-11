@@ -20,14 +20,18 @@ package org.neo4j.driver.internal.async.outbound;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.handler.codec.EncoderException;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.driver.internal.async.ChannelAttributes;
+import org.neo4j.driver.internal.async.ChannelErrorHandler;
+import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.PackStreamMessageFormatV1;
@@ -37,7 +41,6 @@ import org.neo4j.driver.internal.packstream.PackStream;
 import org.neo4j.driver.v1.Value;
 
 import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -57,12 +60,32 @@ import static org.neo4j.driver.v1.util.TestUtil.assertByteBufEquals;
 
 public class OutboundMessageHandlerTest
 {
+    private EmbeddedChannel channel;
+    private InboundMessageDispatcher messageDispatcher;
+
+    @Before
+    public void setUp()
+    {
+        channel = new EmbeddedChannel();
+        messageDispatcher = new InboundMessageDispatcher( channel, DEV_NULL_LOGGING );
+        ChannelAttributes.setMessageDispatcher( channel, messageDispatcher );
+    }
+
+    @After
+    public void tearDown()
+    {
+        if ( channel != null )
+        {
+            channel.close();
+        }
+    }
+
     @Test
-    public void shouldOutputByteBufAsWrittenByWriterAndMessageBoundary() throws IOException
+    public void shouldOutputByteBufAsWrittenByWriterAndMessageBoundary()
     {
         MessageFormat messageFormat = mockMessageFormatWithWriter( 1, 2, 3, 4, 5 );
         OutboundMessageHandler handler = newHandler( messageFormat );
-        EmbeddedChannel channel = new EmbeddedChannel( handler );
+        channel.pipeline().addLast( handler );
 
         // do not care which message, writer will return predefined bytes anyway
         assertTrue( channel.writeOutbound( PULL_ALL ) );
@@ -81,7 +104,7 @@ public class OutboundMessageHandlerTest
     public void shouldSupportByteArraysByDefault()
     {
         OutboundMessageHandler handler = newHandler( new PackStreamMessageFormatV1() );
-        EmbeddedChannel channel = new EmbeddedChannel( handler );
+        channel.pipeline().addLast( handler );
 
         Map<String,Value> params = new HashMap<>();
         params.put( "array", value( new byte[]{1, 2, 3} ) );
@@ -94,7 +117,8 @@ public class OutboundMessageHandlerTest
     public void shouldFailToWriteByteArrayWhenNotSupported()
     {
         OutboundMessageHandler handler = newHandler( new PackStreamMessageFormatV1() ).withoutByteArraySupport();
-        EmbeddedChannel channel = new EmbeddedChannel( handler );
+        channel.pipeline().addLast( handler );
+        channel.pipeline().addLast( new ChannelErrorHandler( DEV_NULL_LOGGING ) );
 
         Map<String,Value> params = new HashMap<>();
         params.put( "array", value( new byte[]{1, 2, 3} ) );
@@ -104,10 +128,9 @@ public class OutboundMessageHandlerTest
             channel.writeOutbound( new RunMessage( "RETURN 1", params ) );
             fail( "Exception expected" );
         }
-        catch ( Exception e )
+        catch ( EncoderException e )
         {
             assertThat( e.getCause(), instanceOf( PackStream.UnPackable.class ) );
-            assertThat( e.getCause().getMessage(), startsWith( "Packing bytes is not supported" ) );
         }
     }
 
@@ -115,14 +138,10 @@ public class OutboundMessageHandlerTest
     {
         MessageFormat messageFormat = mock( MessageFormat.class );
 
-        when( messageFormat.newWriter( any( PackOutput.class ), anyBoolean() ) ).then( new Answer<Writer>()
+        when( messageFormat.newWriter( any( PackOutput.class ), anyBoolean() ) ).then( invocation ->
         {
-            @Override
-            public Writer answer( InvocationOnMock invocation ) throws Throwable
-            {
-                PackOutput output = invocation.getArgumentAt( 0, PackOutput.class );
-                return mockWriter( output, bytesToWrite );
-            }
+            PackOutput output = invocation.getArgumentAt( 0, PackOutput.class );
+            return mockWriter( output, bytesToWrite );
         } );
 
         return messageFormat;
@@ -130,19 +149,15 @@ public class OutboundMessageHandlerTest
 
     private static Writer mockWriter( final PackOutput output, final int... bytesToWrite ) throws IOException
     {
-        final Writer writer = mock( Writer.class );
+        Writer writer = mock( Writer.class );
 
-        doAnswer( new Answer<Writer>()
+        doAnswer( invocation ->
         {
-            @Override
-            public Writer answer( InvocationOnMock invocation ) throws Throwable
+            for ( int b : bytesToWrite )
             {
-                for ( int b : bytesToWrite )
-                {
-                    output.writeByte( (byte) b );
-                }
-                return writer;
+                output.writeByte( (byte) b );
             }
+            return writer;
         } ).when( writer ).write( any( Message.class ) );
 
         return writer;

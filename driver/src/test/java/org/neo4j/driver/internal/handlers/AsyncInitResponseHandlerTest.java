@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal.handlers;
 
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.EncoderException;
@@ -28,6 +29,8 @@ import org.junit.Test;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.driver.internal.async.ChannelErrorHandler;
+import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.async.outbound.OutboundMessageHandler;
 import org.neo4j.driver.internal.messaging.PackStreamMessageFormatV1;
 import org.neo4j.driver.internal.messaging.RunMessage;
@@ -42,6 +45,8 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.driver.internal.async.ChannelAttributes.serverVersion;
+import static org.neo4j.driver.internal.async.ChannelAttributes.setMessageDispatcher;
+import static org.neo4j.driver.internal.async.outbound.OutboundMessageHandler.NAME;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.v1.Values.value;
 
@@ -52,8 +57,10 @@ public class AsyncInitResponseHandlerTest
     @Before
     public void setUp()
     {
-        channel.pipeline().addLast( OutboundMessageHandler.NAME,
-                new OutboundMessageHandler( new PackStreamMessageFormatV1(), DEV_NULL_LOGGING ) );
+        setMessageDispatcher( channel, new InboundMessageDispatcher( channel, DEV_NULL_LOGGING ) );
+        ChannelPipeline pipeline = channel.pipeline();
+        pipeline.addLast( NAME, new OutboundMessageHandler( new PackStreamMessageFormatV1(), DEV_NULL_LOGGING ) );
+        pipeline.addLast( new ChannelErrorHandler( DEV_NULL_LOGGING ) );
     }
 
     @Test
@@ -96,7 +103,7 @@ public class AsyncInitResponseHandlerTest
     }
 
     @Test
-    public void shouldAllowByteArraysForOldVersions()
+    public void shouldNotAllowByteArraysForOldVersions()
     {
         AsyncInitResponseHandler handler = new AsyncInitResponseHandler( channel.newPromise() );
 

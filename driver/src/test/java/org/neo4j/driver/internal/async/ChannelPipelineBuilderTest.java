@@ -1,0 +1,61 @@
+/*
+ * Copyright (c) 2002-2017 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.neo4j.driver.internal.async;
+
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.embedded.EmbeddedChannel;
+import org.junit.Test;
+
+import java.util.Iterator;
+import java.util.Map;
+
+import org.neo4j.driver.internal.async.inbound.ChunkDecoder;
+import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
+import org.neo4j.driver.internal.async.inbound.InboundMessageHandler;
+import org.neo4j.driver.internal.async.inbound.MessageDecoder;
+import org.neo4j.driver.internal.async.outbound.OutboundMessageHandler;
+import org.neo4j.driver.internal.messaging.PackStreamMessageFormatV1;
+
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
+
+public class ChannelPipelineBuilderTest
+{
+    @Test
+    public void shouldBuildPipeline()
+    {
+        EmbeddedChannel channel = new EmbeddedChannel();
+        ChannelAttributes.setMessageDispatcher( channel, new InboundMessageDispatcher( channel, DEV_NULL_LOGGING ) );
+
+        ChannelPipelineBuilder.buildPipeline( channel, new PackStreamMessageFormatV1(), DEV_NULL_LOGGING );
+
+        Iterator<Map.Entry<String,ChannelHandler>> iterator = channel.pipeline().iterator();
+        assertThat( iterator.next().getValue(), instanceOf( ChunkDecoder.class ) );
+        assertThat( iterator.next().getValue(), instanceOf( MessageDecoder.class ) );
+        assertThat( iterator.next().getValue(), instanceOf( InboundMessageHandler.class ) );
+
+        assertThat( iterator.next().getValue(), instanceOf( OutboundMessageHandler.class ) );
+
+        assertThat( iterator.next().getValue(), instanceOf( ChannelErrorHandler.class ) );
+
+        assertFalse( iterator.hasNext() );
+    }
+}

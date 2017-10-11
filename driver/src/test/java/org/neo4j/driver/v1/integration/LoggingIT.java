@@ -64,7 +64,6 @@ public class LoggingIT
 
         // Then
         verify( logger, atLeastOnce() ).debug( anyString(), anyVararg() );
-        // todo: uncomment this line when driver adds LoggingHandler to the pipeline when trace is enabled
-//        verify( logger, atLeastOnce() ).trace( anyString(), anyVararg() );
+        verify( logger, atLeastOnce() ).trace( anyString(), anyVararg() );
     }
 }

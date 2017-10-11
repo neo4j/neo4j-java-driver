@@ -57,7 +57,7 @@ public class HandshakeCompletedListener implements ChannelFutureListener
             AsyncInitResponseHandler handler = new AsyncInitResponseHandler( connectionInitializedPromise );
 
             messageDispatcher( channel ).queue( handler );
-            channel.writeAndFlush( message );
+            channel.writeAndFlush( message, channel.voidPromise() );
         }
         else
         {

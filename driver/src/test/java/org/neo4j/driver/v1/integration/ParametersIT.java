@@ -35,7 +35,6 @@ import org.neo4j.driver.v1.util.TestNeo4jSession;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
@@ -190,12 +189,12 @@ public class ParametersIT
         {
             StatementResult result = session.run(
                     "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", byteArray ) );
+            result.single();
             fail( "Should not be able to pack bytes" );
         }
-        catch( Throwable e )
+        catch ( ServiceUnavailableException e )
         {
-            assertThat( e, instanceOf( ServiceUnavailableException.class ) );
-            assertThat( e.getMessage(), containsString( "Packing bytes is not supported" ) );
+            assertThat( e.getCause().getMessage(), containsString( "Packing bytes is not supported" ) );
         }
     }
 

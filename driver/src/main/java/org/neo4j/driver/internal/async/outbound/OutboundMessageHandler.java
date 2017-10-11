@@ -20,6 +20,7 @@ package org.neo4j.driver.internal.async.outbound;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.EncoderException;
 import io.netty.handler.codec.MessageToMessageEncoder;
 
 import java.util.List;
@@ -29,6 +30,7 @@ import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 
+import static io.netty.buffer.ByteBufUtil.prettyHexDump;
 import static org.neo4j.driver.internal.async.ProtocolUtil.messageBoundary;
 
 public class OutboundMessageHandler extends MessageToMessageEncoder<Message>
@@ -54,7 +56,7 @@ public class OutboundMessageHandler extends MessageToMessageEncoder<Message>
     }
 
     @Override
-    protected void encode( ChannelHandlerContext ctx, Message msg, List<Object> out ) throws Exception
+    protected void encode( ChannelHandlerContext ctx, Message msg, List<Object> out )
     {
         log.debug( "Sending message %s", msg );
 
@@ -66,13 +68,20 @@ public class OutboundMessageHandler extends MessageToMessageEncoder<Message>
         }
         catch ( Throwable error )
         {
-            // todo: test fatal error logging
-            log.error( "Fatal error while encoding outbound message: " + msg, error );
-            throw error;
+            EncoderException exception = new EncoderException( "Failed to write outbound message: " + msg, error );
+            // tell ChannelErrorHandler which is the last handler in the pipeline about this error
+            ctx.fireExceptionCaught( exception );
+            // rethrow, encoder contract requires handler to either fail or populate out list
+            throw exception;
         }
         finally
         {
             output.stop();
+        }
+
+        if ( log.isTraceEnabled() )
+        {
+            log.trace( "Message %s encoded as\n%s\n", msg, prettyHexDump( messageBuf ) );
         }
 
         out.add( messageBuf );

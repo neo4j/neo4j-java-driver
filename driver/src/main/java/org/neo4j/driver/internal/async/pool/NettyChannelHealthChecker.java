@@ -88,7 +88,7 @@ public class NettyChannelHealthChecker implements ChannelHealthChecker
     {
         Promise<Boolean> result = channel.eventLoop().newPromise();
         messageDispatcher( channel ).queue( new PingResponseHandler( result ) );
-        channel.writeAndFlush( ResetMessage.RESET );
+        channel.writeAndFlush( ResetMessage.RESET, channel.voidPromise() );
         return result;
     }
 }

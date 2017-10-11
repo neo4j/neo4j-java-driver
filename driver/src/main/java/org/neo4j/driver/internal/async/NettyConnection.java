@@ -19,7 +19,6 @@
 package org.neo4j.driver.internal.async;
 
 import io.netty.channel.Channel;
-import io.netty.channel.EventLoop;
 import io.netty.channel.pool.ChannelPool;
 import io.netty.util.concurrent.Promise;
 
@@ -158,30 +157,12 @@ public class NettyConnection implements Connection
     private void writeMessagesInEventLoop( Message message1, ResponseHandler handler1, Message message2,
             ResponseHandler handler2, boolean flush )
     {
-        EventLoop eventLoop = channel.eventLoop();
-
-        if ( eventLoop.inEventLoop() )
-        {
-            writeMessages( message1, handler1, message2, handler2, flush );
-        }
-        else
-        {
-            eventLoop.execute( () -> writeMessages( message1, handler1, message2, handler2, flush ) );
-        }
+        channel.eventLoop().execute( () -> writeMessages( message1, handler1, message2, handler2, flush ) );
     }
 
     private void writeAndFlushMessageInEventLoop( Message message, ResponseHandler handler )
     {
-        EventLoop eventLoop = channel.eventLoop();
-
-        if ( eventLoop.inEventLoop() )
-        {
-            writeAndFlushMessage( message, handler );
-        }
-        else
-        {
-            eventLoop.execute( () -> writeAndFlushMessage( message, handler ) );
-        }
+        channel.eventLoop().execute( () -> writeAndFlushMessage( message, handler ) );
     }
 
     private void writeMessages( Message message1, ResponseHandler handler1, Message message2, ResponseHandler handler2,
@@ -190,22 +171,22 @@ public class NettyConnection implements Connection
         messageDispatcher.queue( handler1 );
         messageDispatcher.queue( handler2 );
 
-        channel.write( message1 );
+        channel.write( message1, channel.voidPromise() );
 
         if ( flush )
         {
-            channel.writeAndFlush( message2 );
+            channel.writeAndFlush( message2, channel.voidPromise() );
         }
         else
         {
-            channel.write( message2 );
+            channel.write( message2, channel.voidPromise() );
         }
     }
 
     private void writeAndFlushMessage( Message message, ResponseHandler handler )
     {
         messageDispatcher.queue( handler );
-        channel.writeAndFlush( message );
+        channel.writeAndFlush( message, channel.voidPromise() );
     }
 
     private void setAutoRead( boolean value )

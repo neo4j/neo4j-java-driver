@@ -37,6 +37,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -125,7 +127,7 @@ public class InboundMessageDispatcherTest
 
         dispatcher.handleFailureMessage( FAILURE_CODE, FAILURE_MESSAGE );
 
-        verify( channel ).writeAndFlush( ACK_FAILURE );
+        verify( channel ).writeAndFlush( eq( ACK_FAILURE ), any() );
     }
 
     @Test

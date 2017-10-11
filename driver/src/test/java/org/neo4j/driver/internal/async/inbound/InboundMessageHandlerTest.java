@@ -19,58 +19,72 @@
 package org.neo4j.driver.internal.async.inbound;
 
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.handler.codec.DecoderException;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.driver.internal.async.ChannelAttributes;
 import org.neo4j.driver.internal.messaging.FailureMessage;
 import org.neo4j.driver.internal.messaging.IgnoredMessage;
+import org.neo4j.driver.internal.messaging.MessageFormat;
+import org.neo4j.driver.internal.messaging.MessageFormat.Reader;
 import org.neo4j.driver.internal.messaging.PackStreamMessageFormatV1;
 import org.neo4j.driver.internal.messaging.RecordMessage;
 import org.neo4j.driver.internal.messaging.SuccessMessage;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
-import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
-import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
+import static org.neo4j.driver.internal.messaging.ResetMessage.RESET;
 import static org.neo4j.driver.internal.util.MessageToByteBufWriter.asByteBuf;
 import static org.neo4j.driver.v1.Values.value;
 
 public class InboundMessageHandlerTest
 {
     private EmbeddedChannel channel;
-    private InboundMessageDispatcher dispatcher;
+    private InboundMessageDispatcher messageDispatcher;
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         channel = new EmbeddedChannel();
-        dispatcher = new InboundMessageDispatcher( channel, DEV_NULL_LOGGING );
-        ChannelAttributes.setMessageDispatcher( channel, dispatcher );
+        messageDispatcher = new InboundMessageDispatcher( channel, DEV_NULL_LOGGING );
+        ChannelAttributes.setMessageDispatcher( channel, messageDispatcher );
 
         InboundMessageHandler handler = new InboundMessageHandler( new PackStreamMessageFormatV1(), DEV_NULL_LOGGING );
         channel.pipeline().addFirst( handler );
+    }
+
+    @After
+    public void tearDown()
+    {
+        if ( channel != null )
+        {
+            channel.close();
+        }
     }
 
     @Test
     public void shouldReadSuccessMessage()
     {
         ResponseHandler responseHandler = mock( ResponseHandler.class );
-        dispatcher.queue( responseHandler );
+        messageDispatcher.queue( responseHandler );
 
         Map<String,Value> metadata = new HashMap<>();
         metadata.put( "key1", value( 1 ) );
@@ -84,7 +98,7 @@ public class InboundMessageHandlerTest
     public void shouldReadFailureMessage()
     {
         ResponseHandler responseHandler = mock( ResponseHandler.class );
-        dispatcher.queue( responseHandler );
+        messageDispatcher.queue( responseHandler );
 
         channel.writeInbound( asByteBuf( new FailureMessage( "Neo.TransientError.General.ReadOnly", "Hi!" ) ) );
 
@@ -98,7 +112,7 @@ public class InboundMessageHandlerTest
     public void shouldReadRecordMessage()
     {
         ResponseHandler responseHandler = mock( ResponseHandler.class );
-        dispatcher.queue( responseHandler );
+        messageDispatcher.queue( responseHandler );
 
         Value[] fields = {value( 1 ), value( 2 ), value( 3 )};
         channel.writeInbound( asByteBuf( new RecordMessage( fields ) ) );
@@ -110,65 +124,34 @@ public class InboundMessageHandlerTest
     public void shouldReadIgnoredMessage()
     {
         ResponseHandler responseHandler = mock( ResponseHandler.class );
-        dispatcher.queue( responseHandler );
+        messageDispatcher.queue( responseHandler );
 
         channel.writeInbound( asByteBuf( new IgnoredMessage() ) );
-        assertEquals( 0, dispatcher.queuedHandlersCount() );
+        assertEquals( 0, messageDispatcher.queuedHandlersCount() );
     }
 
     @Test
-    public void shouldCloseContextWhenChannelInactive() throws Exception
+    public void shouldRethrowReadErrors() throws IOException
     {
-        assertTrue( channel.isOpen() );
+        MessageFormat messageFormat = mock( MessageFormat.class );
+        Reader reader = mock( Reader.class );
+        RuntimeException error = new RuntimeException( "Unable to decode!" );
+        doThrow( error ).when( reader ).read( any() );
+        when( messageFormat.newReader( any() ) ).thenReturn( reader );
 
-        channel.pipeline().fireChannelInactive();
+        InboundMessageHandler handler = new InboundMessageHandler( messageFormat, DEV_NULL_LOGGING );
 
-        assertFalse( channel.isOpen() );
-    }
+        channel.pipeline().remove( InboundMessageHandler.class );
+        channel.pipeline().addLast( handler );
 
-    @Test
-    public void shouldNotifyDispatcherWhenChannelInactive()
-    {
-        assertNull( dispatcher.currentError() );
-
-        channel.pipeline().fireChannelInactive();
-
-        assertNotNull( dispatcher.currentError() );
-        assertThat( dispatcher.currentError(), instanceOf( ServiceUnavailableException.class ) );
-    }
-
-    @Test
-    public void shouldCloseContextWhenExceptionCaught()
-    {
-        assertTrue( channel.isOpen() );
-
-        channel.pipeline().fireExceptionCaught( new RuntimeException( "Hi!" ) );
-
-        assertFalse( channel.isOpen() );
-    }
-
-    @Test
-    public void shouldNotifyDispatcherWhenExceptionCaught()
-    {
-        assertNull( dispatcher.currentError() );
-
-        RuntimeException error = new RuntimeException( "Hi!" );
-        channel.pipeline().fireExceptionCaught( error );
-
-        assertEquals( error, dispatcher.currentError() );
-    }
-
-    @Test
-    public void shouldNotifyDispatcherOnlyWhenFirstExceptionCaught()
-    {
-        assertNull( dispatcher.currentError() );
-
-        RuntimeException error1 = new RuntimeException( "Hi!" );
-        RuntimeException error2 = new RuntimeException( "Hello!" );
-
-        channel.pipeline().fireExceptionCaught( error1 );
-        channel.pipeline().fireExceptionCaught( error2 );
-
-        assertEquals( error1, dispatcher.currentError() );
+        try
+        {
+            channel.writeInbound( asByteBuf( RESET ) );
+            fail( "Exception expected" );
+        }
+        catch ( DecoderException e )
+        {
+            assertThat( e.getMessage(), startsWith( "Failed to read inbound message" ) );
+        }
     }
 }
