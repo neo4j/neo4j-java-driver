@@ -61,12 +61,6 @@ public class ChunkAwareByteBufOutput implements PackOutput
     }
 
     @Override
-    public PackOutput flush()
-    {
-        throw new UnsupportedOperationException( "Flush not supported, this output only writes to a buffer" );
-    }
-
-    @Override
     public PackOutput writeByte( byte value )
     {
         ensureCanFitInCurrentChunk( 1 );

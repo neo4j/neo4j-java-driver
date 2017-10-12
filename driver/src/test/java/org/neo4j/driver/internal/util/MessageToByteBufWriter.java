@@ -58,48 +58,42 @@ public final class MessageToByteBufWriter
         }
 
         @Override
-        public PackOutput flush() throws IOException
-        {
-            return this;
-        }
-
-        @Override
-        public PackOutput writeByte( byte value ) throws IOException
+        public PackOutput writeByte( byte value )
         {
             buf.writeByte( value );
             return this;
         }
 
         @Override
-        public PackOutput writeBytes( byte[] data ) throws IOException
+        public PackOutput writeBytes( byte[] data )
         {
             buf.writeBytes( data );
             return this;
         }
 
         @Override
-        public PackOutput writeShort( short value ) throws IOException
+        public PackOutput writeShort( short value )
         {
             buf.writeShort( value );
             return this;
         }
 
         @Override
-        public PackOutput writeInt( int value ) throws IOException
+        public PackOutput writeInt( int value )
         {
             buf.writeInt( value );
             return this;
         }
 
         @Override
-        public PackOutput writeLong( long value ) throws IOException
+        public PackOutput writeLong( long value )
         {
             buf.writeLong( value );
             return this;
         }
 
         @Override
-        public PackOutput writeDouble( double value ) throws IOException
+        public PackOutput writeDouble( double value )
         {
             buf.writeDouble( value );
             return this;

@@ -20,99 +20,68 @@ package org.neo4j.driver.internal.packstream;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.channels.WritableByteChannel;
 
-public class BufferedChannelOutput implements PackOutput
+public class ChannelOutput implements PackOutput
 {
-    private final ByteBuffer buffer;
     private final WritableByteChannel channel;
 
-    public BufferedChannelOutput( WritableByteChannel channel )
+    public ChannelOutput( WritableByteChannel channel )
     {
-        this( channel, 1024 );
-    }
-
-    public BufferedChannelOutput( WritableByteChannel channel, int bufferSize )
-    {
-        this.buffer = ByteBuffer.allocate( bufferSize ).order( ByteOrder.BIG_ENDIAN );
         this.channel = channel;
-    }
-
-    @Override
-    public BufferedChannelOutput flush() throws IOException
-    {
-        buffer.flip();
-        do { channel.write( buffer ); } while ( buffer.remaining() > 0 );
-        buffer.clear();
-        return this;
     }
 
     @Override
     public PackOutput writeBytes( byte[] data ) throws IOException
     {
-        int length = data.length;
-        int index = 0;
-        while ( index < length )
-        {
-            if ( buffer.remaining() == 0 )
-            {
-                flush();
-            }
-
-            int amountToWrite = Math.min( buffer.remaining(), length - index );
-
-            buffer.put( data, index, amountToWrite );
-            index += amountToWrite;
-        }
+        channel.write( ByteBuffer.wrap( data ) );
         return this;
     }
 
     @Override
     public PackOutput writeByte( byte value ) throws IOException
     {
-        ensure( 1 );
-        buffer.put( value );
+        channel.write( ByteBuffer.wrap( new byte[]{value} ) );
         return this;
     }
 
     @Override
     public PackOutput writeShort( short value ) throws IOException
     {
-        ensure( 2 );
+        ByteBuffer buffer = ByteBuffer.allocate( Short.BYTES );
         buffer.putShort( value );
+        buffer.flip();
+        channel.write( buffer );
         return this;
     }
 
     @Override
     public PackOutput writeInt( int value ) throws IOException
     {
-        ensure( 4 );
+        ByteBuffer buffer = ByteBuffer.allocate( Integer.BYTES );
         buffer.putInt( value );
+        buffer.flip();
+        channel.write( buffer );
         return this;
     }
 
     @Override
     public PackOutput writeLong( long value ) throws IOException
     {
-        ensure( 8 );
+        ByteBuffer buffer = ByteBuffer.allocate( Long.BYTES );
         buffer.putLong( value );
+        buffer.flip();
+        channel.write( buffer );
         return this;
     }
 
     @Override
     public PackOutput writeDouble( double value ) throws IOException
     {
-        ensure( 8 );
+        ByteBuffer buffer = ByteBuffer.allocate( Double.BYTES );
         buffer.putDouble( value );
+        buffer.flip();
+        channel.write( buffer );
         return this;
-    }
-
-    private void ensure( int size ) throws IOException
-    {
-        if ( buffer.remaining() < size )
-        {
-            flush();
-        }
     }
 }

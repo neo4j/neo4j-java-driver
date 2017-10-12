@@ -24,7 +24,6 @@ import org.junit.Test;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.mock;
@@ -64,17 +63,6 @@ public class ByteBufInputTest
         {
             assertThat( e, instanceOf( IllegalStateException.class ) );
         }
-    }
-
-    @Test
-    public void shouldDelegateHasMoreData()
-    {
-        ByteBufInput input = new ByteBufInput();
-        ByteBuf buf = mock( ByteBuf.class );
-        when( buf.isReadable() ).thenReturn( true );
-        input.start( buf );
-
-        assertTrue( input.hasMoreData() );
     }
 
     @Test
