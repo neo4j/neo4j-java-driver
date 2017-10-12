@@ -144,13 +144,13 @@ public class ExplicitTransactionTest
     }
 
     @Test
-    public void shouldBeOpenWhenMarkedToClose()
+    public void shouldBeClosedWhenMarkedAsTerminated()
     {
         ExplicitTransaction tx = beginTx( connectionMock() );
 
-        tx.markToClose();
+        tx.markTerminated();
 
-        assertTrue( tx.isOpen() );
+        assertFalse( tx.isOpen() );
     }
 
     @Test
@@ -176,11 +176,11 @@ public class ExplicitTransactionTest
     }
 
     @Test
-    public void shouldBeClosedWhenMarkedToCloseAndClosed()
+    public void shouldBeClosedWhenMarkedTerminatedAndClosed()
     {
         ExplicitTransaction tx = beginTx( connectionMock() );
 
-        tx.markToClose();
+        tx.markTerminated();
         tx.close();
 
         assertFalse( tx.isOpen() );

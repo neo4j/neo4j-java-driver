@@ -160,7 +160,7 @@ public class NetworkSession implements Session
             getBlocking( lastResultStage
                     .exceptionally( error -> null )
                     .thenCompose( this::ensureBuffered )
-                    .thenCompose( error -> forceReleaseResources().thenApply( ignore ->
+                    .thenCompose( error -> releaseResources().thenApply( ignore ->
                     {
                         if ( error != null )
                         {
@@ -177,7 +177,7 @@ public class NetworkSession implements Session
         // todo: wait for buffered result?
         if ( open.compareAndSet( true, false ) )
         {
-            return forceReleaseResources();
+            return releaseResources();
         }
         return completedFuture( null );
     }
@@ -254,7 +254,19 @@ public class NetworkSession implements Session
     @Override
     public void reset()
     {
-        getBlocking( forceReleaseResources() );
+        getBlocking( resetAsync() );
+    }
+
+    private CompletionStage<Void> resetAsync()
+    {
+        return releaseConnectionNow().thenCompose( ignore -> existingTransactionOrNull() )
+                .thenAccept( tx ->
+                {
+                    if ( tx != null )
+                    {
+                        tx.markTerminated();
+                    }
+                } );
     }
 
     @Override
@@ -465,42 +477,38 @@ public class NetworkSession implements Session
         return connectionStage;
     }
 
-    private CompletionStage<Void> forceReleaseResources()
+    private CompletionStage<Void> releaseResources()
     {
-        return rollbackTransaction().thenCompose( ignore -> forceReleaseConnection() );
+        return rollbackTransaction().thenCompose( ignore -> releaseConnectionNow() );
     }
 
     private CompletionStage<Void> rollbackTransaction()
     {
-        return transactionStage
-                .exceptionally( error -> null ) // handle previous acquisition failures
-                .thenCompose( tx ->
-                {
-                    if ( tx != null && tx.isOpen() )
-                    {
-                        return tx.rollbackAsync();
-                    }
-                    return completedFuture( null );
-                } );
+        return existingTransactionOrNull().thenCompose( tx ->
+        {
+            if ( tx != null )
+            {
+                return tx.rollbackAsync();
+            }
+            return completedFuture( null );
+        } ).exceptionally( error ->
+        {
+            Throwable cause = Futures.completionErrorCause( error );
+            logger.error( "Failed to rollback active transaction", cause );
+            return null;
+        } );
     }
 
-    private CompletionStage<Void> forceReleaseConnection()
+    private CompletionStage<Void> releaseConnectionNow()
     {
-        return connectionStage
-                .exceptionally( error -> null ) // handle previous acquisition failures
-                .thenCompose( connection ->
-                {
-                    if ( connection != null )
-                    {
-                        return connection.releaseNow();
-                    }
-                    return completedFuture( null );
-                } ).exceptionally( error ->
-                {
-                    // todo: this log message looks wrong, should it go to #rollbackTransaction() ?
-                    logger.error( "Failed to rollback active transaction", error );
-                    return null;
-                } );
+        return existingConnectionOrNull().thenCompose( connection ->
+        {
+            if ( connection != null )
+            {
+                return connection.releaseNow();
+            }
+            return completedFuture( null );
+        } );
     }
 
     private CompletionStage<Void> ensureNoOpenTxBeforeRunningQuery()
@@ -517,14 +525,25 @@ public class NetworkSession implements Session
 
     private CompletionStage<Void> ensureNoOpenTx( String errorMessage )
     {
-        return transactionStage.exceptionally( error -> null )
-                .thenAccept( tx ->
-                {
-                    if ( tx != null && tx.isOpen() )
-                    {
-                        throw new ClientException( errorMessage );
-                    }
-                } );
+        return existingTransactionOrNull().thenAccept( tx ->
+        {
+            if ( tx != null )
+            {
+                throw new ClientException( errorMessage );
+            }
+        } );
+    }
+
+    private CompletionStage<ExplicitTransaction> existingTransactionOrNull()
+    {
+        return transactionStage
+                .exceptionally( error -> null ) // handle previous acquisition failures
+                .thenApply( tx -> tx != null && tx.isOpen() ? tx : null );
+    }
+
+    private CompletionStage<Connection> existingConnectionOrNull()
+    {
+        return connectionStage.exceptionally( error -> null ); // handle previous acquisition failures
     }
 
     private void ensureSessionIsOpen()

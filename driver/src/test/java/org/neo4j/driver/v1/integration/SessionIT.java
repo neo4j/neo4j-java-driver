@@ -20,10 +20,11 @@ package org.neo4j.driver.v1.integration;
 
 import org.hamcrest.MatcherAssert;
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
+import org.junit.rules.Timeout;
 
 import java.util.HashSet;
 import java.util.List;
@@ -90,14 +91,13 @@ import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.util.DaemonThreadFactory.daemon;
 import static org.neo4j.driver.v1.util.Neo4jRunner.DEFAULT_AUTH_TOKEN;
 
-// todo: unignore and fix all `Session#reset()` tests!
 public class SessionIT
 {
-    @Rule
-    public TestNeo4j neo4j = new TestNeo4j();
+    private final TestNeo4j neo4j = new TestNeo4j();
+    private final ExpectedException exception = ExpectedException.none();
 
     @Rule
-    public ExpectedException exception = ExpectedException.none();
+    public final RuleChain ruleChain = RuleChain.outerRule( neo4j ).around( exception ).around( Timeout.seconds( 60 ) );
 
     private Driver driver;
     private ExecutorService executor;
@@ -237,8 +237,7 @@ public class SessionIT
 
     @SuppressWarnings( "deprecation" )
     @Test
-    @Ignore
-    public void shouldNotAllowBeginTxIfResetFailureIsNotConsumed() throws Throwable
+    public void shouldAllowBeginTxIfResetFailureIsNotConsumed() throws Throwable
     {
         // Given
         neo4j.ensureProcedures( "longRunningStatement.jar" );
@@ -246,26 +245,29 @@ public class SessionIT
 
         try ( Session session = driver.session() )
         {
-            Transaction tx = session.beginTransaction();
+            Transaction tx1 = session.beginTransaction();
 
-            tx.run( "CALL test.driver.longRunningStatement({seconds})",
+            tx1.run( "CALL test.driver.longRunningStatement({seconds})",
                     parameters( "seconds", 10 ) );
             Thread.sleep( 1000 );
             session.reset();
 
-            exception.expect( ClientException.class );
-            exception.expectMessage( startsWith(
-                    "An error has occurred due to the cancellation of executing a previous statement." ) );
+            // When
+            Transaction tx2 = session.beginTransaction();
 
-            // When & Then
-            tx = session.beginTransaction();
-            assertThat( tx, notNullValue() );
+            // Then
+            assertThat( tx2, notNullValue() );
+
+            exception.expect( ClientException.class ); // errors differ depending of neo4j version
+            exception.expectMessage(
+                    "Cannot run more statements in this transaction, it has been terminated by `Session#reset()`" );
+
+            tx1.run( "RETURN 1" );
         }
     }
 
     @SuppressWarnings( "deprecation" )
     @Test
-    @Ignore
     public void shouldThrowExceptionOnCloseIfResetFailureIsNotConsumed() throws Throwable
     {
         // Given
@@ -278,9 +280,8 @@ public class SessionIT
         Thread.sleep( 1000 );
         session.reset();
 
-        exception.expect( ClientException.class );
-        exception.expectMessage( startsWith(
-                "An error has occurred due to the cancellation of executing a previous statement." ) );
+        exception.expect( Neo4jException.class ); // errors differ depending of neo4j version
+        exception.expectMessage( containsString( "The transaction has been terminated" ) );
 
         // When & Then
         session.close();
@@ -288,7 +289,6 @@ public class SessionIT
 
     @SuppressWarnings( "deprecation" )
     @Test
-    @Ignore
     public void shouldBeAbleToBeginTxAfterResetFailureIsConsumed() throws Throwable
     {
         // Given
@@ -357,7 +357,6 @@ public class SessionIT
 
     @SuppressWarnings( "deprecation" )
     @Test
-    @Ignore
     public void shouldAllowMoreStatementAfterSessionReset()
     {
         // Given
@@ -377,7 +376,6 @@ public class SessionIT
 
     @SuppressWarnings( "deprecation" )
     @Test
-    @Ignore
     public void shouldAllowMoreTxAfterSessionReset()
     {
         // Given
@@ -945,7 +943,7 @@ public class SessionIT
         }
     }
 
-    @Test( timeout = 20_000 )
+    @Test
     public void resetShouldStopQueryWaitingForALock() throws Exception
     {
         assumeServerIs31OrLater();
@@ -966,8 +964,7 @@ public class SessionIT
         } );
     }
 
-    @Test( timeout = 20_000 )
-    @Ignore
+    @Test
     public void resetShouldStopTransactionWaitingForALock() throws Exception
     {
         assumeServerIs31OrLater();
@@ -989,8 +986,7 @@ public class SessionIT
         } );
     }
 
-    @Test( timeout = 20_000 )
-    @Ignore
+    @Test
     public void resetShouldStopWriteTransactionWaitingForALock() throws Exception
     {
         assumeServerIs31OrLater();
@@ -1025,7 +1021,7 @@ public class SessionIT
         assertEquals( 1, invocationsOfWork.get() );
     }
 
-    @Test( timeout = 20_000 )
+    @Test
     public void transactionRunShouldFailOnDeadlocks() throws Exception
     {
         final int nodeId1 = 42;
@@ -1101,7 +1097,7 @@ public class SessionIT
         }
     }
 
-    @Test( timeout = 20_000 )
+    @Test
     public void writeTransactionFunctionShouldRetryDeadlocks() throws Exception
     {
         final int nodeId1 = 42;

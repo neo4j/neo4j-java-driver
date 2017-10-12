@@ -51,6 +51,7 @@ public final class ErrorUtil
         }
     }
 
+    // todo: use this method and close channel after unrecoverable error
     public static boolean isRecoverable( Throwable error )
     {
         if ( error instanceof Neo4jException )

@@ -48,6 +48,8 @@ public class TransactionIT
     @Rule
     public TestNeo4jSession session = new TestNeo4jSession();
 
+    private Transaction globalTx;
+
     @Test
     public void shouldRunAndCommit() throws Throwable
     {
@@ -242,14 +244,12 @@ public class TransactionIT
     {
         // Expect
         exception.expect( ClientException.class );
-        exception.expectMessage( "Cannot run more statements in this transaction, it has been rolled back" );
+        exception.expectMessage( "Cannot run more statements in this transaction, it has been terminated by" );
         // When
         Transaction tx = session.beginTransaction();
         session.reset();
         tx.run( "CREATE (n:FirstNode)" );
     }
-
-    private Transaction globalTx = null;
 
     @SuppressWarnings( "deprecation" )
     @Test
@@ -271,7 +271,7 @@ public class TransactionIT
                 }
                 catch ( InterruptedException e )
                 {
-                    new AssertionError( e );
+                    throw new AssertionError( e );
                 }
 
                 globalTx = session.beginTransaction();
@@ -293,7 +293,7 @@ public class TransactionIT
                 }
                 catch ( InterruptedException e )
                 {
-                    new AssertionError( e );
+                    throw new AssertionError( e );
                 }
 
                 session.reset();
