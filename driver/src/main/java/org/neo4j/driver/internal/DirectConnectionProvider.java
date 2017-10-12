@@ -52,7 +52,7 @@ public class DirectConnectionProvider implements ConnectionProvider
     @Override
     public CompletionStage<Void> verifyConnectivity()
     {
-        return acquireConnection( READ ).thenCompose( Connection::forceRelease );
+        return acquireConnection( READ ).thenCompose( Connection::releaseNow );
     }
 
     @Override

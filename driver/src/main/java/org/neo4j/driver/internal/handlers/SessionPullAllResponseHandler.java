@@ -32,12 +32,12 @@ public class SessionPullAllResponseHandler extends PullAllResponseHandler
     @Override
     protected void afterSuccess()
     {
-        connection.release();
+        connection.releaseInBackground();
     }
 
     @Override
     protected void afterFailure( Throwable error )
     {
-        connection.release();
+        connection.releaseInBackground();
     }
 }

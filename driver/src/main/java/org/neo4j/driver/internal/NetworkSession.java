@@ -492,11 +492,12 @@ public class NetworkSession implements Session
                 {
                     if ( connection != null )
                     {
-                        return connection.forceRelease();
+                        return connection.releaseNow();
                     }
                     return completedFuture( null );
                 } ).exceptionally( error ->
                 {
+                    // todo: this log message looks wrong, should it go to #rollbackTransaction() ?
                     logger.error( "Failed to rollback active transaction", error );
                     return null;
                 } );

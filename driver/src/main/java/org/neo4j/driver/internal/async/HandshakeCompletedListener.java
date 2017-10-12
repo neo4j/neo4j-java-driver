@@ -25,7 +25,7 @@ import io.netty.channel.ChannelPromise;
 
 import java.util.Map;
 
-import org.neo4j.driver.internal.handlers.AsyncInitResponseHandler;
+import org.neo4j.driver.internal.handlers.InitResponseHandler;
 import org.neo4j.driver.internal.messaging.InitMessage;
 import org.neo4j.driver.v1.Value;
 
@@ -54,7 +54,7 @@ public class HandshakeCompletedListener implements ChannelFutureListener
             Channel channel = future.channel();
 
             InitMessage message = new InitMessage( userAgent, authToken );
-            AsyncInitResponseHandler handler = new AsyncInitResponseHandler( connectionInitializedPromise );
+            InitResponseHandler handler = new InitResponseHandler( connectionInitializedPromise );
 
             messageDispatcher( channel ).queue( handler );
             channel.writeAndFlush( message, channel.voidPromise() );

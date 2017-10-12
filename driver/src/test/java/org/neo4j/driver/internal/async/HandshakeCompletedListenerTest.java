@@ -28,7 +28,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
-import org.neo4j.driver.internal.handlers.AsyncInitResponseHandler;
+import org.neo4j.driver.internal.handlers.InitResponseHandler;
 import org.neo4j.driver.internal.messaging.InitMessage;
 import org.neo4j.driver.v1.Value;
 
@@ -94,7 +94,7 @@ public class HandshakeCompletedListenerTest
         listener.operationComplete( handshakeCompletedPromise );
         assertTrue( channel.finish() );
 
-        verify( messageDispatcher ).queue( any( AsyncInitResponseHandler.class ) );
+        verify( messageDispatcher ).queue( any( InitResponseHandler.class ) );
         Object outboundMessage = channel.readOutbound();
         assertThat( outboundMessage, instanceOf( InitMessage.class ) );
         InitMessage initMessage = (InitMessage) outboundMessage;
@@ -106,7 +106,7 @@ public class HandshakeCompletedListenerTest
     {
         Map<String,Value> authToken = new HashMap<>();
         authToken.put( "username", value( "neo4j" ) );
-        authToken.put( "username", value( "secret" ) );
+        authToken.put( "password", value( "secret" ) );
         return authToken;
     }
 }

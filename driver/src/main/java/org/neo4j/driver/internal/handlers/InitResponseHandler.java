@@ -18,37 +18,76 @@
  */
 package org.neo4j.driver.internal.handlers;
 
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelPipeline;
+import io.netty.channel.ChannelPromise;
+
 import java.util.Map;
 
+import org.neo4j.driver.internal.async.outbound.OutboundMessageHandler;
 import org.neo4j.driver.internal.spi.ResponseHandler;
+import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.Value;
+
+import static org.neo4j.driver.internal.async.ChannelAttributes.setServerVersion;
 
 public class InitResponseHandler implements ResponseHandler
 {
-    private String serverVersion;
+    private final ChannelPromise connectionInitializedPromise;
+    private final Channel channel;
+
+    public InitResponseHandler( ChannelPromise connectionInitializedPromise )
+    {
+        this.connectionInitializedPromise = connectionInitializedPromise;
+        this.channel = connectionInitializedPromise.channel();
+    }
 
     @Override
     public void onSuccess( Map<String,Value> metadata )
     {
-        Value versionValue = metadata.get( "server" );
-        if ( versionValue != null )
+        try
         {
-            serverVersion = versionValue.asString();
+            ServerVersion serverVersion = extractServerVersion( metadata );
+            setServerVersion( channel, serverVersion );
+            updatePipelineIfNeeded( serverVersion, channel.pipeline() );
+            connectionInitializedPromise.setSuccess();
+        }
+        catch ( Throwable error )
+        {
+            connectionInitializedPromise.setFailure( error );
+            throw error;
         }
     }
 
     @Override
     public void onFailure( Throwable error )
     {
+        channel.close().addListener( future -> connectionInitializedPromise.setFailure( error ) );
     }
 
     @Override
     public void onRecord( Value[] fields )
     {
+        throw new UnsupportedOperationException();
     }
 
-    public String serverVersion()
+    private static ServerVersion extractServerVersion( Map<String,Value> metadata )
     {
-        return serverVersion;
+        Value versionValue = metadata.get( "server" );
+        boolean versionAbsent = versionValue == null || versionValue.isNull();
+        return versionAbsent ? ServerVersion.v3_0_0 : ServerVersion.version( versionValue.asString() );
+    }
+
+    private static void updatePipelineIfNeeded( ServerVersion serverVersion, ChannelPipeline pipeline )
+    {
+        if ( serverVersion.lessThan( ServerVersion.v3_2_0 ) )
+        {
+            OutboundMessageHandler outboundHandler = pipeline.get( OutboundMessageHandler.class );
+            if ( outboundHandler == null )
+            {
+                throw new IllegalStateException( "Can't find " + OutboundMessageHandler.NAME + " in the pipeline" );
+            }
+            pipeline.replace( outboundHandler, OutboundMessageHandler.NAME, outboundHandler.withoutByteArraySupport() );
+        }
     }
 }

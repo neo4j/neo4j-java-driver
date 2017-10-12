@@ -52,7 +52,7 @@ public class ExplicitTransactionTest
         InOrder order = inOrder( connection );
         order.verify( connection ).run( eq( "BEGIN" ), any(), any(), any() );
         order.verify( connection ).runAndFlush( eq( "ROLLBACK" ), any(), any(), any() );
-        order.verify( connection ).release();
+        order.verify( connection ).releaseInBackground();
     }
 
     @Test
@@ -71,7 +71,7 @@ public class ExplicitTransactionTest
         InOrder order = inOrder( connection );
         order.verify( connection ).run( eq( "BEGIN" ), any(), any(), any() );
         order.verify( connection ).runAndFlush( eq( "ROLLBACK" ), any(), any(), any() );
-        order.verify( connection ).release();
+        order.verify( connection ).releaseInBackground();
     }
 
     @Test
@@ -89,7 +89,7 @@ public class ExplicitTransactionTest
         InOrder order = inOrder( connection );
         order.verify( connection ).run( eq( "BEGIN" ), any(), any(), any() );
         order.verify( connection ).runAndFlush( eq( "COMMIT" ), any(), any(), any() );
-        order.verify( connection ).release();
+        order.verify( connection ).releaseInBackground();
     }
 
     @Test

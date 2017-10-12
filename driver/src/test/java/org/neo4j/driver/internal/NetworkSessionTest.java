@@ -87,7 +87,7 @@ public class NetworkSessionTest
     public void setUp()
     {
         connection = connectionMock();
-        when( connection.forceRelease() ).thenReturn( completedFuture( null ) );
+        when( connection.releaseNow() ).thenReturn( completedFuture( null ) );
         connectionProvider = mock( ConnectionProvider.class );
         when( connectionProvider.acquireConnection( any( AccessMode.class ) ) )
                 .thenReturn( completedFuture( connection ) );
@@ -255,7 +255,7 @@ public class NetworkSessionTest
 
         InOrder inOrder = inOrder( connection );
         inOrder.verify( connection ).runAndFlush( eq( "RETURN 1" ), any(), any(), any() );
-        inOrder.verify( connection ).forceRelease();
+        inOrder.verify( connection ).releaseNow();
     }
 
     @SuppressWarnings( "deprecation" )
@@ -358,7 +358,7 @@ public class NetworkSessionTest
         verify( connection ).runAndFlush( eq( "RETURN 1" ), any(), any(), any() );
 
         tx.close();
-        verify( connection ).release();
+        verify( connection ).releaseInBackground();
     }
 
     @Test
@@ -574,12 +574,12 @@ public class NetworkSessionTest
         NetworkSession session = newSession( connectionProvider, READ );
         session.run( "RETURN 1" );
 
-        verify( connection, never() ).release();
-        verify( connection, never() ).forceRelease();
+        verify( connection, never() ).releaseInBackground();
+        verify( connection, never() ).releaseNow();
 
         session.reset();
-        verify( connection, never() ).release();
-        verify( connection ).forceRelease();
+        verify( connection, never() ).releaseInBackground();
+        verify( connection ).releaseNow();
     }
 
     @Test

@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Queue;
 
 import org.neo4j.driver.internal.handlers.AckFailureResponseHandler;
-import org.neo4j.driver.internal.messaging.AckFailureMessage;
 import org.neo4j.driver.internal.messaging.MessageHandler;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.ErrorUtil;
@@ -35,6 +34,7 @@ import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Value;
 
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.driver.internal.messaging.AckFailureMessage.ACK_FAILURE;
 
 public class InboundMessageDispatcher implements MessageHandler
 {
@@ -44,6 +44,7 @@ public class InboundMessageDispatcher implements MessageHandler
 
     private Throwable currentError;
     private boolean fatalErrorOccurred;
+    private boolean ackFailureMuted;
 
     public InboundMessageDispatcher( Channel channel, Logging logging )
     {
@@ -133,9 +134,8 @@ public class InboundMessageDispatcher implements MessageHandler
         log.debug( "Received FAILURE message with code '%s' and message '%s'", code, message );
         currentError = ErrorUtil.newNeo4jError( code, message );
 
-        // queue ACK_FAILURE before notifying the next response handler
-        queue( new AckFailureResponseHandler( this ) );
-        channel.writeAndFlush( AckFailureMessage.ACK_FAILURE, channel.voidPromise() );
+        // try to write ACK_FAILURE before notifying the next response handler
+        ackFailureIfNeeded();
 
         ResponseHandler handler = handlers.remove();
         handler.onFailure( currentError );
@@ -178,5 +178,44 @@ public class InboundMessageDispatcher implements MessageHandler
     public Throwable currentError()
     {
         return currentError;
+    }
+
+    /**
+     * Makes this message dispatcher not send ACK_FAILURE in response to FAILURE until it's un-muted using
+     * {@link #unMuteAckFailure()}. Muting ACK_FAILURE is needed <b>only</b> when sending RESET message. RESET "jumps"
+     * over all queued messages on server and makes them fail. Received failures do not need to be acknowledge because
+     * RESET moves server's state machine to READY state.
+     * <p>
+     * <b>This method is not thread-safe</b> and should only be executed by the event loop thread.
+     */
+    public void muteAckFailure()
+    {
+        ackFailureMuted = true;
+    }
+
+    /**
+     * Makes this message dispatcher send ACK_FAILURE in response to FAILURE. Should be used in combination with
+     * {@link #muteAckFailure()} when sending RESET message.
+     * <p>
+     * <b>This method is not thread-safe</b> and should only be executed by the event loop thread.
+     *
+     * @throws IllegalStateException if ACK_FAILURE is not muted right now.
+     */
+    public void unMuteAckFailure()
+    {
+        if ( !ackFailureMuted )
+        {
+            throw new IllegalStateException( "Can't un-mute ACK_FAILURE because it's not muted" );
+        }
+        ackFailureMuted = false;
+    }
+
+    private void ackFailureIfNeeded()
+    {
+        if ( !ackFailureMuted )
+        {
+            queue( new AckFailureResponseHandler( this ) );
+            channel.writeAndFlush( ACK_FAILURE, channel.voidPromise() );
+        }
     }
 }

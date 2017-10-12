@@ -192,7 +192,7 @@ public class ExplicitTransaction implements Transaction
         {
             // todo: test that this state transition always happens when commit or rollback
             state = newState;
-            connection.release();
+            connection.releaseInBackground();
             session.setBookmark( bookmark );
         };
     }
