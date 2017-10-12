@@ -41,6 +41,8 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
@@ -128,6 +130,59 @@ public class InboundMessageDispatcherTest
         dispatcher.handleFailureMessage( FAILURE_CODE, FAILURE_MESSAGE );
 
         verify( channel ).writeAndFlush( eq( ACK_FAILURE ), any() );
+    }
+
+    @Test
+    public void shouldNotSendAckFailureOnFailureWhenMuted()
+    {
+        Channel channel = mock( Channel.class );
+        InboundMessageDispatcher dispatcher = newDispatcher( channel );
+        dispatcher.muteAckFailure();
+
+        dispatcher.queue( mock( ResponseHandler.class ) );
+        assertEquals( 1, dispatcher.queuedHandlersCount() );
+
+        dispatcher.handleFailureMessage( FAILURE_CODE, FAILURE_MESSAGE );
+
+        verify( channel, never() ).writeAndFlush( eq( ACK_FAILURE ), any() );
+    }
+
+    @Test
+    public void shouldFailToUnMuteAckFailureWhenNotMuted()
+    {
+        InboundMessageDispatcher dispatcher = newDispatcher( mock( Channel.class ) );
+
+        try
+        {
+            dispatcher.unMuteAckFailure();
+            fail( "Exception expected" );
+        }
+        catch ( IllegalStateException e )
+        {
+            assertEquals( "Can't un-mute ACK_FAILURE because it's not muted", e.getMessage() );
+        }
+    }
+
+    @Test
+    public void shouldSendAckFailureAfterUnMute()
+    {
+        Channel channel = mock( Channel.class );
+        InboundMessageDispatcher dispatcher = newDispatcher( channel );
+        dispatcher.muteAckFailure();
+
+        dispatcher.queue( mock( ResponseHandler.class ) );
+        assertEquals( 1, dispatcher.queuedHandlersCount() );
+
+        dispatcher.handleFailureMessage( FAILURE_CODE, FAILURE_MESSAGE );
+        verify( channel, never() ).writeAndFlush( eq( ACK_FAILURE ), any() );
+
+        dispatcher.unMuteAckFailure();
+
+        dispatcher.queue( mock( ResponseHandler.class ) );
+        assertEquals( 1, dispatcher.queuedHandlersCount() );
+
+        dispatcher.handleFailureMessage( FAILURE_CODE, FAILURE_MESSAGE );
+        verify( channel, times( 1 ) ).writeAndFlush( eq( ACK_FAILURE ), any() );
     }
 
     @Test
