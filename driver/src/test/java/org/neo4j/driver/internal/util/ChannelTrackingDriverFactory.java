@@ -44,19 +44,29 @@ public class ChannelTrackingDriverFactory extends DriverFactoryWithClock
     }
 
     @Override
-    protected ChannelConnector createConnector( ConnectionSettings settings, SecurityPlan securityPlan, Config config,
-            Clock clock )
+    protected final ChannelConnector createConnector( ConnectionSettings settings, SecurityPlan securityPlan,
+            Config config, Clock clock )
     {
-        ChannelConnector connector = super.createConnector( settings, securityPlan, config, clock );
-        return new ChannelTrackingConnector( connector, channels );
+        return createChannelTrackingConnector( createRealConnector( settings, securityPlan, config, clock ) );
     }
 
     @Override
-    protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan,
+    protected final ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan,
             Bootstrap bootstrap, Config config )
     {
         pool = super.createConnectionPool( authToken, securityPlan, bootstrap, config );
         return pool;
+    }
+
+    protected ChannelConnector createRealConnector( ConnectionSettings settings, SecurityPlan securityPlan,
+            Config config, Clock clock )
+    {
+        return super.createConnector( settings, securityPlan, config, clock );
+    }
+
+    private ChannelTrackingConnector createChannelTrackingConnector( ChannelConnector connector )
+    {
+        return new ChannelTrackingConnector( connector, channels );
     }
 
     public List<Channel> channels()

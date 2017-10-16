@@ -93,7 +93,7 @@ public class ChannelErrorHandler extends ChannelInboundHandlerAdapter
     {
         Throwable cause = transformError( error );
         messageDispatcher.handleFatalError( cause );
-        log.debug( "Closing channel: %s", ctx.channel() );
+        log.debug( "Closing channel because of an error: %s", ctx.channel() );
         ctx.close();
     }
 

@@ -43,6 +43,7 @@ public class ChannelConnectorImpl implements ChannelConnector
     private final String userAgent;
     private final Map<String,Value> authToken;
     private final SecurityPlan securityPlan;
+    private final ChannelPipelineBuilder pipelineBuilder;
     private final int connectTimeoutMillis;
     private final Logging logging;
     private final Clock clock;
@@ -50,10 +51,17 @@ public class ChannelConnectorImpl implements ChannelConnector
     public ChannelConnectorImpl( ConnectionSettings connectionSettings, SecurityPlan securityPlan, Logging logging,
             Clock clock )
     {
+        this( connectionSettings, securityPlan, new ChannelPipelineBuilderImpl(), logging, clock );
+    }
+
+    public ChannelConnectorImpl( ConnectionSettings connectionSettings, SecurityPlan securityPlan,
+            ChannelPipelineBuilder pipelineBuilder, Logging logging, Clock clock )
+    {
         this.userAgent = connectionSettings.userAgent();
         this.authToken = tokenAsMap( connectionSettings.authToken() );
         this.connectTimeoutMillis = connectionSettings.connectTimeoutMillis();
         this.securityPlan = requireNonNull( securityPlan );
+        this.pipelineBuilder = pipelineBuilder;
         this.logging = requireNonNull( logging );
         this.clock = requireNonNull( clock );
     }
@@ -70,8 +78,10 @@ public class ChannelConnectorImpl implements ChannelConnector
         ChannelPromise handshakeCompleted = channel.newPromise();
         ChannelPromise connectionInitialized = channel.newPromise();
 
-        channelConnected.addListener( new ChannelConnectedListener( address, handshakeCompleted, logging ) );
-        handshakeCompleted.addListener( new HandshakeCompletedListener( userAgent, authToken, connectionInitialized ) );
+        channelConnected.addListener(
+                new ChannelConnectedListener( address, pipelineBuilder, handshakeCompleted, logging ) );
+        handshakeCompleted.addListener(
+                new HandshakeCompletedListener( userAgent, authToken, connectionInitialized ) );
 
         return connectionInitialized;
     }

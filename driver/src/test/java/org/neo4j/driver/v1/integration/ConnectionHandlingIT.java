@@ -33,7 +33,6 @@ import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.DriverFactory;
 import org.neo4j.driver.internal.async.BoltServerAddress;
 import org.neo4j.driver.internal.async.ChannelConnector;
-import org.neo4j.driver.internal.async.ChannelConnectorImpl;
 import org.neo4j.driver.internal.async.pool.ConnectionPoolImpl;
 import org.neo4j.driver.internal.async.pool.PoolSettings;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
@@ -80,7 +79,7 @@ public class ConnectionHandlingIT
     @Before
     public void createDriver()
     {
-        DriverFactoryWithConnector driverFactory = new DriverFactoryWithConnector();
+        DriverFactoryWithConnectionPool driverFactory = new DriverFactoryWithConnectionPool();
         AuthToken auth = neo4j.authToken();
         RoutingSettings routingSettings = new RoutingSettings( 1, 1, null );
         RetrySettings retrySettings = RetrySettings.DEFAULT;
@@ -323,7 +322,7 @@ public class ConnectionHandlingIT
                 parameters( "nodesToCreate", nodesToCreate ) );
     }
 
-    private static class DriverFactoryWithConnector extends DriverFactory
+    private static class DriverFactoryWithConnectionPool extends DriverFactory
     {
         MemorizingConnectionPool connectionPool;
 
@@ -336,9 +335,9 @@ public class ConnectionHandlingIT
                     config.idleTimeBeforeConnectionTest(), config.maxConnectionLifetimeMillis(),
                     config.maxConnectionPoolSize(), config.connectionAcquisitionTimeoutMillis() );
             Clock clock = createClock();
-            ChannelConnectorImpl connector =
-                    new ChannelConnectorImpl( connectionSettings, securityPlan, config.logging(), clock );
-            connectionPool = new MemorizingConnectionPool(  connector, bootstrap, poolSettings,  config.logging(), clock);
+            ChannelConnector connector = super.createConnector( connectionSettings, securityPlan, config, clock );
+            connectionPool =
+                    new MemorizingConnectionPool( connector, bootstrap, poolSettings, config.logging(), clock );
             return connectionPool;
         }
     }

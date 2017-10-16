@@ -18,23 +18,46 @@
  */
 package org.neo4j.driver.v1.integration;
 
+import io.netty.channel.Channel;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.io.IOException;
+import java.net.URI;
+import java.util.List;
 import java.util.UUID;
+import java.util.function.Consumer;
 
+import org.neo4j.driver.internal.cluster.RoutingSettings;
+import org.neo4j.driver.internal.messaging.FailureMessage;
+import org.neo4j.driver.internal.retry.RetrySettings;
+import org.neo4j.driver.internal.util.ChannelTrackingDriverFactory;
+import org.neo4j.driver.internal.util.ChannelTrackingDriverFactoryWithMessageFormat;
+import org.neo4j.driver.internal.util.FailingMessageFormat;
+import org.neo4j.driver.internal.util.FakeClock;
+import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.Config;
+import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
+import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.startsWith;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
+import static org.neo4j.driver.internal.util.Iterables.single;
 
 public class ErrorIT
 {
@@ -162,4 +185,109 @@ public class ErrorIT
         GraphDatabase.driver( "bolt://localhost:7474", config );
     }
 
+    @Test
+    public void shouldCloseChannelOnRuntimeExceptionInOutboundMessage() throws InterruptedException
+    {
+        RuntimeException error = new RuntimeException( "Unable to encode message" );
+        Throwable queryError = testChannelErrorHandling( messageFormat -> messageFormat.makeWriterThrow( error ) );
+
+        assertEquals( error, queryError );
+    }
+
+    @Test
+    public void shouldCloseChannelOnIOExceptionInOutboundMessage() throws InterruptedException
+    {
+        IOException error = new IOException( "Unable to write" );
+        Throwable queryError = testChannelErrorHandling( messageFormat -> messageFormat.makeWriterThrow( error ) );
+
+        assertThat( queryError, instanceOf( ServiceUnavailableException.class ) );
+        assertEquals( "Connection to the database failed", queryError.getMessage() );
+        assertEquals( error, queryError.getCause() );
+    }
+
+    @Test
+    public void shouldCloseChannelOnRuntimeExceptionInInboundMessage() throws InterruptedException
+    {
+        RuntimeException error = new RuntimeException( "Unable to decode message" );
+        Throwable queryError = testChannelErrorHandling( messageFormat -> messageFormat.makeReaderThrow( error ) );
+
+        assertEquals( error, queryError );
+    }
+
+    @Test
+    public void shouldCloseChannelOnIOExceptionInInboundMessage() throws InterruptedException
+    {
+        IOException error = new IOException( "Unable to read" );
+        Throwable queryError = testChannelErrorHandling( messageFormat -> messageFormat.makeReaderThrow( error ) );
+
+        assertThat( queryError, instanceOf( ServiceUnavailableException.class ) );
+        assertEquals( "Connection to the database failed", queryError.getMessage() );
+        assertEquals( error, queryError.getCause() );
+    }
+
+    @Test
+    public void shouldCloseChannelOnInboundFatalFailureMessage() throws InterruptedException
+    {
+        String errorCode = "Neo.ClientError.Request.Invalid";
+        String errorMessage = "Very wrong request";
+        FailureMessage failureMsg = new FailureMessage( errorCode, errorMessage );
+
+        Throwable queryError = testChannelErrorHandling( messageFormat -> messageFormat.makeReaderFail( failureMsg ) );
+
+        assertThat( queryError, instanceOf( ClientException.class ) );
+        assertEquals( ((ClientException) queryError).code(), errorCode );
+        assertEquals( queryError.getMessage(), errorMessage );
+    }
+
+    private Throwable testChannelErrorHandling( Consumer<FailingMessageFormat> messageFormatSetup )
+            throws InterruptedException
+    {
+        FailingMessageFormat messageFormat = new FailingMessageFormat();
+
+        ChannelTrackingDriverFactoryWithMessageFormat driverFactory = new ChannelTrackingDriverFactoryWithMessageFormat(
+                messageFormat, new FakeClock() );
+
+        URI uri = session.uri();
+        AuthToken authToken = session.authToken();
+        RoutingSettings routingSettings = new RoutingSettings( 1, 1 );
+        RetrySettings retrySettings = RetrySettings.DEFAULT;
+        Config config = Config.build().withLogging( DEV_NULL_LOGGING ).toConfig();
+        Throwable queryError = null;
+
+        try ( Driver driver = driverFactory.newInstance( uri, authToken, routingSettings, retrySettings, config );
+              Session session = driver.session() )
+        {
+            messageFormatSetup.accept( messageFormat );
+
+            try
+            {
+                session.run( "RETURN 1" ).consume();
+                fail( "Exception expected" );
+            }
+            catch ( Throwable error )
+            {
+                queryError = error;
+            }
+
+            assertSingleChannelIsClosed( driverFactory );
+            assertNewQueryCanBeExecuted( session, driverFactory );
+        }
+
+        return queryError;
+    }
+
+    private void assertSingleChannelIsClosed( ChannelTrackingDriverFactory driverFactory ) throws InterruptedException
+    {
+        Channel channel = single( driverFactory.channels() );
+        assertTrue( channel.closeFuture().await( 10, SECONDS ) );
+        assertFalse( channel.isActive() );
+    }
+
+    private void assertNewQueryCanBeExecuted( Session session, ChannelTrackingDriverFactory driverFactory )
+    {
+        assertEquals( 42, session.run( "RETURN 42" ).single().get( 0 ).asInt() );
+        List<Channel> channels = driverFactory.channels();
+        Channel lastChannel = channels.get( channels.size() - 1 );
+        assertTrue( lastChannel.isActive() );
+    }
 }

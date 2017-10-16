@@ -41,12 +41,15 @@ import static org.neo4j.driver.internal.async.ProtocolUtil.PROTOCOL_VERSION_1;
 
 public class HandshakeResponseHandler extends ReplayingDecoder<Void>
 {
+    private final ChannelPipelineBuilder pipelineBuilder;
     private final ChannelPromise handshakeCompletedPromise;
     private final Logging logging;
     private final Logger log;
 
-    public HandshakeResponseHandler( ChannelPromise handshakeCompletedPromise, Logging logging )
+    public HandshakeResponseHandler( ChannelPipelineBuilder pipelineBuilder, ChannelPromise handshakeCompletedPromise,
+            Logging logging )
     {
+        this.pipelineBuilder = pipelineBuilder;
         this.handshakeCompletedPromise = handshakeCompletedPromise;
         this.logging = logging;
         this.log = logging.getLog( getClass().getSimpleName() );
@@ -80,10 +83,9 @@ public class HandshakeResponseHandler extends ReplayingDecoder<Void>
         switch ( serverSuggestedVersion )
         {
         case PROTOCOL_VERSION_1:
-            MessageFormat format = new PackStreamMessageFormatV1();
-            ChannelPipelineBuilder.buildPipeline( ctx.channel(), format, logging );
+            MessageFormat messageFormat = new PackStreamMessageFormatV1();
+            pipelineBuilder.build( messageFormat, pipeline, logging );
             handshakeCompletedPromise.setSuccess();
-
             break;
         case NO_PROTOCOL_VERSION:
             fail( ctx, protocolNoSupportedByServerError() );

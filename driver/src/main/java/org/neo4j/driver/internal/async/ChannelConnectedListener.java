@@ -21,27 +21,29 @@ package org.neo4j.driver.internal.async;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
 import static java.lang.String.format;
-import static java.util.Objects.requireNonNull;
 import static org.neo4j.driver.internal.async.ProtocolUtil.handshake;
 
 public class ChannelConnectedListener implements ChannelFutureListener
 {
     private final BoltServerAddress address;
+    private final ChannelPipelineBuilder pipelineBuilder;
     private final ChannelPromise handshakeCompletedPromise;
     private final Logging logging;
 
-    public ChannelConnectedListener( BoltServerAddress address, ChannelPromise handshakeCompletedPromise,
-            Logging logging )
+    public ChannelConnectedListener( BoltServerAddress address, ChannelPipelineBuilder pipelineBuilder,
+            ChannelPromise handshakeCompletedPromise, Logging logging )
     {
-        this.address = requireNonNull( address );
-        this.handshakeCompletedPromise = requireNonNull( handshakeCompletedPromise );
-        this.logging = requireNonNull( logging );
+        this.address = address;
+        this.pipelineBuilder = pipelineBuilder;
+        this.handshakeCompletedPromise = handshakeCompletedPromise;
+        this.logging = logging;
     }
 
     @Override
@@ -51,7 +53,8 @@ public class ChannelConnectedListener implements ChannelFutureListener
 
         if ( future.isSuccess() )
         {
-            channel.pipeline().addLast( new HandshakeResponseHandler( handshakeCompletedPromise, logging ) );
+            ChannelPipeline pipeline = channel.pipeline();
+            pipeline.addLast( new HandshakeResponseHandler( pipelineBuilder, handshakeCompletedPromise, logging ) );
             ChannelFuture handshakeFuture = channel.writeAndFlush( handshake() );
 
             handshakeFuture.addListener( channelFuture ->

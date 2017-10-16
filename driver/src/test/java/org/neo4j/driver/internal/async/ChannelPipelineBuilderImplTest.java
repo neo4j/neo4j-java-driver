@@ -37,7 +37,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 
-public class ChannelPipelineBuilderTest
+public class ChannelPipelineBuilderImplTest
 {
     @Test
     public void shouldBuildPipeline()
@@ -45,7 +45,7 @@ public class ChannelPipelineBuilderTest
         EmbeddedChannel channel = new EmbeddedChannel();
         ChannelAttributes.setMessageDispatcher( channel, new InboundMessageDispatcher( channel, DEV_NULL_LOGGING ) );
 
-        ChannelPipelineBuilder.buildPipeline( channel, new PackStreamMessageFormatV1(), DEV_NULL_LOGGING );
+        new ChannelPipelineBuilderImpl().build( new PackStreamMessageFormatV1(), channel.pipeline(), DEV_NULL_LOGGING );
 
         Iterator<Map.Entry<String,ChannelHandler>> iterator = channel.pipeline().iterator();
         assertThat( iterator.next().getValue(), instanceOf( ChunkDecoder.class ) );

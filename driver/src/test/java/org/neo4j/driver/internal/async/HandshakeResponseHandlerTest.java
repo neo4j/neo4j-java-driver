@@ -158,6 +158,7 @@ public class HandshakeResponseHandlerTest
 
     private static HandshakeResponseHandler newHandler( ChannelPromise handshakeCompletedPromise )
     {
-        return new HandshakeResponseHandler( handshakeCompletedPromise, DEV_NULL_LOGGING );
+        return new HandshakeResponseHandler( new ChannelPipelineBuilderImpl(), handshakeCompletedPromise,
+                DEV_NULL_LOGGING );
     }
 }
