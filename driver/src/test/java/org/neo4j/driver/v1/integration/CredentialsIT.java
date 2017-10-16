@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.v1.integration;
 
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -78,6 +79,13 @@ public class CredentialsIT
         {
             session.run( "RETURN 1" ).consume();
         }
+    }
+
+    @AfterClass
+    public static void restartWithDefaultSettings()
+    {
+        // restart after the test to prevent TemporaryFolder rule from cleaning up files of a running database
+        neo4j.restartDb( Neo4jSettings.TEST_SETTINGS );
     }
 
     @Test
