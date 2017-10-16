@@ -59,6 +59,7 @@ import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.emptyMap;
+import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -71,6 +72,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
+import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.internal.util.Futures.getBlocking;
 import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.internal.util.Matchers.arithmeticError;
@@ -718,6 +720,116 @@ public class SessionAsyncIT
         Record record = getBlocking( cursor.singleAsync() );
         assertEquals( 42, record.get( 0 ).asInt() );
         assertNull( getBlocking( tx.rollbackAsync() ) );
+    }
+
+    @Test
+    public void shouldExecuteReadTransactionUntilSuccessWhenWorkThrows()
+    {
+        int maxFailures = 1;
+
+        CompletionStage<Integer> result = session.readTransactionAsync( new TransactionWork<CompletionStage<Integer>>()
+        {
+            final AtomicInteger failures = new AtomicInteger();
+
+            @Override
+            public CompletionStage<Integer> execute( Transaction tx )
+            {
+                if ( failures.getAndIncrement() < maxFailures )
+                {
+                    throw new SessionExpiredException( "Oh!" );
+                }
+                return tx.runAsync( "UNWIND range(1, 10) AS x RETURN count(x)" )
+                        .thenCompose( StatementResultCursor::singleAsync )
+                        .thenApply( record -> record.get( 0 ).asInt() );
+            }
+        } );
+
+        assertEquals( 10, getBlocking( result ).intValue() );
+    }
+
+    @Test
+    public void shouldExecuteWriteTransactionUntilSuccessWhenWorkThrows()
+    {
+        int maxFailures = 2;
+
+        CompletionStage<Integer> result = session.writeTransactionAsync( new TransactionWork<CompletionStage<Integer>>()
+        {
+            final AtomicInteger failures = new AtomicInteger();
+
+            @Override
+            public CompletionStage<Integer> execute( Transaction tx )
+            {
+                if ( failures.getAndIncrement() < maxFailures )
+                {
+                    throw new ServiceUnavailableException( "Oh!" );
+                }
+                return tx.runAsync( "CREATE (n1:TestNode), (n2:TestNode) RETURN 2" )
+                        .thenCompose( StatementResultCursor::singleAsync )
+                        .thenApply( record -> record.get( 0 ).asInt() );
+            }
+        } );
+
+        assertEquals( 2, getBlocking( result ).intValue() );
+        assertEquals( 2, countNodesByLabel( "TestNode" ) );
+    }
+
+    @Test
+    public void shouldExecuteReadTransactionUntilSuccessWhenWorkFails()
+    {
+        int maxFailures = 3;
+
+        CompletionStage<Integer> result = session.readTransactionAsync( new TransactionWork<CompletionStage<Integer>>()
+        {
+            final AtomicInteger failures = new AtomicInteger();
+
+            @Override
+            public CompletionStage<Integer> execute( Transaction tx )
+            {
+                return tx.runAsync( "RETURN 42" )
+                        .thenCompose( StatementResultCursor::singleAsync )
+                        .thenApply( record -> record.get( 0 ).asInt() )
+                        .thenCompose( result ->
+                        {
+                            if ( failures.getAndIncrement() < maxFailures )
+                            {
+                                return failedFuture( new TransientException( "A", "B" ) );
+                            }
+                            return completedFuture( result );
+                        } );
+            }
+        } );
+
+        assertEquals( 42, getBlocking( result ).intValue() );
+    }
+
+    @Test
+    public void shouldExecuteWriteTransactionUntilSuccessWhenWorkFails()
+    {
+        int maxFailures = 2;
+
+        CompletionStage<String> result = session.writeTransactionAsync( new TransactionWork<CompletionStage<String>>()
+        {
+            final AtomicInteger failures = new AtomicInteger();
+
+            @Override
+            public CompletionStage<String> execute( Transaction tx )
+            {
+                return tx.runAsync( "CREATE (:MyNode) RETURN 'Hello'" )
+                        .thenCompose( StatementResultCursor::singleAsync )
+                        .thenApply( record -> record.get( 0 ).asString() )
+                        .thenCompose( result ->
+                        {
+                            if ( failures.getAndIncrement() < maxFailures )
+                            {
+                                return failedFuture( new ServiceUnavailableException( "Hi" ) );
+                            }
+                            return completedFuture( result );
+                        } );
+            }
+        } );
+
+        assertEquals( "Hello", getBlocking( result ) );
+        assertEquals( 1, countNodesByLabel( "MyNode" ) );
     }
 
     private Future<List<CompletionStage<Record>>> runNestedQueries( StatementResultCursor inputCursor )

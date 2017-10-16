@@ -24,5 +24,7 @@ import org.neo4j.driver.internal.util.Supplier;
 
 public interface RetryLogic
 {
-    <T> CompletionStage<T> retry( Supplier<CompletionStage<T>> work );
+    <T> T retry( Supplier<T> work );
+
+    <T> CompletionStage<T> retryAsync( Supplier<CompletionStage<T>> work );
 }

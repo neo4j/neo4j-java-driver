@@ -80,7 +80,48 @@ public class ExponentialBackoffRetryLogic implements RetryLogic
     }
 
     @Override
-    public <T> CompletionStage<T> retry( Supplier<CompletionStage<T>> work )
+    public <T> T retry( Supplier<T> work )
+    {
+        List<Throwable> errors = null;
+        long startTime = -1;
+        long nextDelayMs = initialRetryDelayMs;
+
+        while ( true )
+        {
+            try
+            {
+                return work.get();
+            }
+            catch ( Throwable error )
+            {
+                if ( canRetryOn( error ) )
+                {
+                    long currentTime = clock.millis();
+                    if ( startTime == -1 )
+                    {
+                        startTime = currentTime;
+                    }
+
+                    long elapsedTime = currentTime - startTime;
+                    if ( elapsedTime < maxRetryTimeMs )
+                    {
+                        long delayWithJitterMs = computeDelayWithJitter( nextDelayMs );
+                        log.warn( "Transaction failed and will be retried in " + delayWithJitterMs + "ms", error );
+
+                        sleep( delayWithJitterMs );
+                        nextDelayMs = (long) (nextDelayMs * multiplier);
+                        errors = recordError( error, errors );
+                        continue;
+                    }
+                }
+                addSuppressed( error, errors );
+                throw error;
+            }
+        }
+    }
+
+    @Override
+    public <T> CompletionStage<T> retryAsync( Supplier<CompletionStage<T>> work )
     {
         CompletableFuture<T> resultFuture = new CompletableFuture<>();
         executeWorkInEventLoop( resultFuture, work );
@@ -109,7 +150,7 @@ public class ExponentialBackoffRetryLogic implements RetryLogic
         EventExecutor eventExecutor = eventExecutorGroup.next();
 
         long delayWithJitterMs = computeDelayWithJitter( delayMs );
-        log.warn( "Transaction failed and is scheduled to retry in " + delayWithJitterMs + "ms", error );
+        log.warn( "Async transaction failed and is scheduled to retry in " + delayWithJitterMs + "ms", error );
 
         eventExecutor.schedule( () ->
         {
@@ -183,6 +224,19 @@ public class ExponentialBackoffRetryLogic implements RetryLogic
         long min = delayMs - jitter;
         long max = delayMs + jitter;
         return ThreadLocalRandom.current().nextLong( min, max + 1 );
+    }
+
+    private void sleep( long delayMs )
+    {
+        try
+        {
+            clock.sleep( delayMs );
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException( "Retries interrupted", e );
+        }
     }
 
     private void verifyAfterConstruction()
