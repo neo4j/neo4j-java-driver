@@ -305,9 +305,13 @@ public abstract class AbstractStressTestBase<C extends AbstractContext>
 
     private void assertNoFileDescriptorLeak( long previousOpenFileDescriptors )
     {
-        // number of open file descriptors should not go up for more than 20%
-        long maxOpenFileDescriptors = (long) (previousOpenFileDescriptors * 1.2);
+        System.out.println( "Initially open file descriptors: " + previousOpenFileDescriptors );
+
+        // number of open file descriptors should not go up for more than 30%
+        long maxOpenFileDescriptors = (long) (previousOpenFileDescriptors * 1.3);
         long currentOpenFileDescriptorCount = getOpenFileDescriptorCount();
+        System.out.println( "Currently open file descriptors: " + currentOpenFileDescriptorCount );
+
         assertThat( "Unexpectedly high number of open file descriptors",
                 currentOpenFileDescriptorCount, lessThanOrEqualTo( maxOpenFileDescriptors ) );
     }
