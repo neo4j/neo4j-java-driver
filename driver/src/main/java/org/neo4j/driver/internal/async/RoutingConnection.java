@@ -76,9 +76,9 @@ public class RoutingConnection implements Connection
     }
 
     @Override
-    public void release()
+    public void releaseInBackground()
     {
-        delegate.release();
+        delegate.releaseInBackground();
     }
 
     @Override
@@ -88,9 +88,9 @@ public class RoutingConnection implements Connection
     }
 
     @Override
-    public CompletionStage<Void> forceRelease()
+    public CompletionStage<Void> releaseNow()
     {
-        return delegate.forceRelease();
+        return delegate.releaseNow();
     }
 
     @Override

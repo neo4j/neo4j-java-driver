@@ -77,7 +77,7 @@ public class ConnectionPoolImplTest
     public void shouldAcquireIdleConnection() throws Exception
     {
         Connection connection1 = await( pool.acquire( neo4j.address() ) );
-        await( connection1.forceRelease() );
+        await( connection1.releaseNow() );
 
         Connection connection2 = await( pool.acquire( neo4j.address() ) );
         assertNotNull( connection2 );
@@ -102,7 +102,7 @@ public class ConnectionPoolImplTest
     public void shouldFailToAcquireWhenPoolClosed() throws Exception
     {
         Connection connection = await( pool.acquire( neo4j.address() ) );
-        await( connection.forceRelease() );
+        await( connection.releaseNow() );
         await( pool.close() );
 
         try

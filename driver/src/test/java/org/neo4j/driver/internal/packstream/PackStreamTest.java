@@ -38,14 +38,11 @@ import org.neo4j.driver.internal.util.BytePrinter;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
-import static junit.framework.TestCase.assertFalse;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 
 public class PackStreamTest
 {
@@ -83,14 +80,7 @@ public class PackStreamTest
         {
             this.output = new ByteArrayOutputStream();
             this.writable = Channels.newChannel( this.output );
-            this.packer = new PackStream.Packer( new BufferedChannelOutput( this.writable ) );
-        }
-
-        public Machine( int bufferSize )
-        {
-            this.output = new ByteArrayOutputStream();
-            this.writable = Channels.newChannel( this.output );
-            this.packer = new PackStream.Packer( new BufferedChannelOutput( this.writable, bufferSize ) );
+            this.packer = new PackStream.Packer( new ChannelOutput( this.writable ) );
         }
 
         public void reset()
@@ -123,7 +113,6 @@ public class PackStreamTest
 
         // When
         machine.packer().packNull();
-        machine.packer().flush();
 
         // Then
         byte[] bytes = machine.output();
@@ -146,7 +135,6 @@ public class PackStreamTest
 
         // When
         machine.packer().pack( true );
-        machine.packer().flush();
 
         // Then
         byte[] bytes = machine.output();
@@ -170,7 +158,6 @@ public class PackStreamTest
 
         // When
         machine.packer().pack( false );
-        machine.packer().flush();
 
         // Then
         byte[] bytes = machine.output();
@@ -197,7 +184,6 @@ public class PackStreamTest
             // When
             machine.reset();
             machine.packer().pack( i );
-            machine.packer().flush();
 
             // Then
             byte[] bytes = machine.output();
@@ -224,7 +210,6 @@ public class PackStreamTest
             // When
             machine.reset();
             machine.packer().pack( i );
-            machine.packer().flush();
 
             // Then
             byte[] bytes = machine.output();
@@ -255,7 +240,6 @@ public class PackStreamTest
             // When
             machine.reset();
             machine.packer().pack( n );
-            machine.packer().flush();
 
             // Then
             PackStream.Unpacker unpacker = newUnpacker( machine.output() );
@@ -282,7 +266,6 @@ public class PackStreamTest
             // When
             machine.reset();
             machine.packer().pack( n );
-            machine.packer().flush();
 
             // Then
             PackStream.Unpacker unpacker = newUnpacker( machine.output() );
@@ -309,7 +292,6 @@ public class PackStreamTest
             // When
             machine.reset();
             machine.packer().pack( n );
-            machine.packer().flush();
 
             // Then
             PackStream.Unpacker unpacker = newUnpacker( machine.output() );
@@ -327,7 +309,7 @@ public class PackStreamTest
     public void testCanPackAndUnpackByteArrays() throws Throwable
     {
         // Given
-        Machine machine = new Machine( 17000000 );
+        Machine machine = new Machine();
 
         for ( int i = 0; i < 24; i++ )
         {
@@ -336,7 +318,6 @@ public class PackStreamTest
             // When
             machine.reset();
             machine.packer().pack( array );
-            machine.packer().flush();
 
             // Then
             PackStream.Unpacker unpacker = newUnpacker( machine.output() );
@@ -352,7 +333,7 @@ public class PackStreamTest
     public void testCanPackAndUnpackStrings() throws Throwable
     {
         // Given
-        Machine machine = new Machine( 17000000 );
+        Machine machine = new Machine();
 
         for ( int i = 0; i < 24; i++ )
         {
@@ -361,7 +342,6 @@ public class PackStreamTest
             // When
             machine.reset();
             machine.packer().pack( string );
-            machine.packer().flush();
 
             // Then
             PackStream.Unpacker unpacker = newUnpacker( machine.output() );
@@ -383,7 +363,6 @@ public class PackStreamTest
         // When
         PackStream.Packer packer = machine.packer();
         packer.pack( "ABCDEFGHIJ".getBytes() );
-        packer.flush();
 
         // Then
         PackStream.Unpacker unpacker = newUnpacker( machine.output() );
@@ -404,7 +383,6 @@ public class PackStreamTest
         // When
         PackStream.Packer packer = machine.packer();
         packer.pack( 'A' );
-        packer.flush();
 
         // Then
         PackStream.Unpacker unpacker = newUnpacker( machine.output() );
@@ -424,7 +402,6 @@ public class PackStreamTest
         // When
         PackStream.Packer packer = machine.packer();
         packer.pack( "ABCDEFGHIJ" );
-        packer.flush();
 
         // Then
         PackStream.Unpacker unpacker = newUnpacker( machine.output() );
@@ -446,7 +423,6 @@ public class PackStreamTest
         // When
         PackStream.Packer packer = machine.packer();
         packer.pack( code );
-        packer.flush();
 
         // Then
         PackStream.Unpacker unpacker = newUnpacker( machine.output() );
@@ -466,7 +442,6 @@ public class PackStreamTest
         // When
         PackStream.Packer packer = machine.packer();
         packer.packString( "ABCDEFGHIJ".getBytes() );
-        packer.flush();
 
         // Then
         PackStream.Unpacker unpacker = newUnpacker( machine.output() );
@@ -493,7 +468,6 @@ public class PackStreamTest
         assertThat( new String( bytes, UTF_8 ), equalTo( code ) );
 
         packer.packString( bytes );
-        packer.flush();
 
         // Then
         PackStream.Unpacker unpacker = newUnpacker( machine.output() );
@@ -516,7 +490,6 @@ public class PackStreamTest
         packer.pack( 12 );
         packer.pack( 13 );
         packer.pack( 14 );
-        packer.flush();
 
         // Then
         PackStream.Unpacker unpacker = newUnpacker( machine.output() );
@@ -539,7 +512,6 @@ public class PackStreamTest
         // When
         PackStream.Packer packer = machine.packer();
         packer.pack( asList( "eins", "zwei", "drei" ) );
-        packer.flush();
 
         // Then
         PackStream.Unpacker unpacker = newUnpacker( machine.output() );
@@ -571,13 +543,9 @@ public class PackStreamTest
         // When
         PackStream.Packer packer = machine.packer();
         packer.packListHeader( 3 );
-        packer.flush();
         packer.pack( "eins" );
-        packer.flush();
         packer.pack( "zwei" );
-        packer.flush();
         packer.pack( "drei" );
-        packer.flush();
 
         // Then
         PackStream.Unpacker unpacker = newUnpacker( machine.output() );
@@ -600,13 +568,9 @@ public class PackStreamTest
         // When
         PackStream.Packer packer = machine.packer();
         packer.packListHeader( 3 );
-        packer.flush();
         packer.pack( "Mjölnir" );
-        packer.flush();
         packer.pack( "Mjölnir" );
-        packer.flush();
         packer.pack( "Mjölnir" );
-        packer.flush();
 
         // Then
         PackStream.Unpacker unpacker = newUnpacker( machine.output() );
@@ -641,7 +605,6 @@ public class PackStreamTest
         packer.pack( 12 );
         packer.pack( asList( "Person", "Employee" ) );
         packer.pack( asMap( "name", "Alice", "age", 33 ) );
-        packer.flush();
 
         // Then
         PackStream.Unpacker unpacker = newUnpacker( machine.output() );
@@ -683,7 +646,6 @@ public class PackStreamTest
         Machine machine = new Machine();
         PackStream.Packer packer = machine.packer();
         packer.pack( asList(1,2,3,asList(4,5)) );
-        packer.flush();
 
         // When I unpack this value
         PackStream.Unpacker unpacker = newUnpacker( machine.output() );
@@ -719,7 +681,6 @@ public class PackStreamTest
         packer.pack( 2 );
         packer.pack( 3 );
         packer.pack( asList( 4,5 ) );
-        packer.flush();
 
         // When I unpack this value
         PackStream.Unpacker unpacker = newUnpacker( machine.output() );
@@ -757,7 +718,6 @@ public class PackStreamTest
         packer.pack( "Bob" );
         packer.pack( "cat_ages" );
         packer.pack( asList( 4.3, true ) );
-        packer.flush();
 
         // When I unpack this value
         PackStream.Unpacker unpacker = newUnpacker( machine.output() );
@@ -783,35 +743,6 @@ public class PackStreamTest
     }
 
     @Test
-    public void testHasNext() throws Throwable
-    {
-        // Given
-        Machine machine = new Machine();
-        PackStream.Packer packer = machine.packer();
-        packer.pack( "name" );
-        packer.pack( 1 );
-        packer.flush();
-
-        // When I start unpacking
-        PackStream.Unpacker unpacker = newUnpacker( machine.output() );
-
-        // Then
-        assertTrue( unpacker.hasNext() );
-
-        // When I unpack the first string
-        unpacker.unpackString();
-
-        // Then
-        assertTrue( unpacker.hasNext() );
-
-        // When I unpack the integer
-        unpacker.unpackLong();
-
-        // Then
-        assertFalse( unpacker.hasNext() );
-    }
-
-    @Test
     public void handlesDataCrossingBufferBoundaries() throws Throwable
     {
         // Given
@@ -819,7 +750,6 @@ public class PackStreamTest
         PackStream.Packer packer = machine.packer();
         packer.pack( Long.MAX_VALUE );
         packer.pack( Long.MAX_VALUE );
-        packer.flush();
 
         ReadableByteChannel ch = Channels.newChannel( new ByteArrayInputStream( machine.output() ) );
         PackStream.Unpacker unpacker = new PackStream.Unpacker( new BufferedChannelInput( 11, ch ) );
@@ -873,7 +803,6 @@ public class PackStreamTest
         Machine machine = new Machine();
         PackStream.Packer packer = machine.packer();
         packer.pack( value );
-        packer.flush();
 
         PackStream.Unpacker unpacker = newUnpacker( machine.output() );
 
@@ -894,7 +823,6 @@ public class PackStreamTest
             strings.add( i, value );
         }
         packer.pack( strings );
-        packer.flush();
 
         // Then
         PackStream.Unpacker unpacker = newUnpacker( machine.output() );
@@ -921,7 +849,6 @@ public class PackStreamTest
             map.put( Integer.toString( i ), i );
         }
         packer.pack( map );
-        packer.flush();
 
         // Then
         PackStream.Unpacker unpacker = newUnpacker( machine.output() );
@@ -951,7 +878,6 @@ public class PackStreamTest
             packer.pack( i );
         }
 
-        packer.flush();
 
         // Then
         PackStream.Unpacker unpacker = newUnpacker( machine.output() );

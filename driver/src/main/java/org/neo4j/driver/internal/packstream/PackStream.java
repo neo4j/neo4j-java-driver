@@ -157,11 +157,6 @@ public class PackStream
             this.out = out;
         }
 
-        public void flush() throws IOException
-        {
-            out.flush();
-        }
-
         public void packRaw( byte[] data ) throws IOException
         {
             out.writeBytes( data );
@@ -423,11 +418,6 @@ public class PackStream
         public Unpacker( PackInput in )
         {
             this.in = in;
-        }
-
-        public boolean hasNext() throws IOException
-        {
-            return in.hasMoreData();
         }
 
         public long unpackStructHeader() throws IOException

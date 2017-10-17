@@ -50,7 +50,7 @@ import static org.neo4j.driver.internal.async.outbound.OutboundMessageHandler.NA
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.v1.Values.value;
 
-public class AsyncInitResponseHandlerTest
+public class InitResponseHandlerTest
 {
     private final EmbeddedChannel channel = new EmbeddedChannel();
 
@@ -67,7 +67,7 @@ public class AsyncInitResponseHandlerTest
     public void shouldSetServerVersionOnChannel()
     {
         ChannelPromise channelPromise = channel.newPromise();
-        AsyncInitResponseHandler handler = new AsyncInitResponseHandler( channelPromise );
+        InitResponseHandler handler = new InitResponseHandler( channelPromise );
 
         Map<String,Value> metadata = singletonMap( "server", value( ServerVersion.v3_2_0.toString() ) );
         handler.onSuccess( metadata );
@@ -80,7 +80,7 @@ public class AsyncInitResponseHandlerTest
     public void shouldSetServerVersionToDefaultValueWhenUnknown()
     {
         ChannelPromise channelPromise = channel.newPromise();
-        AsyncInitResponseHandler handler = new AsyncInitResponseHandler( channelPromise );
+        InitResponseHandler handler = new InitResponseHandler( channelPromise );
 
         Map<String,Value> metadata = singletonMap( "server", Values.NULL );
         handler.onSuccess( metadata );
@@ -92,7 +92,7 @@ public class AsyncInitResponseHandlerTest
     @Test
     public void shouldAllowByteArraysForNewerVersions()
     {
-        AsyncInitResponseHandler handler = new AsyncInitResponseHandler( channel.newPromise() );
+        InitResponseHandler handler = new InitResponseHandler( channel.newPromise() );
 
         Map<String,Value> metadata = singletonMap( "server", value( ServerVersion.v3_2_0.toString() ) );
         handler.onSuccess( metadata );
@@ -105,7 +105,7 @@ public class AsyncInitResponseHandlerTest
     @Test
     public void shouldNotAllowByteArraysForOldVersions()
     {
-        AsyncInitResponseHandler handler = new AsyncInitResponseHandler( channel.newPromise() );
+        InitResponseHandler handler = new InitResponseHandler( channel.newPromise() );
 
         Map<String,Value> metadata = singletonMap( "server", value( ServerVersion.v3_0_0.toString() ) );
         handler.onSuccess( metadata );
@@ -126,7 +126,7 @@ public class AsyncInitResponseHandlerTest
     public void shouldCloseChannelOnFailure() throws Exception
     {
         ChannelPromise channelPromise = channel.newPromise();
-        AsyncInitResponseHandler handler = new AsyncInitResponseHandler( channelPromise );
+        InitResponseHandler handler = new InitResponseHandler( channelPromise );
 
         RuntimeException error = new RuntimeException( "Hi!" );
         handler.onFailure( error );

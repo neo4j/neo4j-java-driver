@@ -40,12 +40,6 @@ public class ByteBufInput implements PackInput
     }
 
     @Override
-    public boolean hasMoreData()
-    {
-        return buf.isReadable();
-    }
-
-    @Override
     public byte readByte()
     {
         return buf.readByte();

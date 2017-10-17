@@ -28,19 +28,11 @@ public interface MessageFormat
     interface Writer
     {
         Writer write( Message msg ) throws IOException;
-
-        Writer flush() throws IOException;
     }
 
     interface Reader
     {
-        /**
-         * Return true is there is another message in the underlying buffer
-         */
-        boolean hasNext() throws IOException;
-
         void read( MessageHandler handler ) throws IOException;
-
     }
 
     Writer newWriter( PackOutput output, boolean byteArraySupportEnabled );

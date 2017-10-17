@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.async;
+package org.neo4j.driver.internal.handlers;
 
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.channel.pool.ChannelPool;
@@ -24,22 +24,22 @@ import io.netty.util.concurrent.Promise;
 import org.junit.After;
 import org.junit.Test;
 
-import java.util.Collections;
-
+import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.util.FakeClock;
-import org.neo4j.driver.v1.Value;
 
+import static java.util.Collections.emptyMap;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.driver.internal.async.ChannelAttributes.lastUsedTimestamp;
 
-public class ReleaseChannelHandlerTest
+public class ResetResponseHandlerTest
 {
     private final EmbeddedChannel channel = new EmbeddedChannel();
+    private final InboundMessageDispatcher messageDispatcher = mock( InboundMessageDispatcher.class );
 
     @After
-    public void tearDown() throws Exception
+    public void tearDown()
     {
         channel.close();
     }
@@ -50,9 +50,9 @@ public class ReleaseChannelHandlerTest
         ChannelPool pool = mock( ChannelPool.class );
         FakeClock clock = new FakeClock();
         clock.progress( 5 );
-        ReleaseChannelHandler handler = new ReleaseChannelHandler( channel, pool, clock );
+        ResetResponseHandler handler = new ResetResponseHandler( channel, pool, messageDispatcher, clock );
 
-        handler.onSuccess( Collections.<String,Value>emptyMap() );
+        handler.onSuccess( emptyMap() );
 
         verifyLastUsedTimestamp( 5 );
         verify( pool ).release( channel );
@@ -65,9 +65,9 @@ public class ReleaseChannelHandlerTest
         FakeClock clock = new FakeClock();
         clock.progress( 42 );
         Promise<Void> promise = channel.newPromise();
-        ReleaseChannelHandler handler = new ReleaseChannelHandler( channel, pool, clock, promise );
+        ResetResponseHandler handler = new ResetResponseHandler( channel, pool, messageDispatcher, clock, promise );
 
-        handler.onSuccess( Collections.<String,Value>emptyMap() );
+        handler.onSuccess( emptyMap() );
 
         verifyLastUsedTimestamp( 42 );
         verify( pool ).release( channel, promise );
@@ -79,7 +79,7 @@ public class ReleaseChannelHandlerTest
         ChannelPool pool = mock( ChannelPool.class );
         FakeClock clock = new FakeClock();
         clock.progress( 100 );
-        ReleaseChannelHandler handler = new ReleaseChannelHandler( channel, pool, clock );
+        ResetResponseHandler handler = new ResetResponseHandler( channel, pool, messageDispatcher, clock );
 
         handler.onFailure( new RuntimeException() );
 
@@ -94,12 +94,34 @@ public class ReleaseChannelHandlerTest
         FakeClock clock = new FakeClock();
         clock.progress( 99 );
         Promise<Void> promise = channel.newPromise();
-        ReleaseChannelHandler handler = new ReleaseChannelHandler( channel, pool, clock, promise );
+        ResetResponseHandler handler = new ResetResponseHandler( channel, pool, messageDispatcher, clock, promise );
 
         handler.onFailure( new RuntimeException() );
 
         verifyLastUsedTimestamp( 99 );
         verify( pool ).release( channel, promise );
+    }
+
+    @Test
+    public void shouldUnMuteAckFailureOnSuccess()
+    {
+        ChannelPool pool = mock( ChannelPool.class );
+        ResetResponseHandler handler = new ResetResponseHandler( channel, pool, messageDispatcher, new FakeClock() );
+
+        handler.onSuccess( emptyMap() );
+
+        verify( messageDispatcher ).unMuteAckFailure();
+    }
+
+    @Test
+    public void shouldUnMuteAckFailureOnFailure()
+    {
+        ChannelPool pool = mock( ChannelPool.class );
+        ResetResponseHandler handler = new ResetResponseHandler( channel, pool, messageDispatcher, new FakeClock() );
+
+        handler.onFailure( new RuntimeException() );
+
+        verify( messageDispatcher ).unMuteAckFailure();
     }
 
     private void verifyLastUsedTimestamp( int expectedValue )

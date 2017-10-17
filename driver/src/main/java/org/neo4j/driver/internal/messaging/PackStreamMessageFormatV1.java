@@ -327,13 +327,6 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         }
 
         @Override
-        public Writer flush() throws IOException
-        {
-            packer.flush();
-            return this;
-        }
-
-        @Override
         public Writer write( Message msg ) throws IOException
         {
             msg.dispatch( this );
@@ -374,12 +367,6 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         public Reader( PackInput input )
         {
             unpacker = new PackStream.Unpacker( input );
-        }
-
-        @Override
-        public boolean hasNext() throws IOException
-        {
-            return unpacker.hasNext();
         }
 
         /**
@@ -660,14 +647,4 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             return map;
         }
     }
-
-    public static class NoOpRunnable implements Runnable
-    {
-        @Override
-        public void run()
-        {
-            // no-op
-        }
-    }
-
 }

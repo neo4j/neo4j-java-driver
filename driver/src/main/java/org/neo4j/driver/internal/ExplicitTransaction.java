@@ -31,6 +31,7 @@ import org.neo4j.driver.internal.handlers.RollbackTxResponseHandler;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.StatementResultCursor;
@@ -42,7 +43,6 @@ import org.neo4j.driver.v1.types.TypeSystem;
 
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.CompletableFuture.completedFuture;
-import static org.neo4j.driver.internal.util.ErrorUtil.isRecoverable;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.internal.util.Futures.getBlocking;
 import static org.neo4j.driver.v1.Values.value;
@@ -65,10 +65,9 @@ public class ExplicitTransaction implements Transaction
         MARKED_FAILED,
 
         /**
-         * An error has occurred, transaction can no longer be used and no more messages will be sent for this
-         * transaction.
+         * This transaction has been explicitly terminated by calling {@link Session#reset()}.
          */
-        FAILED,
+        TERMINATED,
 
         /** This transaction has successfully committed */
         COMMITTED,
@@ -135,16 +134,9 @@ public class ExplicitTransaction implements Transaction
         {
             return commitAsync();
         }
-        else if ( state == State.MARKED_FAILED || state == State.ACTIVE )
+        else if ( state == State.ACTIVE || state == State.MARKED_FAILED || state == State.TERMINATED )
         {
             return rollbackAsync();
-        }
-        else if ( state == State.FAILED )
-        {
-            // unrecoverable error happened, transaction should've been rolled back on the server
-            // update state so that this transaction does not remain open
-            state = State.ROLLED_BACK;
-            return completedFuture( null );
         }
         else
         {
@@ -161,7 +153,12 @@ public class ExplicitTransaction implements Transaction
         }
         else if ( state == State.ROLLED_BACK )
         {
-            return failedFuture( new ClientException( "Can't commit, transaction has already been rolled back" ) );
+            return failedFuture( new ClientException( "Can't commit, transaction has been rolled back" ) );
+        }
+        else if ( state == State.TERMINATED )
+        {
+            return failedFuture(
+                    new ClientException( "Can't commit, transaction has been terminated by `Session#reset()`" ) );
         }
         else
         {
@@ -174,10 +171,16 @@ public class ExplicitTransaction implements Transaction
     {
         if ( state == State.COMMITTED )
         {
-            return failedFuture( new ClientException( "Can't rollback, transaction has already been committed" ) );
+            return failedFuture( new ClientException( "Can't rollback, transaction has been committed" ) );
         }
         else if ( state == State.ROLLED_BACK )
         {
+            return completedFuture( null );
+        }
+        else if ( state == State.TERMINATED )
+        {
+            // transaction has been terminated by RESET and should be rolled back by the database
+            state = State.ROLLED_BACK;
             return completedFuture( null );
         }
         else
@@ -190,9 +193,8 @@ public class ExplicitTransaction implements Transaction
     {
         return ( ignore, error ) ->
         {
-            // todo: test that this state transition always happens when commit or rollback
             state = newState;
-            connection.release();
+            connection.releaseInBackground();
             session.setBookmark( bookmark );
         };
     }
@@ -280,18 +282,18 @@ public class ExplicitTransaction implements Transaction
     public CompletionStage<StatementResultCursor> runAsync( Statement statement )
     {
         ensureCanRunQueries();
+        //noinspection unchecked
         return (CompletionStage) QueryRunner.runAsAsync( connection, statement, this );
     }
 
     @Override
     public boolean isOpen()
     {
-        return state != State.COMMITTED && state != State.ROLLED_BACK;
+        return state != State.COMMITTED && state != State.ROLLED_BACK && state != State.TERMINATED;
     }
 
     private void ensureCanRunQueries()
     {
-        // todo: test these two new branches
         if ( state == State.COMMITTED )
         {
             throw new ClientException( "Cannot run more statements in this transaction, it has been committed" );
@@ -300,13 +302,18 @@ public class ExplicitTransaction implements Transaction
         {
             throw new ClientException( "Cannot run more statements in this transaction, it has been rolled back" );
         }
-        else if ( state == State.FAILED || state == State.MARKED_FAILED )
+        else if ( state == State.MARKED_FAILED )
         {
             throw new ClientException(
                     "Cannot run more statements in this transaction, because previous statements in the " +
                     "transaction has failed and the transaction has been rolled back. Please start a new " +
                     "transaction to run another statement."
             );
+        }
+        else if ( state == State.TERMINATED )
+        {
+            throw new ClientException(
+                    "Cannot run more statements in this transaction, it has been terminated by `Session#reset()`" );
         }
     }
 
@@ -316,21 +323,9 @@ public class ExplicitTransaction implements Transaction
         return InternalTypeSystem.TYPE_SYSTEM;
     }
 
-    public void resultFailed( Throwable error )
+    public void markTerminated()
     {
-        if ( isRecoverable( error ) )
-        {
-            failure();
-        }
-        else
-        {
-            markToClose();
-        }
-    }
-
-    public void markToClose()
-    {
-        state = State.FAILED;
+        state = State.TERMINATED;
     }
 
     public Bookmark bookmark()

@@ -45,12 +45,6 @@ public class BufferedChannelInput implements PackInput
     }
 
     @Override
-    public boolean hasMoreData() throws IOException
-    {
-        return attempt( 1 );
-    }
-
-    @Override
     public byte readByte() throws IOException
     {
         ensure( 1 );

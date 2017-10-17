@@ -27,6 +27,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
+import org.neo4j.driver.internal.handlers.ResetResponseHandler;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.PullAllMessage;
 import org.neo4j.driver.internal.messaging.ResetMessage;
@@ -59,6 +60,12 @@ public class NettyConnection implements Connection
         this.messageDispatcher = messageDispatcher( channel );
         this.channelPool = channelPool;
         this.clock = clock;
+    }
+
+    @Override
+    public boolean isInUse()
+    {
+        return state.isInUse();
     }
 
     @Override
@@ -99,29 +106,22 @@ public class NettyConnection implements Connection
         run( statement, parameters, runHandler, pullAllHandler, true );
     }
 
-    // TODO change this to return future or say that it does stuff in the background in the method name?
     @Override
-    public void release()
+    public void releaseInBackground()
     {
         if ( state.release() )
         {
-            reset( new ReleaseChannelHandler( channel, channelPool, clock ) );
+            reset( new ResetResponseHandler( channel, channelPool, messageDispatcher, clock ) );
         }
     }
 
     @Override
-    public boolean isInUse()
-    {
-        return state.isInUse();
-    }
-
-    @Override
-    public CompletionStage<Void> forceRelease()
+    public CompletionStage<Void> releaseNow()
     {
         if ( state.forceRelease() )
         {
             Promise<Void> releasePromise = channel.eventLoop().newPromise();
-            reset( new ReleaseChannelHandler( channel, channelPool, clock, releasePromise ) );
+            reset( new ResetResponseHandler( channel, channelPool, messageDispatcher, clock, releasePromise ) );
             return asCompletionStage( releasePromise );
         }
         else
@@ -151,18 +151,17 @@ public class NettyConnection implements Connection
 
     private void reset( ResponseHandler resetHandler )
     {
-        writeAndFlushMessageInEventLoop( ResetMessage.RESET, resetHandler );
+        channel.eventLoop().execute( () ->
+        {
+            messageDispatcher.muteAckFailure();
+            writeAndFlushMessage( ResetMessage.RESET, resetHandler );
+        } );
     }
 
     private void writeMessagesInEventLoop( Message message1, ResponseHandler handler1, Message message2,
             ResponseHandler handler2, boolean flush )
     {
         channel.eventLoop().execute( () -> writeMessages( message1, handler1, message2, handler2, flush ) );
-    }
-
-    private void writeAndFlushMessageInEventLoop( Message message, ResponseHandler handler )
-    {
-        channel.eventLoop().execute( () -> writeAndFlushMessage( message, handler ) );
     }
 
     private void writeMessages( Message message1, ResponseHandler handler1, Message message2, ResponseHandler handler2,

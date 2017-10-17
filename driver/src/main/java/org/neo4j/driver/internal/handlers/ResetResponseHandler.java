@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.async;
+package org.neo4j.driver.internal.handlers;
 
 import io.netty.channel.Channel;
 import io.netty.channel.pool.ChannelPool;
@@ -24,30 +24,34 @@ import io.netty.util.concurrent.Promise;
 
 import java.util.Map;
 
+import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.Value;
 
-import static java.util.Objects.requireNonNull;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setLastUsedTimestamp;
 
-public class ReleaseChannelHandler implements ResponseHandler
+public class ResetResponseHandler implements ResponseHandler
 {
     private final Channel channel;
     private final ChannelPool pool;
+    private final InboundMessageDispatcher messageDispatcher;
     private final Clock clock;
     private final Promise<Void> releasePromise;
 
-    public ReleaseChannelHandler( Channel channel, ChannelPool pool, Clock clock )
+    public ResetResponseHandler( Channel channel, ChannelPool pool, InboundMessageDispatcher messageDispatcher,
+            Clock clock )
     {
-        this( channel, pool, clock, null );
+        this( channel, pool, messageDispatcher, clock, null );
     }
 
-    public ReleaseChannelHandler( Channel channel, ChannelPool pool, Clock clock, Promise<Void> releasePromise )
+    public ResetResponseHandler( Channel channel, ChannelPool pool, InboundMessageDispatcher messageDispatcher,
+            Clock clock, Promise<Void> releasePromise )
     {
-        this.channel = requireNonNull( channel );
-        this.pool = requireNonNull( pool );
-        this.clock = requireNonNull( clock );
+        this.channel = channel;
+        this.pool = pool;
+        this.messageDispatcher = messageDispatcher;
+        this.clock = clock;
         this.releasePromise = releasePromise;
     }
 
@@ -71,6 +75,7 @@ public class ReleaseChannelHandler implements ResponseHandler
 
     private void releaseChannel()
     {
+        messageDispatcher.unMuteAckFailure();
         setLastUsedTimestamp( channel, clock.millis() );
 
         if ( releasePromise == null )

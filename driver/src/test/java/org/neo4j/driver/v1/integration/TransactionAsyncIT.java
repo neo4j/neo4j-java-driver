@@ -35,6 +35,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.driver.internal.ExplicitTransaction;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
@@ -65,6 +66,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
+import static org.neo4j.driver.internal.util.Futures.getBlocking;
 import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.internal.util.Matchers.containsResultAvailableAfterAndResultConsumedAfter;
 import static org.neo4j.driver.internal.util.Matchers.syntaxError;
@@ -417,7 +419,7 @@ public class TransactionAsyncIT
         catch ( Exception e )
         {
             assertThat( e, instanceOf( ClientException.class ) );
-            assertThat( e.getMessage(), containsString( "transaction has already been rolled back" ) );
+            assertThat( e.getMessage(), containsString( "transaction has been rolled back" ) );
         }
     }
 
@@ -437,7 +439,7 @@ public class TransactionAsyncIT
         catch ( Exception e )
         {
             assertThat( e, instanceOf( ClientException.class ) );
-            assertThat( e.getMessage(), containsString( "transaction has already been committed" ) );
+            assertThat( e.getMessage(), containsString( "transaction has been committed" ) );
         }
     }
 
@@ -753,6 +755,202 @@ public class TransactionAsyncIT
     public void shouldConsumeNonEmptyCursor()
     {
         testConsume( "RETURN 42" );
+    }
+
+    @Test
+    public void shouldDoNothingWhenCommittedSecondTime()
+    {
+        Transaction tx = getBlocking( session.beginTransactionAsync() );
+
+        assertNull( getBlocking( tx.commitAsync() ) );
+
+        assertTrue( tx.commitAsync().toCompletableFuture().isDone() );
+        assertFalse( tx.isOpen() );
+    }
+
+    @Test
+    public void shouldFailToCommitAfterRollback()
+    {
+        Transaction tx = getBlocking( session.beginTransactionAsync() );
+
+        assertNull( getBlocking( tx.rollbackAsync() ) );
+
+        try
+        {
+            getBlocking( tx.commitAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertEquals( "Can't commit, transaction has been rolled back", e.getMessage() );
+        }
+        assertFalse( tx.isOpen() );
+    }
+
+    @Test
+    public void shouldFailToCommitAfterTermination()
+    {
+        Transaction tx = getBlocking( session.beginTransactionAsync() );
+
+        ((ExplicitTransaction) tx).markTerminated();
+
+        try
+        {
+            getBlocking( tx.commitAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertEquals( "Can't commit, transaction has been terminated by `Session#reset()`", e.getMessage() );
+        }
+        assertFalse( tx.isOpen() );
+    }
+
+    @Test
+    public void shouldDoNothingWhenRolledBackSecondTime()
+    {
+        Transaction tx = getBlocking( session.beginTransactionAsync() );
+
+        assertNull( getBlocking( tx.rollbackAsync() ) );
+
+        assertTrue( tx.rollbackAsync().toCompletableFuture().isDone() );
+        assertFalse( tx.isOpen() );
+    }
+
+    @Test
+    public void shouldFailToRollbackAfterCommit()
+    {
+        Transaction tx = getBlocking( session.beginTransactionAsync() );
+
+        assertNull( getBlocking( tx.commitAsync() ) );
+
+        try
+        {
+            getBlocking( tx.rollbackAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertEquals( "Can't rollback, transaction has been committed", e.getMessage() );
+        }
+        assertFalse( tx.isOpen() );
+    }
+
+    @Test
+    public void shouldRollbackAfterTermination()
+    {
+        Transaction tx = getBlocking( session.beginTransactionAsync() );
+
+        ((ExplicitTransaction) tx).markTerminated();
+
+        assertNull( getBlocking( tx.rollbackAsync() ) );
+        assertFalse( tx.isOpen() );
+    }
+
+    @Test
+    public void shouldFailToRunQueryAfterCommit()
+    {
+        Transaction tx = getBlocking( session.beginTransactionAsync() );
+        tx.runAsync( "CREATE (:MyLabel)" );
+        assertNull( getBlocking( tx.commitAsync() ) );
+
+        assertEquals( 1, session.run( "MATCH (n:MyLabel) RETURN count(n)" ).single().get( 0 ).asInt() );
+
+        try
+        {
+            getBlocking( tx.runAsync( "CREATE (:MyOtherLabel)" ) );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertEquals( "Cannot run more statements in this transaction, it has been committed", e.getMessage() );
+        }
+    }
+
+    @Test
+    public void shouldFailToRunQueryAfterRollback()
+    {
+        Transaction tx = getBlocking( session.beginTransactionAsync() );
+        tx.runAsync( "CREATE (:MyLabel)" );
+        assertNull( getBlocking( tx.rollbackAsync() ) );
+
+        assertEquals( 0, session.run( "MATCH (n:MyLabel) RETURN count(n)" ).single().get( 0 ).asInt() );
+
+        try
+        {
+            getBlocking( tx.runAsync( "CREATE (:MyOtherLabel)" ) );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertEquals( "Cannot run more statements in this transaction, it has been rolled back", e.getMessage() );
+        }
+    }
+
+    @Test
+    public void shouldFailToRunQueryWhenMarkedForFailure()
+    {
+        Transaction tx = getBlocking( session.beginTransactionAsync() );
+        tx.runAsync( "CREATE (:MyLabel)" );
+        tx.failure();
+
+        try
+        {
+            getBlocking( tx.runAsync( "CREATE (:MyOtherLabel)" ) );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e.getMessage(), startsWith( "Cannot run more statements in this transaction" ) );
+        }
+    }
+
+    @Test
+    public void shouldFailToRunQueryWhenTerminated()
+    {
+        Transaction tx = getBlocking( session.beginTransactionAsync() );
+        tx.runAsync( "CREATE (:MyLabel)" );
+        ((ExplicitTransaction) tx).markTerminated();
+
+        try
+        {
+            getBlocking( tx.runAsync( "CREATE (:MyOtherLabel)" ) );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertEquals( "Cannot run more statements in this transaction, it has been terminated by `Session#reset()`",
+                    e.getMessage() );
+        }
+    }
+
+    @Test
+    public void shouldAllowQueriesWhenMarkedForSuccess()
+    {
+        Transaction tx = getBlocking( session.beginTransactionAsync() );
+        tx.runAsync( "CREATE (:MyLabel)" );
+
+        tx.success();
+
+        tx.runAsync( "CREATE (:MyLabel)" );
+        assertNull( getBlocking( tx.commitAsync() ) );
+
+        assertEquals( 2, session.run( "MATCH (n:MyLabel) RETURN count(n)" ).single().get( 0 ).asInt() );
+    }
+
+    @Test
+    public void shouldUpdateSessionBookmarkAfterCommit()
+    {
+        String bookmarkBefore = session.lastBookmark();
+
+        getBlocking( session.beginTransactionAsync()
+                .thenCompose( tx -> tx.runAsync( "CREATE (:MyNode)" )
+                        .thenCompose( ignore -> tx.commitAsync() ) ) );
+
+        String bookmarkAfter = session.lastBookmark();
+
+        assertNotNull( bookmarkAfter );
+        assertNotEquals( bookmarkBefore, bookmarkAfter );
     }
 
     private int countNodes( Object id )
