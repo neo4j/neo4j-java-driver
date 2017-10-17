@@ -723,6 +723,7 @@ public class SessionAsyncIT
     }
 
     @Test
+<<<<<<<HEAD
     public void shouldExecuteReadTransactionUntilSuccessWhenWorkThrows()
     {
         int maxFailures = 1;
@@ -830,6 +831,50 @@ public class SessionAsyncIT
 
         assertEquals( "Hello", getBlocking( result ) );
         assertEquals( 1, countNodesByLabel( "MyNode" ) );
+    }
+
+    @Test
+    public void shouldPropagateRunFailureWhenClosed()
+    {
+        session.runAsync( "RETURN 10 / 0" );
+
+        try
+        {
+            getBlocking( session.closeAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e.getMessage(), containsString( "/ by zero" ) );
+        }
+    }
+
+    @Test
+    public void shouldPropagatePullAllFailureWhenClosed()
+    {
+        session.runAsync( "UNWIND range(20000, 0, -1) AS x RETURN 10 / x" );
+
+        try
+        {
+            getBlocking( session.closeAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e.getMessage(), containsString( "/ by zero" ) );
+        }
+    }
+
+    @Test
+    public void shouldBePossibleToConsumeResultAfterSessionIsClosed()
+    {
+        CompletionStage<StatementResultCursor> cursorStage = session.runAsync( "UNWIND range(1, 20000) AS x RETURN x" );
+
+        getBlocking( session.closeAsync() );
+
+        StatementResultCursor cursor = getBlocking( cursorStage );
+        List<Integer> ints = getBlocking( cursor.listAsync( record -> record.get( 0 ).asInt() ) );
+        assertEquals( 20000, ints.size() );
     }
 
     private Future<List<CompletionStage<Record>>> runNestedQueries( StatementResultCursor inputCursor )

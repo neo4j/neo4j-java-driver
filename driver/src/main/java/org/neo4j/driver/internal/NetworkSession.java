@@ -153,43 +153,42 @@ public class NetworkSession implements Session
     @Override
     public void close()
     {
-        if ( open.compareAndSet( true, false ) )
-        {
-            // todo: should closeAsync() also do this waiting for buffered result?
-            // todo: unit test result buffering?
-            getBlocking( lastResultStage
-                    .exceptionally( error -> null )
-                    .thenCompose( this::ensureBuffered )
-                    .thenCompose( error -> releaseResources().thenApply( ignore ->
-                    {
-                        if ( error != null )
-                        {
-                            throw new CompletionException( error );
-                        }
-                        return null;
-                    } ) ) );
-        }
+        getBlocking( closeAsync() );
     }
 
     @Override
     public CompletionStage<Void> closeAsync()
     {
-        // todo: wait for buffered result?
         if ( open.compareAndSet( true, false ) )
         {
-            return releaseResources();
+            return lastResultStage.thenCompose( this::receiveError )
+                    .exceptionally( error -> error ) // connection acquisition or RUN failed, propagate error
+                    .thenCompose( error -> releaseResources().thenApply( connectionReleased ->
+                    {
+                        Throwable queryError = Futures.completionErrorCause( error );
+                        if ( queryError != null && connectionReleased )
+                        {
+                            // connection has been acquired and there is an unconsumed error in result cursor
+                            throw new CompletionException( queryError );
+                        }
+                        else
+                        {
+                            // either connection acquisition failed or
+                            // there are no unconsumed errors in the result cursor
+                            return null;
+                        }
+                    } ) );
         }
         return completedFuture( null );
     }
 
-    // todo: test this method
-    CompletionStage<Throwable> ensureBuffered( InternalStatementResultCursor cursor )
+    private CompletionStage<Throwable> receiveError( InternalStatementResultCursor cursor )
     {
         if ( cursor == null )
         {
             return completedFuture( null );
         }
-        return cursor.resultBuffered();
+        return cursor.failureAsync();
     }
 
     @Override
@@ -479,11 +478,21 @@ public class NetworkSession implements Session
         return connectionStage;
     }
 
-    private CompletionStage<Void> releaseResources()
+    /**
+     * Rollback existing transaction and release existing connection.
+     *
+     * @return {@link CompletionStage} as returned by {@link #releaseConnectionNow()}.
+     */
+    private CompletionStage<Boolean> releaseResources()
     {
         return rollbackTransaction().thenCompose( ignore -> releaseConnectionNow() );
     }
 
+    /**
+     * Rollback existing transaction, if any. Errors will be ignored.
+     *
+     * @return {@link CompletionStage} completed with {@code null} when transaction rollback completes or fails.
+     */
     private CompletionStage<Void> rollbackTransaction()
     {
         return existingTransactionOrNull().thenCompose( tx ->
@@ -501,15 +510,22 @@ public class NetworkSession implements Session
         } );
     }
 
-    private CompletionStage<Void> releaseConnectionNow()
+    /**
+     * Release existing connection or do nothing when none has been acquired.
+     *
+     * @return {@link CompletionStage} completed with {@code true} when there was a connection and it has been released,
+     * {@link CompletionStage} completed with {@code false} when connection has not been acquired and nothing has been
+     * released.
+     */
+    private CompletionStage<Boolean> releaseConnectionNow()
     {
         return existingConnectionOrNull().thenCompose( connection ->
         {
             if ( connection != null )
             {
-                return connection.releaseNow();
+                return connection.releaseNow().thenApply( ignore -> true );
             }
-            return completedFuture( null );
+            return completedFuture( false );
         } );
     }
 

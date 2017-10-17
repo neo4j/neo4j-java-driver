@@ -1233,6 +1233,55 @@ public class SessionIT
         }
     }
 
+    @Test
+    public void shouldPropagateRunFailureWhenClosed()
+    {
+        Session session = neo4j.driver().session();
+
+        session.run( "RETURN 10 / 0" );
+
+        try
+        {
+            session.close();
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e.getMessage(), containsString( "/ by zero" ) );
+        }
+    }
+
+    @Test
+    public void shouldPropagatePullAllFailureWhenClosed()
+    {
+        Session session = neo4j.driver().session();
+
+        session.run( "UNWIND range(20000, 0, -1) AS x RETURN 10 / x" );
+
+        try
+        {
+            session.close();
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e.getMessage(), containsString( "/ by zero" ) );
+        }
+    }
+
+    @Test
+    public void shouldBePossibleToConsumeResultAfterSessionIsClosed()
+    {
+        StatementResult result;
+        try ( Session session = neo4j.driver().session() )
+        {
+            result = session.run( "UNWIND range(1, 20000) AS x RETURN x" );
+        }
+
+        List<Integer> ints = result.list( record -> record.get( 0 ).asInt() );
+        assertEquals( 20000, ints.size() );
+    }
+
     private void assumeServerIs31OrLater()
     {
         ServerVersion serverVersion = ServerVersion.version( neo4j.driver() );

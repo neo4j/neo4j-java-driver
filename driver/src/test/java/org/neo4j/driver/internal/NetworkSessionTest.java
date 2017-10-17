@@ -34,6 +34,7 @@ import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.spi.ResponseHandler;
+import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.internal.util.Supplier;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Session;
@@ -88,6 +89,7 @@ public class NetworkSessionTest
     {
         connection = connectionMock();
         when( connection.releaseNow() ).thenReturn( completedFuture( null ) );
+        when( connection.serverVersion() ).thenReturn( ServerVersion.v3_2_0 );
         connectionProvider = mock( ConnectionProvider.class );
         when( connectionProvider.acquireConnection( any( AccessMode.class ) ) )
                 .thenReturn( completedFuture( connection ) );
@@ -247,8 +249,15 @@ public class NetworkSessionTest
     }
 
     @Test
-    public void forceReleasesOpenConnectionUsedForRunWhenSessionIsClosed()
+    public void releasesOpenConnectionUsedForRunWhenSessionIsClosed()
     {
+        doAnswer( invocation ->
+        {
+            ResponseHandler pullAllHandler = invocation.getArgumentAt( 3, ResponseHandler.class );
+            pullAllHandler.onSuccess( emptyMap() );
+            return null;
+        } ).when( connection ).runAndFlush( eq( "RETURN 1" ), eq( emptyMap() ), any(), any() );
+
         session.run( "RETURN 1" );
 
         getBlocking( session.closeAsync() );
