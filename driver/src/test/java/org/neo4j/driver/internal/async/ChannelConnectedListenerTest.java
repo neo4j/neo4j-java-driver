@@ -33,9 +33,9 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.driver.internal.async.BoltServerAddress.LOCAL_DEFAULT;
 import static org.neo4j.driver.internal.async.ProtocolUtil.handshake;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
-import static org.neo4j.driver.internal.async.BoltServerAddress.LOCAL_DEFAULT;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
 public class ChannelConnectedListenerTest
@@ -43,7 +43,7 @@ public class ChannelConnectedListenerTest
     private final EmbeddedChannel channel = new EmbeddedChannel();
 
     @After
-    public void tearDown() throws Exception
+    public void tearDown()
     {
         channel.close();
     }
@@ -90,6 +90,7 @@ public class ChannelConnectedListenerTest
 
     private static ChannelConnectedListener newListener( ChannelPromise handshakeCompletedPromise )
     {
-        return new ChannelConnectedListener( LOCAL_DEFAULT, handshakeCompletedPromise, DEV_NULL_LOGGING );
+        return new ChannelConnectedListener( LOCAL_DEFAULT, new ChannelPipelineBuilderImpl(),
+                handshakeCompletedPromise, DEV_NULL_LOGGING );
     }
 }

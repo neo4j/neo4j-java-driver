@@ -16,14 +16,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.async;
+package org.neo4j.driver.internal.util;
 
 import io.netty.channel.ChannelPipeline;
 
+import org.neo4j.driver.internal.async.ChannelPipelineBuilder;
+import org.neo4j.driver.internal.async.ChannelPipelineBuilderImpl;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.v1.Logging;
 
-public interface ChannelPipelineBuilder
+public class ChannelPipelineBuilderWithMessageFormat implements ChannelPipelineBuilder
 {
-    void build( MessageFormat messageFormat, ChannelPipeline pipeline, Logging logging );
+    private final MessageFormat messageFormat;
+
+    public ChannelPipelineBuilderWithMessageFormat( MessageFormat messageFormat )
+    {
+        this.messageFormat = messageFormat;
+    }
+
+    @Override
+    public void build( MessageFormat ignored, ChannelPipeline pipeline, Logging logging )
+    {
+        new ChannelPipelineBuilderImpl().build( messageFormat, pipeline, logging );
+    }
 }

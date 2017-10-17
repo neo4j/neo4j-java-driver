@@ -32,7 +32,7 @@ import java.util.List;
 import org.neo4j.driver.internal.InternalNode;
 import org.neo4j.driver.internal.InternalPath;
 import org.neo4j.driver.internal.InternalRelationship;
-import org.neo4j.driver.internal.async.ChannelPipelineBuilder;
+import org.neo4j.driver.internal.async.ChannelPipelineBuilderImpl;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.async.outbound.ChunkAwareByteBufOutput;
 import org.neo4j.driver.internal.packstream.PackStream;
@@ -151,7 +151,7 @@ public class MessageFormatTest
     {
         EmbeddedChannel channel = new EmbeddedChannel();
         setMessageDispatcher( channel, new MemorizingInboundMessageDispatcher( channel, DEV_NULL_LOGGING ) );
-        ChannelPipelineBuilder.buildPipeline( channel, format, DEV_NULL_LOGGING );
+        new ChannelPipelineBuilderImpl().build( format, channel.pipeline(), DEV_NULL_LOGGING );
         return channel;
     }
 

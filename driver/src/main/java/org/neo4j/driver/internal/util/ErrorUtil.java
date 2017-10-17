@@ -51,22 +51,21 @@ public final class ErrorUtil
         }
     }
 
-    // todo: use this method and close channel after unrecoverable error
-    public static boolean isRecoverable( Throwable error )
+    public static boolean isFatal( Throwable error )
     {
         if ( error instanceof Neo4jException )
         {
             if ( isProtocolViolationError( ((Neo4jException) error) ) )
             {
-                return false;
+                return true;
             }
 
             if ( isClientOrTransientError( ((Neo4jException) error) ) )
             {
-                return true;
+                return false;
             }
         }
-        return false;
+        return true;
     }
 
     private static boolean isProtocolViolationError( Neo4jException error )
@@ -84,6 +83,10 @@ public final class ErrorUtil
     private static String extractClassification( String code )
     {
         String[] parts = code.split( "\\." );
+        if ( parts.length < 2 )
+        {
+            return "";
+        }
         return parts[1];
     }
 }

@@ -68,11 +68,7 @@ public class OutboundMessageHandler extends MessageToMessageEncoder<Message>
         }
         catch ( Throwable error )
         {
-            EncoderException exception = new EncoderException( "Failed to write outbound message: " + msg, error );
-            // tell ChannelErrorHandler which is the last handler in the pipeline about this error
-            ctx.fireExceptionCaught( exception );
-            // rethrow, encoder contract requires handler to either fail or populate out list
-            throw exception;
+            throw new EncoderException( "Failed to write outbound message: " + msg, error );
         }
         finally
         {

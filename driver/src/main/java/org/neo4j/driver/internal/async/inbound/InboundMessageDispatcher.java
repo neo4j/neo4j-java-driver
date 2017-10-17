@@ -134,6 +134,14 @@ public class InboundMessageDispatcher implements MessageHandler
         log.debug( "Received FAILURE message with code '%s' and message '%s'", code, message );
         currentError = ErrorUtil.newNeo4jError( code, message );
 
+        if ( ErrorUtil.isFatal( currentError ) )
+        {
+            // we should not continue using channel after a fatal error
+            // fire error event back to the pipeline and avoid sending ACK_FAILURE
+            channel.pipeline().fireExceptionCaught( currentError );
+            return;
+        }
+
         // try to write ACK_FAILURE before notifying the next response handler
         ackFailureIfNeeded();
 
@@ -178,6 +186,11 @@ public class InboundMessageDispatcher implements MessageHandler
     public Throwable currentError()
     {
         return currentError;
+    }
+
+    public boolean fatalErrorOccurred()
+    {
+        return fatalErrorOccurred;
     }
 
     /**
