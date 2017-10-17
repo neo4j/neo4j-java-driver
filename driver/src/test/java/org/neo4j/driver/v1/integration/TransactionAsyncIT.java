@@ -360,8 +360,7 @@ public class TransactionAsyncIT
     @Test
     public void shouldFailBoBeginTxWithInvalidBookmark()
     {
-        assumeTrue( "Neo4j " + neo4j.version() + " does not support bookmarks",
-                neo4j.version().greaterThanOrEqual( v3_1_0 ) );
+        assumeDatabaseSupportsBookmarks();
 
         Session session = neo4j.driver().session( "InvalidBookmark" );
 
@@ -941,6 +940,8 @@ public class TransactionAsyncIT
     @Test
     public void shouldUpdateSessionBookmarkAfterCommit()
     {
+        assumeDatabaseSupportsBookmarks();
+
         String bookmarkBefore = session.lastBookmark();
 
         getBlocking( session.beginTransactionAsync()
@@ -999,5 +1000,11 @@ public class TransactionAsyncIT
 
         // no records should be available, they should all be consumed
         assertNull( await( cursor.nextAsync() ) );
+    }
+
+    private void assumeDatabaseSupportsBookmarks()
+    {
+        assumeTrue( "Neo4j " + neo4j.version() + " does not support bookmarks",
+                neo4j.version().greaterThanOrEqual( v3_1_0 ) );
     }
 }
