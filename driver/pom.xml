@@ -8,7 +8,7 @@
     <build.revision></build.revision>
     <bundle.name>${project.groupId}.${project.artifactId}</bundle.name>
     <maven.build.timestamp.format>'v'yyyyMMdd-HHmm</maven.build.timestamp.format>
-      <netty.version>4.1.15.Final</netty.version>
+    <netty.version>4.1.16.Final</netty.version>
   </properties>
 
   <parent>
@@ -35,7 +35,7 @@
   <dependencies>
       <dependency>
           <groupId>io.netty</groupId>
-          <artifactId>netty-all</artifactId>
+          <artifactId>netty-handler</artifactId>
           <version>${netty.version}</version>
       </dependency>
 
@@ -220,13 +220,22 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>2.19.1</version>
+        <version>2.20.1</version>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
-        <version>2.19</version>
+        <version>2.20.1</version>
         <configuration>
+          <!--
+          Failsafe plugin starting from 2.19 by default runs tests from 'target/test-classes' against a package jar.
+          When we shade things into the jar packages are changed, however tests in 'target/test-classes' do not.
+          This results in AbstractMethodError and other kind of strange errors.
+
+          Following setting tells failsafe to run tests against 'target/classes' instead.
+          See https://issues.apache.org/jira/browse/SUREFIRE-1198 for more details.
+          -->
+          <classesDirectory>${project.build.directory}/classes</classesDirectory>
         </configuration>
         <executions>
           <execution>
@@ -234,6 +243,33 @@
               <goal>integration-test</goal>
               <goal>verify</goal>
             </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.1.0</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <artifactSet>
+                <includes>
+                  <include>io.netty:*</include>
+                </includes>
+              </artifactSet>
+              <relocations>
+                <relocation>
+                  <pattern>io.netty</pattern>
+                  <shadedPattern>org.neo4j.driver.internal.shaded.io.netty</shadedPattern>
+                </relocation>
+              </relocations>
+              <shadeTestJar>true</shadeTestJar>
+            </configuration>
           </execution>
         </executions>
       </plugin>
