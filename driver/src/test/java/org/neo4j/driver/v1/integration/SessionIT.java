@@ -1282,6 +1282,27 @@ public class SessionIT
         assertEquals( 20000, ints.size() );
     }
 
+    @Test
+    public void shouldPropagateFailureFromSummary()
+    {
+        try ( Session session = neo4j.driver().session() )
+        {
+            StatementResult result = session.run( "RETURN Wrong" );
+
+            try
+            {
+                result.summary();
+                fail( "Exception expected" );
+            }
+            catch ( ClientException e )
+            {
+                assertThat( e.code(), containsString( "SyntaxError" ) );
+            }
+
+            assertNotNull( result.summary() );
+        }
+    }
+
     private void assumeServerIs31OrLater()
     {
         ServerVersion serverVersion = ServerVersion.version( neo4j.driver() );

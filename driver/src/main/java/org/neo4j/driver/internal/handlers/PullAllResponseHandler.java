@@ -142,9 +142,7 @@ public abstract class PullAllResponseHandler implements ResponseHandler
         {
             if ( failure != null )
             {
-                Throwable error = failure;
-                failure = null; // propagate failure only once
-                return failedFuture( error );
+                return failedFuture( extractFailure() );
             }
 
             if ( finished )
@@ -166,17 +164,16 @@ public abstract class PullAllResponseHandler implements ResponseHandler
 
     public synchronized CompletionStage<Record> nextAsync()
     {
-        return peekAsync().thenApply( record ->
-        {
-            dequeueRecord();
-            return record;
-        } );
+        return peekAsync().thenApply( ignore -> dequeueRecord() );
     }
 
-    // todo: propagate failure from here as well
     public synchronized CompletionStage<ResultSummary> summaryAsync()
     {
-        if ( summary != null )
+        if ( failure != null )
+        {
+            return failedFuture( extractFailure() );
+        }
+        else if ( summary != null )
         {
             return completedFuture( summary );
         }
@@ -194,9 +191,7 @@ public abstract class PullAllResponseHandler implements ResponseHandler
     {
         if ( failure != null )
         {
-            Throwable error = failure;
-            failure = null; // propagate failure only once
-            return completedFuture( error );
+            return completedFuture( extractFailure() );
         }
         else if ( finished )
         {
@@ -235,6 +230,18 @@ public abstract class PullAllResponseHandler implements ResponseHandler
             }
         }
         return record;
+    }
+
+    private Throwable extractFailure()
+    {
+        if ( failure == null )
+        {
+            throw new IllegalStateException( "Can't consume failure because it does not exist" );
+        }
+
+        Throwable error = failure;
+        failure = null; // propagate failure only once
+        return error;
     }
 
     private void completeRecordFuture( Record record )

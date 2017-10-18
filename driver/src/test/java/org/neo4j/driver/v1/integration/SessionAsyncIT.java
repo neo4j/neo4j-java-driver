@@ -949,6 +949,24 @@ public class SessionAsyncIT
         assertEquals( 20000, ints.size() );
     }
 
+    @Test
+    public void shouldPropagateFailureFromSummary()
+    {
+        StatementResultCursor cursor = getBlocking( session.runAsync( "RETURN Something" ) );
+
+        try
+        {
+            getBlocking( cursor.summaryAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e.code(), containsString( "SyntaxError" ) );
+        }
+
+        assertNotNull( getBlocking( cursor.summaryAsync() ) );
+    }
+
     private Future<List<CompletionStage<Record>>> runNestedQueries( StatementResultCursor inputCursor )
     {
         CompletableFuture<List<CompletionStage<Record>>> resultFuture = new CompletableFuture<>();

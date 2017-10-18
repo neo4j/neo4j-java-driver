@@ -323,8 +323,7 @@ public class TransactionAsyncIT
         StatementResultCursor cursor3 = await( tx.runAsync( "RETURN" ) );
         try
         {
-            // todo: use summaryAsync()
-            await( cursor3.consumeAsync() );
+            await( cursor3.summaryAsync() );
             fail( "Exception expected" );
         }
         catch ( Exception e )
@@ -1217,6 +1216,26 @@ public class TransactionAsyncIT
         }
 
         assertNull( getBlocking( tx.rollbackAsync() ) );
+    }
+
+    @Test
+    public void shouldPropagateFailureFromSummary()
+    {
+        Transaction tx = getBlocking( session.beginTransactionAsync() );
+
+        StatementResultCursor cursor = getBlocking( tx.runAsync( "RETURN Wrong" ) );
+
+        try
+        {
+            getBlocking( cursor.summaryAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e.code(), containsString( "SyntaxError" ) );
+        }
+
+        assertNotNull( getBlocking( cursor.summaryAsync() ) );
     }
 
     private int countNodes( Object id )

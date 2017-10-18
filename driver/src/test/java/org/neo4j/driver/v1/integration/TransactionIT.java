@@ -18,7 +18,6 @@
  */
 package org.neo4j.driver.v1.integration;
 
-import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -35,9 +34,11 @@ import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -357,9 +358,29 @@ public class TransactionIT
                 StatementResult cursor = tx.run( "RETURN 1" );
                 int val = cursor.single().get( "1" ).asInt();
 
-                Assert.assertThat( val, equalTo( 1 ) );
+                assertThat( val, equalTo( 1 ) );
             }
         }
+    }
 
+    @Test
+    public void shouldPropagateFailureFromSummary()
+    {
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            StatementResult result = tx.run( "RETURN Wrong" );
+
+            try
+            {
+                result.summary();
+                fail( "Exception expected" );
+            }
+            catch ( ClientException e )
+            {
+                assertThat( e.code(), containsString( "SyntaxError" ) );
+            }
+
+            assertNotNull( result.summary() );
+        }
     }
 }
