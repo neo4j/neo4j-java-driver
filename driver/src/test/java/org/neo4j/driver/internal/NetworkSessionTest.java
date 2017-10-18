@@ -251,14 +251,10 @@ public class NetworkSessionTest
     @Test
     public void releasesOpenConnectionUsedForRunWhenSessionIsClosed()
     {
-        doAnswer( invocation ->
-        {
-            ResponseHandler pullAllHandler = invocation.getArgumentAt( 3, ResponseHandler.class );
-            pullAllHandler.onSuccess( emptyMap() );
-            return null;
-        } ).when( connection ).runAndFlush( eq( "RETURN 1" ), eq( emptyMap() ), any(), any() );
+        String query = "RETURN 1";
+        setupSuccessfulPullAll( query );
 
-        session.run( "RETURN 1" );
+        session.run( query );
 
         getBlocking( session.closeAsync() );
 
@@ -360,11 +356,14 @@ public class NetworkSessionTest
     @Test
     public void releasesConnectionWhenTxIsClosed()
     {
+        String query = "RETURN 42";
+        setupSuccessfulPullAll( query );
+
         Transaction tx = session.beginTransaction();
-        tx.run( "RETURN 1" );
+        tx.run( query );
 
         verify( connectionProvider ).acquireConnection( READ );
-        verify( connection ).runAndFlush( eq( "RETURN 1" ), any(), any(), any() );
+        verify( connection ).runAndFlush( eq( query ), any(), any(), any() );
 
         tx.close();
         verify( connection ).releaseInBackground();
@@ -1029,6 +1028,16 @@ public class NetworkSessionTest
             handler.onFailure( error );
             return null;
         } ).when( connection ).runAndFlush( eq( "BEGIN" ), any(), any(), any() );
+    }
+
+    private void setupSuccessfulPullAll( String query )
+    {
+        doAnswer( invocation ->
+        {
+            ResponseHandler pullAllHandler = invocation.getArgumentAt( 3, ResponseHandler.class );
+            pullAllHandler.onSuccess( emptyMap() );
+            return null;
+        } ).when( connection ).runAndFlush( eq( query ), eq( emptyMap() ), any(), any() );
     }
 
     private static class TxWork implements TransactionWork<Integer>

@@ -24,12 +24,16 @@ import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.StatementResultCursor;
 import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.Neo4jException;
 
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.driver.internal.util.Matchers.syntaxError;
 
 public class AsyncWrongQueryInTx<C extends AbstractContext> extends AbstractAsyncQuery<C>
 {
@@ -44,14 +48,19 @@ public class AsyncWrongQueryInTx<C extends AbstractContext> extends AbstractAsyn
         Session session = newSession( AccessMode.READ, context );
 
         return session.beginTransactionAsync()
-                .thenCompose( tx -> tx.runAsync( "RETURN" ).handle( ( cursor, error ) ->
-                {
-                    assertNull( cursor );
-                    Throwable cause = Futures.completionErrorCause( error );
-                    assertThat( cause, is( syntaxError( "Unexpected end of input" ) ) );
+                .thenCompose( tx -> tx.runAsync( "RETURN Wrong" )
+                        .thenCompose( StatementResultCursor::nextAsync )
+                        .handle( ( record, error ) ->
+                        {
+                            assertNull( record );
 
-                    return tx;
-                } ) )
+                            Throwable cause = Futures.completionErrorCause( error );
+                            assertNotNull( cause );
+                            assertThat( cause, instanceOf( ClientException.class ) );
+                            assertThat( ((Neo4jException) cause).code(), containsString( "SyntaxError" ) );
+
+                            return tx;
+                        } ) )
                 .thenCompose( Transaction::rollbackAsync )
                 .whenComplete( ( ignore, error ) -> session.closeAsync() );
     }

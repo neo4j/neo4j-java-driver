@@ -173,6 +173,7 @@ public abstract class PullAllResponseHandler implements ResponseHandler
         } );
     }
 
+    // todo: propagate failure from here as well
     public synchronized CompletionStage<ResultSummary> summaryAsync()
     {
         if ( summary != null )

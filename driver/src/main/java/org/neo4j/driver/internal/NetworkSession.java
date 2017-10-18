@@ -161,12 +161,13 @@ public class NetworkSession implements Session
     {
         if ( open.compareAndSet( true, false ) )
         {
-            return lastResultStage.thenCompose( this::receiveError )
-                    .exceptionally( error -> error ) // connection acquisition or RUN failed, propagate error
-                    .thenCompose( error -> releaseResources().thenApply( connectionReleased ->
+            return lastResultStage
+                    .exceptionally( error -> null ) // ignore connection acquisition failures
+                    .thenCompose( this::receiveFailure )
+                    .thenCompose( error -> releaseResources().thenApply( ignore ->
                     {
                         Throwable queryError = Futures.completionErrorCause( error );
-                        if ( queryError != null && connectionReleased )
+                        if ( queryError != null )
                         {
                             // connection has been acquired and there is an unconsumed error in result cursor
                             throw new CompletionException( queryError );
@@ -182,7 +183,7 @@ public class NetworkSession implements Session
         return completedFuture( null );
     }
 
-    private CompletionStage<Throwable> receiveError( InternalStatementResultCursor cursor )
+    private CompletionStage<Throwable> receiveFailure( InternalStatementResultCursor cursor )
     {
         if ( cursor == null )
         {
@@ -478,21 +479,11 @@ public class NetworkSession implements Session
         return connectionStage;
     }
 
-    /**
-     * Rollback existing transaction and release existing connection.
-     *
-     * @return {@link CompletionStage} as returned by {@link #releaseConnectionNow()}.
-     */
-    private CompletionStage<Boolean> releaseResources()
+    private CompletionStage<Void> releaseResources()
     {
         return rollbackTransaction().thenCompose( ignore -> releaseConnectionNow() );
     }
 
-    /**
-     * Rollback existing transaction, if any. Errors will be ignored.
-     *
-     * @return {@link CompletionStage} completed with {@code null} when transaction rollback completes or fails.
-     */
     private CompletionStage<Void> rollbackTransaction()
     {
         return existingTransactionOrNull().thenCompose( tx ->
@@ -505,27 +496,20 @@ public class NetworkSession implements Session
         } ).exceptionally( error ->
         {
             Throwable cause = Futures.completionErrorCause( error );
-            logger.error( "Failed to rollback active transaction", cause );
+            logger.warn( "Active transaction rolled back with an error", cause );
             return null;
         } );
     }
 
-    /**
-     * Release existing connection or do nothing when none has been acquired.
-     *
-     * @return {@link CompletionStage} completed with {@code true} when there was a connection and it has been released,
-     * {@link CompletionStage} completed with {@code false} when connection has not been acquired and nothing has been
-     * released.
-     */
-    private CompletionStage<Boolean> releaseConnectionNow()
+    private CompletionStage<Void> releaseConnectionNow()
     {
         return existingConnectionOrNull().thenCompose( connection ->
         {
             if ( connection != null )
             {
-                return connection.releaseNow().thenApply( ignore -> true );
+                return connection.releaseNow();
             }
-            return completedFuture( false );
+            return completedFuture( null );
         } );
     }
 

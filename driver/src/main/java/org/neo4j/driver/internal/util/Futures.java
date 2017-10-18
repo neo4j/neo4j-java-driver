@@ -26,6 +26,8 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import static java.util.concurrent.CompletableFuture.completedFuture;
+
 public final class Futures
 {
     private Futures()
@@ -115,5 +117,17 @@ public final class Futures
             return error.getCause();
         }
         return error;
+    }
+
+    public static <T> CompletionStage<T> firstNotNull( CompletionStage<T> stage1, CompletionStage<T> stage2 )
+    {
+        return stage1.thenCompose( value ->
+        {
+            if ( value != null )
+            {
+                return completedFuture( value );
+            }
+            return stage2;
+        } );
     }
 }
