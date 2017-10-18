@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.internal.async.InternalStatementResultCursor;
 import org.neo4j.driver.internal.async.QueryRunner;
+import org.neo4j.driver.internal.async.ResultCursorsHolder;
 import org.neo4j.driver.internal.logging.DelegatingLogger;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.Connection;
@@ -59,12 +60,12 @@ public class NetworkSession implements Session
     private final ConnectionProvider connectionProvider;
     private final AccessMode mode;
     private final RetryLogic retryLogic;
+    private final ResultCursorsHolder resultCursors;
     protected final Logger logger;
 
     private volatile Bookmark bookmark = Bookmark.empty();
     private volatile CompletionStage<ExplicitTransaction> transactionStage = completedFuture( null );
     private volatile CompletionStage<Connection> connectionStage = completedFuture( null );
-    private volatile CompletionStage<InternalStatementResultCursor> lastResultStage = completedFuture( null );
 
     private final AtomicBoolean open = new AtomicBoolean( true );
 
@@ -74,6 +75,7 @@ public class NetworkSession implements Session
         this.connectionProvider = connectionProvider;
         this.mode = mode;
         this.retryLogic = retryLogic;
+        this.resultCursors = new ResultCursorsHolder();
         this.logger = new DelegatingLogger( logging.getLog( LOG_NAME ), String.valueOf( hashCode() ) );
     }
 
@@ -161,9 +163,7 @@ public class NetworkSession implements Session
     {
         if ( open.compareAndSet( true, false ) )
         {
-            return lastResultStage
-                    .exceptionally( error -> null ) // ignore connection acquisition failures
-                    .thenCompose( this::receiveFailure )
+            return resultCursors.retrieveNotConsumedError()
                     .thenCompose( error -> releaseResources().thenApply( ignore ->
                     {
                         Throwable queryError = Futures.completionErrorCause( error );
@@ -181,15 +181,6 @@ public class NetworkSession implements Session
                     } ) );
         }
         return completedFuture( null );
-    }
-
-    private CompletionStage<Throwable> receiveFailure( InternalStatementResultCursor cursor )
-    {
-        if ( cursor == null )
-        {
-            return completedFuture( null );
-        }
-        return cursor.failureAsync();
     }
 
     @Override
@@ -421,7 +412,7 @@ public class NetworkSession implements Session
     {
         ensureSessionIsOpen();
 
-        lastResultStage = ensureNoOpenTxBeforeRunningQuery()
+        CompletionStage<InternalStatementResultCursor> cursorStage = ensureNoOpenTxBeforeRunningQuery()
                 .thenCompose( ignore -> acquireConnection( mode ) )
                 .thenCompose( connection ->
                 {
@@ -435,7 +426,8 @@ public class NetworkSession implements Session
                     }
                 } );
 
-        return lastResultStage;
+        resultCursors.add( cursorStage );
+        return cursorStage;
     }
 
     private CompletionStage<ExplicitTransaction> beginTransactionAsync( AccessMode mode )

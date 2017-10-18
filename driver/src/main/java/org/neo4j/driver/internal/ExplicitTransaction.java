@@ -18,8 +18,6 @@
  */
 package org.neo4j.driver.internal;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -29,6 +27,7 @@ import java.util.function.BiFunction;
 
 import org.neo4j.driver.internal.async.InternalStatementResultCursor;
 import org.neo4j.driver.internal.async.QueryRunner;
+import org.neo4j.driver.internal.async.ResultCursorsHolder;
 import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
 import org.neo4j.driver.internal.handlers.CommitTxResponseHandler;
 import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
@@ -36,7 +35,6 @@ import org.neo4j.driver.internal.handlers.RollbackTxResponseHandler;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
-import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
@@ -93,8 +91,8 @@ public class ExplicitTransaction implements Transaction
 
     private final Connection connection;
     private final NetworkSession session;
+    private final ResultCursorsHolder resultCursors;
 
-    private final List<CompletionStage<InternalStatementResultCursor>> resultCursors = new ArrayList<>();
     private volatile Bookmark bookmark = Bookmark.empty();
     private volatile State state = State.ACTIVE;
 
@@ -102,6 +100,7 @@ public class ExplicitTransaction implements Transaction
     {
         this.connection = connection;
         this.session = session;
+        this.resultCursors = new ResultCursorsHolder();
     }
 
     public CompletionStage<ExplicitTransaction> beginAsync( Bookmark initialBookmark )
@@ -178,8 +177,8 @@ public class ExplicitTransaction implements Transaction
         }
         else
         {
-            return receiveFailures()
-                    .thenCompose( failure -> doCommitAsync().handle( handleCommitOrRollback( failure ) ) )
+            return resultCursors.retrieveNotConsumedError()
+                    .thenCompose( error -> doCommitAsync().handle( handleCommitOrRollback( error ) ) )
                     .whenComplete( transactionClosed( State.COMMITTED ) );
         }
     }
@@ -203,8 +202,8 @@ public class ExplicitTransaction implements Transaction
         }
         else
         {
-            return receiveFailures()
-                    .thenCompose( failure -> doRollbackAsync().handle( handleCommitOrRollback( failure ) ) )
+            return resultCursors.retrieveNotConsumedError()
+                    .thenCompose( error -> doRollbackAsync().handle( handleCommitOrRollback( error ) ) )
                     .whenComplete( transactionClosed( State.ROLLED_BACK ) );
         }
     }
@@ -279,17 +278,17 @@ public class ExplicitTransaction implements Transaction
     private CompletionStage<InternalStatementResultCursor> run( Statement statement, boolean asAsync )
     {
         ensureCanRunQueries();
-        CompletionStage<InternalStatementResultCursor> result;
+        CompletionStage<InternalStatementResultCursor> cursorStage;
         if ( asAsync )
         {
-            result = QueryRunner.runAsAsync( connection, statement, this );
+            cursorStage = QueryRunner.runAsAsync( connection, statement, this );
         }
         else
         {
-            result = QueryRunner.runAsBlocking( connection, statement, this );
+            cursorStage = QueryRunner.runAsBlocking( connection, statement, this );
         }
-        resultCursors.add( result );
-        return result;
+        resultCursors.add( cursorStage );
+        return cursorStage;
     }
 
     private void ensureCanRunQueries()
@@ -390,12 +389,5 @@ public class ExplicitTransaction implements Transaction
             connection.releaseInBackground();
             session.setBookmark( bookmark );
         };
-    }
-
-    private CompletionStage<Throwable> receiveFailures()
-    {
-        return resultCursors.stream()
-                .map( stage -> stage.thenCompose( InternalStatementResultCursor::failureAsync ) )
-                .reduce( completedFuture( null ), Futures::firstNotNull );
     }
 }

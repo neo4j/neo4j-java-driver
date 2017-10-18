@@ -1303,6 +1303,49 @@ public class SessionIT
         }
     }
 
+    @Test
+    public void shouldThrowFromCloseWhenPreviousErrorNotConsumed()
+    {
+        Session session = neo4j.driver().session();
+
+        session.run( "CREATE ()" );
+        session.run( "CREATE ()" );
+        session.run( "RETURN 10 / 0" );
+        session.run( "CREATE ()" );
+
+        try
+        {
+            session.close();
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e.getMessage(), containsString( "/ by zero" ) );
+        }
+    }
+
+    @Test
+    public void shouldCloseCleanlyWhenRunErrorConsumed()
+    {
+        Session session = neo4j.driver().session();
+
+        session.run( "CREATE ()" );
+
+        try
+        {
+            session.run( "RETURN 10 / 0" ).consume();
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e.getMessage(), containsString( "/ by zero" ) );
+        }
+        session.run( "CREATE ()" );
+
+        session.close();
+        assertFalse( session.isOpen() );
+    }
+
     private void assumeServerIs31OrLater()
     {
         ServerVersion serverVersion = ServerVersion.version( neo4j.driver() );

@@ -967,6 +967,27 @@ public class SessionAsyncIT
         assertNotNull( getBlocking( cursor.summaryAsync() ) );
     }
 
+    @Test
+    public void shouldPropagateFailureInCloseFromPreviousRun()
+    {
+        session.runAsync( "CREATE ()" );
+        session.runAsync( "CREATE ()" );
+        session.runAsync( "CREATE ()" );
+        session.runAsync( "RETURN invalid" );
+        session.runAsync( "CREATE ()" );
+        session.runAsync( "CREATE ()" );
+
+        try
+        {
+            getBlocking( session.closeAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e.code(), containsString( "SyntaxError" ) );
+        }
+    }
+
     private Future<List<CompletionStage<Record>>> runNestedQueries( StatementResultCursor inputCursor )
     {
         CompletableFuture<List<CompletionStage<Record>>> resultFuture = new CompletableFuture<>();
