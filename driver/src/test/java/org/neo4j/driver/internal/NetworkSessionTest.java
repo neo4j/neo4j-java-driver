@@ -34,6 +34,7 @@ import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.spi.ResponseHandler;
+import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.internal.util.Supplier;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Session;
@@ -88,6 +89,7 @@ public class NetworkSessionTest
     {
         connection = connectionMock();
         when( connection.releaseNow() ).thenReturn( completedFuture( null ) );
+        when( connection.serverVersion() ).thenReturn( ServerVersion.v3_2_0 );
         connectionProvider = mock( ConnectionProvider.class );
         when( connectionProvider.acquireConnection( any( AccessMode.class ) ) )
                 .thenReturn( completedFuture( connection ) );
@@ -247,9 +249,12 @@ public class NetworkSessionTest
     }
 
     @Test
-    public void forceReleasesOpenConnectionUsedForRunWhenSessionIsClosed()
+    public void releasesOpenConnectionUsedForRunWhenSessionIsClosed()
     {
-        session.run( "RETURN 1" );
+        String query = "RETURN 1";
+        setupSuccessfulPullAll( query );
+
+        session.run( query );
 
         getBlocking( session.closeAsync() );
 
@@ -351,11 +356,14 @@ public class NetworkSessionTest
     @Test
     public void releasesConnectionWhenTxIsClosed()
     {
+        String query = "RETURN 42";
+        setupSuccessfulPullAll( query );
+
         Transaction tx = session.beginTransaction();
-        tx.run( "RETURN 1" );
+        tx.run( query );
 
         verify( connectionProvider ).acquireConnection( READ );
-        verify( connection ).runAndFlush( eq( "RETURN 1" ), any(), any(), any() );
+        verify( connection ).runAndFlush( eq( query ), any(), any(), any() );
 
         tx.close();
         verify( connection ).releaseInBackground();
@@ -1020,6 +1028,16 @@ public class NetworkSessionTest
             handler.onFailure( error );
             return null;
         } ).when( connection ).runAndFlush( eq( "BEGIN" ), any(), any(), any() );
+    }
+
+    private void setupSuccessfulPullAll( String query )
+    {
+        doAnswer( invocation ->
+        {
+            ResponseHandler pullAllHandler = invocation.getArgumentAt( 3, ResponseHandler.class );
+            pullAllHandler.onSuccess( emptyMap() );
+            return null;
+        } ).when( connection ).runAndFlush( eq( query ), eq( emptyMap() ), any(), any() );
     }
 
     private static class TxWork implements TransactionWork<Integer>

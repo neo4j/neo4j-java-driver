@@ -34,6 +34,7 @@ import org.neo4j.driver.v1.util.Consumer;
 import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.util.Functions;
 
+// todo: unit tests
 public class InternalStatementResultCursor implements StatementResultCursor
 {
     // todo: maybe smth better than these two string constants?
@@ -142,10 +143,9 @@ public class InternalStatementResultCursor implements StatementResultCursor
         return resultFuture;
     }
 
-    // todo: test this method and give it better name
-    public CompletionStage<Throwable> resultBuffered()
+    public CompletionStage<Throwable> failureAsync()
     {
-        return pullAllHandler.resultBuffered();
+        return pullAllHandler.failureAsync();
     }
 
     private void internalForEachAsync( Consumer<Record> action, CompletableFuture<Void> resultFuture )

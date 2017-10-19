@@ -20,15 +20,20 @@ package org.neo4j.driver.internal;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 
+import org.neo4j.driver.internal.async.InternalStatementResultCursor;
 import org.neo4j.driver.internal.async.QueryRunner;
+import org.neo4j.driver.internal.async.ResultCursorsHolder;
 import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
 import org.neo4j.driver.internal.handlers.CommitTxResponseHandler;
 import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
 import org.neo4j.driver.internal.handlers.RollbackTxResponseHandler;
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
@@ -43,6 +48,7 @@ import org.neo4j.driver.v1.types.TypeSystem;
 
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.neo4j.driver.internal.util.Futures.completionErrorCause;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.internal.util.Futures.getBlocking;
 import static org.neo4j.driver.v1.Values.value;
@@ -56,28 +62,36 @@ public class ExplicitTransaction implements Transaction
     private enum State
     {
         /** The transaction is running with no explicit success or failure marked */
-        ACTIVE,
+        ACTIVE( true ),
 
         /** Running, user marked for success, meaning it'll value committed */
-        MARKED_SUCCESS,
+        MARKED_SUCCESS( true ),
 
         /** User marked as failed, meaning it'll be rolled back. */
-        MARKED_FAILED,
+        MARKED_FAILED( true ),
 
         /**
          * This transaction has been explicitly terminated by calling {@link Session#reset()}.
          */
-        TERMINATED,
+        TERMINATED( false ),
 
         /** This transaction has successfully committed */
-        COMMITTED,
+        COMMITTED( false ),
 
         /** This transaction has been rolled back */
-        ROLLED_BACK
+        ROLLED_BACK( false );
+
+        final boolean txOpen;
+
+        State( boolean txOpen )
+        {
+            this.txOpen = txOpen;
+        }
     }
 
     private final Connection connection;
     private final NetworkSession session;
+    private final ResultCursorsHolder resultCursors;
 
     private volatile Bookmark bookmark = Bookmark.empty();
     private volatile State state = State.ACTIVE;
@@ -86,6 +100,7 @@ public class ExplicitTransaction implements Transaction
     {
         this.connection = connection;
         this.session = session;
+        this.resultCursors = new ResultCursorsHolder();
     }
 
     public CompletionStage<ExplicitTransaction> beginAsync( Bookmark initialBookmark )
@@ -162,7 +177,9 @@ public class ExplicitTransaction implements Transaction
         }
         else
         {
-            return doCommitAsync().whenComplete( transactionClosed( State.COMMITTED ) );
+            return resultCursors.retrieveNotConsumedError()
+                    .thenCompose( error -> doCommitAsync().handle( handleCommitOrRollback( error ) ) )
+                    .whenComplete( transactionClosed( State.COMMITTED ) );
         }
     }
 
@@ -185,36 +202,10 @@ public class ExplicitTransaction implements Transaction
         }
         else
         {
-            return doRollbackAsync().whenComplete( transactionClosed( State.ROLLED_BACK ) );
+            return resultCursors.retrieveNotConsumedError()
+                    .thenCompose( error -> doRollbackAsync().handle( handleCommitOrRollback( error ) ) )
+                    .whenComplete( transactionClosed( State.ROLLED_BACK ) );
         }
-    }
-
-    private BiConsumer<Void,Throwable> transactionClosed( State newState )
-    {
-        return ( ignore, error ) ->
-        {
-            state = newState;
-            connection.releaseInBackground();
-            session.setBookmark( bookmark );
-        };
-    }
-
-    private CompletionStage<Void> doCommitAsync()
-    {
-        CompletableFuture<Void> commitFuture = new CompletableFuture<>();
-        connection.runAndFlush( COMMIT_QUERY, emptyMap(), NoOpResponseHandler.INSTANCE,
-                new CommitTxResponseHandler( commitFuture, this ) );
-
-        return commitFuture.thenRun( () -> state = State.COMMITTED );
-    }
-
-    private CompletionStage<Void> doRollbackAsync()
-    {
-        CompletableFuture<Void> rollbackFuture = new CompletableFuture<>();
-        connection.runAndFlush( ROLLBACK_QUERY, emptyMap(), NoOpResponseHandler.INSTANCE,
-                new RollbackTxResponseHandler( rollbackFuture ) );
-
-        return rollbackFuture.thenRun( () -> state = State.ROLLED_BACK );
     }
 
     @Override
@@ -273,23 +264,31 @@ public class ExplicitTransaction implements Transaction
     @Override
     public StatementResult run( Statement statement )
     {
-        ensureCanRunQueries();
-        StatementResultCursor cursor = getBlocking( QueryRunner.runAsBlocking( connection, statement, this ) );
+        StatementResultCursor cursor = getBlocking( run( statement, false ) );
         return new InternalStatementResult( cursor );
     }
 
     @Override
     public CompletionStage<StatementResultCursor> runAsync( Statement statement )
     {
-        ensureCanRunQueries();
         //noinspection unchecked
-        return (CompletionStage) QueryRunner.runAsAsync( connection, statement, this );
+        return (CompletionStage) run( statement, true );
     }
 
-    @Override
-    public boolean isOpen()
+    private CompletionStage<InternalStatementResultCursor> run( Statement statement, boolean asAsync )
     {
-        return state != State.COMMITTED && state != State.ROLLED_BACK && state != State.TERMINATED;
+        ensureCanRunQueries();
+        CompletionStage<InternalStatementResultCursor> cursorStage;
+        if ( asAsync )
+        {
+            cursorStage = QueryRunner.runAsAsync( connection, statement, this );
+        }
+        else
+        {
+            cursorStage = QueryRunner.runAsBlocking( connection, statement, this );
+        }
+        resultCursors.add( cursorStage );
+        return cursorStage;
     }
 
     private void ensureCanRunQueries()
@@ -318,6 +317,12 @@ public class ExplicitTransaction implements Transaction
     }
 
     @Override
+    public boolean isOpen()
+    {
+        return state.txOpen;
+    }
+
+    @Override
     public TypeSystem typeSystem()
     {
         return InternalTypeSystem.TYPE_SYSTEM;
@@ -339,5 +344,50 @@ public class ExplicitTransaction implements Transaction
         {
             this.bookmark = bookmark;
         }
+    }
+
+    private CompletionStage<Void> doCommitAsync()
+    {
+        CompletableFuture<Void> commitFuture = new CompletableFuture<>();
+        ResponseHandler pullAllHandler = new CommitTxResponseHandler( commitFuture, this );
+        connection.runAndFlush( COMMIT_QUERY, emptyMap(), NoOpResponseHandler.INSTANCE, pullAllHandler );
+        return commitFuture;
+    }
+
+    private CompletionStage<Void> doRollbackAsync()
+    {
+        CompletableFuture<Void> rollbackFuture = new CompletableFuture<>();
+        ResponseHandler pullAllHandler = new RollbackTxResponseHandler( rollbackFuture );
+        connection.runAndFlush( ROLLBACK_QUERY, emptyMap(), NoOpResponseHandler.INSTANCE, pullAllHandler );
+        return rollbackFuture;
+    }
+
+    private BiFunction<Void,Throwable,Void> handleCommitOrRollback( Throwable cursorFailure )
+    {
+        return ( ignore, commitOrRollbackError ) ->
+        {
+            if ( cursorFailure != null )
+            {
+                throw new CompletionException( completionErrorCause( cursorFailure ) );
+            }
+            else if ( commitOrRollbackError != null )
+            {
+                throw new CompletionException( completionErrorCause( commitOrRollbackError ) );
+            }
+            else
+            {
+                return null;
+            }
+        };
+    }
+
+    private BiConsumer<Object,Throwable> transactionClosed( State newState )
+    {
+        return ( ignore, error ) ->
+        {
+            state = newState;
+            connection.releaseInBackground();
+            session.setBookmark( bookmark );
+        };
     }
 }

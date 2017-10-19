@@ -227,9 +227,10 @@ public class TransactionAsyncIT
     {
         Transaction tx = await( session.beginTransactionAsync() );
 
+        StatementResultCursor cursor = await( tx.runAsync( "RETURN" ) );
         try
         {
-            await( tx.runAsync( "RETURN" ) );
+            await( cursor.consumeAsync() );
             fail( "Exception expected" );
         }
         catch ( Exception e )
@@ -253,9 +254,10 @@ public class TransactionAsyncIT
     {
         Transaction tx = await( session.beginTransactionAsync() );
 
+        StatementResultCursor cursor = await( tx.runAsync( "RETURN" ) );
         try
         {
-            await( tx.runAsync( "RETURN" ) );
+            await( cursor.nextAsync() );
             fail( "Exception expected" );
         }
         catch ( Exception e )
@@ -281,9 +283,10 @@ public class TransactionAsyncIT
         assertNotNull( record2 );
         assertEquals( 42, record2.get( 0 ).asInt() );
 
+        StatementResultCursor cursor3 = await( tx.runAsync( "RETURN" ) );
         try
         {
-            await( tx.runAsync( "RETURN" ) );
+            await( cursor3.consumeAsync() );
             fail( "Exception expected" );
         }
         catch ( Exception e )
@@ -317,9 +320,10 @@ public class TransactionAsyncIT
         assertNotNull( record2 );
         assertEquals( 42, record2.get( 0 ).asInt() );
 
+        StatementResultCursor cursor3 = await( tx.runAsync( "RETURN" ) );
         try
         {
-            await( tx.runAsync( "RETURN" ) );
+            await( cursor3.summaryAsync() );
             fail( "Exception expected" );
         }
         catch ( Exception e )
@@ -335,9 +339,10 @@ public class TransactionAsyncIT
     {
         Transaction tx = await( session.beginTransactionAsync() );
 
+        StatementResultCursor cursor = await( tx.runAsync( "RETURN" ) );
         try
         {
-            await( tx.runAsync( "RETURN" ) );
+            await( cursor.nextAsync() );
             fail( "Exception expected" );
         }
         catch ( Exception e )
@@ -952,6 +957,283 @@ public class TransactionAsyncIT
 
         assertNotNull( bookmarkAfter );
         assertNotEquals( bookmarkBefore, bookmarkAfter );
+    }
+
+    @Test
+    public void shouldFailToCommitWhenQueriesFailAndErrorNotConsumed() throws InterruptedException
+    {
+        Transaction tx = getBlocking( session.beginTransactionAsync() );
+
+        tx.runAsync( "CREATE (:TestNode)" );
+        tx.runAsync( "CREATE (:TestNode)" );
+        tx.runAsync( "RETURN 10 / 0" );
+        tx.runAsync( "CREATE (:TestNode)" );
+
+        try
+        {
+            getBlocking( tx.commitAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertEquals( "/ by zero", e.getMessage() );
+        }
+    }
+
+    @Test
+    public void shouldPropagateRunFailureFromCommit()
+    {
+        Transaction tx = getBlocking( session.beginTransactionAsync() );
+
+        tx.runAsync( "RETURN ILLEGAL" );
+
+        try
+        {
+            getBlocking( tx.commitAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e.getMessage(), containsString( "ILLEGAL" ) );
+        }
+    }
+
+    @Test
+    public void shouldPropagateBlockedRunFailureFromCommit()
+    {
+        Transaction tx = getBlocking( session.beginTransactionAsync() );
+
+        getBlocking( tx.runAsync( "RETURN 42 / 0" ) );
+
+        try
+        {
+            getBlocking( tx.commitAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e.getMessage(), containsString( "/ by zero" ) );
+        }
+    }
+
+    @Test
+    public void shouldPropagateRunFailureFromRollback()
+    {
+        Transaction tx = getBlocking( session.beginTransactionAsync() );
+
+        tx.runAsync( "RETURN ILLEGAL" );
+
+        try
+        {
+            getBlocking( tx.rollbackAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e.getMessage(), containsString( "ILLEGAL" ) );
+        }
+    }
+
+    @Test
+    public void shouldPropagateBlockedRunFailureFromRollback()
+    {
+        Transaction tx = getBlocking( session.beginTransactionAsync() );
+
+        getBlocking( tx.runAsync( "RETURN 42 / 0" ) );
+
+        try
+        {
+            getBlocking( tx.rollbackAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e.getMessage(), containsString( "/ by zero" ) );
+        }
+    }
+
+    @Test
+    public void shouldPropagatePullAllFailureFromCommit()
+    {
+        Transaction tx = getBlocking( session.beginTransactionAsync() );
+
+        tx.runAsync( "UNWIND [1, 2, 3, 'Hi'] AS x RETURN 10 / x" );
+
+        try
+        {
+            getBlocking( tx.commitAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e.code(), containsString( "TypeError" ) );
+        }
+    }
+
+    @Test
+    public void shouldPropagateBlockedPullAllFailureFromCommit()
+    {
+        Transaction tx = getBlocking( session.beginTransactionAsync() );
+
+        getBlocking( tx.runAsync( "UNWIND [1, 2, 3, 'Hi'] AS x RETURN 10 / x" ) );
+
+        try
+        {
+            getBlocking( tx.commitAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e.code(), containsString( "TypeError" ) );
+        }
+    }
+
+    @Test
+    public void shouldPropagatePullAllFailureFromRollback()
+    {
+        Transaction tx = getBlocking( session.beginTransactionAsync() );
+
+        tx.runAsync( "UNWIND [1, 2, 3, 'Hi'] AS x RETURN 10 / x" );
+
+        try
+        {
+            getBlocking( tx.rollbackAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e.code(), containsString( "TypeError" ) );
+        }
+    }
+
+    @Test
+    public void shouldPropagateBlockedPullAllFailureFromRollback()
+    {
+        Transaction tx = getBlocking( session.beginTransactionAsync() );
+
+        getBlocking( tx.runAsync( "UNWIND [1, 2, 3, 'Hi'] AS x RETURN 10 / x" ) );
+
+        try
+        {
+            getBlocking( tx.rollbackAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e.code(), containsString( "TypeError" ) );
+        }
+    }
+
+    @Test
+    public void shouldFailToCommitWhenRunFailureIsConsumed()
+    {
+        Transaction tx = getBlocking( session.beginTransactionAsync() );
+        StatementResultCursor cursor = getBlocking( tx.runAsync( "RETURN Wrong" ) );
+
+        try
+        {
+            getBlocking( cursor.consumeAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e.code(), containsString( "SyntaxError" ) );
+        }
+
+        try
+        {
+            getBlocking( tx.commitAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e.getMessage(), startsWith( "Transaction rolled back" ) );
+        }
+    }
+
+    @Test
+    public void shouldFailToCommitWhenPullAllFailureIsConsumed()
+    {
+        Transaction tx = getBlocking( session.beginTransactionAsync() );
+        StatementResultCursor cursor = getBlocking( tx.runAsync(
+                "FOREACH (value IN [1,2, 'aaa'] | CREATE (:Person {name: 10 / value}))" ) );
+
+        try
+        {
+            getBlocking( cursor.consumeAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e.code(), containsString( "TypeError" ) );
+        }
+        try
+        {
+            getBlocking( tx.commitAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e.getMessage(), startsWith( "Transaction rolled back" ) );
+        }
+    }
+
+    @Test
+    public void shouldRollbackWhenRunFailureIsConsumed()
+    {
+        Transaction tx = getBlocking( session.beginTransactionAsync() );
+        StatementResultCursor cursor = getBlocking( tx.runAsync( "RETURN Wrong" ) );
+
+        try
+        {
+            getBlocking( cursor.consumeAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e.code(), containsString( "SyntaxError" ) );
+        }
+
+        assertNull( getBlocking( tx.rollbackAsync() ) );
+    }
+
+    @Test
+    public void shouldRollbackWhenPullAllFailureIsConsumed()
+    {
+        Transaction tx = getBlocking( session.beginTransactionAsync() );
+        StatementResultCursor cursor = getBlocking( tx.runAsync( "UNWIND [1, 0] AS x RETURN 5 / x" ) );
+
+        try
+        {
+            getBlocking( cursor.consumeAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e.getMessage(), containsString( "/ by zero" ) );
+        }
+
+        assertNull( getBlocking( tx.rollbackAsync() ) );
+    }
+
+    @Test
+    public void shouldPropagateFailureFromSummary()
+    {
+        Transaction tx = getBlocking( session.beginTransactionAsync() );
+
+        StatementResultCursor cursor = getBlocking( tx.runAsync( "RETURN Wrong" ) );
+
+        try
+        {
+            getBlocking( cursor.summaryAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e.code(), containsString( "SyntaxError" ) );
+        }
+
+        assertNotNull( getBlocking( cursor.summaryAsync() ) );
     }
 
     private int countNodes( Object id )

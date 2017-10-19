@@ -49,6 +49,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 
+// todo: unit tests
 public abstract class PullAllResponseHandler implements ResponseHandler
 {
     private static final boolean TOUCH_AUTO_READ = false;
@@ -59,17 +60,15 @@ public abstract class PullAllResponseHandler implements ResponseHandler
 
     private final Queue<Record> records = new LinkedList<>();
 
-    // todo: use presence of summary as a "finished" indicator and remove this field
     private boolean finished;
     private Throwable failure;
     private ResultSummary summary;
 
     private CompletableFuture<Record> recordFuture;
     private CompletableFuture<ResultSummary> summaryFuture;
-    private CompletableFuture<Throwable> resultBufferedFuture;
+    private CompletableFuture<Throwable> failureFuture;
 
-    public PullAllResponseHandler( Statement statement, RunResponseHandler runResponseHandler,
-            Connection connection )
+    public PullAllResponseHandler( Statement statement, RunResponseHandler runResponseHandler, Connection connection )
     {
         this.statement = requireNonNull( statement );
         this.runResponseHandler = requireNonNull( runResponseHandler );
@@ -86,7 +85,7 @@ public abstract class PullAllResponseHandler implements ResponseHandler
 
         completeRecordFuture( null );
         completeSummaryFuture( summary );
-        completeResultBufferedFuture( null );
+        completeFailureFuture( null );
     }
 
     protected abstract void afterSuccess();
@@ -104,7 +103,7 @@ public abstract class PullAllResponseHandler implements ResponseHandler
         {
             // error propagated through record future, complete other two
             completeSummaryFuture( summary );
-            completeResultBufferedFuture( null );
+            completeFailureFuture( null );
         }
         else
         {
@@ -112,13 +111,14 @@ public abstract class PullAllResponseHandler implements ResponseHandler
             if ( failedSummaryFuture )
             {
                 // error propagated through summary future, complete other one
-                completeResultBufferedFuture( null );
+                completeFailureFuture( null );
             }
             else
             {
-                boolean completedResultBufferedFuture = completeResultBufferedFuture( error );
-                if ( !completedResultBufferedFuture )
+                boolean completedFailureFuture = completeFailureFuture( error );
+                if ( !completedFailureFuture )
                 {
+                    // error has not been propagated to the user, remember it
                     failure = error;
                 }
             }
@@ -142,9 +142,7 @@ public abstract class PullAllResponseHandler implements ResponseHandler
         {
             if ( failure != null )
             {
-                Throwable error = failure;
-                failure = null; // propagate failure only once
-                return failedFuture( error );
+                return failedFuture( extractFailure() );
             }
 
             if ( finished )
@@ -166,16 +164,16 @@ public abstract class PullAllResponseHandler implements ResponseHandler
 
     public synchronized CompletionStage<Record> nextAsync()
     {
-        return peekAsync().thenApply( record ->
-        {
-            dequeueRecord();
-            return record;
-        } );
+        return peekAsync().thenApply( ignore -> dequeueRecord() );
     }
 
     public synchronized CompletionStage<ResultSummary> summaryAsync()
     {
-        if ( summary != null )
+        if ( failure != null )
+        {
+            return failedFuture( extractFailure() );
+        }
+        else if ( summary != null )
         {
             return completedFuture( summary );
         }
@@ -189,13 +187,11 @@ public abstract class PullAllResponseHandler implements ResponseHandler
         }
     }
 
-    public synchronized CompletionStage<Throwable> resultBuffered()
+    public synchronized CompletionStage<Throwable> failureAsync()
     {
         if ( failure != null )
         {
-            Throwable error = failure;
-            failure = null; // propagate failure only once
-            return completedFuture( error );
+            return completedFuture( extractFailure() );
         }
         else if ( finished )
         {
@@ -203,11 +199,11 @@ public abstract class PullAllResponseHandler implements ResponseHandler
         }
         else
         {
-            if ( resultBufferedFuture == null )
+            if ( failureFuture == null )
             {
-                resultBufferedFuture = new CompletableFuture<>();
+                failureFuture = new CompletableFuture<>();
             }
-            return resultBufferedFuture;
+            return failureFuture;
         }
     }
 
@@ -234,6 +230,18 @@ public abstract class PullAllResponseHandler implements ResponseHandler
             }
         }
         return record;
+    }
+
+    private Throwable extractFailure()
+    {
+        if ( failure == null )
+        {
+            throw new IllegalStateException( "Can't extract failure because it does not exist" );
+        }
+
+        Throwable error = failure;
+        failure = null; // propagate failure only once
+        return error;
     }
 
     private void completeRecordFuture( Record record )
@@ -280,12 +288,12 @@ public abstract class PullAllResponseHandler implements ResponseHandler
         return false;
     }
 
-    private boolean completeResultBufferedFuture( Throwable error )
+    private boolean completeFailureFuture( Throwable error )
     {
-        if ( resultBufferedFuture != null )
+        if ( failureFuture != null )
         {
-            CompletableFuture<Throwable> future = resultBufferedFuture;
-            resultBufferedFuture = null;
+            CompletableFuture<Throwable> future = failureFuture;
+            failureFuture = null;
             future.complete( error );
             return true;
         }

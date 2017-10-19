@@ -48,8 +48,7 @@ public final class QueryRunner
     }
 
     public static CompletionStage<InternalStatementResultCursor> runAsBlocking( Connection connection,
-            Statement statement,
-            ExplicitTransaction tx )
+            Statement statement, ExplicitTransaction tx )
     {
         return runAsAsync( connection, statement, tx, false );
     }
@@ -61,8 +60,7 @@ public final class QueryRunner
     }
 
     public static CompletionStage<InternalStatementResultCursor> runAsAsync( Connection connection,
-            Statement statement,
-            ExplicitTransaction tx )
+            Statement statement, ExplicitTransaction tx )
     {
         return runAsAsync( connection, statement, tx, true );
     }

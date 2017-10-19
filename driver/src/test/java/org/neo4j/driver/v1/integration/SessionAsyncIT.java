@@ -149,9 +149,10 @@ public class SessionAsyncIT
     @Test
     public void shouldFailForIncorrectQuery()
     {
+        StatementResultCursor cursor = await( session.runAsync( "RETURN" ) );
         try
         {
-            await( session.runAsync( "RETURN" ) );
+            await( cursor.nextAsync() );
             fail( "Exception expected" );
         }
         catch ( Exception e )
@@ -658,9 +659,10 @@ public class SessionAsyncIT
     {
         neo4j.killDb();
 
+        StatementResultCursor cursor1 = getBlocking( session.runAsync( "RETURN 42" ) );
         try
         {
-            getBlocking( session.runAsync( "RETURN 42" ) );
+            getBlocking( cursor1.nextAsync() );
             fail( "Exception expected" );
         }
         catch ( ServiceUnavailableException e )
@@ -670,8 +672,8 @@ public class SessionAsyncIT
 
         neo4j.startDb();
 
-        StatementResultCursor cursor = getBlocking( session.runAsync( "RETURN 42" ) );
-        Record record = getBlocking( cursor.singleAsync() );
+        StatementResultCursor cursor2 = getBlocking( session.runAsync( "RETURN 42" ) );
+        Record record = getBlocking( cursor2.singleAsync() );
         assertEquals( 42, record.get( 0 ).asInt() );
     }
 
@@ -703,9 +705,10 @@ public class SessionAsyncIT
     {
         neo4j.killDb();
 
+        StatementResultCursor cursor1 = await( session.runAsync( "RETURN 42" ) );
         try
         {
-            getBlocking( session.runAsync( "RETURN 42" ) );
+            getBlocking( cursor1.consumeAsync() );
             fail( "Exception expected" );
         }
         catch ( ServiceUnavailableException e )
@@ -716,8 +719,8 @@ public class SessionAsyncIT
         neo4j.startDb();
 
         Transaction tx = getBlocking( session.beginTransactionAsync() );
-        StatementResultCursor cursor = getBlocking( tx.runAsync( "RETURN 42" ) );
-        Record record = getBlocking( cursor.singleAsync() );
+        StatementResultCursor cursor2 = getBlocking( tx.runAsync( "RETURN 42" ) );
+        Record record = getBlocking( cursor2.singleAsync() );
         assertEquals( 42, record.get( 0 ).asInt() );
         assertNull( getBlocking( tx.rollbackAsync() ) );
     }
@@ -830,6 +833,158 @@ public class SessionAsyncIT
 
         assertEquals( "Hello", getBlocking( result ) );
         assertEquals( 1, countNodesByLabel( "MyNode" ) );
+    }
+
+    @Test
+    public void shouldPropagateRunFailureWhenClosed()
+    {
+        session.runAsync( "RETURN 10 / 0" );
+
+        try
+        {
+            getBlocking( session.closeAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e.getMessage(), containsString( "/ by zero" ) );
+        }
+    }
+
+    @Test
+    public void shouldPropagateBlockedRunFailureWhenClosed()
+    {
+        getBlocking( session.runAsync( "RETURN 10 / 0" ) );
+
+        try
+        {
+            getBlocking( session.closeAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e.getMessage(), containsString( "/ by zero" ) );
+        }
+    }
+
+
+    @Test
+    public void shouldPropagatePullAllFailureWhenClosed()
+    {
+        session.runAsync( "UNWIND range(20000, 0, -1) AS x RETURN 10 / x" );
+
+        try
+        {
+            getBlocking( session.closeAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e.getMessage(), containsString( "/ by zero" ) );
+        }
+    }
+
+    @Test
+    public void shouldPropagateBlockedPullAllFailureWhenClosed()
+    {
+        getBlocking( session.runAsync( "UNWIND range(20000, 0, -1) AS x RETURN 10 / x" ) );
+
+        try
+        {
+            getBlocking( session.closeAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e.getMessage(), containsString( "/ by zero" ) );
+        }
+    }
+
+    @Test
+    public void shouldCloseCleanlyWhenRunErrorConsumed()
+    {
+        StatementResultCursor cursor = getBlocking( session.runAsync( "SomeWrongQuery" ) );
+
+        try
+        {
+            getBlocking( cursor.consumeAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e.getMessage(), startsWith( "Invalid input" ) );
+        }
+
+        assertNull( getBlocking( session.closeAsync() ) );
+    }
+
+    @Test
+    public void shouldCloseCleanlyWhenPullAllErrorConsumed()
+    {
+        StatementResultCursor cursor = getBlocking( session.runAsync( "UNWIND range(10, 0, -1) AS x RETURN 1 / x" ) );
+
+        try
+        {
+            getBlocking( cursor.consumeAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e.getMessage(), containsString( "/ by zero" ) );
+        }
+
+        assertNull( getBlocking( session.closeAsync() ) );
+    }
+
+    @Test
+    public void shouldBePossibleToConsumeResultAfterSessionIsClosed()
+    {
+        CompletionStage<StatementResultCursor> cursorStage = session.runAsync( "UNWIND range(1, 20000) AS x RETURN x" );
+
+        getBlocking( session.closeAsync() );
+
+        StatementResultCursor cursor = getBlocking( cursorStage );
+        List<Integer> ints = getBlocking( cursor.listAsync( record -> record.get( 0 ).asInt() ) );
+        assertEquals( 20000, ints.size() );
+    }
+
+    @Test
+    public void shouldPropagateFailureFromSummary()
+    {
+        StatementResultCursor cursor = getBlocking( session.runAsync( "RETURN Something" ) );
+
+        try
+        {
+            getBlocking( cursor.summaryAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e.code(), containsString( "SyntaxError" ) );
+        }
+
+        assertNotNull( getBlocking( cursor.summaryAsync() ) );
+    }
+
+    @Test
+    public void shouldPropagateFailureInCloseFromPreviousRun()
+    {
+        session.runAsync( "CREATE ()" );
+        session.runAsync( "CREATE ()" );
+        session.runAsync( "CREATE ()" );
+        session.runAsync( "RETURN invalid" );
+        session.runAsync( "CREATE ()" );
+        session.runAsync( "CREATE ()" );
+
+        try
+        {
+            getBlocking( session.closeAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e.code(), containsString( "SyntaxError" ) );
+        }
     }
 
     private Future<List<CompletionStage<Record>>> runNestedQueries( StatementResultCursor inputCursor )

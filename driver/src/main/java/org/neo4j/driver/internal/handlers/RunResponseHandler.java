@@ -46,13 +46,13 @@ public class RunResponseHandler implements ResponseHandler
         statementKeys = extractKeys( metadata );
         resultAvailableAfter = extractResultAvailableAfter( metadata );
 
-        runCompletedFuture.complete( null );
+        completeRunFuture();
     }
 
     @Override
     public void onFailure( Throwable error )
     {
-        runCompletedFuture.completeExceptionally( error );
+        completeRunFuture();
     }
 
     @Override
@@ -69,6 +69,16 @@ public class RunResponseHandler implements ResponseHandler
     public long resultAvailableAfter()
     {
         return resultAvailableAfter;
+    }
+
+    /**
+     * Complete the given future with {@code null}. Future is never completed exceptionally because callers are only
+     * interested in when RUN completes and not how. Async API needs to wait for RUN because it needs to access
+     * statement keys.
+     */
+    private void completeRunFuture()
+    {
+        runCompletedFuture.complete( null );
     }
 
     private static List<String> extractKeys( Map<String,Value> metadata )

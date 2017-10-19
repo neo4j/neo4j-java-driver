@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.internal.async.InternalStatementResultCursor;
 import org.neo4j.driver.internal.async.QueryRunner;
+import org.neo4j.driver.internal.async.ResultCursorsHolder;
 import org.neo4j.driver.internal.logging.DelegatingLogger;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.Connection;
@@ -59,12 +60,12 @@ public class NetworkSession implements Session
     private final ConnectionProvider connectionProvider;
     private final AccessMode mode;
     private final RetryLogic retryLogic;
+    private final ResultCursorsHolder resultCursors;
     protected final Logger logger;
 
     private volatile Bookmark bookmark = Bookmark.empty();
     private volatile CompletionStage<ExplicitTransaction> transactionStage = completedFuture( null );
     private volatile CompletionStage<Connection> connectionStage = completedFuture( null );
-    private volatile CompletionStage<InternalStatementResultCursor> lastResultStage = completedFuture( null );
 
     private final AtomicBoolean open = new AtomicBoolean( true );
 
@@ -74,6 +75,7 @@ public class NetworkSession implements Session
         this.connectionProvider = connectionProvider;
         this.mode = mode;
         this.retryLogic = retryLogic;
+        this.resultCursors = new ResultCursorsHolder();
         this.logger = new DelegatingLogger( logging.getLog( LOG_NAME ), String.valueOf( hashCode() ) );
     }
 
@@ -153,43 +155,32 @@ public class NetworkSession implements Session
     @Override
     public void close()
     {
-        if ( open.compareAndSet( true, false ) )
-        {
-            // todo: should closeAsync() also do this waiting for buffered result?
-            // todo: unit test result buffering?
-            getBlocking( lastResultStage
-                    .exceptionally( error -> null )
-                    .thenCompose( this::ensureBuffered )
-                    .thenCompose( error -> releaseResources().thenApply( ignore ->
-                    {
-                        if ( error != null )
-                        {
-                            throw new CompletionException( error );
-                        }
-                        return null;
-                    } ) ) );
-        }
+        getBlocking( closeAsync() );
     }
 
     @Override
     public CompletionStage<Void> closeAsync()
     {
-        // todo: wait for buffered result?
         if ( open.compareAndSet( true, false ) )
         {
-            return releaseResources();
+            return resultCursors.retrieveNotConsumedError()
+                    .thenCompose( error -> releaseResources().thenApply( ignore ->
+                    {
+                        Throwable queryError = Futures.completionErrorCause( error );
+                        if ( queryError != null )
+                        {
+                            // connection has been acquired and there is an unconsumed error in result cursor
+                            throw new CompletionException( queryError );
+                        }
+                        else
+                        {
+                            // either connection acquisition failed or
+                            // there are no unconsumed errors in the result cursor
+                            return null;
+                        }
+                    } ) );
         }
         return completedFuture( null );
-    }
-
-    // todo: test this method
-    CompletionStage<Throwable> ensureBuffered( InternalStatementResultCursor cursor )
-    {
-        if ( cursor == null )
-        {
-            return completedFuture( null );
-        }
-        return cursor.resultBuffered();
     }
 
     @Override
@@ -421,7 +412,7 @@ public class NetworkSession implements Session
     {
         ensureSessionIsOpen();
 
-        lastResultStage = ensureNoOpenTxBeforeRunningQuery()
+        CompletionStage<InternalStatementResultCursor> cursorStage = ensureNoOpenTxBeforeRunningQuery()
                 .thenCompose( ignore -> acquireConnection( mode ) )
                 .thenCompose( connection ->
                 {
@@ -435,7 +426,8 @@ public class NetworkSession implements Session
                     }
                 } );
 
-        return lastResultStage;
+        resultCursors.add( cursorStage );
+        return cursorStage;
     }
 
     private CompletionStage<ExplicitTransaction> beginTransactionAsync( AccessMode mode )
@@ -496,7 +488,7 @@ public class NetworkSession implements Session
         } ).exceptionally( error ->
         {
             Throwable cause = Futures.completionErrorCause( error );
-            logger.error( "Failed to rollback active transaction", cause );
+            logger.warn( "Active transaction rolled back with an error", cause );
             return null;
         } );
     }

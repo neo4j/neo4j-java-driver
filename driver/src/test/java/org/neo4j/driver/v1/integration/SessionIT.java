@@ -120,8 +120,7 @@ public class SessionIT
     public void shouldKnowSessionIsClosed() throws Throwable
     {
         // Given
-        driver = newDriver();
-        Session session = driver.session();
+        Session session = neo4j.driver().session();
 
         // When
         session.close();
@@ -162,13 +161,11 @@ public class SessionIT
     {
         neo4j.ensureProcedures( "longRunningStatement.jar" );
         // Given
-        driver = newDriver();
-
         int executionTimeout = 10; // 10s
         final int killTimeout = 1; // 1s
         long startTime = -1, endTime;
 
-        try ( Session session = driver.session() )
+        try ( Session session = neo4j.driver().session() )
         {
             StatementResult result =
                     session.run( "CALL test.driver.longRunningStatement({seconds})",
@@ -200,14 +197,12 @@ public class SessionIT
     {
         neo4j.ensureProcedures( "longRunningStatement.jar" );
         // Given
-        driver = newDriver();
-
         int executionTimeout = 10; // 10s
         final int killTimeout = 1; // 1s
         long startTime = -1, endTime;
         int recordCount = 0;
 
-        try ( final Session session = driver.session() )
+        try ( final Session session = neo4j.driver().session() )
         {
             StatementResult result = session.run( "CALL test.driver.longStreamingResult({seconds})",
                     parameters( "seconds", executionTimeout ) );
@@ -242,9 +237,8 @@ public class SessionIT
     {
         // Given
         neo4j.ensureProcedures( "longRunningStatement.jar" );
-        driver = newDriver();
 
-        try ( Session session = driver.session() )
+        try ( Session session = neo4j.driver().session() )
         {
             Transaction tx1 = session.beginTransaction();
 
@@ -273,9 +267,8 @@ public class SessionIT
     {
         // Given
         neo4j.ensureProcedures( "longRunningStatement.jar" );
-        driver = newDriver();
 
-        Session session = driver.session();
+        Session session = neo4j.driver().session();
         session.run( "CALL test.driver.longRunningStatement({seconds})",
                 parameters( "seconds", 10 ) );
         Thread.sleep( 1000 );
@@ -294,9 +287,8 @@ public class SessionIT
     {
         // Given
         neo4j.ensureProcedures( "longRunningStatement.jar" );
-        driver = newDriver();
 
-        try ( Session session = driver.session() )
+        try ( Session session = neo4j.driver().session() )
         {
             Transaction tx = session.beginTransaction();
 
@@ -335,23 +327,19 @@ public class SessionIT
     @SuppressWarnings( "deprecation" )
     private void resetSessionAfterTimeout( final Session session, final int timeout )
     {
-        new Thread( new Runnable()
+        new Thread( () ->
         {
-            @Override
-            public void run()
+            try
             {
-                try
-                {
-                    Thread.sleep( timeout * 1000 ); // let the statement executing for timeout seconds
-                }
-                catch ( InterruptedException e )
-                {
-                    e.printStackTrace();
-                }
-                finally
-                {
-                    session.reset(); // reset the session after timeout
-                }
+                Thread.sleep( timeout * 1000 ); // let the statement executing for timeout seconds
+            }
+            catch ( InterruptedException e )
+            {
+                e.printStackTrace();
+            }
+            finally
+            {
+                session.reset(); // reset the session after timeout
             }
         } ).start();
     }
@@ -361,8 +349,7 @@ public class SessionIT
     public void shouldAllowMoreStatementAfterSessionReset()
     {
         // Given
-        try ( Driver driver = newDriver();
-              Session session = driver.session() )
+        try ( Session session = neo4j.driver().session() )
         {
 
             session.run( "Return 1" ).consume();
@@ -380,8 +367,7 @@ public class SessionIT
     public void shouldAllowMoreTxAfterSessionReset()
     {
         // Given
-        try ( Driver driver = newDriver();
-              Session session = driver.session() )
+        try ( Session session = neo4j.driver().session() )
         {
             try ( Transaction tx = session.beginTransaction() )
             {
@@ -406,8 +392,7 @@ public class SessionIT
     public void shouldMarkTxAsFailedAndDisallowRunAfterSessionReset()
     {
         // Given
-        try ( Driver driver = newDriver();
-              Session session = driver.session() )
+        try ( Session session = neo4j.driver().session() )
         {
             try ( Transaction tx = session.beginTransaction() )
             {
@@ -429,8 +414,7 @@ public class SessionIT
     public void shouldAllowMoreTxAfterSessionResetInTx()
     {
         // Given
-        try ( Driver driver = newDriver();
-              Session session = driver.session() )
+        try ( Session session = neo4j.driver().session() )
         {
             try ( Transaction tx = session.beginTransaction() )
             {
@@ -653,14 +637,7 @@ public class SessionIT
             assumeBookmarkSupport( driver );
             assertNull( session.lastBookmark() );
 
-            long answer = session.readTransaction( new TransactionWork<Long>()
-            {
-                @Override
-                public Long execute( Transaction tx )
-                {
-                    return tx.run( "RETURN 42" ).single().get( 0 ).asLong();
-                }
-            } );
+            long answer = session.readTransaction( tx -> tx.run( "RETURN 42" ).single().get( 0 ).asLong() );
             assertEquals( 42, answer );
 
             // bookmark should be not-null after commit
@@ -675,14 +652,8 @@ public class SessionIT
         {
             try ( Session session = driver.session() )
             {
-                long answer = session.writeTransaction( new TransactionWork<Long>()
-                {
-                    @Override
-                    public Long execute( Transaction tx )
-                    {
-                        return tx.run( "CREATE (:Person {name: 'Thor Odinson'}) RETURN 42" ).single().get( 0 ).asLong();
-                    }
-                } );
+                long answer = session.writeTransaction( tx ->
+                        tx.run( "CREATE (:Person {name: 'Thor Odinson'}) RETURN 42" ).single().get( 0 ).asLong() );
                 assertEquals( 42, answer );
             }
 
@@ -703,15 +674,11 @@ public class SessionIT
             assumeBookmarkSupport( driver );
             assertNull( session.lastBookmark() );
 
-            long answer = session.readTransaction( new TransactionWork<Long>()
+            long answer = session.readTransaction( tx ->
             {
-                @Override
-                public Long execute( Transaction tx )
-                {
-                    StatementResult result = tx.run( "RETURN 42" );
-                    tx.failure();
-                    return result.single().get( 0 ).asLong();
-                }
+                StatementResult result = tx.run( "RETURN 42" );
+                tx.failure();
+                return result.single().get( 0 ).asLong();
             } );
             assertEquals( 42, answer );
 
@@ -727,15 +694,11 @@ public class SessionIT
         {
             try ( Session session = driver.session() )
             {
-                int answer = session.writeTransaction( new TransactionWork<Integer>()
+                int answer = session.writeTransaction( tx ->
                 {
-                    @Override
-                    public Integer execute( Transaction tx )
-                    {
-                        tx.run( "CREATE (:Person {name: 'Natasha Romanoff'})" );
-                        tx.failure();
-                        return 42;
-                    }
+                    tx.run( "CREATE (:Person {name: 'Natasha Romanoff'})" );
+                    tx.failure();
+                    return 42;
                 } );
 
                 assertEquals( 42, answer );
@@ -760,18 +723,14 @@ public class SessionIT
 
             try
             {
-                session.readTransaction( new TransactionWork<Long>()
+                session.readTransaction( tx ->
                 {
-                    @Override
-                    public Long execute( Transaction tx )
+                    StatementResult result = tx.run( "RETURN 42" );
+                    if ( result.single().get( 0 ).asLong() == 42 )
                     {
-                        StatementResult result = tx.run( "RETURN 42" );
-                        if ( result.single().get( 0 ).asLong() == 42 )
-                        {
-                            throw new IllegalStateException();
-                        }
-                        return 1L;
+                        throw new IllegalStateException();
                     }
+                    return 1L;
                 } );
                 fail( "Exception expected" );
             }
@@ -794,14 +753,10 @@ public class SessionIT
             {
                 try
                 {
-                    session.writeTransaction( new TransactionWork<Integer>()
+                    session.writeTransaction( tx ->
                     {
-                        @Override
-                        public Integer execute( Transaction tx )
-                        {
-                            tx.run( "CREATE (:Person {name: 'Loki Odinson'})" );
-                            throw new IllegalStateException();
-                        }
+                        tx.run( "CREATE (:Person {name: 'Loki Odinson'})" );
+                        throw new IllegalStateException();
                     } );
                     fail( "Exception expected" );
                 }
@@ -828,16 +783,12 @@ public class SessionIT
             assumeBookmarkSupport( driver );
             assertNull( session.lastBookmark() );
 
-            long answer = session.readTransaction( new TransactionWork<Long>()
+            long answer = session.readTransaction( tx ->
             {
-                @Override
-                public Long execute( Transaction tx )
-                {
-                    StatementResult result = tx.run( "RETURN 42" );
-                    tx.success();
-                    tx.failure();
-                    return result.single().get( 0 ).asLong();
-                }
+                StatementResult result = tx.run( "RETURN 42" );
+                tx.success();
+                tx.failure();
+                return result.single().get( 0 ).asLong();
             } );
             assertEquals( 42, answer );
 
@@ -853,16 +804,12 @@ public class SessionIT
         {
             try ( Session session = driver.session() )
             {
-                int answer = session.writeTransaction( new TransactionWork<Integer>()
+                int answer = session.writeTransaction( tx ->
                 {
-                    @Override
-                    public Integer execute( Transaction tx )
-                    {
-                        tx.run( "CREATE (:Person {name: 'Natasha Romanoff'})" );
-                        tx.success();
-                        tx.failure();
-                        return 42;
-                    }
+                    tx.run( "CREATE (:Person {name: 'Natasha Romanoff'})" );
+                    tx.success();
+                    tx.failure();
+                    return 42;
                 } );
 
                 assertEquals( 42, answer );
@@ -887,15 +834,11 @@ public class SessionIT
 
             try
             {
-                session.readTransaction( new TransactionWork<Long>()
+                session.readTransaction( tx ->
                 {
-                    @Override
-                    public Long execute( Transaction tx )
-                    {
-                        tx.run( "RETURN 42" );
-                        tx.success();
-                        throw new IllegalStateException();
-                    }
+                    tx.run( "RETURN 42" );
+                    tx.success();
+                    throw new IllegalStateException();
                 } );
                 fail( "Exception expected" );
             }
@@ -918,15 +861,11 @@ public class SessionIT
             {
                 try
                 {
-                    session.writeTransaction( new TransactionWork<Integer>()
+                    session.writeTransaction( tx ->
                     {
-                        @Override
-                        public Integer execute( Transaction tx )
-                        {
-                            tx.run( "CREATE (:Person {name: 'Natasha Romanoff'})" );
-                            tx.success();
-                            throw new IllegalStateException();
-                        }
+                        tx.run( "CREATE (:Person {name: 'Natasha Romanoff'})" );
+                        tx.success();
+                        throw new IllegalStateException();
                     } );
                     fail( "Exception expected" );
                 }
@@ -996,7 +935,7 @@ public class SessionIT
         testResetOfQueryWaitingForLock( new NodeIdUpdater()
         {
             @Override
-            public void performUpdate( Driver driver, final int nodeId, final int newNodeId,
+            public void performUpdate( Driver driver, int nodeId, int newNodeId,
                     AtomicReference<Session> usedSessionRef, CountDownLatch latchToWait ) throws Exception
             {
                 try ( Session session = driver.session() )
@@ -1004,16 +943,12 @@ public class SessionIT
                     usedSessionRef.set( session );
                     latchToWait.await();
 
-                    session.writeTransaction( new TransactionWork<Void>()
+                    session.writeTransaction( tx ->
                     {
-                        @Override
-                        public Void execute( Transaction tx )
-                        {
-                            invocationsOfWork.incrementAndGet();
-                            StatementResult result = updateNodeId( tx, nodeId, newNodeId );
-                            result.consume();
-                            return null;
-                        }
+                        invocationsOfWork.incrementAndGet();
+                        StatementResult result = updateNodeId( tx, nodeId, newNodeId );
+                        result.consume();
+                        return null;
                     } );
                 }
             }
@@ -1036,65 +971,54 @@ public class SessionIT
         final CountDownLatch latch1 = new CountDownLatch( 1 );
         final CountDownLatch latch2 = new CountDownLatch( 1 );
 
-        try ( final Driver driver = newDriver() )
+        Future<Void> result1 = executeInDifferentThread( () ->
         {
-            Future<Void> result1 = executeInDifferentThread( new Callable<Void>()
+            try ( Session session = neo4j.driver().session();
+                  Transaction tx = session.beginTransaction() )
             {
-                @Override
-                public Void call() throws Exception
-                {
-                    try ( Session session = driver.session();
-                          Transaction tx = session.beginTransaction() )
-                    {
-                        // lock first node
-                        updateNodeId( tx, nodeId1, newNodeId1 ).consume();
+                // lock first node
+                updateNodeId( tx, nodeId1, newNodeId1 ).consume();
 
-                        latch1.await();
-                        latch2.countDown();
+                latch1.await();
+                latch2.countDown();
 
-                        // lock second node
-                        updateNodeId( tx, nodeId2, newNodeId1 ).consume();
+                // lock second node
+                updateNodeId( tx, nodeId2, newNodeId1 ).consume();
 
-                        tx.success();
-                    }
-                    return null;
-                }
-            } );
-
-            Future<Void> result2 = executeInDifferentThread( new Callable<Void>()
-            {
-                @Override
-                public Void call() throws Exception
-                {
-                    try ( Session session = driver.session();
-                          Transaction tx = session.beginTransaction() )
-                    {
-                        // lock second node
-                        updateNodeId( tx, nodeId2, newNodeId2 ).consume();
-
-                        latch1.countDown();
-                        latch2.await();
-
-                        // lock first node
-                        updateNodeId( tx, nodeId1, newNodeId2 ).consume();
-
-                        tx.success();
-                    }
-                    return null;
-                }
-            } );
-
-            boolean firstResultFailed = assertOneOfTwoFuturesFailWithDeadlock( result1, result2 );
-            if ( firstResultFailed )
-            {
-                assertEquals( 0, countNodesWithId( newNodeId1 ) );
-                assertEquals( 2, countNodesWithId( newNodeId2 ) );
+                tx.success();
             }
-            else
+            return null;
+        } );
+
+        Future<Void> result2 = executeInDifferentThread( () ->
+        {
+            try ( Session session = neo4j.driver().session();
+                  Transaction tx = session.beginTransaction() )
             {
-                assertEquals( 2, countNodesWithId( newNodeId1 ) );
-                assertEquals( 0, countNodesWithId( newNodeId2 ) );
+                // lock second node
+                updateNodeId( tx, nodeId2, newNodeId2 ).consume();
+
+                latch1.countDown();
+                latch2.await();
+
+                // lock first node
+                updateNodeId( tx, nodeId1, newNodeId2 ).consume();
+
+                tx.success();
             }
+            return null;
+        } );
+
+        boolean firstResultFailed = assertOneOfTwoFuturesFailWithDeadlock( result1, result2 );
+        if ( firstResultFailed )
+        {
+            assertEquals( 0, countNodesWithId( newNodeId1 ) );
+            assertEquals( 2, countNodesWithId( newNodeId2 ) );
+        }
+        else
+        {
+            assertEquals( 2, countNodesWithId( newNodeId1 ) );
+            assertEquals( 0, countNodesWithId( newNodeId2 ) );
         }
     }
 
@@ -1113,95 +1037,80 @@ public class SessionIT
         final CountDownLatch latch1 = new CountDownLatch( 1 );
         final CountDownLatch latch2 = new CountDownLatch( 1 );
 
-        try ( final Driver driver = newDriver() )
+        Future<Void> result1 = executeInDifferentThread( () ->
         {
-            Future<Void> result1 = executeInDifferentThread( new Callable<Void>()
+            try ( Session session = neo4j.driver().session();
+                  Transaction tx = session.beginTransaction() )
             {
-                @Override
-                public Void call() throws Exception
+                // lock first node
+                updateNodeId( tx, nodeId1, newNodeId1 ).consume();
+
+                latch1.await();
+                latch2.countDown();
+
+                // lock second node
+                updateNodeId( tx, nodeId2, newNodeId1 ).consume();
+
+                tx.success();
+            }
+            return null;
+        } );
+
+        Future<Void> result2 = executeInDifferentThread( () ->
+        {
+            try ( Session session = neo4j.driver().session() )
+            {
+                session.writeTransaction( tx ->
                 {
-                    try ( Session session = driver.session();
-                          Transaction tx = session.beginTransaction() )
-                    {
-                        // lock first node
-                        updateNodeId( tx, nodeId1, newNodeId1 ).consume();
+                    // lock second node
+                    updateNodeId( tx, nodeId2, newNodeId2 ).consume();
 
-                        latch1.await();
-                        latch2.countDown();
+                    latch1.countDown();
+                    await( latch2 );
 
-                        // lock second node
-                        updateNodeId( tx, nodeId2, newNodeId1 ).consume();
+                    // lock first node
+                    updateNodeId( tx, nodeId1, newNodeId2 ).consume();
 
-                        tx.success();
-                    }
+                    createNodeWithId( nodeId3 );
+
                     return null;
-                }
-            } );
-
-            Future<Void> result2 = executeInDifferentThread( new Callable<Void>()
-            {
-                @Override
-                public Void call() throws Exception
-                {
-                    try ( Session session = driver.session() )
-                    {
-                        session.writeTransaction( new TransactionWork<Void>()
-                        {
-                            @Override
-                            public Void execute( Transaction tx )
-                            {
-                                // lock second node
-                                updateNodeId( tx, nodeId2, newNodeId2 ).consume();
-
-                                latch1.countDown();
-                                await( latch2 );
-
-                                // lock first node
-                                updateNodeId( tx, nodeId1, newNodeId2 ).consume();
-
-                                createNodeWithId( nodeId3 );
-
-                                return null;
-                            }
-                        } );
-                    }
-                    return null;
-                }
-            } );
-
-            boolean firstResultFailed = false;
-            try
-            {
-                // first future may:
-                // 1) succeed, when it's tx was able to grab both locks and tx in other future was
-                //    terminated because of a deadlock
-                // 2) fail, when it's tx was terminated because of a deadlock
-                assertNull( result1.get( 20, TimeUnit.SECONDS ) );
+                } );
             }
-            catch ( ExecutionException e )
-            {
-                firstResultFailed = true;
-            }
+            return null;
+        } );
 
-            // second future can't fail because deadlocks are retried
-            assertNull( result2.get( 20, TimeUnit.SECONDS ) );
-
-            if ( firstResultFailed )
-            {
-                // tx with retries was successful and updated ids
-                assertEquals( 0, countNodesWithId( newNodeId1 ) );
-                assertEquals( 2, countNodesWithId( newNodeId2 ) );
-            }
-            else
-            {
-                // tx without retries was successful and updated ids
-                // tx with retries did not manage to find nodes because their ids were updated
-                assertEquals( 2, countNodesWithId( newNodeId1 ) );
-                assertEquals( 0, countNodesWithId( newNodeId2 ) );
-            }
-            // tx with retries was successful and created an additional node
-            assertEquals( 1, countNodesWithId( nodeId3 ) );
+        boolean firstResultFailed = false;
+        try
+        {
+            // first future may:
+            // 1) succeed, when it's tx was able to grab both locks and tx in other future was
+            //    terminated because of a deadlock
+            // 2) fail, when it's tx was terminated because of a deadlock
+            assertNull( result1.get( 20, TimeUnit.SECONDS ) );
         }
+        catch ( ExecutionException e )
+        {
+            firstResultFailed = true;
+        }
+
+        // second future can't fail because deadlocks are retried
+        assertNull( result2.get( 20, TimeUnit.SECONDS ) );
+
+        if ( firstResultFailed )
+        {
+            // tx with retries was successful and updated ids
+            assertEquals( 0, countNodesWithId( newNodeId1 ) );
+            assertEquals( 2, countNodesWithId( newNodeId2 ) );
+        }
+        else
+        {
+            // tx without retries was successful and updated ids
+            // tx with retries did not manage to find nodes because their ids were updated
+            assertEquals( 2, countNodesWithId( newNodeId1 ) );
+            assertEquals( 0, countNodesWithId( newNodeId2 ) );
+        }
+        // tx with retries was successful and created an additional node
+        assertEquals( 1, countNodesWithId( nodeId3 ) );
     }
 
     @Test
@@ -1210,8 +1119,7 @@ public class SessionIT
         int maxFailures = 3;
         Thread callerThread = Thread.currentThread();
 
-        try ( Driver driver = newDriver();
-              Session session = driver.session() )
+        try ( Session session = neo4j.driver().session() )
         {
             String result = session.readTransaction( new TransactionWork<String>()
             {
@@ -1231,6 +1139,119 @@ public class SessionIT
 
             assertEquals( "Hello", result );
         }
+    }
+
+    @Test
+    public void shouldPropagateRunFailureWhenClosed()
+    {
+        Session session = neo4j.driver().session();
+
+        session.run( "RETURN 10 / 0" );
+
+        try
+        {
+            session.close();
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e.getMessage(), containsString( "/ by zero" ) );
+        }
+    }
+
+    @Test
+    public void shouldPropagatePullAllFailureWhenClosed()
+    {
+        Session session = neo4j.driver().session();
+
+        session.run( "UNWIND range(20000, 0, -1) AS x RETURN 10 / x" );
+
+        try
+        {
+            session.close();
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e.getMessage(), containsString( "/ by zero" ) );
+        }
+    }
+
+    @Test
+    public void shouldBePossibleToConsumeResultAfterSessionIsClosed()
+    {
+        StatementResult result;
+        try ( Session session = neo4j.driver().session() )
+        {
+            result = session.run( "UNWIND range(1, 20000) AS x RETURN x" );
+        }
+
+        List<Integer> ints = result.list( record -> record.get( 0 ).asInt() );
+        assertEquals( 20000, ints.size() );
+    }
+
+    @Test
+    public void shouldPropagateFailureFromSummary()
+    {
+        try ( Session session = neo4j.driver().session() )
+        {
+            StatementResult result = session.run( "RETURN Wrong" );
+
+            try
+            {
+                result.summary();
+                fail( "Exception expected" );
+            }
+            catch ( ClientException e )
+            {
+                assertThat( e.code(), containsString( "SyntaxError" ) );
+            }
+
+            assertNotNull( result.summary() );
+        }
+    }
+
+    @Test
+    public void shouldThrowFromCloseWhenPreviousErrorNotConsumed()
+    {
+        Session session = neo4j.driver().session();
+
+        session.run( "CREATE ()" );
+        session.run( "CREATE ()" );
+        session.run( "RETURN 10 / 0" );
+        session.run( "CREATE ()" );
+
+        try
+        {
+            session.close();
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e.getMessage(), containsString( "/ by zero" ) );
+        }
+    }
+
+    @Test
+    public void shouldCloseCleanlyWhenRunErrorConsumed()
+    {
+        Session session = neo4j.driver().session();
+
+        session.run( "CREATE ()" );
+
+        try
+        {
+            session.run( "RETURN 10 / 0" ).consume();
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e.getMessage(), containsString( "/ by zero" ) );
+        }
+        session.run( "CREATE ()" );
+
+        session.close();
+        assertFalse( session.isOpen() );
     }
 
     private void assumeServerIs31OrLater()
@@ -1254,19 +1275,15 @@ public class SessionIT
         // read previously committed data
         try ( Session session = driver.session( sessionMode ) )
         {
-            Set<String> names = session.readTransaction( new TransactionWork<Set<String>>()
+            Set<String> names = session.readTransaction( tx ->
             {
-                @Override
-                public Set<String> execute( Transaction tx )
+                List<Record> records = tx.run( "MATCH (p:Person) RETURN p.name AS name" ).list();
+                Set<String> names1 = new HashSet<>( records.size() );
+                for ( Record record : records )
                 {
-                    List<Record> records = tx.run( "MATCH (p:Person) RETURN p.name AS name" ).list();
-                    Set<String> names = new HashSet<>( records.size() );
-                    for ( Record record : records )
-                    {
-                        names.add( record.get( "name" ).asString() );
-                    }
-                    return names;
+                    names1.add( record.get( "name" ).asString() );
                 }
+                return names1;
             } );
 
             assertThat( names, containsInAnyOrder( "Tony Stark", "Steve Rogers" ) );
@@ -1280,16 +1297,12 @@ public class SessionIT
         // write some test data
         try ( Session session = driver.session( sessionMode ) )
         {
-            String material = session.writeTransaction( new TransactionWork<String>()
+            String material = session.writeTransaction( tx ->
             {
-                @Override
-                public String execute( Transaction tx )
-                {
-                    StatementResult result = tx.run( "CREATE (s:Shield {material: 'Vibranium'}) RETURN s" );
-                    tx.success();
-                    Record record = result.single();
-                    return record.get( 0 ).asNode().get( "material" ).asString();
-                }
+                StatementResult result = tx.run( "CREATE (s:Shield {material: 'Vibranium'}) RETURN s" );
+                tx.success();
+                Record record = result.single();
+                return record.get( 0 ).asNode().get( "material" ).asString();
             } );
 
             assertEquals( "Vibranium", material );
@@ -1311,17 +1324,13 @@ public class SessionIT
         {
             try
             {
-                session.writeTransaction( new TransactionWork<Void>()
+                session.writeTransaction( tx ->
                 {
-                    @Override
-                    public Void execute( Transaction tx )
-                    {
-                        tx.run( "CREATE (:Person {name: 'Thanos'})" );
-                        // trigger division by zero error:
-                        tx.run( "UNWIND range(0, 1) AS i RETURN 10/i" );
-                        tx.success();
-                        return null;
-                    }
+                    tx.run( "CREATE (:Person {name: 'Thanos'})" );
+                    // trigger division by zero error:
+                    tx.run( "UNWIND range(0, 1) AS i RETURN 10/i" );
+                    tx.success();
+                    return null;
                 } );
                 fail( "Exception expected" );
             }
@@ -1337,6 +1346,7 @@ public class SessionIT
             Record record = session.run( "MATCH (p:Person {name: 'Thanos'}) RETURN count(p)" ).single();
             assertEquals( 0, record.get( 0 ).asInt() );
         }
+
     }
 
     @SuppressWarnings( "deprecation" )
@@ -1351,11 +1361,10 @@ public class SessionIT
         CountDownLatch nodeLocked = new CountDownLatch( 1 );
         AtomicReference<Session> otherSessionRef = new AtomicReference<>();
 
-        try ( Driver driver = newDriver();
-              Session session = driver.session();
+        try ( Session session = neo4j.driver().session();
               Transaction tx = session.beginTransaction() )
         {
-            Future<Void> txResult = nodeIdUpdater.update( driver, nodeId, newNodeId1, otherSessionRef, nodeLocked );
+            Future<Void> txResult = nodeIdUpdater.update( nodeId, newNodeId1, otherSessionRef, nodeLocked );
 
             StatementResult result = updateNodeId( tx, nodeId, newNodeId2 );
             result.consume();
@@ -1388,11 +1397,6 @@ public class SessionIT
         RoutingSettings routingConf = new RoutingSettings( 1, 1, RoutingContext.EMPTY );
         AuthToken auth = DEFAULT_AUTH_TOKEN;
         return driverFactory.newInstance( neo4j.uri(), auth, routingConf, RetrySettings.DEFAULT, noLoggingConfig() );
-    }
-
-    private Driver newDriver()
-    {
-        return GraphDatabase.driver( neo4j.uri(), neo4j.authToken(), noLoggingConfig() );
     }
 
     private Driver newDriverWithLimitedRetries( int maxTxRetryTime, TimeUnit unit )
@@ -1515,17 +1519,13 @@ public class SessionIT
 
     private abstract class NodeIdUpdater
     {
-        final Future<Void> update( final Driver driver, final int nodeId, final int newNodeId,
-                final AtomicReference<Session> usedSessionRef, final CountDownLatch latchToWait )
+        final Future<Void> update( int nodeId, int newNodeId, AtomicReference<Session> usedSessionRef,
+                CountDownLatch latchToWait )
         {
-            return executeInDifferentThread( new Callable<Void>()
+            return executeInDifferentThread( () ->
             {
-                @Override
-                public Void call() throws Exception
-                {
-                    performUpdate( driver, nodeId, newNodeId, usedSessionRef, latchToWait );
-                    return null;
-                }
+                performUpdate( neo4j.driver(), nodeId, newNodeId, usedSessionRef, latchToWait );
+                return null;
             } );
         }
 
