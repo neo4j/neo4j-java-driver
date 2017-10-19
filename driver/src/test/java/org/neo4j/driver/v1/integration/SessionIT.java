@@ -78,6 +78,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -1200,6 +1201,35 @@ public class SessionIT
             }
             // tx with retries was successful and created an additional node
             assertEquals( 1, countNodesWithId( nodeId3 ) );
+        }
+    }
+
+    @Test
+    public void shouldExecuteTransactionWorkInCallerThread()
+    {
+        int maxFailures = 3;
+        Thread callerThread = Thread.currentThread();
+
+        try ( Driver driver = newDriver();
+              Session session = driver.session() )
+        {
+            String result = session.readTransaction( new TransactionWork<String>()
+            {
+                int failures;
+
+                @Override
+                public String execute( Transaction tx )
+                {
+                    assertSame( callerThread, Thread.currentThread() );
+                    if ( failures++ < maxFailures )
+                    {
+                        throw new ServiceUnavailableException( "Oh no" );
+                    }
+                    return "Hello";
+                }
+            } );
+
+            assertEquals( "Hello", result );
         }
     }
 

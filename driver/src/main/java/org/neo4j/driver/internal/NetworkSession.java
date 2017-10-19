@@ -289,32 +289,34 @@ public class NetworkSession implements Session
 
     private <T> T transaction( AccessMode mode, TransactionWork<T> work )
     {
-        return getBlocking( transactionAsync( mode, tx ->
+        // use different code path compared to async so that work is executed in the caller thread
+        // caller thread will also be the one who sleeps between retries;
+        // it is unsafe to execute retries in the event loop threads because this can cause a deadlock
+        // event loop thread will bock and wait for itself to read some data
+        return retryLogic.retry( () ->
         {
-            try
+            try ( Transaction tx = getBlocking( beginTransactionAsync( mode ) ) )
             {
-                // todo: given lambda can't be executed in even loop thread because it deadlocks
-                // todo: event loop executes a blocking operation and waits for itself to read from the network
-                // todo: this is most likely what happens...
-
-                // todo: use of supplyAsync is a hack and it makes blocking API very different from 1.4
-                // todo: because we now execute function in FJP.commonPool()
-
-                // todo: bring back blocking retries with sleeps and etc. so that we execute TxWork in caller thread
-                return CompletableFuture.supplyAsync( () -> work.execute( tx ) );
-//                T result = work.execute( tx );
-//                return completedFuture( result );
+                try
+                {
+                    T result = work.execute( tx );
+                    tx.success();
+                    return result;
+                }
+                catch ( Throwable t )
+                {
+                    // mark transaction for failure if the given unit of work threw exception
+                    // this will override any success marks that were made by the unit of work
+                    tx.failure();
+                    throw t;
+                }
             }
-            catch ( Throwable error )
-            {
-                return failedFuture( error );
-            }
-        } ) );
+        } );
     }
 
     private <T> CompletionStage<T> transactionAsync( AccessMode mode, TransactionWork<CompletionStage<T>> work )
     {
-        return retryLogic.retry( () ->
+        return retryLogic.retryAsync( () ->
         {
             CompletableFuture<T> resultFuture = new CompletableFuture<>();
             CompletionStage<ExplicitTransaction> txFuture = beginTransactionAsync( mode );
