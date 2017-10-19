@@ -39,6 +39,7 @@ public class BlockingWriteQuery<C extends AbstractContext> extends AbstractBlock
     public void execute( C context )
     {
         StatementResult result = null;
+        Throwable queryError = null;
 
         try ( Session session = newSession( AccessMode.WRITE, context ) )
         {
@@ -46,13 +47,14 @@ public class BlockingWriteQuery<C extends AbstractContext> extends AbstractBlock
         }
         catch ( Throwable error )
         {
+            queryError = error;
             if ( !stressTest.handleWriteFailure( error, context ) )
             {
                 throw error;
             }
         }
 
-        if ( result != null )
+        if ( queryError == null && result != null )
         {
             assertEquals( 1, result.summary().counters().nodesCreated() );
             context.nodeCreated();

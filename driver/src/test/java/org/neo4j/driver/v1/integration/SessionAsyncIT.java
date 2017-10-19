@@ -659,10 +659,10 @@ public class SessionAsyncIT
     {
         neo4j.killDb();
 
-        StatementResultCursor cursor1 = getBlocking( session.runAsync( "RETURN 42" ) );
         try
         {
-            getBlocking( cursor1.nextAsync() );
+            StatementResultCursor cursor = getBlocking( session.runAsync( "RETURN 42" ) );
+            getBlocking( cursor.nextAsync() );
             fail( "Exception expected" );
         }
         catch ( ServiceUnavailableException e )
@@ -705,10 +705,10 @@ public class SessionAsyncIT
     {
         neo4j.killDb();
 
-        StatementResultCursor cursor1 = await( session.runAsync( "RETURN 42" ) );
         try
         {
-            getBlocking( cursor1.consumeAsync() );
+            StatementResultCursor cursor = await( session.runAsync( "RETURN 42" ) );
+            getBlocking( cursor.consumeAsync() );
             fail( "Exception expected" );
         }
         catch ( ServiceUnavailableException e )

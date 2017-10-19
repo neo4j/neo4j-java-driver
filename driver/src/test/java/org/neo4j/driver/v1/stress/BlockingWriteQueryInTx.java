@@ -40,6 +40,7 @@ public class BlockingWriteQueryInTx<C extends AbstractContext> extends AbstractB
     public void execute( C context )
     {
         StatementResult result = null;
+        Throwable txError = null;
 
         try ( Session session = newSession( AccessMode.WRITE, context ) )
         {
@@ -53,13 +54,14 @@ public class BlockingWriteQueryInTx<C extends AbstractContext> extends AbstractB
         }
         catch ( Throwable error )
         {
+            txError = error;
             if ( !stressTest.handleWriteFailure( error, context ) )
             {
                 throw error;
             }
         }
 
-        if ( result != null )
+        if ( txError == null && result != null )
         {
             assertEquals( 1, result.summary().counters().nodesCreated() );
             context.nodeCreated();

@@ -49,21 +49,25 @@ public class AsyncWriteQuery<C extends AbstractContext> extends AbstractAsyncQue
                 {
                     session.closeAsync();
 
-                    handleError( Futures.completionErrorCause( error ), context );
-                    assertEquals( 1, summary.counters().nodesCreated() );
-                    context.nodeCreated();
+                    if ( error != null )
+                    {
+                        handleError( Futures.completionErrorCause( error ), context );
+                    }
+                    else
+                    {
+                        assertEquals( 1, summary.counters().nodesCreated() );
+                        context.nodeCreated();
+                    }
+
                     return null;
                 } );
     }
 
     private void handleError( Throwable error, C context )
     {
-        if ( error != null )
+        if ( !stressTest.handleWriteFailure( error, context ) )
         {
-            if ( !stressTest.handleWriteFailure( error, context ) )
-            {
-                throw new RuntimeException( error );
-            }
+            throw new RuntimeException( error );
         }
     }
 }
