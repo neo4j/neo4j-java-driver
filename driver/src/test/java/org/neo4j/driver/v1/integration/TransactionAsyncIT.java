@@ -969,8 +969,6 @@ public class TransactionAsyncIT
         tx.runAsync( "RETURN 10 / 0" );
         tx.runAsync( "CREATE (:TestNode)" );
 
-        Thread.sleep( 1000 );
-
         try
         {
             getBlocking( tx.commitAsync() );

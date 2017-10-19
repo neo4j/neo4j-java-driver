@@ -236,7 +236,7 @@ public abstract class PullAllResponseHandler implements ResponseHandler
     {
         if ( failure == null )
         {
-            throw new IllegalStateException( "Can't consume failure because it does not exist" );
+            throw new IllegalStateException( "Can't extract failure because it does not exist" );
         }
 
         Throwable error = failure;

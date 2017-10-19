@@ -1119,8 +1119,7 @@ public class SessionIT
         int maxFailures = 3;
         Thread callerThread = Thread.currentThread();
 
-        try ( Driver driver = newDriver();
-              Session session = driver.session() )
+        try ( Session session = neo4j.driver().session() )
         {
             String result = session.readTransaction( new TransactionWork<String>()
             {

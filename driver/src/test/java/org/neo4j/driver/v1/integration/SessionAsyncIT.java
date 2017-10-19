@@ -726,7 +726,6 @@ public class SessionAsyncIT
     }
 
     @Test
-<<<<<<<HEAD
     public void shouldExecuteReadTransactionUntilSuccessWhenWorkThrows()
     {
         int maxFailures = 1;
