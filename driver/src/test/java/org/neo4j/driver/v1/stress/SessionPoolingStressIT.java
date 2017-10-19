@@ -122,7 +122,7 @@ public class SessionPoolingStressIT
 
         stop.set( true );
         executor.shutdown();
-        assertTrue( executor.awaitTermination( 30, TimeUnit.SECONDS ) );
+        assertTrue( executor.awaitTermination( 90, TimeUnit.SECONDS ) );
 
         Throwable failure = failureReference.get();
         if ( failure != null )
