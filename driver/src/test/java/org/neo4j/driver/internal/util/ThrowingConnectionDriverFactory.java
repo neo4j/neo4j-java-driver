@@ -1,0 +1,47 @@
+/*
+ * Copyright (c) 2002-2017 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.neo4j.driver.internal.util;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+
+import org.neo4j.driver.internal.ConnectionSettings;
+import org.neo4j.driver.internal.DriverFactory;
+import org.neo4j.driver.internal.security.SecurityPlan;
+import org.neo4j.driver.internal.spi.Connector;
+import org.neo4j.driver.v1.Logging;
+
+public class ThrowingConnectionDriverFactory extends DriverFactory
+{
+    private final List<ThrowingConnection> connections = new CopyOnWriteArrayList<>();
+
+    @Override
+    protected Connector createConnector( ConnectionSettings connectionSettings, SecurityPlan securityPlan,
+            Logging logging )
+    {
+        Connector connector = super.createConnector( connectionSettings, securityPlan, logging );
+        return new ThrowingConnectionConnector( connector, connections );
+    }
+
+    public List<ThrowingConnection> getConnections()
+    {
+        return new ArrayList<>( connections );
+    }
+}

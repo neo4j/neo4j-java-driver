@@ -46,7 +46,7 @@ public class PooledConnectionReleaseConsumerTest
 
         // connection should now be idle
         assertEquals( 0, queue.activeConnections() );
-        assertEquals( 1, queue.size() );
+        assertEquals( 1, queue.idleConnections() );
 
         verify( connection ).reset();
         verify( connection ).sync();
@@ -65,7 +65,7 @@ public class PooledConnectionReleaseConsumerTest
 
         // connection should've been disposed
         assertEquals( 0, queue.activeConnections() );
-        assertEquals( 0, queue.size() );
+        assertEquals( 0, queue.idleConnections() );
 
         verify( connection ).dispose();
     }

@@ -16,31 +16,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.spi;
+package org.neo4j.driver.internal.util;
+
+import java.util.List;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
+import org.neo4j.driver.internal.spi.Connector;
 
-public interface ConnectionPool extends AutoCloseable
+public class ThrowingConnectionConnector implements Connector
 {
-    /**
-     * Acquire a connection - if a live connection exists in the pool, it will
-     * be used, otherwise a new connection will be created.
-     *
-     * @param address The address to acquire
-     */
-    PooledConnection acquire( BoltServerAddress address );
+    private final Connector realConnector;
+    private final List<ThrowingConnection> connections;
 
-    /**
-     * Removes all connections to a given address from the pool.
-     * @param address The address to remove.
-     */
-    void purge( BoltServerAddress address );
+    public ThrowingConnectionConnector( Connector realConnector, List<ThrowingConnection> connections )
+    {
+        this.realConnector = realConnector;
+        this.connections = connections;
+    }
 
-    void activate( BoltServerAddress address );
-
-    void passivate( BoltServerAddress address );
-
-    void compact();
-
-    boolean hasAddress( BoltServerAddress address );
+    @Override
+    public ThrowingConnection connect( BoltServerAddress address )
+    {
+        ThrowingConnection connection = new ThrowingConnection( realConnector.connect( address ) );
+        connections.add( connection );
+        return connection;
+    }
 }

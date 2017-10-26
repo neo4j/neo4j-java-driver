@@ -37,6 +37,8 @@ import org.neo4j.driver.internal.logging.DevNullLogger;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.util.ConnectionTrackingDriverFactory;
 import org.neo4j.driver.internal.util.FakeClock;
+import org.neo4j.driver.internal.util.ThrowingConnection;
+import org.neo4j.driver.internal.util.ThrowingConnectionDriverFactory;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.Config;
@@ -487,6 +489,74 @@ public class CausalClusteringIT
                 assertEquals( count, threadCount );
             }
         }
+    }
+
+    @Test
+    public void shouldAllowExistingTransactionToCompleteAfterDifferentConnectionBreaks()
+    {
+        Cluster cluster = clusterRule.getCluster();
+        ClusterMember leader = cluster.leader();
+
+        ThrowingConnectionDriverFactory driverFactory = new ThrowingConnectionDriverFactory();
+        RoutingSettings routingSettings = new RoutingSettings( 1, SECONDS.toMillis( 5 ), null );
+        Config config = Config.build().toConfig();
+
+        try ( Driver driver = driverFactory.newInstance( leader.getRoutingUri(), clusterRule.getDefaultAuthToken(),
+                routingSettings, RetrySettings.DEFAULT, config ) )
+        {
+            Session session1 = driver.session();
+            Transaction tx1 = session1.beginTransaction();
+            tx1.run( "CREATE (n:Node1 {name: 'Node1'})" ).consume();
+
+            Session session2 = driver.session();
+            Transaction tx2 = session2.beginTransaction();
+            tx2.run( "CREATE (n:Node2 {name: 'Node2'})" ).consume();
+
+            ServiceUnavailableException error = new ServiceUnavailableException( "Connection broke!" );
+            setupLastConnectionToThrow( driverFactory, error );
+            assertUnableToRunMoreStatementsInTx( tx2, error );
+
+            closeTx( tx2 );
+            closeTx( tx1 );
+
+            // tx1 should not be terminated and should commit successfully
+            assertEquals( 1, countNodes( session1, "Node1", "name", "Node1" ) );
+            // tx2 should not commit because of a connection failure
+            assertEquals( 0, countNodes( session1, "Node2", "name", "Node2" ) );
+
+            // rediscovery should happen for the new write query
+            try ( Session session3 = driver.session() )
+            {
+                session3.run( "CREATE (n:Node3 {name: 'Node3'})" ).consume();
+            }
+            assertEquals( 1, countNodes( session1, "Node3", "name", "Node3" ) );
+        }
+    }
+
+    private static void closeTx( Transaction tx )
+    {
+        tx.success();
+        tx.close();
+    }
+
+    private static void assertUnableToRunMoreStatementsInTx( Transaction tx, ServiceUnavailableException cause )
+    {
+        try
+        {
+            tx.run( "CREATE (n:Node3 {name: 'Node3'})" ).consume();
+            fail( "Exception expected" );
+        }
+        catch ( SessionExpiredException e )
+        {
+            assertEquals( cause, e.getCause() );
+        }
+    }
+
+    private static void setupLastConnectionToThrow( ThrowingConnectionDriverFactory factory, RuntimeException error )
+    {
+        List<ThrowingConnection> connections = factory.getConnections();
+        ThrowingConnection lastConnection = connections.get( connections.size() - 1 );
+        lastConnection.setNextRunFailure( error );
     }
 
     private int executeWriteAndReadThroughBolt( ClusterMember member ) throws TimeoutException, InterruptedException

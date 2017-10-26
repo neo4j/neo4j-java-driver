@@ -71,14 +71,15 @@ import static org.neo4j.driver.v1.AccessMode.WRITE;
 public class LoadBalancerTest
 {
     @Test
-    public void ensureRoutingShouldUpdateRoutingTableAndPurgeConnectionPoolWhenStale() throws Exception
+    public void ensureRoutingShouldUpdateRoutingTableAndPassivateConnectionPoolWhenStale() throws Exception
     {
         // given
         ConnectionPool conns = mock( ConnectionPool.class );
         RoutingTable routingTable = mock( RoutingTable.class );
         Rediscovery rediscovery = mock( Rediscovery.class );
         Set<BoltServerAddress> set = singleton( new BoltServerAddress( "abc", 12 ) );
-        when( routingTable.update( any( ClusterComposition.class ) ) ).thenReturn( set );
+        RoutingTableChange updateResult = new RoutingTableChange( new HashSet<BoltServerAddress>(), set );
+        when( routingTable.update( any( ClusterComposition.class ) ) ).thenReturn( updateResult );
 
         // when
         LoadBalancer balancer = new LoadBalancer( conns, routingTable, rediscovery, DEV_NULL_LOGGER );
@@ -88,7 +89,7 @@ public class LoadBalancerTest
         InOrder inOrder = inOrder( rediscovery, routingTable, conns );
         inOrder.verify( rediscovery ).lookupClusterComposition( routingTable, conns );
         inOrder.verify( routingTable ).update( any( ClusterComposition.class ) );
-        inOrder.verify( conns ).purge( new BoltServerAddress( "abc", 12 ) );
+        inOrder.verify( conns ).passivate( new BoltServerAddress( "abc", 12 ) );
     }
 
     @Test
@@ -149,6 +150,7 @@ public class LoadBalancerTest
     public void shouldForgetAddressAndItsConnectionsOnServiceUnavailableWhileClosingTx()
     {
         RoutingTable routingTable = mock( RoutingTable.class );
+        when( routingTable.update( any( ClusterComposition.class ) ) ).thenReturn( RoutingTableChange.EMPTY );
         ConnectionPool connectionPool = mock( ConnectionPool.class );
         Rediscovery rediscovery = mock( Rediscovery.class );
         LoadBalancer loadBalancer = new LoadBalancer( connectionPool, routingTable, rediscovery, DEV_NULL_LOGGER );
@@ -170,11 +172,11 @@ public class LoadBalancerTest
         }
 
         verify( routingTable ).forget( address );
-        verify( connectionPool ).purge( address );
+        verify( connectionPool ).passivate( address );
     }
 
     @Test
-    public void shouldForgetAddressAndItsConnectionsOnServiceUnavailableWhileClosingSession()
+    public void shouldForgetAddressAndItsIdleConnectionsOnServiceUnavailableWhileClosingSession()
     {
         RoutingTable routingTable = mock( RoutingTable.class, RETURNS_MOCKS );
         ConnectionPool connectionPool = mock( ConnectionPool.class );
@@ -191,7 +193,7 @@ public class LoadBalancerTest
         session.close();
 
         verify( routingTable ).forget( address );
-        verify( connectionPool ).purge( address );
+        verify( connectionPool ).passivate( address );
     }
 
     @Test
@@ -223,6 +225,7 @@ public class LoadBalancerTest
     {
         ConnectionPool connections = mock( ConnectionPool.class );
         RoutingTable routingTable = mock( RoutingTable.class );
+        when( routingTable.update( any( ClusterComposition.class ) ) ).thenReturn( RoutingTableChange.EMPTY );
         when( routingTable.isStaleFor( any( AccessMode.class ) ) ).thenReturn( true );
         Rediscovery rediscovery = mock( Rediscovery.class );
         when( routingTable.readers() ).thenReturn( new RoundRobinAddressSet() );
@@ -307,6 +310,7 @@ public class LoadBalancerTest
         when( readerAddrs.next() ).thenReturn( reader );
 
         RoutingTable routingTable = mock( RoutingTable.class );
+        when( routingTable.update( any( ClusterComposition.class ) ) ).thenReturn( RoutingTableChange.EMPTY );
         when( routingTable.readers() ).thenReturn( readerAddrs );
         when( routingTable.writers() ).thenReturn( writerAddrs );
 
@@ -334,10 +338,11 @@ public class LoadBalancerTest
     {
         RoutingTable routingTable = mock( RoutingTable.class );
         when( routingTable.isStaleFor( mode ) ).thenReturn( true );
-        when( routingTable.update( any( ClusterComposition.class ) ) ).thenReturn( new HashSet<BoltServerAddress>() );
+        when( routingTable.update( any( ClusterComposition.class ) ) ).thenReturn( RoutingTableChange.EMPTY );
 
         RoundRobinAddressSet addresses = new RoundRobinAddressSet();
-        addresses.update( new HashSet<>( singletonList( LOCAL_DEFAULT ) ), new HashSet<BoltServerAddress>() );
+        addresses.update( new HashSet<>( singletonList( LOCAL_DEFAULT ) ), new HashSet<BoltServerAddress>(),
+                new HashSet<BoltServerAddress>() );
         when( routingTable.readers() ).thenReturn( addresses );
         when( routingTable.writers() ).thenReturn( addresses );
 

@@ -18,6 +18,9 @@
  */
 package org.neo4j.driver.internal.net.pooling;
 
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -90,9 +93,46 @@ public class SocketConnectionPool implements ConnectionPool
     }
 
     @Override
+    public void activate( BoltServerAddress address )
+    {
+        BlockingPooledConnectionQueue connectionQueue = pools.get( address );
+        if ( connectionQueue != null )
+        {
+            connectionQueue.activate();
+        }
+    }
+
+    @Override
+    public void passivate( BoltServerAddress address )
+    {
+        BlockingPooledConnectionQueue connections = pools.get( address );
+        if ( connections != null )
+        {
+            connections.passivate();
+        }
+    }
+
+    @Override
+    public void compact()
+    {
+        for ( Map.Entry<BoltServerAddress,BlockingPooledConnectionQueue> entry : pools.entrySet() )
+        {
+            BoltServerAddress address = entry.getKey();
+            BlockingPooledConnectionQueue queue = entry.getValue();
+
+            if ( !queue.isActive() && queue.activeConnections() == 0 )
+            {
+                // queue has been in passive state and has no open connections by now
+                pools.remove( address );
+            }
+        }
+    }
+
+    @Override
     public boolean hasAddress( BoltServerAddress address )
     {
-        return pools.containsKey( address );
+        BlockingPooledConnectionQueue connectionQueue = pools.get( address );
+        return connectionQueue != null && connectionQueue.isActive();
     }
 
     @Override
@@ -112,7 +152,17 @@ public class SocketConnectionPool implements ConnectionPool
     public int activeConnections( BoltServerAddress address )
     {
         BlockingPooledConnectionQueue connectionQueue = pools.get( address );
-        return connectionQueue == null ? 0 : connectionQueue.activeConnections();
+        if ( connectionQueue == null || !connectionQueue.isActive() )
+        {
+            return 0;
+        }
+        return connectionQueue.activeConnections();
+    }
+
+    // test-only accessor
+    Set<BoltServerAddress> addresses()
+    {
+        return Collections.unmodifiableSet( pools.keySet() );
     }
 
     private BlockingPooledConnectionQueue pool( BoltServerAddress address )

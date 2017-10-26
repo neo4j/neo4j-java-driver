@@ -18,7 +18,6 @@
  */
 package org.neo4j.driver.internal.net.pooling;
 
-
 import org.junit.Test;
 
 import org.neo4j.driver.internal.spi.Connection;
@@ -29,11 +28,13 @@ import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.RETURNS_MOCKS;
@@ -94,11 +95,11 @@ public class BlockingPooledConnectionQueueTest
         BlockingPooledConnectionQueue queue = newConnectionQueue( 2 );
         queue.offer( connection1 );
         queue.offer( connection2 );
-        assertThat( queue.size(), equalTo( 2 ) );
+        assertThat( queue.idleConnections(), equalTo( 2 ) );
 
         // When
         queue.acquire( supplier );
-        assertThat( queue.size(), equalTo( 1 ) );
+        assertThat( queue.idleConnections(), equalTo( 1 ) );
         queue.terminate();
 
         // Then
@@ -207,7 +208,7 @@ public class BlockingPooledConnectionQueueTest
 
         queue.terminate();
 
-        assertEquals( 0, queue.size() );
+        assertEquals( 0, queue.idleConnections() );
     }
 
     @Test
@@ -300,6 +301,46 @@ public class BlockingPooledConnectionQueueTest
         verify( connection ).dispose();
     }
 
+    @Test
+    public void shouldFailToAcquireConnectionWhenPassive()
+    {
+        Supplier<PooledConnection> connectionSupplier = connectionSupplierMock();
+        when( connectionSupplier.get() ).thenReturn( mock( PooledConnection.class ) );
+        BlockingPooledConnectionQueue queue = newConnectionQueue( 3 );
+        queue.passivate();
+
+        try
+        {
+            queue.acquire( connectionSupplier );
+            fail( "Exception expected" );
+        }
+        catch ( IllegalStateException e )
+        {
+            assertThat( e.getMessage(), startsWith( "Pool is passivated" ) );
+        }
+    }
+
+    @Test
+    public void shouldTerminateOfferedConnectionWhenPassive()
+    {
+        BlockingPooledConnectionQueue queue = newConnectionQueue( 3 );
+        queue.passivate();
+
+        PooledConnection connection = mock( PooledConnection.class );
+        queue.offer( connection );
+
+        verify( connection ).dispose();
+    }
+
+    @Test
+    public void shouldReportWhenActive()
+    {
+        BlockingPooledConnectionQueue queue = newConnectionQueue( 1 );
+        assertTrue( queue.isActive() );
+        queue.passivate();
+        assertFalse( queue.isActive() );
+    }
+
     private static BlockingPooledConnectionQueue newConnectionQueue( int capacity )
     {
         return newConnectionQueue( capacity, mock( Logging.class, RETURNS_MOCKS ) );
@@ -308,5 +349,11 @@ public class BlockingPooledConnectionQueueTest
     private static BlockingPooledConnectionQueue newConnectionQueue( int capacity, Logging logging )
     {
         return new BlockingPooledConnectionQueue( LOCAL_DEFAULT, capacity, logging );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    private static Supplier<PooledConnection> connectionSupplierMock()
+    {
+        return mock( Supplier.class );
     }
 }

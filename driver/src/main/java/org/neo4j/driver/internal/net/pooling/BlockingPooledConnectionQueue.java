@@ -18,9 +18,7 @@
  */
 package org.neo4j.driver.internal.net.pooling;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -46,6 +44,7 @@ public class BlockingPooledConnectionQueue
     private final BlockingQueue<PooledConnection> queue;
     private final Logger logger;
 
+    private final AtomicBoolean isPassive = new AtomicBoolean( false );
     private final AtomicBoolean isTerminating = new AtomicBoolean( false );
 
     /** Keeps track of acquired connections */
@@ -69,15 +68,13 @@ public class BlockingPooledConnectionQueue
         acquiredConnections.remove( pooledConnection );
         boolean offer = queue.offer( pooledConnection );
         // not added back to the queue, dispose of the connection
-        if (!offer) {
-            pooledConnection.dispose();
+        if ( !offer )
+        {
+            disposeSafely( pooledConnection );
         }
-        if (isTerminating.get()) {
-            PooledConnection connection = queue.poll();
-            if (connection != null)
-            {
-                connection.dispose();
-            }
+        if ( isPassive.get() || isTerminating.get() )
+        {
+            terminateIdleConnections();
         }
         return offer;
     }
@@ -89,7 +86,6 @@ public class BlockingPooledConnectionQueue
      */
     public PooledConnection acquire( Supplier<PooledConnection> supplier )
     {
-
         PooledConnection connection = queue.poll();
         if ( connection == null )
         {
@@ -97,12 +93,22 @@ public class BlockingPooledConnectionQueue
         }
         acquiredConnections.add( connection );
 
-        if (isTerminating.get()) {
+        if ( isPassive.get() || isTerminating.get() )
+        {
             acquiredConnections.remove( connection );
-            connection.dispose();
-            throw new IllegalStateException( "Pool has been closed, cannot acquire new values." );
+            disposeSafely( connection );
+            throw new IllegalStateException( "Pool is " + (isPassive.get() ? "passivated" : "terminated") + ", " +
+                                             "new connections can't be acquired" );
         }
-        return connection;
+        else
+        {
+            return connection;
+        }
+    }
+
+    public int idleConnections()
+    {
+        return queue.size();
     }
 
     public int activeConnections()
@@ -116,19 +122,27 @@ public class BlockingPooledConnectionQueue
         disposeSafely( connection );
     }
 
-    public boolean isEmpty()
-    {
-        return queue.isEmpty();
-    }
-
-    public int size()
-    {
-        return queue.size();
-    }
-
     public boolean contains( PooledConnection pooledConnection )
     {
         return queue.contains( pooledConnection );
+    }
+
+    public void activate()
+    {
+        isPassive.compareAndSet( true, false );
+    }
+
+    public void passivate()
+    {
+        if ( isPassive.compareAndSet( false, true ) )
+        {
+            terminateIdleConnections();
+        }
+    }
+
+    public boolean isActive()
+    {
+        return !isPassive.get();
     }
 
     /**
@@ -141,15 +155,25 @@ public class BlockingPooledConnectionQueue
     {
         if ( isTerminating.compareAndSet( false, true ) )
         {
-            while ( !queue.isEmpty() )
-            {
-                PooledConnection idleConnection = queue.poll();
-                disposeSafely( idleConnection );
-            }
-            for ( PooledConnection acquiredConnection : acquiredConnections )
-            {
-                disposeSafely( acquiredConnection );
-            }
+            terminateIdleConnections();
+            terminateAcquiredConnections();
+        }
+    }
+
+    private void terminateIdleConnections()
+    {
+        while ( !queue.isEmpty() )
+        {
+            PooledConnection idleConnection = queue.poll();
+            disposeSafely( idleConnection );
+        }
+    }
+
+    private void terminateAcquiredConnections()
+    {
+        for ( PooledConnection acquiredConnection : acquiredConnections )
+        {
+            disposeSafely( acquiredConnection );
         }
     }
 

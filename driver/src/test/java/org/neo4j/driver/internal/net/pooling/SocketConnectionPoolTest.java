@@ -25,6 +25,7 @@ import org.mockito.stubbing.Answer;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -46,7 +47,9 @@ import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Value;
 
+import static java.util.Arrays.asList;
 import static java.util.Collections.newSetFromMap;
+import static java.util.Collections.singleton;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.isOneOf;
 import static org.hamcrest.Matchers.not;
@@ -108,7 +111,7 @@ public class SocketConnectionPoolTest
     }
 
     @Test
-    public void purgeDoesNothingForNonExistingAddress()
+    public void passivateDoesNothingForNonExistingAddress()
     {
         Connection connection = newConnectionMock( ADDRESS_1 );
         SocketConnectionPool pool = newPool( newMockConnector( connection ) );
@@ -116,12 +119,12 @@ public class SocketConnectionPoolTest
         pool.acquire( ADDRESS_1 ).close();
 
         assertTrue( pool.hasAddress( ADDRESS_1 ) );
-        pool.purge( ADDRESS_2 );
+        pool.passivate( ADDRESS_2 );
         assertTrue( pool.hasAddress( ADDRESS_1 ) );
     }
 
     @Test
-    public void purgeRemovesAddress()
+    public void passivateRemovesAddress()
     {
         Connection connection = newConnectionMock( ADDRESS_1 );
         SocketConnectionPool pool = newPool( newMockConnector( connection ) );
@@ -129,12 +132,12 @@ public class SocketConnectionPoolTest
         pool.acquire( ADDRESS_1 ).close();
 
         assertTrue( pool.hasAddress( ADDRESS_1 ) );
-        pool.purge( ADDRESS_1 );
+        pool.passivate( ADDRESS_1 );
         assertFalse( pool.hasAddress( ADDRESS_1 ) );
     }
 
     @Test
-    public void purgeTerminatesPoolCorrespondingToTheAddress()
+    public void passivateTerminatesIdleConnectionsInThePoolCorrespondingToTheAddress()
     {
         Connection connection1 = newConnectionMock( ADDRESS_1 );
         Connection connection2 = newConnectionMock( ADDRESS_1 );
@@ -149,11 +152,11 @@ public class SocketConnectionPoolTest
         pooledConnection1.close();
         pooledConnection2.close();
 
-        pool.purge( ADDRESS_1 );
+        pool.passivate( ADDRESS_1 );
 
         verify( connection1 ).close();
         verify( connection2 ).close();
-        verify( connection3 ).close();
+        verify( connection3, never() ).close();
     }
 
     @Test
@@ -585,6 +588,88 @@ public class SocketConnectionPoolTest
 
         assertEquals( 0, pool.activeConnections( ADDRESS_1 ) );
         verify( connection ).close();
+    }
+
+    @Test
+    public void shouldPassivateExistingPool()
+    {
+        SocketConnectionPool pool = newPool( newMockConnector() );
+
+        assertNotNull( pool.acquire( ADDRESS_1 ) );
+        assertTrue( pool.hasAddress( ADDRESS_1 ) );
+        assertEquals( 1, pool.activeConnections( ADDRESS_1 ) );
+
+        pool.passivate( ADDRESS_1 );
+        assertFalse( pool.hasAddress( ADDRESS_1 ) );
+        assertEquals( 0, pool.activeConnections( ADDRESS_1 ) );
+    }
+
+    @Test
+    public void shouldPassivateNothingWhenPoolDoesNotExist()
+    {
+        SocketConnectionPool pool = newPool( newMockConnector() );
+
+        assertFalse( pool.hasAddress( ADDRESS_1 ) );
+        assertEquals( 0, pool.activeConnections( ADDRESS_1 ) );
+
+        pool.passivate( ADDRESS_1 );
+
+        assertFalse( pool.hasAddress( ADDRESS_1 ) );
+        assertEquals( 0, pool.activeConnections( ADDRESS_1 ) );
+    }
+
+    @Test
+    public void shouldActivateExistingPool()
+    {
+        SocketConnectionPool pool = newPool( newMockConnector() );
+        assertNotNull( pool.acquire( ADDRESS_1 ) );
+
+        pool.passivate( ADDRESS_1 );
+        pool.activate( ADDRESS_1 );
+
+        assertTrue( pool.hasAddress( ADDRESS_1 ) );
+        assertEquals( 1, pool.activeConnections( ADDRESS_1 ) );
+    }
+
+    @Test
+    public void shouldActivateNothingWhenPoolDoesNotExist()
+    {
+        SocketConnectionPool pool = newPool( newMockConnector() );
+
+        assertFalse( pool.hasAddress( ADDRESS_1 ) );
+        assertEquals( 0, pool.activeConnections( ADDRESS_1 ) );
+
+        pool.activate( ADDRESS_1 );
+
+        assertFalse( pool.hasAddress( ADDRESS_1 ) );
+        assertEquals( 0, pool.activeConnections( ADDRESS_1 ) );
+    }
+
+    @Test
+    public void shouldRemovePassivePoolsWithoutConnectionsWhenCompacting()
+    {
+        SocketConnectionPool pool = newPool( newMockConnector( newConnectionMock( ADDRESS_1 ),
+                newConnectionMock( ADDRESS_1 ), newConnectionMock( ADDRESS_2 ), newConnectionMock( ADDRESS_3 ) ) );
+
+        PooledConnection connection1 = pool.acquire( ADDRESS_1 );
+        PooledConnection connection2 = pool.acquire( ADDRESS_1 );
+        PooledConnection connection3 = pool.acquire( ADDRESS_2 );
+        PooledConnection connection4 = pool.acquire( ADDRESS_3 );
+
+        assertEquals( new HashSet<>( asList( ADDRESS_1, ADDRESS_2, ADDRESS_3 ) ), pool.addresses() );
+
+        pool.passivate( ADDRESS_1 );
+        pool.passivate( ADDRESS_3 );
+
+        connection1.close();
+        connection2.close();
+        connection4.close();
+
+        assertEquals( new HashSet<>( asList( ADDRESS_1, ADDRESS_2, ADDRESS_3 ) ), pool.addresses() );
+
+        pool.compact();
+
+        assertEquals( singleton( ADDRESS_2 ), pool.addresses() );
     }
 
     private static Answer<Connection> createConnectionAnswer( final Set<Connection> createdConnections )

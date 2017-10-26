@@ -43,7 +43,8 @@ public class ClusterRoutingTable implements RoutingTable
     public ClusterRoutingTable( Clock clock, BoltServerAddress... routingAddresses )
     {
         this( clock );
-        routers.update( new LinkedHashSet<>( asList( routingAddresses ) ), new HashSet<BoltServerAddress>() );
+        routers.update( new LinkedHashSet<>( asList( routingAddresses ) ), new HashSet<BoltServerAddress>(),
+                new HashSet<BoltServerAddress>() );
     }
 
     private ClusterRoutingTable( Clock clock )
@@ -66,14 +67,16 @@ public class ClusterRoutingTable implements RoutingTable
     }
 
     @Override
-    public synchronized Set<BoltServerAddress> update( ClusterComposition cluster )
+    public synchronized RoutingTableChange update( ClusterComposition cluster )
     {
         expirationTimeout = cluster.expirationTimestamp();
+        // todo: what if server is added as reader and removed as writer? we should not treat it as removed
+        Set<BoltServerAddress> added = new HashSet<>();
         Set<BoltServerAddress> removed = new HashSet<>();
-        readers.update( cluster.readers(), removed );
-        writers.update( cluster.writers(), removed );
-        routers.update( cluster.routers(), removed );
-        return removed;
+        readers.update( cluster.readers(), added, removed );
+        writers.update( cluster.writers(), added, removed );
+        routers.update( cluster.routers(), added, removed );
+        return new RoutingTableChange( added, removed );
     }
 
     @Override

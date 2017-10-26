@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal.cluster;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -55,17 +56,20 @@ public class RoundRobinAddressSet
         return index % divisor;
     }
 
-    public synchronized void update( Set<BoltServerAddress> addresses, Set<BoltServerAddress> removed )
+    public synchronized void update( Set<BoltServerAddress> addresses, Set<BoltServerAddress> added,
+            Set<BoltServerAddress> removed )
     {
         BoltServerAddress[] prev = this.addresses;
         if ( addresses.isEmpty() )
         {
             this.addresses = NONE;
+            Collections.addAll( removed, prev );
             return;
         }
         if ( prev.length == 0 )
         {
             this.addresses = addresses.toArray( NONE );
+            Collections.addAll( added, this.addresses );
             return;
         }
         BoltServerAddress[] copy = null;
@@ -101,6 +105,7 @@ public class RoundRobinAddressSet
         for ( BoltServerAddress address : addresses )
         {
             copy[j++] = address;
+            added.add( address );
         }
         this.addresses = copy;
     }
