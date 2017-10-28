@@ -46,7 +46,7 @@ class LeakLoggingNetworkSession extends NetworkSession
 
     private void logLeakIfNeeded()
     {
-        Boolean isOpen = Futures.getBlocking( currentConnectionIsOpen() );
+        Boolean isOpen = Futures.getBlocking( hasOpenConnection() );
         if ( isOpen )
         {
             logger.error( "Neo4j Session object leaked, please ensure that your application" +

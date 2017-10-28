@@ -34,7 +34,6 @@ import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.spi.ResponseHandler;
-import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.internal.util.Supplier;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Session;
@@ -74,6 +73,7 @@ import static org.neo4j.driver.internal.util.Futures.getBlocking;
 import static org.neo4j.driver.v1.AccessMode.READ;
 import static org.neo4j.driver.v1.AccessMode.WRITE;
 import static org.neo4j.driver.v1.util.TestUtil.connectionMock;
+import static org.neo4j.driver.v1.util.TestUtil.setupSuccessfulPullAll;
 
 public class NetworkSessionTest
 {
@@ -88,8 +88,6 @@ public class NetworkSessionTest
     public void setUp()
     {
         connection = connectionMock();
-        when( connection.releaseNow() ).thenReturn( completedFuture( null ) );
-        when( connection.serverVersion() ).thenReturn( ServerVersion.v3_2_0 );
         connectionProvider = mock( ConnectionProvider.class );
         when( connectionProvider.acquireConnection( any( AccessMode.class ) ) )
                 .thenReturn( completedFuture( connection ) );
@@ -252,7 +250,7 @@ public class NetworkSessionTest
     public void releasesOpenConnectionUsedForRunWhenSessionIsClosed()
     {
         String query = "RETURN 1";
-        setupSuccessfulPullAll( query );
+        setupSuccessfulPullAll( connection, query );
 
         session.run( query );
 
@@ -357,7 +355,7 @@ public class NetworkSessionTest
     public void releasesConnectionWhenTxIsClosed()
     {
         String query = "RETURN 42";
-        setupSuccessfulPullAll( query );
+        setupSuccessfulPullAll( connection, query );
 
         Transaction tx = session.beginTransaction();
         tx.run( query );
@@ -755,6 +753,32 @@ public class NetworkSessionTest
         verifyBeginTx( connection, times( 1 ) );
     }
 
+    @Test
+    public void shouldNotUseReadConnectionForWriteAccessMode()
+    {
+        String readQuery = "RETURN 1";
+        String writeQuery = "CREATE ()";
+
+        Connection readConnection = connectionMock();
+        Connection writeConnection = connectionMock();
+        when( readConnection.tryMarkInUse() ).thenReturn( true ); // allow read connection to always be used
+        when( writeConnection.tryMarkInUse() ).thenReturn( true ); // allow write connection to always be used
+        setupSuccessfulPullAll( readConnection, readQuery );
+        setupSuccessfulPullAll( writeConnection, writeQuery );
+        when( connectionProvider.acquireConnection( READ ) ).thenReturn( completedFuture( readConnection ) );
+        when( connectionProvider.acquireConnection( WRITE ) ).thenReturn( completedFuture( writeConnection ) );
+
+        session.run( readQuery ); // query is executed with default READ access mode
+        session.writeTransaction( tx -> tx.run( writeQuery ) ); // write tx is executed with WRITE access mode
+
+        // auto-commit query and write tx should've used different connections
+        verifyRunAndFlush( readConnection, writeQuery, never() );
+        verifyRunAndFlush( writeConnection, readQuery, never() );
+
+        verifyRunAndFlush( readConnection, readQuery, times( 1 ) );
+        verifyRunAndFlush( writeConnection, writeQuery, times( 1 ) );
+    }
+
     private void testConnectionAcquisition( AccessMode sessionMode, AccessMode transactionMode )
     {
         NetworkSession session = newSession( connectionProvider, sessionMode );
@@ -1028,16 +1052,6 @@ public class NetworkSessionTest
             handler.onFailure( error );
             return null;
         } ).when( connection ).runAndFlush( eq( "BEGIN" ), any(), any(), any() );
-    }
-
-    private void setupSuccessfulPullAll( String query )
-    {
-        doAnswer( invocation ->
-        {
-            ResponseHandler pullAllHandler = invocation.getArgumentAt( 3, ResponseHandler.class );
-            pullAllHandler.onSuccess( emptyMap() );
-            return null;
-        } ).when( connection ).runAndFlush( eq( query ), eq( emptyMap() ), any(), any() );
     }
 
     private static class TxWork implements TransactionWork<Integer>

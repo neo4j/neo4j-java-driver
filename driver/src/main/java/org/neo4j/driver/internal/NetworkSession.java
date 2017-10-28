@@ -65,7 +65,8 @@ public class NetworkSession implements Session
 
     private volatile Bookmark bookmark = Bookmark.empty();
     private volatile CompletionStage<ExplicitTransaction> transactionStage = completedFuture( null );
-    private volatile CompletionStage<Connection> connectionStage = completedFuture( null );
+    private volatile CompletionStage<Connection> readConnectionStage = completedFuture( null );
+    private volatile CompletionStage<Connection> writeConnectionStage = completedFuture( null );
 
     private final AtomicBoolean open = new AtomicBoolean( true );
 
@@ -250,7 +251,7 @@ public class NetworkSession implements Session
 
     private CompletionStage<Void> resetAsync()
     {
-        return releaseConnectionNow().thenCompose( ignore -> existingTransactionOrNull() )
+        return releaseConnections().thenCompose( ignore -> existingTransactionOrNull() )
                 .thenAccept( tx ->
                 {
                     if ( tx != null )
@@ -266,12 +267,14 @@ public class NetworkSession implements Session
         return InternalTypeSystem.TYPE_SYSTEM;
     }
 
-    CompletionStage<Boolean> currentConnectionIsOpen()
+    CompletionStage<Boolean> hasOpenConnection()
     {
-        if ( connectionStage == null )
-        {
-            return completedFuture( false );
-        }
+        return hasOpenConnection( readConnectionStage ).thenCompose( readConnectionOpen ->
+                readConnectionOpen ? completedFuture( true ) : hasOpenConnection( writeConnectionStage ) );
+    }
+
+    private CompletionStage<Boolean> hasOpenConnection( CompletionStage<Connection> connectionStage )
+    {
         return connectionStage.handle( ( connection, error ) ->
                 error == null && // no acquisition error
                 connection != null && // some connection has actually been acquired
@@ -447,10 +450,28 @@ public class NetworkSession implements Session
 
     private CompletionStage<Connection> acquireConnection( AccessMode mode )
     {
-        // memorize in local so same instance is transformed and used in callbacks
-        CompletionStage<Connection> currentAsyncConnectionStage = connectionStage;
+        if ( mode == AccessMode.READ )
+        {
+            CompletionStage<Connection> currentConnectionStage = readConnectionStage;
+            readConnectionStage = acquireConnection( currentConnectionStage, mode );
+            return readConnectionStage;
+        }
+        else if ( mode == AccessMode.WRITE )
+        {
+            CompletionStage<Connection> currentConnectionStage = writeConnectionStage;
+            writeConnectionStage = acquireConnection( currentConnectionStage, mode );
+            return writeConnectionStage;
+        }
+        else
+        {
+            throw new IllegalArgumentException( "Mode '" + mode + "' is not supported" );
+        }
+    }
 
-        connectionStage = currentAsyncConnectionStage
+    private CompletionStage<Connection> acquireConnection( CompletionStage<Connection> currentConnectionStage,
+            AccessMode mode )
+    {
+        return currentConnectionStage
                 .exceptionally( error -> null ) // handle previous acquisition failures
                 .thenCompose( connection ->
                 {
@@ -458,7 +479,7 @@ public class NetworkSession implements Session
                     {
                         // previous acquisition attempt was successful and connection has not been released yet
                         // continue using same connection
-                        return currentAsyncConnectionStage;
+                        return currentConnectionStage;
                     }
                     else
                     {
@@ -467,13 +488,11 @@ public class NetworkSession implements Session
                         return connectionProvider.acquireConnection( mode );
                     }
                 } );
-
-        return connectionStage;
     }
 
     private CompletionStage<Void> releaseResources()
     {
-        return rollbackTransaction().thenCompose( ignore -> releaseConnectionNow() );
+        return rollbackTransaction().thenCompose( ignore -> releaseConnections() );
     }
 
     private CompletionStage<Void> rollbackTransaction()
@@ -493,16 +512,41 @@ public class NetworkSession implements Session
         } );
     }
 
-    private CompletionStage<Void> releaseConnectionNow()
+    private CompletionStage<Void> releaseConnections()
     {
-        return existingConnectionOrNull().thenCompose( connection ->
+        CompletableFuture<Void> result = new CompletableFuture<>();
+        releaseConnection( readConnectionStage ).whenComplete( ( ignore1, readConnectionError ) ->
+                releaseConnection( writeConnectionStage ).whenComplete( ( ignore2, writeConnectionError ) ->
+                        afterConnectionsReleased( result, readConnectionError, writeConnectionError ) ) );
+        return result;
+    }
+
+    private CompletionStage<Void> releaseConnection( CompletionStage<Connection> connectionStage )
+    {
+        return connectionStage.exceptionally( error -> null )
+                .thenCompose( connection -> connection == null ? completedFuture( null ) : connection.releaseNow() );
+    }
+
+    private void afterConnectionsReleased( CompletableFuture<Void> result, Throwable readConnectionError,
+            Throwable writeConnectionError )
+    {
+        if ( readConnectionError != null && writeConnectionError != null )
         {
-            if ( connection != null )
-            {
-                return connection.releaseNow();
-            }
-            return completedFuture( null );
-        } );
+            readConnectionError.addSuppressed( writeConnectionError );
+            result.completeExceptionally( readConnectionError );
+        }
+        else if ( readConnectionError != null )
+        {
+            result.completeExceptionally( readConnectionError );
+        }
+        else if ( writeConnectionError != null )
+        {
+            result.completeExceptionally( writeConnectionError );
+        }
+        else
+        {
+            result.complete( null );
+        }
     }
 
     private CompletionStage<Void> ensureNoOpenTxBeforeRunningQuery()
@@ -533,11 +577,6 @@ public class NetworkSession implements Session
         return transactionStage
                 .exceptionally( error -> null ) // handle previous acquisition failures
                 .thenApply( tx -> tx != null && tx.isOpen() ? tx : null );
-    }
-
-    private CompletionStage<Connection> existingConnectionOrNull()
-    {
-        return connectionStage.exceptionally( error -> null ); // handle previous acquisition failures
     }
 
     private void ensureSessionIsOpen()
