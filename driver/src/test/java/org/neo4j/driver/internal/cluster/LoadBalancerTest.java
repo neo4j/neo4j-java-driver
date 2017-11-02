@@ -341,8 +341,7 @@ public class LoadBalancerTest
         when( routingTable.update( any( ClusterComposition.class ) ) ).thenReturn( RoutingTableChange.EMPTY );
 
         RoundRobinAddressSet addresses = new RoundRobinAddressSet();
-        addresses.update( new HashSet<>( singletonList( LOCAL_DEFAULT ) ), new HashSet<BoltServerAddress>(),
-                new HashSet<BoltServerAddress>() );
+        addresses.update( new HashSet<>( singletonList( LOCAL_DEFAULT ) ));
         when( routingTable.readers() ).thenReturn( addresses );
         when( routingTable.writers() ).thenReturn( addresses );
 
