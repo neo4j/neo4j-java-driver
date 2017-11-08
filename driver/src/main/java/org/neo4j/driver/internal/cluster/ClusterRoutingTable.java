@@ -78,16 +78,17 @@ public class ClusterRoutingTable implements RoutingTable
     public synchronized RoutingTableChange update( ClusterComposition cluster )
     {
         expirationTimeout = cluster.expirationTimestamp();
-        Set<BoltServerAddress> pre = servers();
+        Set<BoltServerAddress> previousServers = servers();
+
         readers.update( cluster.readers() );
         writers.update( cluster.writers() );
         routers.update( cluster.routers() );
-        Set<BoltServerAddress> cur = servers();
+        Set<BoltServerAddress> currentServers = servers();
 
-        Set<BoltServerAddress> added = new HashSet<>( cur );
-        Set<BoltServerAddress> removed = new HashSet<>( pre );
-        added.removeAll( pre );
-        removed.removeAll( cur );
+        Set<BoltServerAddress> added = new HashSet<>( currentServers );
+        Set<BoltServerAddress> removed = new HashSet<>( previousServers );
+        added.removeAll( previousServers );
+        removed.removeAll( currentServers );
         return new RoutingTableChange( added, removed );
     }
 

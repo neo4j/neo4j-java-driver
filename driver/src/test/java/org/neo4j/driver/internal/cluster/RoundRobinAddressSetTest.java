@@ -21,7 +21,7 @@ package org.neo4j.driver.internal.cluster;
 import org.junit.Test;
 
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -50,7 +50,7 @@ public class RoundRobinAddressSetTest
     {
         // given
         RoundRobinAddressSet set = new RoundRobinAddressSet();
-        Set<BoltServerAddress> addresses = new HashSet<>( asList(
+        Set<BoltServerAddress> addresses = new LinkedHashSet<>( asList(
                 new BoltServerAddress( "one" ),
                 new BoltServerAddress( "two" ),
                 new BoltServerAddress( "tre" ) ) );
@@ -78,7 +78,7 @@ public class RoundRobinAddressSetTest
     public void shouldPreserveOrderWhenAdding() throws Exception
     {
         // given
-        HashSet<BoltServerAddress> servers = new HashSet<>( asList(
+        Set<BoltServerAddress> servers = new LinkedHashSet<>( asList(
                 new BoltServerAddress( "one" ),
                 new BoltServerAddress( "two" ),
                 new BoltServerAddress( "tre" ) ) );
@@ -119,7 +119,7 @@ public class RoundRobinAddressSetTest
     public void shouldPreserveOrderWhenRemoving() throws Exception
     {
         // given
-        HashSet<BoltServerAddress> servers = new HashSet<>( asList(
+        Set<BoltServerAddress> servers = new LinkedHashSet<>( asList(
                 new BoltServerAddress( "one" ),
                 new BoltServerAddress( "two" ),
                 new BoltServerAddress( "tre" ) ) );
@@ -151,7 +151,7 @@ public class RoundRobinAddressSetTest
     public void shouldPreserveOrderWhenRemovingThroughUpdate() throws Exception
     {
         // given
-        HashSet<BoltServerAddress> servers = new HashSet<>( asList(
+        Set<BoltServerAddress> servers = new LinkedHashSet<>( asList(
                 new BoltServerAddress( "one" ),
                 new BoltServerAddress( "two" ),
                 new BoltServerAddress( "tre" ) ) );
