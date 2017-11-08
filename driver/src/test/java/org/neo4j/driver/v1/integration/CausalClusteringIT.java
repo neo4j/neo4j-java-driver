@@ -519,17 +519,26 @@ public class CausalClusteringIT
             closeTx( tx2 );
             closeTx( tx1 );
 
-            // tx1 should not be terminated and should commit successfully
-            assertEquals( 1, countNodes( session1, "Node1", "name", "Node1" ) );
-            // tx2 should not commit because of a connection failure
-            assertEquals( 0, countNodes( session1, "Node2", "name", "Node2" ) );
+            try ( Session session3 = driver.session( session1.lastBookmark() ) )
+            {
+                // tx1 should not be terminated and should commit successfully
+                assertEquals( 1, countNodes( session3, "Node1", "name", "Node1" ) );
+                // tx2 should not commit because of a connection failure
+                assertEquals( 0, countNodes( session3, "Node2", "name", "Node2" ) );
+            }
 
             // rediscovery should happen for the new write query
-            try ( Session session3 = driver.session() )
+            String session4Bookmark;
+            try ( Session session4 = driver.session() )
             {
-                session3.run( "CREATE (n:Node3 {name: 'Node3'})" ).consume();
+                session4.run( "CREATE (n:Node3 {name: 'Node3'})" ).consume();
+                session4Bookmark = session4.lastBookmark();
             }
-            assertEquals( 1, countNodes( session1, "Node3", "name", "Node3" ) );
+
+            try ( Session session5 = driver.session( session4Bookmark ) )
+            {
+                assertEquals( 1, countNodes( session5, "Node3", "name", "Node3" ) );
+            }
         }
     }
 
