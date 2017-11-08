@@ -215,4 +215,20 @@ public class ClusterRoutingTableTest
         assertEquals( 2, change.removed().size() );
         assertThat( change.removed(), containsInAnyOrder( A, D ) );
     }
+
+    @Test
+    public void shouldNotRemoveServerIfPreWriterNowReader()
+    {
+        ClusterRoutingTable routingTable = new ClusterRoutingTable( new FakeClock() );
+        routingTable.update( createClusterComposition( singletonList( A ), singletonList( B ), singletonList( C ) ) );
+
+        ClusterComposition newComposition =
+                createClusterComposition( singletonList( D ), singletonList( E ), singletonList( B ) );
+        RoutingTableChange change = routingTable.update( newComposition );
+
+        assertEquals( 2, change.added().size() );
+        assertThat( change.added(), containsInAnyOrder( D, E ) );
+        assertEquals( 2, change.removed().size() );
+        assertThat( change.removed(), containsInAnyOrder( A, C ) );
+    }
 }

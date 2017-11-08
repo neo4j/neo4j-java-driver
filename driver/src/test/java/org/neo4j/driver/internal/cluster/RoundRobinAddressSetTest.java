@@ -21,7 +21,6 @@ package org.neo4j.driver.internal.cluster;
 import org.junit.Test;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -29,7 +28,6 @@ import java.util.Set;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 
 import static java.util.Arrays.asList;
-import static java.util.Collections.singleton;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
@@ -57,7 +55,7 @@ public class RoundRobinAddressSetTest
                 new BoltServerAddress( "two" ),
                 new BoltServerAddress( "tre" ) ) );
 
-        set.update( addresses, new HashSet<BoltServerAddress>(), new HashSet<BoltServerAddress>() );
+        set.update( addresses );
 
         // when
         BoltServerAddress a = set.next();
@@ -85,7 +83,7 @@ public class RoundRobinAddressSetTest
                 new BoltServerAddress( "two" ),
                 new BoltServerAddress( "tre" ) ) );
         RoundRobinAddressSet set = new RoundRobinAddressSet();
-        set.update( servers, new HashSet<BoltServerAddress>(), new HashSet<BoltServerAddress>() );
+        set.update( servers );
 
         List<BoltServerAddress> order = new ArrayList<>();
         for ( int i = 3 * 4 + 1; i-- > 0; )
@@ -100,7 +98,7 @@ public class RoundRobinAddressSetTest
 
         // when
         servers.add( new BoltServerAddress( "fyr" ) );
-        set.update( servers, new HashSet<BoltServerAddress>(), new HashSet<BoltServerAddress>() );
+        set.update( servers );
 
         // then
         assertEquals( order.get( 1 ), set.next() );
@@ -126,7 +124,7 @@ public class RoundRobinAddressSetTest
                 new BoltServerAddress( "two" ),
                 new BoltServerAddress( "tre" ) ) );
         RoundRobinAddressSet set = new RoundRobinAddressSet();
-        set.update( servers, new HashSet<BoltServerAddress>(), new HashSet<BoltServerAddress>() );
+        set.update( servers );
 
         List<BoltServerAddress> order = new ArrayList<>();
         for ( int i = 3 * 2 + 1; i-- > 0; )
@@ -158,7 +156,7 @@ public class RoundRobinAddressSetTest
                 new BoltServerAddress( "two" ),
                 new BoltServerAddress( "tre" ) ) );
         RoundRobinAddressSet set = new RoundRobinAddressSet();
-        set.update( servers, new HashSet<BoltServerAddress>(), new HashSet<BoltServerAddress>() );
+        set.update( servers );
 
         List<BoltServerAddress> order = new ArrayList<>();
         for ( int i = 3 * 2 + 1; i-- > 0; )
@@ -173,7 +171,7 @@ public class RoundRobinAddressSetTest
 
         // when
         servers.remove( order.get( 1 ) );
-        set.update( servers, new HashSet<BoltServerAddress>(), new HashSet<BoltServerAddress>() );
+        set.update( servers );
 
         // then
         assertEquals( order.get( 2 ), set.next() );
@@ -182,106 +180,7 @@ public class RoundRobinAddressSetTest
         assertEquals( order.get( 0 ), set.next() );
     }
 
-    @Test
-    public void shouldRecordRemovedAddressesWhenUpdating() throws Exception
-    {
-        // given
-        RoundRobinAddressSet set = new RoundRobinAddressSet();
-        Set<BoltServerAddress> addresses = new HashSet<>( asList(
-                new BoltServerAddress( "one" ),
-                new BoltServerAddress( "two" ),
-                new BoltServerAddress( "tre" ) ) );
-        set.update( addresses, new HashSet<BoltServerAddress>(), new HashSet<BoltServerAddress>() );
 
-        // when
-        Set<BoltServerAddress> removed = new HashSet<>();
-        Set<BoltServerAddress> newAddresses = new HashSet<>( asList(
-                new BoltServerAddress( "one" ),
-                new BoltServerAddress( "two" ),
-                new BoltServerAddress( "fyr" ) ) );
-        set.update( newAddresses, new HashSet<BoltServerAddress>(), removed );
-
-        // then
-        assertEquals( singleton( new BoltServerAddress( "tre" ) ), removed );
-    }
-
-    @Test
-    public void shouldRecordRemovedAddressesWhenUpdateIsEmpty()
-    {
-        RoundRobinAddressSet set = new RoundRobinAddressSet();
-        Set<BoltServerAddress> addresses = new HashSet<>( asList(
-                new BoltServerAddress( "one" ),
-                new BoltServerAddress( "two" ) ) );
-        set.update( addresses, new HashSet<BoltServerAddress>(), new HashSet<BoltServerAddress>() );
-
-        Set<BoltServerAddress> update = Collections.emptySet();
-        Set<BoltServerAddress> removed = new HashSet<>();
-        set.update( update, new HashSet<BoltServerAddress>(), removed );
-
-        assertEquals( addresses, removed );
-    }
-
-    @Test
-    public void shouldRecordAddedAddressesWhenUpdatingAnEmptySet()
-    {
-        RoundRobinAddressSet set = new RoundRobinAddressSet();
-
-        Set<BoltServerAddress> added1 = new HashSet<>();
-        Set<BoltServerAddress> addresses1 = new HashSet<>( asList(
-                new BoltServerAddress( "one" ),
-                new BoltServerAddress( "two" ),
-                new BoltServerAddress( "tre" ) ) );
-        set.update( addresses1, added1, new HashSet<BoltServerAddress>() );
-
-        assertEquals( addresses1, added1 );
-    }
-
-    @Test
-    public void shouldRecordAddedAddressesWhenUpdating()
-    {
-        RoundRobinAddressSet set = new RoundRobinAddressSet();
-
-        Set<BoltServerAddress> addresses1 = new HashSet<>( asList(
-                new BoltServerAddress( "one" ),
-                new BoltServerAddress( "two" ),
-                new BoltServerAddress( "tre" ) ) );
-        set.update( addresses1, new HashSet<BoltServerAddress>(), new HashSet<BoltServerAddress>() );
-
-        Set<BoltServerAddress> added = new HashSet<>();
-        Set<BoltServerAddress> newAddresses = new HashSet<>( asList(
-                new BoltServerAddress( "one" ),
-                new BoltServerAddress( "tre" ),
-                new BoltServerAddress( "four" ) ) );
-        set.update( newAddresses, added, new HashSet<BoltServerAddress>() );
-
-        assertEquals( singleton( new BoltServerAddress( "four" ) ), added );
-    }
-
-    @Test
-    public void shouldRecordBothAddedAndRemovedAddressesWhenUpdating()
-    {
-        RoundRobinAddressSet set = new RoundRobinAddressSet();
-
-        Set<BoltServerAddress> addresses1 = new HashSet<>( asList(
-                new BoltServerAddress( "one" ),
-                new BoltServerAddress( "two" ),
-                new BoltServerAddress( "three" ) ) );
-        set.update( addresses1, new HashSet<BoltServerAddress>(), new HashSet<BoltServerAddress>() );
-
-        Set<BoltServerAddress> newAddresses = new HashSet<>( asList(
-                new BoltServerAddress( "two" ),
-                new BoltServerAddress( "four" ),
-                new BoltServerAddress( "five" ) ) );
-
-        Set<BoltServerAddress> added = new HashSet<>();
-        Set<BoltServerAddress> removed = new HashSet<>();
-        set.update( newAddresses, added, removed );
-
-        assertEquals(
-                new HashSet<>( asList( new BoltServerAddress( "four" ), new BoltServerAddress( "five" ) ) ), added );
-        assertEquals(
-                new HashSet<>( asList( new BoltServerAddress( "one" ), new BoltServerAddress( "three" ) ) ), removed );
-    }
 
     @Test
     public void shouldPreserveOrderEvenWhenIntegerOverflows() throws Exception
