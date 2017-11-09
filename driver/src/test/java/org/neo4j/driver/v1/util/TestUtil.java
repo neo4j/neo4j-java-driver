@@ -33,11 +33,13 @@ import java.util.concurrent.TimeoutException;
 
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
+import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 
 import static java.util.Collections.emptyMap;
+import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -45,6 +47,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public final class TestUtil
 {
@@ -157,10 +160,12 @@ public final class TestUtil
         setupSuccessfulPullAll( connection, "COMMIT" );
         setupSuccessfulPullAll( connection, "ROLLBACK" );
         setupSuccessfulPullAll( connection, "BEGIN" );
+        when( connection.releaseNow() ).thenReturn( completedFuture( null ) );
+        when( connection.serverVersion() ).thenReturn( ServerVersion.vInDev );
         return connection;
     }
 
-    private static void setupSuccessfulPullAll( Connection connection, String statement )
+    public static void setupSuccessfulPullAll( Connection connection, String statement )
     {
         doAnswer( invocation ->
         {
