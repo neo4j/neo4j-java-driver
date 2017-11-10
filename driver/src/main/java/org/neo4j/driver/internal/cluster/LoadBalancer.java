@@ -118,7 +118,7 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
         }
         else
         {
-            connections.passivate( address );
+            connections.deactivate( address );
         }
     }
 
@@ -159,7 +159,7 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
             }
             for ( BoltServerAddress removedAddress : routingTableChange.removed() )
             {
-                connections.passivate( removedAddress );
+                connections.deactivate( removedAddress );
             }
             connections.compact();
         }

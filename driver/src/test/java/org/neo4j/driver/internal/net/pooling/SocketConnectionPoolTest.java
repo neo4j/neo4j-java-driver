@@ -111,7 +111,7 @@ public class SocketConnectionPoolTest
     }
 
     @Test
-    public void passivateDoesNothingForNonExistingAddress()
+    public void deactivateDoesNothingForNonExistingAddress()
     {
         Connection connection = newConnectionMock( ADDRESS_1 );
         SocketConnectionPool pool = newPool( newMockConnector( connection ) );
@@ -119,12 +119,12 @@ public class SocketConnectionPoolTest
         pool.acquire( ADDRESS_1 ).close();
 
         assertTrue( pool.hasAddress( ADDRESS_1 ) );
-        pool.passivate( ADDRESS_2 );
+        pool.deactivate( ADDRESS_2 );
         assertTrue( pool.hasAddress( ADDRESS_1 ) );
     }
 
     @Test
-    public void passivateRemovesAddress()
+    public void deactivateRemovesAddress()
     {
         Connection connection = newConnectionMock( ADDRESS_1 );
         SocketConnectionPool pool = newPool( newMockConnector( connection ) );
@@ -132,12 +132,12 @@ public class SocketConnectionPoolTest
         pool.acquire( ADDRESS_1 ).close();
 
         assertTrue( pool.hasAddress( ADDRESS_1 ) );
-        pool.passivate( ADDRESS_1 );
+        pool.deactivate( ADDRESS_1 );
         assertFalse( pool.hasAddress( ADDRESS_1 ) );
     }
 
     @Test
-    public void passivateTerminatesIdleConnectionsInThePoolCorrespondingToTheAddress()
+    public void deactivateTerminatesIdleConnectionsInThePoolCorrespondingToTheAddress()
     {
         Connection connection1 = newConnectionMock( ADDRESS_1 );
         Connection connection2 = newConnectionMock( ADDRESS_1 );
@@ -152,7 +152,7 @@ public class SocketConnectionPoolTest
         pooledConnection1.close();
         pooledConnection2.close();
 
-        pool.passivate( ADDRESS_1 );
+        pool.deactivate( ADDRESS_1 );
 
         verify( connection1 ).close();
         verify( connection2 ).close();
@@ -591,7 +591,7 @@ public class SocketConnectionPoolTest
     }
 
     @Test
-    public void shouldPassivateExistingPool()
+    public void shouldDeactivateExistingPool()
     {
         SocketConnectionPool pool = newPool( newMockConnector() );
 
@@ -599,20 +599,20 @@ public class SocketConnectionPoolTest
         assertTrue( pool.hasAddress( ADDRESS_1 ) );
         assertEquals( 1, pool.activeConnections( ADDRESS_1 ) );
 
-        pool.passivate( ADDRESS_1 );
+        pool.deactivate( ADDRESS_1 );
         assertFalse( pool.hasAddress( ADDRESS_1 ) );
         assertEquals( 0, pool.activeConnections( ADDRESS_1 ) );
     }
 
     @Test
-    public void shouldPassivateNothingWhenPoolDoesNotExist()
+    public void shouldDeactivateNothingWhenPoolDoesNotExist()
     {
         SocketConnectionPool pool = newPool( newMockConnector() );
 
         assertFalse( pool.hasAddress( ADDRESS_1 ) );
         assertEquals( 0, pool.activeConnections( ADDRESS_1 ) );
 
-        pool.passivate( ADDRESS_1 );
+        pool.deactivate( ADDRESS_1 );
 
         assertFalse( pool.hasAddress( ADDRESS_1 ) );
         assertEquals( 0, pool.activeConnections( ADDRESS_1 ) );
@@ -624,7 +624,7 @@ public class SocketConnectionPoolTest
         SocketConnectionPool pool = newPool( newMockConnector() );
         assertNotNull( pool.acquire( ADDRESS_1 ) );
 
-        pool.passivate( ADDRESS_1 );
+        pool.deactivate( ADDRESS_1 );
         pool.activate( ADDRESS_1 );
 
         assertTrue( pool.hasAddress( ADDRESS_1 ) );
@@ -646,7 +646,7 @@ public class SocketConnectionPoolTest
     }
 
     @Test
-    public void shouldRemovePassivePoolsWithoutConnectionsWhenCompacting()
+    public void shouldRemoveDeactivatedPoolsWithoutConnectionsWhenCompacting()
     {
         SocketConnectionPool pool = newPool( newMockConnector( newConnectionMock( ADDRESS_1 ),
                 newConnectionMock( ADDRESS_1 ), newConnectionMock( ADDRESS_2 ), newConnectionMock( ADDRESS_3 ) ) );
@@ -658,8 +658,8 @@ public class SocketConnectionPoolTest
 
         assertEquals( new HashSet<>( asList( ADDRESS_1, ADDRESS_2, ADDRESS_3 ) ), pool.addresses() );
 
-        pool.passivate( ADDRESS_1 );
-        pool.passivate( ADDRESS_3 );
+        pool.deactivate( ADDRESS_1 );
+        pool.deactivate( ADDRESS_3 );
 
         connection1.close();
         connection2.close();

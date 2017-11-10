@@ -71,7 +71,7 @@ import static org.neo4j.driver.v1.AccessMode.WRITE;
 public class LoadBalancerTest
 {
     @Test
-    public void ensureRoutingShouldUpdateRoutingTableAndPassivateConnectionPoolWhenStale() throws Exception
+    public void ensureRoutingShouldUpdateRoutingTableAndDeactivateConnectionPoolWhenStale() throws Exception
     {
         // given
         ConnectionPool conns = mock( ConnectionPool.class );
@@ -89,7 +89,7 @@ public class LoadBalancerTest
         InOrder inOrder = inOrder( rediscovery, routingTable, conns );
         inOrder.verify( rediscovery ).lookupClusterComposition( routingTable, conns );
         inOrder.verify( routingTable ).update( any( ClusterComposition.class ) );
-        inOrder.verify( conns ).passivate( new BoltServerAddress( "abc", 12 ) );
+        inOrder.verify( conns ).deactivate( new BoltServerAddress( "abc", 12 ) );
     }
 
     @Test
@@ -172,7 +172,7 @@ public class LoadBalancerTest
         }
 
         verify( routingTable ).forget( address );
-        verify( connectionPool ).passivate( address );
+        verify( connectionPool ).deactivate( address );
     }
 
     @Test
@@ -193,7 +193,7 @@ public class LoadBalancerTest
         session.close();
 
         verify( routingTable ).forget( address );
-        verify( connectionPool ).passivate( address );
+        verify( connectionPool ).deactivate( address );
     }
 
     @Test

@@ -103,12 +103,12 @@ public class SocketConnectionPool implements ConnectionPool
     }
 
     @Override
-    public void passivate( BoltServerAddress address )
+    public void deactivate( BoltServerAddress address )
     {
         BlockingPooledConnectionQueue connections = pools.get( address );
         if ( connections != null )
         {
-            connections.passivate();
+            connections.deactivate();
         }
     }
 
@@ -122,7 +122,7 @@ public class SocketConnectionPool implements ConnectionPool
 
             if ( !queue.isActive() && queue.activeConnections() == 0 )
             {
-                // queue has been in passive state and has no open connections by now
+                // queue has been in deactivated state and has no open connections by now
                 pools.remove( address );
             }
         }

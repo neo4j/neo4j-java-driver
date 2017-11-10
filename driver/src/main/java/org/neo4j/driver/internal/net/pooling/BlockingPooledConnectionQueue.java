@@ -44,7 +44,7 @@ public class BlockingPooledConnectionQueue
     private final BlockingQueue<PooledConnection> queue;
     private final Logger logger;
 
-    private final AtomicBoolean isPassive = new AtomicBoolean( false );
+    private final AtomicBoolean isDeactivated = new AtomicBoolean( false );
     private final AtomicBoolean isTerminating = new AtomicBoolean( false );
 
     /** Keeps track of acquired connections */
@@ -72,7 +72,7 @@ public class BlockingPooledConnectionQueue
         {
             disposeSafely( pooledConnection );
         }
-        if ( isPassive.get() || isTerminating.get() )
+        if ( isDeactivated.get() || isTerminating.get() )
         {
             terminateIdleConnections();
         }
@@ -93,11 +93,11 @@ public class BlockingPooledConnectionQueue
         }
         acquiredConnections.add( connection );
 
-        if ( isPassive.get() || isTerminating.get() )
+        if ( isDeactivated.get() || isTerminating.get() )
         {
             acquiredConnections.remove( connection );
             disposeSafely( connection );
-            throw new IllegalStateException( "Pool is " + (isPassive.get() ? "passivated" : "terminated") + ", " +
+            throw new IllegalStateException( "Pool is " + (isDeactivated.get() ? "deactivated" : "terminated") + ", " +
                                              "new connections can't be acquired" );
         }
         else
@@ -129,12 +129,12 @@ public class BlockingPooledConnectionQueue
 
     public void activate()
     {
-        isPassive.compareAndSet( true, false );
+        isDeactivated.compareAndSet( true, false );
     }
 
-    public void passivate()
+    public void deactivate()
     {
-        if ( isPassive.compareAndSet( false, true ) )
+        if ( isDeactivated.compareAndSet( false, true ) )
         {
             terminateIdleConnections();
         }
@@ -142,7 +142,7 @@ public class BlockingPooledConnectionQueue
 
     public boolean isActive()
     {
-        return !isPassive.get();
+        return !isDeactivated.get();
     }
 
     /**

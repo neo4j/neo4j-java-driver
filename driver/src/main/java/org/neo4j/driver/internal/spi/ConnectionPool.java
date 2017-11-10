@@ -38,7 +38,7 @@ public interface ConnectionPool extends AutoCloseable
 
     void activate( BoltServerAddress address );
 
-    void passivate( BoltServerAddress address );
+    void deactivate( BoltServerAddress address );
 
     void compact();
 

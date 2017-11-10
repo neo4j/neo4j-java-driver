@@ -302,12 +302,12 @@ public class BlockingPooledConnectionQueueTest
     }
 
     @Test
-    public void shouldFailToAcquireConnectionWhenPassive()
+    public void shouldFailToAcquireConnectionWhenDeactivated()
     {
         Supplier<PooledConnection> connectionSupplier = connectionSupplierMock();
         when( connectionSupplier.get() ).thenReturn( mock( PooledConnection.class ) );
         BlockingPooledConnectionQueue queue = newConnectionQueue( 3 );
-        queue.passivate();
+        queue.deactivate();
 
         try
         {
@@ -316,15 +316,15 @@ public class BlockingPooledConnectionQueueTest
         }
         catch ( IllegalStateException e )
         {
-            assertThat( e.getMessage(), startsWith( "Pool is passivated" ) );
+            assertThat( e.getMessage(), startsWith( "Pool is deactivated" ) );
         }
     }
 
     @Test
-    public void shouldTerminateOfferedConnectionWhenPassive()
+    public void shouldTerminateOfferedConnectionWhenDeactivated()
     {
         BlockingPooledConnectionQueue queue = newConnectionQueue( 3 );
-        queue.passivate();
+        queue.deactivate();
 
         PooledConnection connection = mock( PooledConnection.class );
         queue.offer( connection );
@@ -337,7 +337,7 @@ public class BlockingPooledConnectionQueueTest
     {
         BlockingPooledConnectionQueue queue = newConnectionQueue( 1 );
         assertTrue( queue.isActive() );
-        queue.passivate();
+        queue.deactivate();
         assertFalse( queue.isActive() );
     }
 
