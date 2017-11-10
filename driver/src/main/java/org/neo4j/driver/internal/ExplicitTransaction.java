@@ -35,6 +35,7 @@ import org.neo4j.driver.internal.handlers.RollbackTxResponseHandler;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
+import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
@@ -115,7 +116,17 @@ public class ExplicitTransaction implements Transaction
             CompletableFuture<ExplicitTransaction> beginFuture = new CompletableFuture<>();
             connection.runAndFlush( BEGIN_QUERY, initialBookmark.asBeginTransactionParameters(),
                     NoOpResponseHandler.INSTANCE, new BeginTxResponseHandler<>( beginFuture, this ) );
-            return beginFuture;
+
+            return beginFuture.handle( ( tx, beginError ) ->
+            {
+                if ( beginError != null )
+                {
+                    // release connection if begin failed, transaction can't be started
+                    connection.releaseNow();
+                    throw new CompletionException( Futures.completionErrorCause( beginError ) );
+                }
+                return tx;
+            } );
         }
     }
 

@@ -23,8 +23,10 @@ import org.junit.Test;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -47,6 +49,7 @@ import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.StatementResultCursor;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.TransactionWork;
 import org.neo4j.driver.v1.Values;
@@ -54,6 +57,7 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 import org.neo4j.driver.v1.exceptions.TransientException;
+import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.util.cc.Cluster;
 import org.neo4j.driver.v1.util.cc.ClusterMember;
@@ -65,11 +69,13 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
+import static org.neo4j.driver.internal.util.Futures.getBlocking;
 import static org.neo4j.driver.v1.Values.parameters;
 
 public class CausalClusteringIT
@@ -488,6 +494,63 @@ public class CausalClusteringIT
         }
     }
 
+    @Test
+    public void shouldNotReuseReadConnectionForWriteTransaction()
+    {
+        Cluster cluster = clusterRule.getCluster();
+        ClusterMember leader = cluster.leader();
+
+        try ( Driver driver = createDriver( leader.getRoutingUri() ) )
+        {
+            Session session = driver.session( AccessMode.READ );
+
+            CompletionStage<List<RecordAndSummary>> resultsStage = session.runAsync( "RETURN 42" )
+                    .thenCompose( cursor1 ->
+                            session.writeTransactionAsync( tx -> tx.runAsync( "CREATE (:Node1) RETURN 42" ) )
+                                    .thenCompose( cursor2 -> combineCursors( cursor2, cursor1 ) ) );
+
+            List<RecordAndSummary> results = getBlocking( resultsStage );
+            assertEquals( 2, results.size() );
+
+            RecordAndSummary first = results.get( 0 );
+            RecordAndSummary second = results.get( 1 );
+
+            // both auto-commit query and write tx should return 42
+            assertEquals( 42, first.record.get( 0 ).asInt() );
+            assertEquals( first.record, second.record );
+            // they should not use same server
+            assertNotEquals( first.summary.server().address(), second.summary.server().address() );
+
+            CompletionStage<Integer> countStage =
+                    session.readTransaction( tx -> tx.runAsync( "MATCH (n:Node1) RETURN count(n)" )
+                            .thenCompose( StatementResultCursor::singleAsync ) )
+                            .thenApply( record -> record.get( 0 ).asInt() );
+
+            assertEquals( 1, getBlocking( countStage ).intValue() );
+
+            getBlocking( session.closeAsync() );
+        }
+    }
+
+    private CompletionStage<List<RecordAndSummary>> combineCursors( StatementResultCursor cursor1,
+            StatementResultCursor cursor2 )
+    {
+        return buildRecordAndSummary( cursor1 ).thenCombine( buildRecordAndSummary( cursor2 ),
+                ( rs1, rs2 ) -> Arrays.asList( rs1, rs2 ) );
+    }
+
+    private CompletionStage<RecordAndSummary> buildRecordAndSummary( StatementResultCursor cursor )
+    {
+        return cursor.singleAsync().thenCompose( record ->
+                cursor.summaryAsync().thenApply( summary -> new RecordAndSummary( record, summary ) ) );
+    }
+
+    private CompletionStage<Integer> sumRecordsFrom( StatementResultCursor cursor1, StatementResultCursor cursor2 )
+    {
+        return cursor1.singleAsync().thenCombine( cursor2.singleAsync(),
+                ( record1, record2 ) -> record1.get( 0 ).asInt() + record2.get( 0 ).asInt() );
+    }
+
     private int executeWriteAndReadThroughBolt( ClusterMember member ) throws TimeoutException, InterruptedException
     {
         try ( Driver driver = createDriver( member.getRoutingUri() ) )
@@ -746,5 +809,17 @@ public class CausalClusteringIT
                 }
             }
         };
+    }
+
+    private static class RecordAndSummary
+    {
+        final Record record;
+        final ResultSummary summary;
+
+        RecordAndSummary( Record record, ResultSummary summary )
+        {
+            this.record = record;
+            this.summary = summary;
+        }
     }
 }
