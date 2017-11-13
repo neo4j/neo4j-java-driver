@@ -528,13 +528,7 @@ public class CausalClusteringIT
             }
 
             // rediscovery should happen for the new write query
-            String session4Bookmark;
-            try ( Session session4 = driver.session() )
-            {
-                session4.run( "CREATE (n:Node3 {name: 'Node3'})" ).consume();
-                session4Bookmark = session4.lastBookmark();
-            }
-
+            String session4Bookmark = createNodeAndGetBookmark( driver.session(), "Node3", "name", "Node3" );
             try ( Session session5 = driver.session( session4Bookmark ) )
             {
                 assertEquals( 1, countNodes( session5, "Node3", "name", "Node3" ) );
@@ -810,21 +804,27 @@ public class CausalClusteringIT
             @Override
             public String call()
             {
-                try ( Session session = driver.session() )
-                {
-                    session.writeTransaction( new TransactionWork<Void>()
-                    {
-                        @Override
-                        public Void execute( Transaction tx )
-                        {
-                            tx.run( "CREATE (n:" + label + ") SET n." + property + " = $value",
-                                    parameters( "value", value ) );
-                            return null;
-                        }
-                    } );
-                    return session.lastBookmark();
-                }
+                return createNodeAndGetBookmark( driver.session(), label, property, value );
             }
         };
+    }
+
+    private static String createNodeAndGetBookmark( final Session session, final String label, final String property,
+            final String value )
+    {
+        try ( Session localSession = session )
+        {
+            localSession.writeTransaction( new TransactionWork<Void>()
+            {
+                @Override
+                public Void execute( Transaction tx )
+                {
+                    tx.run( "CREATE (n:" + label + ") SET n." + property + " = $value",
+                            parameters( "value", value ) );
+                    return null;
+                }
+            } );
+            return localSession.lastBookmark();
+        }
     }
 }
