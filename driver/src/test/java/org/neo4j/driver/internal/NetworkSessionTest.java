@@ -663,6 +663,25 @@ public class NetworkSessionTest
         verifyBeginTx( connection, times( 1 ) );
     }
 
+    @Test
+    public void shouldMarkTransactionAsTerminatedAndThenReleaseConnectionOnReset()
+    {
+        NetworkSession session = newSession( connectionProvider, READ );
+        Transaction tx = session.beginTransaction();
+
+        assertTrue( tx.isOpen() );
+        when( connection.releaseNow() ).then( invocation ->
+        {
+            // verify that tx is not open when connection is released
+            assertFalse( tx.isOpen() );
+            return completedFuture( null );
+        } );
+
+        session.reset();
+
+        verify( connection ).releaseNow();
+    }
+
     private void testConnectionAcquisition( AccessMode sessionMode, AccessMode transactionMode )
     {
         NetworkSession session = newSession( connectionProvider, sessionMode );

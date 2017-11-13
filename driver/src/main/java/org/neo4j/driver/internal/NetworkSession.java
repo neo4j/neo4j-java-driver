@@ -254,14 +254,13 @@ public class NetworkSession implements Session
 
     private CompletionStage<Void> resetAsync()
     {
-        return releaseConnectionNow().thenCompose( ignore -> existingTransactionOrNull() )
-                .thenAccept( tx ->
-                {
-                    if ( tx != null )
-                    {
-                        tx.markTerminated();
-                    }
-                } );
+        return existingTransactionOrNull().thenAccept( tx ->
+        {
+            if ( tx != null )
+            {
+                tx.markTerminated();
+            }
+        } ).thenCompose( ignore -> releaseConnectionNow() );
     }
 
     @Override
