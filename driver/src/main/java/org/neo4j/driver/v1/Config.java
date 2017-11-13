@@ -22,9 +22,9 @@ import java.io.File;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
+import org.neo4j.driver.internal.async.pool.PoolSettings;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.logging.JULogging;
-import org.neo4j.driver.internal.async.pool.PoolSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
@@ -412,7 +412,7 @@ public class Config
          * this case, it is recommended to set liveness check to a value smaller than network equipment has and maximum
          * lifetime to a reasonably large value to "renew" connections once in a while.
          * <p>
-         * No maximum lifetime limit is imposed by default. Zero and negative values result in lifetime not being
+         * Default maximum connection lifetime is 1 hour. Zero and negative values result in lifetime not being
          * checked.
          *
          * @param value the maximum connection lifetime
@@ -426,27 +426,64 @@ public class Config
         }
 
         /**
-         * Todo: doc and validation
+         * Configure maximum amount of connections in the connection pool towards a single database. This setting
+         * limits total amount of connections in the pool when used in direct driver, created for URI with 'bolt'
+         * scheme. It will limit amount of connections per cluster member when used with routing driver, created for
+         * URI with 'bolt+routing' scheme.
+         * <p>
+         * Acquisition will be attempted for at most configured timeout
+         * {@link #withConnectionAcquisitionTimeout(long, TimeUnit)} when limit is reached.
+         * <p>
+         * Default value is {@code 100}. Negative values are allowed and result in unlimited pool. Value of {@code 0}
+         * is not allowed.
          *
-         * @param value
-         * @return
+         * @param value the maximum connection pool size.
+         * @return this builder
+         * @see #withConnectionAcquisitionTimeout(long, TimeUnit)
          */
         public ConfigBuilder withMaxConnectionPoolSize( int value )
         {
-            this.maxConnectionPoolSize = value;
+            if ( value == 0 )
+            {
+                throw new IllegalArgumentException( "Zero value is not supported" );
+            }
+            else if ( value < 0 )
+            {
+                this.maxConnectionPoolSize = Integer.MAX_VALUE;
+            }
+            else
+            {
+                this.maxConnectionPoolSize = value;
+            }
             return this;
         }
 
         /**
-         * Todo: doc and validation
+         * Configure maximum amount of time connection acquisition will attempt to acquire a connection from the
+         * connection pool. This timeout only kicks in when all existing connections are being used and no new
+         * connections can be created because maximum connection pool size has been reached.
+         * <p>
+         * Exception is raised when connection can't be acquired within configured time.
+         * <p>
+         * Default value is 60 seconds. Negative values are allowed and result in unlimited acquisition timeout. Value
+         * of {@code 0} is allowed and results in no timeout and immediate failure when connection is unavailable.
          *
-         * @param value
-         * @param unit
-         * @return
+         * @param value the acquisition timeout
+         * @param unit the unit in which the duration is given
+         * @return this builder
+         * @see #withMaxConnectionPoolSize(int)
          */
         public ConfigBuilder withConnectionAcquisitionTimeout( long value, TimeUnit unit )
         {
-            this.connectionAcquisitionTimeoutMillis = unit.toMillis( value );
+            long valueInMillis = unit.toMillis( value );
+            if ( value >= 0 )
+            {
+                this.connectionAcquisitionTimeoutMillis = valueInMillis;
+            }
+            else
+            {
+                this.connectionAcquisitionTimeoutMillis = -1;
+            }
             return this;
         }
 
