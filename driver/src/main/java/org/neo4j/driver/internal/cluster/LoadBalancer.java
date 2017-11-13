@@ -18,8 +18,6 @@
  */
 package org.neo4j.driver.internal.cluster;
 
-import java.util.Set;
-
 import org.neo4j.driver.internal.RoutingErrorHandler;
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.ConnectionPool;
@@ -35,6 +33,7 @@ import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, AutoCloseable
 {
     private static final String LOAD_BALANCER_LOG_NAME = "LoadBalancer";
+    private static final boolean PURGE_ON_ERROR = Boolean.getBoolean( "purgeOnError" );
 
     private final ConnectionPool connections;
     private final RoutingTable routingTable;
@@ -113,8 +112,14 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
     {
         // First remove from the load balancer, to prevent concurrent threads from making connections to them.
         routingTable.forget( address );
-        // drop all current connections to the address
-        connections.purge( address );
+        if ( PURGE_ON_ERROR )
+        {
+            connections.purge( address );
+        }
+        else
+        {
+            connections.deactivate( address );
+        }
     }
 
     synchronized void ensureRouting( AccessMode mode )
@@ -131,14 +136,33 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
 
         // get a new routing table
         ClusterComposition cluster = rediscovery.lookupClusterComposition( routingTable, connections );
-        Set<BoltServerAddress> removed = routingTable.update( cluster );
-        // purge connections to removed addresses
-        for ( BoltServerAddress address : removed )
-        {
-            connections.purge( address );
-        }
+        RoutingTableChange routingTableChange = routingTable.update( cluster );
+        updateConnectionPool( routingTableChange );
 
         log.info( "Refreshed routing information. %s", routingTable );
+    }
+
+    private void updateConnectionPool( RoutingTableChange routingTableChange )
+    {
+        if ( PURGE_ON_ERROR )
+        {
+            for ( BoltServerAddress removedAddress : routingTableChange.removed() )
+            {
+                connections.purge( removedAddress );
+            }
+        }
+        else
+        {
+            for ( BoltServerAddress addedAddress : routingTableChange.added() )
+            {
+                connections.activate( addedAddress );
+            }
+            for ( BoltServerAddress removedAddress : routingTableChange.removed() )
+            {
+                connections.deactivate( removedAddress );
+            }
+            connections.compact();
+        }
     }
 
     private RoundRobinAddressSet addressSetFor( AccessMode mode )

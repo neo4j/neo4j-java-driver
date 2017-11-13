@@ -27,8 +27,10 @@ import org.neo4j.driver.internal.util.FakeClock;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.A;
 import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.B;
@@ -196,5 +198,37 @@ public class ClusterRoutingTableTest
 
         assertFalse( routingTable.isStaleFor( READ ) );
         assertFalse( routingTable.isStaleFor( WRITE ) );
+    }
+
+    @Test
+    public void shouldReturnCorrectChangeWhenUpdated()
+    {
+        ClusterRoutingTable routingTable = new ClusterRoutingTable( new FakeClock() );
+        routingTable.update( createClusterComposition( asList( A, B ), asList( A, C ), asList( C, D ) ) );
+
+        ClusterComposition newComposition =
+                createClusterComposition( asList( E, B, F ), asList( E, C ), asList( C, F ) );
+        RoutingTableChange change = routingTable.update( newComposition );
+
+        assertEquals( 2, change.added().size() );
+        assertThat( change.added(), containsInAnyOrder( E, F ) );
+        assertEquals( 2, change.removed().size() );
+        assertThat( change.removed(), containsInAnyOrder( A, D ) );
+    }
+
+    @Test
+    public void shouldNotRemoveServerIfPreWriterNowReader()
+    {
+        ClusterRoutingTable routingTable = new ClusterRoutingTable( new FakeClock() );
+        routingTable.update( createClusterComposition( singletonList( A ), singletonList( B ), singletonList( C ) ) );
+
+        ClusterComposition newComposition =
+                createClusterComposition( singletonList( D ), singletonList( E ), singletonList( B ) );
+        RoutingTableChange change = routingTable.update( newComposition );
+
+        assertEquals( 2, change.added().size() );
+        assertThat( change.added(), containsInAnyOrder( D, E ) );
+        assertEquals( 2, change.removed().size() );
+        assertThat( change.removed(), containsInAnyOrder( A, C ) );
     }
 }

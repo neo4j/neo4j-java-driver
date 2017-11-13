@@ -43,7 +43,7 @@ public class ClusterRoutingTable implements RoutingTable
     public ClusterRoutingTable( Clock clock, BoltServerAddress... routingAddresses )
     {
         this( clock );
-        routers.update( new LinkedHashSet<>( asList( routingAddresses ) ), new HashSet<BoltServerAddress>() );
+        routers.update( new LinkedHashSet<>( asList( routingAddresses ) ));
     }
 
     private ClusterRoutingTable( Clock clock )
@@ -65,15 +65,31 @@ public class ClusterRoutingTable implements RoutingTable
                mode == AccessMode.WRITE && writers.size() == 0;
     }
 
+    private Set<BoltServerAddress> servers()
+    {
+        Set<BoltServerAddress> servers = new HashSet<>();
+        servers.addAll( readers.servers() );
+        servers.addAll( writers.servers() );
+        servers.addAll( routers.servers() );
+        return servers;
+    }
+
     @Override
-    public synchronized Set<BoltServerAddress> update( ClusterComposition cluster )
+    public synchronized RoutingTableChange update( ClusterComposition cluster )
     {
         expirationTimeout = cluster.expirationTimestamp();
-        Set<BoltServerAddress> removed = new HashSet<>();
-        readers.update( cluster.readers(), removed );
-        writers.update( cluster.writers(), removed );
-        routers.update( cluster.routers(), removed );
-        return removed;
+        Set<BoltServerAddress> previousServers = servers();
+
+        readers.update( cluster.readers() );
+        writers.update( cluster.writers() );
+        routers.update( cluster.routers() );
+        Set<BoltServerAddress> currentServers = servers();
+
+        Set<BoltServerAddress> added = new HashSet<>( currentServers );
+        Set<BoltServerAddress> removed = new HashSet<>( previousServers );
+        added.removeAll( previousServers );
+        removed.removeAll( currentServers );
+        return new RoutingTableChange( added, removed );
     }
 
     @Override

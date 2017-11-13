@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal.cluster;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -45,6 +46,11 @@ public class RoundRobinAddressSet
         return addresses[next( addresses.length )];
     }
 
+    public Set<BoltServerAddress> servers()
+    {
+        return new HashSet<>( Arrays.asList( addresses ) );
+    }
+
     int next( int divisor )
     {
         int index = offset.getAndIncrement();
@@ -55,54 +61,9 @@ public class RoundRobinAddressSet
         return index % divisor;
     }
 
-    public synchronized void update( Set<BoltServerAddress> addresses, Set<BoltServerAddress> removed )
+    public synchronized void update( Set<BoltServerAddress> addresses )
     {
-        BoltServerAddress[] prev = this.addresses;
-        if ( addresses.isEmpty() )
-        {
-            this.addresses = NONE;
-            return;
-        }
-        if ( prev.length == 0 )
-        {
-            this.addresses = addresses.toArray( NONE );
-            return;
-        }
-        BoltServerAddress[] copy = null;
-        if ( addresses.size() != prev.length )
-        {
-            copy = new BoltServerAddress[addresses.size()];
-        }
-        int j = 0;
-        for ( int i = 0; i < prev.length; i++ )
-        {
-            if ( addresses.remove( prev[i] ) )
-            {
-                if ( copy != null )
-                {
-                    copy[j++] = prev[i];
-                }
-            }
-            else
-            {
-                removed.add( prev[i] );
-                if ( copy == null )
-                {
-                    copy = new BoltServerAddress[prev.length];
-                    System.arraycopy( prev, 0, copy, 0, i );
-                    j = i;
-                }
-            }
-        }
-        if ( copy == null )
-        {
-            return;
-        }
-        for ( BoltServerAddress address : addresses )
-        {
-            copy[j++] = address;
-        }
-        this.addresses = copy;
+        this.addresses = addresses.toArray( NONE );
     }
 
     public synchronized void remove( BoltServerAddress address )

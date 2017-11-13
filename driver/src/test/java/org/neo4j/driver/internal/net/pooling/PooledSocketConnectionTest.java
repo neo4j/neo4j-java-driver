@@ -73,7 +73,7 @@ public class PooledSocketConnectionTest
         pooledConnection.close();
 
         // Then
-        assertThat( pool.size(), equalTo( 0 ) );
+        assertThat( pool.idleConnections(), equalTo( 0 ) );
         assertThat( flags[0], equalTo( true ) );
     }
 
@@ -102,7 +102,7 @@ public class PooledSocketConnectionTest
 
         // Then
         assertTrue( pool.contains(pooledConnection));
-        assertThat( pool.size(), equalTo( 1 ) );
+        assertThat( pool.idleConnections(), equalTo( 1 ) );
         assertThat( flags[0], equalTo( false ) );
     }
 
@@ -134,7 +134,7 @@ public class PooledSocketConnectionTest
 
         // Then
         assertTrue( pool.contains(pooledConnection) );
-        assertThat( pool.size(), equalTo( 1 ) );
+        assertThat( pool.idleConnections(), equalTo( 1 ) );
         assertThat( flags[0], equalTo( true ) );
     }
 
@@ -218,7 +218,7 @@ public class PooledSocketConnectionTest
         pooledConnection.close();
 
         // Then
-        assertThat( pool.size(), equalTo( 0 ) );
+        assertThat( pool.idleConnections(), equalTo( 0 ) );
         assertThat( flags[0], equalTo( true ) ); // make sure that the dispose is called
     }
 
@@ -247,7 +247,7 @@ public class PooledSocketConnectionTest
         pooledConnection.close();
 
         // Then
-        assertThat( pool.size(), equalTo( 0 ) );
+        assertThat( pool.idleConnections(), equalTo( 0 ) );
         assertThat( flags[0], equalTo( true ) ); // make sure that the dispose is called
     }
 
