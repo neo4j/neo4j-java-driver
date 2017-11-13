@@ -40,12 +40,6 @@ public class ResetResponseHandler implements ResponseHandler
     private final Promise<Void> releasePromise;
 
     public ResetResponseHandler( Channel channel, ChannelPool pool, InboundMessageDispatcher messageDispatcher,
-            Clock clock )
-    {
-        this( channel, pool, messageDispatcher, clock, null );
-    }
-
-    public ResetResponseHandler( Channel channel, ChannelPool pool, InboundMessageDispatcher messageDispatcher,
             Clock clock, Promise<Void> releasePromise )
     {
         this.channel = channel;

@@ -60,6 +60,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.RETURNS_MOCKS;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -88,7 +89,7 @@ public class NetworkSessionTest
     public void setUp()
     {
         connection = connectionMock();
-        when( connection.releaseNow() ).thenReturn( completedFuture( null ) );
+        when( connection.release() ).thenReturn( completedFuture( null ) );
         when( connection.serverVersion() ).thenReturn( ServerVersion.v3_2_0 );
         connectionProvider = mock( ConnectionProvider.class );
         when( connectionProvider.acquireConnection( any( AccessMode.class ) ) )
@@ -214,7 +215,7 @@ public class NetworkSessionTest
 
         InOrder inOrder = inOrder( connection );
         inOrder.verify( connection ).runAndFlush( eq( "RETURN 1" ), any(), any(), any() );
-        inOrder.verify( connection ).releaseNow();
+        inOrder.verify( connection, atLeastOnce() ).release();
     }
 
     @SuppressWarnings( "deprecation" )
@@ -274,7 +275,7 @@ public class NetworkSessionTest
         verify( connection ).runAndFlush( eq( query ), any(), any(), any() );
 
         tx.close();
-        verify( connection ).releaseInBackground();
+        verify( connection ).release();
     }
 
     @Test
@@ -484,22 +485,18 @@ public class NetworkSessionTest
     }
 
     @Test
-    @SuppressWarnings( "deprecation" )
     public void connectionShouldBeReleasedAfterSessionReset()
     {
         NetworkSession session = newSession( connectionProvider, READ );
         session.run( "RETURN 1" );
 
-        verify( connection, never() ).releaseInBackground();
-        verify( connection, never() ).releaseNow();
+        verify( connection, never() ).release();
 
         session.reset();
-        verify( connection, never() ).releaseInBackground();
-        verify( connection ).releaseNow();
+        verify( connection ).release();
     }
 
     @Test
-    @SuppressWarnings( "deprecation" )
     public void transactionShouldBeRolledBackAfterSessionReset()
     {
         NetworkSession session = newSession( connectionProvider, READ );
@@ -670,7 +667,7 @@ public class NetworkSessionTest
         Transaction tx = session.beginTransaction();
 
         assertTrue( tx.isOpen() );
-        when( connection.releaseNow() ).then( invocation ->
+        when( connection.release() ).then( invocation ->
         {
             // verify that tx is not open when connection is released
             assertFalse( tx.isOpen() );
@@ -679,7 +676,7 @@ public class NetworkSessionTest
 
         session.reset();
 
-        verify( connection ).releaseNow();
+        verify( connection ).release();
     }
 
     private void testConnectionAcquisition( AccessMode sessionMode, AccessMode transactionMode )

@@ -41,7 +41,7 @@ public class SessionPullAllResponseHandlerTest
 
         handler.onSuccess( emptyMap() );
 
-        verify( connection ).releaseInBackground();
+        verify( connection ).release();
     }
 
     @Test
@@ -52,7 +52,7 @@ public class SessionPullAllResponseHandlerTest
 
         handler.onFailure( new RuntimeException() );
 
-        verify( connection ).releaseInBackground();
+        verify( connection ).release();
     }
 
     private SessionPullAllResponseHandler newHandler( Connection connection )

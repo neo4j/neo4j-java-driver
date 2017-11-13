@@ -37,6 +37,7 @@ import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.FakeClock;
+import org.neo4j.driver.internal.util.ServerVersion;
 
 import static java.util.Collections.emptyMap;
 import static org.hamcrest.Matchers.startsWith;
@@ -44,6 +45,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
@@ -77,7 +79,7 @@ public class NettyConnectionTest
     public void shouldNotBeOpenAfterRelease()
     {
         NettyConnection connection = newConnection( new EmbeddedChannel() );
-        connection.releaseNow();
+        connection.release();
         assertFalse( connection.isOpen() );
     }
 
@@ -90,7 +92,7 @@ public class NettyConnectionTest
 
         NettyConnection connection = newConnection( channel );
 
-        connection.releaseNow();
+        connection.release();
         channel.runPendingTasks();
 
         assertEquals( 1, channel.outboundMessages().size() );
@@ -112,15 +114,116 @@ public class NettyConnectionTest
     }
 
     @Test
-    public void shouldWriteReleaseInEventLoopThread() throws Exception
+    public void shouldWriteForceReleaseInEventLoopThread() throws Exception
     {
-        testWriteInEventLoop( "ReleaseTestEventLoop", NettyConnection::releaseInBackground );
+        testWriteInEventLoop( "ReleaseTestEventLoop", NettyConnection::release );
     }
 
     @Test
-    public void shouldWriteForceReleaseInEventLoopThread() throws Exception
+    public void shouldNotEnableAutoReadWhenReleased()
     {
-        testWriteInEventLoop( "ReleaseNowTestEventLoop", NettyConnection::releaseNow );
+        EmbeddedChannel channel = new EmbeddedChannel();
+        channel.config().setAutoRead( false );
+
+        NettyConnection connection = newConnection( channel );
+
+        connection.release();
+
+        try
+        {
+            connection.enableAutoRead();
+            fail( "Exception expected" );
+        }
+        catch ( IllegalStateException e )
+        {
+            assertConnectionReleasedError( e );
+        }
+        assertFalse( channel.config().isAutoRead() );
+    }
+
+    @Test
+    public void shouldNotDisableAutoReadWhenReleased()
+    {
+        EmbeddedChannel channel = new EmbeddedChannel();
+        channel.config().setAutoRead( true );
+
+        NettyConnection connection = newConnection( channel );
+
+        connection.release();
+
+        try
+        {
+            connection.disableAutoRead();
+            fail( "Exception expected" );
+        }
+        catch ( IllegalStateException e )
+        {
+            assertConnectionReleasedError( e );
+        }
+        assertTrue( channel.config().isAutoRead() );
+    }
+
+    @Test
+    public void shouldNotRunWhenReleased()
+    {
+        NettyConnection connection = newConnection( new EmbeddedChannel() );
+
+        connection.release();
+
+        try
+        {
+            connection.run( "RETURN 1", emptyMap(), mock( ResponseHandler.class ), mock( ResponseHandler.class ) );
+            fail( "Exception expected" );
+        }
+        catch ( IllegalStateException e )
+        {
+            assertConnectionReleasedError( e );
+        }
+    }
+
+    @Test
+    public void shouldNotRunAndFlushWhenReleased()
+    {
+        NettyConnection connection = newConnection( new EmbeddedChannel() );
+
+        connection.release();
+
+        try
+        {
+            connection.runAndFlush( "RETURN 1", emptyMap(), mock( ResponseHandler.class ),
+                    mock( ResponseHandler.class ) );
+            fail( "Exception expected" );
+        }
+        catch ( IllegalStateException e )
+        {
+            assertConnectionReleasedError( e );
+        }
+    }
+
+    @Test
+    public void shouldReturnServerAddressWhenReleased()
+    {
+        EmbeddedChannel channel = new EmbeddedChannel();
+        BoltServerAddress address = new BoltServerAddress( "host", 4242 );
+        ChannelAttributes.setServerAddress( channel, address );
+
+        NettyConnection connection = newConnection( channel );
+        connection.release();
+
+        assertEquals( address, connection.serverAddress() );
+    }
+
+    @Test
+    public void shouldReturnServerVersionWhenReleased()
+    {
+        EmbeddedChannel channel = new EmbeddedChannel();
+        ServerVersion version = ServerVersion.v3_2_0;
+        ChannelAttributes.setServerVersion( channel, version );
+
+        NettyConnection connection = newConnection( channel );
+        connection.release();
+
+        assertEquals( version, connection.serverVersion() );
     }
 
     private void testWriteInEventLoop( String threadName, Consumer<NettyConnection> action ) throws Exception
@@ -162,10 +265,15 @@ public class NettyConnectionTest
         return new NettyConnection( channel, mock( ChannelPool.class ), new FakeClock() );
     }
 
+    private static void assertConnectionReleasedError( IllegalStateException e )
+    {
+        assertThat( e.getMessage(), startsWith( "Connection has been released" ) );
+    }
+
     private static class ThreadTrackingInboundMessageDispatcher extends InboundMessageDispatcher
     {
-        final Set<String> queueThreadNames = new ConcurrentSet<>();
 
+        final Set<String> queueThreadNames = new ConcurrentSet<>();
         ThreadTrackingInboundMessageDispatcher( Channel channel )
         {
             super( channel, DEV_NULL_LOGGING );
@@ -177,5 +285,6 @@ public class NettyConnectionTest
             queueThreadNames.add( Thread.currentThread().getName() );
             super.queue( handler );
         }
+
     }
 }

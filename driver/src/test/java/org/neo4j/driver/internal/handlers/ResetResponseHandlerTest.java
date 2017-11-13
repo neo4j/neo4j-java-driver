@@ -25,10 +25,13 @@ import org.junit.After;
 import org.junit.Test;
 
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
+import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.FakeClock;
 
 import static java.util.Collections.emptyMap;
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.driver.internal.async.ChannelAttributes.lastUsedTimestamp;
@@ -50,12 +53,12 @@ public class ResetResponseHandlerTest
         ChannelPool pool = mock( ChannelPool.class );
         FakeClock clock = new FakeClock();
         clock.progress( 5 );
-        ResetResponseHandler handler = new ResetResponseHandler( channel, pool, messageDispatcher, clock );
+        ResetResponseHandler handler = newHandler( pool, clock );
 
         handler.onSuccess( emptyMap() );
 
         verifyLastUsedTimestamp( 5 );
-        verify( pool ).release( channel );
+        verify( pool ).release( eq( channel ), any() );
     }
 
     @Test
@@ -65,7 +68,7 @@ public class ResetResponseHandlerTest
         FakeClock clock = new FakeClock();
         clock.progress( 42 );
         Promise<Void> promise = channel.newPromise();
-        ResetResponseHandler handler = new ResetResponseHandler( channel, pool, messageDispatcher, clock, promise );
+        ResetResponseHandler handler = newHandler( pool, clock, promise );
 
         handler.onSuccess( emptyMap() );
 
@@ -79,12 +82,12 @@ public class ResetResponseHandlerTest
         ChannelPool pool = mock( ChannelPool.class );
         FakeClock clock = new FakeClock();
         clock.progress( 100 );
-        ResetResponseHandler handler = new ResetResponseHandler( channel, pool, messageDispatcher, clock );
+        ResetResponseHandler handler = newHandler( pool, clock );
 
         handler.onFailure( new RuntimeException() );
 
         verifyLastUsedTimestamp( 100 );
-        verify( pool ).release( channel );
+        verify( pool ).release( eq( channel ), any() );
     }
 
     @Test
@@ -94,7 +97,7 @@ public class ResetResponseHandlerTest
         FakeClock clock = new FakeClock();
         clock.progress( 99 );
         Promise<Void> promise = channel.newPromise();
-        ResetResponseHandler handler = new ResetResponseHandler( channel, pool, messageDispatcher, clock, promise );
+        ResetResponseHandler handler = newHandler( pool, clock, promise );
 
         handler.onFailure( new RuntimeException() );
 
@@ -106,7 +109,7 @@ public class ResetResponseHandlerTest
     public void shouldUnMuteAckFailureOnSuccess()
     {
         ChannelPool pool = mock( ChannelPool.class );
-        ResetResponseHandler handler = new ResetResponseHandler( channel, pool, messageDispatcher, new FakeClock() );
+        ResetResponseHandler handler = newHandler( pool, new FakeClock() );
 
         handler.onSuccess( emptyMap() );
 
@@ -117,7 +120,7 @@ public class ResetResponseHandlerTest
     public void shouldUnMuteAckFailureOnFailure()
     {
         ChannelPool pool = mock( ChannelPool.class );
-        ResetResponseHandler handler = new ResetResponseHandler( channel, pool, messageDispatcher, new FakeClock() );
+        ResetResponseHandler handler = newHandler( pool, new FakeClock() );
 
         handler.onFailure( new RuntimeException() );
 
@@ -127,5 +130,15 @@ public class ResetResponseHandlerTest
     private void verifyLastUsedTimestamp( int expectedValue )
     {
         assertEquals( expectedValue, lastUsedTimestamp( channel ).intValue() );
+    }
+
+    private ResetResponseHandler newHandler( ChannelPool pool, Clock clock )
+    {
+        return newHandler( pool, clock, channel.newPromise() );
+    }
+
+    private ResetResponseHandler newHandler( ChannelPool pool, Clock clock, Promise<Void> promise )
+    {
+        return new ResetResponseHandler( channel, pool, messageDispatcher, clock, promise );
     }
 }
