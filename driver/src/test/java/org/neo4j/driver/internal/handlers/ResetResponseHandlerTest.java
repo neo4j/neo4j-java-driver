@@ -41,7 +41,7 @@ public class ResetResponseHandlerTest
     @After
     public void tearDown()
     {
-        channel.close();
+        channel.finishAndReleaseAll();
     }
 
     @Test

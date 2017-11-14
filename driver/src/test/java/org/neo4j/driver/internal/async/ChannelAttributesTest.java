@@ -19,7 +19,6 @@
 package org.neo4j.driver.internal.async;
 
 import io.netty.channel.embedded.EmbeddedChannel;
-import org.junit.After;
 import org.junit.Test;
 
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
@@ -46,12 +45,6 @@ import static org.neo4j.driver.internal.util.ServerVersion.version;
 public class ChannelAttributesTest
 {
     private final EmbeddedChannel channel = new EmbeddedChannel();
-
-    @After
-    public void tearDown() throws Exception
-    {
-        channel.close();
-    }
 
     @Test
     public void shouldSetAndGetAddress()

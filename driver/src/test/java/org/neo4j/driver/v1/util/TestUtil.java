@@ -110,7 +110,7 @@ public final class TestUtil
         }
         finally
         {
-            buf.release();
+            releaseIfPossible( buf );
         }
     }
 
@@ -122,8 +122,8 @@ public final class TestUtil
         }
         finally
         {
-            expected.release();
-            actual.release();
+            releaseIfPossible( expected );
+            releaseIfPossible( actual );
         }
     }
 
@@ -238,6 +238,14 @@ public final class TestUtil
         {
             throw new IllegalArgumentException(
                     "Unexpected number: '" + value + "' or type" + value.getClass() );
+        }
+    }
+
+    private static void releaseIfPossible( ByteBuf buf )
+    {
+        if ( buf.refCnt() > 0 )
+        {
+            buf.release();
         }
     }
 }

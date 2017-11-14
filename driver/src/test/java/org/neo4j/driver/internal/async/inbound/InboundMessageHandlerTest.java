@@ -76,7 +76,7 @@ public class InboundMessageHandlerTest
     {
         if ( channel != null )
         {
-            channel.close();
+            channel.finishAndReleaseAll();
         }
     }
 

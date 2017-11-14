@@ -20,6 +20,7 @@ package org.neo4j.driver.internal.async;
 
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.ssl.SslHandler;
+import org.junit.After;
 import org.junit.Test;
 
 import org.neo4j.driver.internal.security.SecurityPlan;
@@ -31,20 +32,27 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.driver.internal.async.BoltServerAddress.LOCAL_DEFAULT;
 import static org.neo4j.driver.internal.async.ChannelAttributes.creationTimestamp;
 import static org.neo4j.driver.internal.async.ChannelAttributes.messageDispatcher;
 import static org.neo4j.driver.internal.async.ChannelAttributes.serverAddress;
-import static org.neo4j.driver.internal.async.BoltServerAddress.LOCAL_DEFAULT;
 
 public class NettyChannelInitializerTest
 {
+    private final EmbeddedChannel channel = new EmbeddedChannel();
+
+    @After
+    public void tearDown()
+    {
+        channel.finishAndReleaseAll();
+    }
+
     @Test
     public void shouldAddSslHandlerWhenRequiresEncryption() throws Exception
     {
         SecurityPlan security = SecurityPlan.forAllCertificates();
         NettyChannelInitializer initializer = new NettyChannelInitializer( LOCAL_DEFAULT, security, new FakeClock() );
 
-        EmbeddedChannel channel = new EmbeddedChannel();
         initializer.initChannel( channel );
 
         assertNotNull( channel.pipeline().get( SslHandler.class ) );
@@ -56,7 +64,6 @@ public class NettyChannelInitializerTest
         SecurityPlan security = SecurityPlan.insecure();
         NettyChannelInitializer initializer = new NettyChannelInitializer( LOCAL_DEFAULT, security, new FakeClock() );
 
-        EmbeddedChannel channel = new EmbeddedChannel();
         initializer.initChannel( channel );
 
         assertNull( channel.pipeline().get( SslHandler.class ) );
@@ -70,7 +77,6 @@ public class NettyChannelInitializerTest
         SecurityPlan security = SecurityPlan.insecure();
         NettyChannelInitializer initializer = new NettyChannelInitializer( LOCAL_DEFAULT, security, clock );
 
-        EmbeddedChannel channel = new EmbeddedChannel();
         initializer.initChannel( channel );
 
         assertEquals( LOCAL_DEFAULT, serverAddress( channel ) );

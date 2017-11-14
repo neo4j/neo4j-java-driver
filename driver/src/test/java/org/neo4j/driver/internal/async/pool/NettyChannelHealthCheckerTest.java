@@ -38,12 +38,12 @@ import static org.junit.Assert.assertThat;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setCreationTimestamp;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setLastUsedTimestamp;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setMessageDispatcher;
-import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.async.pool.PoolSettings.DEFAULT_CONNECTION_ACQUISITION_TIMEOUT;
 import static org.neo4j.driver.internal.async.pool.PoolSettings.DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST;
 import static org.neo4j.driver.internal.async.pool.PoolSettings.DEFAULT_MAX_CONNECTION_POOL_SIZE;
 import static org.neo4j.driver.internal.async.pool.PoolSettings.DEFAULT_MAX_IDLE_CONNECTION_POOL_SIZE;
 import static org.neo4j.driver.internal.async.pool.PoolSettings.NOT_CONFIGURED;
+import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
@@ -53,15 +53,15 @@ public class NettyChannelHealthCheckerTest
     private final InboundMessageDispatcher dispatcher = new InboundMessageDispatcher( channel, DEV_NULL_LOGGING );
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         setMessageDispatcher( channel, dispatcher );
     }
 
     @After
-    public void tearDown() throws Exception
+    public void tearDown()
     {
-        channel.close();
+        channel.finishAndReleaseAll();
     }
 
     @Test

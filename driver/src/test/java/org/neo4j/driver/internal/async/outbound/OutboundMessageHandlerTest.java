@@ -60,24 +60,18 @@ import static org.neo4j.driver.v1.util.TestUtil.assertByteBufEquals;
 
 public class OutboundMessageHandlerTest
 {
-    private EmbeddedChannel channel;
-    private InboundMessageDispatcher messageDispatcher;
+    private final EmbeddedChannel channel = new EmbeddedChannel();
 
     @Before
     public void setUp()
     {
-        channel = new EmbeddedChannel();
-        messageDispatcher = new InboundMessageDispatcher( channel, DEV_NULL_LOGGING );
-        ChannelAttributes.setMessageDispatcher( channel, messageDispatcher );
+        ChannelAttributes.setMessageDispatcher( channel, new InboundMessageDispatcher( channel, DEV_NULL_LOGGING ) );
     }
 
     @After
     public void tearDown()
     {
-        if ( channel != null )
-        {
-            channel.close();
-        }
+        channel.finishAndReleaseAll();
     }
 
     @Test
