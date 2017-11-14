@@ -42,12 +42,6 @@ public class RoutingConnection implements Connection
     }
 
     @Override
-    public boolean tryMarkInUse()
-    {
-        return delegate.tryMarkInUse();
-    }
-
-    @Override
     public void enableAutoRead()
     {
         delegate.enableAutoRead();
@@ -82,9 +76,9 @@ public class RoutingConnection implements Connection
     }
 
     @Override
-    public boolean isInUse()
+    public boolean isOpen()
     {
-        return delegate.isInUse();
+        return delegate.isOpen();
     }
 
     @Override

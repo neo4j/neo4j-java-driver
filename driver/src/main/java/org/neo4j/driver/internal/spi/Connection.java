@@ -27,9 +27,7 @@ import org.neo4j.driver.v1.Value;
 
 public interface Connection
 {
-    boolean isInUse();
-
-    boolean tryMarkInUse();
+    boolean isOpen();
 
     void enableAutoRead();
 

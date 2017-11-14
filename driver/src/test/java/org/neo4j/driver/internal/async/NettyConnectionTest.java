@@ -40,6 +40,8 @@ import org.neo4j.driver.internal.util.FakeClock;
 
 import static java.util.Collections.emptyMap;
 import static org.hamcrest.Matchers.startsWith;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -47,6 +49,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setMessageDispatcher;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
+import static org.neo4j.driver.internal.messaging.ResetMessage.RESET;
 import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.v1.util.DaemonThreadFactory.daemon;
 
@@ -61,6 +64,37 @@ public class NettyConnectionTest
     public void tearDown() throws Exception
     {
         shutdownEventLoop();
+    }
+
+    @Test
+    public void shouldBeOpenAfterCreated()
+    {
+        NettyConnection connection = newConnection( new EmbeddedChannel() );
+        assertTrue( connection.isOpen() );
+    }
+
+    @Test
+    public void shouldNotBeOpenAfterRelease()
+    {
+        NettyConnection connection = newConnection( new EmbeddedChannel() );
+        connection.releaseNow();
+        assertFalse( connection.isOpen() );
+    }
+
+    @Test
+    public void shouldSendResetOnRelease()
+    {
+        EmbeddedChannel channel = new EmbeddedChannel();
+        InboundMessageDispatcher messageDispatcher = new InboundMessageDispatcher( channel, DEV_NULL_LOGGING );
+        ChannelAttributes.setMessageDispatcher( channel, messageDispatcher );
+
+        NettyConnection connection = newConnection( channel );
+
+        connection.releaseNow();
+        channel.runPendingTasks();
+
+        assertEquals( 1, channel.outboundMessages().size() );
+        assertEquals( RESET, channel.readOutbound() );
     }
 
     @Test

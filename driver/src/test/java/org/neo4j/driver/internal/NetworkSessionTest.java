@@ -203,52 +203,6 @@ public class NetworkSessionTest
     }
 
     @Test
-    public void marksPreviousConnectionInUseForNewRun()
-    {
-        ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
-        Connection connection = mock( Connection.class );
-        when( connection.tryMarkInUse() ).thenReturn( true );
-
-        when( connectionProvider.acquireConnection( READ ) ).thenReturn( completedFuture( connection ) );
-        NetworkSession session = newSession( connectionProvider, READ );
-
-        session.run( "RETURN 1" );
-        verify( connectionProvider ).acquireConnection( READ );
-
-        session.run( "RETURN 2" );
-        verify( connectionProvider ).acquireConnection( READ );
-
-        InOrder inOrder = inOrder( connection );
-        inOrder.verify( connection ).runAndFlush( eq( "RETURN 1" ), any(), any(), any() );
-        inOrder.verify( connection ).tryMarkInUse();
-        inOrder.verify( connection ).runAndFlush( eq( "RETURN 2" ), any(), any(), any() );
-    }
-
-    @Test
-    public void acquiresNewConnectionWhenUnableToUseCurrentOneForRun()
-    {
-        ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
-        Connection connection1 = mock( Connection.class );
-        Connection connection2 = mock( Connection.class );
-        when( connection1.tryMarkInUse() ).thenReturn( false );
-
-        when( connectionProvider.acquireConnection( READ ) )
-                .thenReturn( completedFuture( connection1 ) ).thenReturn( completedFuture( connection2 ) );
-        NetworkSession session = newSession( connectionProvider, READ );
-
-        session.run( "RETURN 1" );
-        verify( connectionProvider ).acquireConnection( READ );
-
-        session.run( "RETURN 2" );
-        verify( connectionProvider, times( 2 ) ).acquireConnection( READ );
-
-        InOrder inOrder = inOrder( connection1, connection2 );
-        inOrder.verify( connection1 ).runAndFlush( eq( "RETURN 1" ), any(), any(), any() );
-        inOrder.verify( connection1 ).tryMarkInUse();
-        inOrder.verify( connection2 ).runAndFlush( eq( "RETURN 2" ), any(), any(), any() );
-    }
-
-    @Test
     public void releasesOpenConnectionUsedForRunWhenSessionIsClosed()
     {
         String query = "RETURN 1";
@@ -293,52 +247,6 @@ public class NetworkSessionTest
 
         assertNotNull( tx );
         verify( connectionProvider ).acquireConnection( READ );
-    }
-
-    @Test
-    public void marksPreviousConnectionInUseForBeginTx()
-    {
-        ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
-        Connection connection = mock( Connection.class );
-        when( connection.tryMarkInUse() ).thenReturn( true );
-
-        when( connectionProvider.acquireConnection( READ ) ).thenReturn( completedFuture( connection ) );
-        NetworkSession session = newSession( connectionProvider, READ );
-
-        session.run( "RETURN 1" );
-        verify( connectionProvider ).acquireConnection( READ );
-        verify( connection ).runAndFlush( eq( "RETURN 1" ), any(), any(), any() );
-
-        Transaction tx = session.beginTransaction();
-        assertNotNull( tx );
-
-        InOrder inOrder = inOrder( connection );
-        inOrder.verify( connection ).runAndFlush( eq( "RETURN 1" ), any(), any(), any() );
-        inOrder.verify( connection ).tryMarkInUse();
-        inOrder.verify( connection ).run( eq( "BEGIN" ), any(), any(), any() );
-    }
-
-    @Test
-    public void acquiresNewConnectionWhenUnableToUseCurrentOneForBeginTx()
-    {
-        ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
-        Connection connection1 = mock( Connection.class );
-        Connection connection2 = mock( Connection.class );
-        when( connection1.tryMarkInUse() ).thenReturn( false );
-
-        when( connectionProvider.acquireConnection( READ ) )
-                .thenReturn( completedFuture( connection1 ) ).thenReturn( completedFuture( connection2 ) );
-        NetworkSession session = newSession( connectionProvider, READ );
-
-        session.run( "RETURN 1" );
-        verify( connectionProvider ).acquireConnection( READ );
-
-        session.beginTransaction();
-
-        InOrder inOrder = inOrder( connection1, connection2 );
-        inOrder.verify( connection1 ).runAndFlush( eq( "RETURN 1" ), any(), any(), any() );
-        inOrder.verify( connection1 ).tryMarkInUse();
-        inOrder.verify( connection2 ).run( eq( "BEGIN" ), any(), any(), any() );
     }
 
     @Test

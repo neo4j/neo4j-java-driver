@@ -63,7 +63,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.driver.v1.Config.defaultConfig;
 import static org.neo4j.driver.v1.Values.parameters;
@@ -199,39 +198,6 @@ public class ConnectionHandlingIT
 
         Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
         assertSame( connection1, connection2 );
-        verify( connection1 ).releaseInBackground();
-    }
-
-    @Test
-    public void activeConnectionFromSessionRunCanBeReusedForNextSessionRun()
-    {
-        Session session = driver.session();
-
-        StatementResult result1 = createNodes( 3, session );
-        Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
-
-        StatementResult result2 = createNodes( 2, session );
-
-        assertEquals( 3, result1.list().size() );
-        assertEquals( 2, result2.list().size() );
-
-        verify( connection1 ).tryMarkInUse();
-        verify( connection1, times( 2 ) ).releaseInBackground();
-    }
-
-    @Test
-    public void activeConnectionFromSessionRunCanBeReusedForNewTransaction()
-    {
-        Session session = driver.session();
-
-        StatementResult result1 = createNodes( 3, session );
-        Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
-
-        session.beginTransaction();
-
-        assertEquals( 3, result1.list().size() );
-
-        verify( connection1 ).tryMarkInUse();
         verify( connection1 ).releaseInBackground();
     }
 

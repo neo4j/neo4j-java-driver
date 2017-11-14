@@ -973,8 +973,6 @@ public class SessionAsyncIT
         session.runAsync( "CREATE ()" );
         session.runAsync( "CREATE ()" );
         session.runAsync( "RETURN invalid" );
-        session.runAsync( "CREATE ()" );
-        session.runAsync( "CREATE ()" );
 
         try
         {
@@ -985,6 +983,49 @@ public class SessionAsyncIT
         {
             assertThat( e.code(), containsString( "SyntaxError" ) );
         }
+    }
+
+    @Test
+    public void shouldCloseCleanlyAfterFailure()
+    {
+        CompletionStage<StatementResultCursor> runWithOpenTx = session.beginTransactionAsync()
+                .thenCompose( tx -> session.runAsync( "RETURN 1" ) );
+
+        try
+        {
+            getBlocking( runWithOpenTx );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e.getMessage(),
+                    startsWith( "Statements cannot be run directly on a session with an open transaction" ) );
+        }
+
+        getBlocking( session.closeAsync() );
+    }
+
+    @Test
+    public void shouldPropagateFailureFromFirstIllegalQuery()
+    {
+        CompletionStage<StatementResultCursor> allStatements = session.runAsync( "CREATE (:Node1)" )
+                .thenCompose( ignore -> session.runAsync( "CREATE (:Node2)" ) )
+                .thenCompose( ignore -> session.runAsync( "RETURN invalid" ) )
+                .thenCompose( ignore -> session.runAsync( "CREATE (:Node3)" ) );
+
+        try
+        {
+            getBlocking( allStatements );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e, is( syntaxError( "Variable `invalid` not defined" ) ) );
+        }
+
+        assertEquals( 1, countNodesByLabel( "Node1" ) );
+        assertEquals( 1, countNodesByLabel( "Node2" ) );
+        assertEquals( 0, countNodesByLabel( "Node3" ) );
     }
 
     private Future<List<CompletionStage<Record>>> runNestedQueries( StatementResultCursor inputCursor )
@@ -1044,7 +1085,11 @@ public class SessionAsyncIT
 
     private long countNodesByLabel( String label )
     {
-        return session.run( "MATCH (n:" + label + ") RETURN count(n)" ).single().get( 0 ).asLong();
+        CompletionStage<Long> countStage = session.runAsync( "MATCH (n:" + label + ") RETURN count(n)" )
+                .thenCompose( StatementResultCursor::singleAsync )
+                .thenApply( record -> record.get( 0 ).asLong() );
+
+        return getBlocking( countStage );
     }
 
     private void testForEach( String query, int expectedSeenRecords )

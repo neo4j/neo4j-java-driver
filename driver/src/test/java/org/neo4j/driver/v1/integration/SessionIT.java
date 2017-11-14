@@ -1219,7 +1219,6 @@ public class SessionIT
         session.run( "CREATE ()" );
         session.run( "CREATE ()" );
         session.run( "RETURN 10 / 0" );
-        session.run( "CREATE ()" );
 
         try
         {
@@ -1229,6 +1228,30 @@ public class SessionIT
         catch ( ClientException e )
         {
             assertThat( e.getMessage(), containsString( "/ by zero" ) );
+        }
+    }
+
+    @Test
+    public void shouldThrowFromRunWhenPreviousErrorNotConsumed()
+    {
+        Session session = neo4j.driver().session();
+
+        session.run( "CREATE ()" );
+        session.run( "CREATE ()" );
+        session.run( "RETURN 10 / 0" );
+
+        try
+        {
+            session.run( "CREATE ()" );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e.getMessage(), containsString( "/ by zero" ) );
+        }
+        finally
+        {
+            session.close();
         }
     }
 
@@ -1252,6 +1275,25 @@ public class SessionIT
 
         session.close();
         assertFalse( session.isOpen() );
+    }
+
+    @Test
+    public void shouldConsumePreviousResultBeforeRunningNewQuery()
+    {
+        try ( Session session = neo4j.driver().session() )
+        {
+            session.run( "UNWIND range(1000, 0, -1) AS x RETURN 42 / x" );
+
+            try
+            {
+                session.run( "RETURN 1" );
+                fail( "Exception expected" );
+            }
+            catch ( ClientException e )
+            {
+                assertThat( e.getMessage(), containsString( "/ by zero" ) );
+            }
+        }
     }
 
     private void assumeServerIs31OrLater()

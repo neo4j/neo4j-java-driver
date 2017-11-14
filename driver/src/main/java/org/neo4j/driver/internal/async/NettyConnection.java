@@ -50,9 +50,8 @@ public class NettyConnection implements Connection
     private final ChannelPool channelPool;
     private final Clock clock;
 
+    private final AtomicBoolean open = new AtomicBoolean( true );
     private final AtomicBoolean autoReadEnabled = new AtomicBoolean( true );
-
-    private final NettyConnectionState state = new NettyConnectionState();
 
     public NettyConnection( Channel channel, ChannelPool channelPool, Clock clock )
     {
@@ -63,15 +62,9 @@ public class NettyConnection implements Connection
     }
 
     @Override
-    public boolean isInUse()
+    public boolean isOpen()
     {
-        return state.isInUse();
-    }
-
-    @Override
-    public boolean tryMarkInUse()
-    {
-        return state.markInUse();
+        return open.get();
     }
 
     @Override
@@ -109,7 +102,7 @@ public class NettyConnection implements Connection
     @Override
     public void releaseInBackground()
     {
-        if ( state.release() )
+        if ( open.compareAndSet( true, false ) )
         {
             reset( new ResetResponseHandler( channel, channelPool, messageDispatcher, clock ) );
         }
@@ -118,7 +111,7 @@ public class NettyConnection implements Connection
     @Override
     public CompletionStage<Void> releaseNow()
     {
-        if ( state.forceRelease() )
+        if ( open.compareAndSet( true, false ) )
         {
             Promise<Void> releasePromise = channel.eventLoop().newPromise();
             reset( new ResetResponseHandler( channel, channelPool, messageDispatcher, clock, releasePromise ) );
