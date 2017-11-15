@@ -22,6 +22,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.concurrent.ThreadLocalRandom;
+
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.StatementResult;
@@ -150,30 +152,17 @@ public class ParametersIT
         }
     }
 
-    private boolean supportsBytes()
-    {
-        String versionString = session.run( "RETURN 1" ).consume().server().version();
-        return version( versionString ).greaterThanOrEqual( ServerVersion.v3_2_0 );
-    }
-
     @Test
     public void shouldBeAbleToSetAndReturnBytesProperty()
     {
         assumeTrue( supportsBytes() );
 
-        // Given
-        byte[] byteArray = "hello, world".getBytes();
-
-        // When
-        StatementResult result = session.run(
-                "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", byteArray ) );
-
-        // Then
-        for ( Record record : result.list() )
+        testBytesProperty( new byte[0] );
+        for ( int i = 0; i < 16; i++ )
         {
-            Value value = record.get( "a.value" );
-            assertThat( value.hasType( session.typeSystem().BYTES() ), equalTo( true ) );
-            assertThat( value.asByteArray(), equalTo( byteArray ) );
+            int length = (int) Math.pow( 2, i );
+            testBytesProperty( randomByteArray( length ) );
+            testBytesProperty( randomByteArray( length - 1 ) );
         }
     }
 
@@ -202,18 +191,10 @@ public class ParametersIT
     @Test
     public void shouldBeAbleToSetAndReturnStringProperty()
     {
-        // When
-        StatementResult result = session.run(
-                "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", "Mjölnir" ) );
-
-        // Then
-        for ( Record record : result.list() )
-        {
-            Value value = record.get( "a.value" );
-            assertThat( value.hasType( session.typeSystem().STRING() ), equalTo( true ) );
-            assertThat( value.asString(), equalTo( "Mjölnir" ) );
-        }
-
+        testStringProperty( "" );
+        testStringProperty( "π≈3.14" );
+        testStringProperty( "Mjölnir" );
+        testStringProperty( "*** Hello World! ***" );
     }
 
     @Test
@@ -459,5 +440,45 @@ public class ParametersIT
 
         // WHEN
         session.run( "RETURN {a}", parameters( "a", path ) );
+    }
+
+    private void testBytesProperty( byte[] array )
+    {
+        assumeTrue( supportsBytes() );
+
+        StatementResult result = session.run(
+                "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", array ) );
+
+        for ( Record record : result.list() )
+        {
+            Value value = record.get( "a.value" );
+            assertThat( value.hasType( session.typeSystem().BYTES() ), equalTo( true ) );
+            assertThat( value.asByteArray(), equalTo( array ) );
+        }
+    }
+
+    private void testStringProperty( String string )
+    {
+        StatementResult result = session.run(
+                "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", string ) );
+
+        for ( Record record : result.list() )
+        {
+            Value value = record.get( "a.value" );
+            assertThat( value.hasType( session.typeSystem().STRING() ), equalTo( true ) );
+            assertThat( value.asString(), equalTo( string ) );
+        }
+    }
+
+    private boolean supportsBytes()
+    {
+        return version( session.driver() ).greaterThanOrEqual( ServerVersion.v3_2_0 );
+    }
+
+    private static byte[] randomByteArray( int length )
+    {
+        byte[] result = new byte[length];
+        ThreadLocalRandom.current().nextBytes( result );
+        return result;
     }
 }
