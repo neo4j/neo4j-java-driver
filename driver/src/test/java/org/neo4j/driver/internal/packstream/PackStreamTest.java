@@ -311,22 +311,25 @@ public class PackStreamTest
         // Given
         Machine machine = new Machine();
 
+        testByteArrayPackingAndUnpacking( machine, 0 );
         for ( int i = 0; i < 24; i++ )
         {
-            byte[] array = new byte[(int) Math.pow( 2, i )];
-
-            // When
-            machine.reset();
-            machine.packer().pack( array );
-
-            // Then
-            PackStream.Unpacker unpacker = newUnpacker( machine.output() );
-            PackType packType = unpacker.peekNextType();
-
-            // Then
-            assertThat( packType, equalTo( PackType.BYTES ) );
-            assertArrayEquals( array, unpacker.unpackBytes() );
+            testByteArrayPackingAndUnpacking( machine, (int) Math.pow( 2, i ) );
         }
+    }
+
+    private void testByteArrayPackingAndUnpacking( Machine machine, int length ) throws Throwable
+    {
+        byte[] array = new byte[length];
+
+        machine.reset();
+        machine.packer().pack( array );
+
+        PackStream.Unpacker unpacker = newUnpacker( machine.output() );
+        PackType packType = unpacker.peekNextType();
+
+        assertThat( packType, equalTo( PackType.BYTES ) );
+        assertArrayEquals( array, unpacker.unpackBytes() );
     }
 
     @Test
