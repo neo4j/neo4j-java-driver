@@ -65,14 +65,14 @@ public class OutboundMessageHandler extends MessageToMessageEncoder<Message>
         try
         {
             writer.write( msg );
+            output.stop();
         }
         catch ( Throwable error )
         {
-            throw new EncoderException( "Failed to write outbound message: " + msg, error );
-        }
-        finally
-        {
             output.stop();
+            // release buffer because it will not get added to the out list and no other handler is going to handle it
+            messageBuf.release();
+            throw new EncoderException( "Failed to write outbound message: " + msg, error );
         }
 
         if ( log.isTraceEnabled() )

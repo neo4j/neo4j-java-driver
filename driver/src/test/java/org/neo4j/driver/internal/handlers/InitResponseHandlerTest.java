@@ -23,6 +23,7 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.EncoderException;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -61,6 +62,12 @@ public class InitResponseHandlerTest
         ChannelPipeline pipeline = channel.pipeline();
         pipeline.addLast( NAME, new OutboundMessageHandler( new PackStreamMessageFormatV1(), DEV_NULL_LOGGING ) );
         pipeline.addLast( new ChannelErrorHandler( DEV_NULL_LOGGING ) );
+    }
+
+    @After
+    public void tearDown()
+    {
+        channel.finishAndReleaseAll();
     }
 
     @Test

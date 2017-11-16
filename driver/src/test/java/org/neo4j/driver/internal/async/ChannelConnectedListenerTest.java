@@ -45,7 +45,7 @@ public class ChannelConnectedListenerTest
     @After
     public void tearDown()
     {
-        channel.close();
+        channel.finishAndReleaseAll();
     }
 
     @Test

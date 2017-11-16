@@ -19,33 +19,39 @@
 package org.neo4j.driver.internal.async.inbound;
 
 import io.netty.channel.embedded.EmbeddedChannel;
+import org.junit.After;
 import org.junit.Test;
 
 import static io.netty.buffer.Unpooled.wrappedBuffer;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.driver.v1.util.TestUtil.assertByteBufEquals;
 
 public class MessageDecoderTest
 {
+    private final EmbeddedChannel channel = new EmbeddedChannel( new MessageDecoder() );
+
+    @After
+    public void tearDown()
+    {
+        channel.finishAndReleaseAll();
+    }
+
     @Test
     public void shouldDecodeMessageWithSingleChunk()
     {
-        EmbeddedChannel channel = new EmbeddedChannel( new MessageDecoder() );
-
         assertFalse( channel.writeInbound( wrappedBuffer( new byte[]{1, 2, 3, 4, 5} ) ) );
         assertTrue( channel.writeInbound( wrappedBuffer( new byte[0] ) ) );
         assertTrue( channel.finish() );
 
         assertEquals( 1, channel.inboundMessages().size() );
-        assertEquals( wrappedBuffer( new byte[]{1, 2, 3, 4, 5} ), channel.readInbound() );
+        assertByteBufEquals( wrappedBuffer( new byte[]{1, 2, 3, 4, 5} ), channel.readInbound() );
     }
 
     @Test
     public void shouldDecodeMessageWithMultipleChunks()
     {
-        EmbeddedChannel channel = new EmbeddedChannel( new MessageDecoder() );
-
         assertFalse( channel.writeInbound( wrappedBuffer( new byte[]{1, 2, 3} ) ) );
         assertFalse( channel.writeInbound( wrappedBuffer( new byte[]{4, 5} ) ) );
         assertFalse( channel.writeInbound( wrappedBuffer( new byte[]{6, 7, 8} ) ) );
@@ -53,7 +59,7 @@ public class MessageDecoderTest
         assertTrue( channel.finish() );
 
         assertEquals( 1, channel.inboundMessages().size() );
-        assertEquals( wrappedBuffer( new byte[]{1, 2, 3, 4, 5, 6, 7, 8} ), channel.readInbound() );
+        assertByteBufEquals( wrappedBuffer( new byte[]{1, 2, 3, 4, 5, 6, 7, 8} ), channel.readInbound() );
     }
 
     @Test
@@ -73,8 +79,8 @@ public class MessageDecoderTest
         channel.writeInbound( wrappedBuffer( new byte[0] ) );
 
         assertEquals( 3, channel.inboundMessages().size() );
-        assertEquals( wrappedBuffer( new byte[]{1, 2, 3} ), channel.readInbound() );
-        assertEquals( wrappedBuffer( new byte[]{4, 5, 6} ), channel.readInbound() );
-        assertEquals( wrappedBuffer( new byte[]{7, 8, 9, 10} ), channel.readInbound() );
+        assertByteBufEquals( wrappedBuffer( new byte[]{1, 2, 3} ), channel.readInbound() );
+        assertByteBufEquals( wrappedBuffer( new byte[]{4, 5, 6} ), channel.readInbound() );
+        assertByteBufEquals( wrappedBuffer( new byte[]{7, 8, 9, 10} ), channel.readInbound() );
     }
 }
