@@ -39,9 +39,7 @@ public interface Connection
     void runAndFlush( String statement, Map<String,Value> parameters, ResponseHandler runHandler,
             ResponseHandler pullAllHandler );
 
-    void releaseInBackground();
-
-    CompletionStage<Void> releaseNow();
+    CompletionStage<Void> release();
 
     BoltServerAddress serverAddress();
 

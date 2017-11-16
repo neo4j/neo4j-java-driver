@@ -122,7 +122,7 @@ public class ExplicitTransaction implements Transaction
                 if ( beginError != null )
                 {
                     // release connection if begin failed, transaction can't be started
-                    connection.releaseNow();
+                    connection.release();
                     throw new CompletionException( Futures.completionErrorCause( beginError ) );
                 }
                 return tx;
@@ -397,7 +397,7 @@ public class ExplicitTransaction implements Transaction
         return ( ignore, error ) ->
         {
             state = newState;
-            connection.releaseInBackground();
+            connection.release(); // release in background
             session.setBookmark( bookmark );
         };
     }

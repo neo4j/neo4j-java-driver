@@ -58,7 +58,7 @@ public class ExplicitTransactionTest
         InOrder order = inOrder( connection );
         order.verify( connection ).run( eq( "BEGIN" ), any(), any(), any() );
         order.verify( connection ).runAndFlush( eq( "ROLLBACK" ), any(), any(), any() );
-        order.verify( connection ).releaseInBackground();
+        order.verify( connection ).release();
     }
 
     @Test
@@ -77,7 +77,7 @@ public class ExplicitTransactionTest
         InOrder order = inOrder( connection );
         order.verify( connection ).run( eq( "BEGIN" ), any(), any(), any() );
         order.verify( connection ).runAndFlush( eq( "ROLLBACK" ), any(), any(), any() );
-        order.verify( connection ).releaseInBackground();
+        order.verify( connection ).release();
     }
 
     @Test
@@ -95,7 +95,7 @@ public class ExplicitTransactionTest
         InOrder order = inOrder( connection );
         order.verify( connection ).run( eq( "BEGIN" ), any(), any(), any() );
         order.verify( connection ).runAndFlush( eq( "COMMIT" ), any(), any(), any() );
-        order.verify( connection ).releaseInBackground();
+        order.verify( connection ).release();
     }
 
     @Test
@@ -243,7 +243,7 @@ public class ExplicitTransactionTest
             assertEquals( error, e );
         }
 
-        verify( connection ).releaseNow();
+        verify( connection ).release();
     }
 
     @Test
@@ -253,7 +253,7 @@ public class ExplicitTransactionTest
         ExplicitTransaction tx = new ExplicitTransaction( connection, mock( NetworkSession.class ) );
         getBlocking( tx.beginAsync( Bookmark.from( "SomeBookmark" ) ) );
 
-        verify( connection, never() ).releaseNow();
+        verify( connection, never() ).release();
     }
 
     private static ExplicitTransaction beginTx( Connection connection )

@@ -254,14 +254,13 @@ public class NetworkSession implements Session
 
     private CompletionStage<Void> resetAsync()
     {
-        return releaseConnectionNow().thenCompose( ignore -> existingTransactionOrNull() )
-                .thenAccept( tx ->
-                {
-                    if ( tx != null )
-                    {
-                        tx.markTerminated();
-                    }
-                } );
+        return existingTransactionOrNull().thenAccept( tx ->
+        {
+            if ( tx != null )
+            {
+                tx.markTerminated();
+            }
+        } ).thenCompose( ignore -> releaseConnection() );
     }
 
     @Override
@@ -496,7 +495,7 @@ public class NetworkSession implements Session
 
     private CompletionStage<Void> releaseResources()
     {
-        return rollbackTransaction().thenCompose( ignore -> releaseConnectionNow() );
+        return rollbackTransaction().thenCompose( ignore -> releaseConnection() );
     }
 
     private CompletionStage<Void> rollbackTransaction()
@@ -516,13 +515,13 @@ public class NetworkSession implements Session
         } );
     }
 
-    private CompletionStage<Void> releaseConnectionNow()
+    private CompletionStage<Void> releaseConnection()
     {
         return existingConnectionOrNull().thenCompose( connection ->
         {
             if ( connection != null )
             {
-                return connection.releaseNow();
+                return connection.release();
             }
             return completedFuture( null );
         } );

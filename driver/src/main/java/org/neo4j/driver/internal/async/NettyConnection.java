@@ -39,14 +39,14 @@ import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.Value;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
-import static org.neo4j.driver.internal.async.ChannelAttributes.messageDispatcher;
 import static org.neo4j.driver.internal.util.Futures.asCompletionStage;
 
-// todo: keep state flags to prohibit interaction with released connections
 public class NettyConnection implements Connection
 {
     private final Channel channel;
     private final InboundMessageDispatcher messageDispatcher;
+    private final BoltServerAddress serverAddress;
+    private final ServerVersion serverVersion;
     private final ChannelPool channelPool;
     private final Clock clock;
 
@@ -56,7 +56,9 @@ public class NettyConnection implements Connection
     public NettyConnection( Channel channel, ChannelPool channelPool, Clock clock )
     {
         this.channel = channel;
-        this.messageDispatcher = messageDispatcher( channel );
+        this.messageDispatcher = ChannelAttributes.messageDispatcher( channel );
+        this.serverAddress = ChannelAttributes.serverAddress( channel );
+        this.serverVersion = ChannelAttributes.serverVersion( channel );
         this.channelPool = channelPool;
         this.clock = clock;
     }
@@ -70,6 +72,7 @@ public class NettyConnection implements Connection
     @Override
     public void enableAutoRead()
     {
+        assertOpen();
         if ( autoReadEnabled.compareAndSet( false, true ) )
         {
             setAutoRead( true );
@@ -79,6 +82,7 @@ public class NettyConnection implements Connection
     @Override
     public void disableAutoRead()
     {
+        assertOpen();
         if ( autoReadEnabled.compareAndSet( true, false ) )
         {
             setAutoRead( false );
@@ -89,6 +93,7 @@ public class NettyConnection implements Connection
     public void run( String statement, Map<String,Value> parameters, ResponseHandler runHandler,
             ResponseHandler pullAllHandler )
     {
+        assertOpen();
         run( statement, parameters, runHandler, pullAllHandler, false );
     }
 
@@ -96,20 +101,12 @@ public class NettyConnection implements Connection
     public void runAndFlush( String statement, Map<String,Value> parameters, ResponseHandler runHandler,
             ResponseHandler pullAllHandler )
     {
+        assertOpen();
         run( statement, parameters, runHandler, pullAllHandler, true );
     }
 
     @Override
-    public void releaseInBackground()
-    {
-        if ( open.compareAndSet( true, false ) )
-        {
-            reset( new ResetResponseHandler( channel, channelPool, messageDispatcher, clock ) );
-        }
-    }
-
-    @Override
-    public CompletionStage<Void> releaseNow()
+    public CompletionStage<Void> release()
     {
         if ( open.compareAndSet( true, false ) )
         {
@@ -126,13 +123,13 @@ public class NettyConnection implements Connection
     @Override
     public BoltServerAddress serverAddress()
     {
-        return ChannelAttributes.serverAddress( channel );
+        return serverAddress;
     }
 
     @Override
     public ServerVersion serverVersion()
     {
-        return ChannelAttributes.serverVersion( channel );
+        return serverVersion;
     }
 
     private void run( String statement, Map<String,Value> parameters, ResponseHandler runHandler,
@@ -184,5 +181,13 @@ public class NettyConnection implements Connection
     private void setAutoRead( boolean value )
     {
         channel.config().setAutoRead( value );
+    }
+
+    private void assertOpen()
+    {
+        if ( !open.get() )
+        {
+            throw new IllegalStateException( "Connection has been released to the pool and can't be reused" );
+        }
     }
 }

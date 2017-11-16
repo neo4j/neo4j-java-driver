@@ -70,21 +70,15 @@ public class RoutingConnection implements Connection
     }
 
     @Override
-    public void releaseInBackground()
-    {
-        delegate.releaseInBackground();
-    }
-
-    @Override
     public boolean isOpen()
     {
         return delegate.isOpen();
     }
 
     @Override
-    public CompletionStage<Void> releaseNow()
+    public CompletionStage<Void> release()
     {
-        return delegate.releaseNow();
+        return delegate.release();
     }
 
     @Override
