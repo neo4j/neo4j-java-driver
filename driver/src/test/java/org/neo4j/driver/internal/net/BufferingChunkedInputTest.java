@@ -41,6 +41,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class BufferingChunkedInputTest
@@ -513,6 +515,17 @@ public class BufferingChunkedInputTest
         assertEquals( buffer.limit(), 0 );
         assertEquals( buffer.capacity(), 8 );
         assertFalse( channel.isOpen() );
+    }
+
+    @Test
+    public void shouldNotReadFromChannelWhenEmptyByteBufferRequested() throws IOException
+    {
+        ReadableByteChannel channel = mock( ReadableByteChannel.class );
+        BufferingChunkedInput input = new BufferingChunkedInput( channel );
+
+        input.readBytes( new byte[0], 0, 0 );
+
+        verify( channel, never() ).read( any( ByteBuffer.class ) );
     }
 
     private ReadableByteChannel fillPacket( int size, int value )

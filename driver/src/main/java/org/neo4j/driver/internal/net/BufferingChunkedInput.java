@@ -142,8 +142,11 @@ public class BufferingChunkedInput implements PackInput
     @Override
     public PackInput readBytes( byte[] into, int offset, int toRead ) throws IOException
     {
-        ByteBuffer dst = ByteBuffer.wrap( into, offset, toRead );
-        read( dst );
+        if ( toRead != 0 )
+        {
+            ByteBuffer dst = ByteBuffer.wrap( into, offset, toRead );
+            read( dst );
+        }
         return this;
     }
 
