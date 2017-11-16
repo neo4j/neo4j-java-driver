@@ -34,11 +34,13 @@ public class Neo4jSettings
     public static final String IMPORT_DIR = "dbms.directories.import";
     public static final String LISTEN_ADDR = "dbms.connectors.default_listen_address"; // only valid for 3.1+
     public static final String IPV6_ENABLED_ADDR = "::";
+    public static final String PAGE_CACHE_SIZE = "dbms.memory.pagecache.size";
 
     private static final String DEFAULT_IMPORT_DIR = "import";
     private static final String DEFAULT_CERT_DIR = "certificates";
     public static final String DEFAULT_TLS_CERT_PATH = DEFAULT_CERT_DIR + "/neo4j.cert";
     public static final String DEFAULT_TLS_KEY_PATH = DEFAULT_CERT_DIR + "/neo4j.key";
+    public static final String DEFAULT_PAGE_CACHE_SIZE = "1g";
 
     public static final String DEFAULT_DATA_DIR = "data";
 
@@ -51,6 +53,7 @@ public class Neo4jSettings
             DATA_DIR, DEFAULT_DATA_DIR,
             IMPORT_DIR, DEFAULT_IMPORT_DIR,
             AUTH_ENABLED, "true",
+            PAGE_CACHE_SIZE, DEFAULT_PAGE_CACHE_SIZE,
             LISTEN_ADDR, IPV6_ENABLED_ADDR ), Collections.<String>emptySet() );
 
     private Neo4jSettings( Map<String, String> settings, Set<String> excludes )
