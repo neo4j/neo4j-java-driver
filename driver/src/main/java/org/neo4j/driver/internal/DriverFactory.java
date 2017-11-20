@@ -103,10 +103,10 @@ public class DriverFactory
         Clock clock = createClock();
         ConnectionSettings settings = new ConnectionSettings( authToken, config.connectionTimeoutMillis() );
         ChannelConnector connector = createConnector( settings, securityPlan, config, clock );
-        PoolSettings poolSettings = new PoolSettings( config.maxIdleConnectionPoolSize(),
-                config.idleTimeBeforeConnectionTest(), config.maxConnectionLifetimeMillis(),
-                config.maxConnectionPoolSize(),
-                config.connectionAcquisitionTimeoutMillis() );
+        PoolSettings poolSettings = new PoolSettings( config.maxConnectionPoolSize(),
+                config.connectionAcquisitionTimeoutMillis(), config.maxConnectionLifetimeMillis(),
+                config.idleTimeBeforeConnectionTest()
+        );
         return new ConnectionPoolImpl( connector, bootstrap, poolSettings, config.logging(), clock );
     }
 
