@@ -40,7 +40,7 @@ public class Neo4jSettings
     private static final String DEFAULT_CERT_DIR = "certificates";
     public static final String DEFAULT_TLS_CERT_PATH = DEFAULT_CERT_DIR + "/neo4j.cert";
     public static final String DEFAULT_TLS_KEY_PATH = DEFAULT_CERT_DIR + "/neo4j.key";
-    public static final String DEFAULT_PAGE_CACHE_SIZE = "1g";
+    public static final String DEFAULT_PAGE_CACHE_SIZE = "512m";
 
     public static final String DEFAULT_DATA_DIR = "data";
 
