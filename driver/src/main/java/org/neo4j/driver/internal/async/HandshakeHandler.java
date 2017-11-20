@@ -96,7 +96,6 @@ public class HandshakeHandler extends ReplayingDecoder<Void>
         {
             failed = true;
 
-            // todo: test this unwrapping and SSLHandshakeException propagation
             Throwable cause = error instanceof DecoderException ? error.getCause() : error;
             if ( cause instanceof SSLHandshakeException )
             {
@@ -140,7 +139,7 @@ public class HandshakeHandler extends ReplayingDecoder<Void>
 
     private void fail( ChannelHandlerContext ctx, Throwable error )
     {
-        ctx.close().addListener( future -> handshakeCompletedPromise.setFailure( error ) );
+        ctx.close().addListener( future -> handshakeCompletedPromise.tryFailure( error ) );
     }
 
     private static Throwable protocolNoSupportedByServerError()
