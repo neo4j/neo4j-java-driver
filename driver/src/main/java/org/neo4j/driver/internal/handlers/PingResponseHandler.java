@@ -18,33 +18,39 @@
  */
 package org.neo4j.driver.internal.handlers;
 
+import io.netty.channel.Channel;
 import io.netty.util.concurrent.Promise;
 
 import java.util.Map;
 
 import org.neo4j.driver.internal.spi.ResponseHandler;
+import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Value;
-
-import static java.util.Objects.requireNonNull;
 
 public class PingResponseHandler implements ResponseHandler
 {
     private final Promise<Boolean> result;
+    private final Channel channel;
+    private final Logger log;
 
-    public PingResponseHandler( Promise<Boolean> result )
+    public PingResponseHandler( Promise<Boolean> result, Channel channel, Logger log )
     {
-        this.result = requireNonNull( result );
+        this.result = result;
+        this.channel = channel;
+        this.log = log;
     }
 
     @Override
     public void onSuccess( Map<String,Value> metadata )
     {
+        log.trace( "Channel %s pinged successfully", channel );
         result.setSuccess( true );
     }
 
     @Override
     public void onFailure( Throwable error )
     {
+        log.trace( "Channel %s failed ping %s", channel, error );
         result.setSuccess( false );
     }
 

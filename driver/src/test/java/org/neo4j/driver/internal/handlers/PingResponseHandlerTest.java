@@ -18,19 +18,21 @@
  */
 package org.neo4j.driver.internal.handlers;
 
+import io.netty.channel.Channel;
 import io.netty.util.concurrent.ImmediateEventExecutor;
 import io.netty.util.concurrent.Promise;
 import org.junit.Test;
 
-import java.util.Collections;
-
 import org.neo4j.driver.v1.Value;
 
+import static java.util.Collections.emptyMap;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
 
 public class PingResponseHandlerTest
 {
@@ -38,9 +40,9 @@ public class PingResponseHandlerTest
     public void shouldResolvePromiseOnSuccess()
     {
         Promise<Boolean> promise = newPromise();
-        PingResponseHandler handler = new PingResponseHandler( promise );
+        PingResponseHandler handler = newHandler( promise );
 
-        handler.onSuccess( Collections.<String,Value>emptyMap() );
+        handler.onSuccess( emptyMap() );
 
         assertTrue( promise.isSuccess() );
         assertTrue( promise.getNow() );
@@ -50,7 +52,7 @@ public class PingResponseHandlerTest
     public void shouldResolvePromiseOnFailure()
     {
         Promise<Boolean> promise = newPromise();
-        PingResponseHandler handler = new PingResponseHandler( promise );
+        PingResponseHandler handler = newHandler( promise );
 
         handler.onFailure( new RuntimeException() );
 
@@ -61,7 +63,7 @@ public class PingResponseHandlerTest
     @Test
     public void shouldNotSupportRecordMessages()
     {
-        PingResponseHandler handler = new PingResponseHandler( newPromise() );
+        PingResponseHandler handler = newHandler( newPromise() );
 
         try
         {
@@ -77,5 +79,10 @@ public class PingResponseHandlerTest
     private static Promise<Boolean> newPromise()
     {
         return ImmediateEventExecutor.INSTANCE.newPromise();
+    }
+
+    private static PingResponseHandler newHandler( Promise<Boolean> result )
+    {
+        return new PingResponseHandler( result, mock( Channel.class ), DEV_NULL_LOGGER );
     }
 }

@@ -27,8 +27,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.InternalRecord;
-import org.neo4j.driver.internal.async.BoltServerAddress;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Value;
 

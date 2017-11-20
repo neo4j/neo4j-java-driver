@@ -25,6 +25,7 @@ import io.netty.handler.codec.MessageToMessageEncoder;
 
 import java.util.List;
 
+import org.neo4j.driver.internal.logging.DelegatingLogger;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.v1.Logger;
@@ -40,19 +41,33 @@ public class OutboundMessageHandler extends MessageToMessageEncoder<Message>
     private final MessageFormat messageFormat;
     private final ChunkAwareByteBufOutput output;
     private final MessageFormat.Writer writer;
-    private final Logger log;
+    private final Logging logging;
+
+    private Logger log;
 
     public OutboundMessageHandler( MessageFormat messageFormat, Logging logging )
     {
-        this( messageFormat, true, logging.getLog( NAME ) );
+        this( messageFormat, true, logging );
     }
 
-    private OutboundMessageHandler( MessageFormat messageFormat, boolean byteArraySupportEnabled, Logger log )
+    private OutboundMessageHandler( MessageFormat messageFormat, boolean byteArraySupportEnabled, Logging logging )
     {
         this.messageFormat = messageFormat;
         this.output = new ChunkAwareByteBufOutput();
         this.writer = messageFormat.newWriter( output, byteArraySupportEnabled );
-        this.log = log;
+        this.logging = logging;
+    }
+
+    @Override
+    public void handlerAdded( ChannelHandlerContext ctx )
+    {
+        log = new DelegatingLogger( ctx.channel().toString(), logging, getClass() );
+    }
+
+    @Override
+    public void handlerRemoved( ChannelHandlerContext ctx )
+    {
+        log = null;
     }
 
     @Override
@@ -86,6 +101,6 @@ public class OutboundMessageHandler extends MessageToMessageEncoder<Message>
 
     public OutboundMessageHandler withoutByteArraySupport()
     {
-        return new OutboundMessageHandler( messageFormat, false, log );
+        return new OutboundMessageHandler( messageFormat, false, logging );
     }
 }

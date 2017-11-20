@@ -24,6 +24,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.pool.ChannelPool;
 import io.netty.util.concurrent.Future;
 
+import java.util.Map;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,7 +32,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.driver.internal.async.BoltServerAddress;
+import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.ChannelConnector;
 import org.neo4j.driver.internal.async.NettyConnection;
 import org.neo4j.driver.internal.spi.Connection;
@@ -61,16 +62,16 @@ public class ConnectionPoolImpl implements ConnectionPool
         this.connector = connector;
         this.bootstrap = bootstrap;
         this.activeChannelTracker = new ActiveChannelTracker( logging );
-        this.channelHealthChecker = new NettyChannelHealthChecker( settings, clock );
+        this.channelHealthChecker = new NettyChannelHealthChecker( settings, clock, logging );
         this.settings = settings;
         this.clock = clock;
-        this.log = logging.getLog( getClass().getSimpleName() );
+        this.log = logging.getLog( ConnectionPool.class.getSimpleName() );
     }
 
     @Override
-    public CompletionStage<Connection> acquire( final BoltServerAddress address )
+    public CompletionStage<Connection> acquire( BoltServerAddress address )
     {
-        log.debug( "Acquiring connection from pool for address: %s", address );
+        log.debug( "Acquiring connection from pool towards %s", address );
 
         assertNotClosed();
         ChannelPool pool = getOrCreatePool( address );
@@ -87,7 +88,7 @@ public class ConnectionPoolImpl implements ConnectionPool
     @Override
     public void purge( BoltServerAddress address )
     {
-        log.info( "Purging connections for address: %s", address );
+        log.info( "Purging connections towards %s", address );
 
         // purge active connections
         activeChannelTracker.purge( address );
@@ -117,11 +118,14 @@ public class ConnectionPoolImpl implements ConnectionPool
     {
         if ( closed.compareAndSet( false, true ) )
         {
-            log.info( "Closing the connection pool" );
             try
             {
-                for ( ChannelPool pool : pools.values() )
+                for ( Map.Entry<BoltServerAddress,ChannelPool> entry : pools.entrySet() )
                 {
+                    BoltServerAddress address = entry.getKey();
+                    ChannelPool pool = entry.getValue();
+
+                    log.info( "Closing connection pool towards %s", address );
                     pool.close();
                 }
 

@@ -24,6 +24,7 @@ import org.mockito.ArgumentCaptor;
 import java.util.concurrent.CompletionException;
 
 import org.neo4j.driver.internal.RoutingErrorHandler;
+import org.neo4j.driver.internal.handlers.RoutingResponseHandler;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.exceptions.ClientException;
@@ -37,7 +38,7 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.neo4j.driver.internal.async.BoltServerAddress.LOCAL_DEFAULT;
+import static org.neo4j.driver.internal.BoltServerAddress.LOCAL_DEFAULT;
 
 public class RoutingResponseHandlerTest
 {

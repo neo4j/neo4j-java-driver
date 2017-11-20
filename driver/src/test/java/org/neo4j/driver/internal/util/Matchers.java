@@ -25,11 +25,11 @@ import org.hamcrest.TypeSafeMatcher;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DirectConnectionProvider;
 import org.neo4j.driver.internal.InternalDriver;
 import org.neo4j.driver.internal.SessionFactory;
 import org.neo4j.driver.internal.SessionFactoryImpl;
-import org.neo4j.driver.internal.async.BoltServerAddress;
 import org.neo4j.driver.internal.cluster.AddressSet;
 import org.neo4j.driver.internal.cluster.RoutingTable;
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;

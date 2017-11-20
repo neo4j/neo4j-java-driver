@@ -57,7 +57,7 @@ public class DelegatingLoggerTest
     @Test
     public void shouldAllowNullPrefix()
     {
-        assertNotNull( new DelegatingLogger( newLoggerMock(), null ) );
+        assertNotNull( new DelegatingLogger( null, newLoggerMock() ) );
     }
 
     @Test
@@ -175,67 +175,67 @@ public class DelegatingLoggerTest
     public void shouldDelegateErrorMessageWithPrefix()
     {
         Logger delegate = newLoggerMock();
-        DelegatingLogger logger = new DelegatingLogger( delegate, PREFIX );
+        DelegatingLogger logger = new DelegatingLogger( PREFIX, delegate );
 
         logger.error( MESSAGE, ERROR );
 
-        verify( delegate ).error( "[Output] Hello World!", ERROR );
+        verify( delegate ).error( "Output Hello World!", ERROR );
     }
 
     @Test
     public void shouldDelegateInfoMessageWithPrefix()
     {
         Logger delegate = newLoggerMock();
-        DelegatingLogger logger = new DelegatingLogger( delegate, PREFIX );
+        DelegatingLogger logger = new DelegatingLogger( PREFIX, delegate );
 
         logger.info( MESSAGE );
 
-        verify( delegate ).info( "[Output] Hello World!" );
+        verify( delegate ).info( "Output Hello World!" );
     }
 
     @Test
     public void shouldDelegateWarnMessageWithPrefix()
     {
         Logger delegate = newLoggerMock();
-        DelegatingLogger logger = new DelegatingLogger( delegate, PREFIX );
+        DelegatingLogger logger = new DelegatingLogger( PREFIX, delegate );
 
         logger.warn( MESSAGE );
 
-        verify( delegate ).warn( "[Output] Hello World!" );
+        verify( delegate ).warn( "Output Hello World!" );
     }
 
     @Test
     public void shouldDelegateWarnMessageWithErrorWithPrefix()
     {
         Logger delegate = newLoggerMock();
-        DelegatingLogger logger = new DelegatingLogger( delegate, PREFIX );
+        DelegatingLogger logger = new DelegatingLogger( PREFIX, delegate );
 
         Exception cause = new Exception();
         logger.warn( MESSAGE, cause );
 
-        verify( delegate ).warn( "[Output] Hello World!", cause );
+        verify( delegate ).warn( "Output Hello World!", cause );
     }
 
     @Test
     public void shouldDelegateDebugMessageWithPrefix()
     {
         Logger delegate = newLoggerMock( true, false );
-        DelegatingLogger logger = new DelegatingLogger( delegate, PREFIX );
+        DelegatingLogger logger = new DelegatingLogger( PREFIX, delegate );
 
         logger.debug( MESSAGE );
 
-        verify( delegate ).debug( "[Output] Hello World!" );
+        verify( delegate ).debug( "Output Hello World!" );
     }
 
     @Test
     public void shouldDelegateTraceMessageWithPrefix()
     {
         Logger delegate = newLoggerMock( false, true );
-        DelegatingLogger logger = new DelegatingLogger( delegate, PREFIX );
+        DelegatingLogger logger = new DelegatingLogger( PREFIX, delegate );
 
         logger.trace( MESSAGE );
 
-        verify( delegate ).trace( "[Output] Hello World!" );
+        verify( delegate ).trace( "Output Hello World!" );
     }
 
     private static Logger newLoggerMock()

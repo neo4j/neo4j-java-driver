@@ -18,13 +18,6 @@
  */
 package org.neo4j.driver.internal.security;
 
-import org.neo4j.driver.internal.async.BoltServerAddress;
-import org.neo4j.driver.v1.*;
-
-import javax.net.ssl.KeyManager;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.TrustManagerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -32,6 +25,13 @@ import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
+
+import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.v1.Logger;
 
 import static org.neo4j.driver.internal.util.CertificateTool.loadX509Cert;
 

@@ -26,11 +26,12 @@ import static io.netty.buffer.Unpooled.wrappedBuffer;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.v1.util.TestUtil.assertByteBufEquals;
 
 public class MessageDecoderTest
 {
-    private final EmbeddedChannel channel = new EmbeddedChannel( new MessageDecoder() );
+    private final EmbeddedChannel channel = new EmbeddedChannel( new MessageDecoder( DEV_NULL_LOGGING ) );
 
     @After
     public void tearDown()
@@ -65,8 +66,6 @@ public class MessageDecoderTest
     @Test
     public void shouldDecodeMultipleConsecutiveMessages()
     {
-        EmbeddedChannel channel = new EmbeddedChannel( new MessageDecoder() );
-
         channel.writeInbound( wrappedBuffer( new byte[]{1, 2, 3} ) );
         channel.writeInbound( wrappedBuffer( new byte[0] ) );
 

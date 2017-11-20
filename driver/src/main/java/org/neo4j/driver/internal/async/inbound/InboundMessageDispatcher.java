@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Queue;
 
 import org.neo4j.driver.internal.handlers.AckFailureResponseHandler;
+import org.neo4j.driver.internal.logging.DelegatingLogger;
 import org.neo4j.driver.internal.messaging.MessageHandler;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.ErrorUtil;
@@ -49,7 +50,7 @@ public class InboundMessageDispatcher implements MessageHandler
     public InboundMessageDispatcher( Channel channel, Logging logging )
     {
         this.channel = requireNonNull( channel );
-        this.log = logging.getLog( getClass().getSimpleName() );
+        this.log = new DelegatingLogger( channel.toString(), logging, getClass() );
     }
 
     public void queue( ResponseHandler handler )
@@ -120,18 +121,20 @@ public class InboundMessageDispatcher implements MessageHandler
     @Override
     public void handleRecordMessage( Value[] fields )
     {
+        ResponseHandler handler = handlers.peek();
         if ( log.isDebugEnabled() )
         {
-            log.debug( "Received RECORD message with metadata %s", Arrays.toString( fields ) );
+            log.debug( "Received RECORD message with metadata %s for handler %s", Arrays.toString( fields ), handler );
         }
-        ResponseHandler handler = handlers.peek();
         handler.onRecord( fields );
     }
 
     @Override
     public void handleFailureMessage( String code, String message )
     {
-        log.debug( "Received FAILURE message with code '%s' and message '%s'", code, message );
+        ResponseHandler handler = handlers.remove();
+        log.debug( "Received FAILURE message with code '%s' and message '%s' for handler %s", code, message, handler );
+
         currentError = ErrorUtil.newNeo4jError( code, message );
 
         if ( ErrorUtil.isFatal( currentError ) )
@@ -145,7 +148,6 @@ public class InboundMessageDispatcher implements MessageHandler
         // try to write ACK_FAILURE before notifying the next response handler
         ackFailureIfNeeded();
 
-        ResponseHandler handler = handlers.remove();
         handler.onFailure( currentError );
     }
 
@@ -154,6 +156,7 @@ public class InboundMessageDispatcher implements MessageHandler
     {
         ResponseHandler handler = handlers.remove();
         log.debug( "Received IGNORED message for handler %s", handler );
+
         if ( currentError != null )
         {
             handler.onFailure( currentError );
@@ -166,8 +169,6 @@ public class InboundMessageDispatcher implements MessageHandler
 
     public void handleFatalError( Throwable error )
     {
-        log.warn( "Fatal error occurred", error );
-
         currentError = error;
         fatalErrorOccurred = true;
 

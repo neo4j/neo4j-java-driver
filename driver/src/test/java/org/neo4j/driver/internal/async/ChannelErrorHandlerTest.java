@@ -26,6 +26,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
+import org.neo4j.driver.internal.async.inbound.ChannelErrorHandler;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 

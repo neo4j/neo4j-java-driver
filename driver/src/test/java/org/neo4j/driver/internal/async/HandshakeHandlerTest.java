@@ -46,7 +46,7 @@ import static org.neo4j.driver.internal.async.ProtocolUtil.PROTOCOL_VERSION_1;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
-public class HandshakeResponseHandlerTest
+public class HandshakeHandlerTest
 {
     private final EmbeddedChannel channel = new EmbeddedChannel();
 
@@ -66,7 +66,7 @@ public class HandshakeResponseHandlerTest
     public void shouldFailGivenPromiseWhenExceptionCaught()
     {
         ChannelPromise handshakeCompletedPromise = channel.newPromise();
-        HandshakeResponseHandler handler = newHandler( handshakeCompletedPromise );
+        HandshakeHandler handler = newHandler( handshakeCompletedPromise );
         channel.pipeline().addLast( handler );
 
         RuntimeException cause = new RuntimeException( "Error!" );
@@ -91,13 +91,13 @@ public class HandshakeResponseHandlerTest
     public void shouldSelectProtocolV1WhenServerSuggests()
     {
         ChannelPromise handshakeCompletedPromise = channel.newPromise();
-        HandshakeResponseHandler handler = newHandler( handshakeCompletedPromise );
+        HandshakeHandler handler = newHandler( handshakeCompletedPromise );
         channel.pipeline().addLast( handler );
 
         channel.pipeline().fireChannelRead( copyInt( PROTOCOL_VERSION_1 ) );
 
         // handshake handler itself should be removed
-        assertNull( channel.pipeline().get( HandshakeResponseHandler.class ) );
+        assertNull( channel.pipeline().get( HandshakeHandler.class ) );
 
         // all inbound handlers should be set
         assertNotNull( channel.pipeline().get( ChunkDecoder.class ) );
@@ -132,13 +132,13 @@ public class HandshakeResponseHandlerTest
     private void testFailure( int serverSuggestedVersion, String expectedMessagePrefix )
     {
         ChannelPromise handshakeCompletedPromise = channel.newPromise();
-        HandshakeResponseHandler handler = newHandler( handshakeCompletedPromise );
+        HandshakeHandler handler = newHandler( handshakeCompletedPromise );
         channel.pipeline().addLast( handler );
 
         channel.pipeline().fireChannelRead( copyInt( serverSuggestedVersion ) );
 
         // handshake handler itself should be removed
-        assertNull( channel.pipeline().get( HandshakeResponseHandler.class ) );
+        assertNull( channel.pipeline().get( HandshakeHandler.class ) );
 
         try
         {
@@ -156,9 +156,9 @@ public class HandshakeResponseHandlerTest
         assertNull( await( channel.closeFuture() ) );
     }
 
-    private static HandshakeResponseHandler newHandler( ChannelPromise handshakeCompletedPromise )
+    private static HandshakeHandler newHandler( ChannelPromise handshakeCompletedPromise )
     {
-        return new HandshakeResponseHandler( new ChannelPipelineBuilderImpl(), handshakeCompletedPromise,
+        return new HandshakeHandler( new ChannelPipelineBuilderImpl(), handshakeCompletedPromise,
                 DEV_NULL_LOGGING );
     }
 }

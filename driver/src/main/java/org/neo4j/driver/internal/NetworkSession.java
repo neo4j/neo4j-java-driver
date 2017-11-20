@@ -24,7 +24,6 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.driver.internal.async.InternalStatementResultCursor;
 import org.neo4j.driver.internal.async.QueryRunner;
 import org.neo4j.driver.internal.logging.DelegatingLogger;
 import org.neo4j.driver.internal.retry.RetryLogic;
@@ -74,7 +73,7 @@ public class NetworkSession implements Session
         this.connectionProvider = connectionProvider;
         this.mode = mode;
         this.retryLogic = retryLogic;
-        this.logger = new DelegatingLogger( logging.getLog( LOG_NAME ), String.valueOf( hashCode() ) );
+        this.logger = new DelegatingLogger( "[" + hashCode() + "]", logging.getLog( LOG_NAME ) );
     }
 
     @Override

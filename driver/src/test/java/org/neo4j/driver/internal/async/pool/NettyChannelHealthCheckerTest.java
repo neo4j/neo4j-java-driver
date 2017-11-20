@@ -72,7 +72,7 @@ public class NettyChannelHealthCheckerTest
                 DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST, maxConnectionLifetime, DEFAULT_MAX_CONNECTION_POOL_SIZE,
                 DEFAULT_CONNECTION_ACQUISITION_TIMEOUT );
         Clock clock = Clock.SYSTEM;
-        NettyChannelHealthChecker healthChecker = new NettyChannelHealthChecker( settings, clock );
+        NettyChannelHealthChecker healthChecker = newHealthChecker( settings, clock );
 
         setCreationTimestamp( channel, clock.millis() - maxConnectionLifetime * 2 );
         Future<Boolean> healthy = healthChecker.isHealthy( channel );
@@ -86,7 +86,7 @@ public class NettyChannelHealthCheckerTest
         PoolSettings settings = new PoolSettings( DEFAULT_MAX_IDLE_CONNECTION_POOL_SIZE,
                 DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST, NOT_CONFIGURED, DEFAULT_MAX_CONNECTION_POOL_SIZE,
                 DEFAULT_CONNECTION_ACQUISITION_TIMEOUT );
-        NettyChannelHealthChecker healthChecker = new NettyChannelHealthChecker( settings, Clock.SYSTEM );
+        NettyChannelHealthChecker healthChecker = newHealthChecker( settings, Clock.SYSTEM );
 
         setCreationTimestamp( channel, 0 );
         Future<Boolean> healthy = healthChecker.isHealthy( channel );
@@ -125,7 +125,7 @@ public class NettyChannelHealthCheckerTest
                 idleTimeBeforeConnectionTest, NOT_CONFIGURED, DEFAULT_MAX_CONNECTION_POOL_SIZE,
                 DEFAULT_CONNECTION_ACQUISITION_TIMEOUT );
         Clock clock = Clock.SYSTEM;
-        NettyChannelHealthChecker healthChecker = new NettyChannelHealthChecker( settings, clock );
+        NettyChannelHealthChecker healthChecker = newHealthChecker( settings, clock );
 
         setCreationTimestamp( channel, clock.millis() );
         setLastUsedTimestamp( channel, clock.millis() - idleTimeBeforeConnectionTest * 2 );
@@ -153,7 +153,7 @@ public class NettyChannelHealthCheckerTest
                 DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST, NOT_CONFIGURED, DEFAULT_MAX_CONNECTION_POOL_SIZE,
                 DEFAULT_CONNECTION_ACQUISITION_TIMEOUT );
         Clock clock = Clock.SYSTEM;
-        NettyChannelHealthChecker healthChecker = new NettyChannelHealthChecker( settings, clock );
+        NettyChannelHealthChecker healthChecker = newHealthChecker( settings, clock );
 
         setCreationTimestamp( channel, clock.millis() );
 
@@ -168,5 +168,10 @@ public class NettyChannelHealthCheckerTest
             Future<Boolean> healthy = healthChecker.isHealthy( channel );
             assertThat( await( healthy ), is( false ) );
         }
+    }
+
+    private NettyChannelHealthChecker newHealthChecker( PoolSettings settings, Clock clock )
+    {
+        return new NettyChannelHealthChecker( settings, clock, DEV_NULL_LOGGING );
     }
 }

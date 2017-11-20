@@ -23,6 +23,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.DecoderException;
 
+import org.neo4j.driver.internal.logging.DelegatingLogger;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
@@ -35,27 +36,30 @@ public class InboundMessageHandler extends SimpleChannelInboundHandler<ByteBuf>
 {
     private final ByteBufInput input;
     private final MessageFormat.Reader reader;
-    private final Logger log;
+    private final Logging logging;
 
     private InboundMessageDispatcher messageDispatcher;
+    private Logger log;
 
     public InboundMessageHandler( MessageFormat messageFormat, Logging logging )
     {
         this.input = new ByteBufInput();
         this.reader = messageFormat.newReader( input );
-        this.log = logging.getLog( getClass().getSimpleName() );
+        this.logging = logging;
     }
 
     @Override
     public void handlerAdded( ChannelHandlerContext ctx )
     {
         messageDispatcher = requireNonNull( messageDispatcher( ctx.channel() ) );
+        log = new DelegatingLogger( ctx.channel().toString(), logging, getClass() );
     }
 
     @Override
     public void handlerRemoved( ChannelHandlerContext ctx )
     {
         messageDispatcher = null;
+        log = null;
     }
 
     @Override
@@ -70,7 +74,7 @@ public class InboundMessageHandler extends SimpleChannelInboundHandler<ByteBuf>
 
         if ( log.isTraceEnabled() )
         {
-            log.trace( "Inbound message received:\n%s\n", prettyHexDump( msg ) );
+            log.trace( "Message received:\n%s\n", prettyHexDump( msg ) );
         }
 
         input.start( msg );

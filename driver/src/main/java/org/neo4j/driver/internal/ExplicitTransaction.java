@@ -25,7 +25,6 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
-import org.neo4j.driver.internal.async.InternalStatementResultCursor;
 import org.neo4j.driver.internal.async.QueryRunner;
 import org.neo4j.driver.internal.async.ResultCursorsHolder;
 import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;

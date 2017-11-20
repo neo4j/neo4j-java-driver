@@ -24,18 +24,59 @@ import io.netty.handler.codec.ByteToMessageDecoder;
 
 import java.util.List;
 
+import org.neo4j.driver.internal.logging.DelegatingLogger;
+import org.neo4j.driver.v1.Logger;
+import org.neo4j.driver.v1.Logging;
+
+import static io.netty.buffer.ByteBufUtil.prettyHexDump;
+
 public class MessageDecoder extends ByteToMessageDecoder
 {
+    private final Logging logging;
+
     private boolean readMessageBoundary;
+    private Logger log;
+
+    public MessageDecoder( Logging logging )
+    {
+        this.logging = logging;
+    }
+
+    @Override
+    public void handlerAdded( ChannelHandlerContext ctx )
+    {
+        log = new DelegatingLogger( ctx.channel().toString(), logging, getClass() );
+    }
+
+    @Override
+    protected void handlerRemoved0( ChannelHandlerContext ctx ) throws Exception
+    {
+        readMessageBoundary = false;
+        log = null;
+    }
 
     @Override
     public void channelRead( ChannelHandlerContext ctx, Object msg ) throws Exception
     {
         if ( msg instanceof ByteBuf )
         {
+            ByteBuf chunkBuf = (ByteBuf) msg;
+
             // on every read check if input buffer is empty or not
             // if it is empty then it's a message boundary and full message is in the buffer
-            readMessageBoundary = ((ByteBuf) msg).readableBytes() == 0;
+            readMessageBoundary = chunkBuf.readableBytes() == 0;
+
+            if ( log.isTraceEnabled() )
+            {
+                if ( readMessageBoundary )
+                {
+                    log.trace( "Received message boundary" );
+                }
+                else
+                {
+                    log.trace( "Received message chunk:\n%s\n", prettyHexDump( chunkBuf ) );
+                }
+            }
         }
         super.channelRead( ctx, msg );
     }

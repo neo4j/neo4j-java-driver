@@ -23,7 +23,7 @@ import org.junit.Test;
 import java.net.UnknownHostException;
 import java.util.Set;
 
-import org.neo4j.driver.internal.async.BoltServerAddress;
+import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.v1.Logger;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;

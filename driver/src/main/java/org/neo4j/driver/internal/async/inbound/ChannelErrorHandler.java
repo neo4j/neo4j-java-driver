@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.async;
+package org.neo4j.driver.internal.async.inbound;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -24,7 +24,8 @@ import io.netty.handler.codec.CodecException;
 
 import java.io.IOException;
 
-import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
+import org.neo4j.driver.internal.logging.DelegatingLogger;
+import org.neo4j.driver.internal.util.ErrorUtil;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
@@ -34,42 +35,42 @@ import static org.neo4j.driver.internal.async.ChannelAttributes.messageDispatche
 
 public class ChannelErrorHandler extends ChannelInboundHandlerAdapter
 {
-    private final Logger log;
+    private final Logging logging;
 
     private InboundMessageDispatcher messageDispatcher;
+    private Logger log;
     private boolean failed;
 
     public ChannelErrorHandler( Logging logging )
     {
-        this.log = logging.getLog( getClass().getSimpleName() );
+        this.logging = logging;
     }
 
     @Override
     public void handlerAdded( ChannelHandlerContext ctx )
     {
         messageDispatcher = requireNonNull( messageDispatcher( ctx.channel() ) );
+        log = new DelegatingLogger( ctx.channel().toString(), logging, getClass() );
     }
 
     @Override
     public void handlerRemoved( ChannelHandlerContext ctx )
     {
         messageDispatcher = null;
+        log = null;
         failed = false;
     }
 
     @Override
     public void channelInactive( ChannelHandlerContext ctx )
     {
-        log.debug( "Channel inactive: %s", ctx.channel() );
+        log.debug( "Channel is inactive" );
 
         if ( !failed )
         {
             // channel became inactive not because of a fatal exception that came from exceptionCaught
             // it is most likely inactive because actual network connection broke
-            ServiceUnavailableException error = new ServiceUnavailableException(
-                    "Connection to the database terminated. " +
-                    "This can happen due to network instabilities, or due to restarts of the database" );
-
+            ServiceUnavailableException error = ErrorUtil.newConnectionTerminatedError();
             fail( ctx, error );
         }
     }
@@ -79,12 +80,12 @@ public class ChannelErrorHandler extends ChannelInboundHandlerAdapter
     {
         if ( failed )
         {
-            log.warn( "Another fatal error in the pipeline of " + ctx.channel(), error );
+            log.warn( "Another fatal error occurred in the pipeline", error );
         }
         else
         {
             failed = true;
-            log.error( "Fatal error in the pipeline of " + ctx.channel(), error );
+            log.error( "Fatal error occurred in the pipeline", error );
             fail( ctx, error );
         }
     }
@@ -93,7 +94,7 @@ public class ChannelErrorHandler extends ChannelInboundHandlerAdapter
     {
         Throwable cause = transformError( error );
         messageDispatcher.handleFatalError( cause );
-        log.debug( "Closing channel because of an error: %s", ctx.channel() );
+        log.debug( "Closing channel because of a failure '%s'", error );
         ctx.close();
     }
 

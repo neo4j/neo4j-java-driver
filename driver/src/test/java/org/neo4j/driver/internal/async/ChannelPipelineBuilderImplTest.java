@@ -25,6 +25,7 @@ import org.junit.Test;
 import java.util.Iterator;
 import java.util.Map;
 
+import org.neo4j.driver.internal.async.inbound.ChannelErrorHandler;
 import org.neo4j.driver.internal.async.inbound.ChunkDecoder;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.async.inbound.InboundMessageHandler;

@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.async;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Test;
 
+import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.util.ServerVersion;
 

@@ -22,12 +22,20 @@ import org.neo4j.driver.v1.exceptions.AuthenticationException;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.DatabaseException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
+import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.TransientException;
 
 public final class ErrorUtil
 {
     private ErrorUtil()
     {
+    }
+
+    public static ServiceUnavailableException newConnectionTerminatedError()
+    {
+        return new ServiceUnavailableException( "Connection to the database terminated. " +
+                                                "This can happen due to network instabilities, " +
+                                                "or due to restarts of the database" );
     }
 
     public static Neo4jException newNeo4jError( String code, String message )

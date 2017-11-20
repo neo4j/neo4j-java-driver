@@ -30,7 +30,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.driver.internal.async.ChannelAttributes;
-import org.neo4j.driver.internal.async.ChannelErrorHandler;
+import org.neo4j.driver.internal.async.inbound.ChannelErrorHandler;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
