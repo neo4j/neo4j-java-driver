@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.v1.integration;
 
+import org.junit.AfterClass;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -84,6 +85,12 @@ public class CausalClusteringIT
 
     @Rule
     public final ClusterRule clusterRule = new ClusterRule();
+
+    @AfterClass
+    public static void stopSharedCluster()
+    {
+        ClusterRule.stopSharedCluster();
+    }
 
     @Test
     public void shouldExecuteReadAndWritesWhenDriverSuppliedWithAddressOfLeader() throws Exception
