@@ -46,21 +46,6 @@ public class TestNeo4jSession extends TestNeo4j implements Session
         super();
     }
 
-    public TestNeo4jSession( Neo4jResetMode resetMode )
-    {
-        super();
-    }
-
-    public TestNeo4jSession( Neo4jSettings initialSettings )
-    {
-        super();
-    }
-
-    public TestNeo4jSession( Neo4jSettings initialSettings, Neo4jResetMode resetMode )
-    {
-        super();
-    }
-
     @Override
     public Statement apply( final Statement base, Description description )
     {
