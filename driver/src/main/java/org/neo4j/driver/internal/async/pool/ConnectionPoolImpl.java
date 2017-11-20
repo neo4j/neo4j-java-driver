@@ -24,9 +24,11 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.pool.ChannelPool;
 import io.netty.util.concurrent.Future;
 
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.internal.async.BoltServerAddress;
@@ -38,6 +40,7 @@ import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
+import org.neo4j.driver.v1.exceptions.ClientException;
 
 public class ConnectionPoolImpl implements ConnectionPool
 {
@@ -73,8 +76,9 @@ public class ConnectionPoolImpl implements ConnectionPool
         ChannelPool pool = getOrCreatePool( address );
         Future<Channel> connectionFuture = pool.acquire();
 
-        return Futures.asCompletionStage( connectionFuture ).thenApply( channel ->
+        return Futures.asCompletionStage( connectionFuture ).handle( ( channel, error ) ->
         {
+            processAcquisitionError( error );
             assertNotClosed( address, channel, pool );
             return new NettyConnection( channel, pool, clock );
         } );
@@ -158,6 +162,27 @@ public class ConnectionPoolImpl implements ConnectionPool
     private EventLoopGroup eventLoopGroup()
     {
         return bootstrap.config().group();
+    }
+
+    private void processAcquisitionError( Throwable error )
+    {
+        Throwable cause = Futures.completionErrorCause( error );
+        if ( cause != null )
+        {
+            if ( cause instanceof TimeoutException )
+            {
+                // NettyChannelPool returns future failed with TimeoutException if acquire operation takes more than
+                // configured time, translate this exception to a prettier one and re-throw
+                throw new ClientException(
+                        "Unable to acquire connection from the pool within configured maximum time of " +
+                        settings.connectionAcquisitionTimeout() + "ms" );
+            }
+            else
+            {
+                // some unknown error happened during connection acquisition, propagate it
+                throw new CompletionException( cause );
+            }
+        }
     }
 
     private void assertNotClosed()
