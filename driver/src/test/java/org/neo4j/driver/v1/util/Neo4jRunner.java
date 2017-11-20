@@ -51,7 +51,7 @@ public class Neo4jRunner
 
     private static final boolean debug = true;
 
-    private static final String DEFAULT_NEOCTRL_ARGS = "-e 3.2.5";
+    private static final String DEFAULT_NEOCTRL_ARGS = "-e 3.2.7";
     public static final String NEOCTRL_ARGS = System.getProperty( "neoctrl.args", DEFAULT_NEOCTRL_ARGS );
     public static final URI DEFAULT_URI = URI.create( "bolt://localhost:7687" );
     public static final BoltServerAddress DEFAULT_ADDRESS = new BoltServerAddress( DEFAULT_URI );
