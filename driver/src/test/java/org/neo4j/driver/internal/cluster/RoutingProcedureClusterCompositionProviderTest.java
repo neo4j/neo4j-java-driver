@@ -49,8 +49,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
-import static org.neo4j.driver.internal.util.Futures.getBlocking;
 import static org.neo4j.driver.v1.Values.value;
+import static org.neo4j.driver.v1.util.TestUtil.await;
 
 public class RoutingProcedureClusterCompositionProviderTest
 {
@@ -67,7 +67,7 @@ public class RoutingProcedureClusterCompositionProviderTest
         when( mockedRunner.run( connectionStage ) ).thenReturn( completedFuture( noRecordsResponse ) );
 
         // When
-        ClusterCompositionResponse response = getBlocking( provider.getClusterComposition( connectionStage ) );
+        ClusterCompositionResponse response = await( provider.getClusterComposition( connectionStage ) );
 
         // Then
         assertThat( response, instanceOf( ClusterCompositionResponse.Failure.class ) );
@@ -97,7 +97,7 @@ public class RoutingProcedureClusterCompositionProviderTest
         when( mockedRunner.run( connectionStage ) ).thenReturn( completedFuture( routingResponse ) );
 
         // When
-        ClusterCompositionResponse response = getBlocking( provider.getClusterComposition( connectionStage ) );
+        ClusterCompositionResponse response = await( provider.getClusterComposition( connectionStage ) );
 
         // Then
         assertThat( response, instanceOf( ClusterCompositionResponse.Failure.class ) );
@@ -127,7 +127,7 @@ public class RoutingProcedureClusterCompositionProviderTest
         when( mockedRunner.run( connectionStage ) ).thenReturn( completedFuture( routingResponse ) );
 
         // When
-        ClusterCompositionResponse response = getBlocking( provider.getClusterComposition( connectionStage ) );
+        ClusterCompositionResponse response = await( provider.getClusterComposition( connectionStage ) );
 
         // Then
         assertThat( response, instanceOf( ClusterCompositionResponse.Failure.class ) );
@@ -163,7 +163,7 @@ public class RoutingProcedureClusterCompositionProviderTest
         when( mockedClock.millis() ).thenReturn( 12345L );
 
         // When
-        ClusterCompositionResponse response = getBlocking( provider.getClusterComposition( connectionStage ) );
+        ClusterCompositionResponse response = await( provider.getClusterComposition( connectionStage ) );
 
         // Then
         assertThat( response, instanceOf( ClusterCompositionResponse.Failure.class ) );
@@ -199,7 +199,7 @@ public class RoutingProcedureClusterCompositionProviderTest
         when( mockedClock.millis() ).thenReturn( 12345L );
 
         // When
-        ClusterCompositionResponse response = getBlocking( provider.getClusterComposition( connectionStage ) );
+        ClusterCompositionResponse response = await( provider.getClusterComposition( connectionStage ) );
 
         // Then
         assertThat( response, instanceOf( ClusterCompositionResponse.Failure.class ) );
@@ -231,7 +231,7 @@ public class RoutingProcedureClusterCompositionProviderTest
         // When & Then
         try
         {
-            getBlocking( provider.getClusterComposition( connectionStage ) );
+            await( provider.getClusterComposition( connectionStage ) );
             fail( "Expecting a failure but not triggered." );
         }
         catch( Exception e )
@@ -262,7 +262,7 @@ public class RoutingProcedureClusterCompositionProviderTest
         when( mockedClock.millis() ).thenReturn( 12345L );
 
         // When
-        ClusterCompositionResponse response = getBlocking( provider.getClusterComposition( connectionStage ) );
+        ClusterCompositionResponse response = await( provider.getClusterComposition( connectionStage ) );
 
         // Then
         assertThat( response, instanceOf( ClusterCompositionResponse.Success.class ) );
@@ -286,7 +286,7 @@ public class RoutingProcedureClusterCompositionProviderTest
                 mock( Clock.class ), DEV_NULL_LOGGER, procedureRunner );
 
         CompletionStage<Connection> connectionStage = completedFuture( mock( Connection.class ) );
-        ClusterCompositionResponse response = getBlocking( provider.getClusterComposition( connectionStage ) );
+        ClusterCompositionResponse response = await( provider.getClusterComposition( connectionStage ) );
 
         try
         {

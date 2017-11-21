@@ -39,7 +39,7 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.driver.internal.util.Futures.getBlocking;
+import static org.neo4j.driver.v1.util.TestUtil.await;
 import static org.neo4j.driver.v1.util.TestUtil.connectionMock;
 
 public class ExplicitTransactionTest
@@ -235,7 +235,7 @@ public class ExplicitTransactionTest
 
         try
         {
-            getBlocking( tx.beginAsync( Bookmark.from( "SomeBookmark" ) ) );
+            await( tx.beginAsync( Bookmark.from( "SomeBookmark" ) ) );
             fail( "Exception expected" );
         }
         catch ( RuntimeException e )
@@ -251,7 +251,7 @@ public class ExplicitTransactionTest
     {
         Connection connection = connectionWithBegin( handler -> handler.onSuccess( emptyMap() ) );
         ExplicitTransaction tx = new ExplicitTransaction( connection, mock( NetworkSession.class ) );
-        getBlocking( tx.beginAsync( Bookmark.from( "SomeBookmark" ) ) );
+        await( tx.beginAsync( Bookmark.from( "SomeBookmark" ) ) );
 
         verify( connection, never() ).release();
     }
@@ -270,7 +270,7 @@ public class ExplicitTransactionTest
             Bookmark initialBookmark )
     {
         ExplicitTransaction tx = new ExplicitTransaction( connection, session );
-        return getBlocking( tx.beginAsync( initialBookmark ) );
+        return await( tx.beginAsync( initialBookmark ) );
     }
 
     private static Connection connectionWithBegin( Consumer<ResponseHandler> beginBehaviour )

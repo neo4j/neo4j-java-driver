@@ -29,7 +29,7 @@ import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Session;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
-import static org.neo4j.driver.internal.util.Futures.getBlocking;
+import static org.neo4j.driver.internal.util.Futures.blockingGet;
 
 public class InternalDriver implements Driver
 {
@@ -104,7 +104,7 @@ public class InternalDriver implements Driver
     @Override
     public void close()
     {
-        getBlocking( closeAsync() );
+        blockingGet( closeAsync() );
     }
 
     @Override

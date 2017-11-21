@@ -28,7 +28,7 @@ import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.util.Function;
 
-import static org.neo4j.driver.internal.util.Futures.getBlocking;
+import static org.neo4j.driver.internal.util.Futures.blockingGet;
 
 public class InternalStatementResult implements StatementResult
 {
@@ -45,7 +45,7 @@ public class InternalStatementResult implements StatementResult
     {
         if ( keys == null )
         {
-            getBlocking( cursor.peekAsync() );
+            blockingGet( cursor.peekAsync() );
             keys = cursor.keys();
         }
         return keys;
@@ -54,13 +54,13 @@ public class InternalStatementResult implements StatementResult
     @Override
     public boolean hasNext()
     {
-        return getBlocking( cursor.peekAsync() ) != null;
+        return blockingGet( cursor.peekAsync() ) != null;
     }
 
     @Override
     public Record next()
     {
-        Record record = getBlocking( cursor.nextAsync() );
+        Record record = blockingGet( cursor.nextAsync() );
         if ( record == null )
         {
             throw new NoSuchRecordException( "No more records" );
@@ -71,13 +71,13 @@ public class InternalStatementResult implements StatementResult
     @Override
     public Record single()
     {
-        return getBlocking( cursor.singleAsync() );
+        return blockingGet( cursor.singleAsync() );
     }
 
     @Override
     public Record peek()
     {
-        Record record = getBlocking( cursor.peekAsync() );
+        Record record = blockingGet( cursor.peekAsync() );
         if ( record == null )
         {
             throw new NoSuchRecordException( "Cannot peek past the last record" );
@@ -88,25 +88,25 @@ public class InternalStatementResult implements StatementResult
     @Override
     public List<Record> list()
     {
-        return getBlocking( cursor.listAsync() );
+        return blockingGet( cursor.listAsync() );
     }
 
     @Override
     public <T> List<T> list( Function<Record, T> mapFunction )
     {
-        return getBlocking( cursor.listAsync( mapFunction ) );
+        return blockingGet( cursor.listAsync( mapFunction ) );
     }
 
     @Override
     public ResultSummary consume()
     {
-        return getBlocking( cursor.consumeAsync() );
+        return blockingGet( cursor.consumeAsync() );
     }
 
     @Override
     public ResultSummary summary()
     {
-        return getBlocking( cursor.summaryAsync() );
+        return blockingGet( cursor.summaryAsync() );
     }
 
     @Override

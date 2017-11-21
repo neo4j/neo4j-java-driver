@@ -41,7 +41,6 @@ import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Clock;
-import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
@@ -67,6 +66,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.driver.v1.Config.defaultConfig;
 import static org.neo4j.driver.v1.Values.parameters;
+import static org.neo4j.driver.v1.util.TestUtil.await;
 
 public class ConnectionHandlingIT
 {
@@ -330,7 +330,7 @@ public class ConnectionHandlingIT
         @Override
         public CompletionStage<Connection> acquire( final BoltServerAddress address )
         {
-            Connection connection = Futures.getBlocking( super.acquire( address ) );
+            Connection connection = await( super.acquire( address ) );
 
             if ( memorize )
             {

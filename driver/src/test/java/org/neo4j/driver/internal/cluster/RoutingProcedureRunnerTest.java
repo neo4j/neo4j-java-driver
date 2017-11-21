@@ -45,9 +45,9 @@ import static org.neo4j.driver.internal.cluster.RoutingProcedureRunner.GET_ROUTI
 import static org.neo4j.driver.internal.cluster.RoutingProcedureRunner.GET_ROUTING_TABLE_PARAM;
 import static org.neo4j.driver.internal.cluster.RoutingProcedureRunner.GET_SERVERS;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
-import static org.neo4j.driver.internal.util.Futures.getBlocking;
 import static org.neo4j.driver.internal.util.ServerVersion.version;
 import static org.neo4j.driver.v1.Values.parameters;
+import static org.neo4j.driver.v1.util.TestUtil.await;
 
 public class RoutingProcedureRunnerTest
 {
@@ -57,7 +57,7 @@ public class RoutingProcedureRunnerTest
         RoutingProcedureRunner runner = new TestRoutingProcedureRunner( RoutingContext.EMPTY,
                 completedFuture( asList( mock( Record.class ), mock( Record.class ) ) ) );
 
-        RoutingProcedureResponse response = getBlocking( runner.run( connectionStage( "Neo4j/3.2.1" ) ) );
+        RoutingProcedureResponse response = await( runner.run( connectionStage( "Neo4j/3.2.1" ) ) );
 
         assertTrue( response.isSuccess() );
         assertEquals( 2, response.records().size() );
@@ -74,7 +74,7 @@ public class RoutingProcedureRunnerTest
         RoutingProcedureRunner runner = new TestRoutingProcedureRunner( context,
                 completedFuture( singletonList( mock( Record.class ) ) ) );
 
-        RoutingProcedureResponse response = getBlocking( runner.run( connectionStage( "Neo4j/3.2.1" ) ) );
+        RoutingProcedureResponse response = await( runner.run( connectionStage( "Neo4j/3.2.1" ) ) );
 
         assertTrue( response.isSuccess() );
         assertEquals( 1, response.records().size() );
@@ -91,7 +91,7 @@ public class RoutingProcedureRunnerTest
         RoutingProcedureRunner runner = new TestRoutingProcedureRunner( context,
                 completedFuture( asList( mock( Record.class ), mock( Record.class ) ) ) );
 
-        RoutingProcedureResponse response = getBlocking( runner.run( connectionStage( "Neo4j/3.1.8" ) ) );
+        RoutingProcedureResponse response = await( runner.run( connectionStage( "Neo4j/3.1.8" ) ) );
 
         assertTrue( response.isSuccess() );
         assertEquals( 2, response.records().size() );
@@ -104,7 +104,7 @@ public class RoutingProcedureRunnerTest
         ClientException error = new ClientException( "Hi" );
         RoutingProcedureRunner runner = new TestRoutingProcedureRunner( RoutingContext.EMPTY, failedFuture( error ) );
 
-        RoutingProcedureResponse response = getBlocking( runner.run( connectionStage( "Neo4j/3.2.2" ) ) );
+        RoutingProcedureResponse response = await( runner.run( connectionStage( "Neo4j/3.2.2" ) ) );
 
         assertFalse( response.isSuccess() );
         assertEquals( error, response.error() );
@@ -118,7 +118,7 @@ public class RoutingProcedureRunnerTest
 
         try
         {
-            getBlocking( runner.run( connectionStage( "Neo4j/3.2.2" ) ) );
+            await( runner.run( connectionStage( "Neo4j/3.2.2" ) ) );
             fail( "Exception expected" );
         }
         catch ( Exception e )
@@ -135,7 +135,7 @@ public class RoutingProcedureRunnerTest
 
         try
         {
-            getBlocking( runner.run( failedFuture( error ) ) );
+            await( runner.run( failedFuture( error ) ) );
             fail( "Exception expected" );
         }
         catch ( RuntimeException e )

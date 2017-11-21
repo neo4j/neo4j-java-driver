@@ -74,7 +74,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
-import static org.neo4j.driver.internal.util.Futures.getBlocking;
 import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.internal.util.Matchers.arithmeticError;
 import static org.neo4j.driver.internal.util.Matchers.blockingOperationInEventLoopError;
@@ -663,8 +662,8 @@ public class SessionAsyncIT
 
         try
         {
-            StatementResultCursor cursor = getBlocking( session.runAsync( "RETURN 42" ) );
-            getBlocking( cursor.nextAsync() );
+            StatementResultCursor cursor = await( session.runAsync( "RETURN 42" ) );
+            await( cursor.nextAsync() );
             fail( "Exception expected" );
         }
         catch ( ServiceUnavailableException e )
@@ -674,8 +673,8 @@ public class SessionAsyncIT
 
         neo4j.startDb();
 
-        StatementResultCursor cursor2 = getBlocking( session.runAsync( "RETURN 42" ) );
-        Record record = getBlocking( cursor2.singleAsync() );
+        StatementResultCursor cursor2 = await( session.runAsync( "RETURN 42" ) );
+        Record record = await( cursor2.singleAsync() );
         assertEquals( 42, record.get( 0 ).asInt() );
     }
 
@@ -689,7 +688,7 @@ public class SessionAsyncIT
 
         try
         {
-            getBlocking( session.beginTransactionAsync() );
+            await( session.beginTransactionAsync() );
             fail( "Exception expected" );
         }
         catch ( ClientException e )
@@ -697,8 +696,8 @@ public class SessionAsyncIT
             // expected
         }
 
-        StatementResultCursor cursor = getBlocking( session.runAsync( "RETURN 'Hello!'" ) );
-        Record record = getBlocking( cursor.singleAsync() );
+        StatementResultCursor cursor = await( session.runAsync( "RETURN 'Hello!'" ) );
+        Record record = await( cursor.singleAsync() );
         assertEquals( "Hello!", record.get( 0 ).asString() );
     }
 
@@ -710,7 +709,7 @@ public class SessionAsyncIT
         try
         {
             StatementResultCursor cursor = await( session.runAsync( "RETURN 42" ) );
-            getBlocking( cursor.consumeAsync() );
+            await( cursor.consumeAsync() );
             fail( "Exception expected" );
         }
         catch ( ServiceUnavailableException e )
@@ -720,11 +719,11 @@ public class SessionAsyncIT
 
         neo4j.startDb();
 
-        Transaction tx = getBlocking( session.beginTransactionAsync() );
-        StatementResultCursor cursor2 = getBlocking( tx.runAsync( "RETURN 42" ) );
-        Record record = getBlocking( cursor2.singleAsync() );
+        Transaction tx = await( session.beginTransactionAsync() );
+        StatementResultCursor cursor2 = await( tx.runAsync( "RETURN 42" ) );
+        Record record = await( cursor2.singleAsync() );
         assertEquals( 42, record.get( 0 ).asInt() );
-        assertNull( getBlocking( tx.rollbackAsync() ) );
+        assertNull( await( tx.rollbackAsync() ) );
     }
 
     @Test
@@ -749,7 +748,7 @@ public class SessionAsyncIT
             }
         } );
 
-        assertEquals( 10, getBlocking( result ).intValue() );
+        assertEquals( 10, await( result ).intValue() );
     }
 
     @Test
@@ -774,7 +773,7 @@ public class SessionAsyncIT
             }
         } );
 
-        assertEquals( 2, getBlocking( result ).intValue() );
+        assertEquals( 2, await( result ).intValue() );
         assertEquals( 2, countNodesByLabel( "TestNode" ) );
     }
 
@@ -804,7 +803,7 @@ public class SessionAsyncIT
             }
         } );
 
-        assertEquals( 42, getBlocking( result ).intValue() );
+        assertEquals( 42, await( result ).intValue() );
     }
 
     @Test
@@ -833,7 +832,7 @@ public class SessionAsyncIT
             }
         } );
 
-        assertEquals( "Hello", getBlocking( result ) );
+        assertEquals( "Hello", await( result ) );
         assertEquals( 1, countNodesByLabel( "MyNode" ) );
     }
 
@@ -844,7 +843,7 @@ public class SessionAsyncIT
 
         try
         {
-            getBlocking( session.closeAsync() );
+            await( session.closeAsync() );
             fail( "Exception expected" );
         }
         catch ( ClientException e )
@@ -856,11 +855,11 @@ public class SessionAsyncIT
     @Test
     public void shouldPropagateBlockedRunFailureWhenClosed()
     {
-        getBlocking( session.runAsync( "RETURN 10 / 0" ) );
+        await( session.runAsync( "RETURN 10 / 0" ) );
 
         try
         {
-            getBlocking( session.closeAsync() );
+            await( session.closeAsync() );
             fail( "Exception expected" );
         }
         catch ( ClientException e )
@@ -877,7 +876,7 @@ public class SessionAsyncIT
 
         try
         {
-            getBlocking( session.closeAsync() );
+            await( session.closeAsync() );
             fail( "Exception expected" );
         }
         catch ( ClientException e )
@@ -889,11 +888,11 @@ public class SessionAsyncIT
     @Test
     public void shouldPropagateBlockedPullAllFailureWhenClosed()
     {
-        getBlocking( session.runAsync( "UNWIND range(20000, 0, -1) AS x RETURN 10 / x" ) );
+        await( session.runAsync( "UNWIND range(20000, 0, -1) AS x RETURN 10 / x" ) );
 
         try
         {
-            getBlocking( session.closeAsync() );
+            await( session.closeAsync() );
             fail( "Exception expected" );
         }
         catch ( ClientException e )
@@ -905,11 +904,11 @@ public class SessionAsyncIT
     @Test
     public void shouldCloseCleanlyWhenRunErrorConsumed()
     {
-        StatementResultCursor cursor = getBlocking( session.runAsync( "SomeWrongQuery" ) );
+        StatementResultCursor cursor = await( session.runAsync( "SomeWrongQuery" ) );
 
         try
         {
-            getBlocking( cursor.consumeAsync() );
+            await( cursor.consumeAsync() );
             fail( "Exception expected" );
         }
         catch ( ClientException e )
@@ -917,17 +916,17 @@ public class SessionAsyncIT
             assertThat( e.getMessage(), startsWith( "Invalid input" ) );
         }
 
-        assertNull( getBlocking( session.closeAsync() ) );
+        assertNull( await( session.closeAsync() ) );
     }
 
     @Test
     public void shouldCloseCleanlyWhenPullAllErrorConsumed()
     {
-        StatementResultCursor cursor = getBlocking( session.runAsync( "UNWIND range(10, 0, -1) AS x RETURN 1 / x" ) );
+        StatementResultCursor cursor = await( session.runAsync( "UNWIND range(10, 0, -1) AS x RETURN 1 / x" ) );
 
         try
         {
-            getBlocking( cursor.consumeAsync() );
+            await( cursor.consumeAsync() );
             fail( "Exception expected" );
         }
         catch ( ClientException e )
@@ -935,7 +934,7 @@ public class SessionAsyncIT
             assertThat( e.getMessage(), containsString( "/ by zero" ) );
         }
 
-        assertNull( getBlocking( session.closeAsync() ) );
+        assertNull( await( session.closeAsync() ) );
     }
 
     @Test
@@ -943,21 +942,21 @@ public class SessionAsyncIT
     {
         CompletionStage<StatementResultCursor> cursorStage = session.runAsync( "UNWIND range(1, 20000) AS x RETURN x" );
 
-        getBlocking( session.closeAsync() );
+        await( session.closeAsync() );
 
-        StatementResultCursor cursor = getBlocking( cursorStage );
-        List<Integer> ints = getBlocking( cursor.listAsync( record -> record.get( 0 ).asInt() ) );
+        StatementResultCursor cursor = await( cursorStage );
+        List<Integer> ints = await( cursor.listAsync( record -> record.get( 0 ).asInt() ) );
         assertEquals( 20000, ints.size() );
     }
 
     @Test
     public void shouldPropagateFailureFromSummary()
     {
-        StatementResultCursor cursor = getBlocking( session.runAsync( "RETURN Something" ) );
+        StatementResultCursor cursor = await( session.runAsync( "RETURN Something" ) );
 
         try
         {
-            getBlocking( cursor.summaryAsync() );
+            await( cursor.summaryAsync() );
             fail( "Exception expected" );
         }
         catch ( ClientException e )
@@ -965,7 +964,7 @@ public class SessionAsyncIT
             assertThat( e.code(), containsString( "SyntaxError" ) );
         }
 
-        assertNotNull( getBlocking( cursor.summaryAsync() ) );
+        assertNotNull( await( cursor.summaryAsync() ) );
     }
 
     @Test
@@ -978,7 +977,7 @@ public class SessionAsyncIT
 
         try
         {
-            getBlocking( session.closeAsync() );
+            await( session.closeAsync() );
             fail( "Exception expected" );
         }
         catch ( ClientException e )
@@ -995,7 +994,7 @@ public class SessionAsyncIT
 
         try
         {
-            getBlocking( runWithOpenTx );
+            await( runWithOpenTx );
             fail( "Exception expected" );
         }
         catch ( ClientException e )
@@ -1004,7 +1003,7 @@ public class SessionAsyncIT
                     startsWith( "Statements cannot be run directly on a session with an open transaction" ) );
         }
 
-        getBlocking( session.closeAsync() );
+        await( session.closeAsync() );
     }
 
     @Test
@@ -1017,7 +1016,7 @@ public class SessionAsyncIT
 
         try
         {
-            getBlocking( allStatements );
+            await( allStatements );
             fail( "Exception expected" );
         }
         catch ( ClientException e )
@@ -1062,7 +1061,7 @@ public class SessionAsyncIT
 
         try
         {
-            getBlocking( result );
+            await( result );
             fail( "Exception expected" );
         }
         catch ( IllegalStateException e )
@@ -1080,7 +1079,7 @@ public class SessionAsyncIT
 
         try
         {
-            getBlocking( result );
+            await( result );
             fail( "Exception expected" );
         }
         catch ( IllegalStateException e )
@@ -1150,7 +1149,7 @@ public class SessionAsyncIT
                 .thenCompose( StatementResultCursor::singleAsync )
                 .thenApply( record -> record.get( 0 ).asLong() );
 
-        return getBlocking( countStage );
+        return await( countStage );
     }
 
     private void testForEach( String query, int expectedSeenRecords )

@@ -75,9 +75,9 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
-import static org.neo4j.driver.internal.util.Futures.getBlocking;
 import static org.neo4j.driver.internal.util.Matchers.connectionAcquisitionTimeoutError;
 import static org.neo4j.driver.v1.Values.parameters;
+import static org.neo4j.driver.v1.util.TestUtil.await;
 
 public class CausalClusteringIT
 {
@@ -516,7 +516,7 @@ public class CausalClusteringIT
                             session.writeTransactionAsync( tx -> tx.runAsync( "CREATE (:Node1) RETURN 42" ) )
                                     .thenCompose( cursor2 -> combineCursors( cursor2, cursor1 ) ) );
 
-            List<RecordAndSummary> results = getBlocking( resultsStage );
+            List<RecordAndSummary> results = await( resultsStage );
             assertEquals( 2, results.size() );
 
             RecordAndSummary first = results.get( 0 );
@@ -533,9 +533,9 @@ public class CausalClusteringIT
                             .thenCompose( StatementResultCursor::singleAsync ) )
                             .thenApply( record -> record.get( 0 ).asInt() );
 
-            assertEquals( 1, getBlocking( countStage ).intValue() );
+            assertEquals( 1, await( countStage ).intValue() );
 
-            getBlocking( session.closeAsync() );
+            await( session.closeAsync() );
         }
     }
 

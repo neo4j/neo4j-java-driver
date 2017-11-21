@@ -62,10 +62,10 @@ import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.A;
 import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.B;
 import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.C;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
-import static org.neo4j.driver.internal.util.Futures.getBlocking;
 import static org.neo4j.driver.v1.AccessMode.READ;
 import static org.neo4j.driver.v1.AccessMode.WRITE;
 import static org.neo4j.driver.v1.util.TestUtil.asOrderedSet;
+import static org.neo4j.driver.v1.util.TestUtil.await;
 
 public class LoadBalancerTest
 {
@@ -92,7 +92,7 @@ public class LoadBalancerTest
         LoadBalancer loadBalancer = new LoadBalancer( connectionPool, routingTable, rediscovery,
                 GlobalEventExecutor.INSTANCE, DEV_NULL_LOGGING );
 
-        assertNotNull( getBlocking( loadBalancer.acquireConnection( READ ) ) );
+        assertNotNull( await( loadBalancer.acquireConnection( READ ) ) );
 
         verify( rediscovery ).lookupClusterComposition( routingTable, connectionPool );
         assertArrayEquals( new BoltServerAddress[]{reader1, reader2}, routingTable.readers().toArray() );
@@ -123,7 +123,7 @@ public class LoadBalancerTest
         LoadBalancer loadBalancer = new LoadBalancer( connectionPool, routingTable, rediscovery,
                 GlobalEventExecutor.INSTANCE, DEV_NULL_LOGGING );
 
-        assertNotNull( getBlocking( loadBalancer.acquireConnection( READ ) ) );
+        assertNotNull( await( loadBalancer.acquireConnection( READ ) ) );
 
         verify( rediscovery ).lookupClusterComposition( routingTable, connectionPool );
         verify( connectionPool ).purge( initialRouter1 );
@@ -172,7 +172,7 @@ public class LoadBalancerTest
 
         try
         {
-            getBlocking( loadBalancer.acquireConnection( READ ) );
+            await( loadBalancer.acquireConnection( READ ) );
             fail( "Exception expected" );
         }
         catch ( Exception e )
@@ -183,7 +183,7 @@ public class LoadBalancerTest
 
         try
         {
-            getBlocking( loadBalancer.acquireConnection( WRITE ) );
+            await( loadBalancer.acquireConnection( WRITE ) );
             fail( "Exception expected" );
         }
         catch ( Exception e )
@@ -215,7 +215,7 @@ public class LoadBalancerTest
         Set<BoltServerAddress> seenAddresses = new HashSet<>();
         for ( int i = 0; i < 10; i++ )
         {
-            Connection connection = getBlocking( loadBalancer.acquireConnection( READ ) );
+            Connection connection = await( loadBalancer.acquireConnection( READ ) );
             seenAddresses.add( connection.serverAddress() );
         }
 
@@ -242,7 +242,7 @@ public class LoadBalancerTest
         Set<BoltServerAddress> seenAddresses = new HashSet<>();
         for ( int i = 0; i < 10; i++ )
         {
-            Connection connection = getBlocking( loadBalancer.acquireConnection( READ ) );
+            Connection connection = await( loadBalancer.acquireConnection( READ ) );
             seenAddresses.add( connection.serverAddress() );
         }
 
@@ -266,7 +266,7 @@ public class LoadBalancerTest
         LoadBalancer loadBalancer = new LoadBalancer( connectionPool, routingTable, rediscovery,
                 GlobalEventExecutor.INSTANCE, DEV_NULL_LOGGING );
 
-        Connection connection = getBlocking( loadBalancer.acquireConnection( READ ) );
+        Connection connection = await( loadBalancer.acquireConnection( READ ) );
 
         assertNotNull( connection );
         assertEquals( B, connection.serverAddress() );
@@ -285,7 +285,7 @@ public class LoadBalancerTest
 
         LoadBalancer loadBalancer = new LoadBalancer( connectionPool, routingTable, rediscovery,
                 GlobalEventExecutor.INSTANCE, DEV_NULL_LOGGING );
-        Connection connection = getBlocking( loadBalancer.acquireConnection( mode ) );
+        Connection connection = await( loadBalancer.acquireConnection( mode ) );
         assertNotNull( connection );
 
         verify( routingTable ).isStaleFor( mode );
@@ -304,7 +304,7 @@ public class LoadBalancerTest
         LoadBalancer loadBalancer = new LoadBalancer( connectionPool, routingTable, rediscovery,
                 GlobalEventExecutor.INSTANCE, DEV_NULL_LOGGING );
 
-        assertNotNull( getBlocking( loadBalancer.acquireConnection( notStaleMode ) ) );
+        assertNotNull( await( loadBalancer.acquireConnection( notStaleMode ) ) );
         verify( routingTable ).isStaleFor( notStaleMode );
         verify( rediscovery, never() ).lookupClusterComposition( routingTable, connectionPool );
     }

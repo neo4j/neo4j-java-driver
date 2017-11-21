@@ -73,7 +73,7 @@ public final class Futures
         return result;
     }
 
-    public static <V> V getBlocking( CompletionStage<V> stage )
+    public static <V> V blockingGet( CompletionStage<V> stage )
     {
         EventLoopGroupFactory.assertNotInEventLoopThread();
 

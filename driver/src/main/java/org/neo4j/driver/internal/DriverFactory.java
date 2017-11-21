@@ -79,7 +79,7 @@ public class DriverFactory
         {
             InternalDriver driver = createDriver( uri, address, connectionPool, config, newRoutingSettings,
                     eventExecutorGroup, securityPlan, retryLogic );
-            Futures.getBlocking( driver.verifyConnectivity() );
+            Futures.blockingGet( driver.verifyConnectivity() );
             return driver;
         }
         catch ( Throwable driverError )
@@ -87,7 +87,7 @@ public class DriverFactory
             // we need to close the connection pool if driver creation threw exception
             try
             {
-                Futures.getBlocking( connectionPool.close() );
+                Futures.blockingGet( connectionPool.close() );
             }
             catch ( Throwable closeError )
             {
