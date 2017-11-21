@@ -335,7 +335,8 @@ public class Config
          *
          * @param size the max number of sessions to keep open
          * @return this builder
-         * @deprecated please use {@link #withMaxConnectionPoolSize(int)} instead.
+         * @deprecated please use a combination of {@link #withMaxConnectionPoolSize(int)} and
+         * {@link #withConnectionAcquisitionTimeout(long, TimeUnit)} instead.
          */
         @Deprecated
         public ConfigBuilder withMaxSessions( int size )
@@ -352,7 +353,8 @@ public class Config
          *
          * @param size the max number of idle sessions to keep open
          * @return this builder
-         * @deprecated please use {@link #withMaxConnectionPoolSize(int)} instead.
+         * @deprecated please use a combination of {@link #withMaxConnectionPoolSize(int)} and
+         * {@link #withConnectionAcquisitionTimeout(long, TimeUnit)} instead.
          */
         @Deprecated
         public ConfigBuilder withMaxIdleSessions( int size )
@@ -369,7 +371,8 @@ public class Config
          *
          * @param size the max number of idle connections to keep open
          * @return this builder
-         * @deprecated please use {@link #withMaxConnectionPoolSize(int)} instead.
+         * @deprecated please use a combination of {@link #withMaxConnectionPoolSize(int)} and
+         * {@link #withConnectionAcquisitionTimeout(long, TimeUnit)} instead.
          */
         @Deprecated
         public ConfigBuilder withMaxIdleConnections( int size )
