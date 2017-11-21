@@ -68,6 +68,7 @@ import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 import static org.neo4j.driver.internal.util.Futures.getBlocking;
 import static org.neo4j.driver.internal.util.Iterables.single;
+import static org.neo4j.driver.internal.util.Matchers.blockingOperationInEventLoopError;
 import static org.neo4j.driver.internal.util.Matchers.containsResultAvailableAfterAndResultConsumedAfter;
 import static org.neo4j.driver.internal.util.Matchers.syntaxError;
 import static org.neo4j.driver.internal.util.ServerVersion.v3_1_0;
@@ -1234,6 +1235,28 @@ public class TransactionAsyncIT
         }
 
         assertNotNull( getBlocking( cursor.summaryAsync() ) );
+    }
+
+    @Test
+    public void shouldFailToExecuteBlockingRunChainedWithAsyncTransaction()
+    {
+        assumeDatabaseSupportsBookmarks();
+
+        session.writeTransaction( tx -> tx.run( "CREATE ()" ) );
+        assertNotNull( session.lastBookmark() );
+
+        CompletionStage<StatementResult> result = session.beginTransactionAsync()
+                .thenApply( tx -> tx.run( "CREATE ()" ) );
+
+        try
+        {
+            getBlocking( result );
+            fail( "Exception expected" );
+        }
+        catch ( IllegalStateException e )
+        {
+            assertThat( e, is( blockingOperationInEventLoopError() ) );
+        }
     }
 
     private int countNodes( Object id )

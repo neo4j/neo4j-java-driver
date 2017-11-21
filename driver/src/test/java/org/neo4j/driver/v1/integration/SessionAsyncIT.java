@@ -42,6 +42,7 @@ import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
+import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.StatementResultCursor;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.TransactionWork;
@@ -76,6 +77,7 @@ import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.internal.util.Futures.getBlocking;
 import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.internal.util.Matchers.arithmeticError;
+import static org.neo4j.driver.internal.util.Matchers.blockingOperationInEventLoopError;
 import static org.neo4j.driver.internal.util.Matchers.containsResultAvailableAfterAndResultConsumedAfter;
 import static org.neo4j.driver.internal.util.Matchers.syntaxError;
 import static org.neo4j.driver.internal.util.ServerVersion.v3_1_0;
@@ -1026,6 +1028,65 @@ public class SessionAsyncIT
         assertEquals( 1, countNodesByLabel( "Node1" ) );
         assertEquals( 1, countNodesByLabel( "Node2" ) );
         assertEquals( 0, countNodesByLabel( "Node3" ) );
+    }
+
+    @Test
+    public void shouldBePossibleToMixRunAsyncAndBlockingSessionClose()
+    {
+        long nodeCount = 5_000;
+
+        try ( Session session = neo4j.driver().session() )
+        {
+            session.runAsync( "UNWIND range(1, " + nodeCount + ") AS x CREATE (n:AsyncNode {x: x}) RETURN n" );
+        }
+
+        assertEquals( nodeCount, countNodesByLabel( "AsyncNode" ) );
+    }
+
+    @Test
+    public void shouldFailToExecuteBlockingRunInAsyncTransactionFunction()
+    {
+        TransactionWork<CompletionStage<List<Record>>> completionStageTransactionWork = tx ->
+        {
+            StatementResult result = tx.run( "UNWIND range(1, 10000) AS x CREATE (n:AsyncNode {x: x}) RETURN n" );
+            List<Record> records = new ArrayList<>();
+            while ( result.hasNext() )
+            {
+                records.add( result.next() );
+            }
+
+            return completedFuture( records );
+        };
+
+        CompletionStage<List<Record>> result = session.readTransactionAsync( completionStageTransactionWork );
+
+        try
+        {
+            getBlocking( result );
+            fail( "Exception expected" );
+        }
+        catch ( IllegalStateException e )
+        {
+            assertThat( e, is( blockingOperationInEventLoopError() ) );
+        }
+    }
+
+    @Test
+    public void shouldFailToExecuteBlockingRunChainedWithAsyncRun()
+    {
+        CompletionStage<StatementResult> result = session.runAsync( "RETURN 1" )
+                .thenCompose( StatementResultCursor::singleAsync )
+                .thenApply( record -> session.run( "RETURN $x", parameters( "x", record.get( 0 ).asInt() ) ) );
+
+        try
+        {
+            getBlocking( result );
+            fail( "Exception expected" );
+        }
+        catch ( IllegalStateException e )
+        {
+            assertThat( e, is( blockingOperationInEventLoopError() ) );
+        }
     }
 
     private Future<List<CompletionStage<Record>>> runNestedQueries( StatementResultCursor inputCursor )
