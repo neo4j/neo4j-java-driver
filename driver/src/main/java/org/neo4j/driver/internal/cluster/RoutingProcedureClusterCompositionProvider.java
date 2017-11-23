@@ -72,11 +72,7 @@ public class RoutingProcedureClusterCompositionProvider implements ClusterCompos
         }
 
         List<Record> records = response.records();
-
-        if ( log.isDebugEnabled() )
-        {
-            log.debug( "Received response from %s procedure: %s", invokedProcedureString( response ), records );
-        }
+        log.info( "Received response from %s procedure: %s", invokedProcedureString( response ), records );
 
         long now = clock.millis();
 

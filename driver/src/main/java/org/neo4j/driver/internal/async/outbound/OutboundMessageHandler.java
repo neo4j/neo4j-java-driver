@@ -92,7 +92,7 @@ public class OutboundMessageHandler extends MessageToMessageEncoder<Message>
 
         if ( log.isTraceEnabled() )
         {
-            log.trace( "C: %s encoded as\n%s", msg, prettyHexDump( messageBuf ) );
+            log.trace( "C:\n%s", prettyHexDump( messageBuf ) );
         }
 
         out.add( messageBuf );
