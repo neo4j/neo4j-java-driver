@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.internal.security;
 
+import io.netty.buffer.ByteBufUtil;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -31,7 +33,6 @@ import java.security.cert.X509Certificate;
 import javax.net.ssl.X509TrustManager;
 
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.util.BytePrinter;
 import org.neo4j.driver.v1.Logger;
 
 import static java.lang.String.format;
@@ -202,7 +203,7 @@ public class TrustOnFirstUseTrustManager implements X509TrustManager
         {
             MessageDigest md = MessageDigest.getInstance( "SHA-512" );
             md.update( cert.getEncoded() );
-            return BytePrinter.compactHex( md.digest() );
+            return ByteBufUtil.hexDump( md.digest() );
         }
         catch( NoSuchAlgorithmException e )
         {
