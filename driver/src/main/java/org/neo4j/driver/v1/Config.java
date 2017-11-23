@@ -349,7 +349,7 @@ public class Config
          * higher if you want more concurrent sessions, or lower if you want
          * to lower the pressure on the database instance.
          * <p>
-         * Method is deprecated and will forward the given argument to {@link #withMaxConnectionPoolSize(int)}.
+         * Method is deprecated and will not change the driver configuration.
          *
          * @param size the max number of idle sessions to keep open
          * @return this builder
@@ -359,7 +359,7 @@ public class Config
         @Deprecated
         public ConfigBuilder withMaxIdleSessions( int size )
         {
-            return withMaxConnectionPoolSize( size );
+            return this;
         }
 
         /**
@@ -367,7 +367,7 @@ public class Config
          * higher for greater concurrency, or lower to reduce the pressure on the
          * database instance.
          * <p>
-         * Method is deprecated and will forward the given argument to {@link #withMaxConnectionPoolSize(int)}.
+         * Method is deprecated and will not change the driver configuration.
          *
          * @param size the max number of idle connections to keep open
          * @return this builder
@@ -377,7 +377,7 @@ public class Config
         @Deprecated
         public ConfigBuilder withMaxIdleConnections( int size )
         {
-            return withMaxConnectionPoolSize( size );
+            return this;
         }
 
         /**
