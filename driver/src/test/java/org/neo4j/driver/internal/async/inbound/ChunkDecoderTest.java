@@ -22,30 +22,46 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.After;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 
+import org.neo4j.driver.v1.Logger;
+import org.neo4j.driver.v1.Logging;
+
+import static io.netty.buffer.ByteBufUtil.prettyHexDump;
 import static io.netty.buffer.Unpooled.buffer;
 import static io.netty.buffer.Unpooled.copyShort;
 import static io.netty.buffer.Unpooled.wrappedBuffer;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.v1.util.TestUtil.assertByteBufEquals;
 
 public class ChunkDecoderTest
 {
-    private final EmbeddedChannel channel = new EmbeddedChannel( new ChunkDecoder() );
+    private ByteBuf buffer;
+    private EmbeddedChannel channel = new EmbeddedChannel( newChunkDecoder() );
 
     @After
     public void tearDown()
     {
-        channel.finishAndReleaseAll();
+        if ( buffer != null )
+        {
+            buffer.release( buffer.refCnt() );
+        }
+        if ( channel != null )
+        {
+            channel.finishAndReleaseAll();
+        }
     }
 
     @Test
     public void shouldDecodeFullChunk()
     {
-        EmbeddedChannel channel = new EmbeddedChannel( new ChunkDecoder() );
-
         // whole chunk with header and body arrives at once
         ByteBuf input = buffer();
         input.writeShort( 7 );
@@ -70,8 +86,6 @@ public class ChunkDecoderTest
     @Test
     public void shouldDecodeSplitChunk()
     {
-        EmbeddedChannel channel = new EmbeddedChannel( new ChunkDecoder() );
-
         // first part of the chunk contains size header and some bytes
         ByteBuf input1 = buffer();
         input1.writeShort( 9 );
@@ -113,8 +127,6 @@ public class ChunkDecoderTest
     @Test
     public void shouldDecodeEmptyChunk()
     {
-        EmbeddedChannel channel = new EmbeddedChannel( new ChunkDecoder() );
-
         // chunk contains just the size header which is zero
         ByteBuf input = copyShort( 0 );
         assertTrue( channel.writeInbound( input ) );
@@ -124,5 +136,68 @@ public class ChunkDecoderTest
         assertEquals( 1, channel.inboundMessages().size() );
         // it should have no size header and empty body
         assertByteBufEquals( wrappedBuffer( new byte[0] ), channel.readInbound() );
+    }
+
+    @Test
+    public void shouldLogEmptyChunkOnTraceLevel()
+    {
+        Logger logger = newTraceLogger();
+        channel = new EmbeddedChannel( new ChunkDecoder( newLogging( logger ) ) );
+
+        buffer = copyShort( 0 );
+        assertTrue( channel.writeInbound( buffer.copy() ) ); // copy buffer so we can verify against it later
+        assertTrue( channel.finish() );
+
+        ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass( String.class );
+        verify( logger ).trace( anyString(), messageCaptor.capture() );
+
+        // pretty hex dump should be logged
+        assertEquals( prettyHexDump( buffer ), messageCaptor.getValue() );
+        // single empty chunk should be available for reading
+        assertEquals( 1, channel.inboundMessages().size() );
+        assertByteBufEquals( wrappedBuffer( new byte[0] ), channel.readInbound() );
+    }
+
+    @Test
+    public void shouldLogNonEmptyChunkOnTraceLevel()
+    {
+        Logger logger = newTraceLogger();
+        channel = new EmbeddedChannel( new ChunkDecoder( newLogging( logger ) ) );
+
+        byte[] bytes = "Hello".getBytes();
+        buffer = buffer();
+        buffer.writeShort( bytes.length );
+        buffer.writeBytes( bytes );
+
+        assertTrue( channel.writeInbound( buffer.copy() ) ); // copy buffer so we can verify against it later
+        assertTrue( channel.finish() );
+
+        ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass( String.class );
+        verify( logger ).trace( anyString(), messageCaptor.capture() );
+
+        // pretty hex dump should be logged
+        assertEquals( prettyHexDump( buffer ), messageCaptor.getValue() );
+        // single chunk should be available for reading
+        assertEquals( 1, channel.inboundMessages().size() );
+        assertByteBufEquals( wrappedBuffer( bytes ), channel.readInbound() );
+    }
+
+    private static ChunkDecoder newChunkDecoder()
+    {
+        return new ChunkDecoder( DEV_NULL_LOGGING );
+    }
+
+    private static Logger newTraceLogger()
+    {
+        Logger logger = mock( Logger.class );
+        when( logger.isTraceEnabled() ).thenReturn( true );
+        return logger;
+    }
+
+    private static Logging newLogging( Logger logger )
+    {
+        Logging logging = mock( Logging.class );
+        when( logging.getLog( anyString() ) ).thenReturn( logger );
+        return logging;
     }
 }

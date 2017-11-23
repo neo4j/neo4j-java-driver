@@ -113,27 +113,26 @@ public class InboundMessageDispatcher implements MessageHandler
     @Override
     public void handleSuccessMessage( Map<String,Value> meta )
     {
+        log.debug( "S: SUCCESS %s", meta );
         ResponseHandler handler = handlers.remove();
-        log.debug( "Received SUCCESS message with metadata %s for handler %s", meta, handler );
         handler.onSuccess( meta );
     }
 
     @Override
     public void handleRecordMessage( Value[] fields )
     {
-        ResponseHandler handler = handlers.peek();
         if ( log.isDebugEnabled() )
         {
-            log.debug( "Received RECORD message with metadata %s for handler %s", Arrays.toString( fields ), handler );
+            log.debug( "S: RECORD %s", Arrays.toString( fields ) );
         }
+        ResponseHandler handler = handlers.peek();
         handler.onRecord( fields );
     }
 
     @Override
     public void handleFailureMessage( String code, String message )
     {
-        ResponseHandler handler = handlers.remove();
-        log.debug( "Received FAILURE message with code '%s' and message '%s' for handler %s", code, message, handler );
+        log.debug( "S: FAILURE %s \"%s\"", code, message );
 
         currentError = ErrorUtil.newNeo4jError( code, message );
 
@@ -148,15 +147,16 @@ public class InboundMessageDispatcher implements MessageHandler
         // try to write ACK_FAILURE before notifying the next response handler
         ackFailureIfNeeded();
 
+        ResponseHandler handler = handlers.remove();
         handler.onFailure( currentError );
     }
 
     @Override
     public void handleIgnoredMessage()
     {
-        ResponseHandler handler = handlers.remove();
-        log.debug( "Received IGNORED message for handler %s", handler );
+        log.debug( "S: IGNORED" );
 
+        ResponseHandler handler = handlers.remove();
         if ( currentError != null )
         {
             handler.onFailure( currentError );

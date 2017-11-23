@@ -34,8 +34,8 @@ public class ChannelPipelineBuilderImpl implements ChannelPipelineBuilder
     public void build( MessageFormat messageFormat, ChannelPipeline pipeline, Logging logging )
     {
         // inbound handlers
-        pipeline.addLast( new ChunkDecoder() );
-        pipeline.addLast( new MessageDecoder( logging ) );
+        pipeline.addLast( new ChunkDecoder( logging ) );
+        pipeline.addLast( new MessageDecoder() );
         pipeline.addLast( new InboundMessageHandler( messageFormat, logging ) );
 
         // outbound handlers

@@ -67,14 +67,14 @@ public class InboundMessageHandler extends SimpleChannelInboundHandler<ByteBuf>
     {
         if ( messageDispatcher.fatalErrorOccurred() )
         {
-            log.warn( "Message ignored because of the previous fatal error. Channel will be closed. Message:\n%s\n",
+            log.warn( "Message ignored because of the previous fatal error. Channel will be closed. Message:\n%s",
                     prettyHexDump( msg ) );
             return;
         }
 
         if ( log.isTraceEnabled() )
         {
-            log.trace( "Message received:\n%s\n", prettyHexDump( msg ) );
+            log.trace( "S:\n%s", prettyHexDump( msg ) );
         }
 
         input.start( msg );

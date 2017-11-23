@@ -73,7 +73,7 @@ public class OutboundMessageHandler extends MessageToMessageEncoder<Message>
     @Override
     protected void encode( ChannelHandlerContext ctx, Message msg, List<Object> out )
     {
-        log.debug( "Sending message %s", msg );
+        log.debug( "C: %s", msg );
 
         ByteBuf messageBuf = ctx.alloc().ioBuffer();
         output.start( messageBuf );
@@ -92,7 +92,7 @@ public class OutboundMessageHandler extends MessageToMessageEncoder<Message>
 
         if ( log.isTraceEnabled() )
         {
-            log.trace( "Message %s encoded as\n%s\n", msg, prettyHexDump( messageBuf ) );
+            log.trace( "C: %s encoded as\n%s", msg, prettyHexDump( messageBuf ) );
         }
 
         out.add( messageBuf );
