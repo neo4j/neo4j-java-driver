@@ -43,10 +43,7 @@ public class EventLoopGroupFactoryTest
     @After
     public void tearDown()
     {
-        if ( eventLoopGroup != null )
-        {
-            eventLoopGroup.shutdownGracefully().syncUninterruptibly();
-        }
+        shutdown( eventLoopGroup );
     }
 
     @Test
@@ -89,6 +86,48 @@ public class EventLoopGroupFactoryTest
         catch ( ExecutionException e )
         {
             assertThat( e.getCause(), is( blockingOperationInEventLoopError() ) );
+        }
+    }
+
+    /**
+     * Test verifies that our event loop group uses same kind of thread as Netty does by default.
+     * It's needed because default Netty setup has good performance.
+     */
+    @Test
+    public void shouldUseSameThreadClassAsNioEventLoopGroupDoesByDefault() throws Exception
+    {
+        NioEventLoopGroup nioEventLoopGroup = new NioEventLoopGroup( 1 );
+        eventLoopGroup = EventLoopGroupFactory.newEventLoopGroup( 1 );
+        try
+        {
+            Thread defaultThread = getThread( nioEventLoopGroup );
+            Thread driverThread = getThread( eventLoopGroup );
+
+            assertEquals( defaultThread.getClass(), driverThread.getClass().getSuperclass() );
+            assertEquals( defaultThread.getPriority(), driverThread.getPriority() );
+        }
+        finally
+        {
+            shutdown( nioEventLoopGroup );
+        }
+    }
+
+    private static Thread getThread( EventLoopGroup eventLoopGroup ) throws Exception
+    {
+        return eventLoopGroup.next().submit( Thread::currentThread ).get( 10, SECONDS );
+    }
+
+    private static void shutdown( EventLoopGroup group )
+    {
+        if ( group != null )
+        {
+            try
+            {
+                group.shutdownGracefully().syncUninterruptibly();
+            }
+            catch ( Throwable ignore )
+            {
+            }
         }
     }
 }

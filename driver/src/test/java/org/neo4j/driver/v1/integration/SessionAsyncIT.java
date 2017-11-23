@@ -1088,6 +1088,22 @@ public class SessionAsyncIT
         }
     }
 
+    @Test
+    public void shouldAllowBlockingOperationInCommonPoolWhenChaining()
+    {
+        CompletionStage<Node> nodeStage = session.runAsync( "RETURN 42 AS value" )
+                .thenCompose( StatementResultCursor::singleAsync )
+                // move execution to ForkJoinPool.commonPool()
+                .thenApplyAsync( record -> session.run( "CREATE (n:Node {value: $value}) RETURN n", record ) )
+                .thenApply( StatementResult::single )
+                .thenApply( record -> record.get( 0 ).asNode() );
+
+        Node node = await( nodeStage );
+
+        assertEquals( 42, node.get( "value" ).asInt() );
+        assertEquals( 1, countNodesByLabel( "Node" ) );
+    }
+
     private Future<List<CompletionStage<Record>>> runNestedQueries( StatementResultCursor inputCursor )
     {
         CompletableFuture<List<CompletionStage<Record>>> resultFuture = new CompletableFuture<>();

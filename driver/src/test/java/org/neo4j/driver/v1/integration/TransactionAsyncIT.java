@@ -1258,6 +1258,28 @@ public class TransactionAsyncIT
         }
     }
 
+    @Test
+    public void shouldAllowUsingBlockingApiInCommonPoolWhenChaining()
+    {
+        CompletionStage<Transaction> txStage = session.beginTransactionAsync()
+                // move execution to ForkJoinPool.commonPool()
+                .thenApplyAsync( tx ->
+                {
+                    tx.run( "UNWIND [1,1,2] AS x CREATE (:Node {id: x})" );
+                    tx.run( "CREATE (:Node {id: 42})" );
+                    tx.success();
+                    tx.close();
+                    return tx;
+                } );
+
+        Transaction tx = await( txStage );
+
+        assertFalse( tx.isOpen() );
+        assertEquals( 2, countNodes( 1 ) );
+        assertEquals( 1, countNodes( 2 ) );
+        assertEquals( 1, countNodes( 42 ) );
+    }
+
     private int countNodes( Object id )
     {
         StatementResult result = session.run( "MATCH (n:Node {id: $id}) RETURN count(n)", parameters( "id", id ) );
