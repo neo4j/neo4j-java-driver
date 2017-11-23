@@ -22,7 +22,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 
-import org.neo4j.driver.internal.logging.DelegatingLogger;
+import org.neo4j.driver.internal.logging.PrefixedLogger;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 
@@ -48,7 +48,7 @@ public class ChunkDecoder extends LengthFieldBasedFrameDecoder
     @Override
     public void handlerAdded( ChannelHandlerContext ctx )
     {
-        log = new DelegatingLogger( ctx.channel().toString(), logging, getClass() );
+        log = new PrefixedLogger( ctx.channel().toString(), logging, getClass() );
     }
 
     @Override

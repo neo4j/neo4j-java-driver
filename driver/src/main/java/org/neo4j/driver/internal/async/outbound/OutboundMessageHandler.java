@@ -25,7 +25,7 @@ import io.netty.handler.codec.MessageToMessageEncoder;
 
 import java.util.List;
 
-import org.neo4j.driver.internal.logging.DelegatingLogger;
+import org.neo4j.driver.internal.logging.PrefixedLogger;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.v1.Logger;
@@ -61,7 +61,7 @@ public class OutboundMessageHandler extends MessageToMessageEncoder<Message>
     @Override
     public void handlerAdded( ChannelHandlerContext ctx )
     {
-        log = new DelegatingLogger( ctx.channel().toString(), logging, getClass() );
+        log = new PrefixedLogger( ctx.channel().toString(), logging, getClass() );
     }
 
     @Override

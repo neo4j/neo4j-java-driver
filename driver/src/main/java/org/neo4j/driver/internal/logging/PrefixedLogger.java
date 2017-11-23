@@ -23,22 +23,22 @@ import org.neo4j.driver.v1.Logging;
 
 import static java.util.Objects.requireNonNull;
 
-public class DelegatingLogger implements Logger
+public class PrefixedLogger implements Logger
 {
     private final Logger delegate;
     private final String messagePrefix;
 
-    public DelegatingLogger( Logger delegate )
+    public PrefixedLogger( Logger delegate )
     {
         this( null, delegate );
     }
 
-    public DelegatingLogger( String messagePrefix, Logging logging, Class<?> owner )
+    public PrefixedLogger( String messagePrefix, Logging logging, Class<?> owner )
     {
         this( messagePrefix, logging.getLog( owner.getSimpleName() ) );
     }
 
-    public DelegatingLogger( String messagePrefix, Logger delegate )
+    public PrefixedLogger( String messagePrefix, Logger delegate )
     {
         this.delegate = requireNonNull( delegate );
         this.messagePrefix = messagePrefix;

@@ -23,7 +23,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.DecoderException;
 
-import org.neo4j.driver.internal.logging.DelegatingLogger;
+import org.neo4j.driver.internal.logging.PrefixedLogger;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
@@ -52,7 +52,7 @@ public class InboundMessageHandler extends SimpleChannelInboundHandler<ByteBuf>
     public void handlerAdded( ChannelHandlerContext ctx )
     {
         messageDispatcher = requireNonNull( messageDispatcher( ctx.channel() ) );
-        log = new DelegatingLogger( ctx.channel().toString(), logging, getClass() );
+        log = new PrefixedLogger( ctx.channel().toString(), logging, getClass() );
     }
 
     @Override

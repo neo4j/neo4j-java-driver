@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.Queue;
 
 import org.neo4j.driver.internal.handlers.AckFailureResponseHandler;
-import org.neo4j.driver.internal.logging.DelegatingLogger;
+import org.neo4j.driver.internal.logging.PrefixedLogger;
 import org.neo4j.driver.internal.messaging.MessageHandler;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.ErrorUtil;
@@ -50,7 +50,7 @@ public class InboundMessageDispatcher implements MessageHandler
     public InboundMessageDispatcher( Channel channel, Logging logging )
     {
         this.channel = requireNonNull( channel );
-        this.log = new DelegatingLogger( channel.toString(), logging, getClass() );
+        this.log = new PrefixedLogger( channel.toString(), logging, getClass() );
     }
 
     public void queue( ResponseHandler handler )

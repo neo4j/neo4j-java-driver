@@ -28,7 +28,7 @@ import io.netty.handler.codec.ReplayingDecoder;
 import java.util.List;
 import javax.net.ssl.SSLHandshakeException;
 
-import org.neo4j.driver.internal.logging.DelegatingLogger;
+import org.neo4j.driver.internal.logging.PrefixedLogger;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.PackStreamMessageFormatV1;
 import org.neo4j.driver.internal.util.ErrorUtil;
@@ -62,7 +62,7 @@ public class HandshakeHandler extends ReplayingDecoder<Void>
     @Override
     public void handlerAdded( ChannelHandlerContext ctx )
     {
-        log = new DelegatingLogger( ctx.channel().toString(), logging, getClass() );
+        log = new PrefixedLogger( ctx.channel().toString(), logging, getClass() );
     }
 
     @Override

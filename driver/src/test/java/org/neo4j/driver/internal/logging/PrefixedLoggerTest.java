@@ -34,7 +34,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class DelegatingLoggerTest
+public class PrefixedLoggerTest
 {
     private static final String PREFIX = "Output";
     private static final String MESSAGE = "Hello World!";
@@ -45,7 +45,7 @@ public class DelegatingLoggerTest
     {
         try
         {
-            new DelegatingLogger( null );
+            new PrefixedLogger( null );
             fail( "Exception expected" );
         }
         catch ( Exception e )
@@ -57,7 +57,7 @@ public class DelegatingLoggerTest
     @Test
     public void shouldAllowNullPrefix()
     {
-        assertNotNull( new DelegatingLogger( null, newLoggerMock() ) );
+        assertNotNull( new PrefixedLogger( null, newLoggerMock() ) );
     }
 
     @Test
@@ -65,7 +65,7 @@ public class DelegatingLoggerTest
     {
         Logger delegate = newLoggerMock( true, false );
 
-        DelegatingLogger logger = new DelegatingLogger( delegate );
+        PrefixedLogger logger = new PrefixedLogger( delegate );
 
         assertTrue( logger.isDebugEnabled() );
         verify( delegate ).isDebugEnabled();
@@ -76,7 +76,7 @@ public class DelegatingLoggerTest
     {
         Logger delegate = newLoggerMock( false, true );
 
-        DelegatingLogger logger = new DelegatingLogger( delegate );
+        PrefixedLogger logger = new PrefixedLogger( delegate );
 
         assertTrue( logger.isTraceEnabled() );
         verify( delegate ).isTraceEnabled();
@@ -87,7 +87,7 @@ public class DelegatingLoggerTest
     {
         Logger delegate = newLoggerMock();
 
-        DelegatingLogger logger = new DelegatingLogger( delegate );
+        PrefixedLogger logger = new PrefixedLogger( delegate );
         logger.debug( MESSAGE );
 
         verify( delegate, never() ).debug( anyString(), anyVararg() );
@@ -98,7 +98,7 @@ public class DelegatingLoggerTest
     {
         Logger delegate = newLoggerMock();
 
-        DelegatingLogger logger = new DelegatingLogger( delegate );
+        PrefixedLogger logger = new PrefixedLogger( delegate );
         logger.trace( MESSAGE );
 
         verify( delegate, never() ).trace( anyString(), anyVararg() );
@@ -108,7 +108,7 @@ public class DelegatingLoggerTest
     public void shouldDelegateErrorMessageWhenNoPrefix()
     {
         Logger delegate = newLoggerMock();
-        DelegatingLogger logger = new DelegatingLogger( delegate );
+        PrefixedLogger logger = new PrefixedLogger( delegate );
 
         logger.error( MESSAGE, ERROR );
 
@@ -119,7 +119,7 @@ public class DelegatingLoggerTest
     public void shouldDelegateInfoMessageWhenNoPrefix()
     {
         Logger delegate = newLoggerMock();
-        DelegatingLogger logger = new DelegatingLogger( delegate );
+        PrefixedLogger logger = new PrefixedLogger( delegate );
 
         logger.info( MESSAGE );
 
@@ -130,7 +130,7 @@ public class DelegatingLoggerTest
     public void shouldDelegateWarnMessageWhenNoPrefix()
     {
         Logger delegate = newLoggerMock();
-        DelegatingLogger logger = new DelegatingLogger( delegate );
+        PrefixedLogger logger = new PrefixedLogger( delegate );
 
         logger.warn( MESSAGE );
 
@@ -141,7 +141,7 @@ public class DelegatingLoggerTest
     public void shouldDelegateWarnMessageWithoutErrorWhenNoPrefix()
     {
         Logger delegate = newLoggerMock();
-        DelegatingLogger logger = new DelegatingLogger( delegate );
+        PrefixedLogger logger = new PrefixedLogger( delegate );
 
         Exception cause = new Exception();
         logger.warn( MESSAGE, cause );
@@ -153,7 +153,7 @@ public class DelegatingLoggerTest
     public void shouldDelegateDebugMessageWhenNoPrefix()
     {
         Logger delegate = newLoggerMock( true, false );
-        DelegatingLogger logger = new DelegatingLogger( delegate );
+        PrefixedLogger logger = new PrefixedLogger( delegate );
 
         logger.debug( MESSAGE );
 
@@ -164,7 +164,7 @@ public class DelegatingLoggerTest
     public void shouldDelegateTraceMessageWhenNoPrefix()
     {
         Logger delegate = newLoggerMock( false, true );
-        DelegatingLogger logger = new DelegatingLogger( delegate );
+        PrefixedLogger logger = new PrefixedLogger( delegate );
 
         logger.trace( MESSAGE );
 
@@ -175,7 +175,7 @@ public class DelegatingLoggerTest
     public void shouldDelegateErrorMessageWithPrefix()
     {
         Logger delegate = newLoggerMock();
-        DelegatingLogger logger = new DelegatingLogger( PREFIX, delegate );
+        PrefixedLogger logger = new PrefixedLogger( PREFIX, delegate );
 
         logger.error( MESSAGE, ERROR );
 
@@ -186,7 +186,7 @@ public class DelegatingLoggerTest
     public void shouldDelegateInfoMessageWithPrefix()
     {
         Logger delegate = newLoggerMock();
-        DelegatingLogger logger = new DelegatingLogger( PREFIX, delegate );
+        PrefixedLogger logger = new PrefixedLogger( PREFIX, delegate );
 
         logger.info( MESSAGE );
 
@@ -197,7 +197,7 @@ public class DelegatingLoggerTest
     public void shouldDelegateWarnMessageWithPrefix()
     {
         Logger delegate = newLoggerMock();
-        DelegatingLogger logger = new DelegatingLogger( PREFIX, delegate );
+        PrefixedLogger logger = new PrefixedLogger( PREFIX, delegate );
 
         logger.warn( MESSAGE );
 
@@ -208,7 +208,7 @@ public class DelegatingLoggerTest
     public void shouldDelegateWarnMessageWithErrorWithPrefix()
     {
         Logger delegate = newLoggerMock();
-        DelegatingLogger logger = new DelegatingLogger( PREFIX, delegate );
+        PrefixedLogger logger = new PrefixedLogger( PREFIX, delegate );
 
         Exception cause = new Exception();
         logger.warn( MESSAGE, cause );
@@ -220,7 +220,7 @@ public class DelegatingLoggerTest
     public void shouldDelegateDebugMessageWithPrefix()
     {
         Logger delegate = newLoggerMock( true, false );
-        DelegatingLogger logger = new DelegatingLogger( PREFIX, delegate );
+        PrefixedLogger logger = new PrefixedLogger( PREFIX, delegate );
 
         logger.debug( MESSAGE );
 
@@ -231,7 +231,7 @@ public class DelegatingLoggerTest
     public void shouldDelegateTraceMessageWithPrefix()
     {
         Logger delegate = newLoggerMock( false, true );
-        DelegatingLogger logger = new DelegatingLogger( PREFIX, delegate );
+        PrefixedLogger logger = new PrefixedLogger( PREFIX, delegate );
 
         logger.trace( MESSAGE );
 
