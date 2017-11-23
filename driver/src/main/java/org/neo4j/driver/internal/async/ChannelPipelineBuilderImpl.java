@@ -20,6 +20,7 @@ package org.neo4j.driver.internal.async;
 
 import io.netty.channel.ChannelPipeline;
 
+import org.neo4j.driver.internal.async.inbound.ChannelErrorHandler;
 import org.neo4j.driver.internal.async.inbound.ChunkDecoder;
 import org.neo4j.driver.internal.async.inbound.InboundMessageHandler;
 import org.neo4j.driver.internal.async.inbound.MessageDecoder;
@@ -33,7 +34,7 @@ public class ChannelPipelineBuilderImpl implements ChannelPipelineBuilder
     public void build( MessageFormat messageFormat, ChannelPipeline pipeline, Logging logging )
     {
         // inbound handlers
-        pipeline.addLast( new ChunkDecoder() );
+        pipeline.addLast( new ChunkDecoder( logging ) );
         pipeline.addLast( new MessageDecoder() );
         pipeline.addLast( new InboundMessageHandler( messageFormat, logging ) );
 

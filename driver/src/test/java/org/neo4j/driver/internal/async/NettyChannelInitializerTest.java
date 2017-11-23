@@ -32,7 +32,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.driver.internal.async.BoltServerAddress.LOCAL_DEFAULT;
+import static org.neo4j.driver.internal.BoltServerAddress.LOCAL_DEFAULT;
 import static org.neo4j.driver.internal.async.ChannelAttributes.creationTimestamp;
 import static org.neo4j.driver.internal.async.ChannelAttributes.messageDispatcher;
 import static org.neo4j.driver.internal.async.ChannelAttributes.serverAddress;

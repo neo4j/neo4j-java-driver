@@ -18,7 +18,15 @@
  */
 package org.neo4j.driver.internal.async.inbound;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
+
+import org.neo4j.driver.internal.logging.PrefixedLogger;
+import org.neo4j.driver.v1.Logger;
+import org.neo4j.driver.v1.Logging;
+
+import static io.netty.buffer.ByteBufUtil.prettyHexDump;
 
 public class ChunkDecoder extends LengthFieldBasedFrameDecoder
 {
@@ -28,8 +36,38 @@ public class ChunkDecoder extends LengthFieldBasedFrameDecoder
     private static final int LENGTH_ADJUSTMENT = 0;
     private static final int INITIAL_BYTES_TO_STRIP = LENGTH_FIELD_LENGTH;
 
-    public ChunkDecoder()
+    private final Logging logging;
+    private Logger log;
+
+    public ChunkDecoder( Logging logging )
     {
         super( MAX_FRAME_LENGTH, LENGTH_FIELD_OFFSET, LENGTH_FIELD_LENGTH, LENGTH_ADJUSTMENT, INITIAL_BYTES_TO_STRIP );
+        this.logging = logging;
+    }
+
+    @Override
+    public void handlerAdded( ChannelHandlerContext ctx )
+    {
+        log = new PrefixedLogger( ctx.channel().toString(), logging, getClass() );
+    }
+
+    @Override
+    protected void handlerRemoved0( ChannelHandlerContext ctx )
+    {
+        log = null;
+    }
+
+    @Override
+    protected ByteBuf extractFrame( ChannelHandlerContext ctx, ByteBuf buffer, int index, int length )
+    {
+        if ( log.isTraceEnabled() )
+        {
+            int originalReaderIndex = buffer.readerIndex();
+            int readerIndexWithChunkHeader = originalReaderIndex - INITIAL_BYTES_TO_STRIP;
+            int lengthWithChunkHeader = INITIAL_BYTES_TO_STRIP + buffer.readableBytes();
+            String hexDump = prettyHexDump( buffer, readerIndexWithChunkHeader, lengthWithChunkHeader );
+            log.trace( "S:\n%s", hexDump );
+        }
+        return super.extractFrame( ctx, buffer, index, length );
     }
 }

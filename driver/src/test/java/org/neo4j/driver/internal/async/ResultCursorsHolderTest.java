@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeoutException;
 
+import org.neo4j.driver.internal.InternalStatementResultCursor;
 import org.neo4j.driver.internal.util.Futures;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;

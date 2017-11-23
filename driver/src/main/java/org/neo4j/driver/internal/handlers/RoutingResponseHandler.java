@@ -16,12 +16,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.async;
+package org.neo4j.driver.internal.handlers;
 
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletionException;
 
+import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.RoutingErrorHandler;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.Futures;

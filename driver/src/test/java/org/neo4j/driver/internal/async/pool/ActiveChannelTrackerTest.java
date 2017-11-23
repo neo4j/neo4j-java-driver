@@ -22,7 +22,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Test;
 
-import org.neo4j.driver.internal.async.BoltServerAddress;
+import org.neo4j.driver.internal.BoltServerAddress;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;

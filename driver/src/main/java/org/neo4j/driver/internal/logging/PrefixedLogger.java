@@ -19,20 +19,26 @@
 package org.neo4j.driver.internal.logging;
 
 import org.neo4j.driver.v1.Logger;
+import org.neo4j.driver.v1.Logging;
 
 import static java.util.Objects.requireNonNull;
 
-public class DelegatingLogger implements Logger
+public class PrefixedLogger implements Logger
 {
     private final Logger delegate;
     private final String messagePrefix;
 
-    public DelegatingLogger( Logger delegate )
+    public PrefixedLogger( Logger delegate )
     {
-        this( delegate, null );
+        this( null, delegate );
     }
 
-    public DelegatingLogger( Logger delegate, String messagePrefix )
+    public PrefixedLogger( String messagePrefix, Logging logging, Class<?> owner )
+    {
+        this( messagePrefix, logging.getLog( owner.getSimpleName() ) );
+    }
+
+    public PrefixedLogger( String messagePrefix, Logger delegate )
     {
         this.delegate = requireNonNull( delegate );
         this.messagePrefix = messagePrefix;
@@ -98,6 +104,6 @@ public class DelegatingLogger implements Logger
         {
             return message;
         }
-        return String.format( "[%s] %s", messagePrefix, message );
+        return String.format( "%s %s", messagePrefix, message );
     }
 }

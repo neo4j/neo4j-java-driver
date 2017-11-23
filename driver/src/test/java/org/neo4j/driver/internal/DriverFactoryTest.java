@@ -30,7 +30,6 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 
-import org.neo4j.driver.internal.async.BoltServerAddress;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
 import org.neo4j.driver.internal.retry.RetryLogic;
@@ -167,7 +166,7 @@ public class DriverFactoryTest
         }
 
         @Override
-        protected InternalDriver createDriver( Config config, SecurityPlan securityPlan, SessionFactory sessionFactory )
+        protected InternalDriver createDriver( SessionFactory sessionFactory, SecurityPlan securityPlan, Config config )
         {
             throw new UnsupportedOperationException( "Can't create direct driver" );
         }
@@ -193,7 +192,7 @@ public class DriverFactoryTest
         SessionFactory capturedSessionFactory;
 
         @Override
-        protected InternalDriver createDriver( Config config, SecurityPlan securityPlan, SessionFactory sessionFactory )
+        protected InternalDriver createDriver( SessionFactory sessionFactory, SecurityPlan securityPlan, Config config )
         {
             InternalDriver driver = mock( InternalDriver.class );
             when( driver.verifyConnectivity() ).thenReturn( completedFuture( null ) );

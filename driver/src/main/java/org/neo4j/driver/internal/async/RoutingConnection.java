@@ -21,7 +21,9 @@ package org.neo4j.driver.internal.async;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
+import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.RoutingErrorHandler;
+import org.neo4j.driver.internal.handlers.RoutingResponseHandler;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.ServerVersion;

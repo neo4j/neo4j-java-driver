@@ -23,7 +23,6 @@ import org.junit.Test;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
-import org.neo4j.driver.internal.async.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 

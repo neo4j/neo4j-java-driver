@@ -24,7 +24,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import org.neo4j.driver.internal.async.BoltServerAddress;
+import org.neo4j.driver.internal.BoltServerAddress;
 
 import static java.util.Collections.singleton;
 import static org.junit.Assert.assertArrayEquals;

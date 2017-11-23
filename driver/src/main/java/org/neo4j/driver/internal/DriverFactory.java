@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.security.GeneralSecurityException;
 
-import org.neo4j.driver.internal.async.BoltServerAddress;
 import org.neo4j.driver.internal.async.BootstrapFactory;
 import org.neo4j.driver.internal.async.ChannelConnector;
 import org.neo4j.driver.internal.async.ChannelConnectorImpl;
@@ -143,11 +142,9 @@ public class DriverFactory
     protected InternalDriver createDirectDriver( BoltServerAddress address, Config config,
             SecurityPlan securityPlan, RetryLogic retryLogic, ConnectionPool connectionPool )
     {
-        ConnectionProvider connectionProvider =
-                new DirectConnectionProvider( address, connectionPool );
-        SessionFactory sessionFactory =
-                createSessionFactory( connectionProvider, retryLogic, config );
-        return createDriver( config, securityPlan, sessionFactory );
+        ConnectionProvider connectionProvider = new DirectConnectionProvider( address, connectionPool );
+        SessionFactory sessionFactory = createSessionFactory( connectionProvider, retryLogic, config );
+        return createDriver( sessionFactory, securityPlan, config );
     }
 
     /**
@@ -166,7 +163,7 @@ public class DriverFactory
         ConnectionProvider connectionProvider = createLoadBalancer( address, connectionPool, eventExecutorGroup,
                 config, routingSettings );
         SessionFactory sessionFactory = createSessionFactory( connectionProvider, retryLogic, config );
-        return createDriver( config, securityPlan, sessionFactory );
+        return createDriver( sessionFactory, securityPlan, config );
     }
 
     /**
@@ -174,9 +171,9 @@ public class DriverFactory
      * <p>
      * <b>This method is protected only for testing</b>
      */
-    protected InternalDriver createDriver( Config config, SecurityPlan securityPlan, SessionFactory sessionFactory )
+    protected InternalDriver createDriver( SessionFactory sessionFactory, SecurityPlan securityPlan, Config config )
     {
-        return new InternalDriver( securityPlan, sessionFactory );
+        return new InternalDriver( securityPlan, sessionFactory, config.logging() );
     }
 
     /**

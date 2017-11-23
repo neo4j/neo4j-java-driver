@@ -22,7 +22,7 @@ import org.junit.Test;
 
 import java.util.List;
 
-import org.neo4j.driver.internal.async.BoltServerAddress;
+import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.util.FakeClock;
 
 import static java.util.Arrays.asList;

@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal.cluster.loadbalancing;
 
-import org.neo4j.driver.internal.async.BoltServerAddress;
+import org.neo4j.driver.internal.BoltServerAddress;
 
 /**
  * A facility to select most appropriate reader or writer among the given addresses for request processing.

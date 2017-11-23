@@ -18,7 +18,6 @@
  */
 package org.neo4j.driver.internal.packstream;
 
-import org.hamcrest.MatcherAssert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -33,8 +32,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
-import org.neo4j.driver.internal.util.BytePrinter;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
@@ -467,8 +464,6 @@ public class PackStreamTest
         PackStream.Packer packer = machine.packer();
 
         byte[] bytes = code.getBytes( UTF_8 );
-        MatcherAssert.assertThat( BytePrinter.hex( bytes ).trim(), equalTo( "4d 6a c3 b6 6c 6e 69 72" ) );
-        assertThat( new String( bytes, UTF_8 ), equalTo( code ) );
 
         packer.packString( bytes );
 

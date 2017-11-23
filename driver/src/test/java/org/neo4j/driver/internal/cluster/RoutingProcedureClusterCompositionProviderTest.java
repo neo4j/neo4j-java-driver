@@ -26,8 +26,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
+import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.InternalRecord;
-import org.neo4j.driver.internal.async.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.value.StringValue;

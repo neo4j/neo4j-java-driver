@@ -22,12 +22,12 @@ import org.junit.Test;
 
 import java.net.SocketAddress;
 
-import org.neo4j.driver.internal.async.BoltServerAddress;
+import org.neo4j.driver.internal.BoltServerAddress;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.driver.internal.async.BoltServerAddress.DEFAULT_PORT;
+import static org.neo4j.driver.internal.BoltServerAddress.DEFAULT_PORT;
 
 public class BoltServerAddressTest
 {

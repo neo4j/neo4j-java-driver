@@ -24,7 +24,7 @@ import io.netty.channel.pool.ChannelHealthChecker;
 import io.netty.channel.pool.ChannelPoolHandler;
 import io.netty.channel.pool.FixedChannelPool;
 
-import org.neo4j.driver.internal.async.BoltServerAddress;
+import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.ChannelConnector;
 
 import static java.util.Objects.requireNonNull;

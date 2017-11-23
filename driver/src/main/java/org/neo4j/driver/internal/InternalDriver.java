@@ -24,6 +24,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.Logger;
+import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Session;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
@@ -33,13 +35,15 @@ public class InternalDriver implements Driver
 {
     private final SecurityPlan securityPlan;
     private final SessionFactory sessionFactory;
+    private final Logger log;
 
     private AtomicBoolean closed = new AtomicBoolean( false );
 
-    InternalDriver( SecurityPlan securityPlan, SessionFactory sessionFactory )
+    InternalDriver( SecurityPlan securityPlan, SessionFactory sessionFactory, Logging logging )
     {
         this.securityPlan = securityPlan;
         this.sessionFactory = sessionFactory;
+        this.log = logging.getLog( Driver.class.getSimpleName() );
     }
 
     @Override
@@ -108,6 +112,7 @@ public class InternalDriver implements Driver
     {
         if ( closed.compareAndSet( false, true ) )
         {
+            log.info( "Driver instance is closing" );
             return sessionFactory.close();
         }
         return completedFuture( null );

@@ -27,7 +27,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.internal.async.BoltServerAddress;
+import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.cluster.ClusterCompositionResponse.Failure;
 import org.neo4j.driver.internal.cluster.ClusterCompositionResponse.Success;
 import org.neo4j.driver.internal.spi.Connection;

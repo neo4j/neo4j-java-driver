@@ -20,16 +20,23 @@ package org.neo4j.driver.internal.async;
 
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.handler.codec.DecoderException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.io.IOException;
+import javax.net.ssl.SSLHandshakeException;
 
 import org.neo4j.driver.internal.async.inbound.ChunkDecoder;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.async.inbound.InboundMessageHandler;
 import org.neo4j.driver.internal.async.inbound.MessageDecoder;
 import org.neo4j.driver.internal.async.outbound.OutboundMessageHandler;
+import org.neo4j.driver.internal.util.ErrorUtil;
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.SecurityException;
+import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
 import static io.netty.buffer.Unpooled.copyInt;
 import static org.hamcrest.Matchers.instanceOf;
@@ -46,7 +53,7 @@ import static org.neo4j.driver.internal.async.ProtocolUtil.PROTOCOL_VERSION_1;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
-public class HandshakeResponseHandlerTest
+public class HandshakeHandlerTest
 {
     private final EmbeddedChannel channel = new EmbeddedChannel();
 
@@ -66,7 +73,7 @@ public class HandshakeResponseHandlerTest
     public void shouldFailGivenPromiseWhenExceptionCaught()
     {
         ChannelPromise handshakeCompletedPromise = channel.newPromise();
-        HandshakeResponseHandler handler = newHandler( handshakeCompletedPromise );
+        HandshakeHandler handler = newHandler( handshakeCompletedPromise );
         channel.pipeline().addLast( handler );
 
         RuntimeException cause = new RuntimeException( "Error!" );
@@ -88,16 +95,103 @@ public class HandshakeResponseHandlerTest
     }
 
     @Test
+    public void shouldFailGivenPromiseWhenMultipleExceptionsCaught()
+    {
+        ChannelPromise handshakeCompletedPromise = channel.newPromise();
+        HandshakeHandler handler = newHandler( handshakeCompletedPromise );
+        channel.pipeline().addLast( handler );
+
+        RuntimeException error1 = new RuntimeException( "Error 1" );
+        RuntimeException error2 = new RuntimeException( "Error 2" );
+        channel.pipeline().fireExceptionCaught( error1 );
+        channel.pipeline().fireExceptionCaught( error2 );
+
+        try
+        {
+            // promise should fail
+            await( handshakeCompletedPromise );
+            fail( "Exception expected" );
+        }
+        catch ( RuntimeException e )
+        {
+            assertEquals( error1, e );
+        }
+
+        // channel should be closed
+        assertNull( await( channel.closeFuture() ) );
+
+        try
+        {
+            channel.checkException();
+            fail( "Exception expected" );
+        }
+        catch ( RuntimeException e )
+        {
+            assertEquals( error2, e );
+        }
+    }
+
+    @Test
+    public void shouldUnwrapDecoderException()
+    {
+        ChannelPromise handshakeCompletedPromise = channel.newPromise();
+        HandshakeHandler handler = newHandler( handshakeCompletedPromise );
+        channel.pipeline().addLast( handler );
+
+        IOException cause = new IOException( "Error!" );
+        channel.pipeline().fireExceptionCaught( new DecoderException( cause ) );
+
+        try
+        {
+            // promise should fail
+            await( handshakeCompletedPromise );
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertEquals( cause, e );
+        }
+
+        // channel should be closed
+        assertNull( await( channel.closeFuture() ) );
+    }
+
+    @Test
+    public void shouldTranslateSSLHandshakeException()
+    {
+        ChannelPromise handshakeCompletedPromise = channel.newPromise();
+        HandshakeHandler handler = newHandler( handshakeCompletedPromise );
+        channel.pipeline().addLast( handler );
+
+        SSLHandshakeException error = new SSLHandshakeException( "Invalid certificate" );
+        channel.pipeline().fireExceptionCaught( error );
+
+        try
+        {
+            // promise should fail
+            await( handshakeCompletedPromise );
+            fail( "Exception expected" );
+        }
+        catch ( SecurityException e )
+        {
+            assertEquals( error, e.getCause() );
+        }
+
+        // channel should be closed
+        assertNull( await( channel.closeFuture() ) );
+    }
+
+    @Test
     public void shouldSelectProtocolV1WhenServerSuggests()
     {
         ChannelPromise handshakeCompletedPromise = channel.newPromise();
-        HandshakeResponseHandler handler = newHandler( handshakeCompletedPromise );
+        HandshakeHandler handler = newHandler( handshakeCompletedPromise );
         channel.pipeline().addLast( handler );
 
         channel.pipeline().fireChannelRead( copyInt( PROTOCOL_VERSION_1 ) );
 
         // handshake handler itself should be removed
-        assertNull( channel.pipeline().get( HandshakeResponseHandler.class ) );
+        assertNull( channel.pipeline().get( HandshakeHandler.class ) );
 
         // all inbound handlers should be set
         assertNotNull( channel.pipeline().get( ChunkDecoder.class ) );
@@ -129,16 +223,40 @@ public class HandshakeResponseHandlerTest
         testFailure( 42, "Protocol error" );
     }
 
+    @Test
+    public void shouldFailGivenPromiseWhenChannelInactive()
+    {
+        ChannelPromise handshakeCompletedPromise = channel.newPromise();
+        HandshakeHandler handler = newHandler( handshakeCompletedPromise );
+        channel.pipeline().addLast( handler );
+
+        channel.pipeline().fireChannelInactive();
+
+        try
+        {
+            // promise should fail
+            await( handshakeCompletedPromise );
+            fail( "Exception expected" );
+        }
+        catch ( ServiceUnavailableException e )
+        {
+            assertEquals( ErrorUtil.newConnectionTerminatedError().getMessage(), e.getMessage() );
+        }
+
+        // channel should be closed
+        assertNull( await( channel.closeFuture() ) );
+    }
+
     private void testFailure( int serverSuggestedVersion, String expectedMessagePrefix )
     {
         ChannelPromise handshakeCompletedPromise = channel.newPromise();
-        HandshakeResponseHandler handler = newHandler( handshakeCompletedPromise );
+        HandshakeHandler handler = newHandler( handshakeCompletedPromise );
         channel.pipeline().addLast( handler );
 
         channel.pipeline().fireChannelRead( copyInt( serverSuggestedVersion ) );
 
         // handshake handler itself should be removed
-        assertNull( channel.pipeline().get( HandshakeResponseHandler.class ) );
+        assertNull( channel.pipeline().get( HandshakeHandler.class ) );
 
         try
         {
@@ -156,9 +274,9 @@ public class HandshakeResponseHandlerTest
         assertNull( await( channel.closeFuture() ) );
     }
 
-    private static HandshakeResponseHandler newHandler( ChannelPromise handshakeCompletedPromise )
+    private static HandshakeHandler newHandler( ChannelPromise handshakeCompletedPromise )
     {
-        return new HandshakeResponseHandler( new ChannelPipelineBuilderImpl(), handshakeCompletedPromise,
+        return new HandshakeHandler( new ChannelPipelineBuilderImpl(), handshakeCompletedPromise,
                 DEV_NULL_LOGGING );
     }
 }

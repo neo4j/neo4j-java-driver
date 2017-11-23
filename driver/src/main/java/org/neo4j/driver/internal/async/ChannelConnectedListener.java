@@ -24,6 +24,8 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 
+import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
@@ -36,6 +38,7 @@ public class ChannelConnectedListener implements ChannelFutureListener
     private final ChannelPipelineBuilder pipelineBuilder;
     private final ChannelPromise handshakeCompletedPromise;
     private final Logging logging;
+    private final Logger log;
 
     public ChannelConnectedListener( BoltServerAddress address, ChannelPipelineBuilder pipelineBuilder,
             ChannelPromise handshakeCompletedPromise, Logging logging )
@@ -44,6 +47,7 @@ public class ChannelConnectedListener implements ChannelFutureListener
         this.pipelineBuilder = pipelineBuilder;
         this.handshakeCompletedPromise = handshakeCompletedPromise;
         this.logging = logging;
+        this.log = logging.getLog( getClass().getSimpleName() );
     }
 
     @Override
@@ -53,8 +57,10 @@ public class ChannelConnectedListener implements ChannelFutureListener
 
         if ( future.isSuccess() )
         {
+            log.trace( "Channel %s connected, running bolt handshake", channel );
+
             ChannelPipeline pipeline = channel.pipeline();
-            pipeline.addLast( new HandshakeResponseHandler( pipelineBuilder, handshakeCompletedPromise, logging ) );
+            pipeline.addLast( new HandshakeHandler( pipelineBuilder, handshakeCompletedPromise, logging ) );
             ChannelFuture handshakeFuture = channel.writeAndFlush( handshake() );
 
             handshakeFuture.addListener( channelFuture ->

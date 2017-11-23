@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 
+import org.neo4j.driver.internal.InternalStatementResultCursor;
+
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
 public class ResultCursorsHolder

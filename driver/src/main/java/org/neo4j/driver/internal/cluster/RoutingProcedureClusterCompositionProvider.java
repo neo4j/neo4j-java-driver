@@ -72,8 +72,8 @@ public class RoutingProcedureClusterCompositionProvider implements ClusterCompos
         }
 
         List<Record> records = response.records();
+        log.info( "Received response from %s procedure: %s", invokedProcedureString( response ), records );
 
-        log.info( "Got getServers response: %s", records );
         long now = clock.millis();
 
         // the record size is wrong

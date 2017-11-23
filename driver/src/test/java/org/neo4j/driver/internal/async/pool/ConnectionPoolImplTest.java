@@ -24,8 +24,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.ConnectionSettings;
-import org.neo4j.driver.internal.async.BoltServerAddress;
 import org.neo4j.driver.internal.async.BootstrapFactory;
 import org.neo4j.driver.internal.async.ChannelConnectorImpl;
 import org.neo4j.driver.internal.security.SecurityPlan;

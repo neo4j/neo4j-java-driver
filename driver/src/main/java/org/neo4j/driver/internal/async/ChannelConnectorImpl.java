@@ -26,6 +26,7 @@ import io.netty.channel.ChannelPromise;
 
 import java.util.Map;
 
+import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.security.SecurityPlan;

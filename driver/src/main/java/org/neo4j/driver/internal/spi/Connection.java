@@ -21,7 +21,7 @@ package org.neo4j.driver.internal.spi;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.internal.async.BoltServerAddress;
+import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.Value;
 

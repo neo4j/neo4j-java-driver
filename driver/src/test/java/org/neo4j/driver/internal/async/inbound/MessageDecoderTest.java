@@ -65,8 +65,6 @@ public class MessageDecoderTest
     @Test
     public void shouldDecodeMultipleConsecutiveMessages()
     {
-        EmbeddedChannel channel = new EmbeddedChannel( new MessageDecoder() );
-
         channel.writeInbound( wrappedBuffer( new byte[]{1, 2, 3} ) );
         channel.writeInbound( wrappedBuffer( new byte[0] ) );
 

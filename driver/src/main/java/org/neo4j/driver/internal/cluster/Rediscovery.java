@@ -28,7 +28,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.driver.internal.async.BoltServerAddress;
+import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Futures;
@@ -232,9 +232,7 @@ public class Rediscovery
             }
             else
             {
-                ClusterComposition cluster = response.clusterComposition();
-                logger.info( "Got cluster composition %s", cluster );
-                return cluster;
+                return response.clusterComposition();
             }
         } );
     }
