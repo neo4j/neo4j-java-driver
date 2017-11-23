@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.util.ChannelTrackingDriverFactory;
+import org.neo4j.driver.internal.util.DriverFactoryWithOneEventLoopThread;
 import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
@@ -37,14 +38,18 @@ import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static junit.framework.TestCase.fail;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.driver.internal.retry.RetrySettings.DEFAULT;
+import static org.neo4j.driver.internal.util.Matchers.connectionAcquisitionTimeoutError;
 
 public class ConnectionPoolIT
 {
@@ -111,6 +116,28 @@ public class ConnectionPoolIT
 
         // new channel should remain open and idle in the pool
         assertTrue( channel2.isActive() );
+    }
+
+    @Test
+    public void shouldRespectMaxConnectionPoolSize()
+    {
+        int maxPoolSize = 3;
+        Config config = Config.build()
+                .withMaxConnectionPoolSize( maxPoolSize )
+                .withConnectionAcquisitionTimeout( 542, TimeUnit.MILLISECONDS )
+                .toConfig();
+
+        driver = new DriverFactoryWithOneEventLoopThread().newInstance( neo4j.uri(), neo4j.authToken(), config );
+
+        try
+        {
+            startAndCloseTransactions( driver, maxPoolSize + 1 );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e, is( connectionAcquisitionTimeoutError( 542 ) ) );
+        }
     }
 
     @After

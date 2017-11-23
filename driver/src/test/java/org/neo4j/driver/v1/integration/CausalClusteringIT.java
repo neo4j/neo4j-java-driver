@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.v1.integration;
 
+import org.junit.AfterClass;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -35,7 +36,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.driver.internal.cluster.RoutingSettings;
-import org.neo4j.driver.internal.logging.DevNullLogger;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.util.ChannelTrackingDriverFactory;
 import org.neo4j.driver.internal.util.FakeClock;
@@ -44,8 +44,6 @@ import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
-import org.neo4j.driver.v1.Logger;
-import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
@@ -64,9 +62,11 @@ import org.neo4j.driver.v1.util.cc.ClusterMember;
 import org.neo4j.driver.v1.util.cc.ClusterMemberRole;
 import org.neo4j.driver.v1.util.cc.ClusterRule;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -76,6 +76,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.Futures.getBlocking;
+import static org.neo4j.driver.internal.util.Matchers.connectionAcquisitionTimeoutError;
 import static org.neo4j.driver.v1.Values.parameters;
 
 public class CausalClusteringIT
@@ -84,6 +85,12 @@ public class CausalClusteringIT
 
     @Rule
     public final ClusterRule clusterRule = new ClusterRule();
+
+    @AfterClass
+    public static void stopSharedCluster()
+    {
+        ClusterRule.stopSharedCluster();
+    }
 
     @Test
     public void shouldExecuteReadAndWritesWhenDriverSuppliedWithAddressOfLeader() throws Exception
@@ -532,6 +539,46 @@ public class CausalClusteringIT
         }
     }
 
+    @Test
+    public void shouldRespectMaxConnectionPoolSizePerClusterMember()
+    {
+        Cluster cluster = clusterRule.getCluster();
+        ClusterMember leader = cluster.leader();
+
+        Config config = Config.build()
+                .withMaxConnectionPoolSize( 2 )
+                .withConnectionAcquisitionTimeout( 42, MILLISECONDS )
+                .withLogging( DEV_NULL_LOGGING )
+                .toConfig();
+
+        try ( Driver driver = createDriver( leader.getRoutingUri(), config ) )
+        {
+            Session writeSession1 = driver.session( AccessMode.WRITE );
+            writeSession1.beginTransaction();
+
+            Session writeSession2 = driver.session( AccessMode.WRITE );
+            writeSession2.beginTransaction();
+
+            // should not be possible to acquire more connections towards leader because limit is 2
+            Session writeSession3 = driver.session( AccessMode.WRITE );
+            try
+            {
+                writeSession3.beginTransaction();
+                fail( "Exception expected" );
+            }
+            catch ( ClientException e )
+            {
+                assertThat( e, is( connectionAcquisitionTimeoutError( 42 ) ) );
+            }
+
+            // should be possible to acquire new connection towards read server
+            // it's a different machine, not leader, so different max connection pool size limit applies
+            Session readSession = driver.session( AccessMode.READ );
+            Record record = readSession.readTransaction( tx -> tx.run( "RETURN 1" ).single() );
+            assertEquals( 1, record.get( 0 ).asInt() );
+        }
+    }
+
     private CompletionStage<List<RecordAndSummary>> combineCursors( StatementResultCursor cursor1,
             StatementResultCursor cursor2 )
     {
@@ -702,19 +749,15 @@ public class CausalClusteringIT
 
     private Driver createDriver( URI boltUri )
     {
-        Logging devNullLogging = new Logging()
-        {
-            @Override
-            public Logger getLog( String name )
-            {
-                return DevNullLogger.DEV_NULL_LOGGER;
-            }
-        };
-
         Config config = Config.build()
-                .withLogging( devNullLogging )
+                .withLogging( DEV_NULL_LOGGING )
                 .toConfig();
 
+        return createDriver( boltUri, config );
+    }
+
+    private Driver createDriver( URI boltUri, Config config )
+    {
         return GraphDatabase.driver( boltUri, clusterRule.getDefaultAuthToken(), config );
     }
 

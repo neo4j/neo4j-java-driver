@@ -45,6 +45,7 @@ import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.logging.DevNullLogging;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.util.DriverFactoryWithFixedRetryLogic;
+import org.neo4j.driver.internal.util.DriverFactoryWithOneEventLoopThread;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.AuthToken;
@@ -73,6 +74,7 @@ import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.emptyArray;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -87,6 +89,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.driver.internal.util.Matchers.connectionAcquisitionTimeoutError;
 import static org.neo4j.driver.internal.util.ServerVersion.v3_1_0;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.util.DaemonThreadFactory.daemon;
@@ -1294,6 +1297,38 @@ public class SessionIT
                 assertThat( e.getMessage(), containsString( "/ by zero" ) );
             }
         }
+    }
+
+    @Test
+    public void shouldNotRetryOnConnectionAcquisitionTimeout()
+    {
+        int maxPoolSize = 3;
+        Config config = Config.build()
+                .withMaxConnectionPoolSize( maxPoolSize )
+                .withConnectionAcquisitionTimeout( 0, TimeUnit.SECONDS )
+                .withMaxTransactionRetryTime( 42, TimeUnit.DAYS ) // retry for a really long time
+                .toConfig();
+
+        driver = new DriverFactoryWithOneEventLoopThread().newInstance( neo4j.uri(), neo4j.authToken(), config );
+
+        for ( int i = 0; i < maxPoolSize; i++ )
+        {
+            driver.session().beginTransaction();
+        }
+
+        AtomicInteger invocations = new AtomicInteger();
+        try
+        {
+            driver.session().writeTransaction( tx -> invocations.incrementAndGet() );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e, is( connectionAcquisitionTimeoutError( 0 ) ) );
+        }
+
+        // work should never be invoked
+        assertEquals( 0, invocations.get() );
     }
 
     private void assumeServerIs31OrLater()

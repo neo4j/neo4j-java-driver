@@ -80,6 +80,11 @@ public class Neo4jRunner
         return globalInstance;
     }
 
+    public static synchronized boolean globalRunnerExists()
+    {
+        return globalInstance != null;
+    }
+
     private Neo4jRunner() throws IOException
     {
         try

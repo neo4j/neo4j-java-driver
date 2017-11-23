@@ -20,6 +20,7 @@ package org.neo4j.driver.v1.util.cc;
 
 import org.junit.rules.ExternalResource;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -52,10 +53,27 @@ public class ClusterRule extends ExternalResource
         return AuthTokens.basic( "neo4j", PASSWORD );
     }
 
+    public static void stopSharedCluster()
+    {
+        if ( SharedCluster.exists() )
+        {
+            try
+            {
+                SharedCluster.stop();
+            }
+            finally
+            {
+                SharedCluster.remove();
+            }
+        }
+    }
+
     @Override
     protected void before() throws Throwable
     {
         assumeTrue( "BoltKit cluster support unavailable", boltKitAvailable() );
+
+        stopSingleInstanceDatabase();
 
         if ( !SharedCluster.exists() )
         {
@@ -109,6 +127,14 @@ public class ClusterRule extends ExternalResource
         return version;
     }
 
+    private static void stopSingleInstanceDatabase() throws IOException
+    {
+        if ( Neo4jRunner.globalRunnerExists() )
+        {
+            Neo4jRunner.getOrCreateGlobalRunner().stopNeo4j();
+        }
+    }
+
     private static void addShutdownHookToStopCluster()
     {
         Runtime.getRuntime().addShutdownHook( new Thread()
@@ -118,7 +144,10 @@ public class ClusterRule extends ExternalResource
             {
                 try
                 {
-                    SharedCluster.kill();
+                    if ( SharedCluster.exists() )
+                    {
+                        SharedCluster.kill();
+                    }
                 }
                 catch ( Throwable t )
                 {
