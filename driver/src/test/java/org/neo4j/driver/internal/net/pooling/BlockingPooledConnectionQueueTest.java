@@ -32,6 +32,7 @@ import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -333,11 +334,104 @@ public class BlockingPooledConnectionQueueTest
     }
 
     @Test
-    public void shouldReportWhenActive()
+    public void shouldBeActiveWhenNotDeactivatedAndNotTerminated()
+    {
+        BlockingPooledConnectionQueue queue = newConnectionQueue( 1 );
+        assertTrue( queue.isActive() );
+    }
+
+    @Test
+    public void shouldNotBeActiveWhenDeactivated()
     {
         BlockingPooledConnectionQueue queue = newConnectionQueue( 1 );
         assertTrue( queue.isActive() );
         queue.deactivate();
+        assertFalse( queue.isActive() );
+    }
+
+    @Test
+    public void shouldNotBeActiveWhenTerminated()
+    {
+        BlockingPooledConnectionQueue queue = newConnectionQueue( 1 );
+        assertTrue( queue.isActive() );
+        queue.terminate();
+        assertFalse( queue.isActive() );
+    }
+
+    @Test
+    public void shouldBeActiveAfterDeactivationAndActivation()
+    {
+        BlockingPooledConnectionQueue queue = newConnectionQueue( 1 );
+        assertTrue( queue.isActive() );
+        queue.deactivate();
+        assertFalse( queue.isActive() );
+        queue.activate();
+        assertTrue( queue.isActive() );
+    }
+
+    @Test
+    public void shouldNotBeActiveAfterTerminationAndActivation()
+    {
+        BlockingPooledConnectionQueue queue = newConnectionQueue( 1 );
+        assertTrue( queue.isActive() );
+        queue.terminate();
+        assertFalse( queue.isActive() );
+        queue.activate();
+        assertFalse( queue.isActive() );
+    }
+
+    @Test
+    public void shouldBePossibleToAcquireFromActivatedQueue()
+    {
+        Supplier<PooledConnection> connectionSupplier = connectionSupplierMock();
+        when( connectionSupplier.get() ).thenReturn( mock( PooledConnection.class ) );
+        BlockingPooledConnectionQueue queue = newConnectionQueue( 3 );
+        queue.deactivate();
+
+        try
+        {
+            queue.acquire( connectionSupplier );
+            fail( "Exception expected" );
+        }
+        catch ( IllegalStateException e )
+        {
+            assertThat( e.getMessage(), startsWith( "Pool is deactivated" ) );
+        }
+
+        queue.activate();
+
+        assertNotNull( queue.acquire( connectionSupplier ) );
+    }
+
+    @Test
+    public void shouldNotBePossibleToActivateTerminatedQueue()
+    {
+        Supplier<PooledConnection> connectionSupplier = connectionSupplierMock();
+        when( connectionSupplier.get() ).thenReturn( mock( PooledConnection.class ) );
+        BlockingPooledConnectionQueue queue = newConnectionQueue( 3 );
+        queue.terminate();
+
+        try
+        {
+            queue.acquire( connectionSupplier );
+            fail( "Exception expected" );
+        }
+        catch ( IllegalStateException e )
+        {
+            assertThat( e.getMessage(), startsWith( "Pool is terminated" ) );
+        }
+
+        queue.activate();
+
+        try
+        {
+            queue.acquire( connectionSupplier );
+            fail( "Exception expected" );
+        }
+        catch ( IllegalStateException e )
+        {
+            assertThat( e.getMessage(), startsWith( "Pool is terminated" ) );
+        }
         assertFalse( queue.isActive() );
     }
 

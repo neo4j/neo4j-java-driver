@@ -23,7 +23,7 @@ import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.driver.internal.logging.DelegatingLogger;
 import org.neo4j.driver.internal.net.BoltServerAddress;
@@ -40,12 +40,15 @@ public class BlockingPooledConnectionQueue
 {
     public static final String LOG_NAME = "ConnectionQueue";
 
+    private static final int ACTIVE = 1;
+    private static final int INACTIVE = 2;
+    private static final int TERMINATED = 3;
+
     /** The backing queue, keeps track of connections currently in queue */
     private final BlockingQueue<PooledConnection> queue;
     private final Logger logger;
 
-    private final AtomicBoolean isDeactivated = new AtomicBoolean( false );
-    private final AtomicBoolean isTerminating = new AtomicBoolean( false );
+    private final AtomicInteger state = new AtomicInteger( ACTIVE );
 
     /** Keeps track of acquired connections */
     private final Set<PooledConnection> acquiredConnections =
@@ -72,7 +75,7 @@ public class BlockingPooledConnectionQueue
         {
             disposeSafely( pooledConnection );
         }
-        if ( isDeactivated.get() || isTerminating.get() )
+        if ( state.get() != ACTIVE )
         {
             terminateIdleConnections();
         }
@@ -93,12 +96,13 @@ public class BlockingPooledConnectionQueue
         }
         acquiredConnections.add( connection );
 
-        if ( isDeactivated.get() || isTerminating.get() )
+        int poolState = state.get();
+        if ( poolState != ACTIVE )
         {
             acquiredConnections.remove( connection );
             disposeSafely( connection );
-            throw new IllegalStateException( "Pool is " + (isDeactivated.get() ? "deactivated" : "terminated") + ", " +
-                                             "new connections can't be acquired" );
+            throw new IllegalStateException( "Pool is " + (poolState == INACTIVE ? "deactivated" : "terminated") +
+                                             ", new connections can't be acquired" );
         }
         else
         {
@@ -129,12 +133,12 @@ public class BlockingPooledConnectionQueue
 
     public void activate()
     {
-        isDeactivated.compareAndSet( true, false );
+        state.compareAndSet( INACTIVE, ACTIVE );
     }
 
     public void deactivate()
     {
-        if ( isDeactivated.compareAndSet( false, true ) )
+        if ( state.compareAndSet( ACTIVE, INACTIVE ) )
         {
             terminateIdleConnections();
         }
@@ -142,7 +146,7 @@ public class BlockingPooledConnectionQueue
 
     public boolean isActive()
     {
-        return !isDeactivated.get();
+        return state.get() == ACTIVE;
     }
 
     /**
@@ -153,7 +157,7 @@ public class BlockingPooledConnectionQueue
      */
     public void terminate()
     {
-        if ( isTerminating.compareAndSet( false, true ) )
+        if ( state.getAndSet( TERMINATED ) != TERMINATED )
         {
             terminateIdleConnections();
             terminateAcquiredConnections();
