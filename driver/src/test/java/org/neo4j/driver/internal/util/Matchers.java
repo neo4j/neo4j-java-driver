@@ -260,6 +260,26 @@ public final class Matchers
         };
     }
 
+    public static Matcher<Throwable> blockingOperationInEventLoopError()
+    {
+        return new TypeSafeMatcher<Throwable>()
+        {
+            @Override
+            protected boolean matchesSafely( Throwable error )
+            {
+                return error instanceof IllegalStateException &&
+                       error.getMessage() != null &&
+                       error.getMessage().startsWith( "Blocking operation can't be executed in IO thread" );
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( "IllegalStateException about blocking operation in event loop thread " );
+            }
+        };
+    }
+
     private static boolean contains( AddressSet set, BoltServerAddress address )
     {
         BoltServerAddress[] addresses = set.toArray();

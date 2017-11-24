@@ -71,9 +71,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
-import static org.neo4j.driver.internal.util.Futures.getBlocking;
 import static org.neo4j.driver.v1.AccessMode.READ;
 import static org.neo4j.driver.v1.AccessMode.WRITE;
+import static org.neo4j.driver.v1.util.TestUtil.await;
 import static org.neo4j.driver.v1.util.TestUtil.connectionMock;
 
 public class NetworkSessionTest
@@ -211,7 +211,7 @@ public class NetworkSessionTest
 
         session.run( query );
 
-        getBlocking( session.closeAsync() );
+        await( session.closeAsync() );
 
         InOrder inOrder = inOrder( connection );
         inOrder.verify( connection ).runAndFlush( eq( "RETURN 1" ), any(), any(), any() );

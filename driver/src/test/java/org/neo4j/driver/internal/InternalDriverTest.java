@@ -28,7 +28,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
-import static org.neo4j.driver.internal.util.Futures.getBlocking;
+import static org.neo4j.driver.v1.util.TestUtil.await;
 
 public class InternalDriverTest
 {
@@ -38,7 +38,7 @@ public class InternalDriverTest
         SessionFactory sessionFactory = sessionFactoryMock();
         InternalDriver driver = newDriver( sessionFactory );
 
-        assertNull( getBlocking( driver.closeAsync() ) );
+        assertNull( await( driver.closeAsync() ) );
         verify( sessionFactory ).close();
     }
 
@@ -48,9 +48,9 @@ public class InternalDriverTest
         SessionFactory sessionFactory = sessionFactoryMock();
         InternalDriver driver = newDriver( sessionFactory );
 
-        assertNull( getBlocking( driver.closeAsync() ) );
-        assertNull( getBlocking( driver.closeAsync() ) );
-        assertNull( getBlocking( driver.closeAsync() ) );
+        assertNull( await( driver.closeAsync() ) );
+        assertNull( await( driver.closeAsync() ) );
+        assertNull( await( driver.closeAsync() ) );
 
         verify( sessionFactory ).close();
     }

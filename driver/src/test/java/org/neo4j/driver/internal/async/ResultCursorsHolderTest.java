@@ -33,7 +33,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.driver.internal.util.Futures.getBlocking;
+import static org.neo4j.driver.v1.util.TestUtil.await;
 
 public class ResultCursorsHolderTest
 {
@@ -42,7 +42,7 @@ public class ResultCursorsHolderTest
     {
         ResultCursorsHolder holder = new ResultCursorsHolder();
 
-        Throwable error = getBlocking( holder.retrieveNotConsumedError() );
+        Throwable error = await( holder.retrieveNotConsumedError() );
         assertNull( error );
     }
 
@@ -72,7 +72,7 @@ public class ResultCursorsHolderTest
         holder.add( cursorWithoutError() );
         holder.add( cursorWithoutError() );
 
-        Throwable error = getBlocking( holder.retrieveNotConsumedError() );
+        Throwable error = await( holder.retrieveNotConsumedError() );
         assertNull( error );
     }
 
@@ -86,7 +86,7 @@ public class ResultCursorsHolderTest
         holder.add( cursorWithoutError() );
         holder.add( Futures.failedFuture( new IOException( "Failed to do IO" ) ) );
 
-        Throwable error = getBlocking( holder.retrieveNotConsumedError() );
+        Throwable error = await( holder.retrieveNotConsumedError() );
         assertNull( error );
     }
 
@@ -101,7 +101,7 @@ public class ResultCursorsHolderTest
         holder.add( cursorWithError( error ) );
         holder.add( cursorWithoutError() );
 
-        Throwable retrievedError = getBlocking( holder.retrieveNotConsumedError() );
+        Throwable retrievedError = await( holder.retrieveNotConsumedError() );
         assertEquals( error, retrievedError );
     }
 
@@ -118,7 +118,7 @@ public class ResultCursorsHolderTest
         holder.add( cursorWithError( error2 ) );
         holder.add( cursorWithError( error3 ) );
 
-        assertEquals( error1, getBlocking( holder.retrieveNotConsumedError() ) );
+        assertEquals( error1, await( holder.retrieveNotConsumedError() ) );
     }
 
     private CompletionStage<InternalStatementResultCursor> cursorWithoutError()

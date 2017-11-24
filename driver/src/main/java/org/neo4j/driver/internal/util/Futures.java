@@ -26,6 +26,8 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import org.neo4j.driver.internal.async.EventLoopGroupFactory;
+
 public final class Futures
 {
     private Futures()
@@ -71,14 +73,11 @@ public final class Futures
         return result;
     }
 
-    public static <V> V getBlocking( CompletionStage<V> stage )
+    public static <V> V blockingGet( CompletionStage<V> stage )
     {
-        Future<V> future = stage.toCompletableFuture();
-        return getBlocking( future );
-    }
+        EventLoopGroupFactory.assertNotInEventLoopThread();
 
-    public static <V> V getBlocking( Future<V> future )
-    {
+        Future<V> future = stage.toCompletableFuture();
         boolean interrupted = false;
         try
         {

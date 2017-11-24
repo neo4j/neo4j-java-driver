@@ -20,8 +20,7 @@ package org.neo4j.driver.internal.async;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelOption;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.channel.EventLoopGroup;
 
 public final class BootstrapFactory
 {
@@ -31,19 +30,19 @@ public final class BootstrapFactory
 
     public static Bootstrap newBootstrap()
     {
-        return newBootstrap( new NioEventLoopGroup() );
+        return newBootstrap( EventLoopGroupFactory.newEventLoopGroup() );
     }
 
     public static Bootstrap newBootstrap( int threadCount )
     {
-        return newBootstrap( new NioEventLoopGroup( threadCount ) );
+        return newBootstrap( EventLoopGroupFactory.newEventLoopGroup( threadCount ) );
     }
 
-    private static Bootstrap newBootstrap( NioEventLoopGroup eventLoopGroup )
+    private static Bootstrap newBootstrap( EventLoopGroup eventLoopGroup )
     {
         Bootstrap bootstrap = new Bootstrap();
         bootstrap.group( eventLoopGroup );
-        bootstrap.channel( NioSocketChannel.class );
+        bootstrap.channel( EventLoopGroupFactory.channelClass() );
         bootstrap.option( ChannelOption.SO_KEEPALIVE, true );
         bootstrap.option( ChannelOption.SO_REUSEADDR, true );
         return bootstrap;

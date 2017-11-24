@@ -47,8 +47,8 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.types.TypeSystem;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.neo4j.driver.internal.util.Futures.blockingGet;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
-import static org.neo4j.driver.internal.util.Futures.getBlocking;
 import static org.neo4j.driver.v1.Values.value;
 
 public class NetworkSession implements Session
@@ -132,7 +132,7 @@ public class NetworkSession implements Session
     @Override
     public StatementResult run( Statement statement )
     {
-        StatementResultCursor cursor = getBlocking( runAsync( statement, false ) );
+        StatementResultCursor cursor = blockingGet( runAsync( statement, false ) );
         return new InternalStatementResult( cursor );
     }
 
@@ -152,7 +152,7 @@ public class NetworkSession implements Session
     @Override
     public void close()
     {
-        getBlocking( closeAsync() );
+        blockingGet( closeAsync() );
     }
 
     @Override
@@ -189,7 +189,7 @@ public class NetworkSession implements Session
     @Override
     public Transaction beginTransaction()
     {
-        return getBlocking( beginTransactionAsync( mode ) );
+        return blockingGet( beginTransactionAsync( mode ) );
     }
 
     @Deprecated
@@ -248,7 +248,7 @@ public class NetworkSession implements Session
     @Override
     public void reset()
     {
-        getBlocking( resetAsync() );
+        blockingGet( resetAsync() );
     }
 
     private CompletionStage<Void> resetAsync()
@@ -288,7 +288,7 @@ public class NetworkSession implements Session
         // event loop thread will bock and wait for itself to read some data
         return retryLogic.retry( () ->
         {
-            try ( Transaction tx = getBlocking( beginTransactionAsync( mode ) ) )
+            try ( Transaction tx = blockingGet( beginTransactionAsync( mode ) ) )
             {
                 try
                 {

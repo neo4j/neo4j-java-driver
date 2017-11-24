@@ -48,9 +48,9 @@ import org.neo4j.driver.v1.types.TypeSystem;
 
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.neo4j.driver.internal.util.Futures.blockingGet;
 import static org.neo4j.driver.internal.util.Futures.completionErrorCause;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
-import static org.neo4j.driver.internal.util.Futures.getBlocking;
 import static org.neo4j.driver.v1.Values.value;
 
 public class ExplicitTransaction implements Transaction
@@ -150,7 +150,7 @@ public class ExplicitTransaction implements Transaction
     @Override
     public void close()
     {
-        getBlocking( closeAsync() );
+        blockingGet( closeAsync() );
     }
 
     CompletionStage<Void> closeAsync()
@@ -274,7 +274,7 @@ public class ExplicitTransaction implements Transaction
     @Override
     public StatementResult run( Statement statement )
     {
-        StatementResultCursor cursor = getBlocking( run( statement, false ) );
+        StatementResultCursor cursor = blockingGet( run( statement, false ) );
         return new InternalStatementResult( cursor );
     }
 
