@@ -298,9 +298,9 @@ public class ConnectionHandlingIT
                 Bootstrap bootstrap, Config config )
         {
             ConnectionSettings connectionSettings = new ConnectionSettings( authToken, 1000 );
-            PoolSettings poolSettings = new PoolSettings( config.maxIdleConnectionPoolSize(),
-                    config.idleTimeBeforeConnectionTest(), config.maxConnectionLifetimeMillis(),
-                    config.maxConnectionPoolSize(), config.connectionAcquisitionTimeoutMillis() );
+            PoolSettings poolSettings = new PoolSettings( config.maxConnectionPoolSize(),
+                    config.connectionAcquisitionTimeoutMillis(), config.maxConnectionLifetimeMillis(),
+                    config.idleTimeBeforeConnectionTest() );
             Clock clock = createClock();
             ChannelConnector connector = super.createConnector( connectionSettings, securityPlan, config, clock );
             connectionPool =
@@ -314,9 +314,8 @@ public class ConnectionHandlingIT
         Connection lastAcquiredConnectionSpy;
         boolean memorize;
 
-        public MemorizingConnectionPool( ChannelConnector connector,
-                Bootstrap bootstrap, PoolSettings settings, Logging logging,
-                Clock clock )
+        MemorizingConnectionPool( ChannelConnector connector, Bootstrap bootstrap, PoolSettings settings,
+                Logging logging, Clock clock )
         {
             super( connector, bootstrap, settings, logging, clock );
         }

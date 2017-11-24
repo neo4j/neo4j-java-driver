@@ -169,7 +169,7 @@ public class ConnectionPoolImplTest
         ChannelConnectorImpl connector =
                 new ChannelConnectorImpl( connectionSettings, SecurityPlan.forAllCertificates(),
                 DEV_NULL_LOGGING, clock );
-        PoolSettings poolSettings = new PoolSettings( 5, -1, -1, 10, 5000 );
+        PoolSettings poolSettings = new PoolSettings( 10, 5000, -1, -1 );
         Bootstrap bootstrap = BootstrapFactory.newBootstrap( 1 );
         return new ConnectionPoolImpl( connector, bootstrap, poolSettings, DEV_NULL_LOGGING, clock );
     }
