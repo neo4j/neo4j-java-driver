@@ -20,9 +20,9 @@ package org.neo4j.driver.internal.async;
 
 import io.netty.channel.Channel;
 import io.netty.channel.pool.ChannelPool;
-import io.netty.util.concurrent.Promise;
 
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -39,9 +39,6 @@ import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.Value;
 
-import static java.util.concurrent.CompletableFuture.completedFuture;
-import static org.neo4j.driver.internal.util.Futures.asCompletionStage;
-
 public class NettyConnection implements Connection
 {
     private final Channel channel;
@@ -49,6 +46,7 @@ public class NettyConnection implements Connection
     private final BoltServerAddress serverAddress;
     private final ServerVersion serverVersion;
     private final ChannelPool channelPool;
+    private final CompletableFuture<Void> releaseFuture;
     private final Clock clock;
 
     private final AtomicBoolean open = new AtomicBoolean( true );
@@ -61,6 +59,7 @@ public class NettyConnection implements Connection
         this.serverAddress = ChannelAttributes.serverAddress( channel );
         this.serverVersion = ChannelAttributes.serverVersion( channel );
         this.channelPool = channelPool;
+        this.releaseFuture = new CompletableFuture<>();
         this.clock = clock;
     }
 
@@ -111,14 +110,9 @@ public class NettyConnection implements Connection
     {
         if ( open.compareAndSet( true, false ) )
         {
-            Promise<Void> releasePromise = channel.eventLoop().newPromise();
-            reset( new ResetResponseHandler( channel, channelPool, messageDispatcher, clock, releasePromise ) );
-            return asCompletionStage( releasePromise );
+            reset( new ResetResponseHandler( channel, channelPool, messageDispatcher, clock, releaseFuture ) );
         }
-        else
-        {
-            return completedFuture( null );
-        }
+        return releaseFuture;
     }
 
     @Override

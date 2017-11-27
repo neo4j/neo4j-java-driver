@@ -23,7 +23,6 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
@@ -398,7 +397,7 @@ public class RediscoveryTest
     {
         RoutingTable routingTable = mock( RoutingTable.class );
         AddressSet addressSet = new AddressSet();
-        addressSet.update( asOrderedSet( routers ), new HashSet<>() );
+        addressSet.update( asOrderedSet( routers ) );
         when( routingTable.routers() ).thenReturn( addressSet );
         return routingTable;
     }

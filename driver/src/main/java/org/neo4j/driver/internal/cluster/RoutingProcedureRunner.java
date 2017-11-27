@@ -53,18 +53,9 @@ public class RoutingProcedureRunner
         return connectionStage.thenCompose( connection ->
         {
             Statement procedure = procedureStatement( connection.serverVersion() );
-            return runProcedure( connection, procedure ).handle( ( records, error ) ->
-            {
-                Throwable cause = Futures.completionErrorCause( error );
-                if ( cause != null )
-                {
-                    return handleError( procedure, cause );
-                }
-                else
-                {
-                    return new RoutingProcedureResponse( procedure, records );
-                }
-            } );
+            return runProcedure( connection, procedure )
+                    .thenCompose( records -> releaseConnection( connection, records ) )
+                    .handle( ( records, error ) -> processProcedureResponse( procedure, records, error ) );
         } );
     }
 
@@ -84,6 +75,30 @@ public class RoutingProcedureRunner
         else
         {
             return new Statement( "CALL " + GET_SERVERS );
+        }
+    }
+
+    private CompletionStage<List<Record>> releaseConnection( Connection connection, List<Record> records )
+    {
+        // It is not strictly required to release connection after routing procedure invocation because it'll
+        // be released by the PULL_ALL response handler after result is fully fetched. Such release will happen
+        // in background. However, releasing it early as part of whole chain makes it easier to reason about
+        // rediscovery in stub server tests. Some of them assume connections to instances not present in new
+        // routing table will be closed immediately.
+        return connection.release().thenApply( ignore -> records );
+    }
+
+    private RoutingProcedureResponse processProcedureResponse( Statement procedure, List<Record> records,
+            Throwable error )
+    {
+        Throwable cause = Futures.completionErrorCause( error );
+        if ( cause != null )
+        {
+            return handleError( procedure, cause );
+        }
+        else
+        {
+            return new RoutingProcedureResponse( procedure, records );
         }
     }
 

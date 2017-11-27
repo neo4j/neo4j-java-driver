@@ -27,7 +27,7 @@ public interface RoutingTable
 {
     boolean isStaleFor( AccessMode mode );
 
-    Set<BoltServerAddress> update( ClusterComposition cluster );
+    void update( ClusterComposition cluster );
 
     void forget( BoltServerAddress address );
 
@@ -36,6 +36,8 @@ public interface RoutingTable
     AddressSet writers();
 
     AddressSet routers();
+
+    Set<BoltServerAddress> servers();
 
     void removeWriter( BoltServerAddress toRemove );
 }

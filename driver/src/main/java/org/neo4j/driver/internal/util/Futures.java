@@ -45,6 +45,10 @@ public final class Futures
         {
             result.complete( future.getNow() );
         }
+        else if ( future.cause() != null )
+        {
+            result.completeExceptionally( future.cause() );
+        }
         else
         {
             future.addListener( ignore ->

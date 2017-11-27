@@ -20,9 +20,10 @@ package org.neo4j.driver.internal.handlers;
 
 import io.netty.channel.Channel;
 import io.netty.channel.pool.ChannelPool;
-import io.netty.util.concurrent.Promise;
+import io.netty.util.concurrent.Future;
 
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.spi.ResponseHandler;
@@ -37,16 +38,16 @@ public class ResetResponseHandler implements ResponseHandler
     private final ChannelPool pool;
     private final InboundMessageDispatcher messageDispatcher;
     private final Clock clock;
-    private final Promise<Void> releasePromise;
+    private final CompletableFuture<Void> releaseFuture;
 
     public ResetResponseHandler( Channel channel, ChannelPool pool, InboundMessageDispatcher messageDispatcher,
-            Clock clock, Promise<Void> releasePromise )
+            Clock clock, CompletableFuture<Void> releaseFuture )
     {
         this.channel = channel;
         this.pool = pool;
         this.messageDispatcher = messageDispatcher;
         this.clock = clock;
-        this.releasePromise = releasePromise;
+        this.releaseFuture = releaseFuture;
     }
 
     @Override
@@ -72,13 +73,7 @@ public class ResetResponseHandler implements ResponseHandler
         messageDispatcher.unMuteAckFailure();
         setLastUsedTimestamp( channel, clock.millis() );
 
-        if ( releasePromise == null )
-        {
-            pool.release( channel );
-        }
-        else
-        {
-            pool.release( channel, releasePromise );
-        }
+        Future<Void> released = pool.release( channel );
+        released.addListener( ignore -> releaseFuture.complete( null ) );
     }
 }
