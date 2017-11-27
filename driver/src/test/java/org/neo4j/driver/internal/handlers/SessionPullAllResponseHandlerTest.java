@@ -22,6 +22,7 @@ import org.junit.Test;
 
 import java.util.concurrent.CompletableFuture;
 
+import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.Statement;
@@ -64,6 +65,7 @@ public class SessionPullAllResponseHandlerTest
     private static Connection newConnectionMock()
     {
         Connection connection = mock( Connection.class );
+        when( connection.serverAddress() ).thenReturn( BoltServerAddress.LOCAL_DEFAULT );
         when( connection.serverVersion() ).thenReturn( ServerVersion.v3_2_0 );
         return connection;
     }

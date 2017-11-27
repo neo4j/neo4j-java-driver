@@ -18,9 +18,7 @@
  */
 package org.neo4j.driver.internal.handlers;
 
-import java.util.Collections;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
@@ -29,20 +27,11 @@ import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
-import org.neo4j.driver.internal.summary.InternalNotification;
-import org.neo4j.driver.internal.summary.InternalPlan;
-import org.neo4j.driver.internal.summary.InternalProfiledPlan;
-import org.neo4j.driver.internal.summary.InternalResultSummary;
-import org.neo4j.driver.internal.summary.InternalServerInfo;
-import org.neo4j.driver.internal.summary.InternalSummaryCounters;
+import org.neo4j.driver.internal.summary.ResultSummaryCreator;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.summary.Notification;
-import org.neo4j.driver.v1.summary.Plan;
-import org.neo4j.driver.v1.summary.ProfiledPlan;
 import org.neo4j.driver.v1.summary.ResultSummary;
-import org.neo4j.driver.v1.summary.StatementType;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
@@ -302,89 +291,7 @@ public abstract class PullAllResponseHandler implements ResponseHandler
 
     private ResultSummary extractResultSummary( Map<String,Value> metadata )
     {
-        InternalServerInfo serverInfo = new InternalServerInfo( connection.serverAddress(),
-                connection.serverVersion() );
-        return new InternalResultSummary( statement, serverInfo, extractStatementType( metadata ),
-                extractCounters( metadata ), extractPlan( metadata ), extractProfiledPlan( metadata ),
-                extractNotifications( metadata ), runResponseHandler.resultAvailableAfter(),
-                extractResultConsumedAfter( metadata ) );
-    }
-
-    private static StatementType extractStatementType( Map<String,Value> metadata )
-    {
-        Value typeValue = metadata.get( "type" );
-        if ( typeValue != null )
-        {
-            return StatementType.fromCode( typeValue.asString() );
-        }
-        return null;
-    }
-
-    private static InternalSummaryCounters extractCounters( Map<String,Value> metadata )
-    {
-        Value countersValue = metadata.get( "stats" );
-        if ( countersValue != null )
-        {
-            return new InternalSummaryCounters(
-                    counterValue( countersValue, "nodes-created" ),
-                    counterValue( countersValue, "nodes-deleted" ),
-                    counterValue( countersValue, "relationships-created" ),
-                    counterValue( countersValue, "relationships-deleted" ),
-                    counterValue( countersValue, "properties-set" ),
-                    counterValue( countersValue, "labels-added" ),
-                    counterValue( countersValue, "labels-removed" ),
-                    counterValue( countersValue, "indexes-added" ),
-                    counterValue( countersValue, "indexes-removed" ),
-                    counterValue( countersValue, "constraints-added" ),
-                    counterValue( countersValue, "constraints-removed" )
-            );
-        }
-        return null;
-    }
-
-    private static int counterValue( Value countersValue, String name )
-    {
-        Value value = countersValue.get( name );
-        return value.isNull() ? 0 : value.asInt();
-    }
-
-    private static Plan extractPlan( Map<String,Value> metadata )
-    {
-        Value planValue = metadata.get( "plan" );
-        if ( planValue != null )
-        {
-            return InternalPlan.EXPLAIN_PLAN_FROM_VALUE.apply( planValue );
-        }
-        return null;
-    }
-
-    private static ProfiledPlan extractProfiledPlan( Map<String,Value> metadata )
-    {
-        Value profiledPlanValue = metadata.get( "profile" );
-        if ( profiledPlanValue != null )
-        {
-            return InternalProfiledPlan.PROFILED_PLAN_FROM_VALUE.apply( profiledPlanValue );
-        }
-        return null;
-    }
-
-    private static List<Notification> extractNotifications( Map<String,Value> metadata )
-    {
-        Value notificationsValue = metadata.get( "notifications" );
-        if ( notificationsValue != null )
-        {
-            return notificationsValue.asList( InternalNotification.VALUE_TO_NOTIFICATION );
-        }
-        return Collections.emptyList();
-    }
-
-    private static long extractResultConsumedAfter( Map<String,Value> metadata )
-    {
-        Value resultConsumedAfterValue = metadata.get( "result_consumed_after" );
-        if ( resultConsumedAfterValue != null )
-        {
-            return resultConsumedAfterValue.asLong();
-        }
-        return -1;
+        long resultAvailableAfter = runResponseHandler.resultAvailableAfter();
+        return ResultSummaryCreator.create( statement, connection, resultAvailableAfter, metadata );
     }
 }
