@@ -52,6 +52,12 @@ public final class TestUtil
     {
     }
 
+    @SafeVarargs
+    public static <T> List<T> awaitAll( CompletionStage<T>... stages )
+    {
+        return awaitAll( Arrays.asList( stages ) );
+    }
+
     public static <T> List<T> awaitAll( List<CompletionStage<T>> stages )
     {
         List<T> result = new ArrayList<>();
