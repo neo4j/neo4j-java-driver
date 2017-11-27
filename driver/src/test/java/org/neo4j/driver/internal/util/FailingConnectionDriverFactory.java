@@ -71,21 +71,9 @@ public class FailingConnectionDriverFactory extends DriverFactory
         }
 
         @Override
-        public void purge( BoltServerAddress address )
-        {
-            delegate.purge( address );
-        }
-
-        @Override
         public void retainAll( Set<BoltServerAddress> addressesToRetain )
         {
             delegate.retainAll( addressesToRetain );
-        }
-
-        @Override
-        public boolean hasAddress( BoltServerAddress address )
-        {
-            return delegate.hasAddress( address );
         }
 
         @Override

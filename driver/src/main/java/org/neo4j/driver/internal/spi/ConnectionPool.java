@@ -27,11 +27,7 @@ public interface ConnectionPool
 {
     CompletionStage<Connection> acquire( BoltServerAddress address );
 
-    void purge( BoltServerAddress address );
-
     void retainAll( Set<BoltServerAddress> addressesToRetain );
-
-    boolean hasAddress( BoltServerAddress address );
 
     int activeConnections( BoltServerAddress address );
 

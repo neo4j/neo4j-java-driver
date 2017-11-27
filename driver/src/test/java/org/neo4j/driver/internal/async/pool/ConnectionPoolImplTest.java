@@ -46,8 +46,6 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singleton;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
@@ -136,44 +134,6 @@ public class ConnectionPoolImplTest
             assertThat( e, instanceOf( IllegalStateException.class ) );
             assertThat( e.getMessage(), startsWith( "Pool closed" ) );
         }
-    }
-
-    @Test
-    public void shouldPurgeAddressWithConnections()
-    {
-        Connection connection1 = await( pool.acquire( neo4j.address() ) );
-        Connection connection2 = await( pool.acquire( neo4j.address() ) );
-        Connection connection3 = await( pool.acquire( neo4j.address() ) );
-
-        assertNotNull( connection1 );
-        assertNotNull( connection2 );
-        assertNotNull( connection3 );
-
-        assertEquals( 3, pool.activeConnections( neo4j.address() ) );
-
-        pool.purge( neo4j.address() );
-
-        assertEquals( 0, pool.activeConnections( neo4j.address() ) );
-    }
-
-    @Test
-    public void shouldPurgeAddressWithoutConnections()
-    {
-        assertEquals( 0, pool.activeConnections( neo4j.address() ) );
-
-        pool.purge( neo4j.address() );
-
-        assertEquals( 0, pool.activeConnections( neo4j.address() ) );
-    }
-
-    @Test
-    public void shouldCheckIfPoolHasAddress()
-    {
-        assertFalse( pool.hasAddress( neo4j.address() ) );
-
-        await( pool.acquire( neo4j.address() ) );
-
-        assertTrue( pool.hasAddress( neo4j.address() ) );
     }
 
     @Test

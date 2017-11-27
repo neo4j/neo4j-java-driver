@@ -93,22 +93,6 @@ public class ConnectionPoolImpl implements ConnectionPool
     }
 
     @Override
-    public void purge( BoltServerAddress address )
-    {
-        log.info( "Purging connections towards %s", address );
-
-        // purge active connections
-        activeChannelTracker.purge( address );
-
-        // purge idle connections in the pool and pool itself
-        ChannelPool pool = pools.remove( address );
-        if ( pool != null )
-        {
-            pool.close();
-        }
-    }
-
-    @Override
     public void retainAll( Set<BoltServerAddress> addressesToRetain )
     {
         for ( BoltServerAddress address : pools.keySet() )
@@ -124,18 +108,13 @@ public class ConnectionPoolImpl implements ConnectionPool
                     ChannelPool pool = pools.remove( address );
                     if ( pool != null )
                     {
-                        log.info( "Purging idle connections towards %s", address );
+                        log.info( "Closing connection pool towards %s, it has no active connections " +
+                                  "and is not in the routing table", address );
                         pool.close();
                     }
                 }
             }
         }
-    }
-
-    @Override
-    public boolean hasAddress( BoltServerAddress address )
-    {
-        return pools.containsKey( address );
     }
 
     @Override
