@@ -290,22 +290,21 @@ public class Neo4jRunner
 
     private void installShutdownHook()
     {
-        Runtime.getRuntime().addShutdownHook( new Thread( new Runnable()
+        Runtime.getRuntime().addShutdownHook( new Thread( () ->
         {
-            @Override
-            public void run()
-            {
             try
             {
-                debug("Starting shutdown hook");
-                driver.close();
+                debug( "Starting shutdown hook" );
+                if ( driver != null )
+                {
+                    driver.close();
+                }
                 stopNeo4j();
-                debug("Finished shutdown hook");
+                debug( "Finished shutdown hook" );
             }
             catch ( Exception e )
             {
                 e.printStackTrace();
-            }
             }
         } ) );
     }
