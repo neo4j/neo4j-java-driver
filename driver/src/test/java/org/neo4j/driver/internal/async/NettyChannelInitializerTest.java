@@ -36,6 +36,7 @@ import static org.neo4j.driver.internal.BoltServerAddress.LOCAL_DEFAULT;
 import static org.neo4j.driver.internal.async.ChannelAttributes.creationTimestamp;
 import static org.neo4j.driver.internal.async.ChannelAttributes.messageDispatcher;
 import static org.neo4j.driver.internal.async.ChannelAttributes.serverAddress;
+import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 
 public class NettyChannelInitializerTest
 {
@@ -51,7 +52,8 @@ public class NettyChannelInitializerTest
     public void shouldAddSslHandlerWhenRequiresEncryption() throws Exception
     {
         SecurityPlan security = SecurityPlan.forAllCertificates();
-        NettyChannelInitializer initializer = new NettyChannelInitializer( LOCAL_DEFAULT, security, new FakeClock() );
+        NettyChannelInitializer initializer = new NettyChannelInitializer( LOCAL_DEFAULT, security, new FakeClock(),
+                DEV_NULL_LOGGING );
 
         initializer.initChannel( channel );
 
@@ -62,7 +64,8 @@ public class NettyChannelInitializerTest
     public void shouldNotAddSslHandlerWhenDoesNotRequireEncryption()
     {
         SecurityPlan security = SecurityPlan.insecure();
-        NettyChannelInitializer initializer = new NettyChannelInitializer( LOCAL_DEFAULT, security, new FakeClock() );
+        NettyChannelInitializer initializer = new NettyChannelInitializer( LOCAL_DEFAULT, security, new FakeClock(),
+                DEV_NULL_LOGGING );
 
         initializer.initChannel( channel );
 
@@ -75,7 +78,7 @@ public class NettyChannelInitializerTest
         Clock clock = mock( Clock.class );
         when( clock.millis() ).thenReturn( 42L );
         SecurityPlan security = SecurityPlan.insecure();
-        NettyChannelInitializer initializer = new NettyChannelInitializer( LOCAL_DEFAULT, security, clock );
+        NettyChannelInitializer initializer = new NettyChannelInitializer( LOCAL_DEFAULT, security, clock, DEV_NULL_LOGGING );
 
         initializer.initChannel( channel );
 
