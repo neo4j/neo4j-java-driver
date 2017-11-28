@@ -28,7 +28,7 @@ import io.netty.handler.codec.ReplayingDecoder;
 import java.util.List;
 import javax.net.ssl.SSLHandshakeException;
 
-import org.neo4j.driver.internal.logging.PrefixedLogger;
+import org.neo4j.driver.internal.logging.ChannelActivityLogger;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.PackStreamMessageFormatV1;
 import org.neo4j.driver.internal.util.ErrorUtil;
@@ -38,9 +38,9 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.SecurityException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
-import static org.neo4j.driver.internal.async.ProtocolUtil.HTTP;
-import static org.neo4j.driver.internal.async.ProtocolUtil.NO_PROTOCOL_VERSION;
-import static org.neo4j.driver.internal.async.ProtocolUtil.PROTOCOL_VERSION_1;
+import static org.neo4j.driver.internal.async.BoltProtocolV1Util.HTTP;
+import static org.neo4j.driver.internal.async.BoltProtocolV1Util.NO_PROTOCOL_VERSION;
+import static org.neo4j.driver.internal.async.BoltProtocolV1Util.PROTOCOL_VERSION_1;
 
 public class HandshakeHandler extends ReplayingDecoder<Void>
 {
@@ -62,7 +62,7 @@ public class HandshakeHandler extends ReplayingDecoder<Void>
     @Override
     public void handlerAdded( ChannelHandlerContext ctx )
     {
-        log = new PrefixedLogger( ctx.channel().toString(), logging, getClass() );
+        log = new ChannelActivityLogger( ctx.channel(), logging, getClass() );
     }
 
     @Override
@@ -112,7 +112,7 @@ public class HandshakeHandler extends ReplayingDecoder<Void>
     protected void decode( ChannelHandlerContext ctx, ByteBuf in, List<Object> out )
     {
         int serverSuggestedVersion = in.readInt();
-        log.debug( "Server suggested protocol version %s during handshake", serverSuggestedVersion );
+        log.debug( "S: [Bolt Handshake] %d", serverSuggestedVersion );
 
         ChannelPipeline pipeline = ctx.pipeline();
         // this is a one-time handler, remove it when protocol version has been read

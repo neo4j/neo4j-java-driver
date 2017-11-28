@@ -27,7 +27,7 @@ import org.mockito.ArgumentCaptor;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 
-import static io.netty.buffer.ByteBufUtil.prettyHexDump;
+import static io.netty.buffer.ByteBufUtil.hexDump;
 import static io.netty.buffer.Unpooled.buffer;
 import static io.netty.buffer.Unpooled.copyShort;
 import static io.netty.buffer.Unpooled.wrappedBuffer;
@@ -152,7 +152,7 @@ public class ChunkDecoderTest
         verify( logger ).trace( anyString(), messageCaptor.capture() );
 
         // pretty hex dump should be logged
-        assertEquals( prettyHexDump( buffer ), messageCaptor.getValue() );
+        assertEquals( hexDump( buffer ), messageCaptor.getValue() );
         // single empty chunk should be available for reading
         assertEquals( 1, channel.inboundMessages().size() );
         assertByteBufEquals( wrappedBuffer( new byte[0] ), channel.readInbound() );
@@ -176,7 +176,7 @@ public class ChunkDecoderTest
         verify( logger ).trace( anyString(), messageCaptor.capture() );
 
         // pretty hex dump should be logged
-        assertEquals( prettyHexDump( buffer ), messageCaptor.getValue() );
+        assertEquals( hexDump( buffer ), messageCaptor.getValue() );
         // single chunk should be available for reading
         assertEquals( 1, channel.inboundMessages().size() );
         assertByteBufEquals( wrappedBuffer( bytes ), channel.readInbound() );

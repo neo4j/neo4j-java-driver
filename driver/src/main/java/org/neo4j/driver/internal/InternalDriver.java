@@ -112,7 +112,7 @@ public class InternalDriver implements Driver
     {
         if ( closed.compareAndSet( false, true ) )
         {
-            log.info( "Driver instance is closing" );
+            log.info( "Closing driver instance %s", this );
             return sessionFactory.close();
         }
         return completedFuture( null );

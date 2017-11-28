@@ -19,14 +19,13 @@
 package org.neo4j.driver.internal.async.inbound;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 
-import org.neo4j.driver.internal.logging.PrefixedLogger;
+import org.neo4j.driver.internal.logging.ChannelActivityLogger;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
-
-import static io.netty.buffer.ByteBufUtil.prettyHexDump;
 
 public class ChunkDecoder extends LengthFieldBasedFrameDecoder
 {
@@ -48,7 +47,7 @@ public class ChunkDecoder extends LengthFieldBasedFrameDecoder
     @Override
     public void handlerAdded( ChannelHandlerContext ctx )
     {
-        log = new PrefixedLogger( ctx.channel().toString(), logging, getClass() );
+        log = new ChannelActivityLogger( ctx.channel(), logging, getClass() );
     }
 
     @Override
@@ -65,8 +64,8 @@ public class ChunkDecoder extends LengthFieldBasedFrameDecoder
             int originalReaderIndex = buffer.readerIndex();
             int readerIndexWithChunkHeader = originalReaderIndex - INITIAL_BYTES_TO_STRIP;
             int lengthWithChunkHeader = INITIAL_BYTES_TO_STRIP + buffer.readableBytes();
-            String hexDump = prettyHexDump( buffer, readerIndexWithChunkHeader, lengthWithChunkHeader );
-            log.trace( "S:\n%s", hexDump );
+            String hexDump = ByteBufUtil.hexDump( buffer, readerIndexWithChunkHeader, lengthWithChunkHeader );
+            log.trace( "S: %s", hexDump );
         }
         return super.extractFrame( ctx, buffer, index, length );
     }

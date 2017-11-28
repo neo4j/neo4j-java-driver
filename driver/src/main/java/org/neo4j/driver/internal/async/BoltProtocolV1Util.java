@@ -24,7 +24,7 @@ import static io.netty.buffer.Unpooled.copyInt;
 import static io.netty.buffer.Unpooled.copyShort;
 import static io.netty.buffer.Unpooled.unreleasableBuffer;
 
-public final class ProtocolUtil
+public final class BoltProtocolV1Util
 {
     public static final int HTTP = 1213486160; //== 0x48545450 == "HTTP"
 
@@ -36,24 +36,30 @@ public final class ProtocolUtil
 
     public static final int DEFAULT_MAX_OUTBOUND_CHUNK_SIZE_BYTES = Short.MAX_VALUE / 2;
 
-    private static final ByteBuf HANDSHAKE_BUF = unreleasableBuffer( copyInt(
+    private static final ByteBuf BOLT_V1_HANDSHAKE_BUF = unreleasableBuffer( copyInt(
             BOLT_MAGIC_PREAMBLE,
             PROTOCOL_VERSION_1,
             NO_PROTOCOL_VERSION,
             NO_PROTOCOL_VERSION,
-            NO_PROTOCOL_VERSION ) ).asReadOnly();
+            NO_PROTOCOL_VERSION ) )
+            .asReadOnly();
 
     private static final ByteBuf MESSAGE_BOUNDARY_BUF = unreleasableBuffer( copyShort( 0 ) ).asReadOnly();
 
     private static final ByteBuf CHUNK_HEADER_PLACEHOLDER_BUF = unreleasableBuffer( copyShort( 0 ) ).asReadOnly();
 
-    private ProtocolUtil()
+    private BoltProtocolV1Util()
     {
     }
 
-    public static ByteBuf handshake()
+    public static ByteBuf handshakeBuf()
     {
-        return HANDSHAKE_BUF.duplicate();
+        return BOLT_V1_HANDSHAKE_BUF.duplicate();
+    }
+
+    public static String handshakeString()
+    {
+        return "[0x6060B017, 1, 0, 0, 0]";
     }
 
     public static ByteBuf messageBoundary()

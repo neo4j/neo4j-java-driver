@@ -25,12 +25,14 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.logging.ChannelActivityLogger;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
 import static java.lang.String.format;
-import static org.neo4j.driver.internal.async.ProtocolUtil.handshake;
+import static org.neo4j.driver.internal.async.BoltProtocolV1Util.handshakeBuf;
+import static org.neo4j.driver.internal.async.BoltProtocolV1Util.handshakeString;
 
 public class ChannelConnectedListener implements ChannelFutureListener
 {
@@ -38,7 +40,6 @@ public class ChannelConnectedListener implements ChannelFutureListener
     private final ChannelPipelineBuilder pipelineBuilder;
     private final ChannelPromise handshakeCompletedPromise;
     private final Logging logging;
-    private final Logger log;
 
     public ChannelConnectedListener( BoltServerAddress address, ChannelPipelineBuilder pipelineBuilder,
             ChannelPromise handshakeCompletedPromise, Logging logging )
@@ -47,21 +48,22 @@ public class ChannelConnectedListener implements ChannelFutureListener
         this.pipelineBuilder = pipelineBuilder;
         this.handshakeCompletedPromise = handshakeCompletedPromise;
         this.logging = logging;
-        this.log = logging.getLog( getClass().getSimpleName() );
     }
 
     @Override
     public void operationComplete( ChannelFuture future )
     {
         Channel channel = future.channel();
+        Logger log = new ChannelActivityLogger( channel, logging, getClass() );
 
         if ( future.isSuccess() )
         {
-            log.trace( "Channel %s connected, running bolt handshake", channel );
+            log.trace( "Channel %s connected, initiating bolt handshake", channel );
 
             ChannelPipeline pipeline = channel.pipeline();
             pipeline.addLast( new HandshakeHandler( pipelineBuilder, handshakeCompletedPromise, logging ) );
-            ChannelFuture handshakeFuture = channel.writeAndFlush( handshake() );
+            log.debug( "C: [Bolt Handshake] %s", handshakeString() );
+            ChannelFuture handshakeFuture = channel.writeAndFlush( handshakeBuf() );
 
             handshakeFuture.addListener( channelFuture ->
             {

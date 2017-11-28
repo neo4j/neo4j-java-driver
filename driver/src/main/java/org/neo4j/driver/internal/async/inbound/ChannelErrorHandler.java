@@ -24,7 +24,7 @@ import io.netty.handler.codec.CodecException;
 
 import java.io.IOException;
 
-import org.neo4j.driver.internal.logging.PrefixedLogger;
+import org.neo4j.driver.internal.logging.ChannelActivityLogger;
 import org.neo4j.driver.internal.util.ErrorUtil;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
@@ -50,7 +50,7 @@ public class ChannelErrorHandler extends ChannelInboundHandlerAdapter
     public void handlerAdded( ChannelHandlerContext ctx )
     {
         messageDispatcher = requireNonNull( messageDispatcher( ctx.channel() ) );
-        log = new PrefixedLogger( ctx.channel().toString(), logging, getClass() );
+        log = new ChannelActivityLogger( ctx.channel(), logging, getClass() );
     }
 
     @Override

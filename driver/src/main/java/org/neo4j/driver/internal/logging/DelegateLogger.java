@@ -55,19 +55,19 @@ public class DelegateLogger implements InternalLogger
     @Override
     public void trace( String format, Object arg )
     {
-        log.trace( format, arg );
+        log.trace( toDriverLoggerFormat( format ), arg );
     }
 
     @Override
     public void trace( String format, Object argA, Object argB )
     {
-        log.trace( format, argA, argB );
+        log.trace( toDriverLoggerFormat( format ), argA, argB );
     }
 
     @Override
     public void trace( String format, Object... arguments )
     {
-        log.trace( format, arguments );
+        log.trace( toDriverLoggerFormat( format ), arguments );
     }
 
     @Override
@@ -97,19 +97,19 @@ public class DelegateLogger implements InternalLogger
     @Override
     public void debug( String format, Object arg )
     {
-        log.debug( format, arg );
+        log.debug( toDriverLoggerFormat( format ), arg );
     }
 
     @Override
     public void debug( String format, Object argA, Object argB )
     {
-        log.debug( format, argA, argB );
+        log.debug( toDriverLoggerFormat( format ), argA, argB );
     }
 
     @Override
     public void debug( String format, Object... arguments )
     {
-        log.debug( format, arguments );
+        log.debug( toDriverLoggerFormat( format ), arguments );
     }
 
     @Override
@@ -139,19 +139,19 @@ public class DelegateLogger implements InternalLogger
     @Override
     public void info( String format, Object arg )
     {
-        log.info( format, arg );
+        log.info( toDriverLoggerFormat( format ), arg );
     }
 
     @Override
     public void info( String format, Object argA, Object argB )
     {
-        log.info( format, argA, argB );
+        log.info( toDriverLoggerFormat( format ), argA, argB );
     }
 
     @Override
     public void info( String format, Object... arguments )
     {
-        log.info( format, arguments );
+        log.info( toDriverLoggerFormat( format ), arguments );
     }
 
     @Override
@@ -181,19 +181,19 @@ public class DelegateLogger implements InternalLogger
     @Override
     public void warn( String format, Object arg )
     {
-        log.warn( format, arg );
+        log.warn( toDriverLoggerFormat( format ), arg );
     }
 
     @Override
     public void warn( String format, Object... arguments )
     {
-        log.warn( format, arguments );
+        log.warn( toDriverLoggerFormat( format ), arguments );
     }
 
     @Override
     public void warn( String format, Object argA, Object argB )
     {
-        log.warn( format, argA, argB );
+        log.warn( toDriverLoggerFormat( format ), argA, argB );
     }
 
     @Override
@@ -223,19 +223,32 @@ public class DelegateLogger implements InternalLogger
     @Override
     public void error( String format, Object arg )
     {
-        error( format(format, arg) );
+        error( format, new Object[]{arg} );
     }
 
     @Override
     public void error( String format, Object argA, Object argB )
     {
-        error( format(format, argA, argB) );
+        error( format, new Object[]{argA, argB} );
     }
 
     @Override
     public void error( String format, Object... arguments )
     {
-        error( format(format, arguments) );
+        format = toDriverLoggerFormat(format);
+        if ( arguments.length == 0 )
+        {
+            log.error( format, null );
+            return;
+        }
+
+        Object arg = arguments[arguments.length - 1];
+        if ( arg instanceof Throwable )
+        {
+            // still give all arguments to string format,
+            // for the worst case, the redundant parameter will be ignored.
+            log.error( format(format, arguments), (Throwable) arg );
+        }
     }
 
     @Override
@@ -403,5 +416,10 @@ public class DelegateLogger implements InternalLogger
             error( t );
             break;
         }
+    }
+
+    private String toDriverLoggerFormat( String format )
+    {
+        return format.replaceAll( "\\{\\}", "%s" );
     }
 }

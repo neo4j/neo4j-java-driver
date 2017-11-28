@@ -25,14 +25,14 @@ import io.netty.handler.codec.MessageToMessageEncoder;
 
 import java.util.List;
 
-import org.neo4j.driver.internal.logging.PrefixedLogger;
+import org.neo4j.driver.internal.logging.ChannelActivityLogger;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 
-import static io.netty.buffer.ByteBufUtil.prettyHexDump;
-import static org.neo4j.driver.internal.async.ProtocolUtil.messageBoundary;
+import static io.netty.buffer.ByteBufUtil.hexDump;
+import static org.neo4j.driver.internal.async.BoltProtocolV1Util.messageBoundary;
 
 public class OutboundMessageHandler extends MessageToMessageEncoder<Message>
 {
@@ -61,7 +61,7 @@ public class OutboundMessageHandler extends MessageToMessageEncoder<Message>
     @Override
     public void handlerAdded( ChannelHandlerContext ctx )
     {
-        log = new PrefixedLogger( ctx.channel().toString(), logging, getClass() );
+        log = new ChannelActivityLogger( ctx.channel(), logging, getClass() );
     }
 
     @Override
@@ -92,7 +92,7 @@ public class OutboundMessageHandler extends MessageToMessageEncoder<Message>
 
         if ( log.isTraceEnabled() )
         {
-            log.trace( "C:\n%s", prettyHexDump( messageBuf ) );
+            log.trace( "C: %s", hexDump( messageBuf ) );
         }
 
         out.add( messageBuf );
