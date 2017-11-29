@@ -37,7 +37,7 @@ import org.neo4j.driver.internal.cluster.loadbalancing.LeastConnectedLoadBalanci
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancingStrategy;
 import org.neo4j.driver.internal.cluster.loadbalancing.RoundRobinLoadBalancingStrategy;
-import org.neo4j.driver.internal.logging.DelegateLogging;
+import org.neo4j.driver.internal.logging.NettyLogging;
 import org.neo4j.driver.internal.retry.ExponentialBackoffRetryLogic;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.retry.RetrySettings;
@@ -71,7 +71,7 @@ public class DriverFactory
         RoutingSettings newRoutingSettings = routingSettings.withRoutingContext( new RoutingContext( uri ) );
         SecurityPlan securityPlan = createSecurityPlan( address, config );
 
-        InternalLoggerFactory.setDefaultFactory( new DelegateLogging( config.logging() ) );
+        InternalLoggerFactory.setDefaultFactory( new NettyLogging( config.logging() ) );
         Bootstrap bootstrap = createBootstrap();
         EventExecutorGroup eventExecutorGroup = bootstrap.config().group();
         RetryLogic retryLogic = createRetryLogic( retrySettings, eventExecutorGroup, config.logging() );

@@ -26,11 +26,11 @@ import org.neo4j.driver.v1.Logging;
 /**
  * This is the logging factory to delegate netty's logging to our logging system
  */
-public class DelegateLogging extends InternalLoggerFactory
+public class NettyLogging extends InternalLoggerFactory
 {
     private Logging logging;
 
-    public DelegateLogging( Logging logging )
+    public NettyLogging( Logging logging )
     {
         this.logging = logging;
     }
@@ -38,6 +38,6 @@ public class DelegateLogging extends InternalLoggerFactory
     @Override
     protected InternalLogger newInstance( String name )
     {
-        return new DelegateLogger( logging.getLog( name ) );
+        return new NettyLogger( name, logging.getLog( name ) );
     }
 }

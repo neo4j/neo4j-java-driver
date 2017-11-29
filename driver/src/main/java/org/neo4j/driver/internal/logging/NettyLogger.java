@@ -18,26 +18,24 @@
  */
 package org.neo4j.driver.internal.logging;
 
-import io.netty.util.internal.logging.InternalLogLevel;
-import io.netty.util.internal.logging.InternalLogger;
+import io.netty.util.internal.logging.AbstractInternalLogger;
+
+import java.util.regex.Pattern;
 
 import org.neo4j.driver.v1.Logger;
 
 import static java.lang.String.format;
 
 
-public class DelegateLogger implements InternalLogger
+public class NettyLogger extends AbstractInternalLogger
 {
     private Logger log;
-    public DelegateLogger( Logger log )
-    {
-        this.log = log;
-    }
+    private static final Pattern PLACE_HOLDER_PATTERN = Pattern.compile("\\{\\}");
 
-    @Override
-    public String name()
+    public NettyLogger( String name, Logger log )
     {
-        return null;
+        super( name );
+        this.log = log;
     }
 
     @Override
@@ -77,12 +75,6 @@ public class DelegateLogger implements InternalLogger
     }
 
     @Override
-    public void trace( Throwable t )
-    {
-        trace( t.getMessage(), t );
-    }
-
-    @Override
     public boolean isDebugEnabled()
     {
         return log.isDebugEnabled();
@@ -116,12 +108,6 @@ public class DelegateLogger implements InternalLogger
     public void debug( String msg, Throwable t )
     {
         log.debug( "%s%n%s", msg, t );
-    }
-
-    @Override
-    public void debug( Throwable t )
-    {
-        debug( t.getMessage(), t );
     }
 
     @Override
@@ -161,12 +147,6 @@ public class DelegateLogger implements InternalLogger
     }
 
     @Override
-    public void info( Throwable t )
-    {
-        info( t.getMessage(), t );
-    }
-
-    @Override
     public boolean isWarnEnabled()
     {
         return true;
@@ -203,12 +183,6 @@ public class DelegateLogger implements InternalLogger
     }
 
     @Override
-    public void warn( Throwable t )
-    {
-        warn( t.getMessage(), t );
-    }
-
-    @Override
     public boolean isErrorEnabled()
     {
         return true;
@@ -235,7 +209,7 @@ public class DelegateLogger implements InternalLogger
     @Override
     public void error( String format, Object... arguments )
     {
-        format = toDriverLoggerFormat(format);
+        format = toDriverLoggerFormat( format );
         if ( arguments.length == 0 )
         {
             log.error( format, null );
@@ -247,7 +221,7 @@ public class DelegateLogger implements InternalLogger
         {
             // still give all arguments to string format,
             // for the worst case, the redundant parameter will be ignored.
-            log.error( format(format, arguments), (Throwable) arg );
+            log.error( format( format, arguments ), (Throwable) arg );
         }
     }
 
@@ -257,169 +231,8 @@ public class DelegateLogger implements InternalLogger
         log.error( msg, t );
     }
 
-    @Override
-    public void error( Throwable t )
-    {
-        error( t.getMessage(), t );
-    }
-
-    @Override
-    public boolean isEnabled( InternalLogLevel level )
-    {
-        if ( level == InternalLogLevel.TRACE )
-        {
-            return isTraceEnabled();
-        }
-        else if ( level == InternalLogLevel.DEBUG )
-        {
-            return isDebugEnabled();
-        }
-        else
-        {
-            return true;
-        }
-    }
-
-    @Override
-    public void log( InternalLogLevel level, String msg )
-    {
-        switch ( level )
-        {
-        case TRACE:
-            trace( msg );
-            break;
-        case DEBUG:
-            debug( msg );
-            break;
-        case INFO:
-            info( msg );
-            break;
-        case WARN:
-            warn( msg );
-            break;
-        case ERROR:
-            error( msg );
-            break;
-        }
-    }
-
-    @Override
-    public void log( InternalLogLevel level, String format, Object arg )
-    {
-        switch ( level )
-        {
-        case TRACE:
-            trace( format, arg );
-            break;
-        case DEBUG:
-            debug( format, arg );
-            break;
-        case INFO:
-            info( format, arg );
-            break;
-        case WARN:
-            warn( format, arg );
-            break;
-        case ERROR:
-            error( format, arg );
-            break;
-        }
-    }
-
-    @Override
-    public void log( InternalLogLevel level, String format, Object argA, Object argB )
-    {
-        switch ( level )
-        {
-        case TRACE:
-            trace( format, argA, argB );
-            break;
-        case DEBUG:
-            debug( format, argA, argB );
-            break;
-        case INFO:
-            info( format, argA, argB );
-            break;
-        case WARN:
-            warn( format, argA, argB );
-            break;
-        case ERROR:
-            error( format, argA, argB );
-            break;
-        }
-    }
-
-    @Override
-    public void log( InternalLogLevel level, String format, Object... arguments )
-    {
-        switch ( level )
-        {
-        case TRACE:
-            trace( format, arguments );
-            break;
-        case DEBUG:
-            debug( format, arguments );
-            break;
-        case INFO:
-            info( format, arguments );
-            break;
-        case WARN:
-            warn( format, arguments );
-            break;
-        case ERROR:
-            error( format, arguments );
-            break;
-        }
-    }
-
-    @Override
-    public void log( InternalLogLevel level, String msg, Throwable t )
-    {
-        switch ( level )
-        {
-        case TRACE:
-            trace( msg, t );
-            break;
-        case DEBUG:
-            debug( msg, t );
-            break;
-        case INFO:
-            info( msg, t );
-            break;
-        case WARN:
-            warn( msg, t );
-            break;
-        case ERROR:
-            error( msg, t );
-            break;
-        }
-    }
-
-    @Override
-    public void log( InternalLogLevel level, Throwable t )
-    {
-        switch ( level )
-        {
-        case TRACE:
-            trace( t );
-            break;
-        case DEBUG:
-            debug( t );
-            break;
-        case INFO:
-            info( t );
-            break;
-        case WARN:
-            warn( t );
-            break;
-        case ERROR:
-            error( t );
-            break;
-        }
-    }
-
     private String toDriverLoggerFormat( String format )
     {
-        return format.replaceAll( "\\{\\}", "%s" );
+        return PLACE_HOLDER_PATTERN.matcher( format ).replaceAll( "%s" );
     }
 }
