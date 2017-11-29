@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -72,6 +73,11 @@ public final class TestUtil
     {
         Future<T> future = stage.toCompletableFuture();
         return await( future );
+    }
+
+    public static <T> T await( CompletableFuture<T> future )
+    {
+        return await( (Future<T>) future );
     }
 
     public static <T, U extends Future<T>> T await( U future )

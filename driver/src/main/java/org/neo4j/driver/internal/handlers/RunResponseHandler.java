@@ -30,10 +30,12 @@ import static java.util.Collections.emptyList;
 
 public class RunResponseHandler implements ResponseHandler
 {
+    private static final int UNKNOWN = -1;
+
     private final CompletableFuture<Void> runCompletedFuture;
 
     private List<String> statementKeys = emptyList();
-    private long resultAvailableAfter;
+    private long resultAvailableAfter = UNKNOWN;
 
     public RunResponseHandler( CompletableFuture<Void> runCompletedFuture )
     {
@@ -107,6 +109,6 @@ public class RunResponseHandler implements ResponseHandler
         {
             return resultAvailableAfterValue.asLong();
         }
-        return -1;
+        return UNKNOWN;
     }
 }

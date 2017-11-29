@@ -63,6 +63,8 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.TransientException;
+import org.neo4j.driver.v1.summary.ResultSummary;
+import org.neo4j.driver.v1.summary.StatementType;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static java.lang.String.format;
@@ -89,6 +91,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.driver.internal.util.Matchers.arithmeticError;
 import static org.neo4j.driver.internal.util.Matchers.connectionAcquisitionTimeoutError;
 import static org.neo4j.driver.internal.util.ServerVersion.v3_1_0;
 import static org.neo4j.driver.v1.Values.parameters;
@@ -1329,6 +1332,77 @@ public class SessionIT
 
         // work should never be invoked
         assertEquals( 0, invocations.get() );
+    }
+
+    @Test
+    public void shouldAllowConsumingRecordsAfterFailureInSessionClose()
+    {
+        Session session = neo4j.driver().session();
+
+        StatementResult result = session.run( "UNWIND [2, 4, 8, 0] AS x RETURN 32 / x" );
+
+        try
+        {
+            session.close();
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e, is( arithmeticError() ) );
+        }
+
+        assertTrue( result.hasNext() );
+        assertEquals( 16, result.next().get( 0 ).asInt() );
+        assertTrue( result.hasNext() );
+        assertEquals( 8, result.next().get( 0 ).asInt() );
+        assertTrue( result.hasNext() );
+        assertEquals( 4, result.next().get( 0 ).asInt() );
+        assertFalse( result.hasNext() );
+    }
+
+    @Test
+    public void shouldAllowAccessingRecordsAfterSummary()
+    {
+        int recordCount = 10_000;
+        String query = "UNWIND range(1, " + recordCount + ") AS x RETURN x";
+
+        try ( Session session = neo4j.driver().session() )
+        {
+            StatementResult result = session.run( query );
+
+            ResultSummary summary = result.summary();
+            assertEquals( query, summary.statement().text() );
+            assertEquals( StatementType.READ_ONLY, summary.statementType() );
+
+            List<Record> records = result.list();
+            assertEquals( recordCount, records.size() );
+            for ( int i = 1; i <= recordCount; i++ )
+            {
+                Record record = records.get( i - 1 );
+                assertEquals( i, record.get( 0 ).asInt() );
+            }
+        }
+    }
+
+    @Test
+    public void shouldAllowAccessingRecordsAfterSessionClosed()
+    {
+        int recordCount = 11_333;
+        String query = "UNWIND range(1, " + recordCount + ") AS x RETURN 'Result-' + x";
+
+        StatementResult result;
+        try ( Session session = neo4j.driver().session() )
+        {
+            result = session.run( query );
+        }
+
+        List<Record> records = result.list();
+        assertEquals( recordCount, records.size() );
+        for ( int i = 1; i <= recordCount; i++ )
+        {
+            Record record = records.get( i - 1 );
+            assertEquals( "Result-" + i, record.get( 0 ).asString() );
+        }
     }
 
     private void assumeServerIs31OrLater()

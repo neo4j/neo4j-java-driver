@@ -122,7 +122,7 @@ public class NettyConnectionTest
     }
 
     @Test
-    public void shouldNotEnableAutoReadWhenReleased()
+    public void shouldEnableAutoReadWhenReleased()
     {
         EmbeddedChannel channel = new EmbeddedChannel();
         channel.config().setAutoRead( false );
@@ -130,17 +130,7 @@ public class NettyConnectionTest
         NettyConnection connection = newConnection( channel );
 
         connection.release();
-
-        try
-        {
-            connection.enableAutoRead();
-            fail( "Exception expected" );
-        }
-        catch ( IllegalStateException e )
-        {
-            assertConnectionReleasedError( e );
-        }
-        assertFalse( channel.config().isAutoRead() );
+        assertTrue( channel.config().isAutoRead() );
     }
 
     @Test
@@ -152,16 +142,7 @@ public class NettyConnectionTest
         NettyConnection connection = newConnection( channel );
 
         connection.release();
-
-        try
-        {
-            connection.disableAutoRead();
-            fail( "Exception expected" );
-        }
-        catch ( IllegalStateException e )
-        {
-            assertConnectionReleasedError( e );
-        }
+        connection.disableAutoRead(); // does nothing on released connection
         assertTrue( channel.config().isAutoRead() );
     }
 

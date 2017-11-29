@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal.handlers;
 
-import java.util.LinkedList;
+import java.util.ArrayDeque;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
@@ -38,16 +38,16 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 
-// todo: unit tests
 public abstract class PullAllResponseHandler implements ResponseHandler
 {
-    private static final boolean TOUCH_AUTO_READ = false;
+    static final int RECORD_BUFFER_LOW_WATERMARK = Integer.getInteger( "recordBufferLowWatermark", 300 );
+    static final int RECORD_BUFFER_HIGH_WATERMARK = Integer.getInteger( "recordBufferHighWatermark", 1000 );
 
     private final Statement statement;
     private final RunResponseHandler runResponseHandler;
     protected final Connection connection;
 
-    private final Queue<Record> records = new LinkedList<>();
+    private final Queue<Record> records = new ArrayDeque<>();
 
     private boolean finished;
     private Throwable failure;
@@ -199,25 +199,31 @@ public abstract class PullAllResponseHandler implements ResponseHandler
     private void queueRecord( Record record )
     {
         records.add( record );
-        if ( TOUCH_AUTO_READ )
+
+        boolean shouldBufferAllRecords = summaryFuture != null || failureFuture != null;
+        // when summary or failure is requested we have to buffer all remaining records and then return summary/failure
+        // do not disable auto-read in this case, otherwise records will not be consumed and trailing
+        // SUCCESS or FAILURE message will not arrive as well, so callers will get stuck waiting for summary/failure
+        if ( !shouldBufferAllRecords && records.size() > RECORD_BUFFER_HIGH_WATERMARK )
         {
-            if ( records.size() > 10_000 )
-            {
-                connection.disableAutoRead();
-            }
+            // more than high watermark records are already queued, tell connection to stop auto-reading from network
+            // this is needed to deal with slow consumers, we do not want to buffer all records in memory if they are
+            // fetched from network faster than consumed
+            connection.disableAutoRead();
         }
     }
 
     private Record dequeueRecord()
     {
         Record record = records.poll();
-        if ( TOUCH_AUTO_READ )
+
+        if ( records.size() < RECORD_BUFFER_LOW_WATERMARK )
         {
-            if ( record != null && records.size() < 100 )
-            {
-                connection.enableAutoRead();
-            }
+            // less than low watermark records are now available in the buffer, tell connection to pre-fetch more
+            // and populate queue with new records from network
+            connection.enableAutoRead();
         }
+
         return record;
     }
 
