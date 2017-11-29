@@ -50,7 +50,7 @@ import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.driver.internal.async.ProtocolUtil.messageBoundary;
+import static org.neo4j.driver.internal.async.BoltProtocolV1Util.messageBoundary;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.messaging.MessageFormat.Writer;
 import static org.neo4j.driver.internal.messaging.PullAllMessage.PULL_ALL;

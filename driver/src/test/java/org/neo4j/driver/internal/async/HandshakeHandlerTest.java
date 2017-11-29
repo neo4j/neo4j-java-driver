@@ -47,9 +47,9 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setMessageDispatcher;
-import static org.neo4j.driver.internal.async.ProtocolUtil.HTTP;
-import static org.neo4j.driver.internal.async.ProtocolUtil.NO_PROTOCOL_VERSION;
-import static org.neo4j.driver.internal.async.ProtocolUtil.PROTOCOL_VERSION_1;
+import static org.neo4j.driver.internal.async.BoltProtocolV1Util.HTTP;
+import static org.neo4j.driver.internal.async.BoltProtocolV1Util.NO_PROTOCOL_VERSION;
+import static org.neo4j.driver.internal.async.BoltProtocolV1Util.PROTOCOL_VERSION_1;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 

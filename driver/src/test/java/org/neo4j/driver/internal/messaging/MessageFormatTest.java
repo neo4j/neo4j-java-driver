@@ -45,7 +45,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.driver.internal.async.ChannelAttributes.messageDispatcher;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setMessageDispatcher;
-import static org.neo4j.driver.internal.async.ProtocolUtil.messageBoundary;
+import static org.neo4j.driver.internal.async.BoltProtocolV1Util.messageBoundary;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.v1.Values.EmptyMap;
 import static org.neo4j.driver.v1.Values.ofValue;

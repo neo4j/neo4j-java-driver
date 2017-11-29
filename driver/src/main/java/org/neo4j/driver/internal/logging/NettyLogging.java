@@ -18,30 +18,26 @@
  */
 package org.neo4j.driver.internal.logging;
 
-import org.neo4j.driver.v1.Logger;
+import io.netty.util.internal.logging.InternalLogger;
+import io.netty.util.internal.logging.InternalLoggerFactory;
 
-public class PrefixedLogger extends ReformattedLogger
+import org.neo4j.driver.v1.Logging;
+
+/**
+ * This is the logging factory to delegate netty's logging to our logging system
+ */
+public class NettyLogging extends InternalLoggerFactory
 {
-    private final String messagePrefix;
+    private Logging logging;
 
-    public PrefixedLogger( Logger delegate )
+    public NettyLogging( Logging logging )
     {
-        this( null, delegate );
-    }
-
-    public PrefixedLogger( String messagePrefix, Logger delegate )
-    {
-        super(delegate);
-        this.messagePrefix = messagePrefix;
+        this.logging = logging;
     }
 
     @Override
-    protected String reformat( String message )
+    protected InternalLogger newInstance( String name )
     {
-        if ( messagePrefix == null )
-        {
-            return message;
-        }
-        return String.format( "%s %s", messagePrefix, message );
+        return new NettyLogger( name, logging.getLog( name ) );
     }
 }

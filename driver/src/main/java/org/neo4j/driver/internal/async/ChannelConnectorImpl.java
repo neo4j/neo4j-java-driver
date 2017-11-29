@@ -71,7 +71,7 @@ public class ChannelConnectorImpl implements ChannelConnector
     public ChannelFuture connect( BoltServerAddress address, Bootstrap bootstrap )
     {
         bootstrap.option( ChannelOption.CONNECT_TIMEOUT_MILLIS, connectTimeoutMillis );
-        bootstrap.handler( new NettyChannelInitializer( address, securityPlan, clock ) );
+        bootstrap.handler( new NettyChannelInitializer( address, securityPlan, clock, logging ) );
 
         ChannelFuture channelConnected = bootstrap.connect( address.toSocketAddress() );
 

@@ -44,6 +44,7 @@ public class InternalDriver implements Driver
         this.securityPlan = securityPlan;
         this.sessionFactory = sessionFactory;
         this.log = logging.getLog( Driver.class.getSimpleName() );
+        log.info( "Driver instance %s created", this );
     }
 
     @Override
@@ -112,7 +113,7 @@ public class InternalDriver implements Driver
     {
         if ( closed.compareAndSet( false, true ) )
         {
-            log.info( "Driver instance is closing" );
+            log.info( "Closing driver instance %s", this );
             return sessionFactory.close();
         }
         return completedFuture( null );

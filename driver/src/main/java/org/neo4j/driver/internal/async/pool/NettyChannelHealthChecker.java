@@ -71,9 +71,11 @@ public class NettyChannelHealthChecker implements ChannelHealthChecker
             long maxAgeMillis = poolSettings.maxConnectionLifetime();
 
             boolean tooOld = ageMillis > maxAgeMillis;
-
-            log.trace( "Can't acquire channel %s from the pool because it is too old: %s > %s",
-                    channel, ageMillis, maxAgeMillis );
+            if ( tooOld )
+            {
+                log.trace( "Failed acquire channel %s from the pool because it is too old: %s > %s",
+                        channel, ageMillis, maxAgeMillis );
+            }
 
             return tooOld;
         }

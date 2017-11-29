@@ -78,7 +78,7 @@ public class ConnectionPoolImpl implements ConnectionPool
     @Override
     public CompletionStage<Connection> acquire( BoltServerAddress address )
     {
-        log.debug( "Acquiring connection from pool towards %s", address );
+        log.trace( "Acquiring a connection from pool towards %s", address );
 
         assertNotClosed();
         ChannelPool pool = getOrCreatePool( address );

@@ -23,12 +23,12 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.DecoderException;
 
-import org.neo4j.driver.internal.logging.PrefixedLogger;
+import org.neo4j.driver.internal.logging.ChannelActivityLogger;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 
-import static io.netty.buffer.ByteBufUtil.prettyHexDump;
+import static io.netty.buffer.ByteBufUtil.hexDump;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.driver.internal.async.ChannelAttributes.messageDispatcher;
 
@@ -52,7 +52,7 @@ public class InboundMessageHandler extends SimpleChannelInboundHandler<ByteBuf>
     public void handlerAdded( ChannelHandlerContext ctx )
     {
         messageDispatcher = requireNonNull( messageDispatcher( ctx.channel() ) );
-        log = new PrefixedLogger( ctx.channel().toString(), logging, getClass() );
+        log = new ChannelActivityLogger( ctx.channel(), logging, getClass() );
     }
 
     @Override
@@ -68,13 +68,13 @@ public class InboundMessageHandler extends SimpleChannelInboundHandler<ByteBuf>
         if ( messageDispatcher.fatalErrorOccurred() )
         {
             log.warn( "Message ignored because of the previous fatal error. Channel will be closed. Message:\n%s",
-                    prettyHexDump( msg ) );
+                    hexDump( msg ) );
             return;
         }
 
         if ( log.isTraceEnabled() )
         {
-            log.trace( "S:\n%s", prettyHexDump( msg ) );
+            log.trace( "S: %s", hexDump( msg ) );
         }
 
         input.start( msg );
@@ -84,7 +84,7 @@ public class InboundMessageHandler extends SimpleChannelInboundHandler<ByteBuf>
         }
         catch ( Throwable error )
         {
-            throw new DecoderException( "Failed to read inbound message:\n" + prettyHexDump( msg ) + "\n", error );
+            throw new DecoderException( "Failed to read inbound message:\n" + hexDump( msg ) + "\n", error );
         }
         finally
         {

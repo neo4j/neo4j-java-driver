@@ -18,30 +18,35 @@
  */
 package org.neo4j.driver.internal.logging;
 
+import io.netty.channel.Channel;
+
 import org.neo4j.driver.v1.Logger;
+import org.neo4j.driver.v1.Logging;
 
-public class PrefixedLogger extends ReformattedLogger
+import static java.lang.String.format;
+
+public class ChannelActivityLogger extends ReformattedLogger
 {
-    private final String messagePrefix;
+    private final Channel channel;
 
-    public PrefixedLogger( Logger delegate )
+    public ChannelActivityLogger( Channel channel, Logging logging, Class<?> owner )
     {
-        this( null, delegate );
+        this( channel, logging.getLog( owner.getSimpleName() ) );
     }
 
-    public PrefixedLogger( String messagePrefix, Logger delegate )
+    private ChannelActivityLogger( Channel channel, Logger delegate )
     {
-        super(delegate);
-        this.messagePrefix = messagePrefix;
+        super( delegate );
+        this.channel = channel;
     }
 
     @Override
     protected String reformat( String message )
     {
-        if ( messagePrefix == null )
+        if ( channel == null )
         {
             return message;
         }
-        return String.format( "%s %s", messagePrefix, message );
+        return format( "[0x%s] %s", channel.id(), message );
     }
 }
