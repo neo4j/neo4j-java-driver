@@ -16,13 +16,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.summary;
+package org.neo4j.driver.internal.util;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.summary.InternalNotification;
+import org.neo4j.driver.internal.summary.InternalPlan;
+import org.neo4j.driver.internal.summary.InternalProfiledPlan;
+import org.neo4j.driver.internal.summary.InternalResultSummary;
+import org.neo4j.driver.internal.summary.InternalServerInfo;
+import org.neo4j.driver.internal.summary.InternalSummaryCounters;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.summary.Notification;
@@ -32,13 +39,44 @@ import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.summary.ServerInfo;
 import org.neo4j.driver.v1.summary.StatementType;
 
-public final class ResultSummaryCreator
+import static java.util.Collections.emptyList;
+
+public final class MetadataUtil
 {
-    private ResultSummaryCreator()
+    private MetadataUtil()
     {
     }
 
-    public static ResultSummary create( Statement statement, Connection connection, long resultAvailableAfter,
+    public static List<String> extractStatementKeys( Map<String,Value> metadata )
+    {
+        Value keysValue = metadata.get( "fields" );
+        if ( keysValue != null )
+        {
+            if ( !keysValue.isEmpty() )
+            {
+                List<String> keys = new ArrayList<>( keysValue.size() );
+                for ( Value value : keysValue.values() )
+                {
+                    keys.add( value.asString() );
+                }
+
+                return keys;
+            }
+        }
+        return emptyList();
+    }
+
+    public static long extractResultAvailableAfter( Map<String,Value> metadata )
+    {
+        Value resultAvailableAfterValue = metadata.get( "result_available_after" );
+        if ( resultAvailableAfterValue != null )
+        {
+            return resultAvailableAfterValue.asLong();
+        }
+        return -1;
+    }
+
+    public static ResultSummary extractSummary( Statement statement, Connection connection, long resultAvailableAfter,
             Map<String,Value> metadata )
     {
         ServerInfo serverInfo = new InternalServerInfo( connection.serverAddress(), connection.serverVersion() );

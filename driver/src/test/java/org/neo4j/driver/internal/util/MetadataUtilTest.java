@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.summary;
+package org.neo4j.driver.internal.util;
 
 import org.junit.Test;
 
@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.util.ServerVersion;
+import org.neo4j.driver.internal.summary.InternalInputPosition;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.summary.Notification;
@@ -35,6 +35,7 @@ import org.neo4j.driver.v1.summary.ProfiledPlan;
 import org.neo4j.driver.v1.summary.ResultSummary;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertEquals;
@@ -44,7 +45,9 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.summary.InternalSummaryCounters.EMPTY_STATS;
-import static org.neo4j.driver.internal.summary.ResultSummaryCreator.create;
+import static org.neo4j.driver.internal.util.MetadataUtil.extractResultAvailableAfter;
+import static org.neo4j.driver.internal.util.MetadataUtil.extractStatementKeys;
+import static org.neo4j.driver.internal.util.MetadataUtil.extractSummary;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.Values.value;
 import static org.neo4j.driver.v1.Values.values;
@@ -53,15 +56,45 @@ import static org.neo4j.driver.v1.summary.StatementType.READ_WRITE;
 import static org.neo4j.driver.v1.summary.StatementType.SCHEMA_WRITE;
 import static org.neo4j.driver.v1.summary.StatementType.WRITE_ONLY;
 
-public class ResultSummaryCreatorTest
+public class MetadataUtilTest
 {
+    @Test
+    public void shouldExtractStatementKeys()
+    {
+        List<String> keys = asList( "hello", " ", "world", "!" );
+        List<String> extractedKeys = extractStatementKeys( singletonMap( "fields", value( keys ) ) );
+        assertEquals( keys, extractedKeys );
+    }
+
+    @Test
+    public void shouldExtractEmptyStatementKeysWhenNoneInMetadata()
+    {
+        List<String> extractedKeys = extractStatementKeys( emptyMap() );
+        assertEquals( emptyList(), extractedKeys );
+    }
+
+    @Test
+    public void shouldExtractResultAvailableAfter()
+    {
+        long extractedResultAvailableAfter = extractResultAvailableAfter(
+                singletonMap( "result_available_after", value( 424242 ) ) );
+        assertEquals( 424242L, extractedResultAvailableAfter );
+    }
+
+    @Test
+    public void shouldExtractNoResultAvailableAfterWhenNoneInMetadata()
+    {
+        long extractedResultAvailableAfter = extractResultAvailableAfter( emptyMap() );
+        assertEquals( -1, extractedResultAvailableAfter );
+    }
+
     @Test
     public void shouldBuildResultSummaryWithStatement()
     {
         Statement statement = new Statement( "UNWIND range(10, 100) AS x CREATE (:Node {name: $name, x: x})",
                 singletonMap( "name", "Apa" ) );
 
-        ResultSummary summary = create( statement, connectionMock(), 42, emptyMap() );
+        ResultSummary summary = extractSummary( statement, connectionMock(), 42, emptyMap() );
 
         assertEquals( statement, summary.statement() );
     }
@@ -71,7 +104,7 @@ public class ResultSummaryCreatorTest
     {
         Connection connection = connectionMock( new BoltServerAddress( "server:42" ), ServerVersion.v3_2_0 );
 
-        ResultSummary summary = create( statement(), connection, 42, emptyMap() );
+        ResultSummary summary = extractSummary( statement(), connection, 42, emptyMap() );
 
         assertEquals( "server:42", summary.server().address() );
         assertEquals( "Neo4j/3.2.0", summary.server().version() );
@@ -107,7 +140,7 @@ public class ResultSummaryCreatorTest
 
         Map<String,Value> metadata = singletonMap( "stats", stats );
 
-        ResultSummary summary = create( statement(), connectionMock(), 42, metadata );
+        ResultSummary summary = extractSummary( statement(), connectionMock(), 42, metadata );
 
         assertEquals( 42, summary.counters().nodesCreated() );
         assertEquals( 4242, summary.counters().nodesDeleted() );
@@ -125,7 +158,7 @@ public class ResultSummaryCreatorTest
     @Test
     public void shouldBuildResultSummaryWithoutCounters()
     {
-        ResultSummary summary = create( statement(), connectionMock(), 42, emptyMap() );
+        ResultSummary summary = extractSummary( statement(), connectionMock(), 42, emptyMap() );
         assertEquals( EMPTY_STATS, summary.counters() );
     }
 
@@ -146,7 +179,7 @@ public class ResultSummaryCreatorTest
         ) );
         Map<String,Value> metadata = singletonMap( "plan", plan );
 
-        ResultSummary summary = create( statement(), connectionMock(), 42, metadata );
+        ResultSummary summary = extractSummary( statement(), connectionMock(), 42, metadata );
 
         assertTrue( summary.hasPlan() );
         assertEquals( "Projection", summary.plan().operatorType() );
@@ -166,7 +199,7 @@ public class ResultSummaryCreatorTest
     @Test
     public void shouldBuildResultSummaryWithoutPlan()
     {
-        ResultSummary summary = create( statement(), connectionMock(), 42, emptyMap() );
+        ResultSummary summary = extractSummary( statement(), connectionMock(), 42, emptyMap() );
         assertFalse( summary.hasPlan() );
         assertNull( summary.plan() );
     }
@@ -192,7 +225,7 @@ public class ResultSummaryCreatorTest
         ) );
         Map<String,Value> metadata = singletonMap( "profile", profile );
 
-        ResultSummary summary = create( statement(), connectionMock(), 42, metadata );
+        ResultSummary summary = extractSummary( statement(), connectionMock(), 42, metadata );
 
         assertTrue( summary.hasPlan() );
         assertTrue( summary.hasProfile() );
@@ -216,7 +249,7 @@ public class ResultSummaryCreatorTest
     @Test
     public void shouldBuildResultSummaryWithoutProfiledPlan()
     {
-        ResultSummary summary = create( statement(), connectionMock(), 42, emptyMap() );
+        ResultSummary summary = extractSummary( statement(), connectionMock(), 42, emptyMap() );
         assertFalse( summary.hasProfile() );
         assertNull( summary.profile() );
     }
@@ -249,7 +282,7 @@ public class ResultSummaryCreatorTest
         Value notifications = value( notification1, notification2 );
         Map<String,Value> metadata = singletonMap( "notifications", notifications );
 
-        ResultSummary summary = create( statement(), connectionMock(), 42, metadata );
+        ResultSummary summary = extractSummary( statement(), connectionMock(), 42, metadata );
 
         assertEquals( 2, summary.notifications().size() );
         Notification firstNotification = summary.notifications().get( 0 );
@@ -271,7 +304,7 @@ public class ResultSummaryCreatorTest
     @Test
     public void shouldBuildResultSummaryWithoutNotifications()
     {
-        ResultSummary summary = create( statement(), connectionMock(), 42, emptyMap() );
+        ResultSummary summary = extractSummary( statement(), connectionMock(), 42, emptyMap() );
         assertEquals( 0, summary.notifications().size() );
     }
 
@@ -280,7 +313,7 @@ public class ResultSummaryCreatorTest
     {
         int value = 42_000;
 
-        ResultSummary summary = create( statement(), connectionMock(), value, emptyMap() );
+        ResultSummary summary = extractSummary( statement(), connectionMock(), value, emptyMap() );
 
         assertEquals( 42, summary.resultAvailableAfter( TimeUnit.SECONDS ) );
         assertEquals( value, summary.resultAvailableAfter( TimeUnit.MILLISECONDS ) );
@@ -292,7 +325,7 @@ public class ResultSummaryCreatorTest
         int value = 42_000;
         Map<String,Value> metadata = singletonMap( "result_consumed_after", value( value ) );
 
-        ResultSummary summary = create( statement(), connectionMock(), 42, metadata );
+        ResultSummary summary = extractSummary( statement(), connectionMock(), 42, metadata );
 
         assertEquals( 42, summary.resultConsumedAfter( TimeUnit.SECONDS ) );
         assertEquals( value, summary.resultConsumedAfter( TimeUnit.MILLISECONDS ) );
@@ -301,7 +334,7 @@ public class ResultSummaryCreatorTest
     @Test
     public void shouldBuildResultSummaryWithoutResultConsumedAfter()
     {
-        ResultSummary summary = create( statement(), connectionMock(), 42, emptyMap() );
+        ResultSummary summary = extractSummary( statement(), connectionMock(), 42, emptyMap() );
         assertEquals( -1, summary.resultConsumedAfter( TimeUnit.SECONDS ) );
         assertEquals( -1, summary.resultConsumedAfter( TimeUnit.MILLISECONDS ) );
     }
@@ -309,7 +342,7 @@ public class ResultSummaryCreatorTest
     private static ResultSummary createWithStatementType( Value typeValue )
     {
         Map<String,Value> metadata = singletonMap( "type", typeValue );
-        return create( statement(), connectionMock(), 42, metadata );
+        return extractSummary( statement(), connectionMock(), 42, metadata );
     }
 
     private static Statement statement()

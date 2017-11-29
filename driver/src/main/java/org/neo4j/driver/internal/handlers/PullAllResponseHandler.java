@@ -27,7 +27,7 @@ import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
-import org.neo4j.driver.internal.summary.ResultSummaryCreator;
+import org.neo4j.driver.internal.util.MetadataUtil;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Value;
@@ -298,6 +298,6 @@ public abstract class PullAllResponseHandler implements ResponseHandler
     private ResultSummary extractResultSummary( Map<String,Value> metadata )
     {
         long resultAvailableAfter = runResponseHandler.resultAvailableAfter();
-        return ResultSummaryCreator.create( statement, connection, resultAvailableAfter, metadata );
+        return MetadataUtil.extractSummary( statement, connection, resultAvailableAfter, metadata );
     }
 }
