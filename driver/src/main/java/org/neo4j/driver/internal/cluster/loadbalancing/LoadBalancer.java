@@ -20,7 +20,6 @@ package org.neo4j.driver.internal.cluster.loadbalancing;
 
 import io.netty.util.concurrent.EventExecutorGroup;
 
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -125,10 +124,8 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
 
     private synchronized void forget( BoltServerAddress address )
     {
-        // First remove from the load balancer, to prevent concurrent threads from making connections to them.
+        // remove from the routing table, to prevent concurrent threads from making connections to this address
         routingTable.forget( address );
-        // drop all current connections to the address
-        connectionPool.purge( address );
     }
 
     private synchronized CompletionStage<RoutingTable> freshRoutingTable( AccessMode mode )
@@ -171,18 +168,21 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
 
     private synchronized void freshClusterCompositionFetched( ClusterComposition composition )
     {
-        Set<BoltServerAddress> removed = routingTable.update( composition );
-
-        for ( BoltServerAddress address : removed )
+        try
         {
-            connectionPool.purge( address );
+            routingTable.update( composition );
+            connectionPool.retainAll( routingTable.servers() );
+
+            log.info( "Refreshed routing information. %s", routingTable );
+
+            CompletableFuture<RoutingTable> routingTableFuture = refreshRoutingTableFuture;
+            refreshRoutingTableFuture = null;
+            routingTableFuture.complete( routingTable );
         }
-
-        log.info( "Refreshed routing information. %s", routingTable );
-
-        CompletableFuture<RoutingTable> routingTableFuture = refreshRoutingTableFuture;
-        refreshRoutingTableFuture = null;
-        routingTableFuture.complete( routingTable );
+        catch ( Throwable error )
+        {
+            clusterCompositionLookupFailed( error );
+        }
     }
 
     private synchronized void clusterCompositionLookupFailed( Throwable error )

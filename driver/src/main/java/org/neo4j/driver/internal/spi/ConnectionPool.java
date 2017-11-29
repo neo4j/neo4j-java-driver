@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal.spi;
 
+import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.BoltServerAddress;
@@ -26,9 +27,7 @@ public interface ConnectionPool
 {
     CompletionStage<Connection> acquire( BoltServerAddress address );
 
-    void purge( BoltServerAddress address );
-
-    boolean hasAddress( BoltServerAddress address );
+    void retainAll( Set<BoltServerAddress> addressesToRetain );
 
     int activeConnections( BoltServerAddress address );
 

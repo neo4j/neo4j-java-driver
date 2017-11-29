@@ -28,6 +28,7 @@ import org.junit.After;
 import org.junit.Test;
 
 import java.util.Set;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -225,6 +226,30 @@ public class NettyConnectionTest
         connection.release();
 
         assertEquals( version, connection.serverVersion() );
+    }
+
+    @Test
+    public void shouldReturnSameCompletionStageFromRelease()
+    {
+        EmbeddedChannel channel = new EmbeddedChannel();
+        InboundMessageDispatcher messageDispatcher = new InboundMessageDispatcher( channel, DEV_NULL_LOGGING );
+        ChannelAttributes.setMessageDispatcher( channel, messageDispatcher );
+
+        NettyConnection connection = newConnection( channel );
+
+        CompletionStage<Void> releaseStage1 = connection.release();
+        CompletionStage<Void> releaseStage2 = connection.release();
+        CompletionStage<Void> releaseStage3 = connection.release();
+
+        channel.runPendingTasks();
+
+        // RESET should be send only once
+        assertEquals( 1, channel.outboundMessages().size() );
+        assertEquals( RESET, channel.outboundMessages().poll() );
+
+        // all returned stages should be the same
+        assertEquals( releaseStage1, releaseStage2 );
+        assertEquals( releaseStage2, releaseStage3 );
     }
 
     private void testWriteInEventLoop( String threadName, Consumer<NettyConnection> action ) throws Exception

@@ -25,6 +25,7 @@ import io.netty.channel.pool.ChannelPool;
 import io.netty.util.concurrent.Future;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
@@ -59,9 +60,15 @@ public class ConnectionPoolImpl implements ConnectionPool
     public ConnectionPoolImpl( ChannelConnector connector, Bootstrap bootstrap, PoolSettings settings,
             Logging logging, Clock clock )
     {
+        this( connector, bootstrap, new ActiveChannelTracker( logging ), settings, logging, clock );
+    }
+
+    ConnectionPoolImpl( ChannelConnector connector, Bootstrap bootstrap, ActiveChannelTracker activeChannelTracker,
+            PoolSettings settings, Logging logging, Clock clock )
+    {
         this.connector = connector;
         this.bootstrap = bootstrap;
-        this.activeChannelTracker = new ActiveChannelTracker( logging );
+        this.activeChannelTracker = activeChannelTracker;
         this.channelHealthChecker = new NettyChannelHealthChecker( settings, clock, logging );
         this.settings = settings;
         this.clock = clock;
@@ -86,25 +93,28 @@ public class ConnectionPoolImpl implements ConnectionPool
     }
 
     @Override
-    public void purge( BoltServerAddress address )
+    public void retainAll( Set<BoltServerAddress> addressesToRetain )
     {
-        log.info( "Purging connections towards %s", address );
-
-        // purge active connections
-        activeChannelTracker.purge( address );
-
-        // purge idle connections in the pool and pool itself
-        ChannelPool pool = pools.remove( address );
-        if ( pool != null )
+        for ( BoltServerAddress address : pools.keySet() )
         {
-            pool.close();
-        }
-    }
+            if ( !addressesToRetain.contains( address ) )
+            {
+                int activeChannels = activeChannelTracker.activeChannelCount( address );
+                if ( activeChannels == 0 )
+                {
+                    // address is not present in updated routing table and has no active connections
+                    // it's now safe to terminate corresponding connection pool and forget about it
 
-    @Override
-    public boolean hasAddress( BoltServerAddress address )
-    {
-        return pools.containsKey( address );
+                    ChannelPool pool = pools.remove( address );
+                    if ( pool != null )
+                    {
+                        log.info( "Closing connection pool towards %s, it has no active connections " +
+                                  "and is not in the routing table", address );
+                        pool.close();
+                    }
+                }
+            }
+        }
     }
 
     @Override
@@ -157,7 +167,7 @@ public class ConnectionPoolImpl implements ConnectionPool
         return pool;
     }
 
-    private NettyChannelPool newPool( BoltServerAddress address )
+    ChannelPool newPool( BoltServerAddress address )
     {
         return new NettyChannelPool( address, connector, bootstrap, activeChannelTracker, channelHealthChecker,
                 settings.connectionAcquisitionTimeout(), settings.maxConnectionPoolSize() );
