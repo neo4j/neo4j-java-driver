@@ -1104,6 +1104,55 @@ public class SessionAsyncIT
         assertEquals( 1, countNodesByLabel( "Node" ) );
     }
 
+    @Test
+    public void shouldAllowAccessingRecordsAfterSummary()
+    {
+        int recordCount = 10_000;
+        String query = "UNWIND range(1, " + recordCount + ") AS x RETURN 'Hello-' + x";
+
+        CompletionStage<SummaryAndRecords> summaryAndRecordsStage = session.runAsync( query )
+                .thenCompose( cursor -> cursor.summaryAsync().thenCompose( summary -> cursor.listAsync()
+                        .thenApply( records -> new SummaryAndRecords( summary, records ) ) ) );
+
+        SummaryAndRecords summaryAndRecords = await( summaryAndRecordsStage );
+        ResultSummary summary = summaryAndRecords.summary;
+        List<Record> records = summaryAndRecords.records;
+
+        assertNotNull( summary );
+        assertNotNull( records );
+
+        assertEquals( neo4j.address().toString(), summary.server().address() );
+        assertEquals( query, summary.statement().text() );
+        assertEquals( StatementType.READ_ONLY, summary.statementType() );
+
+        assertEquals( recordCount, records.size() );
+        for ( int i = 1; i <= recordCount; i++ )
+        {
+            Record record = records.get( i - 1 );
+            assertEquals( "Hello-" + i, record.get( 0 ).asString() );
+        }
+    }
+
+    @Test
+    public void shouldAllowAccessingRecordsAfterSessionClosed()
+    {
+        int recordCount = 7_500;
+        String query = "UNWIND range(1, " + recordCount + ") AS x RETURN x";
+
+        CompletionStage<List<Record>> recordsStage = session.runAsync( query )
+                .thenCompose( cursor -> session.closeAsync().thenApply( ignore -> cursor ) )
+                .thenCompose( StatementResultCursor::listAsync );
+
+        List<Record> records = await( recordsStage );
+
+        assertEquals( recordCount, records.size() );
+        for ( int i = 1; i <= recordCount; i++ )
+        {
+            Record record = records.get( i - 1 );
+            assertEquals( i, record.get( 0 ).asInt() );
+        }
+    }
+
     private Future<List<CompletionStage<Record>>> runNestedQueries( StatementResultCursor inputCursor )
     {
         CompletableFuture<List<CompletionStage<Record>>> resultFuture = new CompletableFuture<>();
@@ -1291,6 +1340,18 @@ public class SessionAsyncIT
             {
                 resultFuture.complete( record );
             }
+        }
+    }
+
+    private static class SummaryAndRecords
+    {
+        final ResultSummary summary;
+        final List<Record> records;
+
+        SummaryAndRecords( ResultSummary summary, List<Record> records )
+        {
+            this.summary = summary;
+            this.records = records;
         }
     }
 }

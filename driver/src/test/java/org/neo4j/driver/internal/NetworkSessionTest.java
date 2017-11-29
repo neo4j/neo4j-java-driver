@@ -90,6 +90,7 @@ public class NetworkSessionTest
     {
         connection = connectionMock();
         when( connection.release() ).thenReturn( completedFuture( null ) );
+        when( connection.serverAddress() ).thenReturn( BoltServerAddress.LOCAL_DEFAULT );
         when( connection.serverVersion() ).thenReturn( ServerVersion.v3_2_0 );
         connectionProvider = mock( ConnectionProvider.class );
         when( connectionProvider.acquireConnection( any( AccessMode.class ) ) )

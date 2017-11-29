@@ -110,13 +110,15 @@ public class InternalResultSummary implements ResultSummary
     @Override
     public long resultAvailableAfter( TimeUnit unit )
     {
-        return unit.convert( resultAvailableAfter, TimeUnit.MILLISECONDS );
+        return resultAvailableAfter == -1 ? resultAvailableAfter
+                                          : unit.convert( resultAvailableAfter, TimeUnit.MILLISECONDS );
     }
 
     @Override
     public long resultConsumedAfter( TimeUnit unit )
     {
-        return unit.convert( resultConsumedAfter, TimeUnit.MILLISECONDS );
+        return resultConsumedAfter == -1 ? resultConsumedAfter
+                                         : unit.convert( resultConsumedAfter, TimeUnit.MILLISECONDS );
     }
 
     @Override

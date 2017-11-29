@@ -50,7 +50,6 @@ public class NettyConnection implements Connection
     private final Clock clock;
 
     private final AtomicBoolean open = new AtomicBoolean( true );
-    private final AtomicBoolean autoReadEnabled = new AtomicBoolean( true );
 
     public NettyConnection( Channel channel, ChannelPool channelPool, Clock clock )
     {
@@ -72,8 +71,7 @@ public class NettyConnection implements Connection
     @Override
     public void enableAutoRead()
     {
-        assertOpen();
-        if ( autoReadEnabled.compareAndSet( false, true ) )
+        if ( isOpen() )
         {
             setAutoRead( true );
         }
@@ -82,8 +80,7 @@ public class NettyConnection implements Connection
     @Override
     public void disableAutoRead()
     {
-        assertOpen();
-        if ( autoReadEnabled.compareAndSet( true, false ) )
+        if ( isOpen() )
         {
             setAutoRead( false );
         }
@@ -110,6 +107,9 @@ public class NettyConnection implements Connection
     {
         if ( open.compareAndSet( true, false ) )
         {
+            // auto-read could've been disabled, re-enable it to automatically receive response for RESET
+            setAutoRead( true );
+
             reset( new ResetResponseHandler( channel, channelPool, messageDispatcher, clock, releaseFuture ) );
         }
         return releaseFuture;
@@ -180,7 +180,7 @@ public class NettyConnection implements Connection
 
     private void assertOpen()
     {
-        if ( !open.get() )
+        if ( !isOpen() )
         {
             throw new IllegalStateException( "Connection has been released to the pool and can't be reused" );
         }
