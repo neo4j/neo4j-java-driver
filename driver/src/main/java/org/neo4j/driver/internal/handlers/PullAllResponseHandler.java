@@ -170,6 +170,10 @@ public abstract class PullAllResponseHandler implements ResponseHandler
         {
             if ( summaryFuture == null )
             {
+                // neither SUCCESS nor FAILURE message has arrived, register future to be notified when it arrives
+                // future will be completed with summary on SUCCESS and completed exceptionally on FAILURE
+                // enable auto-read, otherwise we might not read SUCCESS/FAILURE if records are not consumed
+                connection.enableAutoRead();
                 summaryFuture = new CompletableFuture<>();
             }
             return summaryFuture;
@@ -190,6 +194,10 @@ public abstract class PullAllResponseHandler implements ResponseHandler
         {
             if ( failureFuture == null )
             {
+                // neither SUCCESS nor FAILURE message has arrived, register future to be notified when it arrives
+                // future will be completed with null on SUCCESS and completed with Throwable on FAILURE
+                // enable auto-read, otherwise we might not read SUCCESS/FAILURE if records are not consumed
+                connection.enableAutoRead();
                 failureFuture = new CompletableFuture<>();
             }
             return failureFuture;
