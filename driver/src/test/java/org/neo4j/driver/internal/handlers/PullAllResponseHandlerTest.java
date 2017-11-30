@@ -708,7 +708,6 @@ public class PullAllResponseHandlerTest
             handler.onRecord( values( "a", "b" ) );
         }
 
-        verify( connection, never() ).enableAutoRead();
         verify( connection, never() ).disableAutoRead();
 
         handler.onSuccess( emptyMap() );
@@ -745,7 +744,6 @@ public class PullAllResponseHandlerTest
             handler.onRecord( values( 123, 456 ) );
         }
 
-        verify( connection, never() ).enableAutoRead();
         verify( connection, never() ).disableAutoRead();
 
         IllegalStateException error = new IllegalStateException( "Wrong config" );
@@ -764,6 +762,61 @@ public class PullAllResponseHandlerTest
         }
 
         assertNull( await( handler.nextAsync() ) );
+    }
+
+    @Test
+    public void shouldEnableAutoReadOnConnectionWhenFailureRequestedButNotAvailable() throws Exception
+    {
+        Connection connection = connectionMock();
+        PullAllResponseHandler handler = newHandler( asList( "key1", "key2" ), connection );
+
+        handler.onRecord( values( 1, 2 ) );
+        handler.onRecord( values( 3, 4 ) );
+
+        verify( connection, never() ).enableAutoRead();
+        verify( connection, never() ).disableAutoRead();
+
+        CompletableFuture<Throwable> failureFuture = handler.failureAsync().toCompletableFuture();
+        assertFalse( failureFuture.isDone() );
+
+        verify( connection ).enableAutoRead();
+        verify( connection, never() ).disableAutoRead();
+
+        assertNotNull( await( handler.nextAsync() ) );
+        assertNotNull( await( handler.nextAsync() ) );
+
+        RuntimeException error = new RuntimeException( "Oh my!" );
+        handler.onFailure( error );
+
+        assertTrue( failureFuture.isDone() );
+        assertEquals( error, failureFuture.get() );
+    }
+
+    @Test
+    public void shouldEnableAutoReadOnConnectionWhenSummaryRequestedButNotAvailable() throws Exception
+    {
+        Connection connection = connectionMock();
+        PullAllResponseHandler handler = newHandler( asList( "key1", "key2", "key3" ), connection );
+
+        handler.onRecord( values( 1, 2, 3 ) );
+        handler.onRecord( values( 4, 5, 6 ) );
+
+        verify( connection, never() ).enableAutoRead();
+        verify( connection, never() ).disableAutoRead();
+
+        CompletableFuture<ResultSummary> summaryFuture = handler.summaryAsync().toCompletableFuture();
+        assertFalse( summaryFuture.isDone() );
+
+        verify( connection ).enableAutoRead();
+        verify( connection, never() ).disableAutoRead();
+
+        assertNotNull( await( handler.nextAsync() ) );
+        assertNotNull( await( handler.nextAsync() ) );
+
+        handler.onSuccess( emptyMap() );
+
+        assertTrue( summaryFuture.isDone() );
+        assertNotNull( summaryFuture.get() );
     }
 
     private static PullAllResponseHandler newHandler()

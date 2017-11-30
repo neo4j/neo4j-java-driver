@@ -1405,6 +1405,52 @@ public class SessionIT
         }
     }
 
+    @Test
+    public void shouldAllowToConsumeRecordsSlowlyAndCloseSession() throws InterruptedException
+    {
+        Session session = neo4j.driver().session();
+
+        StatementResult result = session.run( "UNWIND range(10000, 0, -1) AS x RETURN 10 / x" );
+
+        // consume couple records slowly with a sleep in-between
+        for ( int i = 0; i < 10; i++ )
+        {
+            assertTrue( result.hasNext() );
+            assertNotNull( result.next() );
+            Thread.sleep( 50 );
+        }
+
+        try
+        {
+            session.close();
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e, is( arithmeticError() ) );
+        }
+    }
+
+    @Test
+    public void shouldAllowToConsumeRecordsSlowlyAndRetrieveSummary() throws InterruptedException
+    {
+        try ( Session session = neo4j.driver().session() )
+        {
+            StatementResult result = session.run( "UNWIND range(8000, 1, -1) AS x RETURN 42 / x" );
+
+            // consume couple records slowly with a sleep in-between
+            for ( int i = 0; i < 12; i++ )
+            {
+                assertTrue( result.hasNext() );
+                assertNotNull( result.next() );
+                Thread.sleep( 50 );
+            }
+
+            ResultSummary summary = result.summary();
+            assertNotNull( summary );
+        }
+    }
+
     private void assumeServerIs31OrLater()
     {
         ServerVersion serverVersion = ServerVersion.version( neo4j.driver() );
