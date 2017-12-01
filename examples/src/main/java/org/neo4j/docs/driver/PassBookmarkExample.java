@@ -18,7 +18,7 @@
  */
 package org.neo4j.docs.driver;
 
-// tag::=pass-bookmarks-import[]
+// tag::pass-bookmarks-import[]
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,7 +29,7 @@ import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
 
 import static org.neo4j.driver.v1.Values.parameters;
-// end::=pass-bookmarks-import[]
+// end::pass-bookmarks-import[]
 
 public class PassBookmarkExample extends BaseApplication
 {
