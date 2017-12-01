@@ -408,7 +408,7 @@ public class InternalStatementResultTest
         pullAllHandler.onSuccess( emptyMap() );
 
         StatementResultCursor cursor = new InternalStatementResultCursor( runHandler, pullAllHandler );
-        return new InternalStatementResult( cursor );
+        return new InternalStatementResult( connection, cursor );
     }
 
     private List<Value> values( Record record )

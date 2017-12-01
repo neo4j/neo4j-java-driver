@@ -26,14 +26,18 @@ import org.neo4j.driver.v1.exceptions.AuthenticationException;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.DatabaseException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
+import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.TransientException;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.driver.internal.util.ErrorUtil.isFatal;
+import static org.neo4j.driver.internal.util.ErrorUtil.newConnectionTerminatedError;
 import static org.neo4j.driver.internal.util.ErrorUtil.newNeo4jError;
 
 public class ErrorUtilTest
@@ -133,5 +137,28 @@ public class ErrorUtilTest
     public void shouldTreatDatabaseExceptionAsFatal()
     {
         assertTrue( isFatal( new ClientException( "Neo.DatabaseError.Schema.ConstraintCreationFailed", "" ) ) );
+    }
+
+    @Test
+    public void shouldCreateConnectionTerminatedError()
+    {
+        ServiceUnavailableException error = newConnectionTerminatedError();
+        assertThat( error.getMessage(), startsWith( "Connection to the database terminated" ) );
+    }
+
+    @Test
+    public void shouldCreateConnectionTerminatedErrorWithNullReason()
+    {
+        ServiceUnavailableException error = newConnectionTerminatedError( null );
+        assertThat( error.getMessage(), startsWith( "Connection to the database terminated" ) );
+    }
+
+    @Test
+    public void shouldCreateConnectionTerminatedErrorWithReason()
+    {
+        String reason = "Thread interrupted";
+        ServiceUnavailableException error = newConnectionTerminatedError( reason );
+        assertThat( error.getMessage(), startsWith( "Connection to the database terminated" ) );
+        assertThat( error.getMessage(), containsString( reason ) );
     }
 }

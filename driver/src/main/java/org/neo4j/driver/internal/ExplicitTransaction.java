@@ -47,7 +47,6 @@ import org.neo4j.driver.v1.types.TypeSystem;
 
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.CompletableFuture.completedFuture;
-import static org.neo4j.driver.internal.util.Futures.blockingGet;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.v1.Values.value;
 
@@ -148,7 +147,8 @@ public class ExplicitTransaction implements Transaction
     @Override
     public void close()
     {
-        blockingGet( closeAsync() );
+        Futures.blockingGet( closeAsync(),
+                () -> terminateConnectionOnThreadInterrupt( "Thread interrupted while closing the transaction" ) );
     }
 
     CompletionStage<Void> closeAsync()
@@ -272,8 +272,9 @@ public class ExplicitTransaction implements Transaction
     @Override
     public StatementResult run( Statement statement )
     {
-        StatementResultCursor cursor = blockingGet( run( statement, false ) );
-        return new InternalStatementResult( cursor );
+        StatementResultCursor cursor = Futures.blockingGet( run( statement, false ),
+                () -> terminateConnectionOnThreadInterrupt( "Thread interrupted while running query in transaction" ) );
+        return new InternalStatementResult( connection, cursor );
     }
 
     @Override
@@ -391,5 +392,10 @@ public class ExplicitTransaction implements Transaction
             connection.release(); // release in background
             session.setBookmark( bookmark );
         };
+    }
+
+    private void terminateConnectionOnThreadInterrupt( String reason )
+    {
+        connection.terminateAndRelease( reason );
     }
 }

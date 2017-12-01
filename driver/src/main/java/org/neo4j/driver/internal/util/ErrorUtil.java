@@ -31,6 +31,15 @@ public final class ErrorUtil
     {
     }
 
+    public static ServiceUnavailableException newConnectionTerminatedError( String reason )
+    {
+        if ( reason == null )
+        {
+            return newConnectionTerminatedError();
+        }
+        return new ServiceUnavailableException( "Connection to the database terminated. " + reason );
+    }
+
     public static ServiceUnavailableException newConnectionTerminatedError()
     {
         return new ServiceUnavailableException( "Connection to the database terminated. " +

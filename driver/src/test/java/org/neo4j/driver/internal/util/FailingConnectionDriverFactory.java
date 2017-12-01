@@ -147,6 +147,12 @@ public class FailingConnectionDriverFactory extends DriverFactory
         }
 
         @Override
+        public void terminateAndRelease( String reason )
+        {
+            delegate.terminateAndRelease( reason );
+        }
+
+        @Override
         public BoltServerAddress serverAddress()
         {
             return delegate.serverAddress();

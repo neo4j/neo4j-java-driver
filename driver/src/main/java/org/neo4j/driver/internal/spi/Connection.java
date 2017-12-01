@@ -41,6 +41,8 @@ public interface Connection
 
     CompletionStage<Void> release();
 
+    void terminateAndRelease( String reason );
+
     BoltServerAddress serverAddress();
 
     ServerVersion serverVersion();

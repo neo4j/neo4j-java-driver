@@ -30,12 +30,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -46,6 +48,7 @@ import org.neo4j.driver.internal.logging.DevNullLogging;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.util.DriverFactoryWithFixedRetryLogic;
 import org.neo4j.driver.internal.util.DriverFactoryWithOneEventLoopThread;
+import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.AuthToken;
@@ -68,6 +71,7 @@ import org.neo4j.driver.v1.summary.StatementType;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static java.lang.String.format;
+import static java.util.concurrent.CompletableFuture.runAsync;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -1448,6 +1452,64 @@ public class SessionIT
 
             ResultSummary summary = result.summary();
             assertNotNull( summary );
+        }
+    }
+
+    @Test
+    public void shouldBeResponsiveToThreadInterruptWhenWaitingForResult()
+    {
+        try ( Session session1 = neo4j.driver().session();
+              Session session2 = neo4j.driver().session() )
+        {
+            session1.run( "CREATE (:Person {name: 'Beta Ray Bill'})" ).consume();
+
+            Transaction tx = session1.beginTransaction();
+            tx.run( "MATCH (n:Person {name: 'Beta Ray Bill'}) SET n.hammer = 'Mjolnir'" ).consume();
+
+            // now 'Beta Ray Bill' node is locked
+
+            AtomicBoolean interruptedQueryFailed = new AtomicBoolean();
+            Thread testThread = Thread.currentThread();
+            CompletableFuture<Void> interruptFuture = runAsync( () ->
+            {
+                while ( !interruptedQueryFailed.get() )
+                {
+                    // spin until thread that executes the test goes to WAITING state
+                    do
+                    {
+                        try
+                        {
+                            Thread.sleep( 5_00 );
+                        }
+                        catch ( InterruptedException ignore )
+                        {
+                        }
+                    }
+                    while ( testThread.getState() != Thread.State.WAITING );
+
+                    testThread.interrupt();
+                }
+            } );
+
+            try
+            {
+                session2.run( "MATCH (n:Person {name: 'Beta Ray Bill'}) SET n.hammer = 'Stormbreaker'" ).consume();
+                fail( "Exception expected" );
+            }
+            catch ( ServiceUnavailableException e )
+            {
+                assertThat( e.getMessage(), containsString( "Connection to the database terminated" ) );
+                assertThat( e.getMessage(), containsString( "Thread interrupted" ) );
+            }
+            finally
+            {
+                // stop task that perform interruptions
+                interruptedQueryFailed.set( true );
+                Futures.blockingGet( interruptFuture );
+
+                // clear interrupted flag
+                Thread.interrupted();
+            }
         }
     }
 

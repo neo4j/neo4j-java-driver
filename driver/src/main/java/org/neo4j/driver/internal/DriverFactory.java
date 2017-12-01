@@ -82,7 +82,9 @@ public class DriverFactory
         {
             InternalDriver driver = createDriver( uri, address, connectionPool, config, newRoutingSettings,
                     eventExecutorGroup, securityPlan, retryLogic );
-            Futures.blockingGet( driver.verifyConnectivity() );
+
+            // block to verify connectivity, close connection pool if thread gets interrupted
+            Futures.blockingGet( driver.verifyConnectivity(), connectionPool::close );
             return driver;
         }
         catch ( Throwable driverError )

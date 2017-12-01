@@ -39,6 +39,8 @@ import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.Value;
 
+import static org.neo4j.driver.internal.async.ChannelAttributes.setTerminationReason;
+
 public class NettyConnection implements Connection
 {
     private final Channel channel;
@@ -113,6 +115,18 @@ public class NettyConnection implements Connection
             reset( new ResetResponseHandler( channel, channelPool, messageDispatcher, clock, releaseFuture ) );
         }
         return releaseFuture;
+    }
+
+    @Override
+    public void terminateAndRelease( String reason )
+    {
+        if ( open.compareAndSet( true, false ) )
+        {
+            setTerminationReason( channel, reason );
+            channel.close();
+            channelPool.release( channel );
+            releaseFuture.complete( null );
+        }
     }
 
     @Override

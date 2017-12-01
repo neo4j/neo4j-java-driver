@@ -47,7 +47,6 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.types.TypeSystem;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
-import static org.neo4j.driver.internal.util.Futures.blockingGet;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.v1.Values.value;
 
@@ -132,8 +131,12 @@ public class NetworkSession implements Session
     @Override
     public StatementResult run( Statement statement )
     {
-        StatementResultCursor cursor = blockingGet( run( statement, false ) );
-        return new InternalStatementResult( cursor );
+        StatementResultCursor cursor = Futures.blockingGet( run( statement, false ),
+                () -> terminateConnectionOnThreadInterrupt( "Thread interrupted while running query in session" ) );
+
+        // query executed, it is safe to obtain a connection in a blocking way
+        Connection connection = Futures.getNow( connectionStage );
+        return new InternalStatementResult( connection, cursor );
     }
 
     @Override
@@ -152,7 +155,8 @@ public class NetworkSession implements Session
     @Override
     public void close()
     {
-        blockingGet( closeAsync() );
+        Futures.blockingGet( closeAsync(),
+                () -> terminateConnectionOnThreadInterrupt( "Thread interrupted while closing the session" ) );
     }
 
     @Override
@@ -188,7 +192,7 @@ public class NetworkSession implements Session
     @Override
     public Transaction beginTransaction()
     {
-        return blockingGet( beginTransactionAsync( mode ) );
+        return beginTransaction( mode );
     }
 
     @Deprecated
@@ -247,7 +251,8 @@ public class NetworkSession implements Session
     @Override
     public void reset()
     {
-        blockingGet( resetAsync() );
+        Futures.blockingGet( resetAsync(),
+                () -> terminateConnectionOnThreadInterrupt( "Thread interrupted while resetting the session" ) );
     }
 
     private CompletionStage<Void> resetAsync()
@@ -287,7 +292,7 @@ public class NetworkSession implements Session
         // event loop thread will bock and wait for itself to read some data
         return retryLogic.retry( () ->
         {
-            try ( Transaction tx = blockingGet( beginTransactionAsync( mode ) ) )
+            try ( Transaction tx = beginTransaction( mode ) )
             {
                 try
                 {
@@ -422,6 +427,12 @@ public class NetworkSession implements Session
         return newResultCursorStage;
     }
 
+    private Transaction beginTransaction( AccessMode mode )
+    {
+        return Futures.blockingGet( beginTransactionAsync( mode ),
+                () -> terminateConnectionOnThreadInterrupt( "Thread interrupted while starting a transaction" ) );
+    }
+
     private CompletionStage<ExplicitTransaction> beginTransactionAsync( AccessMode mode )
     {
         ensureSessionIsOpen();
@@ -513,6 +524,25 @@ public class NetworkSession implements Session
             }
             return completedFuture( null );
         } );
+    }
+
+    private void terminateConnectionOnThreadInterrupt( String reason )
+    {
+        // try to get current connection in a blocking fashion
+        Connection connection = null;
+        try
+        {
+            connection = Futures.getNow( connectionStage );
+        }
+        catch ( Throwable ignore )
+        {
+            // ignore errors because handing interruptions is best effort
+        }
+
+        if ( connection != null )
+        {
+            connection.terminateAndRelease( reason );
+        }
     }
 
     private CompletionStage<Void> ensureNoOpenTxBeforeRunningQuery()

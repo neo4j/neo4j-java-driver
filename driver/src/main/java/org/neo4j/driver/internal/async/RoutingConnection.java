@@ -84,6 +84,12 @@ public class RoutingConnection implements Connection
     }
 
     @Override
+    public void terminateAndRelease( String reason )
+    {
+        delegate.terminateAndRelease( reason );
+    }
+
+    @Override
     public BoltServerAddress serverAddress()
     {
         return delegate.serverAddress();
