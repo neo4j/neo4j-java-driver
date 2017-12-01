@@ -38,6 +38,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.driver.v1.Values.parameters;
@@ -95,6 +96,11 @@ public class ExamplesIT
     private int personCount( String name )
     {
         return readInt( "MATCH (a:Person {name: $name}) RETURN count(a)", parameters( "name", name ) );
+    }
+
+    private int companyCount( String name )
+    {
+        return readInt( "MATCH (a:Company {name: $name}) RETURN count(a)", parameters( "name", name ) );
     }
 
     @Before
@@ -345,4 +351,33 @@ public class ExamplesIT
             assertThat( personCount( "Alice" ), greaterThan( 0 ) );
         }
     }
+
+    @Test
+    public void testPassBookmarksExample() throws Exception
+    {
+        try ( PassBookmarkExample example = new PassBookmarkExample( uri, USER, PASSWORD ) )
+        {
+            // When
+            example.addEmployAndMakeFriends();
+
+            // Then
+            assertThat( companyCount( "Wayne Enterprises" ), is( 1 ) );
+            assertThat( companyCount( "LexCorp" ), is( 1 ) );
+            assertThat( personCount( "Alice" ), is( 1 ) );
+            assertThat( personCount( "Bob" ), is( 1 ) );
+
+            int employeeCountOfWayne = readInt(
+                "MATCH (emp:Person)-[WORKS_FOR]->(com:Company) WHERE com.name = 'Wayne Enterprises' RETURN count(emp)" );
+            assertThat( employeeCountOfWayne, is( 1 ) );
+
+            int employeeCountOfLexCorp = readInt(
+                    "MATCH (emp:Person)-[WORKS_FOR]->(com:Company) WHERE com.name = 'LexCorp' RETURN count(emp)" );
+            assertThat( employeeCountOfLexCorp, is( 1 ) );
+
+            int friendCount = readInt(
+                    "MATCH (a:Person {name: 'Alice'})-[:KNOWS]->(b:Person {name: 'Bob'}) RETURN count(a)" );
+            assertThat( friendCount, is( 1 ) );
+        }
+    }
+
 }
