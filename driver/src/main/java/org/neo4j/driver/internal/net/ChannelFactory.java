@@ -22,9 +22,7 @@ import java.io.IOException;
 import java.net.ConnectException;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
-import java.net.StandardSocketOptions;
 import java.nio.channels.ByteChannel;
-import java.nio.channels.SocketChannel;
 
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.security.TLSSocketChannel;
@@ -32,21 +30,18 @@ import org.neo4j.driver.v1.Logger;
 
 class ChannelFactory
 {
-    static ByteChannel create( BoltServerAddress address, SecurityPlan securityPlan, int timeoutMillis, Logger log )
-            throws IOException
+    static ByteChannel create( Socket socket, BoltServerAddress address, SecurityPlan securityPlan, int timeoutMillis,
+            Logger log ) throws IOException
     {
-        SocketChannel soChannel = SocketChannel.open();
-        soChannel.setOption( StandardSocketOptions.SO_REUSEADDR, true );
-        soChannel.setOption( StandardSocketOptions.SO_KEEPALIVE, true );
-        connect( soChannel, address, timeoutMillis );
+        connect( socket, address, timeoutMillis );
 
-        ByteChannel channel = soChannel;
+        ByteChannel channel = new UnencryptedSocketChannel( socket );
 
         if ( securityPlan.requiresEncryption() )
         {
             try
             {
-                channel = TLSSocketChannel.create( address, securityPlan, soChannel, log );
+                channel = TLSSocketChannel.create( address, securityPlan, channel, log );
             }
             catch ( Exception e )
             {
@@ -70,10 +65,8 @@ class ChannelFactory
         return channel;
     }
 
-    private static void connect( SocketChannel soChannel, BoltServerAddress address, int timeoutMillis )
-            throws IOException
+    private static void connect( Socket socket, BoltServerAddress address, int timeoutMillis ) throws IOException
     {
-        Socket socket = soChannel.socket();
         try
         {
             socket.connect( address.toSocketAddress(), timeoutMillis );
