@@ -26,6 +26,7 @@ import io.netty.channel.pool.ChannelPool;
 import io.netty.util.internal.ConcurrentSet;
 import org.junit.After;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
@@ -47,7 +48,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -153,38 +153,61 @@ public class NettyConnectionTest
     @Test
     public void shouldNotRunWhenReleased()
     {
+        ResponseHandler runHandler = mock( ResponseHandler.class );
+        ResponseHandler pullAllHandler = mock( ResponseHandler.class );
         NettyConnection connection = newConnection( new EmbeddedChannel() );
 
         connection.release();
+        connection.run( "RETURN 1", emptyMap(), runHandler, pullAllHandler );
 
-        try
-        {
-            connection.run( "RETURN 1", emptyMap(), mock( ResponseHandler.class ), mock( ResponseHandler.class ) );
-            fail( "Exception expected" );
-        }
-        catch ( IllegalStateException e )
-        {
-            assertConnectionReleasedError( e );
-        }
+        ArgumentCaptor<IllegalStateException> failureCaptor = ArgumentCaptor.forClass( IllegalStateException.class );
+        verify( runHandler ).onFailure( failureCaptor.capture() );
+        assertConnectionReleasedError( failureCaptor.getValue() );
     }
 
     @Test
     public void shouldNotRunAndFlushWhenReleased()
     {
+        ResponseHandler runHandler = mock( ResponseHandler.class );
+        ResponseHandler pullAllHandler = mock( ResponseHandler.class );
         NettyConnection connection = newConnection( new EmbeddedChannel() );
 
         connection.release();
+        connection.runAndFlush( "RETURN 1", emptyMap(), runHandler, pullAllHandler );
 
-        try
-        {
-            connection.runAndFlush( "RETURN 1", emptyMap(), mock( ResponseHandler.class ),
-                    mock( ResponseHandler.class ) );
-            fail( "Exception expected" );
-        }
-        catch ( IllegalStateException e )
-        {
-            assertConnectionReleasedError( e );
-        }
+        ArgumentCaptor<IllegalStateException> failureCaptor = ArgumentCaptor.forClass( IllegalStateException.class );
+        verify( runHandler ).onFailure( failureCaptor.capture() );
+        assertConnectionReleasedError( failureCaptor.getValue() );
+    }
+
+    @Test
+    public void shouldNotRunWhenTerminated()
+    {
+        ResponseHandler runHandler = mock( ResponseHandler.class );
+        ResponseHandler pullAllHandler = mock( ResponseHandler.class );
+        NettyConnection connection = newConnection( new EmbeddedChannel() );
+
+        connection.terminateAndRelease( "42" );
+        connection.run( "RETURN 1", emptyMap(), runHandler, pullAllHandler );
+
+        ArgumentCaptor<IllegalStateException> failureCaptor = ArgumentCaptor.forClass( IllegalStateException.class );
+        verify( runHandler ).onFailure( failureCaptor.capture() );
+        assertConnectionTerminatedError( failureCaptor.getValue() );
+    }
+
+    @Test
+    public void shouldNotRunAndFlushWhenTerminated()
+    {
+        ResponseHandler runHandler = mock( ResponseHandler.class );
+        ResponseHandler pullAllHandler = mock( ResponseHandler.class );
+        NettyConnection connection = newConnection( new EmbeddedChannel() );
+
+        connection.terminateAndRelease( "42" );
+        connection.runAndFlush( "RETURN 1", emptyMap(), runHandler, pullAllHandler );
+
+        ArgumentCaptor<IllegalStateException> failureCaptor = ArgumentCaptor.forClass( IllegalStateException.class );
+        verify( runHandler ).onFailure( failureCaptor.capture() );
+        assertConnectionTerminatedError( failureCaptor.getValue() );
     }
 
     @Test
@@ -380,6 +403,11 @@ public class NettyConnectionTest
     private static void assertConnectionReleasedError( IllegalStateException e )
     {
         assertThat( e.getMessage(), startsWith( "Connection has been released" ) );
+    }
+
+    private static void assertConnectionTerminatedError( IllegalStateException e )
+    {
+        assertThat( e.getMessage(), startsWith( "Connection has been terminated" ) );
     }
 
     private static class ThreadTrackingInboundMessageDispatcher extends InboundMessageDispatcher

@@ -172,6 +172,34 @@ public final class TestUtil
         return connection;
     }
 
+    public static void sleep( int millis )
+    {
+        try
+        {
+            Thread.sleep( millis );
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException( e );
+        }
+    }
+
+    public static void interruptWhenInWaitingState( Thread thread )
+    {
+        CompletableFuture.runAsync( () ->
+        {
+            // spin until given thread moves to WAITING state
+            do
+            {
+                sleep( 500 );
+            }
+            while ( thread.getState() != Thread.State.WAITING );
+
+            thread.interrupt();
+        } );
+    }
+
     private static void setupSuccessfulPullAll( Connection connection, String statement )
     {
         doAnswer( invocation ->

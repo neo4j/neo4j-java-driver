@@ -84,7 +84,8 @@ public class DriverFactory
                     eventExecutorGroup, securityPlan, retryLogic );
 
             // block to verify connectivity, close connection pool if thread gets interrupted
-            Futures.blockingGet( driver.verifyConnectivity(), connectionPool::close );
+            Futures.blockingGet( driver.verifyConnectivity(),
+                    () -> closeConnectionPoolOnThreadInterrupt( connectionPool, config.logging() ) );
             return driver;
         }
         catch ( Throwable driverError )
@@ -314,5 +315,12 @@ public class DriverFactory
             throw new IllegalArgumentException(
                     "Routing parameters are not supported with scheme 'bolt'. Given URI: '" + uri + "'" );
         }
+    }
+
+    private static void closeConnectionPoolOnThreadInterrupt( ConnectionPool pool, Logging logging )
+    {
+        Logger log = logging.getLog( Driver.class.getSimpleName() );
+        log.warn( "Driver creation interrupted while verifying connectivity. Connection pool will be closed" );
+        pool.close();
     }
 }

@@ -528,7 +528,7 @@ public class NetworkSession implements Session
 
     private void terminateConnectionOnThreadInterrupt( String reason )
     {
-        // try to get current connection in a blocking fashion
+        // try to get current connection if it has been acquired
         Connection connection = null;
         try
         {
