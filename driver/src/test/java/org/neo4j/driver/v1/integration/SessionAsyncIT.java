@@ -597,7 +597,7 @@ public class SessionAsyncIT
         }
         catch ( NoSuchRecordException e )
         {
-            assertThat( e.getMessage(), startsWith( "Expected a cursor with a single record" ) );
+            assertThat( e.getMessage(), startsWith( "Expected a result with a single record" ) );
         }
     }
 

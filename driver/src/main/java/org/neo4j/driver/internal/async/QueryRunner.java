@@ -97,11 +97,11 @@ public final class QueryRunner
         {
             // wait for response of RUN before proceeding
             return runCompletedFuture.thenApply( ignore ->
-                    InternalStatementResultCursor.forAsyncRun( runHandler, pullAllHandler ) );
+                    new InternalStatementResultCursor( runHandler, pullAllHandler ) );
         }
         else
         {
-            return completedFuture( InternalStatementResultCursor.forBlockingRun( runHandler, pullAllHandler ) );
+            return completedFuture( new InternalStatementResultCursor( runHandler, pullAllHandler ) );
         }
     }
 

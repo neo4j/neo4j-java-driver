@@ -407,7 +407,7 @@ public class InternalStatementResultTest
         }
         pullAllHandler.onSuccess( emptyMap() );
 
-        StatementResultCursor cursor = InternalStatementResultCursor.forBlockingRun( runHandler, pullAllHandler );
+        StatementResultCursor cursor = new InternalStatementResultCursor( runHandler, pullAllHandler );
         return new InternalStatementResult( cursor );
     }
 
