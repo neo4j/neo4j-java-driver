@@ -32,6 +32,7 @@ import org.neo4j.driver.internal.cluster.ClusterCompositionResponse.Success;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.ImmediateSchedulingEventExecutor;
+import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.exceptions.AuthenticationException;
 import org.neo4j.driver.v1.exceptions.ProtocolException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
@@ -39,6 +40,7 @@ import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
+import static java.util.Collections.singletonMap;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -46,6 +48,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.startsWith;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -329,6 +332,38 @@ public class RediscoveryTest
         verify( table, times( maxRoutingFailures ) ).forget( A );
         verify( table, times( maxRoutingFailures ) ).forget( B );
         assertEquals( asList( retryTimeoutDelay, retryTimeoutDelay * 2 ), eventExecutor.scheduleDelays() );
+    }
+
+    @Test
+    public void shouldNotLogWhenSingleRetryAttemtFails()
+    {
+        int maxRoutingFailures = 1;
+        long retryTimeoutDelay = 10;
+
+        Map<BoltServerAddress,Object> responsesByAddress = singletonMap( A, new ServiceUnavailableException( "Hi!" ) );
+        ClusterCompositionProvider compositionProvider = compositionProviderMock( responsesByAddress );
+        HostNameResolver resolver = hostNameResolverMock( A, A );
+
+        ImmediateSchedulingEventExecutor eventExecutor = new ImmediateSchedulingEventExecutor();
+        RoutingSettings settings = new RoutingSettings( maxRoutingFailures, retryTimeoutDelay );
+        Logger logger = mock( Logger.class );
+        Rediscovery rediscovery = new Rediscovery( A, settings, compositionProvider, resolver, eventExecutor,
+                logger, false );
+        RoutingTable table = routingTableMock( A );
+
+        try
+        {
+            await( rediscovery.lookupClusterComposition( table, pool ) );
+            fail( "Exception expected" );
+        }
+        catch ( ServiceUnavailableException e )
+        {
+            assertEquals( "Could not perform discovery. No routing servers available.", e.getMessage() );
+        }
+
+        // rediscovery should not log about retries and should not schedule any retries
+        verify( logger, never() ).info( startsWith( "Unable to fetch new routing table, will try again in " ) );
+        assertEquals( 0, eventExecutor.scheduleDelays().size() );
     }
 
     private Rediscovery newRediscovery( BoltServerAddress initialRouter, ClusterCompositionProvider compositionProvider,
