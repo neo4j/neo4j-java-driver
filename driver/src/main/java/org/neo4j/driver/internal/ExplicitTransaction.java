@@ -285,18 +285,12 @@ public class ExplicitTransaction implements Transaction
         return (CompletionStage) run( statement, true );
     }
 
-    private CompletionStage<InternalStatementResultCursor> run( Statement statement, boolean asAsync )
+    private CompletionStage<InternalStatementResultCursor> run( Statement statement, boolean waitForRunResponse )
     {
         ensureCanRunQueries();
-        CompletionStage<InternalStatementResultCursor> cursorStage;
-        if ( asAsync )
-        {
-            cursorStage = QueryRunner.runAsAsync( connection, statement, this );
-        }
-        else
-        {
-            cursorStage = QueryRunner.runAsBlocking( connection, statement, this );
-        }
+        CompletionStage<InternalStatementResultCursor> cursorStage =
+                QueryRunner.runInTransaction( connection, statement,
+                        this, waitForRunResponse );
         resultCursors.add( cursorStage );
         return cursorStage;
     }

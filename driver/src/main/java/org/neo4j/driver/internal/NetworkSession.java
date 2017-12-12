@@ -132,7 +132,7 @@ public class NetworkSession implements Session
     @Override
     public StatementResult run( Statement statement )
     {
-        StatementResultCursor cursor = blockingGet( runAsync( statement, false ) );
+        StatementResultCursor cursor = blockingGet( run( statement, false ) );
         return new InternalStatementResult( cursor );
     }
 
@@ -140,7 +140,7 @@ public class NetworkSession implements Session
     public CompletionStage<StatementResultCursor> runAsync( Statement statement )
     {
         //noinspection unchecked
-        return (CompletionStage) runAsync( statement, true );
+        return (CompletionStage) run( statement, true );
     }
 
     @Override
@@ -410,23 +410,13 @@ public class NetworkSession implements Session
         }
     }
 
-    private CompletionStage<InternalStatementResultCursor> runAsync( Statement statement, boolean waitForRunResponse )
+    private CompletionStage<InternalStatementResultCursor> run( Statement statement, boolean waitForRunResponse )
     {
         ensureSessionIsOpen();
 
         CompletionStage<InternalStatementResultCursor> newResultCursorStage = ensureNoOpenTxBeforeRunningQuery()
                 .thenCompose( ignore -> acquireConnection( mode ) )
-                .thenCompose( connection ->
-                {
-                    if ( waitForRunResponse )
-                    {
-                        return QueryRunner.runAsAsync( connection, statement );
-                    }
-                    else
-                    {
-                        return QueryRunner.runAsBlocking( connection, statement );
-                    }
-                } );
+                .thenCompose( connection -> QueryRunner.runInSession( connection, statement, waitForRunResponse ) );
 
         resultCursorStage = newResultCursorStage.exceptionally( error -> null );
 
