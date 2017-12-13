@@ -335,7 +335,7 @@ public class FuturesTest
         RuntimeException error = new RuntimeException( "Hello" );
         CompletionException completionException = new CompletionException( error );
 
-        assertEquals( error, Futures.completionErrorCause( completionException ) );
+        assertEquals( error, Futures.completionExceptionCause( completionException ) );
     }
 
     @Test
@@ -343,6 +343,21 @@ public class FuturesTest
     {
         RuntimeException error = new RuntimeException( "Hello" );
 
-        assertEquals( error, Futures.completionErrorCause( error ) );
+        assertEquals( error, Futures.completionExceptionCause( error ) );
+    }
+
+    @Test
+    public void shouldWrapWithCompletionException()
+    {
+        RuntimeException error = new RuntimeException( "Hello" );
+        CompletionException completionException = Futures.asCompletionException( error );
+        assertEquals( error, completionException.getCause() );
+    }
+
+    @Test
+    public void shouldKeepCompletionExceptionAsIs()
+    {
+        CompletionException error = new CompletionException( new RuntimeException( "Hello" ) );
+        assertEquals( error, Futures.asCompletionException( error ) );
     }
 }

@@ -371,13 +371,13 @@ public class ExplicitTransaction implements Transaction
         {
             if ( cursorFailure != null && commitOrRollbackError != null )
             {
-                Throwable cause1 = completionErrorCause( cursorFailure );
-                Throwable cause2 = completionErrorCause( commitOrRollbackError );
+                Throwable cause1 = Futures.completionExceptionCause( cursorFailure );
+                Throwable cause2 = Futures.completionExceptionCause( commitOrRollbackError );
                 if ( cause1 != cause2 )
                 {
                     cause1.addSuppressed( cause2 );
                 }
-                throw new CompletionException( cause1 );
+                throw Futures.asCompletionException( cause1 );
             }
             else if ( cursorFailure != null )
             {
