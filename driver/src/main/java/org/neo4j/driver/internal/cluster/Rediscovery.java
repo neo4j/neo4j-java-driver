@@ -93,7 +93,7 @@ public class Rediscovery
     {
         lookup( routingTable, pool ).whenComplete( ( composition, completionError ) ->
         {
-            Throwable error = Futures.completionErrorCause( completionError );
+            Throwable error = Futures.completionExceptionCause( completionError );
             if ( error != null )
             {
                 result.completeExceptionally( error );
@@ -225,7 +225,7 @@ public class Rediscovery
 
         return provider.getClusterComposition( connectionStage ).handle( ( response, error ) ->
         {
-            Throwable cause = Futures.completionErrorCause( error );
+            Throwable cause = Futures.completionExceptionCause( error );
             if ( cause != null )
             {
                 return handleRoutingProcedureError( cause, routingTable, routerAddress );

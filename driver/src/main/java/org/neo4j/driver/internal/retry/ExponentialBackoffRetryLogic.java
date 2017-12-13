@@ -176,7 +176,7 @@ public class ExponentialBackoffRetryLogic implements RetryLogic
 
         workStage.whenComplete( ( result, completionError ) ->
         {
-            Throwable error = Futures.completionErrorCause( completionError );
+            Throwable error = Futures.completionExceptionCause( completionError );
             if ( error != null )
             {
                 // work failed in async way, attempt to schedule a retry

@@ -20,7 +20,6 @@ package org.neo4j.driver.internal.handlers;
 
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.CompletionException;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.RoutingErrorHandler;
@@ -72,11 +71,7 @@ public class RoutingResponseHandler implements ResponseHandler
 
     private Throwable handledError( Throwable receivedError )
     {
-        Throwable error = Futures.completionErrorCause( receivedError );
-        if ( error instanceof CompletionException )
-        {
-            error = error.getCause();
-        }
+        Throwable error = Futures.completionExceptionCause( receivedError );
 
         if ( error instanceof ServiceUnavailableException )
         {

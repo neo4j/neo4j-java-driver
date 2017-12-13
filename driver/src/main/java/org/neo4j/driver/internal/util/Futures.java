@@ -25,6 +25,8 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 
 import org.neo4j.driver.internal.async.EventLoopGroupFactory;
 
@@ -110,13 +112,36 @@ public final class Futures
         }
     }
 
-    // todo: test all call sites
-    public static Throwable completionErrorCause( Throwable error )
+    /**
+     * Helper method to extract cause of a {@link CompletionException}.
+     * <p>
+     * When using {@link CompletionStage#whenComplete(BiConsumer)} and {@link CompletionStage#handle(BiFunction)}
+     * propagated exceptions might get wrapped in a {@link CompletionException}.
+     *
+     * @param error the exception to get cause for.
+     * @return cause of the given exception if it is a {@link CompletionException}, given exception otherwise.
+     */
+    public static Throwable completionExceptionCause( Throwable error )
     {
         if ( error instanceof CompletionException )
         {
             return error.getCause();
         }
         return error;
+    }
+
+    /**
+     * Helped method to turn given exception into a {@link CompletionException}.
+     *
+     * @param error the exception to convert.
+     * @return given exception wrapped with {@link CompletionException} if it's not one already.
+     */
+    public static CompletionException asCompletionException( Throwable error )
+    {
+        if ( error instanceof CompletionException )
+        {
+            return ((CompletionException) error);
+        }
+        return new CompletionException( error );
     }
 }

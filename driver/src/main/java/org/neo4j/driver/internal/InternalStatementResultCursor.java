@@ -136,7 +136,7 @@ public class InternalStatementResultCursor implements StatementResultCursor
         // the caller thread to get StackOverflowError when result is large and buffered
         recordFuture.whenCompleteAsync( ( record, completionError ) ->
         {
-            Throwable error = Futures.completionErrorCause( completionError );
+            Throwable error = Futures.completionExceptionCause( completionError );
             if ( error != null )
             {
                 resultFuture.completeExceptionally( error );
@@ -170,7 +170,7 @@ public class InternalStatementResultCursor implements StatementResultCursor
         // the caller thread to get StackOverflowError when result is large and buffered
         recordFuture.whenCompleteAsync( ( record, completionError ) ->
         {
-            Throwable error = Futures.completionErrorCause( completionError );
+            Throwable error = Futures.completionExceptionCause( completionError );
             if ( error != null )
             {
                 resultFuture.completeExceptionally( error );

@@ -91,7 +91,7 @@ public class RoutingProcedureRunner
     private RoutingProcedureResponse processProcedureResponse( Statement procedure, List<Record> records,
             Throwable error )
     {
-        Throwable cause = Futures.completionErrorCause( error );
+        Throwable cause = Futures.completionExceptionCause( error );
         if ( cause != null )
         {
             return handleError( procedure, cause );
