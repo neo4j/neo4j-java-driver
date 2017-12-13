@@ -683,7 +683,7 @@ public class TransactionAsyncIT
         }
         catch ( NoSuchRecordException e )
         {
-            assertThat( e.getMessage(), containsString( "cursor is empty" ) );
+            assertThat( e.getMessage(), containsString( "result is empty" ) );
         }
     }
 
