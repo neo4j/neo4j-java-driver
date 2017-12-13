@@ -171,7 +171,7 @@ public class GraphDatabaseTest
                 GraphDatabase.driver( "bolt://localhost:" + serverSocket.getLocalPort() );
                 fail( "Exception expected" );
             }
-            catch ( Exception ignore )
+            catch ( ServiceUnavailableException ignore )
             {
                 // expected
             }
