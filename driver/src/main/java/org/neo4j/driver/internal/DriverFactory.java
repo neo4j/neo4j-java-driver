@@ -53,6 +53,7 @@ import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
 import static java.lang.String.format;
 import static org.neo4j.driver.internal.security.SecurityPlan.insecure;
@@ -78,26 +79,12 @@ public class DriverFactory
 
         ConnectionPool connectionPool = createConnectionPool( authToken, securityPlan, bootstrap, config );
 
-        try
-        {
-            InternalDriver driver = createDriver( uri, address, connectionPool, config, newRoutingSettings,
-                    eventExecutorGroup, securityPlan, retryLogic );
-            Futures.blockingGet( driver.verifyConnectivity() );
-            return driver;
-        }
-        catch ( Throwable driverError )
-        {
-            // we need to close the connection pool if driver creation threw exception
-            try
-            {
-                Futures.blockingGet( connectionPool.close() );
-            }
-            catch ( Throwable closeError )
-            {
-                driverError.addSuppressed( closeError );
-            }
-            throw driverError;
-        }
+        InternalDriver driver = createDriver( uri, address, connectionPool, config, newRoutingSettings,
+                eventExecutorGroup, securityPlan, retryLogic );
+
+        verifyConnectivity( driver, connectionPool, config );
+
+        return driver;
     }
 
     protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan,
@@ -123,17 +110,26 @@ public class DriverFactory
             ConnectionPool connectionPool, Config config, RoutingSettings routingSettings,
             EventExecutorGroup eventExecutorGroup, SecurityPlan securityPlan, RetryLogic retryLogic )
     {
-        String scheme = uri.getScheme().toLowerCase();
-        switch ( scheme )
+        try
         {
-        case BOLT_URI_SCHEME:
-            assertNoRoutingContext( uri, routingSettings );
-            return createDirectDriver( address, config, securityPlan, retryLogic, connectionPool );
-        case BOLT_ROUTING_URI_SCHEME:
-            return createRoutingDriver( address, connectionPool, config, routingSettings, securityPlan, retryLogic,
-                    eventExecutorGroup );
-        default:
-            throw new ClientException( format( "Unsupported URI scheme: %s", scheme ) );
+            String scheme = uri.getScheme().toLowerCase();
+            switch ( scheme )
+            {
+            case BOLT_URI_SCHEME:
+                assertNoRoutingContext( uri, routingSettings );
+                return createDirectDriver( address, config, securityPlan, retryLogic, connectionPool );
+            case BOLT_ROUTING_URI_SCHEME:
+                return createRoutingDriver( address, connectionPool, config, routingSettings, securityPlan, retryLogic,
+                        eventExecutorGroup );
+            default:
+                throw new ClientException( format( "Unsupported URI scheme: %s", scheme ) );
+            }
+        }
+        catch ( Throwable driverError )
+        {
+            // we need to close the connection pool if driver creation threw exception
+            closeConnectionPoolAndSuppressError( connectionPool, driverError );
+            throw driverError;
         }
     }
 
@@ -312,5 +308,51 @@ public class DriverFactory
             throw new IllegalArgumentException(
                     "Routing parameters are not supported with scheme 'bolt'. Given URI: '" + uri + "'" );
         }
+    }
+
+    private static void verifyConnectivity( InternalDriver driver, ConnectionPool connectionPool, Config config )
+    {
+        try
+        {
+            // block to verify connectivity, close connection pool if thread gets interrupted
+            Futures.blockingGet( driver.verifyConnectivity(),
+                    () -> closeConnectionPoolOnThreadInterrupt( connectionPool, config.logging() ) );
+        }
+        catch ( Throwable connectionError )
+        {
+            if ( Thread.currentThread().isInterrupted() )
+            {
+                // current thread has been interrupted while verifying connectivity
+                // connection pool should've been closed
+                throw new ServiceUnavailableException( "Unable to create driver. Thread has been interrupted.",
+                        connectionError );
+            }
+
+            // we need to close the connection pool if driver creation threw exception
+            closeConnectionPoolAndSuppressError( connectionPool, connectionError );
+            throw connectionError;
+        }
+    }
+
+    private static void closeConnectionPoolAndSuppressError( ConnectionPool connectionPool, Throwable mainError )
+    {
+        try
+        {
+            Futures.blockingGet( connectionPool.close() );
+        }
+        catch ( Throwable closeError )
+        {
+            if ( mainError != closeError )
+            {
+                mainError.addSuppressed( closeError );
+            }
+        }
+    }
+
+    private static void closeConnectionPoolOnThreadInterrupt( ConnectionPool pool, Logging logging )
+    {
+        Logger log = logging.getLog( Driver.class.getSimpleName() );
+        log.warn( "Driver creation interrupted while verifying connectivity. Connection pool will be closed" );
+        pool.close();
     }
 }

@@ -19,7 +19,10 @@
 package org.neo4j.driver.internal;
 
 import java.util.List;
+import java.util.concurrent.CompletionStage;
 
+import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.StatementResultCursor;
@@ -28,15 +31,15 @@ import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.util.Function;
 
-import static org.neo4j.driver.internal.util.Futures.blockingGet;
-
 public class InternalStatementResult implements StatementResult
 {
+    private final Connection connection;
     private final StatementResultCursor cursor;
     private List<String> keys;
 
-    public InternalStatementResult( StatementResultCursor cursor )
+    public InternalStatementResult( Connection connection, StatementResultCursor cursor )
     {
+        this.connection = connection;
         this.cursor = cursor;
     }
 
@@ -113,5 +116,15 @@ public class InternalStatementResult implements StatementResult
     public void remove()
     {
         throw new ClientException( "Removing records from a result is not supported." );
+    }
+
+    private <T> T blockingGet( CompletionStage<T> stage )
+    {
+        return Futures.blockingGet( stage, this::terminateConnectionOnThreadInterrupt );
+    }
+
+    private void terminateConnectionOnThreadInterrupt()
+    {
+        connection.terminateAndRelease( "Thread interrupted while waiting for result to arrive" );
     }
 }

@@ -30,12 +30,14 @@ import org.neo4j.driver.internal.async.inbound.ChannelErrorHandler;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setMessageDispatcher;
+import static org.neo4j.driver.internal.async.ChannelAttributes.setTerminationReason;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 
 public class ChannelErrorHandlerTest
@@ -83,6 +85,22 @@ public class ChannelErrorHandlerTest
         Throwable error = messageDispatcher.currentError();
 
         assertEquals( originalError, error );
+        assertFalse( channel.isOpen() );
+    }
+
+    @Test
+    public void shouldHandleChannelInactiveWhenTerminationReasonSet()
+    {
+        String terminationReson = "Something really bad happened";
+        setTerminationReason( channel, terminationReson );
+
+        channel.pipeline().fireChannelInactive();
+
+        Throwable error = messageDispatcher.currentError();
+
+        assertThat( error, instanceOf( ServiceUnavailableException.class ) );
+        assertThat( error.getMessage(), startsWith( "Connection to the database terminated" ) );
+        assertThat( error.getMessage(), containsString( terminationReson ) );
         assertFalse( channel.isOpen() );
     }
 

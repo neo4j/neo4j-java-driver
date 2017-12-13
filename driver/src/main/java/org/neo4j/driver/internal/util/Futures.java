@@ -81,6 +81,11 @@ public final class Futures
 
     public static <V> V blockingGet( CompletionStage<V> stage )
     {
+        return blockingGet( stage, Futures::noOpInterruptHandler );
+    }
+
+    public static <V> V blockingGet( CompletionStage<V> stage, Runnable interruptHandler )
+    {
         EventLoopGroupFactory.assertNotInEventLoopThread();
 
         Future<V> future = stage.toCompletableFuture();
@@ -95,7 +100,14 @@ public final class Futures
                 }
                 catch ( InterruptedException e )
                 {
+                    // this thread was interrupted while waiting
+                    // computation denoted by the future might still be running
+
                     interrupted = true;
+
+                    // run the interrupt handler and ignore if it throws
+                    // need to wait for IO thread to actually finish, can't simply re-rethrow
+                    safeRun( interruptHandler );
                 }
                 catch ( ExecutionException e )
                 {
@@ -110,6 +122,11 @@ public final class Futures
                 Thread.currentThread().interrupt();
             }
         }
+    }
+
+    public static <T> T getNow( CompletionStage<T> stage )
+    {
+        return stage.toCompletableFuture().getNow( null );
     }
 
     /**
@@ -143,5 +160,20 @@ public final class Futures
             return ((CompletionException) error);
         }
         return new CompletionException( error );
+    }
+
+    private static void safeRun( Runnable runnable )
+    {
+        try
+        {
+            runnable.run();
+        }
+        catch ( Throwable ignore )
+        {
+        }
+    }
+
+    private static void noOpInterruptHandler()
+    {
     }
 }

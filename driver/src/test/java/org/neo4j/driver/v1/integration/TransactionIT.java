@@ -28,15 +28,19 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
+import org.neo4j.driver.v1.util.TestUtil;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -381,6 +385,77 @@ public class TransactionIT
             }
 
             assertNotNull( result.summary() );
+        }
+    }
+
+    @Test
+    public void shouldBeResponsiveToThreadInterruptWhenWaitingForResult() throws Exception
+    {
+        try ( Session otherSession = this.session.driver().session() )
+        {
+            session.run( "CREATE (:Person {name: 'Beta Ray Bill'})" ).consume();
+
+            Transaction tx1 = session.beginTransaction();
+            Transaction tx2 = otherSession.beginTransaction();
+            tx1.run( "MATCH (n:Person {name: 'Beta Ray Bill'}) SET n.hammer = 'Mjolnir'" ).consume();
+
+            // now 'Beta Ray Bill' node is locked
+
+            // setup other thread to interrupt current thread when it blocks
+            TestUtil.interruptWhenInWaitingState( Thread.currentThread() );
+
+            try
+            {
+                tx2.run( "MATCH (n:Person {name: 'Beta Ray Bill'}) SET n.hammer = 'Stormbreaker'" ).consume();
+                fail( "Exception expected" );
+            }
+            catch ( ServiceUnavailableException e )
+            {
+                assertThat( e.getMessage(), containsString( "Connection to the database terminated" ) );
+                assertThat( e.getMessage(), containsString( "Thread interrupted while waiting for result to arrive" ) );
+            }
+            finally
+            {
+                // clear interrupted flag
+                Thread.interrupted();
+            }
+        }
+    }
+
+    @Test
+    public void shouldBeResponsiveToThreadInterruptWhenWaitingForCommit() throws Exception
+    {
+        try ( Session otherSession = this.session.driver().session() )
+        {
+            session.run( "CREATE (:Person {name: 'Beta Ray Bill'})" ).consume();
+
+            Transaction tx1 = session.beginTransaction();
+            Transaction tx2 = otherSession.beginTransaction();
+            tx1.run( "MATCH (n:Person {name: 'Beta Ray Bill'}) SET n.hammer = 'Mjolnir'" ).consume();
+
+            // now 'Beta Ray Bill' node is locked
+
+            tx2.run( "MATCH (n:Person {name: 'Beta Ray Bill'}) SET n.hammer = 'Stormbreaker'" );
+            tx2.success();
+
+            // setup other thread to interrupt current thread when it blocks
+            TestUtil.interruptWhenInWaitingState( Thread.currentThread() );
+
+            try
+            {
+                tx2.close();
+                fail( "Exception expected" );
+            }
+            catch ( ServiceUnavailableException e )
+            {
+                assertEquals( e.getMessage(),
+                        "Connection to the database terminated. Thread interrupted while closing the transaction" );
+            }
+            finally
+            {
+                // clear interrupted flag
+                Thread.interrupted();
+            }
         }
     }
 }

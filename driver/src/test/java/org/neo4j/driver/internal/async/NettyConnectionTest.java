@@ -26,6 +26,7 @@ import io.netty.channel.pool.ChannelPool;
 import io.netty.util.internal.ConcurrentSet;
 import org.junit.After;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
@@ -47,11 +48,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setMessageDispatcher;
+import static org.neo4j.driver.internal.async.ChannelAttributes.terminationReason;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.messaging.ResetMessage.RESET;
 import static org.neo4j.driver.internal.util.Iterables.single;
@@ -149,38 +153,61 @@ public class NettyConnectionTest
     @Test
     public void shouldNotRunWhenReleased()
     {
+        ResponseHandler runHandler = mock( ResponseHandler.class );
+        ResponseHandler pullAllHandler = mock( ResponseHandler.class );
         NettyConnection connection = newConnection( new EmbeddedChannel() );
 
         connection.release();
+        connection.run( "RETURN 1", emptyMap(), runHandler, pullAllHandler );
 
-        try
-        {
-            connection.run( "RETURN 1", emptyMap(), mock( ResponseHandler.class ), mock( ResponseHandler.class ) );
-            fail( "Exception expected" );
-        }
-        catch ( IllegalStateException e )
-        {
-            assertConnectionReleasedError( e );
-        }
+        ArgumentCaptor<IllegalStateException> failureCaptor = ArgumentCaptor.forClass( IllegalStateException.class );
+        verify( runHandler ).onFailure( failureCaptor.capture() );
+        assertConnectionReleasedError( failureCaptor.getValue() );
     }
 
     @Test
     public void shouldNotRunAndFlushWhenReleased()
     {
+        ResponseHandler runHandler = mock( ResponseHandler.class );
+        ResponseHandler pullAllHandler = mock( ResponseHandler.class );
         NettyConnection connection = newConnection( new EmbeddedChannel() );
 
         connection.release();
+        connection.runAndFlush( "RETURN 1", emptyMap(), runHandler, pullAllHandler );
 
-        try
-        {
-            connection.runAndFlush( "RETURN 1", emptyMap(), mock( ResponseHandler.class ),
-                    mock( ResponseHandler.class ) );
-            fail( "Exception expected" );
-        }
-        catch ( IllegalStateException e )
-        {
-            assertConnectionReleasedError( e );
-        }
+        ArgumentCaptor<IllegalStateException> failureCaptor = ArgumentCaptor.forClass( IllegalStateException.class );
+        verify( runHandler ).onFailure( failureCaptor.capture() );
+        assertConnectionReleasedError( failureCaptor.getValue() );
+    }
+
+    @Test
+    public void shouldNotRunWhenTerminated()
+    {
+        ResponseHandler runHandler = mock( ResponseHandler.class );
+        ResponseHandler pullAllHandler = mock( ResponseHandler.class );
+        NettyConnection connection = newConnection( new EmbeddedChannel() );
+
+        connection.terminateAndRelease( "42" );
+        connection.run( "RETURN 1", emptyMap(), runHandler, pullAllHandler );
+
+        ArgumentCaptor<IllegalStateException> failureCaptor = ArgumentCaptor.forClass( IllegalStateException.class );
+        verify( runHandler ).onFailure( failureCaptor.capture() );
+        assertConnectionTerminatedError( failureCaptor.getValue() );
+    }
+
+    @Test
+    public void shouldNotRunAndFlushWhenTerminated()
+    {
+        ResponseHandler runHandler = mock( ResponseHandler.class );
+        ResponseHandler pullAllHandler = mock( ResponseHandler.class );
+        NettyConnection connection = newConnection( new EmbeddedChannel() );
+
+        connection.terminateAndRelease( "42" );
+        connection.runAndFlush( "RETURN 1", emptyMap(), runHandler, pullAllHandler );
+
+        ArgumentCaptor<IllegalStateException> failureCaptor = ArgumentCaptor.forClass( IllegalStateException.class );
+        verify( runHandler ).onFailure( failureCaptor.capture() );
+        assertConnectionTerminatedError( failureCaptor.getValue() );
     }
 
     @Test
@@ -233,6 +260,102 @@ public class NettyConnectionTest
         assertEquals( releaseStage2, releaseStage3 );
     }
 
+    @Test
+    public void shouldEnableAutoRead()
+    {
+        EmbeddedChannel channel = new EmbeddedChannel();
+        channel.config().setAutoRead( false );
+        NettyConnection connection = newConnection( channel );
+
+        connection.enableAutoRead();
+
+        assertTrue( channel.config().isAutoRead() );
+    }
+
+    @Test
+    public void shouldDisableAutoRead()
+    {
+        EmbeddedChannel channel = new EmbeddedChannel();
+        channel.config().setAutoRead( true );
+        NettyConnection connection = newConnection( channel );
+
+        connection.disableAutoRead();
+
+        assertFalse( channel.config().isAutoRead() );
+    }
+
+    @Test
+    public void shouldSetTerminationReasonOnChannelWhenTerminated()
+    {
+        EmbeddedChannel channel = new EmbeddedChannel();
+        NettyConnection connection = newConnection( channel );
+
+        String reason = "Something really bad has happened";
+        connection.terminateAndRelease( reason );
+
+        assertEquals( reason, terminationReason( channel ) );
+    }
+
+    @Test
+    public void shouldCloseChannelWhenTerminated()
+    {
+        EmbeddedChannel channel = new EmbeddedChannel();
+        NettyConnection connection = newConnection( channel );
+        assertTrue( channel.isActive() );
+
+        connection.terminateAndRelease( "test" );
+
+        assertFalse( channel.isActive() );
+    }
+
+    @Test
+    public void shouldReleaseChannelWhenTerminated()
+    {
+        EmbeddedChannel channel = new EmbeddedChannel();
+        ChannelPool pool = mock( ChannelPool.class );
+        NettyConnection connection = newConnection( channel, pool );
+        verify( pool, never() ).release( any() );
+
+        connection.terminateAndRelease( "test" );
+
+        verify( pool ).release( channel );
+    }
+
+    @Test
+    public void shouldNotReleaseChannelMultipleTimesWhenTerminatedMultipleTimes()
+    {
+        EmbeddedChannel channel = new EmbeddedChannel();
+        ChannelPool pool = mock( ChannelPool.class );
+        NettyConnection connection = newConnection( channel, pool );
+        verify( pool, never() ).release( any() );
+
+        connection.terminateAndRelease( "reason 1" );
+        connection.terminateAndRelease( "reason 2" );
+        connection.terminateAndRelease( "reason 3" );
+
+        // channel is terminated with the first termination reason
+        assertEquals( "reason 1", terminationReason( channel ) );
+        // channel is released to the pool only once
+        verify( pool ).release( channel );
+    }
+
+    @Test
+    public void shouldNotReleaseAfterTermination()
+    {
+        EmbeddedChannel channel = new EmbeddedChannel();
+        ChannelPool pool = mock( ChannelPool.class );
+        NettyConnection connection = newConnection( channel, pool );
+        verify( pool, never() ).release( any() );
+
+        connection.terminateAndRelease( "test" );
+        CompletionStage<Void> releaseStage = connection.release();
+
+        // release stage should be completed immediately
+        assertTrue( releaseStage.toCompletableFuture().isDone() );
+        // channel is released to the pool only once
+        verify( pool ).release( channel );
+    }
+
     private void testWriteInEventLoop( String threadName, Consumer<NettyConnection> action ) throws Exception
     {
         EmbeddedChannel channel = spy( new EmbeddedChannel() );
@@ -267,14 +390,24 @@ public class NettyConnectionTest
         }
     }
 
-    private static NettyConnection newConnection( EmbeddedChannel channel )
+    private static NettyConnection newConnection( Channel channel )
     {
-        return new NettyConnection( channel, mock( ChannelPool.class ), new FakeClock() );
+        return newConnection( channel, mock( ChannelPool.class ) );
+    }
+
+    private static NettyConnection newConnection( Channel channel, ChannelPool pool )
+    {
+        return new NettyConnection( channel, pool, new FakeClock() );
     }
 
     private static void assertConnectionReleasedError( IllegalStateException e )
     {
         assertThat( e.getMessage(), startsWith( "Connection has been released" ) );
+    }
+
+    private static void assertConnectionTerminatedError( IllegalStateException e )
+    {
+        assertThat( e.getMessage(), startsWith( "Connection has been terminated" ) );
     }
 
     private static class ThreadTrackingInboundMessageDispatcher extends InboundMessageDispatcher

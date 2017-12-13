@@ -66,6 +66,7 @@ import org.neo4j.driver.v1.exceptions.TransientException;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.summary.StatementType;
 import org.neo4j.driver.v1.util.TestNeo4j;
+import org.neo4j.driver.v1.util.TestUtil;
 
 import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -1448,6 +1449,40 @@ public class SessionIT
 
             ResultSummary summary = result.summary();
             assertNotNull( summary );
+        }
+    }
+
+    @Test
+    public void shouldBeResponsiveToThreadInterruptWhenWaitingForResult() throws Exception
+    {
+        try ( Session session1 = neo4j.driver().session();
+              Session session2 = neo4j.driver().session() )
+        {
+            session1.run( "CREATE (:Person {name: 'Beta Ray Bill'})" ).consume();
+
+            Transaction tx = session1.beginTransaction();
+            tx.run( "MATCH (n:Person {name: 'Beta Ray Bill'}) SET n.hammer = 'Mjolnir'" ).consume();
+
+            // now 'Beta Ray Bill' node is locked
+
+            // setup other thread to interrupt current thread when it blocks
+            TestUtil.interruptWhenInWaitingState( Thread.currentThread() );
+
+            try
+            {
+                session2.run( "MATCH (n:Person {name: 'Beta Ray Bill'}) SET n.hammer = 'Stormbreaker'" ).consume();
+                fail( "Exception expected" );
+            }
+            catch ( ServiceUnavailableException e )
+            {
+                assertThat( e.getMessage(), containsString( "Connection to the database terminated" ) );
+                assertThat( e.getMessage(), containsString( "Thread interrupted" ) );
+            }
+            finally
+            {
+                // clear interrupted flag
+                Thread.interrupted();
+            }
         }
     }
 

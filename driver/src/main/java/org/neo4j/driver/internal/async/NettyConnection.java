@@ -24,7 +24,7 @@ import io.netty.channel.pool.ChannelPool;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
@@ -39,6 +39,8 @@ import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.Value;
 
+import static org.neo4j.driver.internal.async.ChannelAttributes.setTerminationReason;
+
 public class NettyConnection implements Connection
 {
     private final Channel channel;
@@ -49,7 +51,7 @@ public class NettyConnection implements Connection
     private final CompletableFuture<Void> releaseFuture;
     private final Clock clock;
 
-    private final AtomicBoolean open = new AtomicBoolean( true );
+    private final AtomicReference<Status> status = new AtomicReference<>( Status.OPEN );
 
     public NettyConnection( Channel channel, ChannelPool channelPool, Clock clock )
     {
@@ -65,7 +67,7 @@ public class NettyConnection implements Connection
     @Override
     public boolean isOpen()
     {
-        return open.get();
+        return status.get() == Status.OPEN;
     }
 
     @Override
@@ -90,22 +92,26 @@ public class NettyConnection implements Connection
     public void run( String statement, Map<String,Value> parameters, ResponseHandler runHandler,
             ResponseHandler pullAllHandler )
     {
-        assertOpen();
-        run( statement, parameters, runHandler, pullAllHandler, false );
+        if ( verifyOpen( runHandler, pullAllHandler ) )
+        {
+            run( statement, parameters, runHandler, pullAllHandler, false );
+        }
     }
 
     @Override
     public void runAndFlush( String statement, Map<String,Value> parameters, ResponseHandler runHandler,
             ResponseHandler pullAllHandler )
     {
-        assertOpen();
-        run( statement, parameters, runHandler, pullAllHandler, true );
+        if ( verifyOpen( runHandler, pullAllHandler ) )
+        {
+            run( statement, parameters, runHandler, pullAllHandler, true );
+        }
     }
 
     @Override
     public CompletionStage<Void> release()
     {
-        if ( open.compareAndSet( true, false ) )
+        if ( status.compareAndSet( Status.OPEN, Status.RELEASED ) )
         {
             // auto-read could've been disabled, re-enable it to automatically receive response for RESET
             setAutoRead( true );
@@ -113,6 +119,18 @@ public class NettyConnection implements Connection
             reset( new ResetResponseHandler( channel, channelPool, messageDispatcher, clock, releaseFuture ) );
         }
         return releaseFuture;
+    }
+
+    @Override
+    public void terminateAndRelease( String reason )
+    {
+        if ( status.compareAndSet( Status.OPEN, Status.TERMINATED ) )
+        {
+            setTerminationReason( channel, reason );
+            channel.close();
+            channelPool.release( channel );
+            releaseFuture.complete( null );
+        }
     }
 
     @Override
@@ -178,11 +196,32 @@ public class NettyConnection implements Connection
         channel.config().setAutoRead( value );
     }
 
-    private void assertOpen()
+    private boolean verifyOpen( ResponseHandler runHandler, ResponseHandler pullAllHandler )
     {
-        if ( !isOpen() )
+        Status connectionStatus = this.status.get();
+        switch ( connectionStatus )
         {
-            throw new IllegalStateException( "Connection has been released to the pool and can't be reused" );
+        case OPEN:
+            return true;
+        case RELEASED:
+            Exception error = new IllegalStateException( "Connection has been released to the pool and can't be used" );
+            runHandler.onFailure( error );
+            pullAllHandler.onFailure( error );
+            return false;
+        case TERMINATED:
+            Exception terminatedError = new IllegalStateException( "Connection has been terminated and can't be used" );
+            runHandler.onFailure( terminatedError );
+            pullAllHandler.onFailure( terminatedError );
+            return false;
+        default:
+            throw new IllegalStateException( "Unknown status: " + connectionStatus );
         }
+    }
+
+    private enum Status
+    {
+        OPEN,
+        RELEASED,
+        TERMINATED
     }
 }

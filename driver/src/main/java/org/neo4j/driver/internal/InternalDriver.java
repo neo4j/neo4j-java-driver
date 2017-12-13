@@ -22,6 +22,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.internal.security.SecurityPlan;
+import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Logger;
@@ -29,7 +30,6 @@ import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Session;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
-import static org.neo4j.driver.internal.util.Futures.blockingGet;
 
 public class InternalDriver implements Driver
 {
@@ -105,7 +105,7 @@ public class InternalDriver implements Driver
     @Override
     public void close()
     {
-        blockingGet( closeAsync() );
+        Futures.blockingGet( closeAsync() );
     }
 
     @Override

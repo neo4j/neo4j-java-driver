@@ -32,6 +32,7 @@ import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.driver.internal.async.ChannelAttributes.messageDispatcher;
+import static org.neo4j.driver.internal.async.ChannelAttributes.terminationReason;
 
 public class ChannelErrorHandler extends ChannelInboundHandlerAdapter
 {
@@ -69,8 +70,10 @@ public class ChannelErrorHandler extends ChannelInboundHandlerAdapter
         if ( !failed )
         {
             // channel became inactive not because of a fatal exception that came from exceptionCaught
-            // it is most likely inactive because actual network connection broke
-            ServiceUnavailableException error = ErrorUtil.newConnectionTerminatedError();
+            // it is most likely inactive because actual network connection broke or was explicitly closed by the driver
+
+            String terminationReason = terminationReason( ctx.channel() );
+            ServiceUnavailableException error = ErrorUtil.newConnectionTerminatedError( terminationReason );
             fail( ctx, error );
         }
     }

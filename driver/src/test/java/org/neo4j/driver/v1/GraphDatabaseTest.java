@@ -21,11 +21,13 @@ package org.neo4j.driver.v1;
 import org.junit.Test;
 
 import java.io.File;
+import java.net.ServerSocket;
 import java.net.URI;
 import java.util.List;
 
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.util.StubServer;
+import org.neo4j.driver.v1.util.TestUtil;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.is;
@@ -155,5 +157,29 @@ public class GraphDatabaseTest
 
         assertEquals( 0, server1.exitStatus() );
         assertEquals( 0, server2.exitStatus() );
+    }
+
+    @Test
+    public void shouldRespondToInterruptsWhenConnectingToUnresponsiveServer() throws Exception
+    {
+        try ( ServerSocket serverSocket = new ServerSocket( 0 ) )
+        {
+            // setup other thread to interrupt current thread when it blocks
+            TestUtil.interruptWhenInWaitingState( Thread.currentThread() );
+            try
+            {
+                GraphDatabase.driver( "bolt://localhost:" + serverSocket.getLocalPort() );
+                fail( "Exception expected" );
+            }
+            catch ( ServiceUnavailableException ignore )
+            {
+                // expected
+            }
+            finally
+            {
+                // clear interrupted flag
+                Thread.interrupted();
+            }
+        }
     }
 }
