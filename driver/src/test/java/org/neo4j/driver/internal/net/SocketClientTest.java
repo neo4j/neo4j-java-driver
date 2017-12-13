@@ -18,24 +18,25 @@
  */
 package org.neo4j.driver.internal.net;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.driver.internal.security.SecurityPlan;
-import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -49,24 +50,16 @@ public class SocketClientTest
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
-    // TODO: This is not possible with blocking NIO channels, unless we use inputStreams, but then we can't use
-    // off-heap buffers. We need to swap to use selectors, which would allow us to time out.
     @Test
-    @Ignore
-    public void testNetworkTimeout() throws Throwable
+    public void shouldFailWhenProtocolNegotiationTakesTooLong() throws Exception
     {
-        // Given a server that will never reply
-        ServerSocket server = new ServerSocket( 0 );
-        BoltServerAddress address = new BoltServerAddress( "localhost", server.getLocalPort() );
+        testReadTimeoutOnConnect( SecurityPlan.insecure() );
+    }
 
-        SocketClient client = dummyClient( address );
-
-        // Expect
-        exception.expect( ClientException.class );
-        exception.expectMessage( "database took longer than network timeout (100ms) to reply." );
-
-        // When
-        client.start();
+    @Test
+    public void shouldFailWhenTLSHandshakeTakesTooLong() throws Exception
+    {
+        testReadTimeoutOnConnect( SecurityPlan.forAllCertificates() );
     }
 
     @Test
@@ -188,6 +181,26 @@ public class SocketClientTest
         // When
         client.setChannel( channel );
         client.blockingWrite( buffer );
+    }
+
+    private static void testReadTimeoutOnConnect( SecurityPlan securityPlan ) throws IOException
+    {
+        try ( ServerSocket server = new ServerSocket( 0 ) ) // server that does not reply
+        {
+            int timeoutMillis = 1_000;
+            BoltServerAddress address = new BoltServerAddress( "localhost", server.getLocalPort() );
+            SocketClient client = new SocketClient( address, securityPlan, timeoutMillis, DEV_NULL_LOGGER );
+
+            try
+            {
+                client.start();
+                fail( "Exception expected" );
+            }
+            catch ( ServiceUnavailableException e )
+            {
+                assertThat( e.getCause(), instanceOf( SocketTimeoutException.class ) );
+            }
+        }
     }
 
     private static class ByteAtATimeChannel implements ByteChannel
