@@ -180,7 +180,7 @@ public class ConnectionPoolImpl implements ConnectionPool
 
     private void processAcquisitionError( Throwable error )
     {
-        Throwable cause = Futures.completionErrorCause( error );
+        Throwable cause = Futures.completionExceptionCause( error );
         if ( cause != null )
         {
             if ( cause instanceof TimeoutException )

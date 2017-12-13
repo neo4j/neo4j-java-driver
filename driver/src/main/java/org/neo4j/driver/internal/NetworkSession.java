@@ -132,7 +132,7 @@ public class NetworkSession implements Session
     @Override
     public StatementResult run( Statement statement )
     {
-        StatementResultCursor cursor = blockingGet( runAsync( statement, false ) );
+        StatementResultCursor cursor = blockingGet( run( statement, false ) );
         return new InternalStatementResult( cursor );
     }
 
@@ -140,7 +140,7 @@ public class NetworkSession implements Session
     public CompletionStage<StatementResultCursor> runAsync( Statement statement )
     {
         //noinspection unchecked
-        return (CompletionStage) runAsync( statement, true );
+        return (CompletionStage) run( statement, true );
     }
 
     @Override
@@ -169,11 +169,10 @@ public class NetworkSession implements Session
                 return cursor.failureAsync();
             } ).thenCompose( error -> releaseResources().thenApply( ignore ->
             {
-                Throwable queryError = Futures.completionErrorCause( error );
-                if ( queryError != null )
+                if ( error != null )
                 {
                     // connection has been acquired and there is an unconsumed error in result cursor
-                    throw new CompletionException( queryError );
+                    throw Futures.asCompletionException( error );
                 }
                 else
                 {
@@ -316,7 +315,7 @@ public class NetworkSession implements Session
 
             txFuture.whenComplete( ( tx, completionError ) ->
             {
-                Throwable error = Futures.completionErrorCause( completionError );
+                Throwable error = Futures.completionExceptionCause( completionError );
                 if ( error != null )
                 {
                     resultFuture.completeExceptionally( error );
@@ -337,7 +336,7 @@ public class NetworkSession implements Session
         CompletionStage<T> workFuture = safeExecuteWork( tx, work );
         workFuture.whenComplete( ( result, completionError ) ->
         {
-            Throwable error = Futures.completionErrorCause( completionError );
+            Throwable error = Futures.completionExceptionCause( completionError );
             if ( error != null )
             {
                 rollbackTxAfterFailedTransactionWork( tx, resultFuture, error );
@@ -393,7 +392,7 @@ public class NetworkSession implements Session
             tx.success();
             tx.closeAsync().whenComplete( ( ignore, completionError ) ->
             {
-                Throwable commitError = Futures.completionErrorCause( completionError );
+                Throwable commitError = Futures.completionExceptionCause( completionError );
                 if ( commitError != null )
                 {
                     resultFuture.completeExceptionally( commitError );
@@ -410,23 +409,13 @@ public class NetworkSession implements Session
         }
     }
 
-    private CompletionStage<InternalStatementResultCursor> runAsync( Statement statement, boolean waitForRunResponse )
+    private CompletionStage<InternalStatementResultCursor> run( Statement statement, boolean waitForRunResponse )
     {
         ensureSessionIsOpen();
 
         CompletionStage<InternalStatementResultCursor> newResultCursorStage = ensureNoOpenTxBeforeRunningQuery()
                 .thenCompose( ignore -> acquireConnection( mode ) )
-                .thenCompose( connection ->
-                {
-                    if ( waitForRunResponse )
-                    {
-                        return QueryRunner.runAsAsync( connection, statement );
-                    }
-                    else
-                    {
-                        return QueryRunner.runAsBlocking( connection, statement );
-                    }
-                } );
+                .thenCompose( connection -> QueryRunner.runInSession( connection, statement, waitForRunResponse ) );
 
         resultCursorStage = newResultCursorStage.exceptionally( error -> null );
 
@@ -508,7 +497,7 @@ public class NetworkSession implements Session
             return completedFuture( null );
         } ).exceptionally( error ->
         {
-            Throwable cause = Futures.completionErrorCause( error );
+            Throwable cause = Futures.completionExceptionCause( error );
             logger.warn( "Active transaction rolled back with an error", cause );
             return null;
         } );

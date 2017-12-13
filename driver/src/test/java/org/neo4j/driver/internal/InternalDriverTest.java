@@ -20,9 +20,12 @@ package org.neo4j.driver.internal;
 
 import org.junit.Test;
 
+import java.util.concurrent.CompletableFuture;
+
 import org.neo4j.driver.internal.security.SecurityPlan;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -53,6 +56,18 @@ public class InternalDriverTest
         assertNull( await( driver.closeAsync() ) );
 
         verify( sessionFactory ).close();
+    }
+
+    @Test
+    public void shouldVerifyConnectivity()
+    {
+        SessionFactory sessionFactory = sessionFactoryMock();
+        CompletableFuture<Void> connectivityStage = completedFuture( null );
+        when( sessionFactory.verifyConnectivity() ).thenReturn( connectivityStage );
+
+        InternalDriver driver = newDriver( sessionFactory );
+
+        assertEquals( connectivityStage, driver.verifyConnectivity() );
     }
 
     private static InternalDriver newDriver( SessionFactory sessionFactory )

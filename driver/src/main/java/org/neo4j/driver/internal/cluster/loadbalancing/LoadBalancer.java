@@ -146,7 +146,7 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
             rediscovery.lookupClusterComposition( routingTable, connectionPool )
                     .whenComplete( ( composition, completionError ) ->
                     {
-                        Throwable error = Futures.completionErrorCause( completionError );
+                        Throwable error = Futures.completionExceptionCause( completionError );
                         if ( error != null )
                         {
                             clusterCompositionLookupFailed( error );
@@ -214,7 +214,7 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
 
         connectionPool.acquire( address ).whenComplete( ( connection, completionError ) ->
         {
-            Throwable error = Futures.completionErrorCause( completionError );
+            Throwable error = Futures.completionExceptionCause( completionError );
             if ( error != null )
             {
                 if ( error instanceof ServiceUnavailableException )

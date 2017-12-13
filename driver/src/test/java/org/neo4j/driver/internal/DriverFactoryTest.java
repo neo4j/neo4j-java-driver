@@ -30,6 +30,7 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 
+import org.neo4j.driver.internal.async.BootstrapFactory;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
 import org.neo4j.driver.internal.retry.RetryLogic;
@@ -38,21 +39,24 @@ import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
-import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.v1.AccessMode.READ;
 import static org.neo4j.driver.v1.Config.defaultConfig;
 
@@ -94,7 +98,7 @@ public class DriverFactoryTest
     {
         ConnectionPool connectionPool = connectionPoolMock();
         RuntimeException poolCloseError = new RuntimeException( "Pool close error" );
-        when( connectionPool.close() ).thenReturn( Futures.failedFuture( poolCloseError ) );
+        when( connectionPool.close() ).thenReturn( failedFuture( poolCloseError ) );
 
         DriverFactory factory = new ThrowingDriverFactory( connectionPool );
 
@@ -133,6 +137,41 @@ public class DriverFactoryTest
 
         SessionFactory capturedFactory = factory.capturedSessionFactory;
         assertThat( capturedFactory.newInstance( READ, null ), instanceOf( LeakLoggingNetworkSession.class ) );
+    }
+
+    @Test
+    public void shouldVerifyConnectivity()
+    {
+        SessionFactory sessionFactory = mock( SessionFactory.class );
+        when( sessionFactory.verifyConnectivity() ).thenReturn( completedFuture( null ) );
+        when( sessionFactory.close() ).thenReturn( completedFuture( null ) );
+        DriverFactoryWithSessions driverFactory = new DriverFactoryWithSessions( sessionFactory );
+
+        try ( Driver driver = createDriver( driverFactory ) )
+        {
+            assertNotNull( driver );
+            verify( sessionFactory ).verifyConnectivity();
+        }
+    }
+
+    @Test
+    public void shouldThrowWhenUnableToVerifyConnectivity()
+    {
+        SessionFactory sessionFactory = mock( SessionFactory.class );
+        ServiceUnavailableException error = new ServiceUnavailableException( "Hello" );
+        when( sessionFactory.verifyConnectivity() ).thenReturn( failedFuture( error ) );
+        when( sessionFactory.close() ).thenReturn( completedFuture( null ) );
+        DriverFactoryWithSessions driverFactory = new DriverFactoryWithSessions( sessionFactory );
+
+        try
+        {
+            createDriver( driverFactory );
+            fail( "Exception expected" );
+        }
+        catch ( ServiceUnavailableException e )
+        {
+            assertEquals( "Hello", e.getMessage() );
+        }
     }
 
     private Driver createDriver( DriverFactory driverFactory )
@@ -220,6 +259,36 @@ public class DriverFactoryTest
                 Bootstrap bootstrap, Config config )
         {
             return connectionPoolMock();
+        }
+    }
+
+    private static class DriverFactoryWithSessions extends DriverFactory
+    {
+        final SessionFactory sessionFactory;
+
+        DriverFactoryWithSessions( SessionFactory sessionFactory )
+        {
+            this.sessionFactory = sessionFactory;
+        }
+
+        @Override
+        protected Bootstrap createBootstrap()
+        {
+            return BootstrapFactory.newBootstrap( 1 );
+        }
+
+        @Override
+        protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan,
+                Bootstrap bootstrap, Config config )
+        {
+            return connectionPoolMock();
+        }
+
+        @Override
+        protected SessionFactory createSessionFactory( ConnectionProvider connectionProvider, RetryLogic retryLogic,
+                Config config )
+        {
+            return sessionFactory;
         }
     }
 }

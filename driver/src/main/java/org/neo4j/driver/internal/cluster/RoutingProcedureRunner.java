@@ -61,7 +61,7 @@ public class RoutingProcedureRunner
 
     CompletionStage<List<Record>> runProcedure( Connection connection, Statement procedure )
     {
-        return QueryRunner.runAsAsync( connection, procedure )
+        return QueryRunner.runInSession( connection, procedure, true )
                 .thenCompose( StatementResultCursor::listAsync );
     }
 
@@ -91,7 +91,7 @@ public class RoutingProcedureRunner
     private RoutingProcedureResponse processProcedureResponse( Statement procedure, List<Record> records,
             Throwable error )
     {
-        Throwable cause = Futures.completionErrorCause( error );
+        Throwable cause = Futures.completionExceptionCause( error );
         if ( cause != null )
         {
             return handleError( procedure, cause );

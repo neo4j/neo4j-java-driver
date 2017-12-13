@@ -581,7 +581,7 @@ public class SessionAsyncIT
         }
         catch ( NoSuchRecordException e )
         {
-            assertThat( e.getMessage(), containsString( "cursor is empty" ) );
+            assertThat( e.getMessage(), containsString( "result is empty" ) );
         }
     }
 
@@ -597,7 +597,7 @@ public class SessionAsyncIT
         }
         catch ( NoSuchRecordException e )
         {
-            assertThat( e.getMessage(), startsWith( "Expected a cursor with a single record" ) );
+            assertThat( e.getMessage(), startsWith( "Expected a result with a single record" ) );
         }
     }
 
@@ -1198,7 +1198,7 @@ public class SessionAsyncIT
         {
             if ( error != null )
             {
-                resultFuture.completeExceptionally( Futures.completionErrorCause( error ) );
+                resultFuture.completeExceptionally( Futures.completionExceptionCause( error ) );
             }
             else
             {
@@ -1300,7 +1300,7 @@ public class SessionAsyncIT
             CompletableFuture<Record> resultFuture = new CompletableFuture<>();
 
             tx.runAsync( query ).whenComplete( ( cursor, error ) ->
-                    processQueryResult( cursor, Futures.completionErrorCause( error ), resultFuture ) );
+                    processQueryResult( cursor, Futures.completionExceptionCause( error ), resultFuture ) );
 
             return resultFuture;
         }
@@ -1315,7 +1315,7 @@ public class SessionAsyncIT
             }
 
             cursor.nextAsync().whenComplete( ( record, fetchError ) ->
-                    processFetchResult( record, Futures.completionErrorCause( fetchError ), resultFuture ) );
+                    processFetchResult( record, Futures.completionExceptionCause( fetchError ), resultFuture ) );
         }
 
         private void processFetchResult( Record record, Throwable error, CompletableFuture<Record> resultFuture )

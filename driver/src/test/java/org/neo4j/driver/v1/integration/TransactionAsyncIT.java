@@ -683,7 +683,7 @@ public class TransactionAsyncIT
         }
         catch ( NoSuchRecordException e )
         {
-            assertThat( e.getMessage(), containsString( "cursor is empty" ) );
+            assertThat( e.getMessage(), containsString( "result is empty" ) );
         }
     }
 
@@ -700,7 +700,7 @@ public class TransactionAsyncIT
         }
         catch ( NoSuchRecordException e )
         {
-            assertThat( e.getMessage(), startsWith( "Expected a cursor with a single record" ) );
+            assertThat( e.getMessage(), startsWith( "Expected a result with a single record" ) );
         }
     }
 

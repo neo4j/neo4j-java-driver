@@ -20,7 +20,6 @@ package org.neo4j.driver.internal;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -49,7 +48,6 @@ import org.neo4j.driver.v1.types.TypeSystem;
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.neo4j.driver.internal.util.Futures.blockingGet;
-import static org.neo4j.driver.internal.util.Futures.completionErrorCause;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.v1.Values.value;
 
@@ -122,7 +120,7 @@ public class ExplicitTransaction implements Transaction
                 {
                     // release connection if begin failed, transaction can't be started
                     connection.release();
-                    throw new CompletionException( Futures.completionErrorCause( beginError ) );
+                    throw Futures.asCompletionException( beginError );
                 }
                 return tx;
             } );
@@ -285,18 +283,12 @@ public class ExplicitTransaction implements Transaction
         return (CompletionStage) run( statement, true );
     }
 
-    private CompletionStage<InternalStatementResultCursor> run( Statement statement, boolean asAsync )
+    private CompletionStage<InternalStatementResultCursor> run( Statement statement, boolean waitForRunResponse )
     {
         ensureCanRunQueries();
-        CompletionStage<InternalStatementResultCursor> cursorStage;
-        if ( asAsync )
-        {
-            cursorStage = QueryRunner.runAsAsync( connection, statement, this );
-        }
-        else
-        {
-            cursorStage = QueryRunner.runAsBlocking( connection, statement, this );
-        }
+        CompletionStage<InternalStatementResultCursor> cursorStage =
+                QueryRunner.runInTransaction( connection, statement,
+                        this, waitForRunResponse );
         resultCursors.add( cursorStage );
         return cursorStage;
     }
@@ -378,11 +370,11 @@ public class ExplicitTransaction implements Transaction
         {
             if ( cursorFailure != null )
             {
-                throw new CompletionException( completionErrorCause( cursorFailure ) );
+                throw Futures.asCompletionException( cursorFailure );
             }
             else if ( commitOrRollbackError != null )
             {
-                throw new CompletionException( completionErrorCause( commitOrRollbackError ) );
+                throw Futures.asCompletionException( commitOrRollbackError );
             }
             else
             {
