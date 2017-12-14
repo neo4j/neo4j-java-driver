@@ -1529,6 +1529,16 @@ public class SessionIT
         }
     }
 
+    @Test
+    public void shouldAllowReturningNullFromTransactionFunction()
+    {
+        try ( Session session = neo4j.driver().session() )
+        {
+            assertNull( session.readTransaction( tx -> null ) );
+            assertNull( session.writeTransaction( tx -> null ) );
+        }
+    }
+
     private void assumeServerIs31OrLater()
     {
         ServerVersion serverVersion = ServerVersion.version( neo4j.driver() );

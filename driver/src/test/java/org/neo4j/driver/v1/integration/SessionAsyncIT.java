@@ -1157,6 +1157,16 @@ public class SessionAsyncIT
         }
     }
 
+    @Test
+    public void shouldAllowReturningNullFromAsyncTransactionFunction()
+    {
+        CompletionStage<Object> readResult = session.readTransactionAsync( tx -> null );
+        assertNull( await( readResult ) );
+
+        CompletionStage<Object> writeResult = session.writeTransactionAsync( tx -> null );
+        assertNull( await( writeResult ) );
+    }
+
     private Future<List<CompletionStage<Record>>> runNestedQueries( StatementResultCursor inputCursor )
     {
         CompletableFuture<List<CompletionStage<Record>>> resultFuture = new CompletableFuture<>();
