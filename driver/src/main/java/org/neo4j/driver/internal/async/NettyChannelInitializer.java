@@ -39,13 +39,16 @@ public class NettyChannelInitializer extends ChannelInitializer<Channel>
 {
     private final BoltServerAddress address;
     private final SecurityPlan securityPlan;
+    private final int connectTimeoutMillis;
     private final Clock clock;
     private final Logging logging;
 
-    public NettyChannelInitializer( BoltServerAddress address, SecurityPlan securityPlan, Clock clock, Logging logging )
+    public NettyChannelInitializer( BoltServerAddress address, SecurityPlan securityPlan, int connectTimeoutMillis,
+            Clock clock, Logging logging )
     {
         this.address = address;
         this.securityPlan = securityPlan;
+        this.connectTimeoutMillis = connectTimeoutMillis;
         this.clock = clock;
         this.logging = logging;
     }
@@ -65,7 +68,9 @@ public class NettyChannelInitializer extends ChannelInitializer<Channel>
     private SslHandler createSslHandler()
     {
         SSLEngine sslEngine = createSslEngine();
-        return new SslHandler( sslEngine );
+        SslHandler sslHandler = new SslHandler( sslEngine );
+        sslHandler.setHandshakeTimeoutMillis( connectTimeoutMillis );
+        return sslHandler;
     }
 
     private SSLEngine createSslEngine()

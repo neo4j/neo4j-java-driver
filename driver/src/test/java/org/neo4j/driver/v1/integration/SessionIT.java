@@ -42,7 +42,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.driver.internal.DriverFactory;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
-import org.neo4j.driver.internal.logging.DevNullLogging;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.util.DriverFactoryWithFixedRetryLogic;
 import org.neo4j.driver.internal.util.DriverFactoryWithOneEventLoopThread;
@@ -92,6 +91,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.Matchers.arithmeticError;
 import static org.neo4j.driver.internal.util.Matchers.connectionAcquisitionTimeoutError;
 import static org.neo4j.driver.internal.util.ServerVersion.v3_1_0;
@@ -1486,6 +1486,49 @@ public class SessionIT
         }
     }
 
+    @Test
+    public void shouldAllowLongRunningQueryWithConnectTimeout() throws Exception
+    {
+        int connectionTimeoutMs = 3_000;
+        Config config = Config.build()
+                .withLogging( DEV_NULL_LOGGING )
+                .withConnectionTimeout( connectionTimeoutMs, TimeUnit.MILLISECONDS )
+                .toConfig();
+
+        try ( Driver driver = GraphDatabase.driver( neo4j.uri(), neo4j.authToken(), config ) )
+        {
+            Session session1 = driver.session();
+            Session session2 = driver.session();
+
+            session1.run( "CREATE (:Avenger {name: 'Hulk'})" ).consume();
+
+            Transaction tx = session1.beginTransaction();
+            tx.run( "MATCH (a:Avenger {name: 'Hulk'}) SET a.power = 100 RETURN a" ).consume();
+
+            // Hulk node is now locked
+
+            CountDownLatch latch = new CountDownLatch( 1 );
+            Future<Long> updateFuture = executeInDifferentThread( () ->
+            {
+                latch.countDown();
+                return session2.run( "MATCH (a:Avenger {name: 'Hulk'}) SET a.weight = 1000 RETURN a.power" )
+                        .single().get( 0 ).asLong();
+            } );
+
+            latch.await();
+            // sleep more than connection timeout
+            Thread.sleep( connectionTimeoutMs + 1_000 );
+            // verify that query is still executing and has not failed because of the read timeout
+            assertFalse( updateFuture.isDone() );
+
+            tx.success();
+            tx.close();
+
+            long hulkPower = updateFuture.get( 10, TimeUnit.SECONDS );
+            assertEquals( 100, hulkPower );
+        }
+    }
+
     private void assumeServerIs31OrLater()
     {
         ServerVersion serverVersion = ServerVersion.version( neo4j.driver() );
@@ -1634,7 +1677,7 @@ public class SessionIT
     private Driver newDriverWithLimitedRetries( int maxTxRetryTime, TimeUnit unit )
     {
         Config config = Config.build()
-                .withLogging( DevNullLogging.DEV_NULL_LOGGING )
+                .withLogging( DEV_NULL_LOGGING )
                 .withMaxTransactionRetryTime( maxTxRetryTime, unit )
                 .toConfig();
         return GraphDatabase.driver( neo4j.uri(), neo4j.authToken(), config );
@@ -1642,7 +1685,7 @@ public class SessionIT
 
     private static Config noLoggingConfig()
     {
-        return Config.build().withLogging( DevNullLogging.DEV_NULL_LOGGING ).toConfig();
+        return Config.build().withLogging( DEV_NULL_LOGGING ).toConfig();
     }
 
     private static ThrowingWork newThrowingWorkSpy( String query, int failures )
