@@ -139,9 +139,20 @@ public interface Driver extends AutoCloseable
     Session session( AccessMode mode, Iterable<String> bookmarks );
 
     /**
-     * Close all the resources assigned to this driver, including any open connections.
+     * Close all the resources assigned to this driver, including open connections and IO threads.
+     * <p>
+     * This operation works the same way as {@link #closeAsync()} but blocks until all resources are closed.
      */
+    @Override
     void close();
 
+    /**
+     * Close all the resources assigned to this driver, including open connections and IO threads.
+     * <p>
+     * This operation is asynchronous and returns a {@link CompletionStage}. This stage is completed with
+     * {@code null} when all resources are closed. It is completed exceptionally if termination fails.
+     *
+     * @return a {@link CompletionStage completion stage} that represents the asynchronous close.
+     */
     CompletionStage<Void> closeAsync();
 }

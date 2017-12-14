@@ -268,7 +268,7 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
     {
         Logger log = loadBalancerLogger( logging );
         ClusterCompositionProvider clusterCompositionProvider =
-                new RoutingProcedureClusterCompositionProvider( clock, log, settings );
+                new RoutingProcedureClusterCompositionProvider( clock, settings );
         return new Rediscovery( initialRouter, settings, clusterCompositionProvider, eventExecutorGroup,
                 new DnsResolver( log ), log );
     }

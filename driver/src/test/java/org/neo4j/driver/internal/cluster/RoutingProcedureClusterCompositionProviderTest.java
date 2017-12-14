@@ -47,7 +47,6 @@ import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.v1.Values.value;
 import static org.neo4j.driver.v1.util.TestUtil.await;
@@ -59,8 +58,8 @@ public class RoutingProcedureClusterCompositionProviderTest
     {
         // Given
         RoutingProcedureRunner mockedRunner = newProcedureRunnerMock();
-        ClusterCompositionProvider provider = new RoutingProcedureClusterCompositionProvider( mock( Clock.class ),
-                DEV_NULL_LOGGER, mockedRunner );
+        ClusterCompositionProvider provider =
+                new RoutingProcedureClusterCompositionProvider( mock( Clock.class ), mockedRunner );
 
         CompletionStage<Connection> connectionStage = completedFuture( mock( Connection.class ) );
         RoutingProcedureResponse noRecordsResponse = newRoutingResponse();
@@ -88,8 +87,8 @@ public class RoutingProcedureClusterCompositionProviderTest
     {
         // Given
         RoutingProcedureRunner mockedRunner = newProcedureRunnerMock();
-        ClusterCompositionProvider provider = new RoutingProcedureClusterCompositionProvider( mock( Clock.class ),
-                DEV_NULL_LOGGER, mockedRunner );
+        ClusterCompositionProvider provider =
+                new RoutingProcedureClusterCompositionProvider( mock( Clock.class ), mockedRunner );
 
         CompletionStage<Connection> connectionStage = completedFuture( mock( Connection.class ) );
         Record aRecord = new InternalRecord( asList( "key1", "key2" ), new Value[]{ new StringValue( "a value" ) } );
@@ -118,8 +117,8 @@ public class RoutingProcedureClusterCompositionProviderTest
     {
         // Given
         RoutingProcedureRunner mockedRunner = newProcedureRunnerMock();
-        ClusterCompositionProvider provider = new RoutingProcedureClusterCompositionProvider( mock( Clock.class ),
-                DEV_NULL_LOGGER, mockedRunner );
+        ClusterCompositionProvider provider =
+                new RoutingProcedureClusterCompositionProvider( mock( Clock.class ), mockedRunner );
 
         CompletionStage<Connection> connectionStage = completedFuture( mock( Connection.class ) );
         Record aRecord = new InternalRecord( asList( "key1", "key2" ), new Value[]{ new StringValue( "a value" ) } );
@@ -149,8 +148,8 @@ public class RoutingProcedureClusterCompositionProviderTest
         // Given
         RoutingProcedureRunner mockedRunner = newProcedureRunnerMock();
         Clock mockedClock = mock( Clock.class );
-        ClusterCompositionProvider provider = new RoutingProcedureClusterCompositionProvider( mockedClock,
-                DEV_NULL_LOGGER, mockedRunner );
+        ClusterCompositionProvider provider =
+                new RoutingProcedureClusterCompositionProvider( mockedClock, mockedRunner );
 
         CompletionStage<Connection> connectionStage = completedFuture( mock( Connection.class ) );
         Record record = new InternalRecord( asList( "ttl", "servers" ), new Value[]{
@@ -185,8 +184,8 @@ public class RoutingProcedureClusterCompositionProviderTest
         // Given
         RoutingProcedureRunner mockedRunner = newProcedureRunnerMock();
         Clock mockedClock = mock( Clock.class );
-        ClusterCompositionProvider provider = new RoutingProcedureClusterCompositionProvider( mockedClock,
-                DEV_NULL_LOGGER, mockedRunner );
+        ClusterCompositionProvider provider =
+                new RoutingProcedureClusterCompositionProvider( mockedClock, mockedRunner );
 
         CompletionStage<Connection> connectionStage = completedFuture( mock( Connection.class ) );
         Record record = new InternalRecord( asList( "ttl", "servers" ), new Value[]{
@@ -221,8 +220,8 @@ public class RoutingProcedureClusterCompositionProviderTest
     {
         // Given
         RoutingProcedureRunner mockedRunner = newProcedureRunnerMock();
-        ClusterCompositionProvider provider = new RoutingProcedureClusterCompositionProvider( mock( Clock.class ),
-                DEV_NULL_LOGGER, mockedRunner );
+        ClusterCompositionProvider provider =
+                new RoutingProcedureClusterCompositionProvider( mock( Clock.class ), mockedRunner );
 
         CompletionStage<Connection> connectionStage = completedFuture( mock( Connection.class ) );
         when( mockedRunner.run( connectionStage ) ).thenReturn( failedFuture(
@@ -247,8 +246,8 @@ public class RoutingProcedureClusterCompositionProviderTest
         // Given
         Clock mockedClock = mock( Clock.class );
         RoutingProcedureRunner mockedRunner = newProcedureRunnerMock();
-        ClusterCompositionProvider provider = new RoutingProcedureClusterCompositionProvider( mockedClock,
-                DEV_NULL_LOGGER, mockedRunner );
+        ClusterCompositionProvider provider =
+                new RoutingProcedureClusterCompositionProvider( mockedClock, mockedRunner );
 
         CompletionStage<Connection> connectionStage = completedFuture( mock( Connection.class ) );
         Record record = new InternalRecord( asList( "ttl", "servers" ), new Value[]{
@@ -282,8 +281,8 @@ public class RoutingProcedureClusterCompositionProviderTest
         when( procedureRunner.run( any( CompletionStage.class ) ) )
                 .thenReturn( completedFuture( newRoutingResponse( error ) ) );
 
-        RoutingProcedureClusterCompositionProvider provider = new RoutingProcedureClusterCompositionProvider(
-                mock( Clock.class ), DEV_NULL_LOGGER, procedureRunner );
+        RoutingProcedureClusterCompositionProvider provider =
+                new RoutingProcedureClusterCompositionProvider( mock( Clock.class ), procedureRunner );
 
         CompletionStage<Connection> connectionStage = completedFuture( mock( Connection.class ) );
         ClusterCompositionResponse response = await( provider.getClusterComposition( connectionStage ) );

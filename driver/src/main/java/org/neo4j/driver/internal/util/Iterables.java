@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import org.neo4j.driver.v1.util.Function;
 
@@ -107,15 +106,5 @@ public class Iterables
                 };
             }
         };
-    }
-
-    public static <K, A, B> Map<K,B> mapValues( Map<K,A> map, Function<A,B> f )
-    {
-        HashMap<K,B> transformed = new HashMap<>( map.size() );
-        for ( Entry<K,A> entry : map.entrySet() )
-        {
-            transformed.put( entry.getKey(), f.apply( entry.getValue() ) );
-        }
-        return transformed;
     }
 }

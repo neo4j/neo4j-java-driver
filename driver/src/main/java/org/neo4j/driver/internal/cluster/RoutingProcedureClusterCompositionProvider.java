@@ -23,7 +23,6 @@ import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Clock;
-import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.exceptions.ProtocolException;
@@ -37,18 +36,16 @@ public class RoutingProcedureClusterCompositionProvider implements ClusterCompos
     private static final String PROTOCOL_ERROR_MESSAGE = "Failed to parse '%s' result received from server due to ";
 
     private final Clock clock;
-    private final Logger log;
     private final RoutingProcedureRunner routingProcedureRunner;
 
-    public RoutingProcedureClusterCompositionProvider( Clock clock, Logger log, RoutingSettings settings )
+    public RoutingProcedureClusterCompositionProvider( Clock clock, RoutingSettings settings )
     {
-        this( clock, log, new RoutingProcedureRunner( settings.routingContext() ) );
+        this( clock, new RoutingProcedureRunner( settings.routingContext() ) );
     }
 
-    RoutingProcedureClusterCompositionProvider( Clock clock, Logger log, RoutingProcedureRunner routingProcedureRunner )
+    RoutingProcedureClusterCompositionProvider( Clock clock, RoutingProcedureRunner routingProcedureRunner )
     {
         this.clock = clock;
-        this.log = log;
         this.routingProcedureRunner = routingProcedureRunner;
     }
 
