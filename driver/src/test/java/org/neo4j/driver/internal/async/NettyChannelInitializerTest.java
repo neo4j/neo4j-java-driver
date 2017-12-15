@@ -52,8 +52,7 @@ public class NettyChannelInitializerTest
     public void shouldAddSslHandlerWhenRequiresEncryption() throws Exception
     {
         SecurityPlan security = SecurityPlan.forAllCertificates();
-        NettyChannelInitializer initializer = new NettyChannelInitializer( LOCAL_DEFAULT, security, new FakeClock(),
-                DEV_NULL_LOGGING );
+        NettyChannelInitializer initializer = newInitializer( security );
 
         initializer.initChannel( channel );
 
@@ -64,12 +63,25 @@ public class NettyChannelInitializerTest
     public void shouldNotAddSslHandlerWhenDoesNotRequireEncryption()
     {
         SecurityPlan security = SecurityPlan.insecure();
-        NettyChannelInitializer initializer = new NettyChannelInitializer( LOCAL_DEFAULT, security, new FakeClock(),
-                DEV_NULL_LOGGING );
+        NettyChannelInitializer initializer = newInitializer( security );
 
         initializer.initChannel( channel );
 
         assertNull( channel.pipeline().get( SslHandler.class ) );
+    }
+
+    @Test
+    public void shouldAddSslHandlerWithHandshakeTimeout() throws Exception
+    {
+        int timeoutMillis = 424242;
+        SecurityPlan security = SecurityPlan.forAllCertificates();
+        NettyChannelInitializer initializer = newInitializer( security, timeoutMillis );
+
+        initializer.initChannel( channel );
+
+        SslHandler sslHandler = channel.pipeline().get( SslHandler.class );
+        assertNotNull( sslHandler );
+        assertEquals( timeoutMillis, sslHandler.getHandshakeTimeoutMillis() );
     }
 
     @Test
@@ -78,12 +90,29 @@ public class NettyChannelInitializerTest
         Clock clock = mock( Clock.class );
         when( clock.millis() ).thenReturn( 42L );
         SecurityPlan security = SecurityPlan.insecure();
-        NettyChannelInitializer initializer = new NettyChannelInitializer( LOCAL_DEFAULT, security, clock, DEV_NULL_LOGGING );
+        NettyChannelInitializer initializer = newInitializer( security, Integer.MAX_VALUE, clock );
 
         initializer.initChannel( channel );
 
         assertEquals( LOCAL_DEFAULT, serverAddress( channel ) );
         assertEquals( 42L, creationTimestamp( channel ) );
         assertNotNull( messageDispatcher( channel ) );
+    }
+
+    private static NettyChannelInitializer newInitializer( SecurityPlan securityPlan )
+    {
+        return newInitializer( securityPlan, Integer.MAX_VALUE );
+    }
+
+    private static NettyChannelInitializer newInitializer( SecurityPlan securityPlan, int connectTimeoutMillis )
+    {
+        return newInitializer( securityPlan, connectTimeoutMillis, new FakeClock() );
+    }
+
+    private static NettyChannelInitializer newInitializer( SecurityPlan securityPlan, int connectTimeoutMillis,
+            Clock clock )
+    {
+        return new NettyChannelInitializer( LOCAL_DEFAULT, securityPlan, connectTimeoutMillis, clock,
+                DEV_NULL_LOGGING );
     }
 }

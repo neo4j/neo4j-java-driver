@@ -21,17 +21,24 @@ package org.neo4j.driver.internal.async;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelPipeline;
+import io.netty.handler.ssl.SslHandler;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
+import org.junit.rules.Timeout;
 
+import java.io.IOException;
 import java.net.ConnectException;
+import java.net.ServerSocket;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.ConnectionSettings;
+import org.neo4j.driver.internal.async.inbound.ConnectTimeoutHandler;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.v1.AuthToken;
@@ -42,7 +49,9 @@ import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.startsWith;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -52,19 +61,20 @@ import static org.neo4j.driver.v1.util.TestUtil.await;
 
 public class ChannelConnectorImplTest
 {
+    private final TestNeo4j neo4j = new TestNeo4j();
     @Rule
-    public final TestNeo4j neo4j = new TestNeo4j();
+    public final RuleChain ruleChain = RuleChain.outerRule( Timeout.seconds( 20 ) ).around( neo4j );
 
     private Bootstrap bootstrap;
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         bootstrap = BootstrapFactory.newBootstrap( 1 );
     }
 
     @After
-    public void tearDown() throws Exception
+    public void tearDown()
     {
         if ( bootstrap != null )
         {
@@ -75,7 +85,7 @@ public class ChannelConnectorImplTest
     @Test
     public void shouldConnect() throws Exception
     {
-        ChannelConnectorImpl connector = newConnector( neo4j.authToken() );
+        ChannelConnector connector = newConnector( neo4j.authToken() );
 
         ChannelFuture channelFuture = connector.connect( neo4j.address(), bootstrap );
         assertTrue( channelFuture.await( 10, TimeUnit.SECONDS ) );
@@ -86,9 +96,25 @@ public class ChannelConnectorImplTest
     }
 
     @Test
+    public void shouldSetupHandlers() throws Exception
+    {
+        ChannelConnector connector = newConnector( neo4j.authToken(), SecurityPlan.forAllCertificates(), 10_000 );
+
+        ChannelFuture channelFuture = connector.connect( neo4j.address(), bootstrap );
+        assertTrue( channelFuture.await( 10, TimeUnit.SECONDS ) );
+
+        Channel channel = channelFuture.channel();
+        ChannelPipeline pipeline = channel.pipeline();
+        assertTrue( channel.isActive() );
+
+        assertNotNull( pipeline.get( SslHandler.class ) );
+        assertNull( pipeline.get( ConnectTimeoutHandler.class ) );
+    }
+
+    @Test
     public void shouldFailToConnectToWrongAddress() throws Exception
     {
-        ChannelConnectorImpl connector = newConnector( neo4j.authToken() );
+        ChannelConnector connector = newConnector( neo4j.authToken() );
 
         ChannelFuture channelFuture = connector.connect( new BoltServerAddress( "wrong-localhost" ), bootstrap );
         assertTrue( channelFuture.await( 10, TimeUnit.SECONDS ) );
@@ -112,7 +138,7 @@ public class ChannelConnectorImplTest
     public void shouldFailToConnectWithWrongCredentials() throws Exception
     {
         AuthToken authToken = AuthTokens.basic( "neo4j", "wrong-password" );
-        ChannelConnectorImpl connector = newConnector( authToken );
+        ChannelConnector connector = newConnector( authToken );
 
         ChannelFuture channelFuture = connector.connect( neo4j.address(), bootstrap );
         assertTrue( channelFuture.await( 10, TimeUnit.SECONDS ) );
@@ -131,10 +157,10 @@ public class ChannelConnectorImplTest
         assertFalse( channel.isActive() );
     }
 
-    @Test( timeout = 10000 )
+    @Test
     public void shouldEnforceConnectTimeout() throws Exception
     {
-        ChannelConnectorImpl connector = newConnector( neo4j.authToken(), 1000 );
+        ChannelConnector connector = newConnector( neo4j.authToken(), 1000 );
 
         // try connect to a non-routable ip address 10.0.0.0, it will never respond
         ChannelFuture channelFuture = connector.connect( new BoltServerAddress( "10.0.0.0" ), bootstrap );
@@ -151,6 +177,41 @@ public class ChannelConnectorImplTest
         }
     }
 
+    @Test
+    public void shouldFailWhenProtocolNegotiationTakesTooLong() throws Exception
+    {
+        // run without TLS so that Bolt handshake is the very first operation after connection is established
+        testReadTimeoutOnConnect( SecurityPlan.insecure() );
+    }
+
+    @Test
+    public void shouldFailWhenTLSHandshakeTakesTooLong() throws Exception
+    {
+        // run with TLS so that TLS handshake is the very first operation after connection is established
+        testReadTimeoutOnConnect( SecurityPlan.forAllCertificates() );
+    }
+
+    private void testReadTimeoutOnConnect( SecurityPlan securityPlan ) throws IOException
+    {
+        try ( ServerSocket server = new ServerSocket( 0 ) ) // server that accepts connections but does not reply
+        {
+            int timeoutMillis = 1_000;
+            BoltServerAddress address = new BoltServerAddress( "localhost", server.getLocalPort() );
+            ChannelConnector connector = newConnector( neo4j.authToken(), securityPlan, timeoutMillis );
+
+            ChannelFuture channelFuture = connector.connect( address, bootstrap );
+            try
+            {
+                await( channelFuture );
+                fail( "Exception expected" );
+            }
+            catch ( ServiceUnavailableException e )
+            {
+                assertEquals( e.getMessage(), "Unable to establish connection in " + timeoutMillis + "ms" );
+            }
+        }
+    }
+
     private ChannelConnectorImpl newConnector( AuthToken authToken ) throws Exception
     {
         return newConnector( authToken, Integer.MAX_VALUE );
@@ -158,8 +219,13 @@ public class ChannelConnectorImplTest
 
     private ChannelConnectorImpl newConnector( AuthToken authToken, int connectTimeoutMillis ) throws Exception
     {
-        ConnectionSettings settings = new ConnectionSettings( authToken, 1000 );
-        return new ChannelConnectorImpl( settings, SecurityPlan.forAllCertificates(), DEV_NULL_LOGGING,
-                new FakeClock() );
+        return newConnector( authToken, SecurityPlan.forAllCertificates(), connectTimeoutMillis );
+    }
+
+    private ChannelConnectorImpl newConnector( AuthToken authToken, SecurityPlan securityPlan,
+            int connectTimeoutMillis )
+    {
+        ConnectionSettings settings = new ConnectionSettings( authToken, connectTimeoutMillis );
+        return new ChannelConnectorImpl( settings, securityPlan, DEV_NULL_LOGGING, new FakeClock() );
     }
 }
