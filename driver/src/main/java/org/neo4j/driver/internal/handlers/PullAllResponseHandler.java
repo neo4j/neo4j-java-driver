@@ -27,6 +27,7 @@ import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
+import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.MetadataUtil;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
@@ -55,7 +56,6 @@ public abstract class PullAllResponseHandler implements ResponseHandler
     private ResultSummary summary;
 
     private CompletableFuture<Record> recordFuture;
-    private CompletableFuture<ResultSummary> summaryFuture;
     private CompletableFuture<Throwable> failureFuture;
 
     public PullAllResponseHandler( Statement statement, RunResponseHandler runResponseHandler, Connection connection )
@@ -74,7 +74,6 @@ public abstract class PullAllResponseHandler implements ResponseHandler
         afterSuccess();
 
         completeRecordFuture( null );
-        completeSummaryFuture( summary );
         completeFailureFuture( null );
     }
 
@@ -91,26 +90,16 @@ public abstract class PullAllResponseHandler implements ResponseHandler
         boolean failedRecordFuture = failRecordFuture( error );
         if ( failedRecordFuture )
         {
-            // error propagated through record future, complete other two
-            completeSummaryFuture( summary );
+            // error propagated through the record future
             completeFailureFuture( null );
         }
         else
         {
-            boolean failedSummaryFuture = failSummaryFuture( error );
-            if ( failedSummaryFuture )
+            boolean completedFailureFuture = completeFailureFuture( error );
+            if ( !completedFailureFuture )
             {
-                // error propagated through summary future, complete other one
-                completeFailureFuture( null );
-            }
-            else
-            {
-                boolean completedFailureFuture = completeFailureFuture( error );
-                if ( !completedFailureFuture )
-                {
-                    // error has not been propagated to the user, remember it
-                    failure = error;
-                }
+                // error has not been propagated to the user, remember it
+                failure = error;
             }
         }
     }
@@ -121,7 +110,7 @@ public abstract class PullAllResponseHandler implements ResponseHandler
     public synchronized void onRecord( Value[] fields )
     {
         Record record = new InternalRecord( runResponseHandler.statementKeys(), fields );
-        queueRecord( record );
+        enqueueRecord( record );
         completeRecordFuture( record );
     }
 
@@ -159,26 +148,14 @@ public abstract class PullAllResponseHandler implements ResponseHandler
 
     public synchronized CompletionStage<ResultSummary> summaryAsync()
     {
-        if ( failure != null )
+        return failureAsync().thenApply( error ->
         {
-            return failedFuture( extractFailure() );
-        }
-        else if ( summary != null )
-        {
-            return completedFuture( summary );
-        }
-        else
-        {
-            if ( summaryFuture == null )
+            if ( error != null )
             {
-                // neither SUCCESS nor FAILURE message has arrived, register future to be notified when it arrives
-                // future will be completed with summary on SUCCESS and completed exceptionally on FAILURE
-                // enable auto-read, otherwise we might not read SUCCESS/FAILURE if records are not consumed
-                connection.enableAutoRead();
-                summaryFuture = new CompletableFuture<>();
+                throw Futures.asCompletionException( error );
             }
-            return summaryFuture;
-        }
+            return summary;
+        } );
     }
 
     public synchronized CompletionStage<Throwable> failureAsync()
@@ -205,14 +182,14 @@ public abstract class PullAllResponseHandler implements ResponseHandler
         }
     }
 
-    private void queueRecord( Record record )
+    private void enqueueRecord( Record record )
     {
         records.add( record );
 
-        boolean shouldBufferAllRecords = summaryFuture != null || failureFuture != null;
-        // when summary or failure is requested we have to buffer all remaining records and then return summary/failure
+        boolean shouldBufferAllRecords = failureFuture != null;
+        // when failure is requested we have to buffer all remaining records and then return the error
         // do not disable auto-read in this case, otherwise records will not be consumed and trailing
-        // SUCCESS or FAILURE message will not arrive as well, so callers will get stuck waiting for summary/failure
+        // SUCCESS or FAILURE message will not arrive as well, so callers will get stuck waiting for the error
         if ( !shouldBufferAllRecords && records.size() > RECORD_BUFFER_HIGH_WATERMARK )
         {
             // more than high watermark records are already queued, tell connection to stop auto-reading from network
@@ -264,28 +241,6 @@ public abstract class PullAllResponseHandler implements ResponseHandler
         {
             CompletableFuture<Record> future = recordFuture;
             recordFuture = null;
-            future.completeExceptionally( error );
-            return true;
-        }
-        return false;
-    }
-
-    private void completeSummaryFuture( ResultSummary summary )
-    {
-        if ( summaryFuture != null )
-        {
-            CompletableFuture<ResultSummary> future = summaryFuture;
-            summaryFuture = null;
-            future.complete( summary );
-        }
-    }
-
-    private boolean failSummaryFuture( Throwable error )
-    {
-        if ( summaryFuture != null )
-        {
-            CompletableFuture<ResultSummary> future = summaryFuture;
-            summaryFuture = null;
             future.completeExceptionally( error );
             return true;
         }
