@@ -520,7 +520,7 @@ public class NetworkSession implements Session
 
     private CompletionStage<Void> releaseConnection()
     {
-        return existingConnectionOrNull().thenCompose( connection ->
+        return connectionStage.thenCompose( connection ->
         {
             if ( connection != null )
             {
@@ -575,13 +575,8 @@ public class NetworkSession implements Session
     private CompletionStage<ExplicitTransaction> existingTransactionOrNull()
     {
         return transactionStage
-                .exceptionally( error -> null ) // handle previous acquisition failures
+                .exceptionally( error -> null ) // handle previous connection acquisition and tx begin failures
                 .thenApply( tx -> tx != null && tx.isOpen() ? tx : null );
-    }
-
-    private CompletionStage<Connection> existingConnectionOrNull()
-    {
-        return connectionStage.exceptionally( error -> null ); // handle previous acquisition failures
     }
 
     private void ensureSessionIsOpen()
