@@ -70,6 +70,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
+import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.v1.AccessMode.READ;
 import static org.neo4j.driver.v1.AccessMode.WRITE;
@@ -89,7 +90,7 @@ public class NetworkSessionTest
     public void setUp()
     {
         connection = connectionMock();
-        when( connection.release() ).thenReturn( completedFuture( null ) );
+        when( connection.release() ).thenReturn( completedWithNull() );
         when( connection.serverAddress() ).thenReturn( BoltServerAddress.LOCAL_DEFAULT );
         when( connection.serverVersion() ).thenReturn( ServerVersion.v3_2_0 );
         connectionProvider = mock( ConnectionProvider.class );
@@ -672,7 +673,7 @@ public class NetworkSessionTest
         {
             // verify that tx is not open when connection is released
             assertFalse( tx.isOpen() );
-            return completedFuture( null );
+            return completedWithNull();
         } );
 
         session.reset();

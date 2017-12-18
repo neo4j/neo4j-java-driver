@@ -53,6 +53,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.v1.Values.value;
 import static org.neo4j.driver.v1.Values.values;
 import static org.neo4j.driver.v1.util.TestUtil.await;
@@ -106,7 +107,7 @@ public class InternalStatementResultCursorTest
     public void shouldReturnNextNonExistingRecord()
     {
         PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
-        when( pullAllHandler.nextAsync() ).thenReturn( completedFuture( null ) );
+        when( pullAllHandler.nextAsync() ).thenReturn( completedWithNull() );
 
         InternalStatementResultCursor cursor = newCursor( pullAllHandler );
 
@@ -130,7 +131,7 @@ public class InternalStatementResultCursorTest
     public void shouldPeekNonExistingRecord()
     {
         PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
-        when( pullAllHandler.peekAsync() ).thenReturn( completedFuture( null ) );
+        when( pullAllHandler.peekAsync() ).thenReturn( completedWithNull() );
 
         InternalStatementResultCursor cursor = newCursor( pullAllHandler );
 
@@ -144,7 +145,7 @@ public class InternalStatementResultCursorTest
 
         Record record = new InternalRecord( asList( "key1", "key2" ), values( 42, 42 ) );
         when( pullAllHandler.nextAsync() ).thenReturn( completedFuture( record ) )
-                .thenReturn( completedFuture( null ) );
+                .thenReturn( completedWithNull() );
 
         InternalStatementResultCursor cursor = newCursor( pullAllHandler );
 
@@ -155,7 +156,7 @@ public class InternalStatementResultCursorTest
     public void shouldFailWhenAskedForSingleRecordButResultIsEmpty()
     {
         PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
-        when( pullAllHandler.nextAsync() ).thenReturn( completedFuture( null ) );
+        when( pullAllHandler.nextAsync() ).thenReturn( completedWithNull() );
 
         InternalStatementResultCursor cursor = newCursor( pullAllHandler );
 
@@ -203,7 +204,7 @@ public class InternalStatementResultCursorTest
         Record record3 = new InternalRecord( asList( "key1", "key2", "key3" ), values( 3, 3, 3 ) );
         when( pullAllHandler.nextAsync() ).thenReturn( completedFuture( record1 ) )
                 .thenReturn( completedFuture( record2 ) ).thenReturn( completedFuture( record3 ) )
-                .thenReturn( completedFuture( null ) );
+                .thenReturn( completedWithNull() );
 
         ResultSummary summary = mock( ResultSummary.class );
         when( pullAllHandler.summaryAsync() ).thenReturn( completedFuture( summary ) );
@@ -221,7 +222,7 @@ public class InternalStatementResultCursorTest
 
         Record record = new InternalRecord( asList( "key1", "key2" ), values( 1, 1 ) );
         when( pullAllHandler.nextAsync() ).thenReturn( completedFuture( record ) )
-                .thenReturn( completedFuture( null ) );
+                .thenReturn( completedWithNull() );
 
         ResultSummary summary = mock( ResultSummary.class );
         when( pullAllHandler.summaryAsync() ).thenReturn( completedFuture( summary ) );
@@ -236,7 +237,7 @@ public class InternalStatementResultCursorTest
     public void shouldConsumeAsyncWhenResultContainsNoRecords()
     {
         PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
-        when( pullAllHandler.nextAsync() ).thenReturn( completedFuture( null ) );
+        when( pullAllHandler.nextAsync() ).thenReturn( completedWithNull() );
 
         ResultSummary summary = mock( ResultSummary.class );
         when( pullAllHandler.summaryAsync() ).thenReturn( completedFuture( summary ) );
@@ -257,7 +258,7 @@ public class InternalStatementResultCursorTest
         Record record3 = new InternalRecord( asList( "key1", "key2", "key3" ), values( 3, 3, 3 ) );
         when( pullAllHandler.nextAsync() ).thenReturn( completedFuture( record1 ) )
                 .thenReturn( completedFuture( record2 ) ).thenReturn( completedFuture( record3 ) )
-                .thenReturn( completedFuture( null ) );
+                .thenReturn( completedWithNull() );
 
         ResultSummary summary = mock( ResultSummary.class );
         when( pullAllHandler.summaryAsync() ).thenReturn( completedFuture( summary ) );
@@ -278,7 +279,7 @@ public class InternalStatementResultCursorTest
 
         Record record = new InternalRecord( asList( "key1", "key2", "key3" ), values( 1, 1, 1 ) );
         when( pullAllHandler.nextAsync() ).thenReturn( completedFuture( record ) )
-                .thenReturn( completedFuture( null ) );
+                .thenReturn( completedWithNull() );
 
         ResultSummary summary = mock( ResultSummary.class );
         when( pullAllHandler.summaryAsync() ).thenReturn( completedFuture( summary ) );
@@ -296,7 +297,7 @@ public class InternalStatementResultCursorTest
     public void shouldForEachAsyncWhenResultContainsNoRecords()
     {
         PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
-        when( pullAllHandler.nextAsync() ).thenReturn( completedFuture( null ) );
+        when( pullAllHandler.nextAsync() ).thenReturn( completedWithNull() );
 
         ResultSummary summary = mock( ResultSummary.class );
         when( pullAllHandler.summaryAsync() ).thenReturn( completedFuture( summary ) );
@@ -320,7 +321,7 @@ public class InternalStatementResultCursorTest
         Record record3 = new InternalRecord( asList( "key1", "key2" ), values( 3, 3 ) );
         when( pullAllHandler.nextAsync() ).thenReturn( completedFuture( record1 ) )
                 .thenReturn( completedFuture( record2 ) ).thenReturn( completedFuture( record3 ) )
-                .thenReturn( completedFuture( null ) );
+                .thenReturn( completedWithNull() );
 
         InternalStatementResultCursor cursor = newCursor( pullAllHandler );
 
@@ -363,7 +364,7 @@ public class InternalStatementResultCursorTest
         Record record4 = new InternalRecord( asList( "key1", "key2", "key3" ), values( 4, 4, 4 ) );
         when( pullAllHandler.nextAsync() ).thenReturn( completedFuture( record1 ) )
                 .thenReturn( completedFuture( record2 ) ).thenReturn( completedFuture( record3 ) )
-                .thenReturn( completedFuture( record4 ) ).thenReturn( completedFuture( null ) );
+                .thenReturn( completedFuture( record4 ) ).thenReturn( completedWithNull() );
 
         InternalStatementResultCursor cursor = newCursor( pullAllHandler );
 
@@ -377,7 +378,7 @@ public class InternalStatementResultCursorTest
 
         Record record = new InternalRecord( asList( "key1", "key2", "key3" ), values( 1, 1, 1 ) );
         when( pullAllHandler.nextAsync() ).thenReturn( completedFuture( record ) )
-                .thenReturn( completedFuture( null ) );
+                .thenReturn( completedWithNull() );
 
         InternalStatementResultCursor cursor = newCursor( pullAllHandler );
 
@@ -388,7 +389,7 @@ public class InternalStatementResultCursorTest
     public void shouldListAsyncWhenResultContainsNoRecords()
     {
         PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
-        when( pullAllHandler.nextAsync() ).thenReturn( completedFuture( null ) );
+        when( pullAllHandler.nextAsync() ).thenReturn( completedWithNull() );
 
         InternalStatementResultCursor cursor = newCursor( pullAllHandler );
 
@@ -406,7 +407,7 @@ public class InternalStatementResultCursorTest
         Record record4 = new InternalRecord( asList( "key1", "key2", "key3" ), values( 4, 44, 444 ) );
         when( pullAllHandler.nextAsync() ).thenReturn( completedFuture( record1 ) )
                 .thenReturn( completedFuture( record2 ) ).thenReturn( completedFuture( record3 ) )
-                .thenReturn( completedFuture( record4 ) ).thenReturn( completedFuture( null ) );
+                .thenReturn( completedFuture( record4 ) ).thenReturn( completedWithNull() );
 
         InternalStatementResultCursor cursor = newCursor( pullAllHandler );
 
@@ -421,7 +422,7 @@ public class InternalStatementResultCursorTest
 
         Record singleRecord = new InternalRecord( asList( "key1", "key2", "key3" ), values( 1, 11, 111 ) );
         when( pullAllHandler.nextAsync() ).thenReturn( completedFuture( singleRecord ) )
-                .thenReturn( completedFuture( null ) );
+                .thenReturn( completedWithNull() );
 
         InternalStatementResultCursor cursor = newCursor( pullAllHandler );
 
@@ -433,7 +434,7 @@ public class InternalStatementResultCursorTest
     public void shouldListAsyncWithFunctionWhenResultContainsNoRecords()
     {
         PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
-        when( pullAllHandler.nextAsync() ).thenReturn( completedFuture( null ) );
+        when( pullAllHandler.nextAsync() ).thenReturn( completedWithNull() );
 
         InternalStatementResultCursor cursor = newCursor( pullAllHandler );
 
@@ -451,7 +452,7 @@ public class InternalStatementResultCursorTest
         Record record3 = new InternalRecord( asList( "key1", "key2" ), values( 3, 3 ) );
         when( pullAllHandler.nextAsync() ).thenReturn( completedFuture( record1 ) )
                 .thenReturn( completedFuture( record2 ) ).thenReturn( completedFuture( record3 ) )
-                .thenReturn( completedFuture( null ) );
+                .thenReturn( completedWithNull() );
 
         InternalStatementResultCursor cursor = newCursor( pullAllHandler );
 
@@ -501,7 +502,7 @@ public class InternalStatementResultCursorTest
     public void shouldReturnNullFailureWhenDoesNotExist()
     {
         PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
-        when( pullAllHandler.failureAsync() ).thenReturn( completedFuture( null ) );
+        when( pullAllHandler.failureAsync() ).thenReturn( completedWithNull() );
 
         InternalStatementResultCursor cursor = newCursor( pullAllHandler );
 

@@ -38,6 +38,7 @@ import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
 import static java.lang.String.format;
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 
 public class Rediscovery
 {
@@ -178,7 +179,7 @@ public class Rediscovery
     {
         BoltServerAddress[] addresses = routingTable.routers().toArray();
 
-        CompletableFuture<ClusterComposition> result = completedFuture( null );
+        CompletableFuture<ClusterComposition> result = completedWithNull();
         for ( BoltServerAddress address : addresses )
         {
             result = result.thenCompose( composition ->
@@ -203,7 +204,7 @@ public class Rediscovery
         Set<BoltServerAddress> addresses = hostNameResolver.resolve( initialRouter );
         addresses.removeAll( seenServers );
 
-        CompletableFuture<ClusterComposition> result = completedFuture( null );
+        CompletableFuture<ClusterComposition> result = completedWithNull();
         for ( BoltServerAddress address : addresses )
         {
             result = result.thenCompose( composition ->

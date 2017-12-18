@@ -36,6 +36,7 @@ import org.neo4j.driver.v1.summary.ResultSummary;
 import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 
 public abstract class PullAllResponseHandler implements ResponseHandler
@@ -136,7 +137,7 @@ public abstract class PullAllResponseHandler implements ResponseHandler
 
             if ( finished )
             {
-                return completedFuture( null );
+                return completedWithNull();
             }
 
             if ( recordFuture == null )
@@ -188,7 +189,7 @@ public abstract class PullAllResponseHandler implements ResponseHandler
         }
         else if ( finished )
         {
-            return completedFuture( null );
+            return completedWithNull();
         }
         else
         {

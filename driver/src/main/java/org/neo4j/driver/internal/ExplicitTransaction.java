@@ -47,6 +47,7 @@ import org.neo4j.driver.v1.types.TypeSystem;
 
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.v1.Values.value;
 
@@ -163,7 +164,7 @@ public class ExplicitTransaction implements Transaction
         }
         else
         {
-            return completedFuture( null );
+            return completedWithNull();
         }
     }
 
@@ -172,7 +173,7 @@ public class ExplicitTransaction implements Transaction
     {
         if ( state == State.COMMITTED )
         {
-            return completedFuture( null );
+            return completedWithNull();
         }
         else if ( state == State.ROLLED_BACK )
         {
@@ -200,13 +201,13 @@ public class ExplicitTransaction implements Transaction
         }
         else if ( state == State.ROLLED_BACK )
         {
-            return completedFuture( null );
+            return completedWithNull();
         }
         else if ( state == State.TERMINATED )
         {
             // transaction has been terminated by RESET and should be rolled back by the database
             state = State.ROLLED_BACK;
-            return completedFuture( null );
+            return completedWithNull();
         }
         else
         {
