@@ -29,6 +29,8 @@ import org.neo4j.driver.v1.util.Function;
 
 public class Iterables
 {
+    private static final float DEFAULT_HASH_MAP_LOAD_FACTOR = 0.75F;
+
     public static int count( Iterable<?> it )
     {
         if ( it instanceof Collection ) { return ((Collection) it).size(); }
@@ -68,7 +70,7 @@ public class Iterables
 
     public static Map<String, String> map( String ... alternatingKeyValue )
     {
-        Map<String, String> out = new HashMap<>();
+        Map<String,String> out = newHashMapWithSize( alternatingKeyValue.length / 2 );
         for ( int i = 0; i < alternatingKeyValue.length; i+=2 )
         {
             out.put( alternatingKeyValue[i], alternatingKeyValue[i+1] );
@@ -106,5 +108,23 @@ public class Iterables
                 };
             }
         };
+    }
+
+    public static <K, V> HashMap<K,V> newHashMapWithSize( int expectedSize )
+    {
+        return new HashMap<>( hashMapCapacity( expectedSize ) );
+    }
+
+    private static int hashMapCapacity( int expectedSize )
+    {
+        if ( expectedSize < 3 )
+        {
+            if ( expectedSize < 0 )
+            {
+                throw new IllegalArgumentException( "Illegal map size: " + expectedSize );
+            }
+            return expectedSize + 1;
+        }
+        return (int) ((float) expectedSize / DEFAULT_HASH_MAP_LOAD_FACTOR + 1.0F);
     }
 }
