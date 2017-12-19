@@ -18,7 +18,6 @@
  */
 package org.neo4j.driver.internal;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -118,9 +117,7 @@ public class InternalStatementResultCursor implements StatementResultCursor
     @Override
     public <T> CompletionStage<List<T>> listAsync( Function<Record,T> mapFunction )
     {
-        CompletableFuture<List<T>> resultFuture = new CompletableFuture<>();
-        internalListAsync( new ArrayList<>(), resultFuture, mapFunction );
-        return resultFuture;
+        return pullAllHandler.listAsync( mapFunction );
     }
 
     public CompletionStage<Throwable> failureAsync()
@@ -157,42 +154,6 @@ public class InternalStatementResultCursor implements StatementResultCursor
             else
             {
                 resultFuture.complete( null );
-            }
-        } );
-    }
-
-    private <T> void internalListAsync( List<T> result, CompletableFuture<List<T>> resultFuture,
-            Function<Record,T> mapFunction )
-    {
-        CompletionStage<Record> recordFuture = nextAsync();
-
-        // use async completion listener because of recursion, otherwise it is possible for
-        // the caller thread to get StackOverflowError when result is large and buffered
-        recordFuture.whenCompleteAsync( ( record, completionError ) ->
-        {
-            Throwable error = Futures.completionExceptionCause( completionError );
-            if ( error != null )
-            {
-                resultFuture.completeExceptionally( error );
-            }
-            else if ( record != null )
-            {
-                T value;
-                try
-                {
-                    value = mapFunction.apply( record );
-                }
-                catch ( Throwable mapError )
-                {
-                    resultFuture.completeExceptionally( mapError );
-                    return;
-                }
-                result.add( value );
-                internalListAsync( result, resultFuture, mapFunction );
-            }
-            else
-            {
-                resultFuture.complete( result );
             }
         } );
     }

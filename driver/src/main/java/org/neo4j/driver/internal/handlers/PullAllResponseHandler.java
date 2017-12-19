@@ -19,6 +19,8 @@
 package org.neo4j.driver.internal.handlers;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
@@ -33,6 +35,7 @@ import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.summary.ResultSummary;
+import org.neo4j.driver.v1.util.Function;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
@@ -158,6 +161,18 @@ public abstract class PullAllResponseHandler implements ResponseHandler
         } );
     }
 
+    public synchronized <T> CompletionStage<List<T>> listAsync( Function<Record,T> mapFunction )
+    {
+        return failureAsync().thenApply( error ->
+        {
+            if ( error != null )
+            {
+                throw Futures.asCompletionException( error );
+            }
+            return recordsAsList( mapFunction );
+        } );
+    }
+
     public synchronized CompletionStage<Throwable> failureAsync()
     {
         if ( failure != null )
@@ -211,6 +226,22 @@ public abstract class PullAllResponseHandler implements ResponseHandler
         }
 
         return record;
+    }
+
+    private <T> List<T> recordsAsList( Function<Record,T> mapFunction )
+    {
+        if ( !finished )
+        {
+            throw new IllegalStateException( "Can't get records as list because SUCCESS or FAILURE did not arrive" );
+        }
+
+        List<T> result = new ArrayList<>( records.size() );
+        while ( !records.isEmpty() )
+        {
+            Record record = records.poll();
+            result.add( mapFunction.apply( record ) );
+        }
+        return result;
     }
 
     private Throwable extractFailure()
