@@ -37,6 +37,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.driver.internal.async.EventLoopGroupFactory;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.Record;
@@ -1045,47 +1046,50 @@ public class SessionAsyncIT
     @Test
     public void shouldFailToExecuteBlockingRunInAsyncTransactionFunction()
     {
-        TransactionWork<CompletionStage<List<Record>>> completionStageTransactionWork = tx ->
+        TransactionWork<CompletionStage<Void>> completionStageTransactionWork = tx ->
         {
-            StatementResult result = tx.run( "UNWIND range(1, 10000) AS x CREATE (n:AsyncNode {x: x}) RETURN n" );
-            List<Record> records = new ArrayList<>();
-            while ( result.hasNext() )
+            if ( EventLoopGroupFactory.isEventLoopThread( Thread.currentThread() ) )
             {
-                records.add( result.next() );
+                try
+                {
+                    tx.run( "UNWIND range(1, 10000) AS x CREATE (n:AsyncNode {x: x}) RETURN n" );
+                    fail( "Exception expected" );
+                }
+                catch ( IllegalStateException e )
+                {
+                    assertThat( e, is( blockingOperationInEventLoopError() ) );
+                }
             }
-
-            return completedFuture( records );
+            return completedFuture( null );
         };
 
-        CompletionStage<List<Record>> result = session.readTransactionAsync( completionStageTransactionWork );
-
-        try
-        {
-            await( result );
-            fail( "Exception expected" );
-        }
-        catch ( IllegalStateException e )
-        {
-            assertThat( e, is( blockingOperationInEventLoopError() ) );
-        }
+        CompletionStage<Void> result = session.readTransactionAsync( completionStageTransactionWork );
+        assertNull( await( result ) );
     }
 
     @Test
     public void shouldFailToExecuteBlockingRunChainedWithAsyncRun()
     {
-        CompletionStage<StatementResult> result = session.runAsync( "RETURN 1" )
+        CompletionStage<Void> result = session.runAsync( "RETURN 1" )
                 .thenCompose( StatementResultCursor::singleAsync )
-                .thenApply( record -> session.run( "RETURN $x", parameters( "x", record.get( 0 ).asInt() ) ) );
+                .thenApply( record ->
+                {
+                    if ( EventLoopGroupFactory.isEventLoopThread( Thread.currentThread() ) )
+                    {
+                        try
+                        {
+                            session.run( "RETURN $x", parameters( "x", record.get( 0 ).asInt() ) );
+                            fail( "Exception expected" );
+                        }
+                        catch ( IllegalStateException e )
+                        {
+                            assertThat( e, is( blockingOperationInEventLoopError() ) );
+                        }
+                    }
+                    return null;
+                } );
 
-        try
-        {
-            await( result );
-            fail( "Exception expected" );
-        }
-        catch ( IllegalStateException e )
-        {
-            assertThat( e, is( blockingOperationInEventLoopError() ) );
-        }
+        assertNull( await( result ) );
     }
 
     @Test
@@ -1151,6 +1155,16 @@ public class SessionAsyncIT
             Record record = records.get( i - 1 );
             assertEquals( i, record.get( 0 ).asInt() );
         }
+    }
+
+    @Test
+    public void shouldAllowReturningNullFromAsyncTransactionFunction()
+    {
+        CompletionStage<Object> readResult = session.readTransactionAsync( tx -> null );
+        assertNull( await( readResult ) );
+
+        CompletionStage<Object> writeResult = session.writeTransactionAsync( tx -> null );
+        assertNull( await( writeResult ) );
     }
 
     private Future<List<CompletionStage<Record>>> runNestedQueries( StatementResultCursor inputCursor )

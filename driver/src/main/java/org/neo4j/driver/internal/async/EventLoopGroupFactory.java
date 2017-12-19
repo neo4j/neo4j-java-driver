@@ -88,12 +88,23 @@ public final class EventLoopGroupFactory
      */
     public static void assertNotInEventLoopThread() throws IllegalStateException
     {
-        if ( Thread.currentThread() instanceof DriverThread )
+        if ( isEventLoopThread( Thread.currentThread() ) )
         {
             throw new IllegalStateException(
                     "Blocking operation can't be executed in IO thread because it might result in a deadlock. " +
                     "Please do not use blocking API when chaining futures returned by async API methods." );
         }
+    }
+
+    /**
+     * Check if given thread is an event loop IO thread.
+     *
+     * @param thread the thread to check.
+     * @return {@code true} when given thread belongs to the event loop, {@code false} otherwise.
+     */
+    public static boolean isEventLoopThread( Thread thread )
+    {
+        return thread instanceof DriverThread;
     }
 
     /**

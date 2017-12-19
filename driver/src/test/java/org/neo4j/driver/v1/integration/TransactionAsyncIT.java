@@ -36,6 +36,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.driver.internal.ExplicitTransaction;
+import org.neo4j.driver.internal.async.EventLoopGroupFactory;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
@@ -1239,23 +1240,25 @@ public class TransactionAsyncIT
     @Test
     public void shouldFailToExecuteBlockingRunChainedWithAsyncTransaction()
     {
-        assumeDatabaseSupportsBookmarks();
+        CompletionStage<Void> result = session.beginTransactionAsync()
+                .thenApply( tx ->
+                {
+                    if ( EventLoopGroupFactory.isEventLoopThread( Thread.currentThread() ) )
+                    {
+                        try
+                        {
+                            tx.run( "CREATE ()" );
+                            fail( "Exception expected" );
+                        }
+                        catch ( IllegalStateException e )
+                        {
+                            assertThat( e, is( blockingOperationInEventLoopError() ) );
+                        }
+                    }
+                    return null;
+                } );
 
-        session.writeTransaction( tx -> tx.run( "CREATE ()" ) );
-        assertNotNull( session.lastBookmark() );
-
-        CompletionStage<StatementResult> result = session.beginTransactionAsync()
-                .thenApply( tx -> tx.run( "CREATE ()" ) );
-
-        try
-        {
-            await( result );
-            fail( "Exception expected" );
-        }
-        catch ( IllegalStateException e )
-        {
-            assertThat( e, is( blockingOperationInEventLoopError() ) );
-        }
+        assertNull( await( result ) );
     }
 
     @Test

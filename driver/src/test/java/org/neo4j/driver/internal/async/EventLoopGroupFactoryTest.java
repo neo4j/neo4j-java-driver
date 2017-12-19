@@ -31,7 +31,9 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.driver.internal.util.Iterables.count;
 import static org.neo4j.driver.internal.util.Matchers.blockingOperationInEventLoopError;
@@ -77,7 +79,7 @@ public class EventLoopGroupFactoryTest
         EventLoopGroupFactory.assertNotInEventLoopThread();
 
         // submit assertion to the event loop thread, it should fail there
-        Future<?> assertFuture = eventLoopGroup.next().submit( EventLoopGroupFactory::assertNotInEventLoopThread );
+        Future<?> assertFuture = eventLoopGroup.submit( EventLoopGroupFactory::assertNotInEventLoopThread );
         try
         {
             assertFuture.get( 30, SECONDS );
@@ -87,6 +89,17 @@ public class EventLoopGroupFactoryTest
         {
             assertThat( e.getCause(), is( blockingOperationInEventLoopError() ) );
         }
+    }
+
+    @Test
+    public void shouldCheckIfEventLoopThread() throws Exception
+    {
+        eventLoopGroup = EventLoopGroupFactory.newEventLoopGroup( 1 );
+
+        Thread eventLoopThread = getThread( eventLoopGroup );
+        assertTrue( EventLoopGroupFactory.isEventLoopThread( eventLoopThread ) );
+
+        assertFalse( EventLoopGroupFactory.isEventLoopThread( Thread.currentThread() ) );
     }
 
     /**
@@ -114,7 +127,7 @@ public class EventLoopGroupFactoryTest
 
     private static Thread getThread( EventLoopGroup eventLoopGroup ) throws Exception
     {
-        return eventLoopGroup.next().submit( Thread::currentThread ).get( 10, SECONDS );
+        return eventLoopGroup.submit( Thread::currentThread ).get( 10, SECONDS );
     }
 
     private static void shutdown( EventLoopGroup group )

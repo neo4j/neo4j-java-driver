@@ -360,7 +360,10 @@ public class NetworkSession implements Session
         // sync failure will result in an exception being thrown
         try
         {
-            return work.execute( tx );
+            CompletionStage<T> result = work.execute( tx );
+
+            // protect from given transaction function returning null
+            return result == null ? completedFuture( null ) : result;
         }
         catch ( Throwable workError )
         {
