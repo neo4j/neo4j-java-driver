@@ -44,6 +44,8 @@ import org.neo4j.driver.v1.types.Relationship;
 import org.neo4j.driver.v1.types.TypeSystem;
 import org.neo4j.driver.v1.util.Function;
 
+import static org.neo4j.driver.internal.util.Iterables.newHashMapWithSize;
+
 /**
  * Utility for wrapping regular Java types and exposing them as {@link Value}
  * objects, and vice versa.
@@ -247,7 +249,7 @@ public abstract class Values
 
     public static Value value( final Map<String,Object> val )
     {
-        Map<String,Value> asValues = new HashMap<>( val.size() );
+        Map<String,Value> asValues = newHashMapWithSize( val.size() );
         for ( Map.Entry<String,Object> entry : val.entrySet() )
         {
             asValues.put( entry.getKey(), value( entry.getValue() ) );
@@ -284,7 +286,7 @@ public abstract class Values
                                        "alternating key and value. Arguments were: " +
                                        Arrays.toString( keysAndValues ) + "." );
         }
-        HashMap<String,Value> map = new HashMap<>( keysAndValues.length / 2 );
+        HashMap<String,Value> map = newHashMapWithSize( keysAndValues.length / 2 );
         for ( int i = 0; i < keysAndValues.length; i += 2 )
         {
             Object value = keysAndValues[i + 1];

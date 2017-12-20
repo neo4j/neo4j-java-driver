@@ -18,15 +18,15 @@
  */
 package org.neo4j.driver.v1;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.util.Immutable;
 
 import static java.lang.String.format;
-import static org.neo4j.driver.v1.Values.value;
+import static org.neo4j.driver.internal.util.Iterables.newHashMapWithSize;
 import static org.neo4j.driver.v1.Values.ofValue;
+import static org.neo4j.driver.v1.Values.value;
 
 /**
  * An executable statement, i.e. the statements' text and its parameters.
@@ -136,7 +136,7 @@ public class Statement
         }
         else
         {
-            Map<String, Value> newParameters = new HashMap<>( Math.max( parameters.size(), updates.size() ) );
+            Map<String,Value> newParameters = newHashMapWithSize( Math.max( parameters.size(), updates.size() ) );
             newParameters.putAll( parameters.asMap( ofValue() ) );
             for ( Map.Entry<String, Value> entry : updates.asMap( ofValue() ).entrySet() )
             {

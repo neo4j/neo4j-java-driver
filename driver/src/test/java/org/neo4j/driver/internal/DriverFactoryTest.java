@@ -56,6 +56,7 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.v1.AccessMode.READ;
 import static org.neo4j.driver.v1.Config.defaultConfig;
@@ -143,8 +144,8 @@ public class DriverFactoryTest
     public void shouldVerifyConnectivity()
     {
         SessionFactory sessionFactory = mock( SessionFactory.class );
-        when( sessionFactory.verifyConnectivity() ).thenReturn( completedFuture( null ) );
-        when( sessionFactory.close() ).thenReturn( completedFuture( null ) );
+        when( sessionFactory.verifyConnectivity() ).thenReturn( completedWithNull() );
+        when( sessionFactory.close() ).thenReturn( completedWithNull() );
         DriverFactoryWithSessions driverFactory = new DriverFactoryWithSessions( sessionFactory );
 
         try ( Driver driver = createDriver( driverFactory ) )
@@ -160,7 +161,7 @@ public class DriverFactoryTest
         SessionFactory sessionFactory = mock( SessionFactory.class );
         ServiceUnavailableException error = new ServiceUnavailableException( "Hello" );
         when( sessionFactory.verifyConnectivity() ).thenReturn( failedFuture( error ) );
-        when( sessionFactory.close() ).thenReturn( completedFuture( null ) );
+        when( sessionFactory.close() ).thenReturn( completedWithNull() );
         DriverFactoryWithSessions driverFactory = new DriverFactoryWithSessions( sessionFactory );
 
         try
@@ -191,7 +192,7 @@ public class DriverFactoryTest
         ConnectionPool pool = mock( ConnectionPool.class );
         Connection connection = mock( Connection.class );
         when( pool.acquire( any( BoltServerAddress.class ) ) ).thenReturn( completedFuture( connection ) );
-        when( pool.close() ).thenReturn( completedFuture( null ) );
+        when( pool.close() ).thenReturn( completedWithNull() );
         return pool;
     }
 
@@ -234,7 +235,7 @@ public class DriverFactoryTest
         protected InternalDriver createDriver( SessionFactory sessionFactory, SecurityPlan securityPlan, Config config )
         {
             InternalDriver driver = mock( InternalDriver.class );
-            when( driver.verifyConnectivity() ).thenReturn( completedFuture( null ) );
+            when( driver.verifyConnectivity() ).thenReturn( completedWithNull() );
             return driver;
         }
 

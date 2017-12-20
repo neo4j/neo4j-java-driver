@@ -46,7 +46,7 @@ import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.types.TypeSystem;
 
-import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.v1.Values.value;
 
@@ -60,9 +60,9 @@ public class NetworkSession implements Session
     protected final Logger logger;
 
     private volatile Bookmark bookmark = Bookmark.empty();
-    private volatile CompletionStage<ExplicitTransaction> transactionStage = completedFuture( null );
-    private volatile CompletionStage<Connection> connectionStage = completedFuture( null );
-    private volatile CompletionStage<InternalStatementResultCursor> resultCursorStage = completedFuture( null );
+    private volatile CompletionStage<ExplicitTransaction> transactionStage = completedWithNull();
+    private volatile CompletionStage<Connection> connectionStage = completedWithNull();
+    private volatile CompletionStage<InternalStatementResultCursor> resultCursorStage = completedWithNull();
 
     private final AtomicBoolean open = new AtomicBoolean( true );
 
@@ -168,7 +168,7 @@ public class NetworkSession implements Session
             {
                 if ( cursor == null )
                 {
-                    return completedFuture( null );
+                    return completedWithNull();
                 }
                 return cursor.failureAsync();
             } ).thenCompose( error -> releaseResources().thenApply( ignore ->
@@ -186,7 +186,7 @@ public class NetworkSession implements Session
                 }
             } ) );
         }
-        return completedFuture( null );
+        return completedWithNull();
     }
 
     @Override
@@ -274,10 +274,6 @@ public class NetworkSession implements Session
 
     CompletionStage<Boolean> currentConnectionIsOpen()
     {
-        if ( connectionStage == null )
-        {
-            return completedFuture( false );
-        }
         return connectionStage.handle( ( connection, error ) ->
                 error == null && // no acquisition error
                 connection != null && // some connection has actually been acquired
@@ -363,7 +359,7 @@ public class NetworkSession implements Session
             CompletionStage<T> result = work.execute( tx );
 
             // protect from given transaction function returning null
-            return result == null ? completedFuture( null ) : result;
+            return result == null ? completedWithNull() : result;
         }
         catch ( Throwable workError )
         {
@@ -459,7 +455,7 @@ public class NetworkSession implements Session
         {
             if ( cursor == null )
             {
-                return completedFuture( null );
+                return completedWithNull();
             }
             // make sure previous result is fully consumed and connection is released back to the pool
             return cursor.failureAsync();
@@ -508,7 +504,7 @@ public class NetworkSession implements Session
             {
                 return tx.rollbackAsync();
             }
-            return completedFuture( null );
+            return completedWithNull();
         } ).exceptionally( error ->
         {
             Throwable cause = Futures.completionExceptionCause( error );
@@ -519,13 +515,13 @@ public class NetworkSession implements Session
 
     private CompletionStage<Void> releaseConnection()
     {
-        return existingConnectionOrNull().thenCompose( connection ->
+        return connectionStage.thenCompose( connection ->
         {
             if ( connection != null )
             {
                 return connection.release();
             }
-            return completedFuture( null );
+            return completedWithNull();
         } );
     }
 
@@ -574,13 +570,8 @@ public class NetworkSession implements Session
     private CompletionStage<ExplicitTransaction> existingTransactionOrNull()
     {
         return transactionStage
-                .exceptionally( error -> null ) // handle previous acquisition failures
+                .exceptionally( error -> null ) // handle previous connection acquisition and tx begin failures
                 .thenApply( tx -> tx != null && tx.isOpen() ? tx : null );
-    }
-
-    private CompletionStage<Connection> existingConnectionOrNull()
-    {
-        return connectionStage.exceptionally( error -> null ); // handle previous acquisition failures
     }
 
     private void ensureSessionIsOpen()

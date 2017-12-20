@@ -26,6 +26,7 @@ import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.internal.InternalStatementResultCursor;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 
 public class ResultCursorsHolder
 {
@@ -41,14 +42,14 @@ public class ResultCursorsHolder
     {
         return cursorStages.stream()
                 .map( this::retrieveFailure )
-                .reduce( completedFuture( null ), this::nonNullFailureFromEither );
+                .reduce( completedWithNull(), this::nonNullFailureFromEither );
     }
 
     private CompletionStage<Throwable> retrieveFailure( CompletionStage<InternalStatementResultCursor> cursorStage )
     {
         return cursorStage
                 .exceptionally( cursor -> null )
-                .thenCompose( cursor -> cursor == null ? completedFuture( null ) : cursor.failureAsync() );
+                .thenCompose( cursor -> cursor == null ? completedWithNull() : cursor.failureAsync() );
     }
 
     private CompletionStage<Throwable> nonNullFailureFromEither( CompletionStage<Throwable> stage1,

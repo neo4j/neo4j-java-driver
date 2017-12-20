@@ -45,6 +45,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.cluster.RoutingProcedureRunner.GET_ROUTING_TABLE;
 import static org.neo4j.driver.internal.cluster.RoutingProcedureRunner.GET_ROUTING_TABLE_PARAM;
 import static org.neo4j.driver.internal.cluster.RoutingProcedureRunner.GET_SERVERS;
+import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.internal.util.ServerVersion.version;
 import static org.neo4j.driver.v1.Values.parameters;
@@ -183,7 +184,7 @@ public class RoutingProcedureRunnerTest
 
     private static CompletionStage<Connection> connectionStage( String serverVersion )
     {
-        return connectionStage( serverVersion, completedFuture( null ) );
+        return connectionStage( serverVersion, completedWithNull() );
     }
 
     private static CompletionStage<Connection> connectionStage( String serverVersion,

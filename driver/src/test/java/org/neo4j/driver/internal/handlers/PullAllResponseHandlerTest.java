@@ -27,18 +27,22 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
+import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.summary.StatementType;
+import org.neo4j.driver.v1.util.Functions;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
+import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -817,6 +821,126 @@ public class PullAllResponseHandlerTest
 
         assertTrue( summaryFuture.isDone() );
         assertNotNull( summaryFuture.get() );
+    }
+
+    @Test
+    public void shouldPropagateFailureFromListAsync()
+    {
+        PullAllResponseHandler handler = newHandler();
+        RuntimeException error = new RuntimeException( "Hi!" );
+        handler.onFailure( error );
+
+        try
+        {
+            await( handler.listAsync( Functions.identity() ) );
+            fail( "Exception expected" );
+        }
+        catch ( RuntimeException e )
+        {
+            assertEquals( error, e );
+        }
+    }
+
+    @Test
+    public void shouldPropagateFailureAfterRecordFromListAsync()
+    {
+        PullAllResponseHandler handler = newHandler( asList( "key1", "key2" ) );
+
+        handler.onRecord( values( "a", "b" ) );
+
+        RuntimeException error = new RuntimeException( "Hi!" );
+        handler.onFailure( error );
+
+        try
+        {
+            await( handler.listAsync( Functions.identity() ) );
+            fail( "Exception expected" );
+        }
+        catch ( RuntimeException e )
+        {
+            assertEquals( error, e );
+        }
+    }
+
+    @Test
+    public void shouldFailListAsyncWhenTransformationFunctionThrows()
+    {
+        PullAllResponseHandler handler = newHandler( asList( "key1", "key2" ) );
+        handler.onRecord( values( 1, 2 ) );
+        handler.onRecord( values( 3, 4 ) );
+        handler.onSuccess( emptyMap() );
+
+        RuntimeException error = new RuntimeException( "Hi!" );
+
+        CompletionStage<List<Integer>> stage = handler.listAsync( record ->
+        {
+            if ( record.get( 1 ).asInt() == 4 )
+            {
+                throw error;
+            }
+            return 42;
+        } );
+
+        try
+        {
+            await( stage );
+            fail( "Exception expected" );
+        }
+        catch ( RuntimeException e )
+        {
+            assertEquals( error, e );
+        }
+    }
+
+    @Test
+    public void shouldReturnEmptyListInListAsync()
+    {
+        PullAllResponseHandler handler = newHandler();
+
+        handler.onSuccess( emptyMap() );
+
+        assertEquals( emptyList(), await( handler.listAsync( Functions.identity() ) ) );
+    }
+
+    @Test
+    public void shouldReturnTransformedListInListAsync()
+    {
+        PullAllResponseHandler handler = newHandler( singletonList( "key1" ) );
+
+        handler.onRecord( values( 1 ) );
+        handler.onRecord( values( 2 ) );
+        handler.onRecord( values( 3 ) );
+        handler.onRecord( values( 4 ) );
+        handler.onSuccess( emptyMap() );
+
+        List<Integer> transformedList = await( handler.listAsync( record -> record.get( 0 ).asInt() * 2 ) );
+
+        assertEquals( asList( 2, 4, 6, 8 ), transformedList );
+    }
+
+    @Test
+    public void shouldReturnNotTransformedListInListAsync()
+    {
+        List<String> keys = asList( "key1", "key2" );
+        PullAllResponseHandler handler = newHandler( keys );
+
+        Value[] fields1 = values( "a", "b" );
+        Value[] fields2 = values( "c", "d" );
+        Value[] fields3 = values( "e", "f" );
+
+        handler.onRecord( fields1 );
+        handler.onRecord( fields2 );
+        handler.onRecord( fields3 );
+        handler.onSuccess( emptyMap() );
+
+        List<Record> list = await( handler.listAsync( Functions.identity() ) );
+
+        List<InternalRecord> expectedRecords = asList(
+                new InternalRecord( keys, fields1 ),
+                new InternalRecord( keys, fields2 ),
+                new InternalRecord( keys, fields3 ) );
+
+        assertEquals( expectedRecords, list );
     }
 
     private static PullAllResponseHandler newHandler()

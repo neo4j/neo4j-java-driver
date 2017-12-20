@@ -29,7 +29,7 @@ import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Session;
 
-import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 
 public class InternalDriver implements Driver
 {
@@ -116,7 +116,7 @@ public class InternalDriver implements Driver
             log.info( "Closing driver instance %s", this );
             return sessionFactory.close();
         }
-        return completedFuture( null );
+        return completedWithNull();
     }
 
     public CompletionStage<Void> verifyConnectivity()

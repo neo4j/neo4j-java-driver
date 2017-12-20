@@ -21,7 +21,7 @@ package org.neo4j.driver.internal.messaging;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -72,8 +72,6 @@ public class PackStreamMessageFormatV1 implements MessageFormat
     public static final int VERSION = 1;
 
     public static final int NODE_FIELDS = 3;
-
-    private static final Map<String,Value> EMPTY_STRING_VALUE_MAP = new HashMap<>( 0 );
 
     @Override
     public MessageFormat.Writer newWriter( PackOutput output, boolean byteArraySupportEnabled )
@@ -543,7 +541,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                 labels.add( unpacker.unpackString() );
             }
             int numProps = (int) unpacker.unpackMapHeader();
-            Map<String,Value> props = new HashMap<>();
+            Map<String,Value> props = Iterables.newHashMapWithSize( numProps );
             for ( int j = 0; j < numProps; j++ )
             {
                 String key = unpacker.unpackString();
@@ -636,9 +634,9 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             int size = (int) unpacker.unpackMapHeader();
             if ( size == 0 )
             {
-                return EMPTY_STRING_VALUE_MAP;
+                return Collections.emptyMap();
             }
-            Map<String,Value> map = new HashMap<>( size );
+            Map<String,Value> map = Iterables.newHashMapWithSize( size );
             for ( int i = 0; i < size; i++ )
             {
                 String key = unpacker.unpackString();

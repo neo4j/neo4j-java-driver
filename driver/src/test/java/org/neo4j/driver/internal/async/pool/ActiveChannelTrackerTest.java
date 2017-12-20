@@ -26,12 +26,10 @@ import org.neo4j.driver.internal.BoltServerAddress;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setServerAddress;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
-import static org.neo4j.driver.v1.util.TestUtil.await;
 
 public class ActiveChannelTrackerTest
 {
@@ -104,35 +102,6 @@ public class ActiveChannelTrackerTest
     public void shouldReturnZeroActiveCountForUnknownAddress()
     {
         assertEquals( 0, tracker.activeChannelCount( address ) );
-    }
-
-    @Test
-    public void shouldPruneForMissingAddress()
-    {
-        assertEquals( 0, tracker.activeChannelCount( address ) );
-        tracker.purge( address );
-        assertEquals( 0, tracker.activeChannelCount( address ) );
-    }
-
-    @Test
-    public void shouldPruneForExistingAddress()
-    {
-        Channel channel1 = newChannel();
-        Channel channel2 = newChannel();
-        Channel channel3 = newChannel();
-
-        tracker.channelAcquired( channel1 );
-        tracker.channelAcquired( channel2 );
-        tracker.channelAcquired( channel3 );
-
-        assertEquals( 3, tracker.activeChannelCount( address ) );
-
-        tracker.purge( address );
-
-        assertEquals( 0, tracker.activeChannelCount( address ) );
-        assertNull( await( channel1.closeFuture() ) );
-        assertNull( await( channel2.closeFuture() ) );
-        assertNull( await( channel3.closeFuture() ) );
     }
 
     private Channel newChannel()

@@ -25,6 +25,7 @@ import java.net.URI;
 import java.net.UnknownHostException;
 
 import static java.lang.String.format;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Holds a host and port pair that denotes a Bolt server address.
@@ -49,23 +50,23 @@ public class BoltServerAddress
 
     public BoltServerAddress( String host, int port )
     {
-        this.host = host;
+        this.host = requireNonNull( host );
         this.port = port;
     }
 
     @Override
-    public boolean equals( Object obj )
+    public boolean equals( Object o )
     {
-        if ( this == obj )
+        if ( this == o )
         {
             return true;
         }
-        if ( !(obj instanceof BoltServerAddress) )
+        if ( o == null || getClass() != o.getClass() )
         {
             return false;
         }
-        BoltServerAddress address = (BoltServerAddress) obj;
-        return host.equals( address.host ) && port == address.port;
+        BoltServerAddress that = (BoltServerAddress) o;
+        return port == that.port && host.equals( that.host );
     }
 
     @Override

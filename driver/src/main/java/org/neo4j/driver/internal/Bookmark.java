@@ -19,7 +19,6 @@
 package org.neo4j.driver.internal;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
@@ -28,6 +27,7 @@ import org.neo4j.driver.v1.Value;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singleton;
+import static org.neo4j.driver.internal.util.Iterables.newHashMapWithSize;
 import static org.neo4j.driver.v1.Values.value;
 
 public final class Bookmark
@@ -93,7 +93,7 @@ public final class Bookmark
         // {bookmarks: ["one", "two", "max"]} for backwards compatibility reasons. Old servers can only accept single
         // bookmark that is why driver has to parse and compare given list of bookmarks. This functionality will
         // eventually be removed.
-        Map<String,Value> parameters = new HashMap<>( 4 );
+        Map<String,Value> parameters = newHashMapWithSize( 2 );
         parameters.put( BOOKMARK_KEY, value( maxValue ) );
         parameters.put( BOOKMARKS_KEY, value( values ) );
         return parameters;
