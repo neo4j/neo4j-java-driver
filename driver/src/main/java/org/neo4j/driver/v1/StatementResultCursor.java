@@ -37,7 +37,6 @@ import org.neo4j.driver.v1.util.Function;
  * Results are valid until the next statement is run or until the end of the current transaction,
  * whichever comes first. To keep a result around while further statements are run, or to use a result outside the scope
  * of the current transaction, see {@link #listAsync()}.
- * <p>
  * <h2>Important note on semantics</h2>
  * <p>
  * In order to handle very large results, and to minimize memory overhead and maximize
