@@ -307,8 +307,8 @@ public abstract class AbstractStressTestBase<C extends AbstractContext>
     {
         System.out.println( "Initially open file descriptors: " + previousOpenFileDescriptors );
 
-        // number of open file descriptors should not go up for more than 30%
-        long maxOpenFileDescriptors = (long) (previousOpenFileDescriptors * 1.3);
+        // number of open file descriptors should not go up for more than 50%
+        long maxOpenFileDescriptors = (long) (previousOpenFileDescriptors * 1.5);
         long currentOpenFileDescriptorCount = getOpenFileDescriptorCount();
         System.out.println( "Currently open file descriptors: " + currentOpenFileDescriptorCount );
 
