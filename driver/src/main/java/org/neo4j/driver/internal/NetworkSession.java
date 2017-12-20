@@ -46,7 +46,6 @@ import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.types.TypeSystem;
 
-import static org.neo4j.driver.internal.util.Futures.completedWithFalse;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.v1.Values.value;
@@ -275,10 +274,6 @@ public class NetworkSession implements Session
 
     CompletionStage<Boolean> currentConnectionIsOpen()
     {
-        if ( connectionStage == null )
-        {
-            return completedWithFalse();
-        }
         return connectionStage.handle( ( connection, error ) ->
                 error == null && // no acquisition error
                 connection != null && // some connection has actually been acquired

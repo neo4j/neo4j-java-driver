@@ -35,7 +35,6 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 public final class Futures
 {
     private static final CompletableFuture<?> COMPLETED_WITH_NULL = completedFuture( null );
-    private static final CompletableFuture<Boolean> COMPLETED_WITH_FALSE = completedFuture( false );
 
     private Futures()
     {
@@ -45,11 +44,6 @@ public final class Futures
     public static <T> CompletableFuture<T> completedWithNull()
     {
         return (CompletableFuture) COMPLETED_WITH_NULL;
-    }
-
-    public static CompletableFuture<Boolean> completedWithFalse()
-    {
-        return COMPLETED_WITH_FALSE;
     }
 
     public static <T> CompletionStage<T> asCompletionStage( io.netty.util.concurrent.Future<T> future )
