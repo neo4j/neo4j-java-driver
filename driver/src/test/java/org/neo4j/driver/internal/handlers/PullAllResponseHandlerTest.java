@@ -893,12 +893,25 @@ public class PullAllResponseHandlerTest
     }
 
     @Test
-    public void shouldReturnEmptyListInListAsync()
+    public void shouldReturnEmptyListInListAsyncAfterSuccess()
     {
         PullAllResponseHandler handler = newHandler();
 
         handler.onSuccess( emptyMap() );
 
+        assertEquals( emptyList(), await( handler.listAsync( Functions.identity() ) ) );
+    }
+
+    @Test
+    public void shouldReturnEmptyListInListAsyncAfterFailure()
+    {
+        PullAllResponseHandler handler = newHandler();
+
+        RuntimeException error = new RuntimeException( "Hi" );
+        handler.onFailure( error );
+
+        // consume the error
+        assertEquals( error, await( handler.failureAsync() ) );
         assertEquals( emptyList(), await( handler.listAsync( Functions.identity() ) ) );
     }
 

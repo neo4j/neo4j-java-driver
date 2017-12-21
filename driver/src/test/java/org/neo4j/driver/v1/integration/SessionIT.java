@@ -28,6 +28,7 @@ import org.junit.rules.Timeout;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -68,6 +69,7 @@ import org.neo4j.driver.v1.util.TestNeo4j;
 import org.neo4j.driver.v1.util.TestUtil;
 
 import static java.lang.String.format;
+import static java.util.Collections.emptyList;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -1536,6 +1538,46 @@ public class SessionIT
         {
             assertNull( session.readTransaction( tx -> null ) );
             assertNull( session.writeTransaction( tx -> null ) );
+        }
+    }
+
+    @Test
+    public void shouldAllowIteratingOverEmptyResult()
+    {
+        try ( Session session = neo4j.driver().session() )
+        {
+            StatementResult result = session.run( "UNWIND [] AS x RETURN x" );
+            assertFalse( result.hasNext() );
+            try
+            {
+                result.next();
+                fail( "Exception expected" );
+            }
+            catch ( NoSuchElementException ignore )
+            {
+            }
+        }
+    }
+
+    @Test
+    public void shouldAllowConsumingEmptyResult()
+    {
+        try ( Session session = neo4j.driver().session() )
+        {
+            StatementResult result = session.run( "UNWIND [] AS x RETURN x" );
+            ResultSummary summary = result.consume();
+            assertNotNull( summary );
+            assertEquals( StatementType.READ_ONLY, summary.statementType() );
+        }
+    }
+
+    @Test
+    public void shouldAllowListEmptyResult()
+    {
+        try ( Session session = neo4j.driver().session() )
+        {
+            StatementResult result = session.run( "UNWIND [] AS x RETURN x" );
+            assertEquals( emptyList(), result.list() );
         }
     }
 

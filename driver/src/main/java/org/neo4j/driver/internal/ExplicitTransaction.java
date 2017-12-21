@@ -289,8 +289,7 @@ public class ExplicitTransaction implements Transaction
     {
         ensureCanRunQueries();
         CompletionStage<InternalStatementResultCursor> cursorStage =
-                QueryRunner.runInTransaction( connection, statement,
-                        this, waitForRunResponse );
+                QueryRunner.runInTransaction( connection, statement, this, waitForRunResponse );
         resultCursors.add( cursorStage );
         return cursorStage;
     }

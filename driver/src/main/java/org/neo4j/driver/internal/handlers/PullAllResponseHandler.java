@@ -30,6 +30,7 @@ import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.Futures;
+import org.neo4j.driver.internal.util.Iterables;
 import org.neo4j.driver.internal.util.MetadataUtil;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
@@ -45,6 +46,8 @@ import static org.neo4j.driver.internal.util.Futures.failedFuture;
 
 public abstract class PullAllResponseHandler implements ResponseHandler
 {
+    private static final Queue<Record> UNINITIALIZED_RECORDS = Iterables.emptyQueue();
+
     static final int RECORD_BUFFER_LOW_WATERMARK = Integer.getInteger( "recordBufferLowWatermark", 300 );
     static final int RECORD_BUFFER_HIGH_WATERMARK = Integer.getInteger( "recordBufferHighWatermark", 1000 );
 
@@ -52,7 +55,8 @@ public abstract class PullAllResponseHandler implements ResponseHandler
     private final RunResponseHandler runResponseHandler;
     protected final Connection connection;
 
-    private final Queue<Record> records = new ArrayDeque<>();
+    // initialized lazily when first record arrives
+    private Queue<Record> records = UNINITIALIZED_RECORDS;
 
     private boolean finished;
     private Throwable failure;
@@ -199,6 +203,11 @@ public abstract class PullAllResponseHandler implements ResponseHandler
 
     private void enqueueRecord( Record record )
     {
+        if ( records == UNINITIALIZED_RECORDS )
+        {
+            records = new ArrayDeque<>();
+        }
+
         records.add( record );
 
         boolean shouldBufferAllRecords = failureFuture != null;
