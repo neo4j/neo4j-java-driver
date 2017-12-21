@@ -38,11 +38,30 @@ public class IterablesTest
     }
 
     @Test
+    public void shouldCreateLinkedHashMapWithExpectedSize()
+    {
+        assertNotNull( Iterables.newLinkedHashMapWithSize( 42 ) );
+    }
+
+    @Test
     public void shouldThrowWhenNegativeHashMapSizeGiven()
     {
         try
         {
             Iterables.newHashMapWithSize( -42 );
+            fail( "Exception expected" );
+        }
+        catch ( IllegalArgumentException ignore )
+        {
+        }
+    }
+
+    @Test
+    public void shouldThrowWhenNegativeLinkedHashMapSizeGiven()
+    {
+        try
+        {
+            Iterables.newLinkedHashMapWithSize( -42 );
             fail( "Exception expected" );
         }
         catch ( IllegalArgumentException ignore )

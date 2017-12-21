@@ -30,8 +30,9 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
+
+import org.neo4j.driver.internal.util.Iterables;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
@@ -49,7 +50,7 @@ public class PackStreamTest
 
     public static Map<String, Object> asMap( Object... keysAndValues )
     {
-        Map<String, Object> map = new LinkedHashMap<>( keysAndValues.length / 2 );
+        Map<String,Object> map = Iterables.newLinkedHashMapWithSize( keysAndValues.length / 2 );
         String key = null;
         for ( Object keyOrValue : keysAndValues )
         {

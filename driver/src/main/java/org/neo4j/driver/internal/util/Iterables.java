@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -124,6 +125,11 @@ public class Iterables
     public static <K, V> HashMap<K,V> newHashMapWithSize( int expectedSize )
     {
         return new HashMap<>( hashMapCapacity( expectedSize ) );
+    }
+
+    public static <K, V> LinkedHashMap<K,V> newLinkedHashMapWithSize( int expectedSize )
+    {
+        return new LinkedHashMap<>( hashMapCapacity( expectedSize ) );
     }
 
     private static int hashMapCapacity( int expectedSize )

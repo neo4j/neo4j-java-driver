@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -274,7 +273,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                     packer.packStructHeader( 3, PATH );
 
                     // Unique nodes
-                    Map<Node, Integer> nodeIdx = new LinkedHashMap<>();
+                    Map<Node,Integer> nodeIdx = Iterables.newLinkedHashMapWithSize( path.length() + 1 );
                     for ( Node node : path.nodes() )
                     {
                         if ( !nodeIdx.containsKey( node ) )
@@ -289,7 +288,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                     }
 
                     // Unique rels
-                    Map<Relationship, Integer> relIdx = new LinkedHashMap<>();
+                    Map<Relationship,Integer> relIdx = Iterables.newLinkedHashMapWithSize( path.length() );
                     for ( Relationship rel : path.relationships() )
                     {
                         if ( !relIdx.containsKey( rel ) )
