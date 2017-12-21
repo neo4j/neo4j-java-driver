@@ -23,7 +23,6 @@ import org.junit.Test;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
-import org.neo4j.driver.internal.async.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 
@@ -33,9 +32,9 @@ import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.driver.internal.util.Futures.getBlocking;
 import static org.neo4j.driver.v1.AccessMode.READ;
 import static org.neo4j.driver.v1.AccessMode.WRITE;
+import static org.neo4j.driver.v1.util.TestUtil.await;
 
 public class DirectConnectionProviderTest
 {
@@ -49,8 +48,8 @@ public class DirectConnectionProviderTest
         ConnectionPool pool = poolMock( address, connection1, connection2 );
         DirectConnectionProvider provider = new DirectConnectionProvider( address, pool );
 
-        assertSame( connection1, getBlocking( provider.acquireConnection( READ ) ) );
-        assertSame( connection2, getBlocking( provider.acquireConnection( WRITE ) ) );
+        assertSame( connection1, await( provider.acquireConnection( READ ) ) );
+        assertSame( connection2, await( provider.acquireConnection( WRITE ) ) );
     }
 
     @Test

@@ -20,13 +20,11 @@ package org.neo4j.driver.internal.cluster;
 
 import org.junit.Test;
 
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import org.neo4j.driver.internal.async.BoltServerAddress;
+import org.neo4j.driver.internal.BoltServerAddress;
 
-import static java.util.Collections.singleton;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
@@ -39,7 +37,7 @@ public class AddressSetTest
         Set<BoltServerAddress> servers = addresses( "one", "two", "tre" );
 
         AddressSet set = new AddressSet();
-        set.update( servers, new HashSet<BoltServerAddress>() );
+        set.update( servers );
 
         assertArrayEquals( new BoltServerAddress[]{
                 new BoltServerAddress( "one" ),
@@ -48,7 +46,7 @@ public class AddressSetTest
 
         // when
         servers.add( new BoltServerAddress( "fyr" ) );
-        set.update( servers, new HashSet<BoltServerAddress>() );
+        set.update( servers );
 
         // then
         assertArrayEquals( new BoltServerAddress[]{
@@ -64,7 +62,7 @@ public class AddressSetTest
         // given
         Set<BoltServerAddress> servers = addresses( "one", "two", "tre" );
         AddressSet set = new AddressSet();
-        set.update( servers, new HashSet<BoltServerAddress>() );
+        set.update( servers );
 
         assertArrayEquals( new BoltServerAddress[]{
                 new BoltServerAddress( "one" ),
@@ -86,7 +84,7 @@ public class AddressSetTest
         // given
         Set<BoltServerAddress> servers = addresses( "one", "two", "tre" );
         AddressSet set = new AddressSet();
-        set.update( servers, new HashSet<BoltServerAddress>() );
+        set.update( servers );
 
         assertArrayEquals( new BoltServerAddress[]{
                 new BoltServerAddress( "one" ),
@@ -95,27 +93,12 @@ public class AddressSetTest
 
         // when
         servers.remove( new BoltServerAddress( "one" ) );
-        set.update( servers, new HashSet<BoltServerAddress>() );
+        set.update( servers );
 
         // then
         assertArrayEquals( new BoltServerAddress[]{
                 new BoltServerAddress( "two" ),
                 new BoltServerAddress( "tre" )}, set.toArray() );
-    }
-
-    @Test
-    public void shouldRecordRemovedAddressesWhenUpdating() throws Exception
-    {
-        // given
-        AddressSet set = new AddressSet();
-        set.update( addresses( "one", "two", "tre" ), new HashSet<BoltServerAddress>() );
-
-        // when
-        HashSet<BoltServerAddress> removed = new HashSet<>();
-        set.update( addresses( "one", "two", "fyr" ), removed );
-
-        // then
-        assertEquals( singleton( new BoltServerAddress( "tre" ) ), removed );
     }
 
     @Test
@@ -132,7 +115,7 @@ public class AddressSetTest
     public void shouldExposeCorrectArray()
     {
         AddressSet addressSet = new AddressSet();
-        addressSet.update( addresses( "one", "two", "tre" ), new HashSet<BoltServerAddress>() );
+        addressSet.update( addresses( "one", "two", "tre" ) );
 
         BoltServerAddress[] addresses = addressSet.toArray();
 
@@ -154,7 +137,7 @@ public class AddressSetTest
     public void shouldHaveCorrectSize()
     {
         AddressSet addressSet = new AddressSet();
-        addressSet.update( addresses( "one", "two" ), new HashSet<BoltServerAddress>() );
+        addressSet.update( addresses( "one", "two" ) );
 
         assertEquals( 2, addressSet.size() );
     }

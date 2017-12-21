@@ -22,9 +22,9 @@ import java.io.File;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
+import org.neo4j.driver.internal.async.pool.PoolSettings;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.logging.JULogging;
-import org.neo4j.driver.internal.async.pool.PoolSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
@@ -38,7 +38,7 @@ import static org.neo4j.driver.v1.Config.TrustStrategy.trustAllCertificates;
 /**
  * A configuration class to config driver properties.
  * <p>
- * To create a config:
+ * To build a simple config with custom logging implementation:
  * <pre>
  * {@code
  * Config config = Config
@@ -47,6 +47,20 @@ import static org.neo4j.driver.v1.Config.TrustStrategy.trustAllCertificates;
  *                  .toConfig();
  * }
  * </pre>
+ * <p>
+ * To build a more complicated config with tuned connection pool options:
+ * <pre>
+ * {@code
+ * Config config = Config.build()
+ *                          .withEncryption()
+ *                          .withConnectionTimeout(10, TimeUnit.SECONDS)
+ *                          .withMaxConnectionLifetime(30, TimeUnit.MINUTES)
+ *                          .withMaxConnectionPoolSize(10)
+ *                          .withConnectionAcquisitionTimeout(20, TimeUnit.SECONDS)
+ *                          .toConfig();
+ * }
+ * </pre>
+ *
  * @since 1.0
  */
 @Immutable
@@ -56,7 +70,6 @@ public class Config
     private final Logging logging;
     private final boolean logLeakedSessions;
 
-    private final int maxIdleConnectionPoolSize;
     private final int maxConnectionPoolSize;
 
     private final long idleTimeBeforeConnectionTest;
@@ -83,7 +96,6 @@ public class Config
 
         this.idleTimeBeforeConnectionTest = builder.idleTimeBeforeConnectionTest;
         this.maxConnectionLifetimeMillis = builder.maxConnectionLifetimeMillis;
-        this.maxIdleConnectionPoolSize = builder.maxIdleConnectionPoolSize;
         this.maxConnectionPoolSize = builder.maxConnectionPoolSize;
         this.connectionAcquisitionTimeoutMillis = builder.connectionAcquisitionTimeoutMillis;
 
@@ -117,21 +129,26 @@ public class Config
 
     /**
      * Max number of connections per URL for this driver.
+     *
      * @return the max number of connections
+     * @deprecated please use {@link #maxConnectionPoolSize()} instead.
      */
     @Deprecated
     public int connectionPoolSize()
     {
-        return maxIdleConnectionPoolSize;
+        return maxConnectionPoolSize;
     }
 
     /**
      * Max number of idle connections per URL for this driver.
+     *
      * @return the max number of connections
+     * @deprecated please use {@link #maxConnectionPoolSize()} instead.
      */
+    @Deprecated
     public int maxIdleConnectionPoolSize()
     {
-        return maxIdleConnectionPoolSize;
+        return maxConnectionPoolSize;
     }
 
     /**
@@ -243,7 +260,6 @@ public class Config
     {
         private Logging logging = new JULogging( Level.INFO );
         private boolean logLeakedSessions;
-        private int maxIdleConnectionPoolSize = PoolSettings.DEFAULT_MAX_IDLE_CONNECTION_POOL_SIZE;
         private int maxConnectionPoolSize = PoolSettings.DEFAULT_MAX_CONNECTION_POOL_SIZE;
         private long idleTimeBeforeConnectionTest = PoolSettings.DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST;
         private long maxConnectionLifetimeMillis = PoolSettings.DEFAULT_MAX_CONNECTION_LIFETIME;
@@ -311,32 +327,38 @@ public class Config
          * The max number of sessions to keep open at once. Configure this
          * higher if you want more concurrent sessions, or lower if you want
          * to lower the pressure on the database instance.
-         *
+         * <p>
          * If the driver is asked to provide more sessions than this, it will
          * block waiting for another session to be closed, with a timeout.
+         * <p>
+         * Method is deprecated and will forward the given argument to {@link #withMaxConnectionPoolSize(int)}.
          *
          * @param size the max number of sessions to keep open
          * @return this builder
+         * @deprecated please use a combination of {@link #withMaxConnectionPoolSize(int)} and
+         * {@link #withConnectionAcquisitionTimeout(long, TimeUnit)} instead.
          */
         @Deprecated
         public ConfigBuilder withMaxSessions( int size )
         {
-            return this;
+            return withMaxConnectionPoolSize( size );
         }
 
         /**
          * The max number of idle sessions to keep open at once. Configure this
          * higher if you want more concurrent sessions, or lower if you want
          * to lower the pressure on the database instance.
+         * <p>
+         * Method is deprecated and will not change the driver configuration.
          *
          * @param size the max number of idle sessions to keep open
          * @return this builder
-         * @deprecated please use {@link #withMaxIdleConnections(int)} instead.
+         * @deprecated please use a combination of {@link #withMaxConnectionPoolSize(int)} and
+         * {@link #withConnectionAcquisitionTimeout(long, TimeUnit)} instead.
          */
         @Deprecated
         public ConfigBuilder withMaxIdleSessions( int size )
         {
-            this.maxIdleConnectionPoolSize = size;
             return this;
         }
 
@@ -344,13 +366,17 @@ public class Config
          * The max number of idle connections to keep open at once. Configure this
          * higher for greater concurrency, or lower to reduce the pressure on the
          * database instance.
+         * <p>
+         * Method is deprecated and will not change the driver configuration.
          *
          * @param size the max number of idle connections to keep open
          * @return this builder
+         * @deprecated please use a combination of {@link #withMaxConnectionPoolSize(int)} and
+         * {@link #withConnectionAcquisitionTimeout(long, TimeUnit)} instead.
          */
+        @Deprecated
         public ConfigBuilder withMaxIdleConnections( int size )
         {
-            this.maxIdleConnectionPoolSize = size;
             return this;
         }
 
@@ -366,8 +392,7 @@ public class Config
         @Deprecated
         public ConfigBuilder withSessionLivenessCheckTimeout( long timeout )
         {
-            withConnectionLivenessCheckTimeout( timeout, TimeUnit.MILLISECONDS );
-            return this;
+            return withConnectionLivenessCheckTimeout( timeout, TimeUnit.MILLISECONDS );
         }
 
         /**
@@ -412,7 +437,7 @@ public class Config
          * this case, it is recommended to set liveness check to a value smaller than network equipment has and maximum
          * lifetime to a reasonably large value to "renew" connections once in a while.
          * <p>
-         * No maximum lifetime limit is imposed by default. Zero and negative values result in lifetime not being
+         * Default maximum connection lifetime is 1 hour. Zero and negative values result in lifetime not being
          * checked.
          *
          * @param value the maximum connection lifetime
@@ -426,27 +451,64 @@ public class Config
         }
 
         /**
-         * Todo: doc and validation
+         * Configure maximum amount of connections in the connection pool towards a single database. This setting
+         * limits total amount of connections in the pool when used in direct driver, created for URI with 'bolt'
+         * scheme. It will limit amount of connections per cluster member when used with routing driver, created for
+         * URI with 'bolt+routing' scheme.
+         * <p>
+         * Acquisition will be attempted for at most configured timeout
+         * {@link #withConnectionAcquisitionTimeout(long, TimeUnit)} when limit is reached.
+         * <p>
+         * Default value is {@code 100}. Negative values are allowed and result in unlimited pool. Value of {@code 0}
+         * is not allowed.
          *
-         * @param value
-         * @return
+         * @param value the maximum connection pool size.
+         * @return this builder
+         * @see #withConnectionAcquisitionTimeout(long, TimeUnit)
          */
         public ConfigBuilder withMaxConnectionPoolSize( int value )
         {
-            this.maxConnectionPoolSize = value;
+            if ( value == 0 )
+            {
+                throw new IllegalArgumentException( "Zero value is not supported" );
+            }
+            else if ( value < 0 )
+            {
+                this.maxConnectionPoolSize = Integer.MAX_VALUE;
+            }
+            else
+            {
+                this.maxConnectionPoolSize = value;
+            }
             return this;
         }
 
         /**
-         * Todo: doc and validation
+         * Configure maximum amount of time connection acquisition will attempt to acquire a connection from the
+         * connection pool. This timeout only kicks in when all existing connections are being used and no new
+         * connections can be created because maximum connection pool size has been reached.
+         * <p>
+         * Exception is raised when connection can't be acquired within configured time.
+         * <p>
+         * Default value is 60 seconds. Negative values are allowed and result in unlimited acquisition timeout. Value
+         * of {@code 0} is allowed and results in no timeout and immediate failure when connection is unavailable.
          *
-         * @param value
-         * @param unit
-         * @return
+         * @param value the acquisition timeout
+         * @param unit the unit in which the duration is given
+         * @return this builder
+         * @see #withMaxConnectionPoolSize(int)
          */
         public ConfigBuilder withConnectionAcquisitionTimeout( long value, TimeUnit unit )
         {
-            this.connectionAcquisitionTimeoutMillis = unit.toMillis( value );
+            long valueInMillis = unit.toMillis( value );
+            if ( value >= 0 )
+            {
+                this.connectionAcquisitionTimeoutMillis = valueInMillis;
+            }
+            else
+            {
+                this.connectionAcquisitionTimeoutMillis = -1;
+            }
             return this;
         }
 

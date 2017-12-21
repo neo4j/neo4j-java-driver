@@ -28,8 +28,10 @@ import java.lang.management.OperatingSystemMXBean;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -38,12 +40,14 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.logging.Level;
 
 import org.neo4j.driver.internal.logging.ConsoleLogging;
 import org.neo4j.driver.internal.logging.DevNullLogger;
+import org.neo4j.driver.internal.util.Futures;
+import org.neo4j.driver.internal.util.Iterables;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
@@ -52,14 +56,23 @@ import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.util.DaemonThreadFactory;
 
+import static java.util.Collections.nCopies;
+import static java.util.Collections.singletonMap;
+import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public abstract class AbstractStressTestBase<C extends AbstractContext>
 {
@@ -67,6 +80,9 @@ public abstract class AbstractStressTestBase<C extends AbstractContext>
     private static final int ASYNC_BATCH_SIZE = Integer.getInteger( "asyncBatchSize", 10 );
     private static final int EXECUTION_TIME_SECONDS = Integer.getInteger( "executionTimeSeconds", 20 );
     private static final boolean DEBUG_LOGGING_ENABLED = Boolean.getBoolean( "loggingEnabled" );
+
+    private static final int BIG_DATA_TEST_NODE_COUNT = Integer.getInteger( "bigDataTestNodeCount", 30_000 );
+    private static final int BIG_DATA_TEST_BATCH_SIZE = Integer.getInteger( "bigDataTestBatchSize", 10_000 );
 
     private LoggerNameTrackingLogging logging;
     private ExecutorService executor;
@@ -112,6 +128,20 @@ public abstract class AbstractStressTestBase<C extends AbstractContext>
         runStressTest( this::launchAsyncWorkerThreads );
     }
 
+    @Test
+    public void blockingApiBigDataTest()
+    {
+        String bookmark = createNodesBlocking( bigDataTestBatchCount(), BIG_DATA_TEST_BATCH_SIZE, driver );
+        readNodesBlocking( driver, bookmark, BIG_DATA_TEST_NODE_COUNT );
+    }
+
+    @Test
+    public void asyncApiBigDataTest() throws Throwable
+    {
+        String bookmark = createNodesAsync( bigDataTestBatchCount(), BIG_DATA_TEST_BATCH_SIZE, driver );
+        readNodesAsync( driver, bookmark, BIG_DATA_TEST_NODE_COUNT );
+    }
+
     private void runStressTest( Function<C,List<Future<?>>> threadLauncher ) throws Throwable
     {
         C context = createContext();
@@ -125,7 +155,7 @@ public abstract class AbstractStressTestBase<C extends AbstractContext>
         {
             try
             {
-                assertNull( future.get( 10, TimeUnit.SECONDS ) );
+                assertNull( future.get( 10, SECONDS ) );
             }
             catch ( Throwable error )
             {
@@ -282,9 +312,9 @@ public abstract class AbstractStressTestBase<C extends AbstractContext>
     private ResourcesInfo sleepAndGetResourcesInfo() throws InterruptedException
     {
         int halfSleepSeconds = Math.max( 1, EXECUTION_TIME_SECONDS / 2 );
-        TimeUnit.SECONDS.sleep( halfSleepSeconds );
+        SECONDS.sleep( halfSleepSeconds );
         ResourcesInfo resourcesInfo = getResourcesInfo();
-        TimeUnit.SECONDS.sleep( halfSleepSeconds );
+        SECONDS.sleep( halfSleepSeconds );
         return resourcesInfo;
     }
 
@@ -307,8 +337,8 @@ public abstract class AbstractStressTestBase<C extends AbstractContext>
     {
         System.out.println( "Initially open file descriptors: " + previousOpenFileDescriptors );
 
-        // number of open file descriptors should not go up for more than 30%
-        long maxOpenFileDescriptors = (long) (previousOpenFileDescriptors * 1.3);
+        // number of open file descriptors should not go up for more than 50%
+        long maxOpenFileDescriptors = (long) (previousOpenFileDescriptors * 1.5);
         long currentOpenFileDescriptorCount = getOpenFileDescriptorCount();
         System.out.println( "Currently open file descriptors: " + currentOpenFileDescriptorCount );
 
@@ -364,6 +394,191 @@ public abstract class AbstractStressTestBase<C extends AbstractContext>
     {
         int index = ThreadLocalRandom.current().nextInt( elements.size() );
         return elements.get( index );
+    }
+
+    private static int bigDataTestBatchCount()
+    {
+        if ( BIG_DATA_TEST_NODE_COUNT < BIG_DATA_TEST_BATCH_SIZE )
+        {
+            return 1;
+        }
+        return BIG_DATA_TEST_NODE_COUNT / BIG_DATA_TEST_BATCH_SIZE;
+    }
+
+    private static String createNodesBlocking( int batchCount, int batchSize, Driver driver )
+    {
+        String bookmark;
+
+        long start = System.nanoTime();
+        try ( Session session = driver.session() )
+        {
+            for ( int i = 0; i < batchCount; i++ )
+            {
+                int batchIndex = i;
+                session.writeTransaction( tx ->
+                {
+                    for ( int j = 0; j < batchSize; j++ )
+                    {
+                        int nodeIndex = batchIndex * batchSize + j;
+                        createNodeInTx( tx, false, nodeIndex );
+                    }
+                    return null;
+                } );
+            }
+            bookmark = session.lastBookmark();
+        }
+        long end = System.nanoTime();
+        System.out.println( "Node creation with blocking API took: " + NANOSECONDS.toMillis( end - start ) + "ms" );
+
+        return bookmark;
+    }
+
+    private static void readNodesBlocking( Driver driver, String bookmark, int expectedNodeCount )
+    {
+        long start = System.nanoTime();
+        try ( Session session = driver.session( bookmark ) )
+        {
+            int nodesProcessed = session.readTransaction( tx ->
+            {
+                StatementResult result = tx.run( "MATCH (n:Node) RETURN n" );
+
+                int nodesSeen = 0;
+                while ( result.hasNext() )
+                {
+                    Node node = result.next().get( 0 ).asNode();
+                    nodesSeen++;
+
+                    List<String> labels = Iterables.asList( node.labels() );
+                    assertEquals( 2, labels.size() );
+                    assertTrue( labels.contains( "Test" ) );
+                    assertTrue( labels.contains( "Node" ) );
+
+                    verifyNodeProperties( node );
+                }
+                return nodesSeen;
+            } );
+
+            assertEquals( expectedNodeCount, nodesProcessed );
+        }
+        long end = System.nanoTime();
+        System.out.println( "Reading nodes with blocking API took: " + NANOSECONDS.toMillis( end - start ) + "ms" );
+    }
+
+    private static String createNodesAsync( int batchCount, int batchSize, Driver driver ) throws Throwable
+    {
+        long start = System.nanoTime();
+
+        Session session = driver.session();
+        CompletableFuture<Throwable> writeTransactions = completedFuture( null );
+
+        for ( int i = 0; i < batchCount; i++ )
+        {
+            int batchIndex = i;
+
+            writeTransactions = writeTransactions.thenCompose( ignore -> session.writeTransactionAsync( tx ->
+            {
+                for ( int j = 0; j < batchSize; j++ )
+                {
+                    int nodeIndex = batchIndex * batchSize + j;
+                    createNodeInTx( tx, true, nodeIndex );
+                }
+                return completedFuture( null );
+            } ) );
+        }
+        writeTransactions = writeTransactions.exceptionally( error -> error )
+                .thenCompose( error -> safeCloseSession( session, error ) );
+
+        Throwable error = Futures.blockingGet( writeTransactions );
+        if ( error != null )
+        {
+            throw error;
+        }
+
+        long end = System.nanoTime();
+        System.out.println( "Node creation with async API took: " + NANOSECONDS.toMillis( end - start ) + "ms" );
+
+        return session.lastBookmark();
+    }
+
+    private static void readNodesAsync( Driver driver, String bookmark, int expectedNodeCount ) throws Throwable
+    {
+        long start = System.nanoTime();
+
+        Session session = driver.session( bookmark );
+        AtomicInteger nodesSeen = new AtomicInteger();
+
+        CompletionStage<Throwable> readQuery = session.readTransactionAsync( tx ->
+                tx.runAsync( "MATCH (n:Node) RETURN n" )
+                        .thenCompose( cursor -> cursor.forEachAsync( record ->
+                        {
+                            Node node = record.get( 0 ).asNode();
+                            nodesSeen.incrementAndGet();
+
+                            List<String> labels = Iterables.asList( node.labels() );
+                            assertEquals( 2, labels.size() );
+                            assertTrue( labels.contains( "Test" ) );
+                            assertTrue( labels.contains( "Node" ) );
+
+                            verifyNodeProperties( node );
+                        } ) ) )
+                .thenApply( summary -> (Throwable) null )
+                .exceptionally( error -> error )
+                .thenCompose( error -> safeCloseSession( session, error ) );
+
+        Throwable error = Futures.blockingGet( readQuery );
+        if ( error != null )
+        {
+            throw error;
+        }
+
+        assertEquals( expectedNodeCount, nodesSeen.get() );
+
+        long end = System.nanoTime();
+        System.out.println( "Reading nodes with async API took: " + NANOSECONDS.toMillis( end - start ) + "ms" );
+    }
+
+    private static void createNodeInTx( Transaction tx, boolean async, int nodeIndex )
+    {
+        String query = "CREATE (n:Test:Node) SET n = $props";
+        Map<String,Object> params = singletonMap( "props", createNodeProperties( nodeIndex ) );
+
+        if ( async )
+        {
+            tx.runAsync( query, params );
+        }
+        else
+        {
+            tx.run( query, params );
+        }
+    }
+
+    private static Map<String,Object> createNodeProperties( int nodeIndex )
+    {
+        Map<String,Object> result = new HashMap<>();
+        result.put( "index", nodeIndex );
+        result.put( "name", "name-" + nodeIndex );
+        result.put( "surname", "surname-" + nodeIndex );
+        result.put( "long-indices", nCopies( 10, (long) nodeIndex ) );
+        result.put( "double-indices", nCopies( 10, (double) nodeIndex ) );
+        result.put( "booleans", nCopies( 10, nodeIndex % 2 == 0 ) );
+        return result;
+    }
+
+    private static void verifyNodeProperties( Node node )
+    {
+        int nodeIndex = node.get( "index" ).asInt();
+        assertEquals( "name-" + nodeIndex, node.get( "name" ).asString() );
+        assertEquals( "surname-" + nodeIndex, node.get( "surname" ).asString() );
+        assertEquals( nCopies( 10, (long) nodeIndex ), node.get( "long-indices" ).asList() );
+        assertEquals( nCopies( 10, (double) nodeIndex ), node.get( "double-indices" ).asList() );
+        assertEquals( nCopies( 10, nodeIndex % 2 == 0 ), node.get( "booleans" ).asList() );
+    }
+
+    private static <T> CompletionStage<T> safeCloseSession( Session session, T result )
+    {
+        return session.closeAsync()
+                .exceptionally( ignore -> null )
+                .thenApply( ignore -> result );
     }
 
     private static class ResourcesInfo

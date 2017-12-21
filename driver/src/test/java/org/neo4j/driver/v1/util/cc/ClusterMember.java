@@ -22,7 +22,7 @@ import java.net.URI;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
 
-import org.neo4j.driver.internal.async.BoltServerAddress;
+import org.neo4j.driver.internal.BoltServerAddress;
 
 import static java.util.Objects.requireNonNull;
 

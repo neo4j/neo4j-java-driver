@@ -24,11 +24,15 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 
+import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.logging.ChannelActivityLogger;
+import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
 import static java.lang.String.format;
-import static org.neo4j.driver.internal.async.ProtocolUtil.handshake;
+import static org.neo4j.driver.internal.async.BoltProtocolV1Util.handshakeBuf;
+import static org.neo4j.driver.internal.async.BoltProtocolV1Util.handshakeString;
 
 public class ChannelConnectedListener implements ChannelFutureListener
 {
@@ -50,12 +54,16 @@ public class ChannelConnectedListener implements ChannelFutureListener
     public void operationComplete( ChannelFuture future )
     {
         Channel channel = future.channel();
+        Logger log = new ChannelActivityLogger( channel, logging, getClass() );
 
         if ( future.isSuccess() )
         {
+            log.trace( "Channel %s connected, initiating bolt handshake", channel );
+
             ChannelPipeline pipeline = channel.pipeline();
-            pipeline.addLast( new HandshakeResponseHandler( pipelineBuilder, handshakeCompletedPromise, logging ) );
-            ChannelFuture handshakeFuture = channel.writeAndFlush( handshake() );
+            pipeline.addLast( new HandshakeHandler( pipelineBuilder, handshakeCompletedPromise, logging ) );
+            log.debug( "C: [Bolt Handshake] %s", handshakeString() );
+            ChannelFuture handshakeFuture = channel.writeAndFlush( handshakeBuf() );
 
             handshakeFuture.addListener( channelFuture ->
             {

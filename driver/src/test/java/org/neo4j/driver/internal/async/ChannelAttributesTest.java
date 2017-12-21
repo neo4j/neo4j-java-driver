@@ -19,9 +19,9 @@
 package org.neo4j.driver.internal.async;
 
 import io.netty.channel.embedded.EmbeddedChannel;
-import org.junit.After;
 import org.junit.Test;
 
+import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.util.ServerVersion;
 
@@ -41,17 +41,13 @@ import static org.neo4j.driver.internal.async.ChannelAttributes.setLastUsedTimes
 import static org.neo4j.driver.internal.async.ChannelAttributes.setMessageDispatcher;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setServerAddress;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setServerVersion;
+import static org.neo4j.driver.internal.async.ChannelAttributes.setTerminationReason;
+import static org.neo4j.driver.internal.async.ChannelAttributes.terminationReason;
 import static org.neo4j.driver.internal.util.ServerVersion.version;
 
 public class ChannelAttributesTest
 {
     private final EmbeddedChannel channel = new EmbeddedChannel();
-
-    @After
-    public void tearDown() throws Exception
-    {
-        channel.close();
-    }
 
     @Test
     public void shouldSetAndGetAddress()
@@ -158,6 +154,30 @@ public class ChannelAttributesTest
         try
         {
             setServerVersion( channel, version( "3.2.3" ) );
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( IllegalStateException.class ) );
+        }
+    }
+
+    @Test
+    public void shouldSetAndGetTerminationReason()
+    {
+        String reason = "This channel has been terminated";
+        setTerminationReason( channel, reason );
+        assertEquals( reason, terminationReason( channel ) );
+    }
+
+    @Test
+    public void shouldFailToSetTerminationReasonTwice()
+    {
+        setTerminationReason( channel, "Reason 1" );
+
+        try
+        {
+            setTerminationReason( channel, "Reason 2" );
             fail( "Exception expected" );
         }
         catch ( Exception e )

@@ -29,9 +29,9 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
+import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.DriverFactory;
-import org.neo4j.driver.internal.async.BoltServerAddress;
 import org.neo4j.driver.internal.async.ChannelConnector;
 import org.neo4j.driver.internal.async.pool.ConnectionPoolImpl;
 import org.neo4j.driver.internal.async.pool.PoolSettings;
@@ -41,7 +41,6 @@ import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Clock;
-import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
@@ -61,12 +60,13 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.driver.v1.Config.defaultConfig;
 import static org.neo4j.driver.v1.Values.parameters;
+import static org.neo4j.driver.v1.util.TestUtil.await;
 
 public class ConnectionHandlingIT
 {
@@ -100,13 +100,13 @@ public class ConnectionHandlingIT
         StatementResult result = createNodesInNewSession( 12 );
 
         Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
-        verify( connection1, never() ).releaseInBackground();
+        verify( connection1, never() ).release();
 
         result.consume();
 
         Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
         assertSame( connection1, connection2 );
-        verify( connection1 ).releaseInBackground();
+        verify( connection1 ).release();
     }
 
     @Test
@@ -115,14 +115,14 @@ public class ConnectionHandlingIT
         StatementResult result = createNodesInNewSession( 5 );
 
         Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
-        verify( connection1, never() ).releaseInBackground();
+        verify( connection1, never() ).release();
 
         ResultSummary summary = result.summary();
 
         assertEquals( 5, summary.counters().nodesCreated() );
         Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
         assertSame( connection1, connection2 );
-        verify( connection1 ).releaseInBackground();
+        verify( connection1 ).release();
     }
 
     @Test
@@ -131,14 +131,14 @@ public class ConnectionHandlingIT
         StatementResult result = createNodesInNewSession( 2 );
 
         Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
-        verify( connection1, never() ).releaseInBackground();
+        verify( connection1, never() ).release();
 
         List<Record> records = result.list();
         assertEquals( 2, records.size() );
 
         Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
         assertSame( connection1, connection2 );
-        verify( connection1 ).releaseInBackground();
+        verify( connection1 ).release();
     }
 
     @Test
@@ -147,13 +147,13 @@ public class ConnectionHandlingIT
         StatementResult result = createNodesInNewSession( 1 );
 
         Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
-        verify( connection1, never() ).releaseInBackground();
+        verify( connection1, never() ).release();
 
         assertNotNull( result.single() );
 
         Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
         assertSame( connection1, connection2 );
-        verify( connection1 ).releaseInBackground();
+        verify( connection1 ).release();
     }
 
     @Test
@@ -162,7 +162,7 @@ public class ConnectionHandlingIT
         StatementResult result = createNodesInNewSession( 6 );
 
         Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
-        verify( connection1, never() ).releaseInBackground();
+        verify( connection1, never() ).release();
 
         int seenRecords = 0;
         while ( result.hasNext() )
@@ -174,7 +174,7 @@ public class ConnectionHandlingIT
 
         Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
         assertSame( connection1, connection2 );
-        verify( connection1 ).releaseInBackground();
+        verify( connection1 ).release();
     }
 
     @Test
@@ -185,7 +185,7 @@ public class ConnectionHandlingIT
         StatementResult result = session.run( "UNWIND range(10, 0, -1) AS i CREATE (n {index: 10/i}) RETURN n" );
 
         Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
-        verify( connection1, never() ).releaseInBackground();
+        verify( connection1, never() ).release();
 
         try
         {
@@ -199,40 +199,7 @@ public class ConnectionHandlingIT
 
         Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
         assertSame( connection1, connection2 );
-        verify( connection1 ).releaseInBackground();
-    }
-
-    @Test
-    public void activeConnectionFromSessionRunCanBeReusedForNextSessionRun()
-    {
-        Session session = driver.session();
-
-        StatementResult result1 = createNodes( 3, session );
-        Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
-
-        StatementResult result2 = createNodes( 2, session );
-
-        assertEquals( 3, result1.list().size() );
-        assertEquals( 2, result2.list().size() );
-
-        verify( connection1 ).tryMarkInUse();
-        verify( connection1, times( 2 ) ).releaseInBackground();
-    }
-
-    @Test
-    public void activeConnectionFromSessionRunCanBeReusedForNewTransaction()
-    {
-        Session session = driver.session();
-
-        StatementResult result1 = createNodes( 3, session );
-        Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
-
-        session.beginTransaction();
-
-        assertEquals( 3, result1.list().size() );
-
-        verify( connection1 ).tryMarkInUse();
-        verify( connection1 ).releaseInBackground();
+        verify( connection1 ).release();
     }
 
     @Test
@@ -243,7 +210,7 @@ public class ConnectionHandlingIT
         Transaction tx = session.beginTransaction();
 
         Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
-        verify( connection1, never() ).releaseInBackground();
+        verify( connection1, never() ).release();
 
         StatementResult result = createNodes( 5, tx );
         tx.success();
@@ -251,7 +218,7 @@ public class ConnectionHandlingIT
 
         Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
         assertSame( connection1, connection2 );
-        verify( connection1 ).releaseInBackground();
+        verify( connection1 ).release();
 
         assertEquals( 5, result.list().size() );
     }
@@ -264,7 +231,7 @@ public class ConnectionHandlingIT
         Transaction tx = session.beginTransaction();
 
         Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
-        verify( connection1, never() ).releaseInBackground();
+        verify( connection1, never() ).release();
 
         StatementResult result = createNodes( 8, tx );
         tx.failure();
@@ -272,7 +239,7 @@ public class ConnectionHandlingIT
 
         Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
         assertSame( connection1, connection2 );
-        verify( connection1 ).releaseInBackground();
+        verify( connection1 ).release();
 
         assertEquals( 8, result.list().size() );
     }
@@ -286,12 +253,12 @@ public class ConnectionHandlingIT
         }
 
         Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
-        verify( connection1 ).releaseInBackground(); // connection used for constraint creation
+        verify( connection1, atLeastOnce() ).release(); // connection used for constraint creation
 
         Session session = driver.session();
         Transaction tx = session.beginTransaction();
         Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
-        verify( connection2, never() ).releaseInBackground();
+        verify( connection2, never() ).release();
 
         // property existence constraints are verified on commit, try to violate it
         tx.run( "CREATE (:Book)" );
@@ -308,7 +275,7 @@ public class ConnectionHandlingIT
         }
 
         // connection should have been released after failed node creation
-        verify( connection2 ).releaseInBackground();
+        verify( connection2 ).release();
     }
 
     private StatementResult createNodesInNewSession( int nodesToCreate )
@@ -331,9 +298,9 @@ public class ConnectionHandlingIT
                 Bootstrap bootstrap, Config config )
         {
             ConnectionSettings connectionSettings = new ConnectionSettings( authToken, 1000 );
-            PoolSettings poolSettings = new PoolSettings( config.maxIdleConnectionPoolSize(),
-                    config.idleTimeBeforeConnectionTest(), config.maxConnectionLifetimeMillis(),
-                    config.maxConnectionPoolSize(), config.connectionAcquisitionTimeoutMillis() );
+            PoolSettings poolSettings = new PoolSettings( config.maxConnectionPoolSize(),
+                    config.connectionAcquisitionTimeoutMillis(), config.maxConnectionLifetimeMillis(),
+                    config.idleTimeBeforeConnectionTest() );
             Clock clock = createClock();
             ChannelConnector connector = super.createConnector( connectionSettings, securityPlan, config, clock );
             connectionPool =
@@ -347,9 +314,8 @@ public class ConnectionHandlingIT
         Connection lastAcquiredConnectionSpy;
         boolean memorize;
 
-        public MemorizingConnectionPool( ChannelConnector connector,
-                Bootstrap bootstrap, PoolSettings settings, Logging logging,
-                Clock clock )
+        MemorizingConnectionPool( ChannelConnector connector, Bootstrap bootstrap, PoolSettings settings,
+                Logging logging, Clock clock )
         {
             super( connector, bootstrap, settings, logging, clock );
         }
@@ -363,7 +329,7 @@ public class ConnectionHandlingIT
         @Override
         public CompletionStage<Connection> acquire( final BoltServerAddress address )
         {
-            Connection connection = Futures.getBlocking( super.acquire( address ) );
+            Connection connection = await( super.acquire( address ) );
 
             if ( memorize )
             {

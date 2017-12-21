@@ -6,6 +6,11 @@ protocol BOLT.
 For detailed information such as manual, driver API documentations, changelogs, please refer to 
 [wiki](https://github.com/neo4j/neo4j-java-driver/wiki).
 
+## Java version
+
+Starting from 1.5 driver requires Java 8 for building and at runtime.
+Please use 1.4 series when Java 7 is required.
+
 ## Minimum viable snippet
 
 Add the driver to your project:
@@ -33,29 +38,20 @@ Connect to a Neo4j 3.0.0+ database:
     
     driver.close();
 
-## Binding
+## Building
 
 The source code here reflects the current development status of a new driver version.
 If you want to use the driver in your products, please use the released driver via maven central or check out the
 code with git tags instead.
 
-### Java version
+### Running tests and creating a package
 
 The driver unit tests relies on latest [`boltkit`](https://github.com/neo4j-contrib/boltkit) installed on your local machine. 
 If `boltkit` is not installed, then all tests that requires `boltkit` will be ignored and not be executed.
 
-Then if you are running Java 8:
+Then execute the following Maven command:
 
     mvn clean install
-
-If you are running Java 7, you need to also provide an environment variable telling the tests where to find
-Java 8, because Neo4j-the-database needs it to run.
-
-    export NEO4J_JAVA=<path/to/java/home>
-    mvn clean install
-
-    # For instance
-    export NEO4J_JAVA=$(/usr/libexec/java_home -v 1.8)
 
 ### Windows
 

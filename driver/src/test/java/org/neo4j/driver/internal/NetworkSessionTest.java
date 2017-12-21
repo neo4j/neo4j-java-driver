@@ -60,6 +60,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.RETURNS_MOCKS;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -69,10 +70,11 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
+import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
-import static org.neo4j.driver.internal.util.Futures.getBlocking;
 import static org.neo4j.driver.v1.AccessMode.READ;
 import static org.neo4j.driver.v1.AccessMode.WRITE;
+import static org.neo4j.driver.v1.util.TestUtil.await;
 import static org.neo4j.driver.v1.util.TestUtil.connectionMock;
 
 public class NetworkSessionTest
@@ -88,7 +90,8 @@ public class NetworkSessionTest
     public void setUp()
     {
         connection = connectionMock();
-        when( connection.releaseNow() ).thenReturn( completedFuture( null ) );
+        when( connection.release() ).thenReturn( completedWithNull() );
+        when( connection.serverAddress() ).thenReturn( BoltServerAddress.LOCAL_DEFAULT );
         when( connection.serverVersion() ).thenReturn( ServerVersion.v3_2_0 );
         connectionProvider = mock( ConnectionProvider.class );
         when( connectionProvider.acquireConnection( any( AccessMode.class ) ) )
@@ -203,52 +206,6 @@ public class NetworkSessionTest
     }
 
     @Test
-    public void marksPreviousConnectionInUseForNewRun()
-    {
-        ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
-        Connection connection = mock( Connection.class );
-        when( connection.tryMarkInUse() ).thenReturn( true );
-
-        when( connectionProvider.acquireConnection( READ ) ).thenReturn( completedFuture( connection ) );
-        NetworkSession session = newSession( connectionProvider, READ );
-
-        session.run( "RETURN 1" );
-        verify( connectionProvider ).acquireConnection( READ );
-
-        session.run( "RETURN 2" );
-        verify( connectionProvider ).acquireConnection( READ );
-
-        InOrder inOrder = inOrder( connection );
-        inOrder.verify( connection ).runAndFlush( eq( "RETURN 1" ), any(), any(), any() );
-        inOrder.verify( connection ).tryMarkInUse();
-        inOrder.verify( connection ).runAndFlush( eq( "RETURN 2" ), any(), any(), any() );
-    }
-
-    @Test
-    public void acquiresNewConnectionWhenUnableToUseCurrentOneForRun()
-    {
-        ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
-        Connection connection1 = mock( Connection.class );
-        Connection connection2 = mock( Connection.class );
-        when( connection1.tryMarkInUse() ).thenReturn( false );
-
-        when( connectionProvider.acquireConnection( READ ) )
-                .thenReturn( completedFuture( connection1 ) ).thenReturn( completedFuture( connection2 ) );
-        NetworkSession session = newSession( connectionProvider, READ );
-
-        session.run( "RETURN 1" );
-        verify( connectionProvider ).acquireConnection( READ );
-
-        session.run( "RETURN 2" );
-        verify( connectionProvider, times( 2 ) ).acquireConnection( READ );
-
-        InOrder inOrder = inOrder( connection1, connection2 );
-        inOrder.verify( connection1 ).runAndFlush( eq( "RETURN 1" ), any(), any(), any() );
-        inOrder.verify( connection1 ).tryMarkInUse();
-        inOrder.verify( connection2 ).runAndFlush( eq( "RETURN 2" ), any(), any(), any() );
-    }
-
-    @Test
     public void releasesOpenConnectionUsedForRunWhenSessionIsClosed()
     {
         String query = "RETURN 1";
@@ -256,11 +213,11 @@ public class NetworkSessionTest
 
         session.run( query );
 
-        getBlocking( session.closeAsync() );
+        await( session.closeAsync() );
 
         InOrder inOrder = inOrder( connection );
         inOrder.verify( connection ).runAndFlush( eq( "RETURN 1" ), any(), any(), any() );
-        inOrder.verify( connection ).releaseNow();
+        inOrder.verify( connection, atLeastOnce() ).release();
     }
 
     @SuppressWarnings( "deprecation" )
@@ -296,52 +253,6 @@ public class NetworkSessionTest
     }
 
     @Test
-    public void marksPreviousConnectionInUseForBeginTx()
-    {
-        ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
-        Connection connection = mock( Connection.class );
-        when( connection.tryMarkInUse() ).thenReturn( true );
-
-        when( connectionProvider.acquireConnection( READ ) ).thenReturn( completedFuture( connection ) );
-        NetworkSession session = newSession( connectionProvider, READ );
-
-        session.run( "RETURN 1" );
-        verify( connectionProvider ).acquireConnection( READ );
-        verify( connection ).runAndFlush( eq( "RETURN 1" ), any(), any(), any() );
-
-        Transaction tx = session.beginTransaction();
-        assertNotNull( tx );
-
-        InOrder inOrder = inOrder( connection );
-        inOrder.verify( connection ).runAndFlush( eq( "RETURN 1" ), any(), any(), any() );
-        inOrder.verify( connection ).tryMarkInUse();
-        inOrder.verify( connection ).run( eq( "BEGIN" ), any(), any(), any() );
-    }
-
-    @Test
-    public void acquiresNewConnectionWhenUnableToUseCurrentOneForBeginTx()
-    {
-        ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
-        Connection connection1 = mock( Connection.class );
-        Connection connection2 = mock( Connection.class );
-        when( connection1.tryMarkInUse() ).thenReturn( false );
-
-        when( connectionProvider.acquireConnection( READ ) )
-                .thenReturn( completedFuture( connection1 ) ).thenReturn( completedFuture( connection2 ) );
-        NetworkSession session = newSession( connectionProvider, READ );
-
-        session.run( "RETURN 1" );
-        verify( connectionProvider ).acquireConnection( READ );
-
-        session.beginTransaction();
-
-        InOrder inOrder = inOrder( connection1, connection2 );
-        inOrder.verify( connection1 ).runAndFlush( eq( "RETURN 1" ), any(), any(), any() );
-        inOrder.verify( connection1 ).tryMarkInUse();
-        inOrder.verify( connection2 ).run( eq( "BEGIN" ), any(), any(), any() );
-    }
-
-    @Test
     public void updatesBookmarkWhenTxIsClosed()
     {
         Transaction tx = session.beginTransaction();
@@ -366,7 +277,7 @@ public class NetworkSessionTest
         verify( connection ).runAndFlush( eq( query ), any(), any(), any() );
 
         tx.close();
-        verify( connection ).releaseInBackground();
+        verify( connection ).release();
     }
 
     @Test
@@ -576,22 +487,18 @@ public class NetworkSessionTest
     }
 
     @Test
-    @SuppressWarnings( "deprecation" )
     public void connectionShouldBeReleasedAfterSessionReset()
     {
         NetworkSession session = newSession( connectionProvider, READ );
         session.run( "RETURN 1" );
 
-        verify( connection, never() ).releaseInBackground();
-        verify( connection, never() ).releaseNow();
+        verify( connection, never() ).release();
 
         session.reset();
-        verify( connection, never() ).releaseInBackground();
-        verify( connection ).releaseNow();
+        verify( connection ).release();
     }
 
     @Test
-    @SuppressWarnings( "deprecation" )
     public void transactionShouldBeRolledBackAfterSessionReset()
     {
         NetworkSession session = newSession( connectionProvider, READ );
@@ -753,6 +660,25 @@ public class NetworkSessionTest
 
         verify( connectionProvider, times( 2 ) ).acquireConnection( READ );
         verifyBeginTx( connection, times( 1 ) );
+    }
+
+    @Test
+    public void shouldMarkTransactionAsTerminatedAndThenReleaseConnectionOnReset()
+    {
+        NetworkSession session = newSession( connectionProvider, READ );
+        Transaction tx = session.beginTransaction();
+
+        assertTrue( tx.isOpen() );
+        when( connection.release() ).then( invocation ->
+        {
+            // verify that tx is not open when connection is released
+            assertFalse( tx.isOpen() );
+            return completedWithNull();
+        } );
+
+        session.reset();
+
+        verify( connection ).release();
     }
 
     private void testConnectionAcquisition( AccessMode sessionMode, AccessMode transactionMode )

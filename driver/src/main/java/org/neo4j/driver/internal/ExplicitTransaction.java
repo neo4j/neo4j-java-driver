@@ -20,12 +20,10 @@ package org.neo4j.driver.internal;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
-import org.neo4j.driver.internal.async.InternalStatementResultCursor;
 import org.neo4j.driver.internal.async.QueryRunner;
 import org.neo4j.driver.internal.async.ResultCursorsHolder;
 import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
@@ -35,6 +33,7 @@ import org.neo4j.driver.internal.handlers.RollbackTxResponseHandler;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
+import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
@@ -48,9 +47,8 @@ import org.neo4j.driver.v1.types.TypeSystem;
 
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.CompletableFuture.completedFuture;
-import static org.neo4j.driver.internal.util.Futures.completionErrorCause;
+import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
-import static org.neo4j.driver.internal.util.Futures.getBlocking;
 import static org.neo4j.driver.v1.Values.value;
 
 public class ExplicitTransaction implements Transaction
@@ -115,7 +113,17 @@ public class ExplicitTransaction implements Transaction
             CompletableFuture<ExplicitTransaction> beginFuture = new CompletableFuture<>();
             connection.runAndFlush( BEGIN_QUERY, initialBookmark.asBeginTransactionParameters(),
                     NoOpResponseHandler.INSTANCE, new BeginTxResponseHandler<>( beginFuture, this ) );
-            return beginFuture;
+
+            return beginFuture.handle( ( tx, beginError ) ->
+            {
+                if ( beginError != null )
+                {
+                    // release connection if begin failed, transaction can't be started
+                    connection.release();
+                    throw Futures.asCompletionException( beginError );
+                }
+                return tx;
+            } );
         }
     }
 
@@ -140,7 +148,8 @@ public class ExplicitTransaction implements Transaction
     @Override
     public void close()
     {
-        getBlocking( closeAsync() );
+        Futures.blockingGet( closeAsync(),
+                () -> terminateConnectionOnThreadInterrupt( "Thread interrupted while closing the transaction" ) );
     }
 
     CompletionStage<Void> closeAsync()
@@ -155,7 +164,7 @@ public class ExplicitTransaction implements Transaction
         }
         else
         {
-            return completedFuture( null );
+            return completedWithNull();
         }
     }
 
@@ -164,7 +173,7 @@ public class ExplicitTransaction implements Transaction
     {
         if ( state == State.COMMITTED )
         {
-            return completedFuture( null );
+            return completedWithNull();
         }
         else if ( state == State.ROLLED_BACK )
         {
@@ -192,13 +201,13 @@ public class ExplicitTransaction implements Transaction
         }
         else if ( state == State.ROLLED_BACK )
         {
-            return completedFuture( null );
+            return completedWithNull();
         }
         else if ( state == State.TERMINATED )
         {
             // transaction has been terminated by RESET and should be rolled back by the database
             state = State.ROLLED_BACK;
-            return completedFuture( null );
+            return completedWithNull();
         }
         else
         {
@@ -264,8 +273,9 @@ public class ExplicitTransaction implements Transaction
     @Override
     public StatementResult run( Statement statement )
     {
-        StatementResultCursor cursor = getBlocking( run( statement, false ) );
-        return new InternalStatementResult( cursor );
+        StatementResultCursor cursor = Futures.blockingGet( run( statement, false ),
+                () -> terminateConnectionOnThreadInterrupt( "Thread interrupted while running query in transaction" ) );
+        return new InternalStatementResult( connection, cursor );
     }
 
     @Override
@@ -275,18 +285,12 @@ public class ExplicitTransaction implements Transaction
         return (CompletionStage) run( statement, true );
     }
 
-    private CompletionStage<InternalStatementResultCursor> run( Statement statement, boolean asAsync )
+    private CompletionStage<InternalStatementResultCursor> run( Statement statement, boolean waitForRunResponse )
     {
         ensureCanRunQueries();
-        CompletionStage<InternalStatementResultCursor> cursorStage;
-        if ( asAsync )
-        {
-            cursorStage = QueryRunner.runAsAsync( connection, statement, this );
-        }
-        else
-        {
-            cursorStage = QueryRunner.runAsBlocking( connection, statement, this );
-        }
+        CompletionStage<InternalStatementResultCursor> cursorStage =
+                QueryRunner.runInTransaction( connection, statement,
+                        this, waitForRunResponse );
         resultCursors.add( cursorStage );
         return cursorStage;
     }
@@ -366,13 +370,23 @@ public class ExplicitTransaction implements Transaction
     {
         return ( ignore, commitOrRollbackError ) ->
         {
-            if ( cursorFailure != null )
+            if ( cursorFailure != null && commitOrRollbackError != null )
             {
-                throw new CompletionException( completionErrorCause( cursorFailure ) );
+                Throwable cause1 = Futures.completionExceptionCause( cursorFailure );
+                Throwable cause2 = Futures.completionExceptionCause( commitOrRollbackError );
+                if ( cause1 != cause2 )
+                {
+                    cause1.addSuppressed( cause2 );
+                }
+                throw Futures.asCompletionException( cause1 );
+            }
+            else if ( cursorFailure != null )
+            {
+                throw Futures.asCompletionException( cursorFailure );
             }
             else if ( commitOrRollbackError != null )
             {
-                throw new CompletionException( completionErrorCause( commitOrRollbackError ) );
+                throw Futures.asCompletionException( commitOrRollbackError );
             }
             else
             {
@@ -386,8 +400,13 @@ public class ExplicitTransaction implements Transaction
         return ( ignore, error ) ->
         {
             state = newState;
-            connection.releaseInBackground();
+            connection.release(); // release in background
             session.setBookmark( bookmark );
         };
+    }
+
+    private void terminateConnectionOnThreadInterrupt( String reason )
+    {
+        connection.terminateAndRelease( reason );
     }
 }

@@ -42,9 +42,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.driver.internal.DriverFactory;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
-import org.neo4j.driver.internal.logging.DevNullLogging;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.util.DriverFactoryWithFixedRetryLogic;
+import org.neo4j.driver.internal.util.DriverFactoryWithOneEventLoopThread;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.AuthToken;
@@ -62,7 +62,10 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.TransientException;
+import org.neo4j.driver.v1.summary.ResultSummary;
+import org.neo4j.driver.v1.summary.StatementType;
 import org.neo4j.driver.v1.util.TestNeo4j;
+import org.neo4j.driver.v1.util.TestUtil;
 
 import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -73,6 +76,7 @@ import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.emptyArray;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -87,6 +91,9 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
+import static org.neo4j.driver.internal.util.Matchers.arithmeticError;
+import static org.neo4j.driver.internal.util.Matchers.connectionAcquisitionTimeoutError;
 import static org.neo4j.driver.internal.util.ServerVersion.v3_1_0;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.util.DaemonThreadFactory.daemon;
@@ -1219,7 +1226,6 @@ public class SessionIT
         session.run( "CREATE ()" );
         session.run( "CREATE ()" );
         session.run( "RETURN 10 / 0" );
-        session.run( "CREATE ()" );
 
         try
         {
@@ -1229,6 +1235,30 @@ public class SessionIT
         catch ( ClientException e )
         {
             assertThat( e.getMessage(), containsString( "/ by zero" ) );
+        }
+    }
+
+    @Test
+    public void shouldThrowFromRunWhenPreviousErrorNotConsumed()
+    {
+        Session session = neo4j.driver().session();
+
+        session.run( "CREATE ()" );
+        session.run( "CREATE ()" );
+        session.run( "RETURN 10 / 0" );
+
+        try
+        {
+            session.run( "CREATE ()" );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e.getMessage(), containsString( "/ by zero" ) );
+        }
+        finally
+        {
+            session.close();
         }
     }
 
@@ -1252,6 +1282,261 @@ public class SessionIT
 
         session.close();
         assertFalse( session.isOpen() );
+    }
+
+    @Test
+    public void shouldConsumePreviousResultBeforeRunningNewQuery()
+    {
+        try ( Session session = neo4j.driver().session() )
+        {
+            session.run( "UNWIND range(1000, 0, -1) AS x RETURN 42 / x" );
+
+            try
+            {
+                session.run( "RETURN 1" );
+                fail( "Exception expected" );
+            }
+            catch ( ClientException e )
+            {
+                assertThat( e.getMessage(), containsString( "/ by zero" ) );
+            }
+        }
+    }
+
+    @Test
+    public void shouldNotRetryOnConnectionAcquisitionTimeout()
+    {
+        int maxPoolSize = 3;
+        Config config = Config.build()
+                .withMaxConnectionPoolSize( maxPoolSize )
+                .withConnectionAcquisitionTimeout( 0, TimeUnit.SECONDS )
+                .withMaxTransactionRetryTime( 42, TimeUnit.DAYS ) // retry for a really long time
+                .toConfig();
+
+        driver = new DriverFactoryWithOneEventLoopThread().newInstance( neo4j.uri(), neo4j.authToken(), config );
+
+        for ( int i = 0; i < maxPoolSize; i++ )
+        {
+            driver.session().beginTransaction();
+        }
+
+        AtomicInteger invocations = new AtomicInteger();
+        try
+        {
+            driver.session().writeTransaction( tx -> invocations.incrementAndGet() );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e, is( connectionAcquisitionTimeoutError( 0 ) ) );
+        }
+
+        // work should never be invoked
+        assertEquals( 0, invocations.get() );
+    }
+
+    @Test
+    public void shouldAllowConsumingRecordsAfterFailureInSessionClose()
+    {
+        Session session = neo4j.driver().session();
+
+        StatementResult result = session.run( "UNWIND [2, 4, 8, 0] AS x RETURN 32 / x" );
+
+        try
+        {
+            session.close();
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e, is( arithmeticError() ) );
+        }
+
+        assertTrue( result.hasNext() );
+        assertEquals( 16, result.next().get( 0 ).asInt() );
+        assertTrue( result.hasNext() );
+        assertEquals( 8, result.next().get( 0 ).asInt() );
+        assertTrue( result.hasNext() );
+        assertEquals( 4, result.next().get( 0 ).asInt() );
+        assertFalse( result.hasNext() );
+    }
+
+    @Test
+    public void shouldAllowAccessingRecordsAfterSummary()
+    {
+        int recordCount = 10_000;
+        String query = "UNWIND range(1, " + recordCount + ") AS x RETURN x";
+
+        try ( Session session = neo4j.driver().session() )
+        {
+            StatementResult result = session.run( query );
+
+            ResultSummary summary = result.summary();
+            assertEquals( query, summary.statement().text() );
+            assertEquals( StatementType.READ_ONLY, summary.statementType() );
+
+            List<Record> records = result.list();
+            assertEquals( recordCount, records.size() );
+            for ( int i = 1; i <= recordCount; i++ )
+            {
+                Record record = records.get( i - 1 );
+                assertEquals( i, record.get( 0 ).asInt() );
+            }
+        }
+    }
+
+    @Test
+    public void shouldAllowAccessingRecordsAfterSessionClosed()
+    {
+        int recordCount = 11_333;
+        String query = "UNWIND range(1, " + recordCount + ") AS x RETURN 'Result-' + x";
+
+        StatementResult result;
+        try ( Session session = neo4j.driver().session() )
+        {
+            result = session.run( query );
+        }
+
+        List<Record> records = result.list();
+        assertEquals( recordCount, records.size() );
+        for ( int i = 1; i <= recordCount; i++ )
+        {
+            Record record = records.get( i - 1 );
+            assertEquals( "Result-" + i, record.get( 0 ).asString() );
+        }
+    }
+
+    @Test
+    public void shouldAllowToConsumeRecordsSlowlyAndCloseSession() throws InterruptedException
+    {
+        Session session = neo4j.driver().session();
+
+        StatementResult result = session.run( "UNWIND range(10000, 0, -1) AS x RETURN 10 / x" );
+
+        // consume couple records slowly with a sleep in-between
+        for ( int i = 0; i < 10; i++ )
+        {
+            assertTrue( result.hasNext() );
+            assertNotNull( result.next() );
+            Thread.sleep( 50 );
+        }
+
+        try
+        {
+            session.close();
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e, is( arithmeticError() ) );
+        }
+    }
+
+    @Test
+    public void shouldAllowToConsumeRecordsSlowlyAndRetrieveSummary() throws InterruptedException
+    {
+        try ( Session session = neo4j.driver().session() )
+        {
+            StatementResult result = session.run( "UNWIND range(8000, 1, -1) AS x RETURN 42 / x" );
+
+            // consume couple records slowly with a sleep in-between
+            for ( int i = 0; i < 12; i++ )
+            {
+                assertTrue( result.hasNext() );
+                assertNotNull( result.next() );
+                Thread.sleep( 50 );
+            }
+
+            ResultSummary summary = result.summary();
+            assertNotNull( summary );
+        }
+    }
+
+    @Test
+    public void shouldBeResponsiveToThreadInterruptWhenWaitingForResult() throws Exception
+    {
+        try ( Session session1 = neo4j.driver().session();
+              Session session2 = neo4j.driver().session() )
+        {
+            session1.run( "CREATE (:Person {name: 'Beta Ray Bill'})" ).consume();
+
+            Transaction tx = session1.beginTransaction();
+            tx.run( "MATCH (n:Person {name: 'Beta Ray Bill'}) SET n.hammer = 'Mjolnir'" ).consume();
+
+            // now 'Beta Ray Bill' node is locked
+
+            // setup other thread to interrupt current thread when it blocks
+            TestUtil.interruptWhenInWaitingState( Thread.currentThread() );
+
+            try
+            {
+                session2.run( "MATCH (n:Person {name: 'Beta Ray Bill'}) SET n.hammer = 'Stormbreaker'" ).consume();
+                fail( "Exception expected" );
+            }
+            catch ( ServiceUnavailableException e )
+            {
+                assertThat( e.getMessage(), containsString( "Connection to the database terminated" ) );
+                assertThat( e.getMessage(), containsString( "Thread interrupted" ) );
+            }
+            finally
+            {
+                // clear interrupted flag
+                Thread.interrupted();
+            }
+        }
+    }
+
+    @Test
+    public void shouldAllowLongRunningQueryWithConnectTimeout() throws Exception
+    {
+        int connectionTimeoutMs = 3_000;
+        Config config = Config.build()
+                .withLogging( DEV_NULL_LOGGING )
+                .withConnectionTimeout( connectionTimeoutMs, TimeUnit.MILLISECONDS )
+                .toConfig();
+
+        try ( Driver driver = GraphDatabase.driver( neo4j.uri(), neo4j.authToken(), config ) )
+        {
+            Session session1 = driver.session();
+            Session session2 = driver.session();
+
+            session1.run( "CREATE (:Avenger {name: 'Hulk'})" ).consume();
+
+            Transaction tx = session1.beginTransaction();
+            tx.run( "MATCH (a:Avenger {name: 'Hulk'}) SET a.power = 100 RETURN a" ).consume();
+
+            // Hulk node is now locked
+
+            CountDownLatch latch = new CountDownLatch( 1 );
+            Future<Long> updateFuture = executeInDifferentThread( () ->
+            {
+                latch.countDown();
+                return session2.run( "MATCH (a:Avenger {name: 'Hulk'}) SET a.weight = 1000 RETURN a.power" )
+                        .single().get( 0 ).asLong();
+            } );
+
+            latch.await();
+            // sleep more than connection timeout
+            Thread.sleep( connectionTimeoutMs + 1_000 );
+            // verify that query is still executing and has not failed because of the read timeout
+            assertFalse( updateFuture.isDone() );
+
+            tx.success();
+            tx.close();
+
+            long hulkPower = updateFuture.get( 10, TimeUnit.SECONDS );
+            assertEquals( 100, hulkPower );
+        }
+    }
+
+    @Test
+    public void shouldAllowReturningNullFromTransactionFunction()
+    {
+        try ( Session session = neo4j.driver().session() )
+        {
+            assertNull( session.readTransaction( tx -> null ) );
+            assertNull( session.writeTransaction( tx -> null ) );
+        }
     }
 
     private void assumeServerIs31OrLater()
@@ -1402,7 +1687,7 @@ public class SessionIT
     private Driver newDriverWithLimitedRetries( int maxTxRetryTime, TimeUnit unit )
     {
         Config config = Config.build()
-                .withLogging( DevNullLogging.DEV_NULL_LOGGING )
+                .withLogging( DEV_NULL_LOGGING )
                 .withMaxTransactionRetryTime( maxTxRetryTime, unit )
                 .toConfig();
         return GraphDatabase.driver( neo4j.uri(), neo4j.authToken(), config );
@@ -1410,7 +1695,7 @@ public class SessionIT
 
     private static Config noLoggingConfig()
     {
-        return Config.build().withLogging( DevNullLogging.DEV_NULL_LOGGING ).toConfig();
+        return Config.build().withLogging( DEV_NULL_LOGGING ).toConfig();
     }
 
     private static ThrowingWork newThrowingWorkSpy( String query, int failures )

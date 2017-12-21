@@ -20,7 +20,6 @@ package org.neo4j.driver.internal;
 
 import java.util.Objects;
 
-import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.util.Pair;
 
 public class InternalPair<K, V> implements Pair<K, V>
@@ -55,11 +54,6 @@ public class InternalPair<K, V> implements Pair<K, V>
     public String toString()
     {
         return String.format( "%s: %s", Objects.toString( key ), Objects.toString( value ) );
-    }
-
-    public String toString( Function<V, String> printValue )
-    {
-        return String.format( "%s: %s", key, printValue.apply( value ) );
     }
 
     @Override

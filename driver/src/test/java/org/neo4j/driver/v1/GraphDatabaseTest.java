@@ -21,13 +21,17 @@ package org.neo4j.driver.v1;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
+import java.net.ServerSocket;
 import java.net.URI;
 import java.util.List;
 
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.util.StubServer;
+import org.neo4j.driver.v1.util.TestUtil;
 
 import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
@@ -40,6 +44,7 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.Matchers.clusterDriver;
 import static org.neo4j.driver.internal.util.Matchers.directDriver;
 import static org.neo4j.driver.v1.Config.TrustStrategy.trustOnFirstUse;
@@ -155,5 +160,78 @@ public class GraphDatabaseTest
 
         assertEquals( 0, server1.exitStatus() );
         assertEquals( 0, server2.exitStatus() );
+    }
+
+    @Test
+    public void shouldRespondToInterruptsWhenConnectingToUnresponsiveServer() throws Exception
+    {
+        try ( ServerSocket serverSocket = new ServerSocket( 0 ) )
+        {
+            // setup other thread to interrupt current thread when it blocks
+            TestUtil.interruptWhenInWaitingState( Thread.currentThread() );
+            try
+            {
+                GraphDatabase.driver( "bolt://localhost:" + serverSocket.getLocalPort() );
+                fail( "Exception expected" );
+            }
+            catch ( ServiceUnavailableException ignore )
+            {
+                // expected
+            }
+            finally
+            {
+                // clear interrupted flag
+                Thread.interrupted();
+            }
+        }
+    }
+
+    @Test
+    public void shouldFailToCreateUnencryptedDriverWhenServerDoesNotRespond() throws IOException
+    {
+        testFailureWhenServerDoesNotRespond( false );
+    }
+
+    @Test
+    public void shouldFailToCreateEncryptedDriverWhenServerDoesNotRespond() throws IOException
+    {
+        testFailureWhenServerDoesNotRespond( true );
+    }
+
+    private static void testFailureWhenServerDoesNotRespond( boolean encrypted ) throws IOException
+    {
+        try ( ServerSocket server = new ServerSocket( 0 ) ) // server that accepts connections but does not reply
+        {
+            int connectionTimeoutMillis = 1_000;
+            Config config = createConfig( encrypted, connectionTimeoutMillis );
+
+            try
+            {
+                GraphDatabase.driver( URI.create( "bolt://localhost:" + server.getLocalPort() ), config );
+                fail( "Exception expected" );
+            }
+            catch ( ServiceUnavailableException e )
+            {
+                assertEquals( e.getMessage(), "Unable to establish connection in " + connectionTimeoutMillis + "ms" );
+            }
+        }
+    }
+
+    private static Config createConfig( boolean encrypted, int timeoutMillis )
+    {
+        Config.ConfigBuilder configBuilder = Config.build()
+                .withConnectionTimeout( timeoutMillis, MILLISECONDS )
+                .withLogging( DEV_NULL_LOGGING );
+
+        if ( encrypted )
+        {
+            configBuilder.withEncryption();
+        }
+        else
+        {
+            configBuilder.withoutEncryption();
+        }
+
+        return configBuilder.toConfig();
     }
 }

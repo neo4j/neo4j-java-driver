@@ -18,67 +18,137 @@
  */
 package org.neo4j.driver.v1.integration;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.driver.v1.*;
+
+import org.neo4j.driver.internal.util.ServerVersion;
+import org.neo4j.driver.v1.Config;
+import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.GraphDatabase;
+import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.v1.util.Neo4jSettings;
+import org.neo4j.driver.v1.util.Neo4jSettings.BoltTlsLevel;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.driver.v1.Config.EncryptionLevel.NONE;
-import static org.neo4j.driver.v1.Config.EncryptionLevel.REQUIRED;
+import static org.hamcrest.CoreMatchers.startsWith;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+import static org.neo4j.driver.internal.util.ServerVersion.v3_1_0;
 
 public class EncryptionIT
 {
     @Rule
-    public TestNeo4j neo4j = new TestNeo4j();
+    public final TestNeo4j neo4j = new TestNeo4j();
 
-    @Test
-    public void shouldOperateWithNoEncryption() throws Exception
+    private ServerVersion neo4jVersion;
+
+    @Before
+    public void setUp()
     {
-        // Given
-        Driver driver = GraphDatabase.driver( neo4j.uri(), neo4j.authToken(),
-                Config.build().withoutEncryption().toConfig() );
-
-        // Then
-        assertThat( driver.isEncrypted(), equalTo( false ) );
-
-        // When
-        Session session = driver.session();
-        StatementResult result = session.run( "RETURN 1" );
-
-        // Then
-        Record record = result.next();
-        int value = record.get( 0 ).asInt();
-        assertThat( value, equalTo( 1 ) );
-
-        // Finally
-        session.close();
-        driver.close();
+        neo4jVersion = neo4j.version();
     }
 
     @Test
-    public void shouldOperateWithRequiredEncryption() throws Exception
+    public void shouldOperateWithNoEncryptionWhenItIsOptionalInTheDatabase()
     {
-        // Given
-        Driver driver = GraphDatabase.driver( neo4j.uri(), neo4j.authToken(),
-                Config.build().withEncryption().toConfig() );
-
-        // Then
-        assertThat( driver.isEncrypted(), equalTo( true ) );
-
-        // When
-        Session session = driver.session();
-        StatementResult result = session.run( "RETURN 1" );
-
-        // Then
-        Record record = result.next();
-        int value = record.get( 0 ).asInt();
-        assertThat( value, equalTo( 1 ) );
-
-        // Finally
-        session.close();
-        driver.close();
+        testMatchingEncryption( BoltTlsLevel.OPTIONAL, false );
     }
 
+    @Test
+    public void shouldOperateWithEncryptionWhenItIsOptionalInTheDatabase()
+    {
+        testMatchingEncryption( BoltTlsLevel.OPTIONAL, true );
+    }
+
+    @Test
+    public void shouldFailWithoutEncryptionWhenItIsRequiredInTheDatabase()
+    {
+        testMismatchingEncryption( BoltTlsLevel.REQUIRED, false );
+    }
+
+    @Test
+    public void shouldOperateWithEncryptionWhenItIsAlsoRequiredInTheDatabase()
+    {
+        testMatchingEncryption( BoltTlsLevel.REQUIRED, true );
+    }
+
+    @Test
+    public void shouldFailWithEncryptionWhenItIsDisabledInTheDatabase()
+    {
+        testMismatchingEncryption( BoltTlsLevel.DISABLED, true );
+    }
+
+    @Test
+    public void shouldOperateWithoutEncryptionWhenItIsAlsoDisabledInTheDatabase()
+    {
+        testMatchingEncryption( BoltTlsLevel.DISABLED, false );
+    }
+
+    private void testMatchingEncryption( BoltTlsLevel tlsLevel, boolean driverEncrypted )
+    {
+        neo4j.restartDb( Neo4jSettings.TEST_SETTINGS.updateWith( Neo4jSettings.BOLT_TLS_LEVEL, tlsLevel.toString() ) );
+        Config config = newConfig( driverEncrypted );
+
+        try ( Driver driver = GraphDatabase.driver( neo4j.uri(), neo4j.authToken(), config ) )
+        {
+            assertThat( driver.isEncrypted(), equalTo( driverEncrypted ) );
+
+            try ( Session session = driver.session() )
+            {
+                StatementResult result = session.run( "RETURN 1" );
+
+                Record record = result.next();
+                int value = record.get( 0 ).asInt();
+                assertThat( value, equalTo( 1 ) );
+            }
+        }
+    }
+
+    private void testMismatchingEncryption( BoltTlsLevel tlsLevel, boolean driverEncrypted )
+    {
+        neo4j.restartDb( Neo4jSettings.TEST_SETTINGS.updateWith( Neo4jSettings.BOLT_TLS_LEVEL, tlsLevel.toString() ) );
+        Config config = newConfig( driverEncrypted );
+
+        try
+        {
+            GraphDatabase.driver( neo4j.uri(), neo4j.authToken(), config ).close();
+            fail( "Exception expected" );
+        }
+        catch ( RuntimeException e )
+        {
+            // pre 3.1 neo4j throws different exception when encryption required but not used
+            if ( neo4jVersion.lessThan( v3_1_0 ) && tlsLevel == BoltTlsLevel.REQUIRED )
+            {
+                assertThat( e, instanceOf( ClientException.class ) );
+                assertThat( e.getMessage(), startsWith( "This server requires a TLS encrypted connection" ) );
+            }
+            else
+            {
+                assertThat( e, instanceOf( ServiceUnavailableException.class ) );
+                assertThat( e.getMessage(), startsWith( "Connection to the database terminated" ) );
+            }
+        }
+    }
+
+    private static Config newConfig( boolean withEncryption )
+    {
+        return withEncryption ? configWithEncryption() : configWithoutEncryption();
+    }
+
+    private static Config configWithEncryption()
+    {
+        return Config.build().withEncryption().toConfig();
+    }
+
+    private static Config configWithoutEncryption()
+    {
+        return Config.build().withoutEncryption().toConfig();
+    }
 }

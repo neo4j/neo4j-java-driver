@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.util.Clock;
-import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.ImmediateSchedulingEventExecutor;
 import org.neo4j.driver.internal.util.Supplier;
 import org.neo4j.driver.v1.Logger;
@@ -57,7 +56,6 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
-import static org.neo4j.driver.internal.util.Futures.getBlocking;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
 public class ExponentialBackoffRetryLogicTest
@@ -179,7 +177,7 @@ public class ExponentialBackoffRetryLogicTest
 
         CompletionStage<Object> future = retryAsync( retryLogic, retries, result );
 
-        assertEquals( result, Futures.getBlocking( future ) );
+        assertEquals( result, await( future ) );
         assertEquals( delaysWithoutJitter( initialDelay, multiplier, retries ), eventExecutor.scheduleDelays() );
     }
 
@@ -215,7 +213,7 @@ public class ExponentialBackoffRetryLogicTest
                 mock( Clock.class ) );
 
         CompletionStage<Object> future = retryAsync( retryLogic, retries, result );
-        assertEquals( result, Futures.getBlocking( future ) );
+        assertEquals( result, await( future ) );
 
         List<Long> scheduleDelays = eventExecutor.scheduleDelays();
         List<Long> delaysWithoutJitter = delaysWithoutJitter( initialDelay, multiplier, retries );
@@ -642,7 +640,7 @@ public class ExponentialBackoffRetryLogicTest
 
         try
         {
-            Futures.getBlocking( retryLogic.retryAsync( workMock ) );
+            await( retryLogic.retryAsync( workMock ) );
             fail( "Exception expected" );
         }
         catch ( Exception e )
@@ -713,7 +711,7 @@ public class ExponentialBackoffRetryLogicTest
 
         try
         {
-            Futures.getBlocking( retryLogic.retryAsync( workMock ) );
+            await( retryLogic.retryAsync( workMock ) );
             fail( "Exception expected" );
         }
         catch ( Exception e )
@@ -805,7 +803,7 @@ public class ExponentialBackoffRetryLogicTest
 
         try
         {
-            getBlocking( logic.retryAsync( () -> failedFuture( new RuntimeException( "Fatal async" ) ) ) );
+            await( logic.retryAsync( () -> failedFuture( new RuntimeException( "Fatal async" ) ) ) );
             fail( "Exception expected" );
         }
         catch ( RuntimeException e )
@@ -871,7 +869,7 @@ public class ExponentialBackoffRetryLogicTest
 
         try
         {
-            getBlocking( logic.retryAsync( new Supplier<CompletionStage<Void>>()
+            await( logic.retryAsync( new Supplier<CompletionStage<Void>>()
             {
                 volatile boolean invoked;
 

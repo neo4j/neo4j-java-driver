@@ -20,7 +20,6 @@ package org.neo4j.driver.internal;
 
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.internal.async.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
@@ -52,7 +51,7 @@ public class DirectConnectionProvider implements ConnectionProvider
     @Override
     public CompletionStage<Void> verifyConnectivity()
     {
-        return acquireConnection( READ ).thenCompose( Connection::releaseNow );
+        return acquireConnection( READ ).thenCompose( Connection::release );
     }
 
     @Override

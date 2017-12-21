@@ -26,8 +26,9 @@ import io.netty.util.concurrent.Promise;
 import org.neo4j.driver.internal.handlers.PingResponseHandler;
 import org.neo4j.driver.internal.messaging.ResetMessage;
 import org.neo4j.driver.internal.util.Clock;
+import org.neo4j.driver.v1.Logger;
+import org.neo4j.driver.v1.Logging;
 
-import static java.util.Objects.requireNonNull;
 import static org.neo4j.driver.internal.async.ChannelAttributes.creationTimestamp;
 import static org.neo4j.driver.internal.async.ChannelAttributes.lastUsedTimestamp;
 import static org.neo4j.driver.internal.async.ChannelAttributes.messageDispatcher;
@@ -36,11 +37,13 @@ public class NettyChannelHealthChecker implements ChannelHealthChecker
 {
     private final PoolSettings poolSettings;
     private final Clock clock;
+    private final Logger log;
 
-    public NettyChannelHealthChecker( PoolSettings poolSettings, Clock clock )
+    public NettyChannelHealthChecker( PoolSettings poolSettings, Clock clock, Logging logging )
     {
-        this.poolSettings = requireNonNull( poolSettings );
-        this.clock = requireNonNull( clock );
+        this.poolSettings = poolSettings;
+        this.clock = clock;
+        this.log = logging.getLog( getClass().getSimpleName() );
     }
 
     @Override
@@ -63,9 +66,18 @@ public class NettyChannelHealthChecker implements ChannelHealthChecker
         {
             long creationTimestampMillis = creationTimestamp( channel );
             long currentTimestampMillis = clock.millis();
-            long ageMillis = currentTimestampMillis - creationTimestampMillis;
 
-            return ageMillis > poolSettings.maxConnectionLifetime();
+            long ageMillis = currentTimestampMillis - creationTimestampMillis;
+            long maxAgeMillis = poolSettings.maxConnectionLifetime();
+
+            boolean tooOld = ageMillis > maxAgeMillis;
+            if ( tooOld )
+            {
+                log.trace( "Failed acquire channel %s from the pool because it is too old: %s > %s",
+                        channel, ageMillis, maxAgeMillis );
+            }
+
+            return tooOld;
         }
         return false;
     }
@@ -78,7 +90,11 @@ public class NettyChannelHealthChecker implements ChannelHealthChecker
             if ( lastUsedTimestamp != null )
             {
                 long idleTime = clock.millis() - lastUsedTimestamp;
-                return idleTime > poolSettings.idleTimeBeforeConnectionTest();
+                boolean idleTooLong = idleTime > poolSettings.idleTimeBeforeConnectionTest();
+
+                log.trace( "Channel %s has been idle for %s and needs a ping", channel, idleTime );
+
+                return idleTooLong;
             }
         }
         return false;
@@ -87,7 +103,7 @@ public class NettyChannelHealthChecker implements ChannelHealthChecker
     private Future<Boolean> ping( Channel channel )
     {
         Promise<Boolean> result = channel.eventLoop().newPromise();
-        messageDispatcher( channel ).queue( new PingResponseHandler( result ) );
+        messageDispatcher( channel ).queue( new PingResponseHandler( result, channel, log ) );
         channel.writeAndFlush( ResetMessage.RESET, channel.voidPromise() );
         return result;
     }

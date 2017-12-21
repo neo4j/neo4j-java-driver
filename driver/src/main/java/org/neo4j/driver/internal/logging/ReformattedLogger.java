@@ -22,44 +22,37 @@ import org.neo4j.driver.v1.Logger;
 
 import static java.util.Objects.requireNonNull;
 
-public class DelegatingLogger implements Logger
+public abstract class ReformattedLogger implements Logger
 {
     private final Logger delegate;
-    private final String messagePrefix;
 
-    public DelegatingLogger( Logger delegate )
-    {
-        this( delegate, null );
-    }
-
-    public DelegatingLogger( Logger delegate, String messagePrefix )
+    protected ReformattedLogger(Logger delegate)
     {
         this.delegate = requireNonNull( delegate );
-        this.messagePrefix = messagePrefix;
     }
 
     @Override
     public void error( String message, Throwable cause )
     {
-        delegate.error( messageWithPrefix( message ), cause );
+        delegate.error( reformat( message ), cause );
     }
 
     @Override
     public void info( String message, Object... params )
     {
-        delegate.info( messageWithPrefix( message ), params );
+        delegate.info( reformat( message ), params );
     }
 
     @Override
     public void warn( String message, Object... params )
     {
-        delegate.warn( messageWithPrefix( message ), params );
+        delegate.warn( reformat( message ), params );
     }
 
     @Override
     public void warn( String message, Throwable cause )
     {
-        delegate.warn( messageWithPrefix( message ), cause );
+        delegate.warn( reformat( message ), cause );
     }
 
     @Override
@@ -67,7 +60,7 @@ public class DelegatingLogger implements Logger
     {
         if ( isDebugEnabled() )
         {
-            delegate.debug( messageWithPrefix( message ), params );
+            delegate.debug( reformat( message ), params );
         }
     }
 
@@ -76,7 +69,7 @@ public class DelegatingLogger implements Logger
     {
         if ( isTraceEnabled() )
         {
-            delegate.trace( messageWithPrefix( message ), params );
+            delegate.trace( reformat( message ), params );
         }
     }
 
@@ -92,12 +85,5 @@ public class DelegatingLogger implements Logger
         return delegate.isDebugEnabled();
     }
 
-    private String messageWithPrefix( String message )
-    {
-        if ( messagePrefix == null )
-        {
-            return message;
-        }
-        return String.format( "[%s] %s", messagePrefix, message );
-    }
+    protected abstract String reformat( String message );
 }

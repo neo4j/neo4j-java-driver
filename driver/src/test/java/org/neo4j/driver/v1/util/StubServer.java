@@ -18,21 +18,26 @@
  */
 package org.neo4j.driver.v1.util;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 
 import org.neo4j.driver.v1.Config;
 
 import static java.lang.Thread.sleep;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
+import static java.util.concurrent.Executors.newCachedThreadPool;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
+import static org.neo4j.driver.v1.util.DaemonThreadFactory.daemon;
 
 public class StubServer
 {
@@ -40,6 +45,8 @@ public class StubServer
 
     public static final Config INSECURE_CONFIG = Config.build()
             .withoutEncryption().toConfig();
+
+    private static final ExecutorService executor = newCachedThreadPool( daemon( "stub-server-output-reader-" ) );
 
     // This may be thrown if the driver has not been closed properly
     public static class ForceKilled extends Exception {}
@@ -53,8 +60,9 @@ public class StubServer
         List<String> command = new ArrayList<>();
         command.addAll( singletonList( BOLT_STUB_COMMAND ) );
         command.addAll( asList( Integer.toString( port ), script ) );
-        ProcessBuilder server = new ProcessBuilder().inheritIO().command( command );
+        ProcessBuilder server = new ProcessBuilder().command( command );
         process = server.start();
+        startReadingOutput( process );
         waitForSocket( port );
     }
 
@@ -127,5 +135,35 @@ public class StubServer
             }
         }
         throw new AssertionError( "Can't connect to " + address );
+    }
+
+    /**
+     * Read output of the given process using a separate thread.
+     * Since maven-surefire-plugin 2.20.0 it is not good to simply inherit IO using {@link ProcessBuilder#inheritIO()}.
+     * It will result in "Corrupted stdin stream in forked JVM 1" warning being printed and output being redirected to a
+     * separate temporary file.
+     * <p>
+     * Fore more details see:
+     * <ul>
+     * <li>http://maven.apache.org/surefire/maven-surefire-plugin/faq.html#corruptedstream</li>
+     * <li>https://issues.apache.org/jira/browse/SUREFIRE-1359</li>
+     * </ul>
+     *
+     * @param process the process to read output.
+     */
+    private static void startReadingOutput( Process process )
+    {
+        executor.submit( () ->
+        {
+            try ( BufferedReader reader = new BufferedReader( new InputStreamReader( process.getInputStream() ) ) )
+            {
+                String line;
+                while ( (line = reader.readLine()) != null )
+                {
+                    System.out.println( line );
+                }
+            }
+            return null;
+        } );
     }
 }

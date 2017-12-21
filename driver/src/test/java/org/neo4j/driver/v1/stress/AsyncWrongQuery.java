@@ -53,7 +53,7 @@ public class AsyncWrongQuery<C extends AbstractContext> extends AbstractAsyncQue
                     session.closeAsync();
                     assertNull( record );
 
-                    Throwable cause = Futures.completionErrorCause( error );
+                    Throwable cause = Futures.completionExceptionCause( error );
                     assertNotNull( cause );
                     assertThat( cause, instanceOf( ClientException.class ) );
                     assertThat( ((Neo4jException) cause).code(), containsString( "SyntaxError" ) );

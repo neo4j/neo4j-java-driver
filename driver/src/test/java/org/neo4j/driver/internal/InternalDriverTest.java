@@ -20,14 +20,18 @@ package org.neo4j.driver.internal;
 
 import org.junit.Test;
 
+import java.util.concurrent.CompletableFuture;
+
 import org.neo4j.driver.internal.security.SecurityPlan;
 
-import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.driver.internal.util.Futures.getBlocking;
+import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
+import static org.neo4j.driver.internal.util.Futures.completedWithNull;
+import static org.neo4j.driver.v1.util.TestUtil.await;
 
 public class InternalDriverTest
 {
@@ -37,7 +41,7 @@ public class InternalDriverTest
         SessionFactory sessionFactory = sessionFactoryMock();
         InternalDriver driver = newDriver( sessionFactory );
 
-        assertNull( getBlocking( driver.closeAsync() ) );
+        assertNull( await( driver.closeAsync() ) );
         verify( sessionFactory ).close();
     }
 
@@ -47,22 +51,34 @@ public class InternalDriverTest
         SessionFactory sessionFactory = sessionFactoryMock();
         InternalDriver driver = newDriver( sessionFactory );
 
-        assertNull( getBlocking( driver.closeAsync() ) );
-        assertNull( getBlocking( driver.closeAsync() ) );
-        assertNull( getBlocking( driver.closeAsync() ) );
+        assertNull( await( driver.closeAsync() ) );
+        assertNull( await( driver.closeAsync() ) );
+        assertNull( await( driver.closeAsync() ) );
 
         verify( sessionFactory ).close();
     }
 
+    @Test
+    public void shouldVerifyConnectivity()
+    {
+        SessionFactory sessionFactory = sessionFactoryMock();
+        CompletableFuture<Void> connectivityStage = completedWithNull();
+        when( sessionFactory.verifyConnectivity() ).thenReturn( connectivityStage );
+
+        InternalDriver driver = newDriver( sessionFactory );
+
+        assertEquals( connectivityStage, driver.verifyConnectivity() );
+    }
+
     private static InternalDriver newDriver( SessionFactory sessionFactory )
     {
-        return new InternalDriver( SecurityPlan.insecure(), sessionFactory );
+        return new InternalDriver( SecurityPlan.insecure(), sessionFactory, DEV_NULL_LOGGING );
     }
 
     private static SessionFactory sessionFactoryMock()
     {
         SessionFactory sessionFactory = mock( SessionFactory.class );
-        when( sessionFactory.close() ).thenReturn( completedFuture( null ) );
+        when( sessionFactory.close() ).thenReturn( completedWithNull() );
         return sessionFactory;
     }
 }

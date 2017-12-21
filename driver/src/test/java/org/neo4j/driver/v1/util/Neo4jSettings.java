@@ -34,11 +34,15 @@ public class Neo4jSettings
     public static final String IMPORT_DIR = "dbms.directories.import";
     public static final String LISTEN_ADDR = "dbms.connectors.default_listen_address"; // only valid for 3.1+
     public static final String IPV6_ENABLED_ADDR = "::";
+    public static final String PAGE_CACHE_SIZE = "dbms.memory.pagecache.size";
+    public static final String BOLT_TLS_LEVEL = "dbms.connector.bolt.tls_level";
 
     private static final String DEFAULT_IMPORT_DIR = "import";
     private static final String DEFAULT_CERT_DIR = "certificates";
     public static final String DEFAULT_TLS_CERT_PATH = DEFAULT_CERT_DIR + "/neo4j.cert";
     public static final String DEFAULT_TLS_KEY_PATH = DEFAULT_CERT_DIR + "/neo4j.key";
+    public static final String DEFAULT_PAGE_CACHE_SIZE = "512m";
+    public static final String DEFAULT_BOLT_TLS_LEVEL = BoltTlsLevel.OPTIONAL.toString();
 
     public static final String DEFAULT_DATA_DIR = "data";
 
@@ -51,7 +55,16 @@ public class Neo4jSettings
             DATA_DIR, DEFAULT_DATA_DIR,
             IMPORT_DIR, DEFAULT_IMPORT_DIR,
             AUTH_ENABLED, "true",
+            PAGE_CACHE_SIZE, DEFAULT_PAGE_CACHE_SIZE,
+            BOLT_TLS_LEVEL, DEFAULT_BOLT_TLS_LEVEL,
             LISTEN_ADDR, IPV6_ENABLED_ADDR ), Collections.<String>emptySet() );
+
+    public enum BoltTlsLevel
+    {
+        OPTIONAL,
+        REQUIRED,
+        DISABLED
+    }
 
     private Neo4jSettings( Map<String, String> settings, Set<String> excludes )
     {

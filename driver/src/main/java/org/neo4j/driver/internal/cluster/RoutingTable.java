@@ -20,14 +20,14 @@ package org.neo4j.driver.internal.cluster;
 
 import java.util.Set;
 
-import org.neo4j.driver.internal.async.BoltServerAddress;
+import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.v1.AccessMode;
 
 public interface RoutingTable
 {
     boolean isStaleFor( AccessMode mode );
 
-    Set<BoltServerAddress> update( ClusterComposition cluster );
+    void update( ClusterComposition cluster );
 
     void forget( BoltServerAddress address );
 
@@ -36,6 +36,8 @@ public interface RoutingTable
     AddressSet writers();
 
     AddressSet routers();
+
+    Set<BoltServerAddress> servers();
 
     void removeWriter( BoltServerAddress toRemove );
 }

@@ -25,6 +25,7 @@ import org.hamcrest.TypeSafeMatcher;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DirectConnectionProvider;
 import org.neo4j.driver.internal.InternalDriver;
 import org.neo4j.driver.internal.SessionFactory;
@@ -32,7 +33,6 @@ import org.neo4j.driver.internal.SessionFactoryImpl;
 import org.neo4j.driver.internal.cluster.AddressSet;
 import org.neo4j.driver.internal.cluster.RoutingTable;
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
-import org.neo4j.driver.internal.async.BoltServerAddress;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.exceptions.ClientException;
@@ -232,6 +232,50 @@ public final class Matchers
             public void describeTo( Description description )
             {
                 description.appendText( "client error with code 'SyntaxError' and prefix '" + messagePrefix + "' " );
+            }
+        };
+    }
+
+    public static Matcher<Throwable> connectionAcquisitionTimeoutError( int timeoutMillis )
+    {
+        return new TypeSafeMatcher<Throwable>()
+        {
+            @Override
+            protected boolean matchesSafely( Throwable error )
+            {
+                if ( error instanceof ClientException )
+                {
+                    String expectedMessage = "Unable to acquire connection from the pool within " +
+                                             "configured maximum time of " + timeoutMillis + "ms";
+                    return expectedMessage.equals( error.getMessage() );
+                }
+                return false;
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( "acquisition timeout error with " + timeoutMillis + "ms" );
+            }
+        };
+    }
+
+    public static Matcher<Throwable> blockingOperationInEventLoopError()
+    {
+        return new TypeSafeMatcher<Throwable>()
+        {
+            @Override
+            protected boolean matchesSafely( Throwable error )
+            {
+                return error instanceof IllegalStateException &&
+                       error.getMessage() != null &&
+                       error.getMessage().startsWith( "Blocking operation can't be executed in IO thread" );
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( "IllegalStateException about blocking operation in event loop thread " );
             }
         };
     }

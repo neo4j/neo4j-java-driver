@@ -18,37 +18,29 @@
  */
 package org.neo4j.driver.internal.async.pool;
 
+import java.util.concurrent.TimeUnit;
+
 public class PoolSettings
 {
-    public static final int NO_IDLE_CONNECTION_TEST = -1;
-    public static final int INFINITE_CONNECTION_LIFETIME = -1;
     public static final int NOT_CONFIGURED = -1;
 
-    public static final int DEFAULT_MAX_IDLE_CONNECTION_POOL_SIZE = 10;
-    public static final int DEFAULT_MAX_CONNECTION_POOL_SIZE = Integer.MAX_VALUE;
+    public static final int DEFAULT_MAX_CONNECTION_POOL_SIZE = 100;
     public static final long DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST = NOT_CONFIGURED;
-    public static final long DEFAULT_MAX_CONNECTION_LIFETIME = NOT_CONFIGURED;
-    public static final long DEFAULT_CONNECTION_ACQUISITION_TIMEOUT = Long.MAX_VALUE;
+    public static final long DEFAULT_MAX_CONNECTION_LIFETIME = TimeUnit.HOURS.toMillis( 1 );
+    public static final long DEFAULT_CONNECTION_ACQUISITION_TIMEOUT = TimeUnit.SECONDS.toMillis( 60 );
 
-    private final int maxIdleConnectionPoolSize;
-    private final long idleTimeBeforeConnectionTest;
-    private final long maxConnectionLifetime;
     private final int maxConnectionPoolSize;
     private final long connectionAcquisitionTimeout;
+    private final long maxConnectionLifetime;
+    private final long idleTimeBeforeConnectionTest;
 
-    public PoolSettings( int maxIdleConnectionPoolSize, long idleTimeBeforeConnectionTest, long maxConnectionLifetime,
-            int maxConnectionPoolSize, long connectionAcquisitionTimeout )
+    public PoolSettings( int maxConnectionPoolSize, long connectionAcquisitionTimeout,
+            long maxConnectionLifetime, long idleTimeBeforeConnectionTest )
     {
-        this.maxIdleConnectionPoolSize = maxIdleConnectionPoolSize;
-        this.idleTimeBeforeConnectionTest = idleTimeBeforeConnectionTest;
-        this.maxConnectionLifetime = maxConnectionLifetime;
         this.maxConnectionPoolSize = maxConnectionPoolSize;
         this.connectionAcquisitionTimeout = connectionAcquisitionTimeout;
-    }
-
-    public int maxIdleConnectionPoolSize()
-    {
-        return maxIdleConnectionPoolSize;
+        this.maxConnectionLifetime = maxConnectionLifetime;
+        this.idleTimeBeforeConnectionTest = idleTimeBeforeConnectionTest;
     }
 
     public long idleTimeBeforeConnectionTest()

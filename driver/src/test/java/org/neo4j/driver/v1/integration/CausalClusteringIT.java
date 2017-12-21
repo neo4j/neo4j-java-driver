@@ -18,13 +18,16 @@
  */
 package org.neo4j.driver.v1.integration;
 
+import org.junit.AfterClass;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -33,20 +36,19 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.driver.internal.cluster.RoutingSettings;
-import org.neo4j.driver.internal.logging.DevNullLogger;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.util.ChannelTrackingDriverFactory;
+import org.neo4j.driver.internal.util.FailingConnectionDriverFactory;
 import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
-import org.neo4j.driver.v1.Logger;
-import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.StatementResultCursor;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.TransactionWork;
 import org.neo4j.driver.v1.Values;
@@ -54,23 +56,29 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 import org.neo4j.driver.v1.exceptions.TransientException;
+import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.util.cc.Cluster;
 import org.neo4j.driver.v1.util.cc.ClusterMember;
 import org.neo4j.driver.v1.util.cc.ClusterMemberRole;
 import org.neo4j.driver.v1.util.cc.ClusterRule;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
+import static org.neo4j.driver.internal.util.Matchers.connectionAcquisitionTimeoutError;
 import static org.neo4j.driver.v1.Values.parameters;
+import static org.neo4j.driver.v1.util.TestUtil.await;
 
 public class CausalClusteringIT
 {
@@ -78,6 +86,12 @@ public class CausalClusteringIT
 
     @Rule
     public final ClusterRule clusterRule = new ClusterRule();
+
+    @AfterClass
+    public static void stopSharedCluster()
+    {
+        ClusterRule.stopSharedCluster();
+    }
 
     @Test
     public void shouldExecuteReadAndWritesWhenDriverSuppliedWithAddressOfLeader() throws Exception
@@ -488,6 +502,167 @@ public class CausalClusteringIT
         }
     }
 
+    @Test
+    public void shouldNotReuseReadConnectionForWriteTransaction()
+    {
+        Cluster cluster = clusterRule.getCluster();
+        ClusterMember leader = cluster.leader();
+
+        try ( Driver driver = createDriver( leader.getRoutingUri() ) )
+        {
+            Session session = driver.session( AccessMode.READ );
+
+            CompletionStage<List<RecordAndSummary>> resultsStage = session.runAsync( "RETURN 42" )
+                    .thenCompose( cursor1 ->
+                            session.writeTransactionAsync( tx -> tx.runAsync( "CREATE (:Node1) RETURN 42" ) )
+                                    .thenCompose( cursor2 -> combineCursors( cursor2, cursor1 ) ) );
+
+            List<RecordAndSummary> results = await( resultsStage );
+            assertEquals( 2, results.size() );
+
+            RecordAndSummary first = results.get( 0 );
+            RecordAndSummary second = results.get( 1 );
+
+            // both auto-commit query and write tx should return 42
+            assertEquals( 42, first.record.get( 0 ).asInt() );
+            assertEquals( first.record, second.record );
+            // they should not use same server
+            assertNotEquals( first.summary.server().address(), second.summary.server().address() );
+
+            CompletionStage<Integer> countStage =
+                    session.readTransaction( tx -> tx.runAsync( "MATCH (n:Node1) RETURN count(n)" )
+                            .thenCompose( StatementResultCursor::singleAsync ) )
+                            .thenApply( record -> record.get( 0 ).asInt() );
+
+            assertEquals( 1, await( countStage ).intValue() );
+
+            await( session.closeAsync() );
+        }
+    }
+
+    @Test
+    public void shouldRespectMaxConnectionPoolSizePerClusterMember()
+    {
+        Cluster cluster = clusterRule.getCluster();
+        ClusterMember leader = cluster.leader();
+
+        Config config = Config.build()
+                .withMaxConnectionPoolSize( 2 )
+                .withConnectionAcquisitionTimeout( 42, MILLISECONDS )
+                .withLogging( DEV_NULL_LOGGING )
+                .toConfig();
+
+        try ( Driver driver = createDriver( leader.getRoutingUri(), config ) )
+        {
+            Session writeSession1 = driver.session( AccessMode.WRITE );
+            writeSession1.beginTransaction();
+
+            Session writeSession2 = driver.session( AccessMode.WRITE );
+            writeSession2.beginTransaction();
+
+            // should not be possible to acquire more connections towards leader because limit is 2
+            Session writeSession3 = driver.session( AccessMode.WRITE );
+            try
+            {
+                writeSession3.beginTransaction();
+                fail( "Exception expected" );
+            }
+            catch ( ClientException e )
+            {
+                assertThat( e, is( connectionAcquisitionTimeoutError( 42 ) ) );
+            }
+
+            // should be possible to acquire new connection towards read server
+            // it's a different machine, not leader, so different max connection pool size limit applies
+            Session readSession = driver.session( AccessMode.READ );
+            Record record = readSession.readTransaction( tx -> tx.run( "RETURN 1" ).single() );
+            assertEquals( 1, record.get( 0 ).asInt() );
+        }
+    }
+
+    @Test
+    public void shouldAllowExistingTransactionToCompleteAfterDifferentConnectionBreaks()
+    {
+        Cluster cluster = clusterRule.getCluster();
+        ClusterMember leader = cluster.leader();
+
+        FailingConnectionDriverFactory driverFactory = new FailingConnectionDriverFactory();
+        RoutingSettings routingSettings = new RoutingSettings( 1, SECONDS.toMillis( 5 ), null );
+        Config config = Config.build().toConfig();
+
+        try ( Driver driver = driverFactory.newInstance( leader.getRoutingUri(), clusterRule.getDefaultAuthToken(),
+                routingSettings, RetrySettings.DEFAULT, config ) )
+        {
+            Session session1 = driver.session();
+            Transaction tx1 = session1.beginTransaction();
+            tx1.run( "CREATE (n:Node1 {name: 'Node1'})" ).consume();
+
+            Session session2 = driver.session();
+            Transaction tx2 = session2.beginTransaction();
+            tx2.run( "CREATE (n:Node2 {name: 'Node2'})" ).consume();
+
+            ServiceUnavailableException error = new ServiceUnavailableException( "Connection broke!" );
+            driverFactory.setNextRunFailure( error );
+            assertUnableToRunMoreStatementsInTx( tx2, error );
+
+            closeTx( tx2 );
+            closeTx( tx1 );
+
+            try ( Session session3 = driver.session( session1.lastBookmark() ) )
+            {
+                // tx1 should not be terminated and should commit successfully
+                assertEquals( 1, countNodes( session3, "Node1", "name", "Node1" ) );
+                // tx2 should not commit because of a connection failure
+                assertEquals( 0, countNodes( session3, "Node2", "name", "Node2" ) );
+            }
+
+            // rediscovery should happen for the new write query
+            String session4Bookmark = createNodeAndGetBookmark( driver.session(), "Node3", "name", "Node3" );
+            try ( Session session5 = driver.session( session4Bookmark ) )
+            {
+                assertEquals( 1, countNodes( session5, "Node3", "name", "Node3" ) );
+            }
+        }
+    }
+
+    private static void closeTx( Transaction tx )
+    {
+        tx.success();
+        tx.close();
+    }
+
+    private static void assertUnableToRunMoreStatementsInTx( Transaction tx, ServiceUnavailableException cause )
+    {
+        try
+        {
+            tx.run( "CREATE (n:Node3 {name: 'Node3'})" ).consume();
+            fail( "Exception expected" );
+        }
+        catch ( SessionExpiredException e )
+        {
+            assertEquals( cause, e.getCause() );
+        }
+    }
+
+    private CompletionStage<List<RecordAndSummary>> combineCursors( StatementResultCursor cursor1,
+            StatementResultCursor cursor2 )
+    {
+        return buildRecordAndSummary( cursor1 ).thenCombine( buildRecordAndSummary( cursor2 ),
+                ( rs1, rs2 ) -> Arrays.asList( rs1, rs2 ) );
+    }
+
+    private CompletionStage<RecordAndSummary> buildRecordAndSummary( StatementResultCursor cursor )
+    {
+        return cursor.singleAsync().thenCompose( record ->
+                cursor.summaryAsync().thenApply( summary -> new RecordAndSummary( record, summary ) ) );
+    }
+
+    private CompletionStage<Integer> sumRecordsFrom( StatementResultCursor cursor1, StatementResultCursor cursor2 )
+    {
+        return cursor1.singleAsync().thenCombine( cursor2.singleAsync(),
+                ( record1, record2 ) -> record1.get( 0 ).asInt() + record2.get( 0 ).asInt() );
+    }
+
     private int executeWriteAndReadThroughBolt( ClusterMember member ) throws TimeoutException, InterruptedException
     {
         try ( Driver driver = createDriver( member.getRoutingUri() ) )
@@ -639,19 +814,15 @@ public class CausalClusteringIT
 
     private Driver createDriver( URI boltUri )
     {
-        Logging devNullLogging = new Logging()
-        {
-            @Override
-            public Logger getLog( String name )
-            {
-                return DevNullLogger.DEV_NULL_LOGGER;
-            }
-        };
-
         Config config = Config.build()
-                .withLogging( devNullLogging )
+                .withLogging( DEV_NULL_LOGGING )
                 .toConfig();
 
+        return createDriver( boltUri, config );
+    }
+
+    private Driver createDriver( URI boltUri, Config config )
+    {
         return GraphDatabase.driver( boltUri, clusterRule.getDefaultAuthToken(), config );
     }
 
@@ -708,43 +879,44 @@ public class CausalClusteringIT
         }
     }
 
-    private static int countNodes( Session session, final String label, final String property, final String value )
+    private static int countNodes( Session session, String label, String property, String value )
     {
-        return session.readTransaction( new TransactionWork<Integer>()
+        return session.readTransaction( tx ->
         {
-            @Override
-            public Integer execute( Transaction tx )
-            {
-                StatementResult result = tx.run( "MATCH (n:" + label + " {" + property + ": $value}) RETURN count(n)",
-                        parameters( "value", value ) );
-                return result.single().get( 0 ).asInt();
-            }
+            String query = "MATCH (n:" + label + " {" + property + ": $value}) RETURN count(n)";
+            StatementResult result = tx.run( query, parameters( "value", value ) );
+            return result.single().get( 0 ).asInt();
         } );
     }
 
-    private static Callable<String> createNodeAndGetBookmark( final Driver driver, final String label,
-            final String property, final String value )
+    private static Callable<String> createNodeAndGetBookmark( Driver driver, String label, String property,
+            String value )
     {
-        return new Callable<String>()
+        return () -> createNodeAndGetBookmark( driver.session(), label, property, value );
+    }
+
+    private static String createNodeAndGetBookmark( Session session, String label, String property, String value )
+    {
+        try ( Session localSession = session )
         {
-            @Override
-            public String call()
+            localSession.writeTransaction( tx ->
             {
-                try ( Session session = driver.session() )
-                {
-                    session.writeTransaction( new TransactionWork<Void>()
-                    {
-                        @Override
-                        public Void execute( Transaction tx )
-                        {
-                            tx.run( "CREATE (n:" + label + ") SET n." + property + " = $value",
-                                    parameters( "value", value ) );
-                            return null;
-                        }
-                    } );
-                    return session.lastBookmark();
-                }
-            }
-        };
+                tx.run( "CREATE (n:" + label + ") SET n." + property + " = $value", parameters( "value", value ) );
+                return null;
+            } );
+            return localSession.lastBookmark();
+        }
+    }
+
+    private static class RecordAndSummary
+    {
+        final Record record;
+        final ResultSummary summary;
+
+        RecordAndSummary( Record record, ResultSummary summary )
+        {
+            this.record = record;
+            this.summary = summary;
+        }
     }
 }

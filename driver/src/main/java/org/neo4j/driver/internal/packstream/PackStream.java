@@ -71,7 +71,8 @@ import static java.util.Collections.singletonList;
  * <tr><td><code>DB</code></td><td><code>11011011</code></td><td><em>RESERVED</em></td><td></td></tr>
  * <tr><td><code>DC</code></td><td><code>11011100</code></td><td>STRUCT_8</td><td>Structure (fewer than 2<sup>8</sup> fields)</td></tr>
  * <tr><td><code>DD</code></td><td><code>11011101</code></td><td>STRUCT_16</td><td>Structure (fewer than 2<sup>16</sup> fields)</td></tr>
- * <tr><td><code>DE</code></td><td><code>11011110</code></td><td>STRUCT_32</td><td>Structure (fewer than 2<sup>32</sup> fields)</td></tr>
+ * <tr><td><code>DE</code></td><td><code>11011110</code></td><td><em>RESERVED</em></td><td></td></tr>
+ * <tr><td><code>DF</code></td><td><code>11011111</code></td><td><em>RESERVED</em></td><td></td></tr>
  * <tr><td><code>DF</code></td><td><code>11011111</code></td><td><em>RESERVED</em></td><td></td></tr>
  * <tr><td><code>E0..EF</code></td><td><code>1110xxxx</code></td><td><em>RESERVED</em></td><td></td></tr>
  * <tr><td><code>F0..FF</code></td><td><code>1111xxxx</code></td><td>-TINY_INT</td><td>Integer -1 to -16</td></tr>
@@ -115,7 +116,7 @@ public class PackStream
     public static final byte RESERVED_DB = (byte) 0xDB;
     public static final byte STRUCT_8 = (byte) 0xDC;
     public static final byte STRUCT_16 = (byte) 0xDD;
-    public static final byte RESERVED_DE = (byte) 0xDE; // TODO STRUCT_32? or the class javadoc is wrong?
+    public static final byte RESERVED_DE = (byte) 0xDE;
     public static final byte RESERVED_DF = (byte) 0xDF;
     public static final byte RESERVED_E0 = (byte) 0xE0;
     public static final byte RESERVED_E1 = (byte) 0xE1;
@@ -144,6 +145,7 @@ public class PackStream
     private static final long MINUS_2_TO_THE_31 = -2147483648L;
 
     private static final String EMPTY_STRING = "";
+    private static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
     private static final Charset UTF_8 = Charset.forName( "UTF-8" );
 
     private PackStream() {}
@@ -604,6 +606,10 @@ public class PackStream
 
         private byte[] unpackRawBytes(int size ) throws IOException
         {
+            if ( size == 0 )
+            {
+                return EMPTY_BYTE_ARRAY;
+            }
             byte[] heapBuffer = new byte[size];
             in.readBytes( heapBuffer, 0, heapBuffer.length );
             return heapBuffer;

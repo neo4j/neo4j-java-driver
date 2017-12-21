@@ -95,24 +95,24 @@ public class LeakLoggingNetworkSessionTest
         finalizeMethod.invoke( session );
     }
 
-    private static LeakLoggingNetworkSession newSession( Logging logging, boolean inUseConnection )
+    private static LeakLoggingNetworkSession newSession( Logging logging, boolean openConnection )
     {
-        return new LeakLoggingNetworkSession( connectionProviderMock( inUseConnection ), READ,
+        return new LeakLoggingNetworkSession( connectionProviderMock( openConnection ), READ,
                 new FixedRetryLogic( 0 ), logging );
     }
 
-    private static ConnectionProvider connectionProviderMock( boolean inUseConnection )
+    private static ConnectionProvider connectionProviderMock( boolean openConnection )
     {
         ConnectionProvider provider = mock( ConnectionProvider.class );
-        Connection connection = connectionMock( inUseConnection );
+        Connection connection = connectionMock( openConnection );
         when( provider.acquireConnection( any( AccessMode.class ) ) ).thenReturn( completedFuture( connection ) );
         return provider;
     }
 
-    private static Connection connectionMock( boolean inUse )
+    private static Connection connectionMock( boolean open )
     {
         Connection connection = mock( Connection.class );
-        when( connection.isInUse() ).thenReturn( inUse );
+        when( connection.isOpen() ).thenReturn( open );
         return connection;
     }
 }

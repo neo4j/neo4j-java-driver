@@ -21,7 +21,9 @@ package org.neo4j.driver.internal.async;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
+import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.RoutingErrorHandler;
+import org.neo4j.driver.internal.handlers.RoutingResponseHandler;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.ServerVersion;
@@ -39,12 +41,6 @@ public class RoutingConnection implements Connection
         this.delegate = delegate;
         this.accessMode = accessMode;
         this.errorHandler = errorHandler;
-    }
-
-    @Override
-    public boolean tryMarkInUse()
-    {
-        return delegate.tryMarkInUse();
     }
 
     @Override
@@ -76,21 +72,21 @@ public class RoutingConnection implements Connection
     }
 
     @Override
-    public void releaseInBackground()
+    public boolean isOpen()
     {
-        delegate.releaseInBackground();
+        return delegate.isOpen();
     }
 
     @Override
-    public boolean isInUse()
+    public CompletionStage<Void> release()
     {
-        return delegate.isInUse();
+        return delegate.release();
     }
 
     @Override
-    public CompletionStage<Void> releaseNow()
+    public void terminateAndRelease( String reason )
     {
-        return delegate.releaseNow();
+        delegate.terminateAndRelease( reason );
     }
 
     @Override

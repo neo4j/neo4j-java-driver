@@ -28,45 +28,83 @@ import io.netty.handler.codec.ReplayingDecoder;
 import java.util.List;
 import javax.net.ssl.SSLHandshakeException;
 
+import org.neo4j.driver.internal.logging.ChannelActivityLogger;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.PackStreamMessageFormatV1;
+import org.neo4j.driver.internal.util.ErrorUtil;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.SecurityException;
+import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
-import static org.neo4j.driver.internal.async.ProtocolUtil.HTTP;
-import static org.neo4j.driver.internal.async.ProtocolUtil.NO_PROTOCOL_VERSION;
-import static org.neo4j.driver.internal.async.ProtocolUtil.PROTOCOL_VERSION_1;
+import static org.neo4j.driver.internal.async.BoltProtocolV1Util.HTTP;
+import static org.neo4j.driver.internal.async.BoltProtocolV1Util.NO_PROTOCOL_VERSION;
+import static org.neo4j.driver.internal.async.BoltProtocolV1Util.PROTOCOL_VERSION_1;
 
-public class HandshakeResponseHandler extends ReplayingDecoder<Void>
+public class HandshakeHandler extends ReplayingDecoder<Void>
 {
     private final ChannelPipelineBuilder pipelineBuilder;
     private final ChannelPromise handshakeCompletedPromise;
     private final Logging logging;
-    private final Logger log;
 
-    public HandshakeResponseHandler( ChannelPipelineBuilder pipelineBuilder, ChannelPromise handshakeCompletedPromise,
+    private boolean failed;
+    private Logger log;
+
+    public HandshakeHandler( ChannelPipelineBuilder pipelineBuilder, ChannelPromise handshakeCompletedPromise,
             Logging logging )
     {
         this.pipelineBuilder = pipelineBuilder;
         this.handshakeCompletedPromise = handshakeCompletedPromise;
         this.logging = logging;
-        this.log = logging.getLog( getClass().getSimpleName() );
+    }
+
+    @Override
+    public void handlerAdded( ChannelHandlerContext ctx )
+    {
+        log = new ChannelActivityLogger( ctx.channel(), logging, getClass() );
+    }
+
+    @Override
+    protected void handlerRemoved0( ChannelHandlerContext ctx )
+    {
+        failed = false;
+        log = null;
+    }
+
+    @Override
+    public void channelInactive( ChannelHandlerContext ctx )
+    {
+        log.debug( "Channel is inactive" );
+
+        if ( !failed )
+        {
+            // channel became inactive while doing bolt handshake, not because of some previous error
+            ServiceUnavailableException error = ErrorUtil.newConnectionTerminatedError();
+            fail( ctx, error );
+        }
     }
 
     @Override
     public void exceptionCaught( ChannelHandlerContext ctx, Throwable error )
     {
-        // todo: test this unwrapping and SSLHandshakeException propagation
-        Throwable cause = error instanceof DecoderException ? error.getCause() : error;
-        if ( cause instanceof SSLHandshakeException )
+        if ( failed )
         {
-            fail( ctx, new SecurityException( "Failed to establish secured connection with the server", cause ) );
+            log.warn( "Another fatal error occurred in the pipeline", error );
         }
         else
         {
-            fail( ctx, cause );
+            failed = true;
+
+            Throwable cause = error instanceof DecoderException ? error.getCause() : error;
+            if ( cause instanceof SSLHandshakeException )
+            {
+                fail( ctx, new SecurityException( "Failed to establish secured connection with the server", cause ) );
+            }
+            else
+            {
+                fail( ctx, cause );
+            }
         }
     }
 
@@ -74,7 +112,7 @@ public class HandshakeResponseHandler extends ReplayingDecoder<Void>
     protected void decode( ChannelHandlerContext ctx, ByteBuf in, List<Object> out )
     {
         int serverSuggestedVersion = in.readInt();
-        log.debug( "Server suggested protocol version: %s", serverSuggestedVersion );
+        log.debug( "S: [Bolt Handshake] %d", serverSuggestedVersion );
 
         ChannelPipeline pipeline = ctx.pipeline();
         // this is a one-time handler, remove it when protocol version has been read
@@ -101,7 +139,7 @@ public class HandshakeResponseHandler extends ReplayingDecoder<Void>
 
     private void fail( ChannelHandlerContext ctx, Throwable error )
     {
-        ctx.close().addListener( future -> handshakeCompletedPromise.setFailure( error ) );
+        ctx.close().addListener( future -> handshakeCompletedPromise.tryFailure( error ) );
     }
 
     private static Throwable protocolNoSupportedByServerError()

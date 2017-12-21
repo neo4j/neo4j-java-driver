@@ -39,7 +39,7 @@ public class AckFailureMessage implements Message
     @Override
     public String toString()
     {
-        return "[ACK_FAILURE]";
+        return "ACK_FAILURE";
     }
 
     @Override

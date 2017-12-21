@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.async;
 import io.netty.channel.Channel;
 import io.netty.util.AttributeKey;
 
+import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.util.ServerVersion;
 
@@ -33,6 +34,7 @@ public final class ChannelAttributes
     private static final AttributeKey<Long> CREATION_TIMESTAMP = newInstance( "creationTimestamp" );
     private static final AttributeKey<Long> LAST_USED_TIMESTAMP = newInstance( "lastUsedTimestamp" );
     private static final AttributeKey<InboundMessageDispatcher> MESSAGE_DISPATCHER = newInstance( "messageDispatcher" );
+    private static final AttributeKey<String> TERMINATION_REASON = newInstance( "terminationReason" );
 
     private ChannelAttributes()
     {
@@ -86,6 +88,16 @@ public final class ChannelAttributes
     public static void setMessageDispatcher( Channel channel, InboundMessageDispatcher messageDispatcher )
     {
         setOnce( channel, MESSAGE_DISPATCHER, messageDispatcher );
+    }
+
+    public static String terminationReason( Channel channel )
+    {
+        return get( channel, TERMINATION_REASON );
+    }
+
+    public static void setTerminationReason( Channel channel, String reason )
+    {
+        setOnce( channel, TERMINATION_REASON, reason );
     }
 
     private static <T> T get( Channel channel, AttributeKey<T> key )

@@ -21,19 +21,25 @@ package org.neo4j.driver.internal;
 import org.junit.Test;
 import org.mockito.InOrder;
 
+import java.util.function.Consumer;
+
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Transaction;
 
+import static java.util.Collections.emptyMap;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.driver.internal.util.Futures.getBlocking;
+import static org.neo4j.driver.v1.util.TestUtil.await;
 import static org.neo4j.driver.v1.util.TestUtil.connectionMock;
 
 public class ExplicitTransactionTest
@@ -52,7 +58,7 @@ public class ExplicitTransactionTest
         InOrder order = inOrder( connection );
         order.verify( connection ).run( eq( "BEGIN" ), any(), any(), any() );
         order.verify( connection ).runAndFlush( eq( "ROLLBACK" ), any(), any(), any() );
-        order.verify( connection ).releaseInBackground();
+        order.verify( connection ).release();
     }
 
     @Test
@@ -71,7 +77,7 @@ public class ExplicitTransactionTest
         InOrder order = inOrder( connection );
         order.verify( connection ).run( eq( "BEGIN" ), any(), any(), any() );
         order.verify( connection ).runAndFlush( eq( "ROLLBACK" ), any(), any(), any() );
-        order.verify( connection ).releaseInBackground();
+        order.verify( connection ).release();
     }
 
     @Test
@@ -89,7 +95,7 @@ public class ExplicitTransactionTest
         InOrder order = inOrder( connection );
         order.verify( connection ).run( eq( "BEGIN" ), any(), any(), any() );
         order.verify( connection ).runAndFlush( eq( "COMMIT" ), any(), any(), any() );
-        order.verify( connection ).releaseInBackground();
+        order.verify( connection ).release();
     }
 
     @Test
@@ -220,6 +226,36 @@ public class ExplicitTransactionTest
         assertEquals( "Cat", tx.bookmark().maxBookmarkAsString() );
     }
 
+    @Test
+    public void shouldReleaseConnectionWhenBeginFails()
+    {
+        RuntimeException error = new RuntimeException( "Wrong bookmark!" );
+        Connection connection = connectionWithBegin( handler -> handler.onFailure( error ) );
+        ExplicitTransaction tx = new ExplicitTransaction( connection, mock( NetworkSession.class ) );
+
+        try
+        {
+            await( tx.beginAsync( Bookmark.from( "SomeBookmark" ) ) );
+            fail( "Exception expected" );
+        }
+        catch ( RuntimeException e )
+        {
+            assertEquals( error, e );
+        }
+
+        verify( connection ).release();
+    }
+
+    @Test
+    public void shouldNotReleaseConnectionWhenBeginSucceeds()
+    {
+        Connection connection = connectionWithBegin( handler -> handler.onSuccess( emptyMap() ) );
+        ExplicitTransaction tx = new ExplicitTransaction( connection, mock( NetworkSession.class ) );
+        await( tx.beginAsync( Bookmark.from( "SomeBookmark" ) ) );
+
+        verify( connection, never() ).release();
+    }
+
     private static ExplicitTransaction beginTx( Connection connection )
     {
         return beginTx( connection, Bookmark.empty() );
@@ -234,6 +270,20 @@ public class ExplicitTransactionTest
             Bookmark initialBookmark )
     {
         ExplicitTransaction tx = new ExplicitTransaction( connection, session );
-        return getBlocking( tx.beginAsync( initialBookmark ) );
+        return await( tx.beginAsync( initialBookmark ) );
+    }
+
+    private static Connection connectionWithBegin( Consumer<ResponseHandler> beginBehaviour )
+    {
+        Connection connection = mock( Connection.class );
+
+        doAnswer( invocation ->
+        {
+            ResponseHandler beginHandler = invocation.getArgumentAt( 3, ResponseHandler.class );
+            beginBehaviour.accept( beginHandler );
+            return null;
+        } ).when( connection ).runAndFlush( eq( "BEGIN" ), any(), any(), any() );
+
+        return connection;
     }
 }

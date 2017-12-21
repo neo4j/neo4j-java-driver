@@ -21,15 +21,13 @@ package org.neo4j.driver.internal.spi;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.internal.async.BoltServerAddress;
+import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.Value;
 
 public interface Connection
 {
-    boolean isInUse();
-
-    boolean tryMarkInUse();
+    boolean isOpen();
 
     void enableAutoRead();
 
@@ -41,9 +39,9 @@ public interface Connection
     void runAndFlush( String statement, Map<String,Value> parameters, ResponseHandler runHandler,
             ResponseHandler pullAllHandler );
 
-    void releaseInBackground();
+    CompletionStage<Void> release();
 
-    CompletionStage<Void> releaseNow();
+    void terminateAndRelease( String reason );
 
     BoltServerAddress serverAddress();
 

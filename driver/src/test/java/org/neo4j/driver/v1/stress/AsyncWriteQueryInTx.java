@@ -54,7 +54,7 @@ public class AsyncWriteQueryInTx<C extends AbstractContext> extends AbstractAsyn
 
             if ( error != null )
             {
-                handleError( Futures.completionErrorCause( error ), context );
+                handleError( Futures.completionExceptionCause( error ), context );
             }
             else
             {

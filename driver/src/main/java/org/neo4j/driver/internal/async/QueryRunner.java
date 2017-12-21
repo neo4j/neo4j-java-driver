@@ -23,50 +23,66 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.ExplicitTransaction;
+import org.neo4j.driver.internal.InternalStatementResultCursor;
 import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.handlers.SessionPullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.TransactionPullAllResponseHandler;
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
+import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.Value;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.neo4j.driver.v1.Values.ofValue;
 
-// todo: better method naming in this class and tests!
+/**
+ * Helper to execute queries in {@link Session} and {@link Transaction}. Query execution consists of sending
+ * RUN and PULL_ALL messages. Different handles are used to process responses for those messages, depending on if
+ * they were executed in session or transaction.
+ */
 public final class QueryRunner
 {
     private QueryRunner()
     {
     }
 
-    public static CompletionStage<InternalStatementResultCursor> runAsBlocking( Connection connection,
-            Statement statement )
+    /**
+     * Execute given statement for {@link Session#run(Statement)}.
+     *
+     * @param connection the network connection to use.
+     * @param statement the cypher to execute.
+     * @param waitForRunResponse {@code true} for async query execution and {@code false} for blocking query
+     * execution. Makes returned cursor stage be chained after the RUN response arrives. Needed to have statement
+     * keys populated.
+     * @return stage with cursor.
+     */
+    public static CompletionStage<InternalStatementResultCursor> runInSession( Connection connection,
+            Statement statement, boolean waitForRunResponse )
     {
-        return runAsBlocking( connection, statement, null );
+        return run( connection, statement, null, waitForRunResponse );
     }
 
-    public static CompletionStage<InternalStatementResultCursor> runAsBlocking( Connection connection,
-            Statement statement, ExplicitTransaction tx )
+    /**
+     * Execute given statement for {@link Transaction#run(Statement)}.
+     *
+     * @param connection the network connection to use.
+     * @param statement the cypher to execute.
+     * @param tx the transaction which executes the query.
+     * @param waitForRunResponse {@code true} for async query execution and {@code false} for blocking query
+     * execution. Makes returned cursor stage be chained after the RUN response arrives. Needed to have statement
+     * keys populated.
+     * @return stage with cursor.
+     */
+    public static CompletionStage<InternalStatementResultCursor> runInTransaction( Connection connection,
+            Statement statement, ExplicitTransaction tx, boolean waitForRunResponse )
     {
-        return runAsAsync( connection, statement, tx, false );
+        return run( connection, statement, tx, waitForRunResponse );
     }
 
-    public static CompletionStage<InternalStatementResultCursor> runAsAsync( Connection connection,
-            Statement statement )
-    {
-        return runAsAsync( connection, statement, null );
-    }
-
-    public static CompletionStage<InternalStatementResultCursor> runAsAsync( Connection connection,
-            Statement statement, ExplicitTransaction tx )
-    {
-        return runAsAsync( connection, statement, tx, true );
-    }
-
-    private static CompletionStage<InternalStatementResultCursor> runAsAsync( Connection connection,
-            Statement statement, ExplicitTransaction tx, boolean async )
+    private static CompletionStage<InternalStatementResultCursor> run( Connection connection,
+            Statement statement, ExplicitTransaction tx, boolean waitForRunResponse )
     {
         String query = statement.text();
         Map<String,Value> params = statement.parameters().asMap( ofValue() );
@@ -77,15 +93,15 @@ public final class QueryRunner
 
         connection.runAndFlush( query, params, runHandler, pullAllHandler );
 
-        if ( async )
+        if ( waitForRunResponse )
         {
-            // wait for response of RUN before proceeding when execution is async
+            // wait for response of RUN before proceeding
             return runCompletedFuture.thenApply( ignore ->
-                    InternalStatementResultCursor.forAsyncRun( runHandler, pullAllHandler ) );
+                    new InternalStatementResultCursor( runHandler, pullAllHandler ) );
         }
         else
         {
-            return completedFuture( InternalStatementResultCursor.forBlockingRun( runHandler, pullAllHandler ) );
+            return completedFuture( new InternalStatementResultCursor( runHandler, pullAllHandler ) );
         }
     }
 

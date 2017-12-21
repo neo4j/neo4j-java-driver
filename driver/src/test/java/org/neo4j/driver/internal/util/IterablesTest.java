@@ -16,10 +16,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1.util;
+package org.neo4j.driver.internal.util;
 
-public enum Neo4jResetMode
+import org.junit.Test;
+
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
+
+public class IterablesTest
 {
-    CLEAR_DATABASE_CONTENTS,
-    CLEAR_DATABASE_FILES
+    @Test
+    public void shouldCreateHashMapWithExpectedSize()
+    {
+        assertNotNull( Iterables.newHashMapWithSize( 42 ) );
+    }
+
+    @Test
+    public void shouldThrowWhenNegativeHashMapSizeGiven()
+    {
+        try
+        {
+            Iterables.newHashMapWithSize( -42 );
+            fail( "Exception expected" );
+        }
+        catch ( IllegalArgumentException ignore )
+        {
+        }
+    }
 }

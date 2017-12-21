@@ -16,26 +16,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.util;
+package org.neo4j.driver.internal.logging;
 
-import org.neo4j.driver.v1.util.Consumer;
+import io.netty.util.internal.logging.InternalLogger;
+import io.netty.util.internal.logging.InternalLoggerFactory;
 
-public final class Consumers
+import org.neo4j.driver.v1.Logging;
+
+/**
+ * This is the logging factory to delegate netty's logging to our logging system
+ */
+public class NettyLogging extends InternalLoggerFactory
 {
-    private Consumers()
+    private Logging logging;
+
+    public NettyLogging( Logging logging )
     {
-        throw new UnsupportedOperationException( "Do not instantiate" );
+        this.logging = logging;
     }
 
-    public static <T> Consumer<T> noOp()
+    @Override
+    protected InternalLogger newInstance( String name )
     {
-        return new Consumer<T>()
-        {
-            @Override
-            public void accept( T t )
-            {
-                //Do nothing
-            }
-        };
+        return new NettyLogger( name, logging.getLog( name ) );
     }
 }

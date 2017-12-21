@@ -30,7 +30,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.driver.internal.async.ChannelAttributes;
-import org.neo4j.driver.internal.async.ChannelErrorHandler;
+import org.neo4j.driver.internal.async.inbound.ChannelErrorHandler;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
@@ -50,7 +50,7 @@ import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.driver.internal.async.ProtocolUtil.messageBoundary;
+import static org.neo4j.driver.internal.async.BoltProtocolV1Util.messageBoundary;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.messaging.MessageFormat.Writer;
 import static org.neo4j.driver.internal.messaging.PullAllMessage.PULL_ALL;
@@ -60,24 +60,18 @@ import static org.neo4j.driver.v1.util.TestUtil.assertByteBufEquals;
 
 public class OutboundMessageHandlerTest
 {
-    private EmbeddedChannel channel;
-    private InboundMessageDispatcher messageDispatcher;
+    private final EmbeddedChannel channel = new EmbeddedChannel();
 
     @Before
     public void setUp()
     {
-        channel = new EmbeddedChannel();
-        messageDispatcher = new InboundMessageDispatcher( channel, DEV_NULL_LOGGING );
-        ChannelAttributes.setMessageDispatcher( channel, messageDispatcher );
+        ChannelAttributes.setMessageDispatcher( channel, new InboundMessageDispatcher( channel, DEV_NULL_LOGGING ) );
     }
 
     @After
     public void tearDown()
     {
-        if ( channel != null )
-        {
-            channel.close();
-        }
+        channel.finishAndReleaseAll();
     }
 
     @Test

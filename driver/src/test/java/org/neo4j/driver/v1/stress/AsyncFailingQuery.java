@@ -50,7 +50,7 @@ public class AsyncFailingQuery<C extends AbstractContext> extends AbstractAsyncQ
                     session.closeAsync();
 
                     assertNull( records );
-                    Throwable cause = Futures.completionErrorCause( error );
+                    Throwable cause = Futures.completionExceptionCause( error );
                     assertThat( cause, is( arithmeticError() ) );
 
                     return null;

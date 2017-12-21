@@ -22,24 +22,29 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.internal.security.SecurityPlan;
+import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.Logger;
+import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Session;
 
-import static java.util.concurrent.CompletableFuture.completedFuture;
-import static org.neo4j.driver.internal.util.Futures.getBlocking;
+import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 
 public class InternalDriver implements Driver
 {
     private final SecurityPlan securityPlan;
     private final SessionFactory sessionFactory;
+    private final Logger log;
 
     private AtomicBoolean closed = new AtomicBoolean( false );
 
-    InternalDriver( SecurityPlan securityPlan, SessionFactory sessionFactory )
+    InternalDriver( SecurityPlan securityPlan, SessionFactory sessionFactory, Logging logging )
     {
         this.securityPlan = securityPlan;
         this.sessionFactory = sessionFactory;
+        this.log = logging.getLog( Driver.class.getSimpleName() );
+        log.info( "Driver instance %s created", this );
     }
 
     @Override
@@ -100,7 +105,7 @@ public class InternalDriver implements Driver
     @Override
     public void close()
     {
-        getBlocking( closeAsync() );
+        Futures.blockingGet( closeAsync() );
     }
 
     @Override
@@ -108,12 +113,12 @@ public class InternalDriver implements Driver
     {
         if ( closed.compareAndSet( false, true ) )
         {
+            log.info( "Closing driver instance %s", this );
             return sessionFactory.close();
         }
-        return completedFuture( null );
+        return completedWithNull();
     }
 
-    // todo: test this method and it's usage in DriverFactory
     public CompletionStage<Void> verifyConnectivity()
     {
         return sessionFactory.verifyConnectivity();

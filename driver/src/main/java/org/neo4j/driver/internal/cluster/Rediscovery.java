@@ -28,7 +28,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.driver.internal.async.BoltServerAddress;
+import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Futures;
@@ -38,6 +38,7 @@ import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
 import static java.lang.String.format;
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 
 public class Rediscovery
 {
@@ -91,15 +92,9 @@ public class Rediscovery
     private void lookupClusterComposition( RoutingTable routingTable, ConnectionPool pool,
             int failures, long previousDelay, CompletableFuture<ClusterComposition> result )
     {
-        if ( failures >= settings.maxRoutingFailures() )
-        {
-            result.completeExceptionally( new ServiceUnavailableException( NO_ROUTERS_AVAILABLE ) );
-            return;
-        }
-
         lookup( routingTable, pool ).whenComplete( ( composition, completionError ) ->
         {
-            Throwable error = Futures.completionErrorCause( completionError );
+            Throwable error = Futures.completionExceptionCause( completionError );
             if ( error != null )
             {
                 result.completeExceptionally( error );
@@ -110,14 +105,20 @@ public class Rediscovery
             }
             else
             {
-                long nextDelay = Math.max( settings.retryTimeoutDelay(), previousDelay * 2 );
-                // todo: this will log even when retryTimes=1, fix by checking number of failures here and not inside
-                // lookupClusterComposition
-                logger.info( "Unable to fetch new routing table, will try again in " + nextDelay + "ms" );
-                eventExecutorGroup.next().schedule(
-                        () -> lookupClusterComposition( routingTable, pool, failures + 1, nextDelay, result ),
-                        nextDelay, TimeUnit.MILLISECONDS
-                );
+                int newFailures = failures + 1;
+                if ( newFailures >= settings.maxRoutingFailures() )
+                {
+                    result.completeExceptionally( new ServiceUnavailableException( NO_ROUTERS_AVAILABLE ) );
+                }
+                else
+                {
+                    long nextDelay = Math.max( settings.retryTimeoutDelay(), previousDelay * 2 );
+                    logger.info( "Unable to fetch new routing table, will try again in " + nextDelay + "ms" );
+                    eventExecutorGroup.next().schedule(
+                            () -> lookupClusterComposition( routingTable, pool, newFailures, nextDelay, result ),
+                            nextDelay, TimeUnit.MILLISECONDS
+                    );
+                }
             }
         } );
     }
@@ -178,7 +179,7 @@ public class Rediscovery
     {
         BoltServerAddress[] addresses = routingTable.routers().toArray();
 
-        CompletableFuture<ClusterComposition> result = completedFuture( null );
+        CompletableFuture<ClusterComposition> result = completedWithNull();
         for ( BoltServerAddress address : addresses )
         {
             result = result.thenCompose( composition ->
@@ -203,7 +204,7 @@ public class Rediscovery
         Set<BoltServerAddress> addresses = hostNameResolver.resolve( initialRouter );
         addresses.removeAll( seenServers );
 
-        CompletableFuture<ClusterComposition> result = completedFuture( null );
+        CompletableFuture<ClusterComposition> result = completedWithNull();
         for ( BoltServerAddress address : addresses )
         {
             result = result.thenCompose( composition ->
@@ -225,16 +226,14 @@ public class Rediscovery
 
         return provider.getClusterComposition( connectionStage ).handle( ( response, error ) ->
         {
-            Throwable cause = Futures.completionErrorCause( error );
+            Throwable cause = Futures.completionExceptionCause( error );
             if ( cause != null )
             {
                 return handleRoutingProcedureError( cause, routingTable, routerAddress );
             }
             else
             {
-                ClusterComposition cluster = response.clusterComposition();
-                logger.info( "Got cluster composition %s", cluster );
-                return cluster;
+                return response.clusterComposition();
             }
         } );
     }

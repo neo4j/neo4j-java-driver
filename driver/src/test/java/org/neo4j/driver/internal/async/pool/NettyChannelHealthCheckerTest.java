@@ -38,12 +38,11 @@ import static org.junit.Assert.assertThat;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setCreationTimestamp;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setLastUsedTimestamp;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setMessageDispatcher;
-import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.async.pool.PoolSettings.DEFAULT_CONNECTION_ACQUISITION_TIMEOUT;
 import static org.neo4j.driver.internal.async.pool.PoolSettings.DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST;
 import static org.neo4j.driver.internal.async.pool.PoolSettings.DEFAULT_MAX_CONNECTION_POOL_SIZE;
-import static org.neo4j.driver.internal.async.pool.PoolSettings.DEFAULT_MAX_IDLE_CONNECTION_POOL_SIZE;
 import static org.neo4j.driver.internal.async.pool.PoolSettings.NOT_CONFIGURED;
+import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
@@ -53,28 +52,27 @@ public class NettyChannelHealthCheckerTest
     private final InboundMessageDispatcher dispatcher = new InboundMessageDispatcher( channel, DEV_NULL_LOGGING );
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         setMessageDispatcher( channel, dispatcher );
     }
 
     @After
-    public void tearDown() throws Exception
+    public void tearDown()
     {
-        channel.close();
+        channel.finishAndReleaseAll();
     }
 
     @Test
     public void shouldDropTooOldChannelsWhenMaxLifetimeEnabled()
     {
-        int maxConnectionLifetime = 1000;
-        PoolSettings settings = new PoolSettings( DEFAULT_MAX_IDLE_CONNECTION_POOL_SIZE,
-                DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST, maxConnectionLifetime, DEFAULT_MAX_CONNECTION_POOL_SIZE,
-                DEFAULT_CONNECTION_ACQUISITION_TIMEOUT );
+        int maxLifetime = 1000;
+        PoolSettings settings = new PoolSettings( DEFAULT_MAX_CONNECTION_POOL_SIZE,
+                DEFAULT_CONNECTION_ACQUISITION_TIMEOUT, maxLifetime, DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST );
         Clock clock = Clock.SYSTEM;
-        NettyChannelHealthChecker healthChecker = new NettyChannelHealthChecker( settings, clock );
+        NettyChannelHealthChecker healthChecker = newHealthChecker( settings, clock );
 
-        setCreationTimestamp( channel, clock.millis() - maxConnectionLifetime * 2 );
+        setCreationTimestamp( channel, clock.millis() - maxLifetime * 2 );
         Future<Boolean> healthy = healthChecker.isHealthy( channel );
 
         assertThat( await( healthy ), is( false ) );
@@ -83,10 +81,9 @@ public class NettyChannelHealthCheckerTest
     @Test
     public void shouldAllowVeryOldChannelsWhenMaxLifetimeDisabled()
     {
-        PoolSettings settings = new PoolSettings( DEFAULT_MAX_IDLE_CONNECTION_POOL_SIZE,
-                DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST, NOT_CONFIGURED, DEFAULT_MAX_CONNECTION_POOL_SIZE,
-                DEFAULT_CONNECTION_ACQUISITION_TIMEOUT );
-        NettyChannelHealthChecker healthChecker = new NettyChannelHealthChecker( settings, Clock.SYSTEM );
+        PoolSettings settings = new PoolSettings( DEFAULT_MAX_CONNECTION_POOL_SIZE,
+                DEFAULT_CONNECTION_ACQUISITION_TIMEOUT, NOT_CONFIGURED, DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST );
+        NettyChannelHealthChecker healthChecker = newHealthChecker( settings, Clock.SYSTEM );
 
         setCreationTimestamp( channel, 0 );
         Future<Boolean> healthy = healthChecker.isHealthy( channel );
@@ -121,11 +118,10 @@ public class NettyChannelHealthCheckerTest
     private void testPing( boolean resetMessageSuccessful )
     {
         int idleTimeBeforeConnectionTest = 1000;
-        PoolSettings settings = new PoolSettings( DEFAULT_MAX_IDLE_CONNECTION_POOL_SIZE,
-                idleTimeBeforeConnectionTest, NOT_CONFIGURED, DEFAULT_MAX_CONNECTION_POOL_SIZE,
-                DEFAULT_CONNECTION_ACQUISITION_TIMEOUT );
+        PoolSettings settings = new PoolSettings( DEFAULT_MAX_CONNECTION_POOL_SIZE,
+                DEFAULT_CONNECTION_ACQUISITION_TIMEOUT, NOT_CONFIGURED, idleTimeBeforeConnectionTest );
         Clock clock = Clock.SYSTEM;
-        NettyChannelHealthChecker healthChecker = new NettyChannelHealthChecker( settings, clock );
+        NettyChannelHealthChecker healthChecker = newHealthChecker( settings, clock );
 
         setCreationTimestamp( channel, clock.millis() );
         setLastUsedTimestamp( channel, clock.millis() - idleTimeBeforeConnectionTest * 2 );
@@ -149,11 +145,10 @@ public class NettyChannelHealthCheckerTest
 
     private void testActiveConnectionCheck( boolean channelActive )
     {
-        PoolSettings settings = new PoolSettings( DEFAULT_MAX_IDLE_CONNECTION_POOL_SIZE,
-                DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST, NOT_CONFIGURED, DEFAULT_MAX_CONNECTION_POOL_SIZE,
-                DEFAULT_CONNECTION_ACQUISITION_TIMEOUT );
+        PoolSettings settings = new PoolSettings( DEFAULT_MAX_CONNECTION_POOL_SIZE,
+                DEFAULT_CONNECTION_ACQUISITION_TIMEOUT, NOT_CONFIGURED, DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST );
         Clock clock = Clock.SYSTEM;
-        NettyChannelHealthChecker healthChecker = new NettyChannelHealthChecker( settings, clock );
+        NettyChannelHealthChecker healthChecker = newHealthChecker( settings, clock );
 
         setCreationTimestamp( channel, clock.millis() );
 
@@ -168,5 +163,10 @@ public class NettyChannelHealthCheckerTest
             Future<Boolean> healthy = healthChecker.isHealthy( channel );
             assertThat( await( healthy ), is( false ) );
         }
+    }
+
+    private NettyChannelHealthChecker newHealthChecker( PoolSettings settings, Clock clock )
+    {
+        return new NettyChannelHealthChecker( settings, clock, DEV_NULL_LOGGING );
     }
 }

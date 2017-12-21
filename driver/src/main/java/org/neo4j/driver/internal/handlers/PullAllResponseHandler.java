@@ -18,8 +18,8 @@
  */
 package org.neo4j.driver.internal.handlers;
 
-import java.util.Collections;
-import java.util.LinkedList;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -29,43 +29,36 @@ import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
-import org.neo4j.driver.internal.summary.InternalNotification;
-import org.neo4j.driver.internal.summary.InternalPlan;
-import org.neo4j.driver.internal.summary.InternalProfiledPlan;
-import org.neo4j.driver.internal.summary.InternalResultSummary;
-import org.neo4j.driver.internal.summary.InternalServerInfo;
-import org.neo4j.driver.internal.summary.InternalSummaryCounters;
+import org.neo4j.driver.internal.util.Futures;
+import org.neo4j.driver.internal.util.MetadataUtil;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.summary.Notification;
-import org.neo4j.driver.v1.summary.Plan;
-import org.neo4j.driver.v1.summary.ProfiledPlan;
 import org.neo4j.driver.v1.summary.ResultSummary;
-import org.neo4j.driver.v1.summary.StatementType;
+import org.neo4j.driver.v1.util.Function;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 
-// todo: unit tests
 public abstract class PullAllResponseHandler implements ResponseHandler
 {
-    private static final boolean TOUCH_AUTO_READ = false;
+    static final int RECORD_BUFFER_LOW_WATERMARK = Integer.getInteger( "recordBufferLowWatermark", 300 );
+    static final int RECORD_BUFFER_HIGH_WATERMARK = Integer.getInteger( "recordBufferHighWatermark", 1000 );
 
     private final Statement statement;
     private final RunResponseHandler runResponseHandler;
     protected final Connection connection;
 
-    private final Queue<Record> records = new LinkedList<>();
+    private final Queue<Record> records = new ArrayDeque<>();
 
     private boolean finished;
     private Throwable failure;
     private ResultSummary summary;
 
     private CompletableFuture<Record> recordFuture;
-    private CompletableFuture<ResultSummary> summaryFuture;
     private CompletableFuture<Throwable> failureFuture;
 
     public PullAllResponseHandler( Statement statement, RunResponseHandler runResponseHandler, Connection connection )
@@ -84,7 +77,6 @@ public abstract class PullAllResponseHandler implements ResponseHandler
         afterSuccess();
 
         completeRecordFuture( null );
-        completeSummaryFuture( summary );
         completeFailureFuture( null );
     }
 
@@ -101,26 +93,16 @@ public abstract class PullAllResponseHandler implements ResponseHandler
         boolean failedRecordFuture = failRecordFuture( error );
         if ( failedRecordFuture )
         {
-            // error propagated through record future, complete other two
-            completeSummaryFuture( summary );
+            // error propagated through the record future
             completeFailureFuture( null );
         }
         else
         {
-            boolean failedSummaryFuture = failSummaryFuture( error );
-            if ( failedSummaryFuture )
+            boolean completedFailureFuture = completeFailureFuture( error );
+            if ( !completedFailureFuture )
             {
-                // error propagated through summary future, complete other one
-                completeFailureFuture( null );
-            }
-            else
-            {
-                boolean completedFailureFuture = completeFailureFuture( error );
-                if ( !completedFailureFuture )
-                {
-                    // error has not been propagated to the user, remember it
-                    failure = error;
-                }
+                // error has not been propagated to the user, remember it
+                failure = error;
             }
         }
     }
@@ -131,7 +113,7 @@ public abstract class PullAllResponseHandler implements ResponseHandler
     public synchronized void onRecord( Value[] fields )
     {
         Record record = new InternalRecord( runResponseHandler.statementKeys(), fields );
-        queueRecord( record );
+        enqueueRecord( record );
         completeRecordFuture( record );
     }
 
@@ -147,7 +129,7 @@ public abstract class PullAllResponseHandler implements ResponseHandler
 
             if ( finished )
             {
-                return completedFuture( null );
+                return completedWithNull();
             }
 
             if ( recordFuture == null )
@@ -169,22 +151,26 @@ public abstract class PullAllResponseHandler implements ResponseHandler
 
     public synchronized CompletionStage<ResultSummary> summaryAsync()
     {
-        if ( failure != null )
+        return failureAsync().thenApply( error ->
         {
-            return failedFuture( extractFailure() );
-        }
-        else if ( summary != null )
-        {
-            return completedFuture( summary );
-        }
-        else
-        {
-            if ( summaryFuture == null )
+            if ( error != null )
             {
-                summaryFuture = new CompletableFuture<>();
+                throw Futures.asCompletionException( error );
             }
-            return summaryFuture;
-        }
+            return summary;
+        } );
+    }
+
+    public synchronized <T> CompletionStage<List<T>> listAsync( Function<Record,T> mapFunction )
+    {
+        return failureAsync().thenApply( error ->
+        {
+            if ( error != null )
+            {
+                throw Futures.asCompletionException( error );
+            }
+            return recordsAsList( mapFunction );
+        } );
     }
 
     public synchronized CompletionStage<Throwable> failureAsync()
@@ -195,41 +181,67 @@ public abstract class PullAllResponseHandler implements ResponseHandler
         }
         else if ( finished )
         {
-            return completedFuture( null );
+            return completedWithNull();
         }
         else
         {
             if ( failureFuture == null )
             {
+                // neither SUCCESS nor FAILURE message has arrived, register future to be notified when it arrives
+                // future will be completed with null on SUCCESS and completed with Throwable on FAILURE
+                // enable auto-read, otherwise we might not read SUCCESS/FAILURE if records are not consumed
+                connection.enableAutoRead();
                 failureFuture = new CompletableFuture<>();
             }
             return failureFuture;
         }
     }
 
-    private void queueRecord( Record record )
+    private void enqueueRecord( Record record )
     {
         records.add( record );
-        if ( TOUCH_AUTO_READ )
+
+        boolean shouldBufferAllRecords = failureFuture != null;
+        // when failure is requested we have to buffer all remaining records and then return the error
+        // do not disable auto-read in this case, otherwise records will not be consumed and trailing
+        // SUCCESS or FAILURE message will not arrive as well, so callers will get stuck waiting for the error
+        if ( !shouldBufferAllRecords && records.size() > RECORD_BUFFER_HIGH_WATERMARK )
         {
-            if ( records.size() > 10_000 )
-            {
-                connection.disableAutoRead();
-            }
+            // more than high watermark records are already queued, tell connection to stop auto-reading from network
+            // this is needed to deal with slow consumers, we do not want to buffer all records in memory if they are
+            // fetched from network faster than consumed
+            connection.disableAutoRead();
         }
     }
 
     private Record dequeueRecord()
     {
         Record record = records.poll();
-        if ( TOUCH_AUTO_READ )
+
+        if ( records.size() < RECORD_BUFFER_LOW_WATERMARK )
         {
-            if ( record != null && records.size() < 100 )
-            {
-                connection.enableAutoRead();
-            }
+            // less than low watermark records are now available in the buffer, tell connection to pre-fetch more
+            // and populate queue with new records from network
+            connection.enableAutoRead();
         }
+
         return record;
+    }
+
+    private <T> List<T> recordsAsList( Function<Record,T> mapFunction )
+    {
+        if ( !finished )
+        {
+            throw new IllegalStateException( "Can't get records as list because SUCCESS or FAILURE did not arrive" );
+        }
+
+        List<T> result = new ArrayList<>( records.size() );
+        while ( !records.isEmpty() )
+        {
+            Record record = records.poll();
+            result.add( mapFunction.apply( record ) );
+        }
+        return result;
     }
 
     private Throwable extractFailure()
@@ -266,28 +278,6 @@ public abstract class PullAllResponseHandler implements ResponseHandler
         return false;
     }
 
-    private void completeSummaryFuture( ResultSummary summary )
-    {
-        if ( summaryFuture != null )
-        {
-            CompletableFuture<ResultSummary> future = summaryFuture;
-            summaryFuture = null;
-            future.complete( summary );
-        }
-    }
-
-    private boolean failSummaryFuture( Throwable error )
-    {
-        if ( summaryFuture != null )
-        {
-            CompletableFuture<ResultSummary> future = summaryFuture;
-            summaryFuture = null;
-            future.completeExceptionally( error );
-            return true;
-        }
-        return false;
-    }
-
     private boolean completeFailureFuture( Throwable error )
     {
         if ( failureFuture != null )
@@ -302,89 +292,7 @@ public abstract class PullAllResponseHandler implements ResponseHandler
 
     private ResultSummary extractResultSummary( Map<String,Value> metadata )
     {
-        InternalServerInfo serverInfo = new InternalServerInfo( connection.serverAddress(),
-                connection.serverVersion() );
-        return new InternalResultSummary( statement, serverInfo, extractStatementType( metadata ),
-                extractCounters( metadata ), extractPlan( metadata ), extractProfiledPlan( metadata ),
-                extractNotifications( metadata ), runResponseHandler.resultAvailableAfter(),
-                extractResultConsumedAfter( metadata ) );
-    }
-
-    private static StatementType extractStatementType( Map<String,Value> metadata )
-    {
-        Value typeValue = metadata.get( "type" );
-        if ( typeValue != null )
-        {
-            return StatementType.fromCode( typeValue.asString() );
-        }
-        return null;
-    }
-
-    private static InternalSummaryCounters extractCounters( Map<String,Value> metadata )
-    {
-        Value countersValue = metadata.get( "stats" );
-        if ( countersValue != null )
-        {
-            return new InternalSummaryCounters(
-                    counterValue( countersValue, "nodes-created" ),
-                    counterValue( countersValue, "nodes-deleted" ),
-                    counterValue( countersValue, "relationships-created" ),
-                    counterValue( countersValue, "relationships-deleted" ),
-                    counterValue( countersValue, "properties-set" ),
-                    counterValue( countersValue, "labels-added" ),
-                    counterValue( countersValue, "labels-removed" ),
-                    counterValue( countersValue, "indexes-added" ),
-                    counterValue( countersValue, "indexes-removed" ),
-                    counterValue( countersValue, "constraints-added" ),
-                    counterValue( countersValue, "constraints-removed" )
-            );
-        }
-        return null;
-    }
-
-    private static int counterValue( Value countersValue, String name )
-    {
-        Value value = countersValue.get( name );
-        return value.isNull() ? 0 : value.asInt();
-    }
-
-    private static Plan extractPlan( Map<String,Value> metadata )
-    {
-        Value planValue = metadata.get( "plan" );
-        if ( planValue != null )
-        {
-            return InternalPlan.EXPLAIN_PLAN_FROM_VALUE.apply( planValue );
-        }
-        return null;
-    }
-
-    private static ProfiledPlan extractProfiledPlan( Map<String,Value> metadata )
-    {
-        Value profiledPlanValue = metadata.get( "profile" );
-        if ( profiledPlanValue != null )
-        {
-            return InternalProfiledPlan.PROFILED_PLAN_FROM_VALUE.apply( profiledPlanValue );
-        }
-        return null;
-    }
-
-    private static List<Notification> extractNotifications( Map<String,Value> metadata )
-    {
-        Value notificationsValue = metadata.get( "notifications" );
-        if ( notificationsValue != null )
-        {
-            return notificationsValue.asList( InternalNotification.VALUE_TO_NOTIFICATION );
-        }
-        return Collections.emptyList();
-    }
-
-    private static long extractResultConsumedAfter( Map<String,Value> metadata )
-    {
-        Value resultConsumedAfterValue = metadata.get( "result_consumed_after" );
-        if ( resultConsumedAfterValue != null )
-        {
-            return resultConsumedAfterValue.asLong();
-        }
-        return -1;
+        long resultAvailableAfter = runResponseHandler.resultAvailableAfter();
+        return MetadataUtil.extractSummary( statement, connection, resultAvailableAfter, metadata );
     }
 }

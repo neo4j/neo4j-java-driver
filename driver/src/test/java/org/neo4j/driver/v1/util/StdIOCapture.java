@@ -20,8 +20,8 @@ package org.neo4j.driver.v1.util;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static java.util.Arrays.asList;
 
@@ -30,8 +30,8 @@ import static java.util.Arrays.asList;
  */
 public class StdIOCapture
 {
-    private final List<String> stdout = new LinkedList<>();
-    private final List<String> stderr = new LinkedList<>();
+    private final List<String> stdout = new CopyOnWriteArrayList<>();
+    private final List<String> stderr = new CopyOnWriteArrayList<>();
 
     /** Put this in a try-with-resources block to capture all standard io that happens within the try block */
     public AutoCloseable capture()
@@ -44,16 +44,12 @@ public class StdIOCapture
         System.setOut( new PrintStream( capturedStdOut ) );
         System.setErr( new PrintStream( capturedStdErr ) );
 
-        return new AutoCloseable()
+        return () ->
         {
-            @Override
-            public void close() throws Exception
-            {
-                System.setOut( originalStdOut );
-                System.setErr( originalStdErr );
-                stdout.addAll( asList( capturedStdOut.toString( "UTF-8" ).split( System.lineSeparator() ) ) );
-                stderr.addAll( asList( capturedStdErr.toString( "UTF-8" ).split( System.lineSeparator() ) ) );
-            }
+            System.setOut( originalStdOut );
+            System.setErr( originalStdErr );
+            stdout.addAll( asList( capturedStdOut.toString( "UTF-8" ).split( System.lineSeparator() ) ) );
+            stderr.addAll( asList( capturedStdErr.toString( "UTF-8" ).split( System.lineSeparator() ) ) );
         };
     }
 

@@ -20,12 +20,12 @@ package org.neo4j.driver.internal;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.util.concurrent.EventExecutorGroup;
+import io.netty.util.internal.logging.InternalLoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
 import java.security.GeneralSecurityException;
 
-import org.neo4j.driver.internal.async.BoltServerAddress;
 import org.neo4j.driver.internal.async.BootstrapFactory;
 import org.neo4j.driver.internal.async.ChannelConnector;
 import org.neo4j.driver.internal.async.ChannelConnectorImpl;
@@ -37,6 +37,7 @@ import org.neo4j.driver.internal.cluster.loadbalancing.LeastConnectedLoadBalanci
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancingStrategy;
 import org.neo4j.driver.internal.cluster.loadbalancing.RoundRobinLoadBalancingStrategy;
+import org.neo4j.driver.internal.logging.NettyLogging;
 import org.neo4j.driver.internal.retry.ExponentialBackoffRetryLogic;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.retry.RetrySettings;
@@ -52,6 +53,7 @@ import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
 import static java.lang.String.format;
 import static org.neo4j.driver.internal.security.SecurityPlan.insecure;
@@ -70,32 +72,19 @@ public class DriverFactory
         RoutingSettings newRoutingSettings = routingSettings.withRoutingContext( new RoutingContext( uri ) );
         SecurityPlan securityPlan = createSecurityPlan( address, config );
 
+        InternalLoggerFactory.setDefaultFactory( new NettyLogging( config.logging() ) );
         Bootstrap bootstrap = createBootstrap();
         EventExecutorGroup eventExecutorGroup = bootstrap.config().group();
         RetryLogic retryLogic = createRetryLogic( retrySettings, eventExecutorGroup, config.logging() );
 
         ConnectionPool connectionPool = createConnectionPool( authToken, securityPlan, bootstrap, config );
 
-        try
-        {
-            InternalDriver driver = createDriver( uri, address, connectionPool, config, newRoutingSettings,
-                    eventExecutorGroup, securityPlan, retryLogic );
-            Futures.getBlocking( driver.verifyConnectivity() );
-            return driver;
-        }
-        catch ( Throwable driverError )
-        {
-            // we need to close the connection pool if driver creation threw exception
-            try
-            {
-                Futures.getBlocking( connectionPool.close() );
-            }
-            catch ( Throwable closeError )
-            {
-                driverError.addSuppressed( closeError );
-            }
-            throw driverError;
-        }
+        InternalDriver driver = createDriver( uri, address, connectionPool, config, newRoutingSettings,
+                eventExecutorGroup, securityPlan, retryLogic );
+
+        verifyConnectivity( driver, connectionPool, config );
+
+        return driver;
     }
 
     protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan,
@@ -104,10 +93,10 @@ public class DriverFactory
         Clock clock = createClock();
         ConnectionSettings settings = new ConnectionSettings( authToken, config.connectionTimeoutMillis() );
         ChannelConnector connector = createConnector( settings, securityPlan, config, clock );
-        PoolSettings poolSettings = new PoolSettings( config.maxIdleConnectionPoolSize(),
-                config.idleTimeBeforeConnectionTest(), config.maxConnectionLifetimeMillis(),
-                config.maxConnectionPoolSize(),
-                config.connectionAcquisitionTimeoutMillis() );
+        PoolSettings poolSettings = new PoolSettings( config.maxConnectionPoolSize(),
+                config.connectionAcquisitionTimeoutMillis(), config.maxConnectionLifetimeMillis(),
+                config.idleTimeBeforeConnectionTest()
+        );
         return new ConnectionPoolImpl( connector, bootstrap, poolSettings, config.logging(), clock );
     }
 
@@ -121,17 +110,26 @@ public class DriverFactory
             ConnectionPool connectionPool, Config config, RoutingSettings routingSettings,
             EventExecutorGroup eventExecutorGroup, SecurityPlan securityPlan, RetryLogic retryLogic )
     {
-        String scheme = uri.getScheme().toLowerCase();
-        switch ( scheme )
+        try
         {
-        case BOLT_URI_SCHEME:
-            assertNoRoutingContext( uri, routingSettings );
-            return createDirectDriver( address, config, securityPlan, retryLogic, connectionPool );
-        case BOLT_ROUTING_URI_SCHEME:
-            return createRoutingDriver( address, connectionPool, config, routingSettings, securityPlan, retryLogic,
-                    eventExecutorGroup );
-        default:
-            throw new ClientException( format( "Unsupported URI scheme: %s", scheme ) );
+            String scheme = uri.getScheme().toLowerCase();
+            switch ( scheme )
+            {
+            case BOLT_URI_SCHEME:
+                assertNoRoutingContext( uri, routingSettings );
+                return createDirectDriver( address, config, securityPlan, retryLogic, connectionPool );
+            case BOLT_ROUTING_URI_SCHEME:
+                return createRoutingDriver( address, connectionPool, config, routingSettings, securityPlan, retryLogic,
+                        eventExecutorGroup );
+            default:
+                throw new ClientException( format( "Unsupported URI scheme: %s", scheme ) );
+            }
+        }
+        catch ( Throwable driverError )
+        {
+            // we need to close the connection pool if driver creation threw exception
+            closeConnectionPoolAndSuppressError( connectionPool, driverError );
+            throw driverError;
         }
     }
 
@@ -143,11 +141,9 @@ public class DriverFactory
     protected InternalDriver createDirectDriver( BoltServerAddress address, Config config,
             SecurityPlan securityPlan, RetryLogic retryLogic, ConnectionPool connectionPool )
     {
-        ConnectionProvider connectionProvider =
-                new DirectConnectionProvider( address, connectionPool );
-        SessionFactory sessionFactory =
-                createSessionFactory( connectionProvider, retryLogic, config );
-        return createDriver( config, securityPlan, sessionFactory );
+        ConnectionProvider connectionProvider = new DirectConnectionProvider( address, connectionPool );
+        SessionFactory sessionFactory = createSessionFactory( connectionProvider, retryLogic, config );
+        return createDriver( sessionFactory, securityPlan, config );
     }
 
     /**
@@ -166,7 +162,7 @@ public class DriverFactory
         ConnectionProvider connectionProvider = createLoadBalancer( address, connectionPool, eventExecutorGroup,
                 config, routingSettings );
         SessionFactory sessionFactory = createSessionFactory( connectionProvider, retryLogic, config );
-        return createDriver( config, securityPlan, sessionFactory );
+        return createDriver( sessionFactory, securityPlan, config );
     }
 
     /**
@@ -174,9 +170,9 @@ public class DriverFactory
      * <p>
      * <b>This method is protected only for testing</b>
      */
-    protected InternalDriver createDriver( Config config, SecurityPlan securityPlan, SessionFactory sessionFactory )
+    protected InternalDriver createDriver( SessionFactory sessionFactory, SecurityPlan securityPlan, Config config )
     {
-        return new InternalDriver( securityPlan, sessionFactory );
+        return new InternalDriver( securityPlan, sessionFactory, config.logging() );
     }
 
     /**
@@ -312,5 +308,51 @@ public class DriverFactory
             throw new IllegalArgumentException(
                     "Routing parameters are not supported with scheme 'bolt'. Given URI: '" + uri + "'" );
         }
+    }
+
+    private static void verifyConnectivity( InternalDriver driver, ConnectionPool connectionPool, Config config )
+    {
+        try
+        {
+            // block to verify connectivity, close connection pool if thread gets interrupted
+            Futures.blockingGet( driver.verifyConnectivity(),
+                    () -> closeConnectionPoolOnThreadInterrupt( connectionPool, config.logging() ) );
+        }
+        catch ( Throwable connectionError )
+        {
+            if ( Thread.currentThread().isInterrupted() )
+            {
+                // current thread has been interrupted while verifying connectivity
+                // connection pool should've been closed
+                throw new ServiceUnavailableException( "Unable to create driver. Thread has been interrupted.",
+                        connectionError );
+            }
+
+            // we need to close the connection pool if driver creation threw exception
+            closeConnectionPoolAndSuppressError( connectionPool, connectionError );
+            throw connectionError;
+        }
+    }
+
+    private static void closeConnectionPoolAndSuppressError( ConnectionPool connectionPool, Throwable mainError )
+    {
+        try
+        {
+            Futures.blockingGet( connectionPool.close() );
+        }
+        catch ( Throwable closeError )
+        {
+            if ( mainError != closeError )
+            {
+                mainError.addSuppressed( closeError );
+            }
+        }
+    }
+
+    private static void closeConnectionPoolOnThreadInterrupt( ConnectionPool pool, Logging logging )
+    {
+        Logger log = logging.getLog( Driver.class.getSimpleName() );
+        log.warn( "Driver creation interrupted while verifying connectivity. Connection pool will be closed" );
+        pool.close();
     }
 }

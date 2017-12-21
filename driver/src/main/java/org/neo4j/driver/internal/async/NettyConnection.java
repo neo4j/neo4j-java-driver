@@ -20,12 +20,13 @@ package org.neo4j.driver.internal.async;
 
 import io.netty.channel.Channel;
 import io.netty.channel.pool.ChannelPool;
-import io.netty.util.concurrent.Promise;
 
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.handlers.ResetResponseHandler;
 import org.neo4j.driver.internal.messaging.Message;
@@ -38,46 +39,41 @@ import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.Value;
 
-import static java.util.concurrent.CompletableFuture.completedFuture;
-import static org.neo4j.driver.internal.async.ChannelAttributes.messageDispatcher;
-import static org.neo4j.driver.internal.util.Futures.asCompletionStage;
+import static org.neo4j.driver.internal.async.ChannelAttributes.setTerminationReason;
 
-// todo: keep state flags to prohibit interaction with released connections
 public class NettyConnection implements Connection
 {
     private final Channel channel;
     private final InboundMessageDispatcher messageDispatcher;
+    private final BoltServerAddress serverAddress;
+    private final ServerVersion serverVersion;
     private final ChannelPool channelPool;
+    private final CompletableFuture<Void> releaseFuture;
     private final Clock clock;
 
-    private final AtomicBoolean autoReadEnabled = new AtomicBoolean( true );
-
-    private final NettyConnectionState state = new NettyConnectionState();
+    private final AtomicReference<Status> status = new AtomicReference<>( Status.OPEN );
 
     public NettyConnection( Channel channel, ChannelPool channelPool, Clock clock )
     {
         this.channel = channel;
-        this.messageDispatcher = messageDispatcher( channel );
+        this.messageDispatcher = ChannelAttributes.messageDispatcher( channel );
+        this.serverAddress = ChannelAttributes.serverAddress( channel );
+        this.serverVersion = ChannelAttributes.serverVersion( channel );
         this.channelPool = channelPool;
+        this.releaseFuture = new CompletableFuture<>();
         this.clock = clock;
     }
 
     @Override
-    public boolean isInUse()
+    public boolean isOpen()
     {
-        return state.isInUse();
-    }
-
-    @Override
-    public boolean tryMarkInUse()
-    {
-        return state.markInUse();
+        return status.get() == Status.OPEN;
     }
 
     @Override
     public void enableAutoRead()
     {
-        if ( autoReadEnabled.compareAndSet( false, true ) )
+        if ( isOpen() )
         {
             setAutoRead( true );
         }
@@ -86,7 +82,7 @@ public class NettyConnection implements Connection
     @Override
     public void disableAutoRead()
     {
-        if ( autoReadEnabled.compareAndSet( true, false ) )
+        if ( isOpen() )
         {
             setAutoRead( false );
         }
@@ -96,50 +92,57 @@ public class NettyConnection implements Connection
     public void run( String statement, Map<String,Value> parameters, ResponseHandler runHandler,
             ResponseHandler pullAllHandler )
     {
-        run( statement, parameters, runHandler, pullAllHandler, false );
+        if ( verifyOpen( runHandler, pullAllHandler ) )
+        {
+            run( statement, parameters, runHandler, pullAllHandler, false );
+        }
     }
 
     @Override
     public void runAndFlush( String statement, Map<String,Value> parameters, ResponseHandler runHandler,
             ResponseHandler pullAllHandler )
     {
-        run( statement, parameters, runHandler, pullAllHandler, true );
-    }
-
-    @Override
-    public void releaseInBackground()
-    {
-        if ( state.release() )
+        if ( verifyOpen( runHandler, pullAllHandler ) )
         {
-            reset( new ResetResponseHandler( channel, channelPool, messageDispatcher, clock ) );
+            run( statement, parameters, runHandler, pullAllHandler, true );
         }
     }
 
     @Override
-    public CompletionStage<Void> releaseNow()
+    public CompletionStage<Void> release()
     {
-        if ( state.forceRelease() )
+        if ( status.compareAndSet( Status.OPEN, Status.RELEASED ) )
         {
-            Promise<Void> releasePromise = channel.eventLoop().newPromise();
-            reset( new ResetResponseHandler( channel, channelPool, messageDispatcher, clock, releasePromise ) );
-            return asCompletionStage( releasePromise );
+            // auto-read could've been disabled, re-enable it to automatically receive response for RESET
+            setAutoRead( true );
+
+            reset( new ResetResponseHandler( channel, channelPool, messageDispatcher, clock, releaseFuture ) );
         }
-        else
+        return releaseFuture;
+    }
+
+    @Override
+    public void terminateAndRelease( String reason )
+    {
+        if ( status.compareAndSet( Status.OPEN, Status.TERMINATED ) )
         {
-            return completedFuture( null );
+            setTerminationReason( channel, reason );
+            channel.close();
+            channelPool.release( channel );
+            releaseFuture.complete( null );
         }
     }
 
     @Override
     public BoltServerAddress serverAddress()
     {
-        return ChannelAttributes.serverAddress( channel );
+        return serverAddress;
     }
 
     @Override
     public ServerVersion serverVersion()
     {
-        return ChannelAttributes.serverVersion( channel );
+        return serverVersion;
     }
 
     private void run( String statement, Map<String,Value> parameters, ResponseHandler runHandler,
@@ -191,5 +194,34 @@ public class NettyConnection implements Connection
     private void setAutoRead( boolean value )
     {
         channel.config().setAutoRead( value );
+    }
+
+    private boolean verifyOpen( ResponseHandler runHandler, ResponseHandler pullAllHandler )
+    {
+        Status connectionStatus = this.status.get();
+        switch ( connectionStatus )
+        {
+        case OPEN:
+            return true;
+        case RELEASED:
+            Exception error = new IllegalStateException( "Connection has been released to the pool and can't be used" );
+            runHandler.onFailure( error );
+            pullAllHandler.onFailure( error );
+            return false;
+        case TERMINATED:
+            Exception terminatedError = new IllegalStateException( "Connection has been terminated and can't be used" );
+            runHandler.onFailure( terminatedError );
+            pullAllHandler.onFailure( terminatedError );
+            return false;
+        default:
+            throw new IllegalStateException( "Unknown status: " + connectionStatus );
+        }
+    }
+
+    private enum Status
+    {
+        OPEN,
+        RELEASED,
+        TERMINATED
     }
 }

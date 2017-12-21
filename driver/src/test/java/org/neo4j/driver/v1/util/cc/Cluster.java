@@ -28,7 +28,7 @@ import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.driver.internal.async.BoltServerAddress;
+import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.util.DriverFactoryWithOneEventLoopThread;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.AuthTokens;
@@ -44,6 +44,7 @@ import static java.util.Collections.unmodifiableSet;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.v1.Config.TrustStrategy.trustAllCertificates;
+import static org.neo4j.driver.v1.util.TestUtil.sleep;
 
 public class Cluster
 {
@@ -437,18 +438,5 @@ public class Cluster
             currentIndex++;
         }
         throw new AssertionError();
-    }
-
-    private static void sleep( int millis )
-    {
-        try
-        {
-            Thread.sleep( millis );
-        }
-        catch ( InterruptedException e )
-        {
-            Thread.currentThread().interrupt();
-            throw new RuntimeException( e );
-        }
     }
 }

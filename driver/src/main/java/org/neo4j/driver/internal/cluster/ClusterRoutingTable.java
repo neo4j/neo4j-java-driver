@@ -19,11 +19,12 @@
 
 package org.neo4j.driver.internal.cluster;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import org.neo4j.driver.internal.async.BoltServerAddress;
+import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.AccessMode;
 
@@ -43,7 +44,7 @@ public class ClusterRoutingTable implements RoutingTable
     public ClusterRoutingTable( Clock clock, BoltServerAddress... routingAddresses )
     {
         this( clock );
-        routers.update( new LinkedHashSet<>( asList( routingAddresses ) ), new HashSet<BoltServerAddress>() );
+        routers.update( new LinkedHashSet<>( asList( routingAddresses ) ) );
     }
 
     private ClusterRoutingTable( Clock clock )
@@ -66,14 +67,12 @@ public class ClusterRoutingTable implements RoutingTable
     }
 
     @Override
-    public synchronized Set<BoltServerAddress> update( ClusterComposition cluster )
+    public synchronized void update( ClusterComposition cluster )
     {
         expirationTimeout = cluster.expirationTimestamp();
-        Set<BoltServerAddress> removed = new HashSet<>();
-        readers.update( cluster.readers(), removed );
-        writers.update( cluster.writers(), removed );
-        routers.update( cluster.routers(), removed );
-        return removed;
+        readers.update( cluster.readers() );
+        writers.update( cluster.writers() );
+        routers.update( cluster.routers() );
     }
 
     @Override
@@ -100,6 +99,16 @@ public class ClusterRoutingTable implements RoutingTable
     public AddressSet routers()
     {
         return routers;
+    }
+
+    @Override
+    public Set<BoltServerAddress> servers()
+    {
+        Set<BoltServerAddress> servers = new HashSet<>();
+        Collections.addAll( servers, readers.toArray() );
+        Collections.addAll( servers, writers.toArray() );
+        Collections.addAll( servers, routers.toArray() );
+        return servers;
     }
 
     @Override

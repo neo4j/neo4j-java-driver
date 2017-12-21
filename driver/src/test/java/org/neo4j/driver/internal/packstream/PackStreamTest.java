@@ -18,7 +18,6 @@
  */
 package org.neo4j.driver.internal.packstream;
 
-import org.hamcrest.MatcherAssert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -33,8 +32,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
-import org.neo4j.driver.internal.util.BytePrinter;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
@@ -311,22 +308,25 @@ public class PackStreamTest
         // Given
         Machine machine = new Machine();
 
+        testByteArrayPackingAndUnpacking( machine, 0 );
         for ( int i = 0; i < 24; i++ )
         {
-            byte[] array = new byte[(int) Math.pow( 2, i )];
-
-            // When
-            machine.reset();
-            machine.packer().pack( array );
-
-            // Then
-            PackStream.Unpacker unpacker = newUnpacker( machine.output() );
-            PackType packType = unpacker.peekNextType();
-
-            // Then
-            assertThat( packType, equalTo( PackType.BYTES ) );
-            assertArrayEquals( array, unpacker.unpackBytes() );
+            testByteArrayPackingAndUnpacking( machine, (int) Math.pow( 2, i ) );
         }
+    }
+
+    private void testByteArrayPackingAndUnpacking( Machine machine, int length ) throws Throwable
+    {
+        byte[] array = new byte[length];
+
+        machine.reset();
+        machine.packer().pack( array );
+
+        PackStream.Unpacker unpacker = newUnpacker( machine.output() );
+        PackType packType = unpacker.peekNextType();
+
+        assertThat( packType, equalTo( PackType.BYTES ) );
+        assertArrayEquals( array, unpacker.unpackBytes() );
     }
 
     @Test
@@ -464,8 +464,6 @@ public class PackStreamTest
         PackStream.Packer packer = machine.packer();
 
         byte[] bytes = code.getBytes( UTF_8 );
-        MatcherAssert.assertThat( BytePrinter.hex( bytes ).trim(), equalTo( "4d 6a c3 b6 6c 6e 69 72" ) );
-        assertThat( new String( bytes, UTF_8 ), equalTo( code ) );
 
         packer.packString( bytes );
 

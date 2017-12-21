@@ -19,7 +19,10 @@
 package org.neo4j.driver.internal;
 
 import java.util.List;
+import java.util.concurrent.CompletionStage;
 
+import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.StatementResultCursor;
@@ -28,15 +31,15 @@ import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.util.Function;
 
-import static org.neo4j.driver.internal.util.Futures.getBlocking;
-
 public class InternalStatementResult implements StatementResult
 {
+    private final Connection connection;
     private final StatementResultCursor cursor;
     private List<String> keys;
 
-    public InternalStatementResult( StatementResultCursor cursor )
+    public InternalStatementResult( Connection connection, StatementResultCursor cursor )
     {
+        this.connection = connection;
         this.cursor = cursor;
     }
 
@@ -45,7 +48,7 @@ public class InternalStatementResult implements StatementResult
     {
         if ( keys == null )
         {
-            getBlocking( cursor.peekAsync() );
+            blockingGet( cursor.peekAsync() );
             keys = cursor.keys();
         }
         return keys;
@@ -54,13 +57,13 @@ public class InternalStatementResult implements StatementResult
     @Override
     public boolean hasNext()
     {
-        return getBlocking( cursor.peekAsync() ) != null;
+        return blockingGet( cursor.peekAsync() ) != null;
     }
 
     @Override
     public Record next()
     {
-        Record record = getBlocking( cursor.nextAsync() );
+        Record record = blockingGet( cursor.nextAsync() );
         if ( record == null )
         {
             throw new NoSuchRecordException( "No more records" );
@@ -71,13 +74,13 @@ public class InternalStatementResult implements StatementResult
     @Override
     public Record single()
     {
-        return getBlocking( cursor.singleAsync() );
+        return blockingGet( cursor.singleAsync() );
     }
 
     @Override
     public Record peek()
     {
-        Record record = getBlocking( cursor.peekAsync() );
+        Record record = blockingGet( cursor.peekAsync() );
         if ( record == null )
         {
             throw new NoSuchRecordException( "Cannot peek past the last record" );
@@ -88,30 +91,40 @@ public class InternalStatementResult implements StatementResult
     @Override
     public List<Record> list()
     {
-        return getBlocking( cursor.listAsync() );
+        return blockingGet( cursor.listAsync() );
     }
 
     @Override
     public <T> List<T> list( Function<Record, T> mapFunction )
     {
-        return getBlocking( cursor.listAsync( mapFunction ) );
+        return blockingGet( cursor.listAsync( mapFunction ) );
     }
 
     @Override
     public ResultSummary consume()
     {
-        return getBlocking( cursor.consumeAsync() );
+        return blockingGet( cursor.consumeAsync() );
     }
 
     @Override
     public ResultSummary summary()
     {
-        return getBlocking( cursor.summaryAsync() );
+        return blockingGet( cursor.summaryAsync() );
     }
 
     @Override
     public void remove()
     {
         throw new ClientException( "Removing records from a result is not supported." );
+    }
+
+    private <T> T blockingGet( CompletionStage<T> stage )
+    {
+        return Futures.blockingGet( stage, this::terminateConnectionOnThreadInterrupt );
+    }
+
+    private void terminateConnectionOnThreadInterrupt()
+    {
+        connection.terminateAndRelease( "Thread interrupted while waiting for result to arrive" );
     }
 }

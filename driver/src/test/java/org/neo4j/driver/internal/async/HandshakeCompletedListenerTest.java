@@ -49,9 +49,9 @@ public class HandshakeCompletedListenerTest
     private final EmbeddedChannel channel = new EmbeddedChannel();
 
     @After
-    public void tearDown() throws Exception
+    public void tearDown()
     {
-        channel.close();
+        channel.finishAndReleaseAll();
     }
 
     @Test

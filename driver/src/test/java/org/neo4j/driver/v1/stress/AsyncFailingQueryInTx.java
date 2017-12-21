@@ -50,7 +50,7 @@ public class AsyncFailingQueryInTx<C extends AbstractContext> extends AbstractAs
                         .handle( ( records, error ) ->
                         {
                             assertNull( records );
-                            Throwable cause = Futures.completionErrorCause( error );
+                            Throwable cause = Futures.completionExceptionCause( error );
                             assertThat( cause, is( arithmeticError() ) );
 
                             return tx;

@@ -22,6 +22,7 @@ import org.junit.Test;
 
 import java.util.concurrent.CompletableFuture;
 
+import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.ExplicitTransaction;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.ServerVersion;
@@ -37,6 +38,7 @@ public class TransactionPullAllResponseHandlerTest
     public void shouldMarkTransactionAsFailedOnFailure()
     {
         Connection connection = mock( Connection.class );
+        when( connection.serverAddress() ).thenReturn( BoltServerAddress.LOCAL_DEFAULT );
         when( connection.serverVersion() ).thenReturn( ServerVersion.v3_2_0 );
         ExplicitTransaction tx = mock( ExplicitTransaction.class );
         TransactionPullAllResponseHandler handler = new TransactionPullAllResponseHandler( new Statement( "RETURN 1" ),

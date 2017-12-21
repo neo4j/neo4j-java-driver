@@ -22,11 +22,14 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
+import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 
 import java.util.Map;
 
+import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.ConnectionSettings;
+import org.neo4j.driver.internal.async.inbound.ConnectTimeoutHandler;
 import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.util.Clock;
@@ -70,7 +73,7 @@ public class ChannelConnectorImpl implements ChannelConnector
     public ChannelFuture connect( BoltServerAddress address, Bootstrap bootstrap )
     {
         bootstrap.option( ChannelOption.CONNECT_TIMEOUT_MILLIS, connectTimeoutMillis );
-        bootstrap.handler( new NettyChannelInitializer( address, securityPlan, clock ) );
+        bootstrap.handler( new NettyChannelInitializer( address, securityPlan, connectTimeoutMillis, clock, logging ) );
 
         ChannelFuture channelConnected = bootstrap.connect( address.toSocketAddress() );
 
@@ -78,12 +81,39 @@ public class ChannelConnectorImpl implements ChannelConnector
         ChannelPromise handshakeCompleted = channel.newPromise();
         ChannelPromise connectionInitialized = channel.newPromise();
 
-        channelConnected.addListener(
-                new ChannelConnectedListener( address, pipelineBuilder, handshakeCompleted, logging ) );
-        handshakeCompleted.addListener(
-                new HandshakeCompletedListener( userAgent, authToken, connectionInitialized ) );
+        installChannelConnectedListeners( address, channelConnected, handshakeCompleted );
+        installHandshakeCompletedListeners( handshakeCompleted, connectionInitialized );
 
         return connectionInitialized;
+    }
+
+    private void installChannelConnectedListeners( BoltServerAddress address, ChannelFuture channelConnected,
+            ChannelPromise handshakeCompleted )
+    {
+        ChannelPipeline pipeline = channelConnected.channel().pipeline();
+
+        // add timeout handler to the pipeline when channel is connected. it's needed to limit amount of time code
+        // spends in TLS and Bolt handshakes. prevents infinite waiting when database does not respond
+        channelConnected.addListener( future ->
+                pipeline.addFirst( new ConnectTimeoutHandler( connectTimeoutMillis ) ) );
+
+        // add listener that sends Bolt handshake bytes when channel is connected
+        channelConnected.addListener(
+                new ChannelConnectedListener( address, pipelineBuilder, handshakeCompleted, logging ) );
+    }
+
+    private void installHandshakeCompletedListeners( ChannelPromise handshakeCompleted,
+            ChannelPromise connectionInitialized )
+    {
+        ChannelPipeline pipeline = handshakeCompleted.channel().pipeline();
+
+        // remove timeout handler from the pipeline once TLS and Bolt handshakes are completed. regular protocol
+        // messages will flow next and we do not want to have read timeout for them
+        handshakeCompleted.addListener( future -> pipeline.remove( ConnectTimeoutHandler.class ) );
+
+        // add listener that sends an INIT message. connection is now fully established. channel pipeline if fully
+        // set to send/receive messages for a selected protocol version
+        handshakeCompleted.addListener( new HandshakeCompletedListener( userAgent, authToken, connectionInitialized ) );
     }
 
     private static Map<String,Value> tokenAsMap( AuthToken token )

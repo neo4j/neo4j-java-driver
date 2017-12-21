@@ -24,12 +24,16 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.pool.ChannelPool;
 import io.netty.util.concurrent.Future;
 
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.driver.internal.async.BoltServerAddress;
+import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.ChannelConnector;
 import org.neo4j.driver.internal.async.NettyConnection;
 import org.neo4j.driver.internal.spi.Connection;
@@ -38,6 +42,7 @@ import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
+import org.neo4j.driver.v1.exceptions.ClientException;
 
 public class ConnectionPoolImpl implements ConnectionPool
 {
@@ -55,51 +60,61 @@ public class ConnectionPoolImpl implements ConnectionPool
     public ConnectionPoolImpl( ChannelConnector connector, Bootstrap bootstrap, PoolSettings settings,
             Logging logging, Clock clock )
     {
+        this( connector, bootstrap, new ActiveChannelTracker( logging ), settings, logging, clock );
+    }
+
+    ConnectionPoolImpl( ChannelConnector connector, Bootstrap bootstrap, ActiveChannelTracker activeChannelTracker,
+            PoolSettings settings, Logging logging, Clock clock )
+    {
         this.connector = connector;
         this.bootstrap = bootstrap;
-        this.activeChannelTracker = new ActiveChannelTracker( logging );
-        this.channelHealthChecker = new NettyChannelHealthChecker( settings, clock );
+        this.activeChannelTracker = activeChannelTracker;
+        this.channelHealthChecker = new NettyChannelHealthChecker( settings, clock, logging );
         this.settings = settings;
         this.clock = clock;
-        this.log = logging.getLog( getClass().getSimpleName() );
+        this.log = logging.getLog( ConnectionPool.class.getSimpleName() );
     }
 
     @Override
-    public CompletionStage<Connection> acquire( final BoltServerAddress address )
+    public CompletionStage<Connection> acquire( BoltServerAddress address )
     {
-        log.debug( "Acquiring connection from pool for address: %s", address );
+        log.trace( "Acquiring a connection from pool towards %s", address );
 
         assertNotClosed();
         ChannelPool pool = getOrCreatePool( address );
         Future<Channel> connectionFuture = pool.acquire();
 
-        return Futures.asCompletionStage( connectionFuture ).thenApply( channel ->
+        return Futures.asCompletionStage( connectionFuture ).handle( ( channel, error ) ->
         {
+            processAcquisitionError( error );
             assertNotClosed( address, channel, pool );
             return new NettyConnection( channel, pool, clock );
         } );
     }
 
     @Override
-    public void purge( BoltServerAddress address )
+    public void retainAll( Set<BoltServerAddress> addressesToRetain )
     {
-        log.info( "Purging connections for address: %s", address );
-
-        // purge active connections
-        activeChannelTracker.purge( address );
-
-        // purge idle connections in the pool and pool itself
-        ChannelPool pool = pools.remove( address );
-        if ( pool != null )
+        for ( BoltServerAddress address : pools.keySet() )
         {
-            pool.close();
-        }
-    }
+            if ( !addressesToRetain.contains( address ) )
+            {
+                int activeChannels = activeChannelTracker.activeChannelCount( address );
+                if ( activeChannels == 0 )
+                {
+                    // address is not present in updated routing table and has no active connections
+                    // it's now safe to terminate corresponding connection pool and forget about it
 
-    @Override
-    public boolean hasAddress( BoltServerAddress address )
-    {
-        return pools.containsKey( address );
+                    ChannelPool pool = pools.remove( address );
+                    if ( pool != null )
+                    {
+                        log.info( "Closing connection pool towards %s, it has no active connections " +
+                                  "and is not in the routing table", address );
+                        pool.close();
+                    }
+                }
+            }
+        }
     }
 
     @Override
@@ -113,11 +128,14 @@ public class ConnectionPoolImpl implements ConnectionPool
     {
         if ( closed.compareAndSet( false, true ) )
         {
-            log.info( "Closing the connection pool" );
             try
             {
-                for ( ChannelPool pool : pools.values() )
+                for ( Map.Entry<BoltServerAddress,ChannelPool> entry : pools.entrySet() )
                 {
+                    BoltServerAddress address = entry.getKey();
+                    ChannelPool pool = entry.getValue();
+
+                    log.info( "Closing connection pool towards %s", address );
                     pool.close();
                 }
 
@@ -149,7 +167,7 @@ public class ConnectionPoolImpl implements ConnectionPool
         return pool;
     }
 
-    private NettyChannelPool newPool( BoltServerAddress address )
+    ChannelPool newPool( BoltServerAddress address )
     {
         return new NettyChannelPool( address, connector, bootstrap, activeChannelTracker, channelHealthChecker,
                 settings.connectionAcquisitionTimeout(), settings.maxConnectionPoolSize() );
@@ -158,6 +176,27 @@ public class ConnectionPoolImpl implements ConnectionPool
     private EventLoopGroup eventLoopGroup()
     {
         return bootstrap.config().group();
+    }
+
+    private void processAcquisitionError( Throwable error )
+    {
+        Throwable cause = Futures.completionExceptionCause( error );
+        if ( cause != null )
+        {
+            if ( cause instanceof TimeoutException )
+            {
+                // NettyChannelPool returns future failed with TimeoutException if acquire operation takes more than
+                // configured time, translate this exception to a prettier one and re-throw
+                throw new ClientException(
+                        "Unable to acquire connection from the pool within configured maximum time of " +
+                        settings.connectionAcquisitionTimeout() + "ms" );
+            }
+            else
+            {
+                // some unknown error happened during connection acquisition, propagate it
+                throw new CompletionException( cause );
+            }
+        }
     }
 
     private void assertNotClosed()

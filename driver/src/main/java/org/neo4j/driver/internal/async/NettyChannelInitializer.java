@@ -25,26 +25,32 @@ import io.netty.handler.ssl.SslHandler;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 
+import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.util.Clock;
+import org.neo4j.driver.v1.Logging;
 
 import static org.neo4j.driver.internal.async.ChannelAttributes.setCreationTimestamp;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setMessageDispatcher;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setServerAddress;
-import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 
 public class NettyChannelInitializer extends ChannelInitializer<Channel>
 {
     private final BoltServerAddress address;
     private final SecurityPlan securityPlan;
+    private final int connectTimeoutMillis;
     private final Clock clock;
+    private final Logging logging;
 
-    public NettyChannelInitializer( BoltServerAddress address, SecurityPlan securityPlan, Clock clock )
+    public NettyChannelInitializer( BoltServerAddress address, SecurityPlan securityPlan, int connectTimeoutMillis,
+            Clock clock, Logging logging )
     {
         this.address = address;
         this.securityPlan = securityPlan;
+        this.connectTimeoutMillis = connectTimeoutMillis;
         this.clock = clock;
+        this.logging = logging;
     }
 
     @Override
@@ -62,7 +68,9 @@ public class NettyChannelInitializer extends ChannelInitializer<Channel>
     private SslHandler createSslHandler()
     {
         SSLEngine sslEngine = createSslEngine();
-        return new SslHandler( sslEngine );
+        SslHandler sslHandler = new SslHandler( sslEngine );
+        sslHandler.setHandshakeTimeoutMillis( connectTimeoutMillis );
+        return sslHandler;
     }
 
     private SSLEngine createSslEngine()
@@ -77,6 +85,6 @@ public class NettyChannelInitializer extends ChannelInitializer<Channel>
     {
         setServerAddress( channel, address );
         setCreationTimestamp( channel, clock.millis() );
-        setMessageDispatcher( channel, new InboundMessageDispatcher( channel, DEV_NULL_LOGGING ) );
+        setMessageDispatcher( channel, new InboundMessageDispatcher( channel, logging ) );
     }
 }

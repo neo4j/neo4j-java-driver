@@ -23,9 +23,9 @@ import io.netty.buffer.ByteBuf;
 import org.neo4j.driver.internal.packstream.PackOutput;
 
 import static java.util.Objects.requireNonNull;
-import static org.neo4j.driver.internal.async.ProtocolUtil.CHUNK_HEADER_SIZE_BYTES;
-import static org.neo4j.driver.internal.async.ProtocolUtil.DEFAULT_MAX_OUTBOUND_CHUNK_SIZE_BYTES;
-import static org.neo4j.driver.internal.async.ProtocolUtil.chunkHeaderPlaceholder;
+import static org.neo4j.driver.internal.async.BoltProtocolV1Util.CHUNK_HEADER_SIZE_BYTES;
+import static org.neo4j.driver.internal.async.BoltProtocolV1Util.DEFAULT_MAX_OUTBOUND_CHUNK_SIZE_BYTES;
+import static org.neo4j.driver.internal.async.BoltProtocolV1Util.chunkHeaderPlaceholder;
 
 public class ChunkAwareByteBufOutput implements PackOutput
 {

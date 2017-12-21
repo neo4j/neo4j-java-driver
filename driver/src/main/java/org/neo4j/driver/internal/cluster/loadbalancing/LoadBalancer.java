@@ -20,12 +20,11 @@ package org.neo4j.driver.internal.cluster.loadbalancing;
 
 import io.netty.util.concurrent.EventExecutorGroup;
 
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
+import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.RoutingErrorHandler;
-import org.neo4j.driver.internal.async.BoltServerAddress;
 import org.neo4j.driver.internal.async.RoutingConnection;
 import org.neo4j.driver.internal.cluster.AddressSet;
 import org.neo4j.driver.internal.cluster.ClusterComposition;
@@ -125,10 +124,8 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
 
     private synchronized void forget( BoltServerAddress address )
     {
-        // First remove from the load balancer, to prevent concurrent threads from making connections to them.
+        // remove from the routing table, to prevent concurrent threads from making connections to this address
         routingTable.forget( address );
-        // drop all current connections to the address
-        connectionPool.purge( address );
     }
 
     private synchronized CompletionStage<RoutingTable> freshRoutingTable( AccessMode mode )
@@ -141,7 +138,7 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
         else if ( routingTable.isStaleFor( mode ) )
         {
             // existing routing table is not fresh and should be updated
-            log.info( "Routing information is stale. %s", routingTable );
+            log.info( "Routing table is stale. %s", routingTable );
 
             CompletableFuture<RoutingTable> resultFuture = new CompletableFuture<>();
             refreshRoutingTableFuture = resultFuture;
@@ -149,7 +146,7 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
             rediscovery.lookupClusterComposition( routingTable, connectionPool )
                     .whenComplete( ( composition, completionError ) ->
                     {
-                        Throwable error = Futures.completionErrorCause( completionError );
+                        Throwable error = Futures.completionExceptionCause( completionError );
                         if ( error != null )
                         {
                             clusterCompositionLookupFailed( error );
@@ -171,18 +168,21 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
 
     private synchronized void freshClusterCompositionFetched( ClusterComposition composition )
     {
-        Set<BoltServerAddress> removed = routingTable.update( composition );
-
-        for ( BoltServerAddress address : removed )
+        try
         {
-            connectionPool.purge( address );
+            routingTable.update( composition );
+            connectionPool.retainAll( routingTable.servers() );
+
+            log.info( "Updated routing table. %s", routingTable );
+
+            CompletableFuture<RoutingTable> routingTableFuture = refreshRoutingTableFuture;
+            refreshRoutingTableFuture = null;
+            routingTableFuture.complete( routingTable );
         }
-
-        log.info( "Refreshed routing information. %s", routingTable );
-
-        CompletableFuture<RoutingTable> routingTableFuture = refreshRoutingTableFuture;
-        refreshRoutingTableFuture = null;
-        routingTableFuture.complete( routingTable );
+        catch ( Throwable error )
+        {
+            clusterCompositionLookupFailed( error );
+        }
     }
 
     private synchronized void clusterCompositionLookupFailed( Throwable error )
@@ -214,7 +214,7 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
 
         connectionPool.acquire( address ).whenComplete( ( connection, completionError ) ->
         {
-            Throwable error = Futures.completionErrorCause( completionError );
+            Throwable error = Futures.completionExceptionCause( completionError );
             if ( error != null )
             {
                 if ( error instanceof ServiceUnavailableException )
@@ -268,7 +268,7 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
     {
         Logger log = loadBalancerLogger( logging );
         ClusterCompositionProvider clusterCompositionProvider =
-                new RoutingProcedureClusterCompositionProvider( clock, log, settings );
+                new RoutingProcedureClusterCompositionProvider( clock, settings );
         return new Rediscovery( initialRouter, settings, clusterCompositionProvider, eventExecutorGroup,
                 new DnsResolver( log ), log );
     }

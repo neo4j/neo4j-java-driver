@@ -107,6 +107,12 @@ public class ConfigTest
     }
 
     @Test
+    public void shouldHaveCorrectMaxConnectionLifetime()
+    {
+        assertEquals( TimeUnit.HOURS.toMillis( 1 ), Config.defaultConfig().maxConnectionLifetimeMillis() );
+    }
+
+    @Test
     public void shouldSupportMaxConnectionLifetimeSetting() throws Throwable
     {
         Config config = Config.build().withMaxConnectionLifetime( 42, TimeUnit.SECONDS ).toConfig();
@@ -223,6 +229,72 @@ public class ConfigTest
         Config config = Config.build().withMaxTransactionRetryTime( 42, TimeUnit.SECONDS ).toConfig();
 
         assertEquals( TimeUnit.SECONDS.toMillis( 42 ), config.retrySettings().maxRetryTimeMs() );
+    }
+
+    @Test
+    public void shouldHaveCorrectDefaultMaxConnectionPoolSize()
+    {
+        assertEquals( 100, Config.defaultConfig().maxConnectionPoolSize() );
+    }
+
+    @Test
+    public void shouldAllowPositiveMaxConnectionPoolSize()
+    {
+        Config config = Config.build().withMaxConnectionPoolSize( 42 ).toConfig();
+
+        assertEquals( 42, config.maxConnectionPoolSize() );
+    }
+
+    @Test
+    public void shouldAllowNegativeMaxConnectionPoolSize()
+    {
+        Config config = Config.build().withMaxConnectionPoolSize( -42 ).toConfig();
+
+        assertEquals( Integer.MAX_VALUE, config.maxConnectionPoolSize() );
+    }
+
+    @Test
+    public void shouldDisallowZeroMaxConnectionPoolSize()
+    {
+        try
+        {
+            Config.build().withMaxConnectionPoolSize( 0 ).toConfig();
+            fail( "Exception expected" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            assertEquals( "Zero value is not supported", e.getMessage() );
+        }
+    }
+
+    @Test
+    public void shouldHaveCorrectDefaultConnectionAcquisitionTimeout()
+    {
+        assertEquals( TimeUnit.SECONDS.toMillis( 60 ), Config.defaultConfig().connectionAcquisitionTimeoutMillis() );
+    }
+
+    @Test
+    public void shouldAllowPositiveConnectionAcquisitionTimeout()
+    {
+        Config config = Config.build().withConnectionAcquisitionTimeout( 42, TimeUnit.SECONDS ).toConfig();
+
+        assertEquals( TimeUnit.SECONDS.toMillis( 42 ), config.connectionAcquisitionTimeoutMillis() );
+    }
+
+    @Test
+    public void shouldAllowNegativeConnectionAcquisitionTimeout()
+    {
+        Config config = Config.build().withConnectionAcquisitionTimeout( -42, TimeUnit.HOURS ).toConfig();
+
+        assertEquals( -1, config.connectionAcquisitionTimeoutMillis() );
+    }
+
+    @Test
+    public void shouldAllowConnectionAcquisitionTimeoutOfZero()
+    {
+        Config config = Config.build().withConnectionAcquisitionTimeout( 0, TimeUnit.DAYS ).toConfig();
+
+        assertEquals( 0, config.connectionAcquisitionTimeoutMillis() );
     }
 
     public static void deleteDefaultKnownCertFileIfExists()

@@ -16,24 +16,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver;
+package org.neo4j.driver.internal.logging;
 
-public interface ResultResourcesHandler
+import org.neo4j.driver.v1.Logger;
+
+public class PrefixedLogger extends ReformattedLogger
 {
-    void resultFetched();
+    private final String messagePrefix;
 
-    void resultFailed( Throwable error );
-
-    ResultResourcesHandler NO_OP = new ResultResourcesHandler()
+    public PrefixedLogger( Logger delegate )
     {
-        @Override
-        public void resultFetched()
-        {
-        }
+        this( null, delegate );
+    }
 
-        @Override
-        public void resultFailed( Throwable error )
+    public PrefixedLogger( String messagePrefix, Logger delegate )
+    {
+        super(delegate);
+        this.messagePrefix = messagePrefix;
+    }
+
+    @Override
+    protected String reformat( String message )
+    {
+        if ( messagePrefix == null )
         {
+            return message;
         }
-    };
+        return String.format( "%s %s", messagePrefix, message );
+    }
 }

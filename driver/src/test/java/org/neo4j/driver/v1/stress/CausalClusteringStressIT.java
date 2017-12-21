@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.v1.stress;
 
+import org.junit.AfterClass;
 import org.junit.Rule;
 
 import java.net.URI;
@@ -40,6 +41,7 @@ import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.util.cc.ClusterMemberRole;
+import org.neo4j.driver.v1.util.cc.ClusterRule;
 import org.neo4j.driver.v1.util.cc.LocalOrRemoteClusterRule;
 
 import static org.hamcrest.Matchers.both;
@@ -53,6 +55,12 @@ public class CausalClusteringStressIT extends AbstractStressTestBase<CausalClust
 {
     @Rule
     public final LocalOrRemoteClusterRule clusterRule = new LocalOrRemoteClusterRule();
+
+    @AfterClass
+    public static void stopSharedCluster()
+    {
+        ClusterRule.stopSharedCluster();
+    }
 
     @Override
     URI databaseUri()

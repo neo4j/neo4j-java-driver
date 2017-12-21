@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -52,6 +53,12 @@ public final class TestUtil
     {
     }
 
+    @SafeVarargs
+    public static <T> List<T> awaitAll( CompletionStage<T>... stages )
+    {
+        return awaitAll( Arrays.asList( stages ) );
+    }
+
     public static <T> List<T> awaitAll( List<CompletionStage<T>> stages )
     {
         List<T> result = new ArrayList<>();
@@ -68,11 +75,16 @@ public final class TestUtil
         return await( future );
     }
 
+    public static <T> T await( CompletableFuture<T> future )
+    {
+        return await( (Future<T>) future );
+    }
+
     public static <T, U extends Future<T>> T await( U future )
     {
         try
         {
-            return future.get( 1, MINUTES );
+            return future.get( 5, MINUTES );
         }
         catch ( InterruptedException e )
         {
@@ -110,7 +122,7 @@ public final class TestUtil
         }
         finally
         {
-            buf.release();
+            releaseIfPossible( buf );
         }
     }
 
@@ -122,8 +134,8 @@ public final class TestUtil
         }
         finally
         {
-            expected.release();
-            actual.release();
+            releaseIfPossible( expected );
+            releaseIfPossible( actual );
         }
     }
 
@@ -158,6 +170,34 @@ public final class TestUtil
         setupSuccessfulPullAll( connection, "ROLLBACK" );
         setupSuccessfulPullAll( connection, "BEGIN" );
         return connection;
+    }
+
+    public static void sleep( int millis )
+    {
+        try
+        {
+            Thread.sleep( millis );
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException( e );
+        }
+    }
+
+    public static void interruptWhenInWaitingState( Thread thread )
+    {
+        CompletableFuture.runAsync( () ->
+        {
+            // spin until given thread moves to WAITING state
+            do
+            {
+                sleep( 500 );
+            }
+            while ( thread.getState() != Thread.State.WAITING );
+
+            thread.interrupt();
+        } );
     }
 
     private static void setupSuccessfulPullAll( Connection connection, String statement )
@@ -238,6 +278,14 @@ public final class TestUtil
         {
             throw new IllegalArgumentException(
                     "Unexpected number: '" + value + "' or type" + value.getClass() );
+        }
+    }
+
+    private static void releaseIfPossible( ByteBuf buf )
+    {
+        if ( buf.refCnt() > 0 )
+        {
+            buf.release();
         }
     }
 }

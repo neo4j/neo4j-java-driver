@@ -26,9 +26,12 @@ import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
 
-import org.neo4j.driver.internal.async.BoltServerAddress;
+import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.logging.ConsoleLogging;
 import org.neo4j.driver.v1.AuthToken;
+import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 
@@ -51,10 +54,12 @@ public class Neo4jRunner
 
     private static final boolean debug = true;
 
-    private static final String DEFAULT_NEOCTRL_ARGS = "-e 3.2.5";
+    private static final String DEFAULT_NEOCTRL_ARGS = "-e 3.2.7";
     public static final String NEOCTRL_ARGS = System.getProperty( "neoctrl.args", DEFAULT_NEOCTRL_ARGS );
     public static final URI DEFAULT_URI = URI.create( "bolt://localhost:7687" );
     public static final BoltServerAddress DEFAULT_ADDRESS = new BoltServerAddress( DEFAULT_URI );
+    public static final Config DEFAULT_CONFIG = Config.build().withLogging( new ConsoleLogging( Level.INFO ) )
+            .toConfig();
 
     public static final String USER = "neo4j";
     public static final String PASSWORD = "password";
@@ -78,6 +83,11 @@ public class Neo4jRunner
             globalInstance = new Neo4jRunner();
         }
         return globalInstance;
+    }
+
+    public static synchronized boolean globalRunnerExists()
+    {
+        return globalInstance != null;
     }
 
     private Neo4jRunner() throws IOException
@@ -123,7 +133,7 @@ public class Neo4jRunner
 
         if ( driver == null )
         {
-            driver = GraphDatabase.driver( DEFAULT_URI, DEFAULT_AUTH_TOKEN );
+            driver = GraphDatabase.driver( DEFAULT_URI, DEFAULT_AUTH_TOKEN, DEFAULT_CONFIG );
         }
         return driver;
     }
@@ -285,22 +295,21 @@ public class Neo4jRunner
 
     private void installShutdownHook()
     {
-        Runtime.getRuntime().addShutdownHook( new Thread( new Runnable()
+        Runtime.getRuntime().addShutdownHook( new Thread( () ->
         {
-            @Override
-            public void run()
-            {
             try
             {
-                debug("Starting shutdown hook");
-                driver.close();
+                debug( "Starting shutdown hook" );
+                if ( driver != null )
+                {
+                    driver.close();
+                }
                 stopNeo4j();
-                debug("Finished shutdown hook");
+                debug( "Finished shutdown hook" );
             }
             catch ( Exception e )
             {
                 e.printStackTrace();
-            }
             }
         } ) );
     }

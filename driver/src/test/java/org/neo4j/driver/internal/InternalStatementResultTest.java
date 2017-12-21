@@ -27,7 +27,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-import org.neo4j.driver.internal.async.InternalStatementResultCursor;
 import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.handlers.SessionPullAllResponseHandler;
@@ -55,7 +54,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.driver.internal.async.BoltServerAddress.LOCAL_DEFAULT;
+import static org.neo4j.driver.internal.BoltServerAddress.LOCAL_DEFAULT;
 import static org.neo4j.driver.v1.Records.column;
 import static org.neo4j.driver.v1.Values.ofString;
 import static org.neo4j.driver.v1.Values.value;
@@ -408,8 +407,8 @@ public class InternalStatementResultTest
         }
         pullAllHandler.onSuccess( emptyMap() );
 
-        StatementResultCursor cursor = InternalStatementResultCursor.forBlockingRun( runHandler, pullAllHandler );
-        return new InternalStatementResult( cursor );
+        StatementResultCursor cursor = new InternalStatementResultCursor( runHandler, pullAllHandler );
+        return new InternalStatementResult( connection, cursor );
     }
 
     private List<Value> values( Record record )
