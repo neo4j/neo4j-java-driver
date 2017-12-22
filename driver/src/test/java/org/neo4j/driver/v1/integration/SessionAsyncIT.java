@@ -60,6 +60,7 @@ import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static java.util.Collections.emptyIterator;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.hamcrest.Matchers.containsString;
@@ -1167,6 +1168,75 @@ public class SessionAsyncIT
         assertNull( await( writeResult ) );
     }
 
+    @Test
+    public void shouldReturnNoRecordsWhenConsumed()
+    {
+        String query = "UNWIND range(1, 5) AS x RETURN x";
+        CompletionStage<SummaryAndRecords> summaryAndRecordStage = session.runAsync( query )
+                .thenCompose( cursor ->
+                {
+                    CompletionStage<ResultSummary> consumeStage = cursor.consumeAsync();
+                    CompletionStage<Record> recordStage = cursor.nextAsync();
+                    return consumeStage.thenCombine( recordStage, SummaryAndRecords::new );
+                } );
+
+        SummaryAndRecords result = await( summaryAndRecordStage );
+
+        assertEquals( query, result.summary.statement().text() );
+        assertEquals( StatementType.READ_ONLY, result.summary.statementType() );
+
+        assertEquals( 1, result.records.size() );
+        assertNull( result.records.get( 0 ) );
+    }
+
+    @Test
+    public void shouldStopReturningRecordsAfterConsumed()
+    {
+        String query = "UNWIND range(1, 5) AS x RETURN x";
+        CompletionStage<SummaryAndRecords> summaryAndRecordsStage = session.runAsync( query )
+                .thenCompose( cursor -> cursor.nextAsync() // fetch just a single record
+                        .thenCompose( record1 ->
+                        {
+                            // then consume rest
+                            CompletionStage<ResultSummary> consumeStage = cursor.consumeAsync();
+                            // and try to fetch another record
+                            CompletionStage<Record> record2Stage = cursor.nextAsync();
+                            return consumeStage.thenCombine( record2Stage,
+                                    ( summary, record2 ) -> new SummaryAndRecords( summary, record1, record2 ) );
+                        } ) );
+
+        SummaryAndRecords result = await( summaryAndRecordsStage );
+
+        assertEquals( query, result.summary.statement().text() );
+        assertEquals( StatementType.READ_ONLY, result.summary.statementType() );
+
+        assertEquals( 2, result.records.size() );
+        Record record1 = result.records.get( 0 );
+        assertNotNull( record1 );
+        assertEquals( 1, record1.get( 0 ).asInt() );
+        Record record2 = result.records.get( 1 );
+        assertNull( record2 );
+    }
+
+    @Test
+    public void shouldReturnEmptyListOfRecordsWhenConsumed()
+    {
+        String query = "UNWIND range(1, 5) AS x RETURN x";
+        CompletionStage<SummaryAndRecords> summaryAndRecordsStage = session.runAsync( query )
+                .thenCompose( cursor ->
+                {
+                    CompletionStage<ResultSummary> consumeStage = cursor.consumeAsync();
+                    CompletionStage<List<Record>> recordsStage = cursor.listAsync();
+                    return consumeStage.thenCombine( recordsStage, SummaryAndRecords::new );
+                } );
+
+        SummaryAndRecords result = await( summaryAndRecordsStage );
+
+        assertEquals( query, result.summary.statement().text() );
+        assertEquals( StatementType.READ_ONLY, result.summary.statementType() );
+        assertEquals( emptyList(), result.records );
+    }
+
     private Future<List<CompletionStage<Record>>> runNestedQueries( StatementResultCursor inputCursor )
     {
         CompletableFuture<List<CompletionStage<Record>>> resultFuture = new CompletableFuture<>();
@@ -1361,6 +1431,12 @@ public class SessionAsyncIT
     {
         final ResultSummary summary;
         final List<Record> records;
+
+        SummaryAndRecords( ResultSummary summary, Record... records )
+        {
+            this.summary = summary;
+            this.records = Arrays.asList( records );
+        }
 
         SummaryAndRecords( ResultSummary summary, List<Record> records )
         {

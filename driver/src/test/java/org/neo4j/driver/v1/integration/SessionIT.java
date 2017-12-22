@@ -1581,6 +1581,49 @@ public class SessionIT
         }
     }
 
+    @Test
+    public void shouldConsume()
+    {
+        try ( Session session = neo4j.driver().session() )
+        {
+            String query = "UNWIND [1, 2, 3, 4, 5] AS x RETURN x";
+            StatementResult result = session.run( query );
+
+            ResultSummary summary = result.consume();
+            assertEquals( query, summary.statement().text() );
+            assertEquals( StatementType.READ_ONLY, summary.statementType() );
+
+            assertFalse( result.hasNext() );
+            assertEquals( emptyList(), result.list() );
+        }
+    }
+
+    @Test
+    public void shouldConsumeWithFailure()
+    {
+        try ( Session session = neo4j.driver().session() )
+        {
+            String query = "UNWIND [1, 2, 3, 4, 0] AS x RETURN 10 / x";
+            StatementResult result = session.run( query );
+
+            try
+            {
+                result.consume();
+                fail( "Exception expected" );
+            }
+            catch ( ClientException e )
+            {
+                assertThat( e, is( arithmeticError() ) );
+            }
+
+            assertFalse( result.hasNext() );
+            assertEquals( emptyList(), result.list() );
+
+            ResultSummary summary = result.summary();
+            assertEquals( query, summary.statement().text() );
+        }
+    }
+
     private void assumeServerIs31OrLater()
     {
         ServerVersion serverVersion = ServerVersion.version( neo4j.driver() );

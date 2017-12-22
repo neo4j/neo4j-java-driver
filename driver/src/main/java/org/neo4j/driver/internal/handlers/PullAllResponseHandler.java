@@ -62,6 +62,7 @@ public abstract class PullAllResponseHandler implements ResponseHandler
     private Throwable failure;
     private ResultSummary summary;
 
+    private boolean ignoreRecords;
     private CompletableFuture<Record> recordFuture;
     private CompletableFuture<Throwable> failureFuture;
 
@@ -116,9 +117,16 @@ public abstract class PullAllResponseHandler implements ResponseHandler
     @Override
     public synchronized void onRecord( Value[] fields )
     {
-        Record record = new InternalRecord( runResponseHandler.statementKeys(), fields );
-        enqueueRecord( record );
-        completeRecordFuture( record );
+        if ( ignoreRecords )
+        {
+            completeRecordFuture( null );
+        }
+        else
+        {
+            Record record = new InternalRecord( runResponseHandler.statementKeys(), fields );
+            enqueueRecord( record );
+            completeRecordFuture( record );
+        }
     }
 
     public synchronized CompletionStage<Record> peekAsync()
@@ -131,7 +139,7 @@ public abstract class PullAllResponseHandler implements ResponseHandler
                 return failedFuture( extractFailure() );
             }
 
-            if ( finished )
+            if ( ignoreRecords || finished )
             {
                 return completedWithNull();
             }
@@ -163,6 +171,13 @@ public abstract class PullAllResponseHandler implements ResponseHandler
             }
             return summary;
         } );
+    }
+
+    public synchronized CompletionStage<ResultSummary> consumeAsync()
+    {
+        ignoreRecords = true;
+        records.clear();
+        return summaryAsync();
     }
 
     public synchronized <T> CompletionStage<List<T>> listAsync( Function<Record,T> mapFunction )
