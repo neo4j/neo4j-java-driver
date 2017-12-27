@@ -21,6 +21,7 @@ import org.junit.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 public class ServerVersionTest
@@ -41,4 +42,13 @@ public class ServerVersionTest
         fail( "Should have failed to parse version" );
     }
 
+    @Test
+    public void shouldHaveCorrectToString()
+    {
+        assertEquals( "Neo4j/dev", ServerVersion.vInDev.toString() );
+        assertEquals( "Neo4j/3.0.0", ServerVersion.v3_0_0.toString() );
+        assertEquals( "Neo4j/3.1.0", ServerVersion.v3_1_0.toString() );
+        assertEquals( "Neo4j/3.2.0", ServerVersion.v3_2_0.toString() );
+        assertEquals( "Neo4j/3.5.7", ServerVersion.version( "Neo4j/3.5.7" ).toString() );
+    }
 }

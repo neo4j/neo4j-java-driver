@@ -95,9 +95,7 @@ public class InternalStatementResultCursor implements StatementResultCursor
     @Override
     public CompletionStage<ResultSummary> consumeAsync()
     {
-        return forEachAsync( record ->
-        {
-        } );
+        return pullAllHandler.consumeAsync();
     }
 
     @Override

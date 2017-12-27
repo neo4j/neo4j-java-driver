@@ -32,6 +32,7 @@ import java.util.List;
 import org.neo4j.driver.internal.InternalNode;
 import org.neo4j.driver.internal.InternalPath;
 import org.neo4j.driver.internal.InternalRelationship;
+import org.neo4j.driver.internal.async.BoltProtocolV1Util;
 import org.neo4j.driver.internal.async.ChannelPipelineBuilderImpl;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.async.outbound.ChunkAwareByteBufOutput;
@@ -45,7 +46,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.driver.internal.async.ChannelAttributes.messageDispatcher;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setMessageDispatcher;
-import static org.neo4j.driver.internal.async.BoltProtocolV1Util.messageBoundary;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.v1.Values.EmptyMap;
 import static org.neo4j.driver.v1.Values.ofValue;
@@ -121,6 +121,7 @@ public class MessageFormatTest
         packer.packStructHeader( 0, PackStreamMessageFormatV1.NODE );
 
         output.stop();
+        BoltProtocolV1Util.writeMessageBoundary( buf );
 
         // Expect
         exception.expect( ClientException.class );
@@ -129,7 +130,7 @@ public class MessageFormatTest
                 "received NODE structure has 0 fields." ) );
 
         // When
-        unpack( Unpooled.wrappedBuffer( buf, messageBoundary() ), newEmbeddedChannel() );
+        unpack( buf, newEmbeddedChannel() );
     }
 
     private void assertSerializesValue( Value value ) throws Throwable

@@ -30,6 +30,7 @@ import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.Futures;
+import org.neo4j.driver.internal.util.Iterables;
 import org.neo4j.driver.internal.util.MetadataUtil;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
@@ -45,6 +46,8 @@ import static org.neo4j.driver.internal.util.Futures.failedFuture;
 
 public abstract class PullAllResponseHandler implements ResponseHandler
 {
+    private static final Queue<Record> UNINITIALIZED_RECORDS = Iterables.emptyQueue();
+
     static final int RECORD_BUFFER_LOW_WATERMARK = Integer.getInteger( "recordBufferLowWatermark", 300 );
     static final int RECORD_BUFFER_HIGH_WATERMARK = Integer.getInteger( "recordBufferHighWatermark", 1000 );
 
@@ -52,12 +55,14 @@ public abstract class PullAllResponseHandler implements ResponseHandler
     private final RunResponseHandler runResponseHandler;
     protected final Connection connection;
 
-    private final Queue<Record> records = new ArrayDeque<>();
+    // initialized lazily when first record arrives
+    private Queue<Record> records = UNINITIALIZED_RECORDS;
 
     private boolean finished;
     private Throwable failure;
     private ResultSummary summary;
 
+    private boolean ignoreRecords;
     private CompletableFuture<Record> recordFuture;
     private CompletableFuture<Throwable> failureFuture;
 
@@ -112,9 +117,16 @@ public abstract class PullAllResponseHandler implements ResponseHandler
     @Override
     public synchronized void onRecord( Value[] fields )
     {
-        Record record = new InternalRecord( runResponseHandler.statementKeys(), fields );
-        enqueueRecord( record );
-        completeRecordFuture( record );
+        if ( ignoreRecords )
+        {
+            completeRecordFuture( null );
+        }
+        else
+        {
+            Record record = new InternalRecord( runResponseHandler.statementKeys(), fields );
+            enqueueRecord( record );
+            completeRecordFuture( record );
+        }
     }
 
     public synchronized CompletionStage<Record> peekAsync()
@@ -127,7 +139,7 @@ public abstract class PullAllResponseHandler implements ResponseHandler
                 return failedFuture( extractFailure() );
             }
 
-            if ( finished )
+            if ( ignoreRecords || finished )
             {
                 return completedWithNull();
             }
@@ -159,6 +171,13 @@ public abstract class PullAllResponseHandler implements ResponseHandler
             }
             return summary;
         } );
+    }
+
+    public synchronized CompletionStage<ResultSummary> consumeAsync()
+    {
+        ignoreRecords = true;
+        records.clear();
+        return summaryAsync();
     }
 
     public synchronized <T> CompletionStage<List<T>> listAsync( Function<Record,T> mapFunction )
@@ -199,6 +218,11 @@ public abstract class PullAllResponseHandler implements ResponseHandler
 
     private void enqueueRecord( Record record )
     {
+        if ( records == UNINITIALIZED_RECORDS )
+        {
+            records = new ArrayDeque<>();
+        }
+
         records.add( record );
 
         boolean shouldBufferAllRecords = failureFuture != null;

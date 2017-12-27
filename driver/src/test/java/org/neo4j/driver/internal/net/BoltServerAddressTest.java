@@ -25,6 +25,7 @@ import java.net.SocketAddress;
 import org.neo4j.driver.internal.BoltServerAddress;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.driver.internal.BoltServerAddress.DEFAULT_PORT;
@@ -52,5 +53,12 @@ public class BoltServerAddressTest
         SocketAddress socketAddress2 = boltAddress.toSocketAddress();
 
         assertNotSame( socketAddress1, socketAddress2 );
+    }
+
+    @Test
+    public void shouldHaveCorrectToString()
+    {
+        assertEquals( "localhost:4242", new BoltServerAddress( "localhost", 4242 ).toString() );
+        assertEquals( "127.0.0.1:8888", new BoltServerAddress( "127.0.0.1", 8888 ).toString() );
     }
 }

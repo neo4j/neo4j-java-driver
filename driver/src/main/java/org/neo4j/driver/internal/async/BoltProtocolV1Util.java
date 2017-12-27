@@ -21,7 +21,6 @@ package org.neo4j.driver.internal.async;
 import io.netty.buffer.ByteBuf;
 
 import static io.netty.buffer.Unpooled.copyInt;
-import static io.netty.buffer.Unpooled.copyShort;
 import static io.netty.buffer.Unpooled.unreleasableBuffer;
 
 public final class BoltProtocolV1Util
@@ -41,12 +40,7 @@ public final class BoltProtocolV1Util
             PROTOCOL_VERSION_1,
             NO_PROTOCOL_VERSION,
             NO_PROTOCOL_VERSION,
-            NO_PROTOCOL_VERSION ) )
-            .asReadOnly();
-
-    private static final ByteBuf MESSAGE_BOUNDARY_BUF = unreleasableBuffer( copyShort( 0 ) ).asReadOnly();
-
-    private static final ByteBuf CHUNK_HEADER_PLACEHOLDER_BUF = unreleasableBuffer( copyShort( 0 ) ).asReadOnly();
+            NO_PROTOCOL_VERSION ) ).asReadOnly();
 
     private BoltProtocolV1Util()
     {
@@ -62,13 +56,18 @@ public final class BoltProtocolV1Util
         return "[0x6060B017, 1, 0, 0, 0]";
     }
 
-    public static ByteBuf messageBoundary()
+    public static void writeMessageBoundary( ByteBuf buf )
     {
-        return MESSAGE_BOUNDARY_BUF.duplicate();
+        buf.writeShort( 0 );
     }
 
-    public static ByteBuf chunkHeaderPlaceholder()
+    public static void writeEmptyChunkHeader( ByteBuf buf )
     {
-        return CHUNK_HEADER_PLACEHOLDER_BUF.duplicate();
+        buf.writeShort( 0 );
+    }
+
+    public static void writeChunkHeader( ByteBuf buf, int chunkStartIndex, int headerValue )
+    {
+        buf.setShort( chunkStartIndex, headerValue );
     }
 }

@@ -28,24 +28,27 @@ import static java.lang.Integer.compare;
 
 public class ServerVersion
 {
+    public static final ServerVersion v3_2_0 = new ServerVersion( 3, 2, 0 );
+    public static final ServerVersion v3_1_0 = new ServerVersion( 3, 1, 0 );
+    public static final ServerVersion v3_0_0 = new ServerVersion( 3, 0, 0 );
+    public static final ServerVersion vInDev = new ServerVersion( 0, 0, 0 );
+
     private static final String NEO4J_IN_DEV_VERSION_STRING = "Neo4j/dev";
+    private static final Pattern PATTERN =
+            Pattern.compile( "(Neo4j/)?(\\d+)\\.(\\d+)(?:\\.)?(\\d*)(\\.|-|\\+)?([0-9A-Za-z-.]*)?" );
+
     private final int major;
     private final int minor;
     private final int patch;
-
-    private static final Pattern PATTERN =
-            Pattern.compile("(Neo4j/)?(\\d+)\\.(\\d+)(?:\\.)?(\\d*)(\\.|-|\\+)?([0-9A-Za-z-.]*)?");
+    private final String stringValue;
 
     private ServerVersion( int major, int minor, int patch )
     {
         this.major = major;
         this.minor = minor;
         this.patch = patch;
+        this.stringValue = stringValue( major, minor, patch );
     }
-    public static final ServerVersion v3_2_0 = new ServerVersion(3, 2, 0);
-    public static final ServerVersion v3_1_0 = new ServerVersion(3, 1, 0);
-    public static final ServerVersion v3_0_0 = new ServerVersion(3, 0, 0);
-    public static final ServerVersion vInDev = new ServerVersion(0, 0, 0);
 
     public static ServerVersion version( Driver driver )
     {
@@ -60,7 +63,7 @@ public class ServerVersion
     {
         if ( server == null )
         {
-            return new ServerVersion( 3, 0, 0 );
+            return v3_0_0;
         }
         else
         {
@@ -152,8 +155,15 @@ public class ServerVersion
     @Override
     public String toString()
     {
-        return this == vInDev
-               ? NEO4J_IN_DEV_VERSION_STRING
-               : String.format( "Neo4j/%s.%s.%s", major, minor, patch );
+        return stringValue;
+    }
+
+    private static String stringValue( int major, int minor, int patch )
+    {
+        if ( major == 0 && minor == 0 && patch == 0 )
+        {
+            return NEO4J_IN_DEV_VERSION_STRING;
+        }
+        return String.format( "Neo4j/%s.%s.%s", major, minor, patch );
     }
 }
