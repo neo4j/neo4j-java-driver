@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -25,11 +25,11 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.driver.internal.value.PathValue;
+import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.types.Entity;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.types.Path;
 import org.neo4j.driver.v1.types.Relationship;
-import org.neo4j.driver.v1.Value;
 
 /**
  * {@link Path} implementation that directly contains all nodes and relationships.

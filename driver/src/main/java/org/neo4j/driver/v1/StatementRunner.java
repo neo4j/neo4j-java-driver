@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -20,8 +20,8 @@ package org.neo4j.driver.v1;
 
 import java.util.Map;
 
-import org.neo4j.driver.v1.util.Experimental;
 import org.neo4j.driver.v1.types.TypeSystem;
+import org.neo4j.driver.v1.util.Experimental;
 
 /**
  * Common interface for components that can execute Neo4j statements.

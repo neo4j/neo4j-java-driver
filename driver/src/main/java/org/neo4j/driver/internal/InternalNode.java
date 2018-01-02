@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -23,8 +23,8 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.neo4j.driver.internal.value.NodeValue;
-import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.types.Node;
 
 /**
  * {@link Node} implementation that directly contains labels and properties.

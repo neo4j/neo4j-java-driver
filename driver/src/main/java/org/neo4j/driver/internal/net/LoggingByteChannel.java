@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -22,8 +22,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
 
-import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.internal.util.BytePrinter;
+import org.neo4j.driver.v1.Logger;
 
 /**
  * Basically it is a wrapper to a {@link ByteChannel} with logging enabled to record bytes sent and received over the

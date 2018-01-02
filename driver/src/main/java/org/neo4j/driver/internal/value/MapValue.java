@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -29,8 +29,8 @@ import org.neo4j.driver.v1.util.Function;
 
 import static org.neo4j.driver.internal.util.Format.formatPairs;
 import static org.neo4j.driver.internal.value.InternalValue.Format.VALUE_ONLY;
-import static org.neo4j.driver.v1.Values.ofValue;
 import static org.neo4j.driver.v1.Values.ofObject;
+import static org.neo4j.driver.v1.Values.ofValue;
 
 public class MapValue extends ValueAdapter
 {

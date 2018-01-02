@@ -103,7 +103,7 @@
             <java>SLASHSTAR_STYLE</java>
           </mapping>
           <properties>
-            <thisYear>2017</thisYear>
+            <thisYear>2018</thisYear>
           </properties>
           <includes>
             <include>**/*.java</include>

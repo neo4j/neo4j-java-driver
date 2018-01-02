@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -24,10 +24,10 @@ import java.util.List;
 
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.internal.util.Extract;
-import org.neo4j.driver.v1.util.Function;
-import org.neo4j.driver.v1.types.Type;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
+import org.neo4j.driver.v1.types.Type;
+import org.neo4j.driver.v1.util.Function;
 
 import static org.neo4j.driver.internal.util.Format.formatElements;
 import static org.neo4j.driver.internal.value.InternalValue.Format.VALUE_ONLY;

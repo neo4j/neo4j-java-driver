@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -23,14 +23,14 @@ import org.junit.Test;
 import java.util.List;
 
 import org.neo4j.driver.internal.util.Iterables;
-import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.Values;
+import org.neo4j.driver.v1.types.Node;
 
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.Values.ofValue;
+import static org.neo4j.driver.v1.Values.parameters;
 
 public class SelfContainedNodeTest
 {

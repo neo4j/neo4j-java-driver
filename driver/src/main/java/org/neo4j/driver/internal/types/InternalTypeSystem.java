@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -24,6 +24,7 @@ import org.neo4j.driver.v1.types.TypeSystem;
 
 import static org.neo4j.driver.internal.types.TypeConstructor.ANY_TyCon;
 import static org.neo4j.driver.internal.types.TypeConstructor.BOOLEAN_TyCon;
+import static org.neo4j.driver.internal.types.TypeConstructor.BYTES_TyCon;
 import static org.neo4j.driver.internal.types.TypeConstructor.FLOAT_TyCon;
 import static org.neo4j.driver.internal.types.TypeConstructor.INTEGER_TyCon;
 import static org.neo4j.driver.internal.types.TypeConstructor.LIST_TyCon;
@@ -33,7 +34,6 @@ import static org.neo4j.driver.internal.types.TypeConstructor.NULL_TyCon;
 import static org.neo4j.driver.internal.types.TypeConstructor.NUMBER_TyCon;
 import static org.neo4j.driver.internal.types.TypeConstructor.PATH_TyCon;
 import static org.neo4j.driver.internal.types.TypeConstructor.RELATIONSHIP_TyCon;
-import static org.neo4j.driver.internal.types.TypeConstructor.BYTES_TyCon;
 import static org.neo4j.driver.internal.types.TypeConstructor.STRING_TyCon;
 
 /**

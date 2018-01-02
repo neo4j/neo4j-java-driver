@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -42,8 +42,8 @@ import org.neo4j.driver.v1.tck.tck.util.runners.StringRunner;
 
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.driver.v1.tck.Environment.driver;
 import static org.neo4j.driver.v1.Values.parameters;
+import static org.neo4j.driver.v1.tck.Environment.driver;
 import static org.neo4j.driver.v1.tck.Environment.expectedBoltValue;
 import static org.neo4j.driver.v1.tck.Environment.expectedJavaValue;
 import static org.neo4j.driver.v1.tck.Environment.listOfObjects;
