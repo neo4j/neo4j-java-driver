@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -50,13 +50,11 @@ import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.driver.internal.async.BoltProtocolV1Util.messageBoundary;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.messaging.MessageFormat.Writer;
 import static org.neo4j.driver.internal.messaging.PullAllMessage.PULL_ALL;
 import static org.neo4j.driver.v1.Values.value;
 import static org.neo4j.driver.v1.util.TestUtil.assertByteBufContains;
-import static org.neo4j.driver.v1.util.TestUtil.assertByteBufEquals;
 
 public class OutboundMessageHandlerTest
 {
@@ -85,13 +83,14 @@ public class OutboundMessageHandlerTest
         assertTrue( channel.writeOutbound( PULL_ALL ) );
         assertTrue( channel.finish() );
 
-        assertEquals( 2, channel.outboundMessages().size() );
+        assertEquals( 1, channel.outboundMessages().size() );
 
-        ByteBuf buf1 = channel.readOutbound();
-        assertByteBufContains( buf1, (short) 5, (byte) 1, (byte) 2, (byte) 3, (byte) 4, (byte) 5 );
-
-        ByteBuf buf2 = channel.readOutbound();
-        assertByteBufEquals( messageBoundary(), buf2 );
+        ByteBuf buf = channel.readOutbound();
+        assertByteBufContains(
+                buf,
+                (short) 5, (byte) 1, (byte) 2, (byte) 3, (byte) 4, (byte) 5, // message body
+                (byte) 0, (byte) 0  // message boundary
+        );
     }
 
     @Test

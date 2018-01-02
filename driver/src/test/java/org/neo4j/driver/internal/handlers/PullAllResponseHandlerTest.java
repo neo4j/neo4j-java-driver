@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -893,12 +893,25 @@ public class PullAllResponseHandlerTest
     }
 
     @Test
-    public void shouldReturnEmptyListInListAsync()
+    public void shouldReturnEmptyListInListAsyncAfterSuccess()
     {
         PullAllResponseHandler handler = newHandler();
 
         handler.onSuccess( emptyMap() );
 
+        assertEquals( emptyList(), await( handler.listAsync( Functions.identity() ) ) );
+    }
+
+    @Test
+    public void shouldReturnEmptyListInListAsyncAfterFailure()
+    {
+        PullAllResponseHandler handler = newHandler();
+
+        RuntimeException error = new RuntimeException( "Hi" );
+        handler.onFailure( error );
+
+        // consume the error
+        assertEquals( error, await( handler.failureAsync() ) );
         assertEquals( emptyList(), await( handler.listAsync( Functions.identity() ) ) );
     }
 
@@ -943,6 +956,206 @@ public class PullAllResponseHandlerTest
         assertEquals( expectedRecords, list );
     }
 
+    @Test
+    public void shouldConsumeAfterSuccessWithRecords()
+    {
+        PullAllResponseHandler handler = newHandler( singletonList( "key1" ) );
+        handler.onRecord( values( 1 ) );
+        handler.onRecord( values( 2 ) );
+        handler.onSuccess( emptyMap() );
+
+        assertNotNull( await( handler.consumeAsync() ) );
+
+        assertNoRecordsCanBeFetched( handler );
+    }
+
+    @Test
+    public void shouldConsumeAfterSuccessWithoutRecords()
+    {
+        PullAllResponseHandler handler = newHandler();
+        handler.onSuccess( emptyMap() );
+
+        assertNotNull( await( handler.consumeAsync() ) );
+
+        assertNoRecordsCanBeFetched( handler );
+    }
+
+    @Test
+    public void shouldConsumeAfterFailureWithRecords()
+    {
+        PullAllResponseHandler handler = newHandler( singletonList( "key1" ) );
+        handler.onRecord( values( 1 ) );
+        handler.onRecord( values( 2 ) );
+        RuntimeException error = new RuntimeException( "Hi" );
+        handler.onFailure( error );
+
+        try
+        {
+            await( handler.consumeAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( RuntimeException e )
+        {
+            assertEquals( error, e );
+        }
+
+        assertNoRecordsCanBeFetched( handler );
+    }
+
+    @Test
+    public void shouldConsumeAfterFailureWithoutRecords()
+    {
+        PullAllResponseHandler handler = newHandler();
+        RuntimeException error = new RuntimeException( "Hi" );
+        handler.onFailure( error );
+
+        try
+        {
+            await( handler.consumeAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( RuntimeException e )
+        {
+            assertEquals( error, e );
+        }
+
+        assertNoRecordsCanBeFetched( handler );
+    }
+
+    @Test
+    public void shouldConsumeAfterProcessedFailureWithRecords()
+    {
+        PullAllResponseHandler handler = newHandler( singletonList( "key1" ) );
+        handler.onRecord( values( 1 ) );
+        handler.onRecord( values( 2 ) );
+        RuntimeException error = new RuntimeException( "Hi" );
+        handler.onFailure( error );
+
+        // process failure
+        assertEquals( error, await( handler.failureAsync() ) );
+        // consume all buffered records
+        assertNotNull( await( handler.consumeAsync() ) );
+
+        assertNoRecordsCanBeFetched( handler );
+    }
+
+    @Test
+    public void shouldConsumeAfterProcessedFailureWithoutRecords()
+    {
+        PullAllResponseHandler handler = newHandler();
+        RuntimeException error = new RuntimeException( "Hi" );
+        handler.onFailure( error );
+
+        // process failure
+        assertEquals( error, await( handler.failureAsync() ) );
+        // consume all buffered records
+        assertNotNull( await( handler.consumeAsync() ) );
+
+        assertNoRecordsCanBeFetched( handler );
+    }
+
+    @Test
+    public void shouldConsumeUntilSuccess()
+    {
+        PullAllResponseHandler handler = newHandler( asList( "key1", "key2" ) );
+        handler.onRecord( values( 1, 2 ) );
+        handler.onRecord( values( 3, 4 ) );
+
+        CompletableFuture<ResultSummary> consumeFuture = handler.consumeAsync().toCompletableFuture();
+        assertFalse( consumeFuture.isDone() );
+
+        handler.onRecord( values( 5, 6 ) );
+        handler.onRecord( values( 7, 8 ) );
+        assertFalse( consumeFuture.isDone() );
+
+        handler.onSuccess( emptyMap() );
+
+        assertTrue( consumeFuture.isDone() );
+        assertNotNull( await( consumeFuture ) );
+
+        assertNoRecordsCanBeFetched( handler );
+    }
+
+    @Test
+    public void shouldConsumeUntilFailure()
+    {
+        PullAllResponseHandler handler = newHandler( asList( "key1", "key2" ) );
+        handler.onRecord( values( 1, 2 ) );
+        handler.onRecord( values( 3, 4 ) );
+
+        CompletableFuture<ResultSummary> consumeFuture = handler.consumeAsync().toCompletableFuture();
+        assertFalse( consumeFuture.isDone() );
+
+        handler.onRecord( values( 5, 6 ) );
+        handler.onRecord( values( 7, 8 ) );
+        assertFalse( consumeFuture.isDone() );
+
+        RuntimeException error = new RuntimeException( "Hi" );
+        handler.onFailure( error );
+
+        assertTrue( consumeFuture.isDone() );
+        assertTrue( consumeFuture.isCompletedExceptionally() );
+        try
+        {
+            await( consumeFuture );
+            fail( "Exception expected" );
+        }
+        catch ( RuntimeException e )
+        {
+            assertEquals( error, e );
+        }
+
+        assertNoRecordsCanBeFetched( handler );
+    }
+
+    @Test
+    public void shouldReturnNoRecordsWhenConsumed()
+    {
+        PullAllResponseHandler handler = newHandler( asList( "key1", "key2" ) );
+        handler.onRecord( values( 1, 2 ) );
+        handler.onRecord( values( 3, 4 ) );
+
+        CompletableFuture<ResultSummary> consumeFuture = handler.consumeAsync().toCompletableFuture();
+        assertFalse( consumeFuture.isDone() );
+
+        CompletionStage<Record> peekStage1 = handler.peekAsync();
+        CompletionStage<Record> nextStage1 = handler.nextAsync();
+
+        handler.onRecord( values( 5, 6 ) );
+        handler.onRecord( values( 7, 8 ) );
+
+        CompletionStage<Record> peekStage2 = handler.peekAsync();
+        CompletionStage<Record> nextStage2 = handler.nextAsync();
+        assertFalse( consumeFuture.isDone() );
+
+        handler.onSuccess( emptyMap() );
+
+        assertNull( await( peekStage1 ) );
+        assertNull( await( nextStage1 ) );
+        assertNull( await( peekStage2 ) );
+        assertNull( await( nextStage2 ) );
+
+        assertTrue( consumeFuture.isDone() );
+        assertNotNull( await( consumeFuture ) );
+    }
+
+    @Test
+    public void shouldReceiveSummaryAfterConsume()
+    {
+        Statement statement = new Statement( "RETURN 'Hello!'" );
+        PullAllResponseHandler handler = newHandler( statement, singletonList( "key" ) );
+        handler.onRecord( values( "Hi!" ) );
+        handler.onSuccess( singletonMap( "type", value( "rw" ) ) );
+
+        ResultSummary summary1 = await( handler.consumeAsync() );
+        assertEquals( statement.text(), summary1.statement().text() );
+        assertEquals( StatementType.READ_WRITE, summary1.statementType() );
+
+        ResultSummary summary2 = await( handler.summaryAsync() );
+        assertEquals( statement.text(), summary2.statement().text() );
+        assertEquals( StatementType.READ_WRITE, summary2.statementType() );
+    }
+
     private static PullAllResponseHandler newHandler()
     {
         return newHandler( new Statement( "RETURN 1" ) );
@@ -950,12 +1163,17 @@ public class PullAllResponseHandlerTest
 
     private static PullAllResponseHandler newHandler( Statement statement )
     {
-        return newHandler( statement, emptyList(), connectionMock() );
+        return newHandler( statement, emptyList() );
     }
 
     private static PullAllResponseHandler newHandler( List<String> statementKeys )
     {
         return newHandler( new Statement( "RETURN 1" ), statementKeys, connectionMock() );
+    }
+
+    private static PullAllResponseHandler newHandler( Statement statement, List<String> statementKeys )
+    {
+        return newHandler( statement, statementKeys, connectionMock() );
     }
 
     private static PullAllResponseHandler newHandler( List<String> statementKeys, Connection connection )
@@ -977,6 +1195,13 @@ public class PullAllResponseHandlerTest
         when( connection.serverAddress() ).thenReturn( BoltServerAddress.LOCAL_DEFAULT );
         when( connection.serverVersion() ).thenReturn( ServerVersion.v3_2_0 );
         return connection;
+    }
+
+    private static void assertNoRecordsCanBeFetched( PullAllResponseHandler handler )
+    {
+        assertNull( await( handler.peekAsync() ) );
+        assertNull( await( handler.nextAsync() ) );
+        assertEquals( emptyList(), await( handler.listAsync( Functions.identity() ) ) );
     }
 
     private static class TestPullAllResponseHandler extends PullAllResponseHandler

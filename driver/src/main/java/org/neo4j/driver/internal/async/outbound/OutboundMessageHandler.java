@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -25,6 +25,7 @@ import io.netty.handler.codec.MessageToMessageEncoder;
 
 import java.util.List;
 
+import org.neo4j.driver.internal.async.BoltProtocolV1Util;
 import org.neo4j.driver.internal.logging.ChannelActivityLogger;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
@@ -32,7 +33,6 @@ import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 
 import static io.netty.buffer.ByteBufUtil.hexDump;
-import static org.neo4j.driver.internal.async.BoltProtocolV1Util.messageBoundary;
 
 public class OutboundMessageHandler extends MessageToMessageEncoder<Message>
 {
@@ -95,8 +95,8 @@ public class OutboundMessageHandler extends MessageToMessageEncoder<Message>
             log.trace( "C: %s", hexDump( messageBuf ) );
         }
 
+        BoltProtocolV1Util.writeMessageBoundary( messageBuf );
         out.add( messageBuf );
-        out.add( messageBoundary() );
     }
 
     public OutboundMessageHandler withoutByteArraySupport()

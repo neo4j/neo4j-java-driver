@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -195,60 +195,6 @@ public class InternalStatementResultCursorTest
         {
             assertThat( e.getMessage(), containsString( "Ensure your query returns only one record" ) );
         }
-    }
-
-    @Test
-    public void shouldConsumeAsyncWhenResultContainsMultipleRecords()
-    {
-        PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
-
-        Record record1 = new InternalRecord( asList( "key1", "key2", "key3" ), values( 1, 1, 1 ) );
-        Record record2 = new InternalRecord( asList( "key1", "key2", "key3" ), values( 2, 2, 2 ) );
-        Record record3 = new InternalRecord( asList( "key1", "key2", "key3" ), values( 3, 3, 3 ) );
-        when( pullAllHandler.nextAsync() ).thenReturn( completedFuture( record1 ) )
-                .thenReturn( completedFuture( record2 ) ).thenReturn( completedFuture( record3 ) )
-                .thenReturn( completedWithNull() );
-
-        ResultSummary summary = mock( ResultSummary.class );
-        when( pullAllHandler.summaryAsync() ).thenReturn( completedFuture( summary ) );
-
-        InternalStatementResultCursor cursor = newCursor( pullAllHandler );
-
-        assertEquals( summary, await( cursor.consumeAsync() ) );
-        verify( pullAllHandler, times( 4 ) ).nextAsync();
-    }
-
-    @Test
-    public void shouldConsumeAsyncWhenResultContainsOneRecords()
-    {
-        PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
-
-        Record record = new InternalRecord( asList( "key1", "key2" ), values( 1, 1 ) );
-        when( pullAllHandler.nextAsync() ).thenReturn( completedFuture( record ) )
-                .thenReturn( completedWithNull() );
-
-        ResultSummary summary = mock( ResultSummary.class );
-        when( pullAllHandler.summaryAsync() ).thenReturn( completedFuture( summary ) );
-
-        InternalStatementResultCursor cursor = newCursor( pullAllHandler );
-
-        assertEquals( summary, await( cursor.consumeAsync() ) );
-        verify( pullAllHandler, times( 2 ) ).nextAsync();
-    }
-
-    @Test
-    public void shouldConsumeAsyncWhenResultContainsNoRecords()
-    {
-        PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
-        when( pullAllHandler.nextAsync() ).thenReturn( completedWithNull() );
-
-        ResultSummary summary = mock( ResultSummary.class );
-        when( pullAllHandler.summaryAsync() ).thenReturn( completedFuture( summary ) );
-
-        InternalStatementResultCursor cursor = newCursor( pullAllHandler );
-
-        assertEquals( summary, await( cursor.consumeAsync() ) );
-        verify( pullAllHandler ).nextAsync();
     }
 
     @Test
@@ -453,6 +399,38 @@ public class InternalStatementResultCursorTest
             assertEquals( error, e );
         }
         verify( pullAllHandler ).listAsync( mapFunction );
+    }
+
+    @Test
+    public void shouldConsumeAsync()
+    {
+        PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
+        ResultSummary summary = mock( ResultSummary.class );
+        when( pullAllHandler.consumeAsync() ).thenReturn( completedFuture( summary ) );
+
+        InternalStatementResultCursor cursor = newCursor( pullAllHandler );
+
+        assertEquals( summary, await( cursor.consumeAsync() ) );
+    }
+
+    @Test
+    public void shouldPropagateFailureInConsumeAsync()
+    {
+        PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
+        RuntimeException error = new RuntimeException( "Hi" );
+        when( pullAllHandler.consumeAsync() ).thenReturn( failedFuture( error ) );
+
+        InternalStatementResultCursor cursor = newCursor( pullAllHandler );
+
+        try
+        {
+            await( cursor.consumeAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( RuntimeException e )
+        {
+            assertEquals( error, e );
+        }
     }
 
     private static InternalStatementResultCursor newCursor( PullAllResponseHandler pullAllHandler )

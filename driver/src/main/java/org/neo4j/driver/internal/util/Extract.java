@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -20,7 +20,6 @@ package org.neo4j.driver.internal.util;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -102,7 +101,7 @@ public final class Extract
                 Map.Entry<String, Value> head = data.entrySet().iterator().next();
                 return singletonMap( head.getKey(), mapFunction.apply( head.getValue() ) );
             } else {
-                Map<String, T> map = new LinkedHashMap<>( size );
+                Map<String,T> map = Iterables.newLinkedHashMapWithSize( size );
                 for ( Map.Entry<String, Value> entry : data.entrySet() )
                 {
                     map.put( entry.getKey(), mapFunction.apply( entry.getValue() ) );
@@ -124,7 +123,7 @@ public final class Extract
                 return singletonMap( record.keys().get( 0 ), mapFunction.apply( record.get( 0 ) ) );
 
             default:
-                Map<String, T> map = new LinkedHashMap<>( size );
+                Map<String,T> map = Iterables.newLinkedHashMapWithSize( size );
                 List<String> keys = record.keys();
                 for ( int i = 0; i < size; i++ )
                 {

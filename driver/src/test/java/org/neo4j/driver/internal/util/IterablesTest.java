@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -20,7 +20,13 @@ package org.neo4j.driver.internal.util;
 
 import org.junit.Test;
 
+import java.util.Queue;
+
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class IterablesTest
@@ -29,6 +35,12 @@ public class IterablesTest
     public void shouldCreateHashMapWithExpectedSize()
     {
         assertNotNull( Iterables.newHashMapWithSize( 42 ) );
+    }
+
+    @Test
+    public void shouldCreateLinkedHashMapWithExpectedSize()
+    {
+        assertNotNull( Iterables.newLinkedHashMapWithSize( 42 ) );
     }
 
     @Test
@@ -42,5 +54,52 @@ public class IterablesTest
         catch ( IllegalArgumentException ignore )
         {
         }
+    }
+
+    @Test
+    public void shouldThrowWhenNegativeLinkedHashMapSizeGiven()
+    {
+        try
+        {
+            Iterables.newLinkedHashMapWithSize( -42 );
+            fail( "Exception expected" );
+        }
+        catch ( IllegalArgumentException ignore )
+        {
+        }
+    }
+
+    @Test
+    public void shouldReturnEmptyQueue()
+    {
+        Queue<Object> queue = Iterables.emptyQueue();
+        assertEquals( 0, queue.size() );
+        assertTrue( queue.isEmpty() );
+        assertNull( queue.peek() );
+        assertNull( queue.poll() );
+
+        try
+        {
+            queue.add( "Hello" );
+            fail( "Exception expected" );
+        }
+        catch ( UnsupportedOperationException ignore )
+        {
+        }
+
+        try
+        {
+            queue.offer( "World" );
+            fail( "Exception expected" );
+        }
+        catch ( UnsupportedOperationException ignore )
+        {
+        }
+    }
+
+    @Test
+    public void shouldReturnSameEmptyQueue()
+    {
+        assertSame( Iterables.emptyQueue(), Iterables.emptyQueue() );
     }
 }

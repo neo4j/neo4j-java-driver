@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -24,7 +24,6 @@ import java.net.SocketAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
 
-import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -37,6 +36,7 @@ public class BoltServerAddress
 
     private final String host;
     private final int port;
+    private final String stringValue;
 
     public BoltServerAddress( String address )
     {
@@ -52,6 +52,7 @@ public class BoltServerAddress
     {
         this.host = requireNonNull( host );
         this.port = port;
+        this.stringValue = String.format( "%s:%d", host, port );
     }
 
     @Override
@@ -78,7 +79,7 @@ public class BoltServerAddress
     @Override
     public String toString()
     {
-        return format( "%s:%d", host, port );
+        return stringValue;
     }
 
     /**
