@@ -30,7 +30,9 @@ import org.neo4j.driver.internal.value.StringValue;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.neo4j.driver.v1.AuthTokens.basic;
 import static org.neo4j.driver.v1.AuthTokens.custom;
 import static org.neo4j.driver.v1.Values.values;
@@ -109,5 +111,113 @@ public class AuthTokensTest
         assertThat( map.get( "scheme" ), equalTo( (Value) new StringValue( "kerberos" ) ) );
         assertThat( map.get( "principal" ), equalTo( (Value) new StringValue( "" ) ) );
         assertThat( map.get( "credentials" ), equalTo( (Value) new StringValue( "base64" ) ) );
+    }
+
+    @Test
+    public void shouldNotAllowBasicAuthTokenWithNullUsername()
+    {
+        try
+        {
+            AuthTokens.basic( null, "password" );
+            fail( "Exception expected" );
+        }
+        catch ( NullPointerException e )
+        {
+            assertEquals( "Username can't be null", e.getMessage() );
+        }
+    }
+
+    @Test
+    public void shouldNotAllowBasicAuthTokenWithNullPassword()
+    {
+        try
+        {
+            AuthTokens.basic( "username", null );
+            fail( "Exception expected" );
+        }
+        catch ( NullPointerException e )
+        {
+            assertEquals( "Password can't be null", e.getMessage() );
+        }
+    }
+
+    @Test
+    public void shouldAllowBasicAuthTokenWithNullRealm()
+    {
+        AuthToken token = AuthTokens.basic( "username", "password", null );
+        Map<String,Value> map = ((InternalAuthToken) token).toMap();
+
+        assertEquals( 3, map.size() );
+        assertEquals( "basic", map.get( "scheme" ).asString() );
+        assertEquals( "username", map.get( "principal" ).asString() );
+        assertEquals( "password", map.get( "credentials" ).asString() );
+    }
+
+    @Test
+    public void shouldNotAllowKerberosAuthTokenWithNullTicket()
+    {
+        try
+        {
+            AuthTokens.kerberos( null );
+            fail( "Exception expected" );
+        }
+        catch ( NullPointerException e )
+        {
+            assertEquals( "Ticket can't be null", e.getMessage() );
+        }
+    }
+
+    @Test
+    public void shouldNotAllowCustomAuthTokenWithNullPrincipal()
+    {
+        try
+        {
+            AuthTokens.custom( null, "credentials", "realm", "scheme" );
+            fail( "Exception expected" );
+        }
+        catch ( NullPointerException e )
+        {
+            assertEquals( "Principal can't be null", e.getMessage() );
+        }
+    }
+
+    @Test
+    public void shouldNotAllowCustomAuthTokenWithNullCredentials()
+    {
+        try
+        {
+            AuthTokens.custom( "principal", null, "realm", "scheme" );
+            fail( "Exception expected" );
+        }
+        catch ( NullPointerException e )
+        {
+            assertEquals( "Credentials can't be null", e.getMessage() );
+        }
+    }
+
+    @Test
+    public void shouldAllowCustomAuthTokenWithNullRealm()
+    {
+        AuthToken token = AuthTokens.custom( "principal", "credentials", null, "scheme" );
+        Map<String,Value> map = ((InternalAuthToken) token).toMap();
+
+        assertEquals( 3, map.size() );
+        assertEquals( "scheme", map.get( "scheme" ).asString() );
+        assertEquals( "principal", map.get( "principal" ).asString() );
+        assertEquals( "credentials", map.get( "credentials" ).asString() );
+    }
+
+    @Test
+    public void shouldNotAllowCustomAuthTokenWithNullScheme()
+    {
+        try
+        {
+            AuthTokens.custom( "principal", "credentials", "realm", null );
+            fail( "Exception expected" );
+        }
+        catch ( NullPointerException e )
+        {
+            assertEquals( "Scheme can't be null", e.getMessage() );
+        }
     }
 }
