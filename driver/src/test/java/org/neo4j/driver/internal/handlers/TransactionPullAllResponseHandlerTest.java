@@ -20,6 +20,7 @@ package org.neo4j.driver.internal.handlers;
 
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.driver.internal.BoltServerAddress;
@@ -27,6 +28,10 @@ import org.neo4j.driver.internal.ExplicitTransaction;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.Statement;
+import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.v1.exceptions.SessionExpiredException;
+import org.neo4j.driver.v1.exceptions.TransientException;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -35,7 +40,26 @@ import static org.mockito.Mockito.when;
 public class TransactionPullAllResponseHandlerTest
 {
     @Test
-    public void shouldMarkTransactionAsFailedOnFailure()
+    public void shouldMarkTransactionAsFailedOnNonFatalFailures()
+    {
+        testErrorHandling( new ClientException( "Neo.ClientError.Cluster.NotALeader", "" ), false );
+        testErrorHandling( new ClientException( "Neo.ClientError.Procedure.ProcedureCallFailed", "" ), false );
+        testErrorHandling( new TransientException( "Neo.TransientError.Transaction.Terminated", "" ), false );
+        testErrorHandling( new TransientException( "Neo.TransientError.General.DatabaseUnavailable", "" ), false );
+    }
+
+    @Test
+    public void shouldMarkTransactionAsTerminatedOnFatalFailures()
+    {
+        testErrorHandling( new RuntimeException(), true );
+        testErrorHandling( new IOException(), true );
+        testErrorHandling( new ServiceUnavailableException( "" ), true );
+        testErrorHandling( new SessionExpiredException( "" ), true );
+        testErrorHandling( new SessionExpiredException( "" ), true );
+        testErrorHandling( new ClientException( "Neo.ClientError.Request.Invalid" ), true );
+    }
+
+    private static void testErrorHandling( Throwable error, boolean fatal )
     {
         Connection connection = mock( Connection.class );
         when( connection.serverAddress() ).thenReturn( BoltServerAddress.LOCAL_DEFAULT );
@@ -44,8 +68,15 @@ public class TransactionPullAllResponseHandlerTest
         TransactionPullAllResponseHandler handler = new TransactionPullAllResponseHandler( new Statement( "RETURN 1" ),
                 new RunResponseHandler( new CompletableFuture<>() ), connection, tx );
 
-        handler.onFailure( new RuntimeException() );
+        handler.onFailure( error );
 
-        verify( tx ).failure();
+        if ( fatal )
+        {
+            verify( tx ).markTerminated();
+        }
+        else
+        {
+            verify( tx ).failure();
+        }
     }
 }

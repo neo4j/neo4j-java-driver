@@ -256,6 +256,18 @@ public class ExplicitTransactionTest
         verify( connection, never() ).release();
     }
 
+    @Test
+    public void shouldReleaseConnectionWhenTerminatedAndRolledBack()
+    {
+        Connection connection = connectionMock();
+        ExplicitTransaction tx = new ExplicitTransaction( connection, mock( NetworkSession.class ) );
+
+        tx.markTerminated();
+        await( tx.rollbackAsync() );
+
+        verify( connection ).release();
+    }
+
     private static ExplicitTransaction beginTx( Connection connection )
     {
         return beginTx( connection, Bookmark.empty() );

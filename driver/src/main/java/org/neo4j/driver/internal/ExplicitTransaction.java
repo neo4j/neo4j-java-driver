@@ -21,7 +21,6 @@ package org.neo4j.driver.internal;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
 import org.neo4j.driver.internal.async.QueryRunner;
@@ -69,7 +68,8 @@ public class ExplicitTransaction implements Transaction
         MARKED_FAILED( true ),
 
         /**
-         * This transaction has been explicitly terminated by calling {@link Session#reset()}.
+         * This transaction has been terminated either because of explicit {@link Session#reset()} or because of a
+         * fatal connection error.
          */
         TERMINATED( false ),
 
@@ -181,14 +181,13 @@ public class ExplicitTransaction implements Transaction
         }
         else if ( state == State.TERMINATED )
         {
-            return failedFuture(
-                    new ClientException( "Can't commit, transaction has been terminated by `Session#reset()`" ) );
+            return failedFuture( new ClientException( "Can't commit, transaction has been terminated" ) );
         }
         else
         {
             return resultCursors.retrieveNotConsumedError()
                     .thenCompose( error -> doCommitAsync().handle( handleCommitOrRollback( error ) ) )
-                    .whenComplete( transactionClosed( State.COMMITTED ) );
+                    .whenComplete( ( ignore, error ) -> transactionClosed( State.COMMITTED ) );
         }
     }
 
@@ -205,15 +204,15 @@ public class ExplicitTransaction implements Transaction
         }
         else if ( state == State.TERMINATED )
         {
-            // transaction has been terminated by RESET and should be rolled back by the database
-            state = State.ROLLED_BACK;
+            // no need for explicit rollback, transaction should've been rolled back by the database
+            transactionClosed( State.ROLLED_BACK );
             return completedWithNull();
         }
         else
         {
             return resultCursors.retrieveNotConsumedError()
                     .thenCompose( error -> doRollbackAsync().handle( handleCommitOrRollback( error ) ) )
-                    .whenComplete( transactionClosed( State.ROLLED_BACK ) );
+                    .whenComplete( ( ignore, error ) -> transactionClosed( State.ROLLED_BACK ) );
         }
     }
 
@@ -314,8 +313,7 @@ public class ExplicitTransaction implements Transaction
         }
         else if ( state == State.TERMINATED )
         {
-            throw new ClientException(
-                    "Cannot run more statements in this transaction, it has been terminated by `Session#reset()`" );
+            throw new ClientException( "Cannot run more statements in this transaction, it has been terminated" );
         }
     }
 
@@ -394,14 +392,11 @@ public class ExplicitTransaction implements Transaction
         };
     }
 
-    private BiConsumer<Object,Throwable> transactionClosed( State newState )
+    private void transactionClosed( State newState )
     {
-        return ( ignore, error ) ->
-        {
-            state = newState;
-            connection.release(); // release in background
-            session.setBookmark( bookmark );
-        };
+        state = newState;
+        connection.release(); // release in background
+        session.setBookmark( bookmark );
     }
 
     private void terminateConnectionOnThreadInterrupt( String reason )

@@ -653,15 +653,16 @@ public class TransactionAsyncIT
     }
 
     @Test
-    public void shouldFailWhenServerIsRestarted()
+    public void shouldFailToCommitWhenServerIsRestarted()
     {
         Transaction tx = await( session.beginTransactionAsync() );
+
+        await( tx.runAsync( "CREATE ()" ) );
 
         neo4j.killDb();
 
         try
         {
-            await( tx.runAsync( "CREATE ()" ) );
             await( tx.commitAsync() );
             fail( "Exception expected" );
         }
@@ -806,7 +807,7 @@ public class TransactionAsyncIT
         }
         catch ( ClientException e )
         {
-            assertEquals( "Can't commit, transaction has been terminated by `Session#reset()`", e.getMessage() );
+            assertEquals( "Can't commit, transaction has been terminated", e.getMessage() );
         }
         assertFalse( tx.isOpen() );
     }
@@ -924,8 +925,7 @@ public class TransactionAsyncIT
         }
         catch ( ClientException e )
         {
-            assertEquals( "Cannot run more statements in this transaction, it has been terminated by `Session#reset()`",
-                    e.getMessage() );
+            assertEquals( "Cannot run more statements in this transaction, it has been terminated", e.getMessage() );
         }
     }
 

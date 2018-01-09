@@ -263,8 +263,7 @@ public class SessionIT
             assertThat( tx2, notNullValue() );
 
             exception.expect( ClientException.class ); // errors differ depending of neo4j version
-            exception.expectMessage(
-                    "Cannot run more statements in this transaction, it has been terminated by `Session#reset()`" );
+            exception.expectMessage( "Cannot run more statements in this transaction, it has been terminated" );
 
             tx1.run( "RETURN 1" );
         }

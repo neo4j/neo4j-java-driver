@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.v1.integration;
 
+import io.netty.channel.Channel;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -27,6 +28,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.driver.internal.cluster.RoutingSettings;
+import org.neo4j.driver.internal.util.ChannelTrackingDriverFactory;
+import org.neo4j.driver.internal.util.Clock;
+import org.neo4j.driver.v1.Config;
+import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
@@ -39,12 +45,14 @@ import org.neo4j.driver.v1.util.TestUtil;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
+import static org.neo4j.driver.internal.retry.RetrySettings.DEFAULT;
 
 public class TransactionIT
 {
@@ -249,7 +257,7 @@ public class TransactionIT
     {
         // Expect
         exception.expect( ClientException.class );
-        exception.expectMessage( "Cannot run more statements in this transaction, it has been terminated by" );
+        exception.expectMessage( "Cannot run more statements in this transaction, it has been terminated" );
         // When
         Transaction tx = session.beginTransaction();
         session.reset();
@@ -391,7 +399,7 @@ public class TransactionIT
     @Test
     public void shouldBeResponsiveToThreadInterruptWhenWaitingForResult() throws Exception
     {
-        try ( Session otherSession = this.session.driver().session() )
+        try ( Session otherSession = session.driver().session() )
         {
             session.run( "CREATE (:Person {name: 'Beta Ray Bill'})" ).consume();
 
@@ -425,7 +433,7 @@ public class TransactionIT
     @Test
     public void shouldBeResponsiveToThreadInterruptWhenWaitingForCommit() throws Exception
     {
-        try ( Session otherSession = this.session.driver().session() )
+        try ( Session otherSession = session.driver().session() )
         {
             session.run( "CREATE (:Person {name: 'Beta Ray Bill'})" ).consume();
 
@@ -457,5 +465,53 @@ public class TransactionIT
                 Thread.interrupted();
             }
         }
+    }
+
+    @Test
+    public void shouldThrowWhenConnectionKilledDuringTransaction()
+    {
+        testFailWhenConnectionKilledDuringTransaction( false );
+    }
+
+    @Test
+    public void shouldThrowWhenConnectionKilledDuringTransactionMarkedForSuccess()
+    {
+        testFailWhenConnectionKilledDuringTransaction( true );
+    }
+
+    private void testFailWhenConnectionKilledDuringTransaction( boolean markForSuccess )
+    {
+        ChannelTrackingDriverFactory factory = new ChannelTrackingDriverFactory( 1, Clock.SYSTEM );
+        RoutingSettings instance = new RoutingSettings( 1, 0 );
+        Config config = Config.build().withLogging( DEV_NULL_LOGGING ).toConfig();
+
+        try ( Driver driver = factory.newInstance( session.uri(), session.authToken(), instance, DEFAULT, config ) )
+        {
+            try ( Session session = driver.session();
+                  Transaction tx = session.beginTransaction() )
+            {
+                tx.run( "CREATE (:MyNode {id: 1})" ).consume();
+
+                if ( markForSuccess )
+                {
+                    tx.success();
+                }
+
+                // kill all network channels
+                for ( Channel channel : factory.channels() )
+                {
+                    channel.close().syncUninterruptibly();
+                }
+
+                tx.run( "CREATE (:MyNode {id: 1})" ).consume();
+                fail( "Exception expected" );
+            }
+            catch ( ServiceUnavailableException e )
+            {
+                assertThat( e.getMessage(), containsString( "Connection to the database terminated" ) );
+            }
+        }
+
+        assertEquals( 0, session.run( "MATCH (n:MyNode {id: 1}) RETURN count(n)" ).single().get( 0 ).asInt() );
     }
 }
