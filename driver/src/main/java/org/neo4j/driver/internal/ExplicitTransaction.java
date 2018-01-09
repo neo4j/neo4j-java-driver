@@ -158,7 +158,7 @@ public class ExplicitTransaction implements Transaction
         {
             return commitAsync();
         }
-        else if ( state == State.ACTIVE || state == State.MARKED_FAILED || state == State.TERMINATED )
+        else if ( state != State.COMMITTED && state != State.ROLLED_BACK )
         {
             return rollbackAsync();
         }
