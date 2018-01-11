@@ -59,32 +59,25 @@ public class ExplicitTransaction implements Transaction
     private enum State
     {
         /** The transaction is running with no explicit success or failure marked */
-        ACTIVE( true ),
+        ACTIVE,
 
         /** Running, user marked for success, meaning it'll value committed */
-        MARKED_SUCCESS( true ),
+        MARKED_SUCCESS,
 
         /** User marked as failed, meaning it'll be rolled back. */
-        MARKED_FAILED( true ),
+        MARKED_FAILED,
 
         /**
          * This transaction has been terminated either because of explicit {@link Session#reset()} or because of a
          * fatal connection error.
          */
-        TERMINATED( false ),
+        TERMINATED,
 
         /** This transaction has successfully committed */
-        COMMITTED( false ),
+        COMMITTED,
 
         /** This transaction has been rolled back */
-        ROLLED_BACK( false );
-
-        final boolean txOpen;
-
-        State( boolean txOpen )
-        {
-            this.txOpen = txOpen;
-        }
+        ROLLED_BACK
     }
 
     private final Connection connection;
@@ -181,6 +174,7 @@ public class ExplicitTransaction implements Transaction
         }
         else if ( state == State.TERMINATED )
         {
+            transactionClosed( State.ROLLED_BACK );
             return failedFuture( new ClientException( "Can't commit, transaction has been terminated" ) );
         }
         else
@@ -320,7 +314,7 @@ public class ExplicitTransaction implements Transaction
     @Override
     public boolean isOpen()
     {
-        return state.txOpen;
+        return state != State.COMMITTED && state != State.ROLLED_BACK;
     }
 
     @Override

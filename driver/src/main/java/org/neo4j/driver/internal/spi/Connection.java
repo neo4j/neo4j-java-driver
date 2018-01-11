@@ -39,6 +39,8 @@ public interface Connection
     void runAndFlush( String statement, Map<String,Value> parameters, ResponseHandler runHandler,
             ResponseHandler pullAllHandler );
 
+    CompletionStage<Void> reset();
+
     CompletionStage<Void> release();
 
     void terminateAndRelease( String reason );

@@ -72,6 +72,12 @@ public class RoutingConnection implements Connection
     }
 
     @Override
+    public CompletionStage<Void> reset()
+    {
+        return delegate.reset();
+    }
+
+    @Override
     public boolean isOpen()
     {
         return delegate.isOpen();

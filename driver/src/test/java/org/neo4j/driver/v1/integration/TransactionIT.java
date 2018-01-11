@@ -24,9 +24,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.util.ChannelTrackingDriverFactory;
@@ -60,8 +57,6 @@ public class TransactionIT
     public ExpectedException exception = ExpectedException.none();
     @Rule
     public TestNeo4jSession session = new TestNeo4jSession();
-
-    private Transaction globalTx;
 
     @Test
     public void shouldRunAndCommit() throws Throwable
@@ -230,95 +225,6 @@ public class TransactionIT
         }
 
         // Then it wasn't the end of the world as we know it
-    }
-
-    @SuppressWarnings( "deprecation" )
-    @Test
-    public void shouldBeAbleToRunMoreStatementsAfterResetOnNoErrorState() throws Throwable
-    {
-        // Given
-        session.reset();
-
-        // When
-        Transaction tx = session.beginTransaction();
-        tx.run( "CREATE (n:FirstNode)" );
-        tx.success();
-        tx.close();
-
-        // Then the outcome of both statements should be visible
-        StatementResult result = session.run( "MATCH (n) RETURN count(n)" );
-        long nodes = result.single().get( "count(n)" ).asLong();
-        assertThat( nodes, equalTo( 1L ) );
-    }
-
-    @SuppressWarnings( "deprecation" )
-    @Test
-    public void shouldHandleResetBeforeRun() throws Throwable
-    {
-        // Expect
-        exception.expect( ClientException.class );
-        exception.expectMessage( "Cannot run more statements in this transaction, it has been terminated" );
-        // When
-        Transaction tx = session.beginTransaction();
-        session.reset();
-        tx.run( "CREATE (n:FirstNode)" );
-    }
-
-    @SuppressWarnings( "deprecation" )
-    @Test
-    public void shouldHandleResetFromMultipleThreads() throws Throwable
-    {
-        // When
-        ExecutorService runner = Executors.newFixedThreadPool( 2 );
-        runner.execute( new Runnable()
-
-        {
-            @Override
-            public void run()
-            {
-                globalTx = session.beginTransaction();
-                    globalTx.run( "CREATE (n:FirstNode)" );
-                try
-                {
-                    Thread.sleep( 1000 );
-                }
-                catch ( InterruptedException e )
-                {
-                    throw new AssertionError( e );
-                }
-
-                globalTx = session.beginTransaction();
-                globalTx.run( "CREATE (n:FirstNode)" );
-                globalTx.success();
-                globalTx.close();
-
-            }
-        } );
-        runner.execute( new Runnable()
-
-        {
-            @Override
-            public void run()
-            {
-                try
-                {
-                    Thread.sleep( 500 );
-                }
-                catch ( InterruptedException e )
-                {
-                    throw new AssertionError( e );
-                }
-
-                session.reset();
-            }
-        } );
-
-        runner.awaitTermination( 5, TimeUnit.SECONDS );
-
-        // Then the outcome of both statements should be visible
-        StatementResult result = session.run( "MATCH (n) RETURN count(n)" );
-        long nodes = result.single().get( "count(n)" ).asLong();
-        assertThat( nodes, equalTo( 1L ) );
     }
 
     @Test
