@@ -28,8 +28,10 @@ import java.util.Map;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.util.ChannelTrackingDriverFactory;
 import org.neo4j.driver.internal.util.Clock;
+import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
@@ -37,6 +39,8 @@ import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.v1.exceptions.TransientException;
+import org.neo4j.driver.v1.util.StubServer;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 import org.neo4j.driver.v1.util.TestUtil;
 
@@ -385,6 +389,18 @@ public class TransactionIT
         testFailWhenConnectionKilledDuringTransaction( true );
     }
 
+    @Test
+    public void shouldThrowCommitError() throws Exception
+    {
+        testTxCloseErrorPropagation( "commit_error.script", true, "Unable to commit" );
+    }
+
+    @Test
+    public void shouldThrowRollbackError() throws Exception
+    {
+        testTxCloseErrorPropagation( "rollback_error.script", false, "Unable to rollback" );
+    }
+
     private void testFailWhenConnectionKilledDuringTransaction( boolean markForSuccess )
     {
         ChannelTrackingDriverFactory factory = new ChannelTrackingDriverFactory( 1, Clock.SYSTEM );
@@ -419,5 +435,46 @@ public class TransactionIT
         }
 
         assertEquals( 0, session.run( "MATCH (n:MyNode {id: 1}) RETURN count(n)" ).single().get( 0 ).asInt() );
+    }
+
+    private static void testTxCloseErrorPropagation( String script, boolean commit, String expectedErrorMessage )
+            throws Exception
+    {
+        StubServer server = StubServer.start( script, 9001 );
+        try
+        {
+            Config config = Config.build().withLogging( DEV_NULL_LOGGING ).withoutEncryption().toConfig();
+            try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", AuthTokens.none(), config );
+                  Session session = driver.session() )
+            {
+                Transaction tx = session.beginTransaction();
+                StatementResult result = tx.run( "CREATE (n {name:'Alice'}) RETURN n.name AS name" );
+                assertEquals( "Alice", result.single().get( "name" ).asString() );
+
+                if ( commit )
+                {
+                    tx.success();
+                }
+                else
+                {
+                    tx.failure();
+                }
+
+                try
+                {
+                    tx.close();
+                    fail( "Exception expected" );
+                }
+                catch ( TransientException e )
+                {
+                    assertEquals( "Neo.TransientError.General.DatabaseUnavailable", e.code() );
+                    assertEquals( expectedErrorMessage, e.getMessage() );
+                }
+            }
+        }
+        finally
+        {
+            assertEquals( 0, server.exitStatus() );
+        }
     }
 }
