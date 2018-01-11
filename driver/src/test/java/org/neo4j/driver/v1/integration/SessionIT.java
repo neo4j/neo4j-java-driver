@@ -1623,6 +1623,34 @@ public class SessionIT
         }
     }
 
+    @Test
+    public void shouldNotAllowStartingMultipleTransactions()
+    {
+        try ( Session session = neo4j.driver().session() )
+        {
+            Transaction tx = session.beginTransaction();
+            assertNotNull( tx );
+
+            for ( int i = 0; i < 3; i++ )
+            {
+                try
+                {
+                    session.beginTransaction();
+                    fail( "Exception expected" );
+                }
+                catch ( ClientException e )
+                {
+                    assertThat( e.getMessage(),
+                            containsString( "You cannot begin a transaction on a session with an open transaction" ) );
+                }
+            }
+
+            tx.close();
+
+            assertNotNull( session.beginTransaction() );
+        }
+    }
+
     private void assumeServerIs31OrLater()
     {
         ServerVersion serverVersion = ServerVersion.version( neo4j.driver() );

@@ -681,6 +681,53 @@ public class NetworkSessionTest
         verify( connection ).release();
     }
 
+    @Test
+    public void shouldNotAllowStartingMultipleTransactions()
+    {
+        NetworkSession session = newSession( connectionProvider, READ );
+
+        Transaction tx = session.beginTransaction();
+        assertNotNull( tx );
+
+        for ( int i = 0; i < 5; i++ )
+        {
+            try
+            {
+                session.beginTransaction();
+                fail( "Exception expected" );
+            }
+            catch ( ClientException e )
+            {
+                assertThat( e.getMessage(),
+                        containsString( "You cannot begin a transaction on a session with an open transaction" ) );
+            }
+        }
+    }
+
+    @Test
+    public void shouldAllowStartingTransactionAfterCurrentOneIsClosed()
+    {
+        NetworkSession session = newSession( connectionProvider, READ );
+
+        Transaction tx = session.beginTransaction();
+        assertNotNull( tx );
+
+        try
+        {
+            session.beginTransaction();
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e.getMessage(),
+                    containsString( "You cannot begin a transaction on a session with an open transaction" ) );
+        }
+
+        tx.close();
+
+        assertNotNull( session.beginTransaction() );
+    }
+
     private void testConnectionAcquisition( AccessMode sessionMode, AccessMode transactionMode )
     {
         NetworkSession session = newSession( connectionProvider, sessionMode );
