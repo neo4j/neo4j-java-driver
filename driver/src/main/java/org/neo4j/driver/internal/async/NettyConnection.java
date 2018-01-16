@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
+import org.neo4j.driver.internal.handlers.ChannelReleasingResetResponseHandler;
 import org.neo4j.driver.internal.handlers.ResetResponseHandler;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.PullAllMessage;
@@ -39,6 +40,7 @@ import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.Value;
 
+import static java.util.Collections.emptyMap;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setTerminationReason;
 
 public class NettyConnection implements Connection
@@ -109,14 +111,23 @@ public class NettyConnection implements Connection
     }
 
     @Override
+    public CompletionStage<Void> reset()
+    {
+        CompletableFuture<Void> result = new CompletableFuture<>();
+        ResetResponseHandler handler = new ResetResponseHandler( messageDispatcher, result );
+        writeResetMessageIfNeeded( handler, true );
+        return result;
+    }
+
+    @Override
     public CompletionStage<Void> release()
     {
         if ( status.compareAndSet( Status.OPEN, Status.RELEASED ) )
         {
-            // auto-read could've been disabled, re-enable it to automatically receive response for RESET
-            setAutoRead( true );
+            ChannelReleasingResetResponseHandler handler = new ChannelReleasingResetResponseHandler( channel,
+                    channelPool, messageDispatcher, clock, releaseFuture );
 
-            reset( new ResetResponseHandler( channel, channelPool, messageDispatcher, clock, releaseFuture ) );
+            writeResetMessageIfNeeded( handler, false );
         }
         return releaseFuture;
     }
@@ -152,12 +163,21 @@ public class NettyConnection implements Connection
                 pullAllHandler, flush );
     }
 
-    private void reset( ResponseHandler resetHandler )
+    private void writeResetMessageIfNeeded( ResponseHandler resetHandler, boolean isSessionReset )
     {
         channel.eventLoop().execute( () ->
         {
-            messageDispatcher.muteAckFailure();
-            writeAndFlushMessage( ResetMessage.RESET, resetHandler );
+            if ( isSessionReset && !isOpen() )
+            {
+                resetHandler.onSuccess( emptyMap() );
+            }
+            else
+            {
+                messageDispatcher.muteAckFailure();
+                // auto-read could've been disabled, re-enable it to automatically receive response for RESET
+                setAutoRead( true );
+                writeAndFlushMessage( ResetMessage.RESET, resetHandler );
+            }
         } );
     }
 

@@ -27,8 +27,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.Timeout;
 
 import java.io.IOException;
 import java.net.ConnectException;
@@ -61,9 +59,8 @@ import static org.neo4j.driver.v1.util.TestUtil.await;
 
 public class ChannelConnectorImplTest
 {
-    private final TestNeo4j neo4j = new TestNeo4j();
     @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( Timeout.seconds( 60 ) ).around( neo4j );
+    public final TestNeo4j neo4j = new TestNeo4j();
 
     private Bootstrap bootstrap;
 

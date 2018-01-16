@@ -46,6 +46,7 @@ import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.types.TypeSystem;
 
+import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.v1.Values.value;
@@ -257,13 +258,24 @@ public class NetworkSession implements Session
 
     private CompletionStage<Void> resetAsync()
     {
-        return existingTransactionOrNull().thenAccept( tx ->
-        {
-            if ( tx != null )
-            {
-                tx.markTerminated();
-            }
-        } ).thenCompose( ignore -> releaseConnection() );
+        return existingTransactionOrNull()
+                .thenAccept( tx ->
+                {
+                    if ( tx != null )
+                    {
+                        tx.markTerminated();
+                    }
+                } )
+                .thenCompose( ignore -> connectionStage )
+                .thenCompose( connection ->
+                {
+                    if ( connection != null )
+                    {
+                        // there exists an active connection, send a RESET message over it
+                        return connection.reset();
+                    }
+                    return completedWithNull();
+                } );
     }
 
     @Override
@@ -436,7 +448,8 @@ public class NetworkSession implements Session
     {
         ensureSessionIsOpen();
 
-        transactionStage = ensureNoOpenTxBeforeStartingTx()
+        // create a chain that acquires connection and starts a transaction
+        CompletionStage<ExplicitTransaction> newTransactionStage = ensureNoOpenTxBeforeStartingTx()
                 .thenCompose( ignore -> acquireConnection( mode ) )
                 .thenCompose( connection ->
                 {
@@ -444,7 +457,23 @@ public class NetworkSession implements Session
                     return tx.beginAsync( bookmark );
                 } );
 
-        return transactionStage;
+        // update the reference to the only known transaction
+        CompletionStage<ExplicitTransaction> currentTransactionStage = transactionStage;
+
+        transactionStage = newTransactionStage
+                .exceptionally( error -> null ) // ignore errors from starting new transaction
+                .thenCompose( tx ->
+                {
+                    if ( tx == null )
+                    {
+                        // failed to begin new transaction, keep reference to the existing one
+                        return currentTransactionStage;
+                    }
+                    // new transaction started, keep reference to it
+                    return completedFuture( tx );
+                } );
+
+        return newTransactionStage;
     }
 
     private CompletionStage<Connection> acquireConnection( AccessMode mode )

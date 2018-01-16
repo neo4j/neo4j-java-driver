@@ -18,62 +18,50 @@
  */
 package org.neo4j.driver.internal.handlers;
 
-import io.netty.channel.Channel;
-import io.netty.channel.pool.ChannelPool;
-import io.netty.util.concurrent.Future;
-
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.spi.ResponseHandler;
-import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.Value;
-
-import static org.neo4j.driver.internal.async.ChannelAttributes.setLastUsedTimestamp;
 
 public class ResetResponseHandler implements ResponseHandler
 {
-    private final Channel channel;
-    private final ChannelPool pool;
     private final InboundMessageDispatcher messageDispatcher;
-    private final Clock clock;
-    private final CompletableFuture<Void> releaseFuture;
+    private final CompletableFuture<Void> completionFuture;
 
-    public ResetResponseHandler( Channel channel, ChannelPool pool, InboundMessageDispatcher messageDispatcher,
-            Clock clock, CompletableFuture<Void> releaseFuture )
+    public ResetResponseHandler( InboundMessageDispatcher messageDispatcher, CompletableFuture<Void> completionFuture )
     {
-        this.channel = channel;
-        this.pool = pool;
         this.messageDispatcher = messageDispatcher;
-        this.clock = clock;
-        this.releaseFuture = releaseFuture;
+        this.completionFuture = completionFuture;
     }
 
     @Override
-    public void onSuccess( Map<String,Value> metadata )
+    public final void onSuccess( Map<String,Value> metadata )
     {
-        releaseChannel();
+        resetCompleted();
     }
 
     @Override
-    public void onFailure( Throwable error )
+    public final void onFailure( Throwable error )
     {
-        releaseChannel();
+        resetCompleted();
     }
 
     @Override
-    public void onRecord( Value[] fields )
+    public final void onRecord( Value[] fields )
     {
         throw new UnsupportedOperationException();
     }
 
-    private void releaseChannel()
+    private void resetCompleted()
     {
         messageDispatcher.unMuteAckFailure();
-        setLastUsedTimestamp( channel, clock.millis() );
+        resetCompleted( completionFuture );
+    }
 
-        Future<Void> released = pool.release( channel );
-        released.addListener( ignore -> releaseFuture.complete( null ) );
+    protected void resetCompleted( CompletableFuture<Void> completionFuture )
+    {
+        completionFuture.complete( null );
     }
 }

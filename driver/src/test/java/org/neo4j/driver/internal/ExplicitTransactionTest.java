@@ -26,6 +26,7 @@ import java.util.function.Consumer;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static java.util.Collections.emptyMap;
 import static org.junit.Assert.assertEquals;
@@ -156,7 +157,7 @@ public class ExplicitTransactionTest
 
         tx.markTerminated();
 
-        assertFalse( tx.isOpen() );
+        assertTrue( tx.isOpen() );
     }
 
     @Test
@@ -254,6 +255,38 @@ public class ExplicitTransactionTest
         await( tx.beginAsync( Bookmark.from( "SomeBookmark" ) ) );
 
         verify( connection, never() ).release();
+    }
+
+    @Test
+    public void shouldReleaseConnectionWhenTerminatedAndCommitted()
+    {
+        Connection connection = connectionMock();
+        ExplicitTransaction tx = new ExplicitTransaction( connection, mock( NetworkSession.class ) );
+
+        tx.markTerminated();
+        try
+        {
+            await( tx.commitAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException ignore )
+        {
+        }
+
+        assertFalse( tx.isOpen() );
+        verify( connection ).release();
+    }
+
+    @Test
+    public void shouldReleaseConnectionWhenTerminatedAndRolledBack()
+    {
+        Connection connection = connectionMock();
+        ExplicitTransaction tx = new ExplicitTransaction( connection, mock( NetworkSession.class ) );
+
+        tx.markTerminated();
+        await( tx.rollbackAsync() );
+
+        verify( connection ).release();
     }
 
     private static ExplicitTransaction beginTx( Connection connection )

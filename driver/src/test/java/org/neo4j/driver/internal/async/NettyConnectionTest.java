@@ -29,6 +29,7 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -54,6 +55,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.driver.internal.async.ChannelAttributes.messageDispatcher;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setMessageDispatcher;
 import static org.neo4j.driver.internal.async.ChannelAttributes.terminationReason;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
@@ -77,14 +79,14 @@ public class NettyConnectionTest
     @Test
     public void shouldBeOpenAfterCreated()
     {
-        NettyConnection connection = newConnection( new EmbeddedChannel() );
+        NettyConnection connection = newConnection( newChannel() );
         assertTrue( connection.isOpen() );
     }
 
     @Test
     public void shouldNotBeOpenAfterRelease()
     {
-        NettyConnection connection = newConnection( new EmbeddedChannel() );
+        NettyConnection connection = newConnection( newChannel() );
         connection.release();
         assertFalse( connection.isOpen() );
     }
@@ -92,10 +94,7 @@ public class NettyConnectionTest
     @Test
     public void shouldSendResetOnRelease()
     {
-        EmbeddedChannel channel = new EmbeddedChannel();
-        InboundMessageDispatcher messageDispatcher = new InboundMessageDispatcher( channel, DEV_NULL_LOGGING );
-        ChannelAttributes.setMessageDispatcher( channel, messageDispatcher );
-
+        EmbeddedChannel channel = newChannel();
         NettyConnection connection = newConnection( channel );
 
         connection.release();
@@ -128,19 +127,21 @@ public class NettyConnectionTest
     @Test
     public void shouldEnableAutoReadWhenReleased()
     {
-        EmbeddedChannel channel = new EmbeddedChannel();
+        EmbeddedChannel channel = newChannel();
         channel.config().setAutoRead( false );
 
         NettyConnection connection = newConnection( channel );
 
         connection.release();
+        channel.runPendingTasks();
+
         assertTrue( channel.config().isAutoRead() );
     }
 
     @Test
     public void shouldNotDisableAutoReadWhenReleased()
     {
-        EmbeddedChannel channel = new EmbeddedChannel();
+        EmbeddedChannel channel = newChannel();
         channel.config().setAutoRead( true );
 
         NettyConnection connection = newConnection( channel );
@@ -155,7 +156,7 @@ public class NettyConnectionTest
     {
         ResponseHandler runHandler = mock( ResponseHandler.class );
         ResponseHandler pullAllHandler = mock( ResponseHandler.class );
-        NettyConnection connection = newConnection( new EmbeddedChannel() );
+        NettyConnection connection = newConnection( newChannel() );
 
         connection.release();
         connection.run( "RETURN 1", emptyMap(), runHandler, pullAllHandler );
@@ -170,7 +171,7 @@ public class NettyConnectionTest
     {
         ResponseHandler runHandler = mock( ResponseHandler.class );
         ResponseHandler pullAllHandler = mock( ResponseHandler.class );
-        NettyConnection connection = newConnection( new EmbeddedChannel() );
+        NettyConnection connection = newConnection( newChannel() );
 
         connection.release();
         connection.runAndFlush( "RETURN 1", emptyMap(), runHandler, pullAllHandler );
@@ -185,7 +186,7 @@ public class NettyConnectionTest
     {
         ResponseHandler runHandler = mock( ResponseHandler.class );
         ResponseHandler pullAllHandler = mock( ResponseHandler.class );
-        NettyConnection connection = newConnection( new EmbeddedChannel() );
+        NettyConnection connection = newConnection( newChannel() );
 
         connection.terminateAndRelease( "42" );
         connection.run( "RETURN 1", emptyMap(), runHandler, pullAllHandler );
@@ -200,7 +201,7 @@ public class NettyConnectionTest
     {
         ResponseHandler runHandler = mock( ResponseHandler.class );
         ResponseHandler pullAllHandler = mock( ResponseHandler.class );
-        NettyConnection connection = newConnection( new EmbeddedChannel() );
+        NettyConnection connection = newConnection( newChannel() );
 
         connection.terminateAndRelease( "42" );
         connection.runAndFlush( "RETURN 1", emptyMap(), runHandler, pullAllHandler );
@@ -213,7 +214,7 @@ public class NettyConnectionTest
     @Test
     public void shouldReturnServerAddressWhenReleased()
     {
-        EmbeddedChannel channel = new EmbeddedChannel();
+        EmbeddedChannel channel = newChannel();
         BoltServerAddress address = new BoltServerAddress( "host", 4242 );
         ChannelAttributes.setServerAddress( channel, address );
 
@@ -226,7 +227,7 @@ public class NettyConnectionTest
     @Test
     public void shouldReturnServerVersionWhenReleased()
     {
-        EmbeddedChannel channel = new EmbeddedChannel();
+        EmbeddedChannel channel = newChannel();
         ServerVersion version = ServerVersion.v3_2_0;
         ChannelAttributes.setServerVersion( channel, version );
 
@@ -239,10 +240,7 @@ public class NettyConnectionTest
     @Test
     public void shouldReturnSameCompletionStageFromRelease()
     {
-        EmbeddedChannel channel = new EmbeddedChannel();
-        InboundMessageDispatcher messageDispatcher = new InboundMessageDispatcher( channel, DEV_NULL_LOGGING );
-        ChannelAttributes.setMessageDispatcher( channel, messageDispatcher );
-
+        EmbeddedChannel channel = newChannel();
         NettyConnection connection = newConnection( channel );
 
         CompletionStage<Void> releaseStage1 = connection.release();
@@ -263,7 +261,7 @@ public class NettyConnectionTest
     @Test
     public void shouldEnableAutoRead()
     {
-        EmbeddedChannel channel = new EmbeddedChannel();
+        EmbeddedChannel channel = newChannel();
         channel.config().setAutoRead( false );
         NettyConnection connection = newConnection( channel );
 
@@ -275,7 +273,7 @@ public class NettyConnectionTest
     @Test
     public void shouldDisableAutoRead()
     {
-        EmbeddedChannel channel = new EmbeddedChannel();
+        EmbeddedChannel channel = newChannel();
         channel.config().setAutoRead( true );
         NettyConnection connection = newConnection( channel );
 
@@ -287,7 +285,7 @@ public class NettyConnectionTest
     @Test
     public void shouldSetTerminationReasonOnChannelWhenTerminated()
     {
-        EmbeddedChannel channel = new EmbeddedChannel();
+        EmbeddedChannel channel = newChannel();
         NettyConnection connection = newConnection( channel );
 
         String reason = "Something really bad has happened";
@@ -299,7 +297,7 @@ public class NettyConnectionTest
     @Test
     public void shouldCloseChannelWhenTerminated()
     {
-        EmbeddedChannel channel = new EmbeddedChannel();
+        EmbeddedChannel channel = newChannel();
         NettyConnection connection = newConnection( channel );
         assertTrue( channel.isActive() );
 
@@ -311,7 +309,7 @@ public class NettyConnectionTest
     @Test
     public void shouldReleaseChannelWhenTerminated()
     {
-        EmbeddedChannel channel = new EmbeddedChannel();
+        EmbeddedChannel channel = newChannel();
         ChannelPool pool = mock( ChannelPool.class );
         NettyConnection connection = newConnection( channel, pool );
         verify( pool, never() ).release( any() );
@@ -324,7 +322,7 @@ public class NettyConnectionTest
     @Test
     public void shouldNotReleaseChannelMultipleTimesWhenTerminatedMultipleTimes()
     {
-        EmbeddedChannel channel = new EmbeddedChannel();
+        EmbeddedChannel channel = newChannel();
         ChannelPool pool = mock( ChannelPool.class );
         NettyConnection connection = newConnection( channel, pool );
         verify( pool, never() ).release( any() );
@@ -342,7 +340,7 @@ public class NettyConnectionTest
     @Test
     public void shouldNotReleaseAfterTermination()
     {
-        EmbeddedChannel channel = new EmbeddedChannel();
+        EmbeddedChannel channel = newChannel();
         ChannelPool pool = mock( ChannelPool.class );
         NettyConnection connection = newConnection( channel, pool );
         verify( pool, never() ).release( any() );
@@ -354,6 +352,93 @@ public class NettyConnectionTest
         assertTrue( releaseStage.toCompletableFuture().isDone() );
         // channel is released to the pool only once
         verify( pool ).release( channel );
+    }
+
+    @Test
+    public void shouldSendResetMessageWhenReset()
+    {
+        EmbeddedChannel channel = newChannel();
+        NettyConnection connection = newConnection( channel );
+
+        connection.reset();
+        channel.runPendingTasks();
+
+        assertEquals( 1, channel.outboundMessages().size() );
+        assertEquals( RESET, channel.readOutbound() );
+    }
+
+    @Test
+    public void shouldCompleteResetFutureWhenSuccessResponseArrives()
+    {
+        EmbeddedChannel channel = newChannel();
+        NettyConnection connection = newConnection( channel );
+
+        CompletableFuture<Void> resetFuture = connection.reset().toCompletableFuture();
+        channel.runPendingTasks();
+        assertFalse( resetFuture.isDone() );
+
+        messageDispatcher( channel ).handleSuccessMessage( emptyMap() );
+        assertTrue( resetFuture.isDone() );
+        assertFalse( resetFuture.isCompletedExceptionally() );
+    }
+
+    @Test
+    public void shouldCompleteResetFutureWhenFailureResponseArrives()
+    {
+        EmbeddedChannel channel = newChannel();
+        NettyConnection connection = newConnection( channel );
+
+        CompletableFuture<Void> resetFuture = connection.reset().toCompletableFuture();
+        channel.runPendingTasks();
+        assertFalse( resetFuture.isDone() );
+
+        messageDispatcher( channel ).handleFailureMessage( "Neo.TransientError.Transaction.Terminated", "Message" );
+        assertTrue( resetFuture.isDone() );
+        assertFalse( resetFuture.isCompletedExceptionally() );
+    }
+
+    @Test
+    public void shouldDoNothingInResetWhenClosed()
+    {
+        EmbeddedChannel channel = newChannel();
+        NettyConnection connection = newConnection( channel );
+
+        connection.release();
+        channel.runPendingTasks();
+
+        CompletableFuture<Void> resetFuture = connection.reset().toCompletableFuture();
+        channel.runPendingTasks();
+
+        assertEquals( 1, channel.outboundMessages().size() );
+        assertEquals( RESET, channel.readOutbound() );
+        assertTrue( resetFuture.isDone() );
+        assertFalse( resetFuture.isCompletedExceptionally() );
+    }
+
+    @Test
+    public void shouldMuteAckFailureWhenReset()
+    {
+        InboundMessageDispatcher messageDispatcher = mock( InboundMessageDispatcher.class );
+        EmbeddedChannel channel = newChannel( messageDispatcher );
+        NettyConnection connection = newConnection( channel );
+
+        connection.reset();
+        channel.runPendingTasks();
+
+        verify( messageDispatcher ).muteAckFailure();
+    }
+
+    @Test
+    public void shouldEnableAutoReadWhenDoingReset()
+    {
+        EmbeddedChannel channel = newChannel();
+        channel.config().setAutoRead( false );
+        NettyConnection connection = newConnection( channel );
+
+        connection.reset();
+        channel.runPendingTasks();
+
+        assertTrue( channel.config().isAutoRead() );
     }
 
     private void testWriteInEventLoop( String threadName, Consumer<NettyConnection> action ) throws Exception
@@ -388,6 +473,21 @@ public class NettyConnectionTest
             executor.shutdown();
             assertTrue( executor.awaitTermination( 30, TimeUnit.SECONDS ) );
         }
+    }
+
+    private static EmbeddedChannel newChannel()
+    {
+        EmbeddedChannel channel = new EmbeddedChannel();
+        InboundMessageDispatcher messageDispatcher = new InboundMessageDispatcher( channel, DEV_NULL_LOGGING );
+        ChannelAttributes.setMessageDispatcher( channel, messageDispatcher );
+        return channel;
+    }
+
+    private static EmbeddedChannel newChannel( InboundMessageDispatcher messageDispatcher )
+    {
+        EmbeddedChannel channel = new EmbeddedChannel();
+        ChannelAttributes.setMessageDispatcher( channel, messageDispatcher );
+        return channel;
     }
 
     private static NettyConnection newConnection( Channel channel )

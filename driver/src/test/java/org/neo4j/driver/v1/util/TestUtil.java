@@ -30,7 +30,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.BooleanSupplier;
 
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
@@ -39,9 +41,12 @@ import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 
 import static java.util.Collections.emptyMap;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -49,6 +54,8 @@ import static org.mockito.Mockito.mock;
 
 public final class TestUtil
 {
+    private static final long DEFAULT_WAIT_TIME_MS = MINUTES.toMillis( 1 );
+
     private TestUtil()
     {
     }
@@ -84,7 +91,7 @@ public final class TestUtil
     {
         try
         {
-            return future.get( 5, MINUTES );
+            return future.get( DEFAULT_WAIT_TIME_MS, MILLISECONDS );
         }
         catch ( InterruptedException e )
         {
@@ -198,6 +205,50 @@ public final class TestUtil
 
             thread.interrupt();
         } );
+    }
+
+    public static int activeQueryCount( Driver driver )
+    {
+        return activeQueryNames( driver ).size();
+    }
+
+    public static List<String> activeQueryNames( Driver driver )
+    {
+        try ( Session session = driver.session() )
+        {
+            return session.run( "CALL dbms.listQueries() YIELD query RETURN query" )
+                    .list()
+                    .stream()
+                    .map( record -> record.get( 0 ).asString() )
+                    .filter( query -> !query.contains( "dbms.listQueries" ) ) // do not include listQueries procedure
+                    .collect( toList() );
+        }
+    }
+
+    public static void awaitCondition( BooleanSupplier condition )
+    {
+        awaitCondition( condition, DEFAULT_WAIT_TIME_MS, MILLISECONDS );
+    }
+
+    public static void awaitCondition( BooleanSupplier condition, long value, TimeUnit unit )
+    {
+        long deadline = System.currentTimeMillis() + unit.toMillis( value );
+        while ( !condition.getAsBoolean() )
+        {
+            if ( System.currentTimeMillis() > deadline )
+            {
+                fail( "Condition was not met in time" );
+            }
+            try
+            {
+                MILLISECONDS.sleep( 100 );
+            }
+            catch ( InterruptedException e )
+            {
+                Thread.currentThread().interrupt();
+                fail( "Interrupted while waiting" );
+            }
+        }
     }
 
     private static void setupSuccessfulPullAll( Connection connection, String statement )

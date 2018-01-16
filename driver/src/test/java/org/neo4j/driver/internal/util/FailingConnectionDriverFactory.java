@@ -141,6 +141,12 @@ public class FailingConnectionDriverFactory extends DriverFactory
         }
 
         @Override
+        public CompletionStage<Void> reset()
+        {
+            return delegate.reset();
+        }
+
+        @Override
         public CompletionStage<Void> release()
         {
             return delegate.release();

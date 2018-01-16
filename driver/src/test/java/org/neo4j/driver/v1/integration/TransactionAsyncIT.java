@@ -653,15 +653,16 @@ public class TransactionAsyncIT
     }
 
     @Test
-    public void shouldFailWhenServerIsRestarted()
+    public void shouldFailToCommitWhenServerIsRestarted()
     {
         Transaction tx = await( session.beginTransactionAsync() );
+
+        await( tx.runAsync( "CREATE ()" ) );
 
         neo4j.killDb();
 
         try
         {
-            await( tx.runAsync( "CREATE ()" ) );
             await( tx.commitAsync() );
             fail( "Exception expected" );
         }
@@ -806,9 +807,8 @@ public class TransactionAsyncIT
         }
         catch ( ClientException e )
         {
-            assertEquals( "Can't commit, transaction has been terminated by `Session#reset()`", e.getMessage() );
+            assertEquals( "Can't commit, transaction has been terminated", e.getMessage() );
         }
-        assertFalse( tx.isOpen() );
     }
 
     @Test
@@ -924,8 +924,7 @@ public class TransactionAsyncIT
         }
         catch ( ClientException e )
         {
-            assertEquals( "Cannot run more statements in this transaction, it has been terminated by `Session#reset()`",
-                    e.getMessage() );
+            assertEquals( "Cannot run more statements in this transaction, it has been terminated", e.getMessage() );
         }
     }
 
@@ -1280,6 +1279,32 @@ public class TransactionAsyncIT
         assertFalse( tx.isOpen() );
         assertEquals( 2, countNodes( 1 ) );
         assertEquals( 1, countNodes( 2 ) );
+        assertEquals( 1, countNodes( 42 ) );
+    }
+
+    @Test
+    public void shouldBePossibleToRunMoreTransactionsAfterOneIsTerminated()
+    {
+        Transaction tx1 = await( session.beginTransactionAsync() );
+        ((ExplicitTransaction) tx1).markTerminated();
+
+        try
+        {
+            // commit should fail, make session forget about this transaction and release the connection to the pool
+            await( tx1.commitAsync() );
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertEquals( "Can't commit, transaction has been terminated", e.getMessage() );
+        }
+
+        await( session.beginTransactionAsync()
+                .thenCompose( tx -> tx.runAsync( "CREATE (:Node {id: 42})" )
+                        .thenCompose( StatementResultCursor::consumeAsync )
+                        .thenApply( ignore -> tx )
+                ).thenCompose( Transaction::commitAsync ) );
+
         assertEquals( 1, countNodes( 42 ) );
     }
 
