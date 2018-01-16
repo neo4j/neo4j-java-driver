@@ -27,6 +27,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.ConnectionSettings;
+import org.neo4j.driver.internal.async.BootstrapFactory;
 import org.neo4j.driver.internal.async.ChannelConnector;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.ConnectionPool;
@@ -36,11 +37,24 @@ import org.neo4j.driver.v1.Config;
 public class ChannelTrackingDriverFactory extends DriverFactoryWithClock
 {
     private final List<Channel> channels = new CopyOnWriteArrayList<>();
+    private final int eventLoopThreads;
     private ConnectionPool pool;
 
     public ChannelTrackingDriverFactory( Clock clock )
     {
+        this( 0, clock );
+    }
+
+    public ChannelTrackingDriverFactory( int eventLoopThreads, Clock clock )
+    {
         super( clock );
+        this.eventLoopThreads = eventLoopThreads;
+    }
+
+    @Override
+    protected Bootstrap createBootstrap()
+    {
+        return eventLoopThreads == 0 ? super.createBootstrap() : BootstrapFactory.newBootstrap( eventLoopThreads );
     }
 
     @Override

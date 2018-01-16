@@ -33,6 +33,7 @@ import org.neo4j.driver.internal.util.ErrorUtil;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.driver.internal.messaging.AckFailureMessage.ACK_FAILURE;
@@ -157,14 +158,24 @@ public class InboundMessageDispatcher implements MessageHandler
         log.debug( "S: IGNORED" );
 
         ResponseHandler handler = handlers.remove();
+
+        Throwable error;
         if ( currentError != null )
         {
-            handler.onFailure( currentError );
+            error = currentError;
+        }
+        else if ( ackFailureMuted )
+        {
+            error = new ClientException( "Database ignored the request because session has been reset" );
         }
         else
         {
-            log.warn( "Received IGNORED message for handler %s but error is missing", handler );
+            log.warn( "Received IGNORED message for handler %s but error is missing and RESET is not in progress. " +
+                      "Current handlers %s", handler, handlers );
+
+            error = new ClientException( "Database ignored the request" );
         }
+        handler.onFailure( error );
     }
 
     public void handleFatalError( Throwable error )
@@ -212,15 +223,9 @@ public class InboundMessageDispatcher implements MessageHandler
      * {@link #muteAckFailure()} when sending RESET message.
      * <p>
      * <b>This method is not thread-safe</b> and should only be executed by the event loop thread.
-     *
-     * @throws IllegalStateException if ACK_FAILURE is not muted right now.
      */
     public void unMuteAckFailure()
     {
-        if ( !ackFailureMuted )
-        {
-            throw new IllegalStateException( "Can't un-mute ACK_FAILURE because it's not muted" );
-        }
         ackFailureMuted = false;
     }
 

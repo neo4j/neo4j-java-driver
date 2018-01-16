@@ -30,8 +30,10 @@ import java.util.Map;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 
+import static java.util.Collections.emptyMap;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -148,19 +150,18 @@ public class InboundMessageDispatcherTest
     }
 
     @Test
-    public void shouldFailToUnMuteAckFailureWhenNotMuted()
+    public void shouldUnMuteAckFailureWhenNotMuted()
     {
-        InboundMessageDispatcher dispatcher = newDispatcher( mock( Channel.class ) );
+        Channel channel = mock( Channel.class );
+        InboundMessageDispatcher dispatcher = newDispatcher( channel );
 
-        try
-        {
-            dispatcher.unMuteAckFailure();
-            fail( "Exception expected" );
-        }
-        catch ( IllegalStateException e )
-        {
-            assertEquals( "Can't un-mute ACK_FAILURE because it's not muted", e.getMessage() );
-        }
+        dispatcher.unMuteAckFailure();
+
+        dispatcher.queue( mock( ResponseHandler.class ) );
+        assertEquals( 1, dispatcher.queuedHandlersCount() );
+
+        dispatcher.handleFailureMessage( FAILURE_CODE, FAILURE_MESSAGE );
+        verify( channel ).writeAndFlush( eq( ACK_FAILURE ), any() );
     }
 
     @Test
@@ -268,7 +269,49 @@ public class InboundMessageDispatcherTest
         dispatcher.handleIgnoredMessage();
 
         assertEquals( 0, dispatcher.queuedHandlersCount() );
-        verifyZeroInteractions( handler );
+    }
+
+    @Test
+    public void shouldFailHandlerOnIgnoredMessageWithExistingError()
+    {
+        InboundMessageDispatcher dispatcher = newDispatcher();
+        ResponseHandler handler1 = mock( ResponseHandler.class );
+        ResponseHandler handler2 = mock( ResponseHandler.class );
+
+        dispatcher.queue( handler1 );
+        dispatcher.queue( handler2 );
+
+        dispatcher.handleFailureMessage( FAILURE_CODE, FAILURE_MESSAGE );
+        verifyFailure( handler1 );
+        verifyZeroInteractions( handler2 );
+
+        dispatcher.handleIgnoredMessage();
+        verifyFailure( handler2 );
+    }
+
+    @Test
+    public void shouldFailHandlerOnIgnoredMessageWhenHandlingReset()
+    {
+        InboundMessageDispatcher dispatcher = newDispatcher();
+        ResponseHandler handler = mock( ResponseHandler.class );
+        dispatcher.queue( handler );
+
+        dispatcher.muteAckFailure();
+        dispatcher.handleIgnoredMessage();
+
+        verify( handler ).onFailure( any( ClientException.class ) );
+    }
+
+    @Test
+    public void shouldFailHandlerOnIgnoredMessageWhenNoErrorAndNotHandlingReset()
+    {
+        InboundMessageDispatcher dispatcher = newDispatcher();
+        ResponseHandler handler = mock( ResponseHandler.class );
+        dispatcher.queue( handler );
+
+        dispatcher.handleIgnoredMessage();
+
+        verify( handler ).onFailure( any( ClientException.class ) );
     }
 
     @Test
@@ -296,7 +339,7 @@ public class InboundMessageDispatcherTest
 
         try
         {
-            dispatcher.handleInitMessage( "Client", Collections.<String,Value>emptyMap() );
+            dispatcher.handleInitMessage( "Client", emptyMap() );
             fail( "Exception expected" );
         }
         catch ( Exception e )
@@ -312,7 +355,7 @@ public class InboundMessageDispatcherTest
 
         try
         {
-            dispatcher.handleRunMessage( "RETURN 1", Collections.<String,Value>emptyMap() );
+            dispatcher.handleRunMessage( "RETURN 1", emptyMap() );
             fail( "Exception expected" );
         }
         catch ( Exception e )

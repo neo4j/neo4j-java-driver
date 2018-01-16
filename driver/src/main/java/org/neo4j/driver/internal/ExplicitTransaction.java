@@ -21,7 +21,6 @@ package org.neo4j.driver.internal;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
 import org.neo4j.driver.internal.async.QueryRunner;
@@ -60,31 +59,25 @@ public class ExplicitTransaction implements Transaction
     private enum State
     {
         /** The transaction is running with no explicit success or failure marked */
-        ACTIVE( true ),
+        ACTIVE,
 
         /** Running, user marked for success, meaning it'll value committed */
-        MARKED_SUCCESS( true ),
+        MARKED_SUCCESS,
 
         /** User marked as failed, meaning it'll be rolled back. */
-        MARKED_FAILED( true ),
+        MARKED_FAILED,
 
         /**
-         * This transaction has been explicitly terminated by calling {@link Session#reset()}.
+         * This transaction has been terminated either because of explicit {@link Session#reset()} or because of a
+         * fatal connection error.
          */
-        TERMINATED( false ),
+        TERMINATED,
 
         /** This transaction has successfully committed */
-        COMMITTED( false ),
+        COMMITTED,
 
         /** This transaction has been rolled back */
-        ROLLED_BACK( false );
-
-        final boolean txOpen;
-
-        State( boolean txOpen )
-        {
-            this.txOpen = txOpen;
-        }
+        ROLLED_BACK
     }
 
     private final Connection connection;
@@ -158,7 +151,7 @@ public class ExplicitTransaction implements Transaction
         {
             return commitAsync();
         }
-        else if ( state == State.ACTIVE || state == State.MARKED_FAILED || state == State.TERMINATED )
+        else if ( state != State.COMMITTED && state != State.ROLLED_BACK )
         {
             return rollbackAsync();
         }
@@ -181,14 +174,14 @@ public class ExplicitTransaction implements Transaction
         }
         else if ( state == State.TERMINATED )
         {
-            return failedFuture(
-                    new ClientException( "Can't commit, transaction has been terminated by `Session#reset()`" ) );
+            transactionClosed( State.ROLLED_BACK );
+            return failedFuture( new ClientException( "Can't commit, transaction has been terminated" ) );
         }
         else
         {
             return resultCursors.retrieveNotConsumedError()
                     .thenCompose( error -> doCommitAsync().handle( handleCommitOrRollback( error ) ) )
-                    .whenComplete( transactionClosed( State.COMMITTED ) );
+                    .whenComplete( ( ignore, error ) -> transactionClosed( State.COMMITTED ) );
         }
     }
 
@@ -205,15 +198,15 @@ public class ExplicitTransaction implements Transaction
         }
         else if ( state == State.TERMINATED )
         {
-            // transaction has been terminated by RESET and should be rolled back by the database
-            state = State.ROLLED_BACK;
+            // no need for explicit rollback, transaction should've been rolled back by the database
+            transactionClosed( State.ROLLED_BACK );
             return completedWithNull();
         }
         else
         {
             return resultCursors.retrieveNotConsumedError()
                     .thenCompose( error -> doRollbackAsync().handle( handleCommitOrRollback( error ) ) )
-                    .whenComplete( transactionClosed( State.ROLLED_BACK ) );
+                    .whenComplete( ( ignore, error ) -> transactionClosed( State.ROLLED_BACK ) );
         }
     }
 
@@ -314,15 +307,14 @@ public class ExplicitTransaction implements Transaction
         }
         else if ( state == State.TERMINATED )
         {
-            throw new ClientException(
-                    "Cannot run more statements in this transaction, it has been terminated by `Session#reset()`" );
+            throw new ClientException( "Cannot run more statements in this transaction, it has been terminated" );
         }
     }
 
     @Override
     public boolean isOpen()
     {
-        return state.txOpen;
+        return state != State.COMMITTED && state != State.ROLLED_BACK;
     }
 
     @Override
@@ -394,14 +386,11 @@ public class ExplicitTransaction implements Transaction
         };
     }
 
-    private BiConsumer<Object,Throwable> transactionClosed( State newState )
+    private void transactionClosed( State newState )
     {
-        return ( ignore, error ) ->
-        {
-            state = newState;
-            connection.release(); // release in background
-            session.setBookmark( bookmark );
-        };
+        state = newState;
+        connection.release(); // release in background
+        session.setBookmark( bookmark );
     }
 
     private void terminateConnectionOnThreadInterrupt( String reason )

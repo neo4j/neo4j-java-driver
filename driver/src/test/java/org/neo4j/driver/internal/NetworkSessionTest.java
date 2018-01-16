@@ -51,7 +51,6 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
@@ -91,6 +90,7 @@ public class NetworkSessionTest
     {
         connection = connectionMock();
         when( connection.release() ).thenReturn( completedWithNull() );
+        when( connection.reset() ).thenReturn( completedWithNull() );
         when( connection.serverAddress() ).thenReturn( BoltServerAddress.LOCAL_DEFAULT );
         when( connection.serverVersion() ).thenReturn( ServerVersion.v3_2_0 );
         connectionProvider = mock( ConnectionProvider.class );
@@ -487,27 +487,17 @@ public class NetworkSessionTest
     }
 
     @Test
-    public void connectionShouldBeReleasedAfterSessionReset()
+    public void connectionShouldBeResetAfterSessionReset()
     {
         NetworkSession session = newSession( connectionProvider, READ );
         session.run( "RETURN 1" );
 
+        verify( connection, never() ).reset();
         verify( connection, never() ).release();
 
         session.reset();
-        verify( connection ).release();
-    }
-
-    @Test
-    public void transactionShouldBeRolledBackAfterSessionReset()
-    {
-        NetworkSession session = newSession( connectionProvider, READ );
-        Transaction tx = session.beginTransaction();
-
-        assertTrue( tx.isOpen() );
-
-        session.reset();
-        assertFalse( tx.isOpen() );
+        verify( connection ).reset();
+        verify( connection, never() ).release();
     }
 
     @Test
@@ -663,22 +653,64 @@ public class NetworkSessionTest
     }
 
     @Test
-    public void shouldMarkTransactionAsTerminatedAndThenReleaseConnectionOnReset()
+    public void shouldMarkTransactionAsTerminatedAndThenResetConnectionOnReset()
     {
         NetworkSession session = newSession( connectionProvider, READ );
         Transaction tx = session.beginTransaction();
 
         assertTrue( tx.isOpen() );
-        when( connection.release() ).then( invocation ->
-        {
-            // verify that tx is not open when connection is released
-            assertFalse( tx.isOpen() );
-            return completedWithNull();
-        } );
+        verify( connection, never() ).reset();
 
         session.reset();
 
-        verify( connection ).release();
+        verify( connection ).reset();
+    }
+
+    @Test
+    public void shouldNotAllowStartingMultipleTransactions()
+    {
+        NetworkSession session = newSession( connectionProvider, READ );
+
+        Transaction tx = session.beginTransaction();
+        assertNotNull( tx );
+
+        for ( int i = 0; i < 5; i++ )
+        {
+            try
+            {
+                session.beginTransaction();
+                fail( "Exception expected" );
+            }
+            catch ( ClientException e )
+            {
+                assertThat( e.getMessage(),
+                        containsString( "You cannot begin a transaction on a session with an open transaction" ) );
+            }
+        }
+    }
+
+    @Test
+    public void shouldAllowStartingTransactionAfterCurrentOneIsClosed()
+    {
+        NetworkSession session = newSession( connectionProvider, READ );
+
+        Transaction tx = session.beginTransaction();
+        assertNotNull( tx );
+
+        try
+        {
+            session.beginTransaction();
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e.getMessage(),
+                    containsString( "You cannot begin a transaction on a session with an open transaction" ) );
+        }
+
+        tx.close();
+
+        assertNotNull( session.beginTransaction() );
     }
 
     private void testConnectionAcquisition( AccessMode sessionMode, AccessMode transactionMode )

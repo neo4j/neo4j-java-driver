@@ -18,15 +18,20 @@
  */
 package org.neo4j.driver.v1.integration;
 
+import io.netty.channel.Channel;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
+import org.neo4j.driver.internal.cluster.RoutingSettings;
+import org.neo4j.driver.internal.util.ChannelTrackingDriverFactory;
+import org.neo4j.driver.internal.util.Clock;
+import org.neo4j.driver.v1.AuthTokens;
+import org.neo4j.driver.v1.Config;
+import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
@@ -34,17 +39,21 @@ import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.v1.exceptions.TransientException;
+import org.neo4j.driver.v1.util.StubServer;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 import org.neo4j.driver.v1.util.TestUtil;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
+import static org.neo4j.driver.internal.retry.RetrySettings.DEFAULT;
 
 public class TransactionIT
 {
@@ -52,8 +61,6 @@ public class TransactionIT
     public ExpectedException exception = ExpectedException.none();
     @Rule
     public TestNeo4jSession session = new TestNeo4jSession();
-
-    private Transaction globalTx;
 
     @Test
     public void shouldRunAndCommit() throws Throwable
@@ -224,95 +231,6 @@ public class TransactionIT
         // Then it wasn't the end of the world as we know it
     }
 
-    @SuppressWarnings( "deprecation" )
-    @Test
-    public void shouldBeAbleToRunMoreStatementsAfterResetOnNoErrorState() throws Throwable
-    {
-        // Given
-        session.reset();
-
-        // When
-        Transaction tx = session.beginTransaction();
-        tx.run( "CREATE (n:FirstNode)" );
-        tx.success();
-        tx.close();
-
-        // Then the outcome of both statements should be visible
-        StatementResult result = session.run( "MATCH (n) RETURN count(n)" );
-        long nodes = result.single().get( "count(n)" ).asLong();
-        assertThat( nodes, equalTo( 1L ) );
-    }
-
-    @SuppressWarnings( "deprecation" )
-    @Test
-    public void shouldHandleResetBeforeRun() throws Throwable
-    {
-        // Expect
-        exception.expect( ClientException.class );
-        exception.expectMessage( "Cannot run more statements in this transaction, it has been terminated by" );
-        // When
-        Transaction tx = session.beginTransaction();
-        session.reset();
-        tx.run( "CREATE (n:FirstNode)" );
-    }
-
-    @SuppressWarnings( "deprecation" )
-    @Test
-    public void shouldHandleResetFromMultipleThreads() throws Throwable
-    {
-        // When
-        ExecutorService runner = Executors.newFixedThreadPool( 2 );
-        runner.execute( new Runnable()
-
-        {
-            @Override
-            public void run()
-            {
-                globalTx = session.beginTransaction();
-                    globalTx.run( "CREATE (n:FirstNode)" );
-                try
-                {
-                    Thread.sleep( 1000 );
-                }
-                catch ( InterruptedException e )
-                {
-                    throw new AssertionError( e );
-                }
-
-                globalTx = session.beginTransaction();
-                globalTx.run( "CREATE (n:FirstNode)" );
-                globalTx.success();
-                globalTx.close();
-
-            }
-        } );
-        runner.execute( new Runnable()
-
-        {
-            @Override
-            public void run()
-            {
-                try
-                {
-                    Thread.sleep( 500 );
-                }
-                catch ( InterruptedException e )
-                {
-                    throw new AssertionError( e );
-                }
-
-                session.reset();
-            }
-        } );
-
-        runner.awaitTermination( 5, TimeUnit.SECONDS );
-
-        // Then the outcome of both statements should be visible
-        StatementResult result = session.run( "MATCH (n) RETURN count(n)" );
-        long nodes = result.single().get( "count(n)" ).asLong();
-        assertThat( nodes, equalTo( 1L ) );
-    }
-
     @Test
     public void shouldRollBackTxIfErrorWithoutConsume() throws Throwable
     {
@@ -391,7 +309,7 @@ public class TransactionIT
     @Test
     public void shouldBeResponsiveToThreadInterruptWhenWaitingForResult() throws Exception
     {
-        try ( Session otherSession = this.session.driver().session() )
+        try ( Session otherSession = session.driver().session() )
         {
             session.run( "CREATE (:Person {name: 'Beta Ray Bill'})" ).consume();
 
@@ -425,7 +343,7 @@ public class TransactionIT
     @Test
     public void shouldBeResponsiveToThreadInterruptWhenWaitingForCommit() throws Exception
     {
-        try ( Session otherSession = this.session.driver().session() )
+        try ( Session otherSession = session.driver().session() )
         {
             session.run( "CREATE (:Person {name: 'Beta Ray Bill'})" ).consume();
 
@@ -456,6 +374,107 @@ public class TransactionIT
                 // clear interrupted flag
                 Thread.interrupted();
             }
+        }
+    }
+
+    @Test
+    public void shouldThrowWhenConnectionKilledDuringTransaction()
+    {
+        testFailWhenConnectionKilledDuringTransaction( false );
+    }
+
+    @Test
+    public void shouldThrowWhenConnectionKilledDuringTransactionMarkedForSuccess()
+    {
+        testFailWhenConnectionKilledDuringTransaction( true );
+    }
+
+    @Test
+    public void shouldThrowCommitError() throws Exception
+    {
+        testTxCloseErrorPropagation( "commit_error.script", true, "Unable to commit" );
+    }
+
+    @Test
+    public void shouldThrowRollbackError() throws Exception
+    {
+        testTxCloseErrorPropagation( "rollback_error.script", false, "Unable to rollback" );
+    }
+
+    private void testFailWhenConnectionKilledDuringTransaction( boolean markForSuccess )
+    {
+        ChannelTrackingDriverFactory factory = new ChannelTrackingDriverFactory( 1, Clock.SYSTEM );
+        RoutingSettings instance = new RoutingSettings( 1, 0 );
+        Config config = Config.build().withLogging( DEV_NULL_LOGGING ).toConfig();
+
+        try ( Driver driver = factory.newInstance( session.uri(), session.authToken(), instance, DEFAULT, config ) )
+        {
+            try ( Session session = driver.session();
+                  Transaction tx = session.beginTransaction() )
+            {
+                tx.run( "CREATE (:MyNode {id: 1})" ).consume();
+
+                if ( markForSuccess )
+                {
+                    tx.success();
+                }
+
+                // kill all network channels
+                for ( Channel channel : factory.channels() )
+                {
+                    channel.close().syncUninterruptibly();
+                }
+
+                tx.run( "CREATE (:MyNode {id: 1})" ).consume();
+                fail( "Exception expected" );
+            }
+            catch ( ServiceUnavailableException e )
+            {
+                assertThat( e.getMessage(), containsString( "Connection to the database terminated" ) );
+            }
+        }
+
+        assertEquals( 0, session.run( "MATCH (n:MyNode {id: 1}) RETURN count(n)" ).single().get( 0 ).asInt() );
+    }
+
+    private static void testTxCloseErrorPropagation( String script, boolean commit, String expectedErrorMessage )
+            throws Exception
+    {
+        StubServer server = StubServer.start( script, 9001 );
+        try
+        {
+            Config config = Config.build().withLogging( DEV_NULL_LOGGING ).withoutEncryption().toConfig();
+            try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", AuthTokens.none(), config );
+                  Session session = driver.session() )
+            {
+                Transaction tx = session.beginTransaction();
+                StatementResult result = tx.run( "CREATE (n {name:'Alice'}) RETURN n.name AS name" );
+                assertEquals( "Alice", result.single().get( "name" ).asString() );
+
+                if ( commit )
+                {
+                    tx.success();
+                }
+                else
+                {
+                    tx.failure();
+                }
+
+                try
+                {
+                    tx.close();
+                    fail( "Exception expected" );
+                }
+                catch ( TransientException e )
+                {
+                    assertEquals( "Neo.TransientError.General.DatabaseUnavailable", e.code() );
+                    assertEquals( expectedErrorMessage, e.getMessage() );
+                }
+            }
+        }
+        finally
+        {
+            assertEquals( 0, server.exitStatus() );
         }
     }
 }

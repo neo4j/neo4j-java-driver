@@ -20,6 +20,7 @@ package org.neo4j.driver.internal.handlers;
 
 import org.neo4j.driver.internal.ExplicitTransaction;
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.util.ErrorUtil;
 import org.neo4j.driver.v1.Statement;
 
 import static java.util.Objects.requireNonNull;
@@ -43,6 +44,13 @@ public class TransactionPullAllResponseHandler extends PullAllResponseHandler
     @Override
     protected void afterFailure( Throwable error )
     {
-        tx.failure();
+        if ( ErrorUtil.isFatal( error ) )
+        {
+            tx.markTerminated();
+        }
+        else
+        {
+            tx.failure();
+        }
     }
 }
