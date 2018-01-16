@@ -37,16 +37,19 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Level;
 
 import org.neo4j.driver.internal.DriverFactory;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
+import org.neo4j.driver.internal.logging.ConsoleLogging;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.util.DriverFactoryWithFixedRetryLogic;
 import org.neo4j.driver.internal.util.DriverFactoryWithOneEventLoopThread;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.AuthToken;
+import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
@@ -62,6 +65,7 @@ import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.TransientException;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.summary.StatementType;
+import org.neo4j.driver.v1.util.StubServer;
 import org.neo4j.driver.v1.util.TestNeo4j;
 import org.neo4j.driver.v1.util.TestUtil;
 
@@ -1296,6 +1300,50 @@ public class SessionIT
         }
     }
 
+    @Test
+    public void shouldCloseOpenTransactionWhenClosed()
+    {
+        try ( Session session = neo4j.driver().session() )
+        {
+            Transaction tx = session.beginTransaction();
+            tx.run( "CREATE (:Node {id: 123})" );
+            tx.run( "CREATE (:Node {id: 456})" );
+
+            tx.success();
+        }
+
+        assertEquals( 1, countNodesWithId( 123 ) );
+        assertEquals( 1, countNodesWithId( 456 ) );
+    }
+
+    @Test
+    public void shouldRollbackOpenTransactionWhenClosed()
+    {
+        try ( Session session = neo4j.driver().session() )
+        {
+            Transaction tx = session.beginTransaction();
+            tx.run( "CREATE (:Node {id: 123})" );
+            tx.run( "CREATE (:Node {id: 456})" );
+
+            tx.failure();
+        }
+
+        assertEquals( 0, countNodesWithId( 123 ) );
+        assertEquals( 0, countNodesWithId( 456 ) );
+    }
+
+    @Test
+    public void shouldPropagateTransactionCommitErrorWhenClosed() throws Exception
+    {
+        testTransactionCloseErrorPropagationWhenSessionClosed( "commit_error.script", true, "Unable to commit" );
+    }
+
+    @Test
+    public void shouldPropagateTransactionRollbackErrorWhenClosed() throws Exception
+    {
+        testTransactionCloseErrorPropagationWhenSessionClosed( "rollback_error.script", false, "Unable to rollback" );
+    }
+
     private void testExecuteReadTx( AccessMode sessionMode )
     {
         Driver driver = neo4j.driver();
@@ -1498,6 +1546,52 @@ public class SessionIT
         {
             Thread.currentThread().interrupt();
             throw new RuntimeException( e );
+        }
+    }
+
+    private static void testTransactionCloseErrorPropagationWhenSessionClosed( String script, boolean commit,
+            String expectedErrorMessage ) throws Exception
+    {
+        StubServer server = StubServer.start( script, 9001 );
+        try
+        {
+            Config config = Config.build()
+                    .withLogging( DEV_NULL_LOGGING )
+                    .withLogging( new ConsoleLogging( Level.INFO ) )
+                    .withoutEncryption()
+                    .toConfig();
+            try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", AuthTokens.none(), config ) )
+            {
+                Session session = driver.session();
+
+                Transaction tx = session.beginTransaction();
+                StatementResult result = tx.run( "CREATE (n {name:'Alice'}) RETURN n.name AS name" );
+                assertEquals( "Alice", result.single().get( "name" ).asString() );
+
+                if ( commit )
+                {
+                    tx.success();
+                }
+                else
+                {
+                    tx.failure();
+                }
+
+                try
+                {
+                    session.close();
+                    fail( "Exception expected" );
+                }
+                catch ( TransientException e )
+                {
+                    assertEquals( "Neo.TransientError.General.DatabaseUnavailable", e.code() );
+                    assertEquals( expectedErrorMessage, e.getMessage() );
+                }
+            }
+        }
+        finally
+        {
+            assertEquals( 0, server.exitStatus() );
         }
     }
 

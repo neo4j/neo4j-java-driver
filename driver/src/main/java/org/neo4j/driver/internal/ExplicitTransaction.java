@@ -20,6 +20,7 @@ package org.neo4j.driver.internal;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 
@@ -361,28 +362,12 @@ public class ExplicitTransaction implements Transaction
     {
         return ( ignore, commitOrRollbackError ) ->
         {
-            if ( cursorFailure != null && commitOrRollbackError != null )
+            CompletionException combinedError = Futures.combineErrors( cursorFailure, commitOrRollbackError );
+            if ( combinedError != null )
             {
-                Throwable cause1 = Futures.completionExceptionCause( cursorFailure );
-                Throwable cause2 = Futures.completionExceptionCause( commitOrRollbackError );
-                if ( cause1 != cause2 )
-                {
-                    cause1.addSuppressed( cause2 );
-                }
-                throw Futures.asCompletionException( cause1 );
+                throw combinedError;
             }
-            else if ( cursorFailure != null )
-            {
-                throw Futures.asCompletionException( cursorFailure );
-            }
-            else if ( commitOrRollbackError != null )
-            {
-                throw Futures.asCompletionException( commitOrRollbackError );
-            }
-            else
-            {
-                return null;
-            }
+            return null;
         };
     }
 
