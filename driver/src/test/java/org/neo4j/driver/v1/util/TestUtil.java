@@ -47,10 +47,13 @@ import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.driver.internal.util.ServerVersion.v3_1_0;
+import static org.neo4j.driver.internal.util.ServerVersion.version;
 
 public final class TestUtil
 {
@@ -214,6 +217,9 @@ public final class TestUtil
 
     public static List<String> activeQueryNames( Driver driver )
     {
+        // procedure dbms.listQueries() is only supported starting from 3.1
+        assumeTrue( version( driver ).greaterThanOrEqual( v3_1_0 ) );
+
         try ( Session session = driver.session() )
         {
             return session.run( "CALL dbms.listQueries() YIELD query RETURN query" )
