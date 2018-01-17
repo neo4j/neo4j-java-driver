@@ -115,6 +115,7 @@ public class SessionResetIT
     @Before
     public void setUp()
     {
+        assumeTrue( neo4j.version().greaterThanOrEqual( v3_1_0 ) );
         executor = Executors.newCachedThreadPool( daemon( getClass().getSimpleName() + "-thread" ) );
     }
 
