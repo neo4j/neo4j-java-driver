@@ -16,44 +16,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1.types;
+package org.neo4j.driver.internal.messaging;
 
-import org.neo4j.driver.v1.util.Experimental;
-import org.neo4j.driver.v1.util.Immutable;
+import org.junit.Test;
 
-/**
- * A listing of all database types this driver can handle.
- * @since 1.0
- */
-@Immutable
-@Experimental
-public interface TypeSystem
+import org.neo4j.driver.internal.packstream.PackOutput;
+
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+
+public class PackStreamMessageFormatV2Test
 {
-    Type ANY();
+    private final PackStreamMessageFormatV2 messageFormat = new PackStreamMessageFormatV2();
 
-    Type BOOLEAN();
+    @Test
+    public void shouldFailToCreateWriterWithoutByteArraySupport()
+    {
+        PackOutput output = mock( PackOutput.class );
 
-    Type BYTES();
-
-    Type STRING();
-
-    Type NUMBER();
-
-    Type INTEGER();
-
-    Type FLOAT();
-
-    Type LIST();
-
-    Type MAP();
-
-    Type NODE();
-
-    Type RELATIONSHIP();
-
-    Type PATH();
-
-    Type POINT();
-
-    Type NULL();
+        try
+        {
+            messageFormat.newWriter( output, false );
+            fail( "Exception expected" );
+        }
+        catch ( IllegalArgumentException ignore )
+        {
+        }
+    }
 }

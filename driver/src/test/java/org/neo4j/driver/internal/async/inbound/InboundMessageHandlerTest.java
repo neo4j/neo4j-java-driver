@@ -38,6 +38,7 @@ import org.neo4j.driver.internal.messaging.PackStreamMessageFormatV1;
 import org.neo4j.driver.internal.messaging.RecordMessage;
 import org.neo4j.driver.internal.messaging.SuccessMessage;
 import org.neo4j.driver.internal.spi.ResponseHandler;
+import org.neo4j.driver.internal.util.MessageToByteBufWriter;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 
@@ -52,19 +53,20 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.messaging.ResetMessage.RESET;
-import static org.neo4j.driver.internal.util.MessageToByteBufWriter.asByteBuf;
 import static org.neo4j.driver.v1.Values.value;
 
 public class InboundMessageHandlerTest
 {
     private EmbeddedChannel channel;
     private InboundMessageDispatcher messageDispatcher;
+    private MessageToByteBufWriter writer;
 
     @Before
     public void setUp()
     {
         channel = new EmbeddedChannel();
         messageDispatcher = new InboundMessageDispatcher( channel, DEV_NULL_LOGGING );
+        writer = new MessageToByteBufWriter( new PackStreamMessageFormatV1() );
         ChannelAttributes.setMessageDispatcher( channel, messageDispatcher );
 
         InboundMessageHandler handler = new InboundMessageHandler( new PackStreamMessageFormatV1(), DEV_NULL_LOGGING );
@@ -89,7 +91,7 @@ public class InboundMessageHandlerTest
         Map<String,Value> metadata = new HashMap<>();
         metadata.put( "key1", value( 1 ) );
         metadata.put( "key2", value( 2 ) );
-        channel.writeInbound( asByteBuf( new SuccessMessage( metadata ) ) );
+        channel.writeInbound( writer.asByteBuf( new SuccessMessage( metadata ) ) );
 
         verify( responseHandler ).onSuccess( metadata );
     }
@@ -100,7 +102,7 @@ public class InboundMessageHandlerTest
         ResponseHandler responseHandler = mock( ResponseHandler.class );
         messageDispatcher.queue( responseHandler );
 
-        channel.writeInbound( asByteBuf( new FailureMessage( "Neo.TransientError.General.ReadOnly", "Hi!" ) ) );
+        channel.writeInbound( writer.asByteBuf( new FailureMessage( "Neo.TransientError.General.ReadOnly", "Hi!" ) ) );
 
         ArgumentCaptor<Neo4jException> captor = ArgumentCaptor.forClass( Neo4jException.class );
         verify( responseHandler ).onFailure( captor.capture() );
@@ -115,7 +117,7 @@ public class InboundMessageHandlerTest
         messageDispatcher.queue( responseHandler );
 
         Value[] fields = {value( 1 ), value( 2 ), value( 3 )};
-        channel.writeInbound( asByteBuf( new RecordMessage( fields ) ) );
+        channel.writeInbound( writer.asByteBuf( new RecordMessage( fields ) ) );
 
         verify( responseHandler ).onRecord( fields );
     }
@@ -126,7 +128,7 @@ public class InboundMessageHandlerTest
         ResponseHandler responseHandler = mock( ResponseHandler.class );
         messageDispatcher.queue( responseHandler );
 
-        channel.writeInbound( asByteBuf( new IgnoredMessage() ) );
+        channel.writeInbound( writer.asByteBuf( new IgnoredMessage() ) );
         assertEquals( 0, messageDispatcher.queuedHandlersCount() );
     }
 
@@ -146,7 +148,7 @@ public class InboundMessageHandlerTest
 
         try
         {
-            channel.writeInbound( asByteBuf( RESET ) );
+            channel.writeInbound( writer.asByteBuf( RESET ) );
             fail( "Exception expected" );
         }
         catch ( DecoderException e )

@@ -24,22 +24,25 @@ import io.netty.buffer.Unpooled;
 import java.io.IOException;
 
 import org.neo4j.driver.internal.messaging.Message;
-import org.neo4j.driver.internal.messaging.PackStreamMessageFormatV1;
+import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.packstream.PackOutput;
 
-public final class MessageToByteBufWriter
+public class MessageToByteBufWriter
 {
-    private MessageToByteBufWriter()
+    private final MessageFormat messageFormat;
+
+    public MessageToByteBufWriter( MessageFormat messageFormat )
     {
+        this.messageFormat = messageFormat;
     }
 
-    public static ByteBuf asByteBuf( Message message )
+    public ByteBuf asByteBuf( Message message )
     {
         try
         {
             ByteBuf buf = Unpooled.buffer();
             ByteBufOutput output = new ByteBufOutput( buf );
-            new PackStreamMessageFormatV1.Writer( output, true ).write( message );
+            messageFormat.newWriter( output, true ).write( message );
             return buf;
         }
         catch ( IOException e )

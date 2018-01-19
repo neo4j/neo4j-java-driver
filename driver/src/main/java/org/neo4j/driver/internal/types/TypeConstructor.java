@@ -139,6 +139,15 @@ public enum TypeConstructor
         }
     },
 
+    POINT_TyCon
+            {
+                @Override
+                public String typeName()
+                {
+                    return "POINT";
+                }
+            },
+
     NULL_TyCon {
         @Override
         public String typeName()

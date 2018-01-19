@@ -19,41 +19,13 @@
 package org.neo4j.driver.v1.types;
 
 import org.neo4j.driver.v1.util.Experimental;
-import org.neo4j.driver.v1.util.Immutable;
 
-/**
- * A listing of all database types this driver can handle.
- * @since 1.0
- */
-@Immutable
 @Experimental
-public interface TypeSystem
+public interface Point
 {
-    Type ANY();
+    long crsTableId();
 
-    Type BOOLEAN();
+    long crsCode();
 
-    Type BYTES();
-
-    Type STRING();
-
-    Type NUMBER();
-
-    Type INTEGER();
-
-    Type FLOAT();
-
-    Type LIST();
-
-    Type MAP();
-
-    Type NODE();
-
-    Type RELATIONSHIP();
-
-    Type PATH();
-
-    Type POINT();
-
-    Type NULL();
+    Coordinate coordinate();
 }

@@ -20,12 +20,12 @@ package org.neo4j.driver.internal.async.outbound;
 
 import io.netty.buffer.ByteBuf;
 
-import org.neo4j.driver.internal.async.BoltProtocolV1Util;
+import org.neo4j.driver.internal.async.BoltProtocolUtil;
 import org.neo4j.driver.internal.packstream.PackOutput;
 
 import static java.util.Objects.requireNonNull;
-import static org.neo4j.driver.internal.async.BoltProtocolV1Util.CHUNK_HEADER_SIZE_BYTES;
-import static org.neo4j.driver.internal.async.BoltProtocolV1Util.DEFAULT_MAX_OUTBOUND_CHUNK_SIZE_BYTES;
+import static org.neo4j.driver.internal.async.BoltProtocolUtil.CHUNK_HEADER_SIZE_BYTES;
+import static org.neo4j.driver.internal.async.BoltProtocolUtil.DEFAULT_MAX_OUTBOUND_CHUNK_SIZE_BYTES;
 
 public class ChunkAwareByteBufOutput implements PackOutput
 {
@@ -138,7 +138,7 @@ public class ChunkAwareByteBufOutput implements PackOutput
     private void startNewChunk( int index )
     {
         currentChunkStartIndex = index;
-        BoltProtocolV1Util.writeEmptyChunkHeader( buf );
+        BoltProtocolUtil.writeEmptyChunkHeader( buf );
         currentChunkSize = CHUNK_HEADER_SIZE_BYTES;
     }
 
@@ -146,7 +146,7 @@ public class ChunkAwareByteBufOutput implements PackOutput
     {
         // go to the beginning of the chunk and write the size header
         int chunkBodySize = currentChunkSize - CHUNK_HEADER_SIZE_BYTES;
-        BoltProtocolV1Util.writeChunkHeader( buf, currentChunkStartIndex, chunkBodySize );
+        BoltProtocolUtil.writeChunkHeader( buf, currentChunkStartIndex, chunkBodySize );
     }
 
     private int availableBytesInCurrentChunk()

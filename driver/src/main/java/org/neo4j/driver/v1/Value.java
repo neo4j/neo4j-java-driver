@@ -29,6 +29,7 @@ import org.neo4j.driver.v1.types.MapAccessor;
 import org.neo4j.driver.v1.types.MapAccessorWithDefaultValue;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.types.Path;
+import org.neo4j.driver.v1.types.Point;
 import org.neo4j.driver.v1.types.Relationship;
 import org.neo4j.driver.v1.types.Type;
 import org.neo4j.driver.v1.types.TypeSystem;
@@ -288,6 +289,8 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue
      * @throws Uncoercible if value types are incompatible.
      */
     Path asPath();
+
+    Point asPoint();
 
     // Force implementation
     @Override

@@ -26,8 +26,11 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.DoubleStream;
 
 import org.neo4j.driver.internal.AsValue;
+import org.neo4j.driver.internal.InternalCoordinate;
+import org.neo4j.driver.internal.InternalPoint;
 import org.neo4j.driver.internal.value.BooleanValue;
 import org.neo4j.driver.internal.value.BytesValue;
 import org.neo4j.driver.internal.value.FloatValue;
@@ -35,15 +38,18 @@ import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.internal.value.ListValue;
 import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.internal.value.NullValue;
+import org.neo4j.driver.internal.value.PointValue;
 import org.neo4j.driver.internal.value.StringValue;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.types.Entity;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.types.Path;
+import org.neo4j.driver.v1.types.Point;
 import org.neo4j.driver.v1.types.Relationship;
 import org.neo4j.driver.v1.types.TypeSystem;
 import org.neo4j.driver.v1.util.Function;
 
+import static java.util.stream.Collectors.toList;
 import static org.neo4j.driver.internal.util.Iterables.newHashMapWithSize;
 
 /**
@@ -255,6 +261,13 @@ public abstract class Values
             asValues.put( entry.getKey(), value( entry.getValue() ) );
         }
         return new MapValue( asValues );
+    }
+
+    public static Value point( long crsTableId, long crsCode, double... coordinates )
+    {
+        InternalCoordinate coordinate = new InternalCoordinate( DoubleStream.of( coordinates ).boxed().collect( toList() ) );
+        InternalPoint point = new InternalPoint( crsTableId, crsCode, coordinate );
+        return new PointValue( point );
     }
 
     /**
@@ -472,6 +485,11 @@ public abstract class Values
         return PATH;
     }
 
+    public static Function<Value,Point> ofPoint()
+    {
+        return POINT;
+    }
+
     /**
      * Converts values to {@link List} of {@link Object}.
      * @return a function that returns {@link Value#asList()} of a {@link Value}
@@ -617,6 +635,13 @@ public abstract class Values
         public Path apply( Value val )
         {
             return val.asPath();
+        }
+    };
+    private static final Function<Value,Point> POINT = new Function<Value,Point>()
+    {
+        public Point apply( Value val )
+        {
+            return val.asPoint();
         }
     };
 
