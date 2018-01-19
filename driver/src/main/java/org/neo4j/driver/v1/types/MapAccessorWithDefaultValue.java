@@ -107,13 +107,6 @@ public interface MapAccessorWithDefaultValue
     List<Object> get( String key, List<Object> defaultValue );
 
     /**
-     * Retrieve the list of objects with the given key.
-     * If no value found by the key, then the default value provided would be returned.
-     * @param key the key of the value
-     * @param defaultValue the default value that would be returned if no value found by the key in the map
-     * @return the list of objects found by the key or the default value if no such key exists
-     */
-    /**
      * Retrieve the list with the given key.
      * If no value found by the key, then the default list provided would be returned.
      * @param key the key of the value
