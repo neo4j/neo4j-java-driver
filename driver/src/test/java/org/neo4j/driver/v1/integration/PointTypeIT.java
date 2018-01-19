@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.v1.integration;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -32,6 +33,8 @@ import org.neo4j.driver.v1.util.TestNeo4jSession;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeTrue;
+import static org.neo4j.driver.internal.util.ServerVersion.v3_4_0;
 import static org.neo4j.driver.v1.Values.point;
 
 public class PointTypeIT
@@ -44,6 +47,12 @@ public class PointTypeIT
 
     @Rule
     public final TestNeo4jSession session = new TestNeo4jSession();
+
+    @Before
+    public void setUp()
+    {
+        assumeTrue( session.version().greaterThanOrEqual( v3_4_0 ) );
+    }
 
     @Test
     public void shouldReceivePoint()
