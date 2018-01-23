@@ -110,15 +110,12 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
 
     private synchronized void forget( BoltServerAddress address )
     {
-        // First remove from the load balancer, to prevent concurrent threads from making connections to them.
+        // remove from the routing table, to prevent concurrent threads from making connections to this address
         routingTable.forget( address );
+
         if ( PURGE_ON_ERROR )
         {
             connections.purge( address );
-        }
-        else
-        {
-            connections.deactivate( address );
         }
     }
 
@@ -153,15 +150,7 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler, Au
         }
         else
         {
-            for ( BoltServerAddress addedAddress : routingTableChange.added() )
-            {
-                connections.activate( addedAddress );
-            }
-            for ( BoltServerAddress removedAddress : routingTableChange.removed() )
-            {
-                connections.deactivate( removedAddress );
-            }
-            connections.compact();
+            connections.retainAll( routingTable.servers() );
         }
     }
 

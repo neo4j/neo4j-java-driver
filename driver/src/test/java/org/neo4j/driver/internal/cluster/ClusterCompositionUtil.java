@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal.cluster;
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -41,7 +41,7 @@ public final class ClusterCompositionUtil
     public static final BoltServerAddress E = new BoltServerAddress( "5555:55" );
     public static final BoltServerAddress F = new BoltServerAddress( "6666:66" );
 
-    public static final List<BoltServerAddress> EMPTY = new ArrayList<>();
+    public static final List<BoltServerAddress> EMPTY = Collections.emptyList();
 
     public static final ClusterComposition VALID_CLUSTER_COMPOSITION =
             createClusterComposition( asList( A, B ), asList( C ), asList( D, E ) );

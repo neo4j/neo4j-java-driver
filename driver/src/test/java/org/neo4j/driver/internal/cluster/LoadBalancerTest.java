@@ -36,6 +36,7 @@ import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.PooledConnection;
+import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.internal.util.SleeplessClock;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Session;
@@ -44,6 +45,7 @@ import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 
+import static java.util.Arrays.asList;
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.Matchers.instanceOf;
@@ -62,6 +64,14 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.A;
+import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.B;
+import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.C;
+import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.D;
+import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.E;
+import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.EMPTY;
+import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.F;
+import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.createClusterComposition;
 import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.net.BoltServerAddress.LOCAL_DEFAULT;
@@ -71,7 +81,7 @@ import static org.neo4j.driver.v1.AccessMode.WRITE;
 public class LoadBalancerTest
 {
     @Test
-    public void ensureRoutingShouldUpdateRoutingTableAndDeactivateConnectionPoolWhenStale() throws Exception
+    public void ensureRoutingShouldUpdateRoutingTableWhenStale() throws Exception
     {
         // given
         ConnectionPool conns = mock( ConnectionPool.class );
@@ -89,7 +99,6 @@ public class LoadBalancerTest
         InOrder inOrder = inOrder( rediscovery, routingTable, conns );
         inOrder.verify( rediscovery ).lookupClusterComposition( routingTable, conns );
         inOrder.verify( routingTable ).update( any( ClusterComposition.class ) );
-        inOrder.verify( conns ).deactivate( new BoltServerAddress( "abc", 12 ) );
     }
 
     @Test
@@ -147,7 +156,7 @@ public class LoadBalancerTest
     }
 
     @Test
-    public void shouldForgetAddressAndItsConnectionsOnServiceUnavailableWhileClosingTx()
+    public void shouldForgetAddressOnServiceUnavailableWhileClosingTx()
     {
         RoutingTable routingTable = mock( RoutingTable.class );
         when( routingTable.update( any( ClusterComposition.class ) ) ).thenReturn( RoutingTableChange.EMPTY );
@@ -172,11 +181,10 @@ public class LoadBalancerTest
         }
 
         verify( routingTable ).forget( address );
-        verify( connectionPool ).deactivate( address );
     }
 
     @Test
-    public void shouldForgetAddressAndItsIdleConnectionsOnServiceUnavailableWhileClosingSession()
+    public void shouldForgetAddressOnServiceUnavailableWhileClosingSession()
     {
         RoutingTable routingTable = mock( RoutingTable.class, RETURNS_MOCKS );
         ConnectionPool connectionPool = mock( ConnectionPool.class );
@@ -193,7 +201,6 @@ public class LoadBalancerTest
         session.close();
 
         verify( routingTable ).forget( address );
-        verify( connectionPool ).deactivate( address );
     }
 
     @Test
@@ -254,6 +261,27 @@ public class LoadBalancerTest
             assertThat( e, instanceOf( SessionExpiredException.class ) );
             assertThat( e.getMessage(), startsWith( "Failed to obtain connection towards WRITE server" ) );
         }
+    }
+
+    @Test
+    public void shouldRetainConnectionsToAllAddressesFromReceivedRoutingTable()
+    {
+        ConnectionPool connections = mock( ConnectionPool.class );
+        when( connections.acquire( LOCAL_DEFAULT ) ).thenReturn( mock( PooledConnection.class ) );
+
+        ClusterRoutingTable routingTable = new ClusterRoutingTable( new FakeClock(), A );
+        // initally a stale routing table without readers
+        ClusterComposition initalComposition = createClusterComposition( asList( A, B ), asList( B, C ), EMPTY );
+        // then valid routing table with everything
+        ClusterComposition nextComposition = createClusterComposition( asList( A, B, C ), asList( B, C, D ), asList( C, D, E, F ) );
+        Rediscovery rediscovery = newRediscoveryMock( initalComposition, nextComposition );
+
+        LoadBalancer loadBalancer = new LoadBalancer( connections, routingTable, rediscovery, DEV_NULL_LOGGER );
+        loadBalancer.acquireConnection( READ ); // requires rediscovery
+
+        // rediscovery should be performed when load balancer is created and on read connection acquisition
+        verify( rediscovery, times( 2 ) ).lookupClusterComposition( routingTable, connections );
+        verify( connections ).retainAll( new HashSet<BoltServerAddress>( asList( A, B, C, D, E, F ) ) );
     }
 
     private void testRediscoveryWhenStale( AccessMode mode )
@@ -350,11 +378,16 @@ public class LoadBalancerTest
 
     private static Rediscovery newRediscoveryMock()
     {
-        Rediscovery rediscovery = mock( Rediscovery.class );
-        Set<BoltServerAddress> noServers = Collections.<BoltServerAddress>emptySet();
+        Set<BoltServerAddress> noServers = Collections.emptySet();
         ClusterComposition clusterComposition = new ClusterComposition( 1, noServers, noServers, noServers );
+        return newRediscoveryMock( clusterComposition );
+    }
+
+    private static Rediscovery newRediscoveryMock( ClusterComposition initialComposition, ClusterComposition... otherCompositions )
+    {
+        Rediscovery rediscovery = mock( Rediscovery.class );
         when( rediscovery.lookupClusterComposition( any( RoutingTable.class ), any( ConnectionPool.class ) ) )
-                .thenReturn( clusterComposition );
+                .thenReturn( initialComposition, otherCompositions );
         return rediscovery;
     }
 }

@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.internal.cluster;
 
+import java.util.Set;
+
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.v1.AccessMode;
 
@@ -36,6 +38,8 @@ public interface RoutingTable
     BoltServerAddress nextRouter();
 
     int routerSize();
+
+    Set<BoltServerAddress> servers();
 
     void removeWriter( BoltServerAddress toRemove );
 }

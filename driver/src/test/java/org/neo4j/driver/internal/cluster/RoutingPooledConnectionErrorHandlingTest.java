@@ -46,7 +46,6 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonMap;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -232,7 +231,7 @@ public class RoutingPooledConnectionErrorHandlingTest
             assertThat( routingTable, not( containsRouter( address ) ) );
             assertThat( routingTable, not( containsReader( address ) ) );
             assertThat( routingTable, not( containsWriter( address ) ) );
-            assertFalse( connectionPool.hasAddress( address ) );
+            assertTrue( connectionPool.hasAddress( address ) );
         }
     }
 

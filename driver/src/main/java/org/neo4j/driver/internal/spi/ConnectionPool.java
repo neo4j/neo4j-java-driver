@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.internal.spi;
 
+import java.util.Set;
+
 import org.neo4j.driver.internal.net.BoltServerAddress;
 
 public interface ConnectionPool extends AutoCloseable
@@ -36,11 +38,7 @@ public interface ConnectionPool extends AutoCloseable
      */
     void purge( BoltServerAddress address );
 
-    void activate( BoltServerAddress address );
-
-    void deactivate( BoltServerAddress address );
-
-    void compact();
+    void retainAll( Set<BoltServerAddress> addressesToRetain );
 
     boolean hasAddress( BoltServerAddress address );
 }
