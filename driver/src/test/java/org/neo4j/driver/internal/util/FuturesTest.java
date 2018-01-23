@@ -37,6 +37,7 @@ import java.util.concurrent.Executors;
 import org.neo4j.driver.internal.async.EventLoopGroupFactory;
 
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -359,5 +360,44 @@ public class FuturesTest
     {
         CompletionException error = new CompletionException( new RuntimeException( "Hello" ) );
         assertEquals( error, Futures.asCompletionException( error ) );
+    }
+
+    @Test
+    public void shouldCombineTwoErrors()
+    {
+        RuntimeException error1 = new RuntimeException( "Error1" );
+        RuntimeException error2Cause = new RuntimeException( "Error2" );
+        CompletionException error2 = new CompletionException( error2Cause );
+
+        CompletionException combined = Futures.combineErrors( error1, error2 );
+
+        assertEquals( error1, combined.getCause() );
+        assertArrayEquals( new Throwable[]{error2Cause}, combined.getCause().getSuppressed() );
+    }
+
+    @Test
+    public void shouldCombineErrorAndNull()
+    {
+        RuntimeException error1 = new RuntimeException( "Error1" );
+
+        CompletionException combined = Futures.combineErrors( error1, null );
+
+        assertEquals( error1, combined.getCause() );
+    }
+
+    @Test
+    public void shouldCombineNullAndError()
+    {
+        RuntimeException error2 = new RuntimeException( "Error2" );
+
+        CompletionException combined = Futures.combineErrors( null, error2 );
+
+        assertEquals( error2, combined.getCause() );
+    }
+
+    @Test
+    public void shouldCombineNullAndNullErrors()
+    {
+        assertNull( Futures.combineErrors( null, null ) );
     }
 }
