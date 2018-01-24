@@ -77,6 +77,7 @@ public class Neo4jRunner
     /** Global runner controlling a single server, used to avoid having to restart the server between tests */
     public static synchronized Neo4jRunner getOrCreateGlobalRunner() throws IOException
     {
+        System.out.println( "--- Discovered neoctrl.args: " + System.getProperty( "neoctrl.args" ) );
         assumeTrue( "BoltKit support unavailable", boltKitAvailable() );
         if ( globalInstance == null )
         {
