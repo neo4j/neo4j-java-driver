@@ -54,7 +54,7 @@ public class TrustOnFirstUseTrustManagerTest
     private String knownServer;
 
     @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
+    public TemporaryFolder testDir = new TemporaryFolder( new File( "target" ) );
     private X509Certificate knownCertificate;
 
     @Before

@@ -20,8 +20,6 @@ package org.neo4j.driver.v1.tck;
 
 import cucumber.api.CucumberOptions;
 import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
@@ -36,9 +34,6 @@ import org.neo4j.driver.v1.util.TestNeo4j;
         format = {"default_summary"})
 public class DriverComplianceIT
 {
-    @Rule
-    TemporaryFolder folder = new TemporaryFolder();
-
     @ClassRule
     public static TestNeo4j neo4j = new TestNeo4j();
 
