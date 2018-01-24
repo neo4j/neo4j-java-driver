@@ -24,7 +24,6 @@ import java.net.StandardSocketOptions;
 import java.net.URI;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -53,8 +52,6 @@ public class Neo4jRunner
 {
     private static Neo4jRunner globalInstance;
 
-    private static final boolean debug = true;
-
     private static final String DEFAULT_NEOCTRL_ARGS = "-e 3.2.7";
     public static final String NEOCTRL_ARGS = System.getProperty( "neoctrl.args", DEFAULT_NEOCTRL_ARGS );
     public static final URI DEFAULT_URI = URI.create( "bolt://localhost:7687" );
@@ -78,7 +75,6 @@ public class Neo4jRunner
     /** Global runner controlling a single server, used to avoid having to restart the server between tests */
     public static synchronized Neo4jRunner getOrCreateGlobalRunner() throws IOException
     {
-        System.out.println( "--- Discovered neoctrl.args: " + System.getProperty( "neoctrl.args" ) );
         assumeTrue( "BoltKit support unavailable", boltKitAvailable() );
         if ( globalInstance == null )
         {
@@ -155,10 +151,8 @@ public class Neo4jRunner
             List<String> commands = new ArrayList<>();
             commands.add( "neoctrl-install" );
             String[] split = NEOCTRL_ARGS.trim().split( "\\s+" );
-            System.out.println( "--- Split neoctrl.args: " + Arrays.toString( split ) );
             commands.addAll( asList( split ) );
             commands.add( NEO4J_DIR );
-            System.out.println( "--- Full neoctrl-install command: " + commands );
 
             String tempHomeDir = executeCommand( commands ).trim();
             debug( "Downloaded server at `%s`, now renaming to `%s`.", tempHomeDir, HOME_DIR );
@@ -320,10 +314,7 @@ public class Neo4jRunner
 
     public static void debug( String text, Object... args )
     {
-        if ( debug )
-        {
-            System.out.println( String.format( text, args ) );
-        }
+        System.out.println( String.format( text, args ) );
     }
 }
 
