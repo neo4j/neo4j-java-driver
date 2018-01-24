@@ -91,6 +91,18 @@
             </execution>
           </executions>
         </plugin>
+        <plugin>
+          <groupId>pl.project13.maven</groupId>
+          <artifactId>git-commit-id-plugin</artifactId>
+          <version>2.2.4</version>
+          <executions>
+            <execution>
+              <goals>
+                <goal>revision</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
       </plugins>
     </pluginManagement>
     <plugins>
@@ -133,7 +145,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-source-plugin</artifactId>
-        <version>2.4</version>
+        <version>3.0.1</version>
         <executions>
           <execution>
             <id>attach-sources</id>
@@ -146,7 +158,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
-        <version>2.9.1</version>
+        <version>3.0.0</version>
         <configuration>
           <charset>UTF-8</charset>
           <docencoding>UTF-8</docencoding>
@@ -157,7 +169,7 @@
             <script>hljs.initHighlightingOnLoad();</script>
           ]]></top>
           <!-- Required for Java 8u121 or later. See https://github.com/neo4j/neo4j-java-driver/pull/318  -->
-          <additionalparam>--allow-script-in-comments</additionalparam>
+          <additionalOptions>--allow-script-in-comments</additionalOptions>
         </configuration>
         <executions>
           <execution>
