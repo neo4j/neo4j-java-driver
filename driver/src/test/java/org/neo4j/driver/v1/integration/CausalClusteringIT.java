@@ -35,8 +35,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
-import org.neo4j.driver.internal.util.Clock;
-import org.neo4j.driver.internal.util.ConnectionTrackingDriverFactory;
 import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.internal.util.ThrowingConnection;
 import org.neo4j.driver.internal.util.ThrowingConnectionDriverFactory;
@@ -70,6 +68,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
@@ -236,7 +235,7 @@ public class CausalClusteringIT
     }
 
     @Test
-    public void shouldDropBrokenOldSessions() throws Exception
+    public void shouldDropBrokenOldConnections() throws Exception
     {
         Cluster cluster = clusterRule.getCluster();
 
@@ -249,7 +248,7 @@ public class CausalClusteringIT
                 .toConfig();
 
         FakeClock clock = new FakeClock();
-        ConnectionTrackingDriverFactory driverFactory = new ConnectionTrackingDriverFactory( clock );
+        ThrowingConnectionDriverFactory driverFactory = new ThrowingConnectionDriverFactory( clock );
 
         URI routingUri = cluster.leader().getRoutingUri();
         AuthToken auth = clusterRule.getDefaultAuthToken();
@@ -257,11 +256,16 @@ public class CausalClusteringIT
 
         try ( Driver driver = driverFactory.newInstance( routingUri, auth, defaultRoutingSettings(), retrySettings, config ) )
         {
-            // create nodes in different threads using different sessions
+            // create nodes in different threads using different sessions and connections
             createNodesInDifferentThreads( concurrentSessionsCount, driver );
 
-            // now pool contains many sessions, make them all invalid
-            driverFactory.closeConnections();
+            // now pool contains many connections, make them all invalid
+            List<ThrowingConnection> oldConnections = driverFactory.pollConnections();
+            for ( ThrowingConnection oldConnection : oldConnections )
+            {
+                oldConnection.setNextResetError( new ServiceUnavailableException( "Unable to reset" ) );
+            }
+
             // move clock forward more than configured liveness check timeout
             clock.progress( MINUTES.toMillis( livenessCheckTimeoutMinutes + 1 ) );
 
@@ -272,6 +276,12 @@ public class CausalClusteringIT
                 List<Record> records = session.run( "MATCH (n) RETURN count(n)" ).list();
                 assertEquals( 1, records.size() );
                 assertEquals( concurrentSessionsCount, records.get( 0 ).get( 0 ).asInt() );
+            }
+
+            // all old connections failed to reset and should be closed
+            for ( ThrowingConnection connection : oldConnections )
+            {
+                assertFalse( connection.isOpen() );
             }
         }
     }
@@ -573,7 +583,7 @@ public class CausalClusteringIT
             // make all those connections throw and seem broken
             for ( ThrowingConnection connection : driverFactory.getConnections() )
             {
-                connection.setNextRunFailure( new ServiceUnavailableException( "Disconnected" ) );
+                connection.setNextRunError( new ServiceUnavailableException( "Disconnected" ) );
             }
 
             // observe that connection towards writer is broken
@@ -620,7 +630,7 @@ public class CausalClusteringIT
         String value = "Tony Stark";
         Cluster cluster = clusterRule.getCluster();
 
-        ConnectionTrackingDriverFactory driverFactory = new ConnectionTrackingDriverFactory( Clock.SYSTEM );
+        ThrowingConnectionDriverFactory driverFactory = new ThrowingConnectionDriverFactory();
         AtomicBoolean stop = new AtomicBoolean();
         executor = newExecutor();
 
@@ -639,11 +649,15 @@ public class CausalClusteringIT
                 results.add( executor.submit( createNodesCallable( driver, label, property, value, stop ) ) );
             }
 
-            // terminate connections while reads and writes are in progress
+            // make connections throw while reads and writes are in progress
             long deadline = System.currentTimeMillis() + MINUTES.toMillis( 1 );
             while ( System.currentTimeMillis() < deadline && !stop.get() )
             {
-                driverFactory.closeConnections();
+                List<ThrowingConnection> connections = driverFactory.pollConnections();
+                for ( ThrowingConnection connection : connections )
+                {
+                    connection.setNextRunError( new ServiceUnavailableException( "Unable to execute query" ) );
+                }
                 SECONDS.sleep( 5 ); // sleep a bit to allow readers and writers to progress
             }
             stop.set( true );
@@ -676,7 +690,7 @@ public class CausalClusteringIT
     {
         List<ThrowingConnection> connections = factory.getConnections();
         ThrowingConnection lastConnection = connections.get( connections.size() - 1 );
-        lastConnection.setNextRunFailure( error );
+        lastConnection.setNextRunError( error );
     }
 
     private int executeWriteAndReadThroughBolt( ClusterMember member ) throws TimeoutException, InterruptedException
