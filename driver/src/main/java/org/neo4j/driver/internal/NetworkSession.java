@@ -249,6 +249,7 @@ public class NetworkSession implements Session
     }
 
     @Override
+    @SuppressWarnings( "deprecation" )
     public void reset()
     {
         Futures.blockingGet( resetAsync(),
