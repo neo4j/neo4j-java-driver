@@ -44,6 +44,8 @@ import static org.neo4j.driver.internal.util.ServerVersion.version;
 
 public class SocketClient
 {
+    public static final String TIMEOUT_TLS_AND_BOLT_HANDSHAKES_SYSTEM_PROPERTY = "timeoutTlsAndBoltHandshakes";
+
     private static final int MAGIC_PREAMBLE = 0x6060B017;
     private static final int VERSION1 = 1;
     private static final int HTTP = 1213486160;//== 0x48545450 == "HTTP"
@@ -330,7 +332,8 @@ public class SocketClient
     }
 
     /**
-     * Creates new {@link Socket} object with {@link Socket#setSoTimeout(int) read timeout} set to the given value.
+     * Creates new {@link Socket} object. It's {@link Socket#setSoTimeout(int) read timeout} is set to the given value
+     * if {@link #TIMEOUT_TLS_AND_BOLT_HANDSHAKES_SYSTEM_PROPERTY} system property is set to true.
      * Connection to bolt server includes:
      * <ol>
      * <li>TCP connect via {@link Socket#connect(SocketAddress, int)}</li>
@@ -355,8 +358,11 @@ public class SocketClient
         Socket socket = new Socket();
         socket.setReuseAddress( true );
         socket.setKeepAlive( true );
-        // set read timeout initially
-        socket.setSoTimeout( configuredConnectTimeout );
+        if ( Boolean.getBoolean( TIMEOUT_TLS_AND_BOLT_HANDSHAKES_SYSTEM_PROPERTY ) )
+        {
+            // set read timeout initially
+            socket.setSoTimeout( configuredConnectTimeout );
+        }
         return socket;
     }
 }
