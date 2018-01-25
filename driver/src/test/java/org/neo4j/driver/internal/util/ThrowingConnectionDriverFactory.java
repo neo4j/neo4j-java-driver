@@ -30,7 +30,24 @@ import org.neo4j.driver.v1.Logging;
 
 public class ThrowingConnectionDriverFactory extends DriverFactory
 {
+    private final Clock clock;
     private final List<ThrowingConnection> connections = new CopyOnWriteArrayList<>();
+
+    public ThrowingConnectionDriverFactory()
+    {
+        this( Clock.SYSTEM );
+    }
+
+    public ThrowingConnectionDriverFactory( Clock clock )
+    {
+        this.clock = clock;
+    }
+
+    @Override
+    protected Clock createClock()
+    {
+        return clock;
+    }
 
     @Override
     protected Connector createConnector( ConnectionSettings connectionSettings, SecurityPlan securityPlan,
@@ -43,5 +60,12 @@ public class ThrowingConnectionDriverFactory extends DriverFactory
     public List<ThrowingConnection> getConnections()
     {
         return new ArrayList<>( connections );
+    }
+
+    public List<ThrowingConnection> pollConnections()
+    {
+        List<ThrowingConnection> result = new ArrayList<>( connections );
+        connections.clear();
+        return result;
     }
 }

@@ -52,6 +52,21 @@ public class ClusterRule extends ExternalResource
         return AuthTokens.basic( "neo4j", PASSWORD );
     }
 
+    public static void stopSharedCluster()
+    {
+        if ( SharedCluster.exists() )
+        {
+            try
+            {
+                SharedCluster.stop();
+            }
+            finally
+            {
+                SharedCluster.remove();
+            }
+        }
+    }
+
     @Override
     protected void before() throws Throwable
     {

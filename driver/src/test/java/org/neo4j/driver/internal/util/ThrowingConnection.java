@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal.util;
 
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Collector;
@@ -29,11 +30,14 @@ import org.neo4j.driver.v1.summary.ServerInfo;
 public class ThrowingConnection implements Connection
 {
     private final Connection realConnection;
-    private RuntimeException nextRunFailure;
+    private final AtomicReference<RuntimeException> nextRunError;
+    private final AtomicReference<RuntimeException> nextResetError;
 
     public ThrowingConnection( Connection realConnection )
     {
         this.realConnection = realConnection;
+        this.nextRunError = new AtomicReference<>();
+        this.nextResetError = new AtomicReference<>();
     }
 
     @Override
@@ -45,12 +49,7 @@ public class ThrowingConnection implements Connection
     @Override
     public void run( String statement, Map<String,Value> parameters, Collector collector )
     {
-        if ( nextRunFailure != null )
-        {
-            RuntimeException error = nextRunFailure;
-            nextRunFailure = null;
-            throw error;
-        }
+        throwErrorIfExists( nextRunError );
         realConnection.run( statement, parameters, collector );
     }
 
@@ -69,6 +68,7 @@ public class ThrowingConnection implements Connection
     @Override
     public void reset()
     {
+        throwErrorIfExists( nextResetError );
         realConnection.reset();
     }
 
@@ -132,8 +132,22 @@ public class ThrowingConnection implements Connection
         return realConnection.boltServerAddress();
     }
 
-    public void setNextRunFailure( RuntimeException nextRunFailure )
+    public void setNextRunError( RuntimeException error )
     {
-        this.nextRunFailure = nextRunFailure;
+        nextRunError.set( error );
+    }
+
+    public void setNextResetError( RuntimeException error )
+    {
+        nextResetError.set( error );
+    }
+
+    private static void throwErrorIfExists( AtomicReference<RuntimeException> errorReference )
+    {
+        RuntimeException error = errorReference.getAndSet( null );
+        if ( error != null )
+        {
+            throw error;
+        }
     }
 }

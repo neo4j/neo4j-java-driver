@@ -19,6 +19,7 @@
 package org.neo4j.driver.v1.integration;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -35,8 +36,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
-import org.neo4j.driver.internal.util.Clock;
-import org.neo4j.driver.internal.util.ConnectionTrackingDriverFactory;
 import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.internal.util.ThrowingConnection;
 import org.neo4j.driver.internal.util.ThrowingConnectionDriverFactory;
@@ -70,6 +69,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
@@ -95,6 +95,12 @@ public class CausalClusteringIT
         {
             executor.shutdownNow();
         }
+    }
+
+    @AfterClass
+    public static void stopSharedCluster()
+    {
+        ClusterRule.stopSharedCluster();
     }
 
     @Test
@@ -236,7 +242,7 @@ public class CausalClusteringIT
     }
 
     @Test
-    public void shouldDropBrokenOldSessions() throws Exception
+    public void shouldDropBrokenOldConnections() throws Exception
     {
         Cluster cluster = clusterRule.getCluster();
 
@@ -249,7 +255,7 @@ public class CausalClusteringIT
                 .toConfig();
 
         FakeClock clock = new FakeClock();
-        ConnectionTrackingDriverFactory driverFactory = new ConnectionTrackingDriverFactory( clock );
+        ThrowingConnectionDriverFactory driverFactory = new ThrowingConnectionDriverFactory( clock );
 
         URI routingUri = cluster.leader().getRoutingUri();
         AuthToken auth = clusterRule.getDefaultAuthToken();
@@ -257,11 +263,16 @@ public class CausalClusteringIT
 
         try ( Driver driver = driverFactory.newInstance( routingUri, auth, defaultRoutingSettings(), retrySettings, config ) )
         {
-            // create nodes in different threads using different sessions
+            // create nodes in different threads using different sessions and connections
             createNodesInDifferentThreads( concurrentSessionsCount, driver );
 
-            // now pool contains many sessions, make them all invalid
-            driverFactory.closeConnections();
+            // now pool contains many connections, make them all invalid
+            List<ThrowingConnection> oldConnections = driverFactory.pollConnections();
+            for ( ThrowingConnection oldConnection : oldConnections )
+            {
+                oldConnection.setNextResetError( new ServiceUnavailableException( "Unable to reset" ) );
+            }
+
             // move clock forward more than configured liveness check timeout
             clock.progress( MINUTES.toMillis( livenessCheckTimeoutMinutes + 1 ) );
 
@@ -272,6 +283,12 @@ public class CausalClusteringIT
                 List<Record> records = session.run( "MATCH (n) RETURN count(n)" ).list();
                 assertEquals( 1, records.size() );
                 assertEquals( concurrentSessionsCount, records.get( 0 ).get( 0 ).asInt() );
+            }
+
+            // all old connections failed to reset and should be closed
+            for ( ThrowingConnection connection : oldConnections )
+            {
+                assertFalse( connection.isOpen() );
             }
         }
     }
@@ -573,7 +590,7 @@ public class CausalClusteringIT
             // make all those connections throw and seem broken
             for ( ThrowingConnection connection : driverFactory.getConnections() )
             {
-                connection.setNextRunFailure( new ServiceUnavailableException( "Disconnected" ) );
+                connection.setNextRunError( new ServiceUnavailableException( "Disconnected" ) );
             }
 
             // observe that connection towards writer is broken
@@ -620,7 +637,7 @@ public class CausalClusteringIT
         String value = "Tony Stark";
         Cluster cluster = clusterRule.getCluster();
 
-        ConnectionTrackingDriverFactory driverFactory = new ConnectionTrackingDriverFactory( Clock.SYSTEM );
+        ThrowingConnectionDriverFactory driverFactory = new ThrowingConnectionDriverFactory();
         AtomicBoolean stop = new AtomicBoolean();
         executor = newExecutor();
 
@@ -632,18 +649,22 @@ public class CausalClusteringIT
             // launch writers and readers that use transaction functions and thus should never fail
             for ( int i = 0; i < 3; i++ )
             {
-                results.add( executor.submit( countNodesCallable( driver, label, property, value, stop ) ) );
+                results.add( executor.submit( readNodesCallable( driver, label, property, value, stop ) ) );
             }
             for ( int i = 0; i < 2; i++ )
             {
                 results.add( executor.submit( createNodesCallable( driver, label, property, value, stop ) ) );
             }
 
-            // terminate connections while reads and writes are in progress
+            // make connections throw while reads and writes are in progress
             long deadline = System.currentTimeMillis() + MINUTES.toMillis( 1 );
             while ( System.currentTimeMillis() < deadline && !stop.get() )
             {
-                driverFactory.closeConnections();
+                List<ThrowingConnection> connections = driverFactory.pollConnections();
+                for ( ThrowingConnection connection : connections )
+                {
+                    connection.setNextRunError( new ServiceUnavailableException( "Unable to execute query" ) );
+                }
                 SECONDS.sleep( 5 ); // sleep a bit to allow readers and writers to progress
             }
             stop.set( true );
@@ -676,7 +697,7 @@ public class CausalClusteringIT
     {
         List<ThrowingConnection> connections = factory.getConnections();
         ThrowingConnection lastConnection = connections.get( connections.size() - 1 );
-        lastConnection.setNextRunFailure( error );
+        lastConnection.setNextRunError( error );
     }
 
     private int executeWriteAndReadThroughBolt( ClusterMember member ) throws TimeoutException, InterruptedException
@@ -951,7 +972,7 @@ public class CausalClusteringIT
         };
     }
 
-    private static Callable<Void> countNodesCallable( final Driver driver, final String label, final String property, final String value,
+    private static Callable<Void> readNodesCallable( final Driver driver, final String label, final String property, final String value,
             final AtomicBoolean stop )
     {
         return new Callable<Void>()
@@ -963,7 +984,7 @@ public class CausalClusteringIT
                 {
                     try ( Session session = driver.session( AccessMode.READ ) )
                     {
-                        countNodes( session, label, property, value );
+                        readNodeIds( session, label, property, value );
                     }
                     catch ( Throwable t )
                     {
@@ -985,6 +1006,26 @@ public class CausalClusteringIT
             {
                 runCreateNode( tx, label, property, value );
                 return null;
+            }
+        } );
+    }
+
+    private static List<Long> readNodeIds( final Session session, final String label, final String property, final String value )
+    {
+        return session.readTransaction( new TransactionWork<List<Long>>()
+        {
+            @Override
+            public List<Long> execute( Transaction tx )
+            {
+                StatementResult result = tx.run( "MATCH (n:" + label + " {" + property + ": $value}) RETURN n LIMIT 5",
+                        parameters( "value", value ) );
+
+                List<Long> ids = new ArrayList<>();
+                while ( result.hasNext() )
+                {
+                    ids.add( result.next().get( 0 ).asNode().id() );
+                }
+                return ids;
             }
         } );
     }
