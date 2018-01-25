@@ -185,6 +185,7 @@ public class SocketClientTest
 
     private static void testReadTimeoutOnConnect( SecurityPlan securityPlan ) throws IOException
     {
+        System.setProperty( SocketClient.TIMEOUT_TLS_AND_BOLT_HANDSHAKES_SYSTEM_PROPERTY, "true" );
         try ( ServerSocket server = new ServerSocket( 0 ) ) // server that does not reply
         {
             int timeoutMillis = 1_000;
@@ -200,6 +201,10 @@ public class SocketClientTest
             {
                 assertThat( e.getCause(), instanceOf( SocketTimeoutException.class ) );
             }
+        }
+        finally
+        {
+            System.setProperty( SocketClient.TIMEOUT_TLS_AND_BOLT_HANDSHAKES_SYSTEM_PROPERTY, "false" );
         }
     }
 

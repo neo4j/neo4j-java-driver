@@ -38,6 +38,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.driver.internal.DriverFactory;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
+import org.neo4j.driver.internal.net.SocketClient;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.util.DriverFactoryWithFixedRetryLogic;
 import org.neo4j.driver.internal.util.ServerVersion;
@@ -1194,6 +1195,7 @@ public class SessionIT
                 .withConnectionTimeout( connectionTimeoutMs, TimeUnit.MILLISECONDS )
                 .toConfig();
 
+        System.setProperty( SocketClient.TIMEOUT_TLS_AND_BOLT_HANDSHAKES_SYSTEM_PROPERTY, "true" );
         try ( Driver driver = GraphDatabase.driver( neo4j.uri(), neo4j.authToken(), config ) )
         {
             final Session session1 = driver.session();
@@ -1229,6 +1231,10 @@ public class SessionIT
 
             long hulkPower = powerFuture.get( 10, TimeUnit.SECONDS );
             assertEquals( 100, hulkPower );
+        }
+        finally
+        {
+            System.setProperty( SocketClient.TIMEOUT_TLS_AND_BOLT_HANDSHAKES_SYSTEM_PROPERTY, "false" );
         }
     }
 
